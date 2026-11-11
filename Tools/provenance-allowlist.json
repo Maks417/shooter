@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "scope": "M0 independent contract source only; not a generated-content or release provenance approval",
+  "assetSourceExtensions": [".cs", ".asmdef", ".meta"],
+  "nonShippingFixtures": [
+    {
+      "path": "docs/fixtures/codec-payload.bin",
+      "sha256": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+      "reason": "Three-byte ASCII abc specification codec fixture; never a game asset"
+    }
+  ],
+  "engineAndPackageVisualExceptions": [],
+  "fontPolicy": "No font is used yet. Name and verify the engine font exception after selecting the editor, before any UI implementation."
+}

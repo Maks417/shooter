@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "updatedDate": "2026-11-11",
+  "integrator": "Codex (single integrator)",
+  "branch": "main",
+  "baseCommit": "55cfe5644a383e2c2bbcbdedacb1e600b7cf3b3e",
+  "contractVersion": "C0-candidate.1",
+  "readyForParallelIntegration": false,
+  "packages": [
+    {
+      "packageId": "WP-00",
+      "owner": "Codex (single integrator)",
+      "branch": "main",
+      "baseCommit": "55cfe5644a383e2c2bbcbdedacb1e600b7cf3b3e",
+      "paths": ["UnityProject/Assets/Shooter/Contracts", "Tools", "global.json", "coordination.json", "docs", ".gitattributes", ".gitignore"],
+      "dependencies": [],
+      "contractVersion": "C0-candidate.1",
+      "status": "F01 pending Unity installation; independent F02 candidate implemented; freeze awaits editor/adapters/smoke evidence",
+      "leaseExpiry": null
+    },
+    {
+      "packageId": "WP-09",
+      "owner": "Codex (same integrator; independent fixture/source-audit tooling only)",
+      "branch": "main",
+      "baseCommit": "55cfe5644a383e2c2bbcbdedacb1e600b7cf3b3e",
+      "paths": ["Tools"],
+      "dependencies": ["WP-00"],
+      "contractVersion": "C0-candidate.1",
+      "status": "No Unity/performance integration or benchmark implementation started",
+      "leaseExpiry": null
+    }
+  ]
+}
