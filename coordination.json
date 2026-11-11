@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "updatedDate": "2026-11-11",
-  "integrator": "Codex (single integrator)",
+  "integrator": "Codex (M0 integrator)",
   "branch": "main",
   "baseCommit": "a983a7bbd776dcdcb5be6aab9359944350d660ec",
   "contractVersion": "C0-candidate.1",
@@ -51,6 +51,71 @@
       "contractVersion": "C0-candidate.1",
       "status": "M0 provenance/fixtures, real B01 capture/analyzer and CI configuration implemented; three complete captures pending required counters/reference conditions, plus retained failed overload/shutdown attempt; hosted CI unrun; RAM channel mode deliberately unverified",
       "leaseExpiry": null
+    },
+    {
+      "packageId": "WP-09/benchmark-validation",
+      "owner": "/root/benchmark_validation",
+      "branch": "main",
+      "baseCommit": "1f2c9d8a10578949dd4ce73f1e65c6c2a64280d5",
+      "paths": [
+        "Tools/analyze_benchmark.py",
+        "Tools/test_benchmark_analysis.py"
+      ],
+      "dependencies": [
+        "Existing M0 tooling and fixtures only; no frozen C0 dependency"
+      ],
+      "contractVersion": "C0-candidate.1 (read-only)",
+      "status": "Completed: 11/11 tooling tests pass; reviewed and integrated by Codex; no C0-dependent features or Unity/project changes",
+      "leaseExpiry": null,
+      "integratedFromBranch": "codex/m0-benchmark-validation",
+      "workspaceStatus": "Consolidated into main; temporary worktree and branch retired after preservation verification"
+    },
+    {
+      "packageId": "WP-09/package-preflight",
+      "owner": "/root/package_preflight",
+      "branch": "main",
+      "baseCommit": "1f2c9d8a10578949dd4ce73f1e65c6c2a64280d5",
+      "paths": [
+        "Tools/prepare_unity_packages.py",
+        "Tools/test_prepare_unity_packages.py"
+      ],
+      "dependencies": [
+        "Existing M0 tooling and fixtures only; no frozen C0 dependency"
+      ],
+      "contractVersion": "C0-candidate.1 (read-only)",
+      "status": "Completed: 10/10 tooling tests pass; reviewed and integrated by Codex; no C0-dependent features or Unity/project changes",
+      "leaseExpiry": null,
+      "integratedFromBranch": "codex/m0-package-preflight",
+      "workspaceStatus": "Consolidated into main; temporary worktree and branch retired after preservation verification"
+    },
+    {
+      "packageId": "WP-09/schema-catalog",
+      "owner": "/root/schema_catalog",
+      "branch": "main",
+      "baseCommit": "1f2c9d8a10578949dd4ce73f1e65c6c2a64280d5",
+      "paths": [
+        "Tools/verify_schemas.py",
+        "Tools/test_verify_schemas.py"
+      ],
+      "dependencies": [
+        "Existing M0 tooling and fixtures only; no frozen C0 dependency"
+      ],
+      "contractVersion": "C0-candidate.1 (read-only)",
+      "status": "Completed: 9/9 tooling tests pass; reviewed and integrated by Codex; no C0-dependent features or Unity/project changes",
+      "leaseExpiry": null,
+      "integratedFromBranch": "codex/m0-schema-catalog",
+      "workspaceStatus": "Consolidated into main; temporary worktree and branch retired after preservation verification"
     }
-  ]
+  ],
+  "validationWave": {
+    "baseCommit": "1f2c9d8a10578949dd4ce73f1e65c6c2a64280d5",
+    "scope": "Independent M0 tooling validation only (T033/T034); no C0-dependent feature implementation or integration. C0 freeze and M0 acceptance remain pending.",
+    "readiness": "Existing fixture/tooling inputs available; disjoint paths and isolated worktrees assigned; no Unity editor/project import allowed in this wave.",
+    "fixtureVersion": "specification-v1.1",
+    "seed": "460072030",
+    "status": "Integrated and reviewed; 30 tooling regression tests and six schema cases pass; three historical B01 reports reproduced unchanged; C0 and acceptance gates remain pending",
+    "evidence": "Artifacts/m0-foundation/1f2c9d8a10578949dd4ce73f1e65c6c2a64280d5/tooling-validation-20261111T224045Z/validation.json",
+    "cleanupEvidence": "Artifacts/workspace-cleanup/tooling-wave-preservation.json"
+  },
+  "workflowRule": "Commit completed task changes into main; integrate and verify all task worktrees, preserve evidence, then remove temporary worktrees/branches before finishing."
 }

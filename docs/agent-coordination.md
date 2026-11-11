@@ -18,6 +18,7 @@ One human/integrator owns main, shared Contracts, Bootstrap, project/package set
 4. Pull request states behavior, contract/schema impact, generated artifacts provenance, tested build/seed/profile, measured budget deltas, limitations and rollback. Evidence includes tests; visuals alone insufficient.
 5. CI checks contracts, art audit, generation and feature tests. Integrator merges in dependency order, resolves shared files and runs integration smoke.
 6. Worker rebases on new contract version explicitly, reruns impacted tests; integrator deletes retired stubs after real adapter passes conformance.
+7. Commit all completed task changes into `main` before finishing. Integrate all task worktrees/branches, verify required checks and preservation of their contents in `main`, then remove the temporary worktrees and branches. Preserve required ignored evidence before cleanup; completed work must not remain only in a workspace, task branch or uncommitted working copy. Repository AGENTS.md makes this a standing rule.
 
 Use separate git worktrees; never concurrent Unity editors on one project directory. Per-worktree Library/cache paths; share only immutable verified cache artifacts with locks. Unity-generated `.meta` and scenes change only under single owner. Avoid monolithic scenes: bootstrap scene composed by code from deterministic recipes. Workers do not auto-upgrade editor/packages or reserialize whole project.
 

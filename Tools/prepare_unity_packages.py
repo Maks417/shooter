@@ -54,8 +54,9 @@ def immutable_archive(source):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--editor", type=Path, required=True)
-    parser.add_argument("--record-initial-lock", action="store_true")
-    parser.add_argument("--migrate-immutable-archive", action="store_true")
+    lock_operation = parser.add_mutually_exclusive_group()
+    lock_operation.add_argument("--record-initial-lock", action="store_true")
+    lock_operation.add_argument("--migrate-immutable-archive", action="store_true")
     parser.add_argument("--quiet", action="store_true")
     args = parser.parse_args()
     source = args.editor.resolve().parent / "Data/Resources/PackageManager/BuiltInPackages/com.unity.render-pipelines.core"
@@ -75,9 +76,6 @@ def main():
     archive_hash = hashlib.sha256(data).hexdigest()
     if destination.exists() and hashlib.sha256(destination.read_bytes()).hexdigest() != archive_hash:
         raise ValueError("Existing package archive differs; refusing to overwrite or bless it")
-    if not destination.exists():
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        destination.write_bytes(data)
     proof = {"schemaVersion": 2, "package": package["name"], "version": package["version"],
              "upstreamInventorySha256": original_hash, "curatedInventorySha256": curated_hash, "removedPaths": REMOVED,
              "archiveFormat": "pax-tar-gzip-stored-v1", "archivePath": archive_relative, "archiveSha256": archive_hash,
@@ -89,14 +87,21 @@ def main():
             raise ValueError("Archive migration requires the unchanged schema-1 curation inputs")
         if args.record_initial_lock and expected_patch and expected_patch != proof:
             raise ValueError("Cannot silently replace an existing package curation lock")
-        lock["corePackageCuration"] = proof
-        lock_path.write_bytes((json.dumps(lock, indent=2) + "\n").encode())
         manifest_path = ROOT / "UnityProject/Packages/manifest.json"
         manifest = json.loads(manifest_path.read_text(encoding="utf-8-sig"))
         manifest["dependencies"]["com.unity.render-pipelines.core"] = "file:../../" + archive_relative
-        manifest_path.write_bytes((json.dumps(manifest, indent=2) + "\n").encode())
+        lock["corePackageCuration"] = proof
+        lock_bytes = (json.dumps(lock, indent=2) + "\n").encode()
+        manifest_bytes = (json.dumps(manifest, indent=2) + "\n").encode()
     elif expected_patch != proof:
         raise ValueError("Source curation is not pinned; initial integrator review is required")
+    # Complete approval and input validation before creating any output or changing a lock.
+    if not destination.exists():
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(data)
+    if args.record_initial_lock or args.migrate_immutable_archive:
+        lock_path.write_bytes(lock_bytes)
+        manifest_path.write_bytes(manifest_bytes)
     output = ROOT / "Artifacts/unity-setup/core-package-curation.json"
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_bytes((json.dumps(proof, indent=2) + "\n").encode())

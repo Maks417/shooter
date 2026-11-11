@@ -1,10 +1,10 @@
-# M0 — Foundation — handoff and gate record
+# M0 â€” Foundation â€” handoff and gate record
 
 Status: **IMPLEMENTED / ACCEPTANCE PENDING**, 2026-11-11. The foundation imports from a clean worktree, compiles, runs native client/server players and records real benchmark data. M0 is not signed off: required performance counters/reference conditions and explicit C0/reviewer acceptance remain pending. M1 has not started. See [acceptance](validation-acceptance.md), [entry](index.md) and [bootstrap runbook](../../bootstrap-runbook.md).
 
 ## Source, ownership and versions
 
-One integrator, Codex; no parallel workers. Root `coordination.json` retains `readyForParallelIntegration=false`. Implementation commit `e94ca642b05442252789ca45502de89e6adcb4e7` added the Unity foundation; `a983a7bbd776dcdcb5be6aab9359944350d660ec` corrected package immutability after real clean-import failure. Subsequent handoff-only changes do not replace these tested source identities. No milestone tag or C0 freeze is claimed.
+The original foundation implementation used one integrator, Codex. A subsequent independent tooling-validation wave is recorded below; root `coordination.json` retains `readyForParallelIntegration=false`. Implementation commit `e94ca642b05442252789ca45502de89e6adcb4e7` added the Unity foundation; `a983a7bbd776dcdcb5be6aab9359944350d660ec` corrected package immutability after real clean-import failure. Subsequent documentation/tooling changes do not replace these tested player-source identities. No milestone tag or C0 freeze is claimed.
 
 | Identity | Verified value |
 |---|---|
@@ -37,11 +37,11 @@ Run directories below originate in that worktree's `Artifacts/m0-foundation/a983
 | Fresh import / exact packages | PASS; `configure-unity-20261111T215550159Z-e51b876c` |
 | Pure contracts/foundation | 54/54 pass, zero skipped; `20261111T215749293Z-25e65ccd` |
 | Dedicated server | PASS, no graphics sources/client assemblies; `build-server-20261111T215803720Z-d20778d3` |
-| Server smoke | Ready, ≥60 fixed ticks, clean exit; `smoke-server-20261111T215933065Z-32f31d80` |
+| Server smoke | Ready, â‰¥60 fixed ticks, clean exit; `smoke-server-20261111T215933065Z-32f31d80` |
 | EditMode after server build | 6/6 pass, including registered-pipeline restoration; `tests-editmode-20261111T215944439Z-572f2011` |
 | PlayMode | 5/5 pass; real physics tie/order/quality, penetration/overflow, nav failure/ticket and generated mesh checks; `tests-playmode-20261111T220012007Z-d7b35d26` |
 | IL2CPP Release client | PASS, no imported image/model/animation/audio, prefab or built-in sprite/logo entries; `build-client-20261111T220035822Z-49b4bf4f` |
-| Client smoke | Ready, ≥60 fixed ticks, clean exit; `smoke-client-20261111T220532899Z-beb98a8b` |
+| Client smoke | Ready, â‰¥60 fixed ticks, clean exit; `smoke-client-20261111T220532899Z-beb98a8b` |
 | Generated/source provenance | PASS before and after builds; 128 asset entries, 64 unique GUIDs; retained `reproduction/source-provenance.json` |
 
 Pure tests include independent fixture reproduction, serial/ordinal and validation boundaries, bounded lifetime/cancellation/backpressure, fixed-clock overload/failure, fake rejection and steady Step allocation. The full Draft 2020-12 validator passes six expected valid/invalid cases; the standard-library verifier passes 35 assertions over 17 JSON files. Archive decoding/path/timestamp tests pass 2/2; analyzer percentile/invalid-sample tests pass 2/2. No fixture payload or schema was edited. Final documentation verification passes 84 pages, 533 local links and 104 integrity files; it certifies documentation only. Evidence retention verifies 786 file sizes and 54 key report/raw/player hashes (`reproduction/retention.json`). Hosted CI remains pending.
@@ -50,13 +50,13 @@ Pure tests include independent fixture reproduction, serial/ordinal and validati
 
 [ADR-013](../../decisions.md#adr-013--accepted-initial-m0-toolchain-and-explicit-engine-resource-curation) records the exact curation, archive migration and source hashes. Two unused Core Resources debug UI prefabs plus their metadata are omitted; no engine source API/shader is modified. The immutable archive has SHA256 `ac919cdfbb561e93be0fc4b0a3c65ee998fd382d9933d1046785dba70ae74c8e`. Independent decoding matches all 2993 curated files. Ordinary verification refuses changed inputs/output rather than blessing or overwriting them.
 
-`ShooterBuild.InitializeFoundation` generates numeric presets/material/scene settings and ordered dither lookups; meshes are generated at runtime. The 64×64 ordered lookup is not a blue-noise quality claim; M0 uses no LOD crossfade/post. A persistent one-pixel zero lookup replaces the unused debug-font atlas. No font is used. `Assets/Shooter/Settings/provenance.json` hashes source, toolchain and real generated outputs, including native URP shader-prefilter fields. Both splash and Unity-logo flags are disabled; shared wrapper guards reject extensionless built-in sprite/logo entries. Server audits additionally reject shader/material payloads. No visual-art exception was added and no installed package/Library payload or golden was hand-edited.
+`ShooterBuild.InitializeFoundation` generates numeric presets/material/scene settings and ordered dither lookups; meshes are generated at runtime. The 64Ã—64 ordered lookup is not a blue-noise quality claim; M0 uses no LOD crossfade/post. A persistent one-pixel zero lookup replaces the unused debug-font atlas. No font is used. `Assets/Shooter/Settings/provenance.json` hashes source, toolchain and real generated outputs, including native URP shader-prefilter fields. Both splash and Unity-logo flags are disabled; shared wrapper guards reject extensionless built-in sprite/logo entries. Server audits additionally reject shader/material payloads. No visual-art exception was added and no installed package/Library payload or golden was hand-edited.
 
 ## B01 hardware and acceptance
 
 Actual machine: Ryzen 5 4600H, rendered AMD Radeon(TM) Graphics/D3D11, driver 31.0.21923.11000, 16 GiB RAM configured at 3200, WDC PC SN730 NVMe. Captures record actual power plan/AC state; the separate virtual display adapter is not the rendered adapter. **RAM channel mode stays unverified at the user's explicit request.** A/B bank labels do not prove operating interleaving. Thermal stabilization is unverified.
 
-Full captures use the same cleaned binary/content/route, 60s warmup then 180s sampling and exactly 10800 consecutive ticks per complete run. Native rendering is 1280×720 Low. Route SHA256 is `786aaefd68873583e51b00b5b2f8b24441a54c3d2dbb9df0773ead9eae89dc1a`. Raw unavailable values become JSON null plus reasons. External process-memory sampling is 1Hz and may miss subsecond peaks. Timing-budget failures remain failures; missing counters/conditions keep acceptance pending.
+Full captures use the same cleaned binary/content/route, 60s warmup then 180s sampling and exactly 10800 consecutive ticks per complete run. Native rendering is 1280Ã—720 Low. Route SHA256 is `786aaefd68873583e51b00b5b2f8b24441a54c3d2dbb9df0773ead9eae89dc1a`. Raw unavailable values become JSON null plus reasons. External process-memory sampling is 1Hz and may miss subsecond peaks. Timing-budget failures remain failures; missing counters/conditions keep acceptance pending.
 
 | Completed capture directory | Frames / ticks | Frame p95 / p99 / max (ms) | Sampled private bytes peak | Gate |
 |---|---|---|---:|---|
@@ -64,7 +64,7 @@ Full captures use the same cleaned binary/content/route, 60s warmup then 180s sa
 | `benchmark-2-20261111T221001799Z-4dcab2ae` | 205042 / 10800 | 1.4273 / 2.3317 / 40.8757 | 248610816 | PendingHardware |
 | `benchmark-3-20261111T222100609Z-3456981e` (bounded retry) | 213100 / 10800 | 1.3253 / 2.2616 / 28.3892 | 248020992 | PendingHardware |
 
-All three complete reports conform to the unchanged full JSON Schema. Each measured zero managed bytes per empty-authority Step; observed budgets did not fail. GPU/per-frame allocation counters were unavailable in all three; render timing was unavailable in runs 1–2, while the retry measured render p95 0.2073ms. These empty-box data do not prove combat performance or complete reference-machine acceptance.
+All three complete reports conform to the unchanged full JSON Schema. Each measured zero managed bytes per empty-authority Step; observed budgets did not fail. GPU/per-frame allocation counters were unavailable in all three; render timing was unavailable in runs 1â€“2, while the retry measured render p95 0.2073ms. These empty-box data do not prove combat performance or complete reference-machine acceptance.
 
 The original third attempt, `benchmark-3-20261111T221414839Z-f9309a8f`, is **FAIL**, with no `capture.json`, `frames.csv` or `ticks.csv`. The player logged offline tick overload with retained debt 0.0273900333333339 seconds after its capped service, then hung during shutdown until the wrapper killed it at 330s. The bounded retry used unchanged binary/configuration/limits and does not erase that failure. The hitch/shutdown cause is unresolved; no all-attempts-passing or milestone performance claim is made. `reproduction/b01-summary.json` retains three complete reports plus the invalid attempt and overall PENDING status.
 
@@ -79,3 +79,17 @@ The first fresh import of `e94ca64` passed compilation/pure tests but Unity rewr
 Workspace cleanup: both detached verification worktrees were clean and their commits already belonged to main. After retaining evidence, `.local/fresh-m0` and `.local/fresh-m0-archive` were removed. Only `C:\Job\shooter` on main remains registered. `Artifacts/workspace-cleanup/evidence-retention.json` records 882 preserved evidence/diagnostic files. Root project, installed editor, local configuration and required package archive remain available.
 
 Remaining: explicit C0/reviewer decision, unavailable required metrics/reference conditions, investigation/retest of the overload/shutdown failure and hosted CI. RAM channel mode remains intentionally unverified. Missing evidence remains pending; do not start dependent feature integration or mark M0 PASS. Publish exact C0/fixture/toolchain identities only after the readiness decision. No automatic downstream assignment is made here.
+
+## Independent M0 tooling-validation wave
+
+At the user's request, three agents worked from base `1f2c9d8a10578949dd4ce73f1e65c6c2a64280d5` in separate worktrees/branches, with disjoint tool/test file ownership recorded in `coordination.json`. This T033/T034 support work had no dependency on frozen C0 and introduced no feature implementation, Unity import or project changes. Contracts remain C0-candidate.1; specification-v1.1 fixtures, schemas, seed 460072030, workload definitions, package locks and generated assets are unchanged. The integrator reviewed and copied only the assigned files, then wired the schema tests into the existing CI lane.
+
+| Agent / owned implementation | Change | Integrated result |
+|---|---|---|
+| `benchmark_validation` / `Tools/analyze_benchmark.py` and its test file | Reject each negative tick-allocation/private-memory/RSS sample before peak aggregation; missing CPU/rendered GPU stays null and pending | 11/11 tests pass; optional recorder sentinels, mandatory timing validity, failure priority and diagnostic scope covered |
+| `package_preflight` / `Tools/prepare_unity_packages.py` and its test file | Complete curation-proof/manifest validation before writes; initial-lock/migration flags mutually exclusive | 10/10 tests pass; rejected requests preserve inputs/outputs and approved archive identity is unchanged; write failures are not transactional |
+| `schema_catalog` / `Tools/verify_schemas.py` and `Tools/test_verify_schemas.py` | Reject empty/malformed catalogs, unknown expectations, duplicate fixture/schema pairs and invalid/missing negative paths | 9/9 tests pass; original six schema cases pass with locked jsonschema 4.26.0 |
+
+Integrated evidence: `Artifacts/m0-foundation/1f2c9d8a10578949dd4ce73f1e65c6c2a64280d5/tooling-validation-20261111T224045Z/validation.json`, plus individual command logs and `schemas.json`. The report records dirty working-source hashes, unchanged toolchain identity and raw-input hashes. Read-only reanalysis of all three complete retained B01 captures exactly reproduces their original reports, each still PendingHardware. Pinned installed-package preparation also passes and preserves archive SHA256 `ac919cdfbb561e93be0fc4b0a3c65ee998fd382d9933d1046785dba70ae74c8e`; installed source and archive were not modified.
+
+`Tools/Test-Contracts.ps1 -Offline` passes 54/54 tests with zero skipped in `20261111T223859840Z-e974d63b` under that base directory. The preceding sandboxed attempt `20261111T223839564Z-f7356005` failed during restore and ran no tests; the successful run used approved execution outside the sandbox. Offline dependency advisory lookup remains pending. Source provenance passes with 128 entries/64 GUIDs; fixtures pass 35 assertions over 17 JSON files; final documentation verification passes 84 pages, 533 links and 104 integrity files. Worker sources are retained alongside integrated evidence and match the main working copy byte-for-byte; the subsequent user-requested cleanup consolidates them into `main` and removes the temporary worktrees/branches after preservation checks. `Artifacts/workspace-cleanup/tooling-wave-preservation.json` records all changed-file hashes and the absence of unique branch commits before removal. Synthetic regression samples are test-only, never hardware evidence. No new Unity build, benchmark capture, hosted CI execution, C0 freeze or M0 acceptance is claimed; the unresolved overload/shutdown failure and prior pending gates remain.

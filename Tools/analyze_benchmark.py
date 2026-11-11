@@ -44,6 +44,12 @@ def analyze(capture_path, build_path, hardware_path, run_index):
         raise ValueError("Tick capture is incomplete, duplicated or reordered")
     frame_values = [float(row["frameMs"]) for row in rows]
     frame_ms = {key: percentile(frame_values, p) for key, p in [("p50", .5), ("p95", .95), ("p99", .99), ("max", 1)]}
+    allocations = [int(t["managedTickBytes"]) for t in ticks]
+    if any(value < 0 for value in allocations):
+        raise ValueError("Invalid allocation sample")
+    allocated_tick = max(allocations)
+    simulation = [float(t["simulationMs"]) for t in ticks]
+    simulation_p95 = percentile(simulation, .95)
     if meta["diagnostic"]:
         return {"schemaVersion": 1, "scope": "Short diagnostic capture only; not B01 acceptance", "diagnostic": True,
                 "frames": len(rows), "ticks": len(ticks), "frameMs": frame_ms, "gpuAdapter": meta["gpuAdapter"], "gateStatus": "PendingHardware"}
@@ -60,14 +66,13 @@ def analyze(capture_path, build_path, hardware_path, run_index):
 
     main, render, gpu = measured("mainMs"), measured("renderMs"), measured("gpuMs")
     allocated_frame = measured("managedFrameBytes", 1)
-    allocated_tick = max(int(t["managedTickBytes"]) for t in ticks)
-    if allocated_tick < 0:
-        raise ValueError("Invalid allocation sample")
-    simulation = [float(t["simulationMs"]) for t in ticks]
-    simulation_p95 = percentile(simulation, .95)
     memory = [r for r in read_rows(capture_path / "memory.csv") if utc(meta["captureStartUtc"]) <= utc(r["utc"]) <= utc(meta["captureEndUtc"])]
-    private_peak = max((int(r["privateBytes"]) for r in memory), default=None)
-    rss_peak = max((int(r["rssBytes"]) for r in memory), default=None)
+    private_samples = [int(r["privateBytes"]) for r in memory]
+    rss_samples = [int(r["rssBytes"]) for r in memory]
+    if any(value < 0 for value in private_samples + rss_samples):
+        raise ValueError("Invalid process memory sample")
+    private_peak = max(private_samples, default=None)
+    rss_peak = max(rss_samples, default=None)
     if not memory:
         unavailable.append("process memory: no external 1Hz samples during capture")
     machine = {key: hardware.get(key) for key in ["cpu", "gpuAdapter", "ramBytes", "ramSpeed", "channelMode", "os", "driver", "powerPlan", "acPower"]}
@@ -75,7 +80,7 @@ def analyze(capture_path, build_path, hardware_path, run_index):
     for key, value in machine.items():
         if value is None:
             unavailable.append("machine." + key + ": unavailable; no assumption substituted")
-    if "4600H" not in machine["cpu"] or "Radeon" not in machine["gpuAdapter"] or machine["ramBytes"] != 16 * 1024 ** 3 or machine["ramSpeed"] != 3200 or machine["acPower"] is not True:
+    if "4600H" not in (machine["cpu"] or "") or "Radeon" not in (machine["gpuAdapter"] or "") or machine["ramBytes"] != 16 * 1024 ** 3 or machine["ramSpeed"] != 3200 or machine["acPower"] is not True:
         unavailable.append("reference hardware/power conditions not fully verified")
     fail = frame_ms["p95"] > 33.33 or frame_ms["p99"] > 50 or frame_ms["max"] > 100
     fail |= sum(50 < value <= 100 for value in frame_values) > 3

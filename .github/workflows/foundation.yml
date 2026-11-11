@@ -28,8 +28,12 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           python -m venv .local/fixtures-venv
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
           ./.local/fixtures-venv/Scripts/python.exe -m pip install --require-hashes -r Tools/requirements-fixtures.lock
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
           ./.local/fixtures-venv/Scripts/python.exe Tools/verify_schemas.py --report Artifacts/schemas.json
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          ./.local/fixtures-venv/Scripts/python.exe Tools/test_verify_schemas.py
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           python docs/fixtures/verify_fixtures.py
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
