@@ -105,6 +105,60 @@
       "leaseExpiry": null,
       "integratedFromBranch": "codex/m0-schema-catalog",
       "workspaceStatus": "Consolidated into main; temporary worktree and branch retired after preservation verification"
+    },
+    {
+      "packageId": "WP-09/smoke-validation",
+      "owner": "/root/smoke_validation",
+      "branch": "main",
+      "baseCommit": "a055cc2b08925110a341d329e8319533171c5f6d",
+      "paths": [
+        "Tools/Smoke.ps1",
+        "Tools/test_smoke.ps1"
+      ],
+      "dependencies": [
+        "Independent existing M0 wrapper inputs; no frozen C0 dependency"
+      ],
+      "contractVersion": "C0-candidate.1 (read-only)",
+      "status": "Completed: reviewed and merged by integrator; wrapper regressions pass; C0 remains candidate and dependent feature integration gated",
+      "leaseExpiry": null,
+      "integratedFromBranch": "codex/m0-smoke-validation",
+      "workspaceStatus": "Merged into main; temporary worktree and branch retired after evidence preservation and ancestry/source verification"
+    },
+    {
+      "packageId": "WP-09/unity-xml-validation",
+      "owner": "/root/unity_xml_validation",
+      "branch": "main",
+      "baseCommit": "a055cc2b08925110a341d329e8319533171c5f6d",
+      "paths": [
+        "Tools/Test-Unity.ps1",
+        "Tools/test_unity_results.ps1"
+      ],
+      "dependencies": [
+        "Independent existing M0 wrapper inputs; no frozen C0 dependency"
+      ],
+      "contractVersion": "C0-candidate.1 (read-only)",
+      "status": "Completed: reviewed and merged by integrator; wrapper regressions pass; C0 remains candidate and dependent feature integration gated",
+      "leaseExpiry": null,
+      "integratedFromBranch": "codex/m0-unity-xml-validation",
+      "workspaceStatus": "Merged into main; temporary worktree and branch retired after evidence preservation and ancestry/source verification"
+    },
+    {
+      "packageId": "WP-09/provenance-validation",
+      "owner": "/root/provenance_validation",
+      "branch": "main",
+      "baseCommit": "a055cc2b08925110a341d329e8319533171c5f6d",
+      "paths": [
+        "Tools/Test-SourceProvenance.ps1",
+        "Tools/test_source_provenance.ps1"
+      ],
+      "dependencies": [
+        "Independent existing M0 wrapper inputs; no frozen C0 dependency"
+      ],
+      "contractVersion": "C0-candidate.1 (read-only)",
+      "status": "Completed: reviewed and merged by integrator; wrapper regressions pass; C0 remains candidate and dependent feature integration gated",
+      "leaseExpiry": null,
+      "integratedFromBranch": "codex/m0-provenance-validation",
+      "workspaceStatus": "Merged into main; temporary worktree and branch retired after evidence preservation and ancestry/source verification"
     }
   ],
   "validationWave": {
@@ -117,5 +171,15 @@
     "evidence": "Artifacts/m0-foundation/1f2c9d8a10578949dd4ce73f1e65c6c2a64280d5/tooling-validation-20261111T224045Z/validation.json",
     "cleanupEvidence": "Artifacts/workspace-cleanup/tooling-wave-preservation.json"
   },
-  "workflowRule": "Commit completed task changes into main; integrate and verify all task worktrees, preserve evidence, then remove temporary worktrees/branches before finishing."
+  "workflowRule": "Commit completed task changes into main; integrate and verify all task worktrees, preserve evidence, then remove temporary worktrees/branches before finishing.",
+  "wrapperValidationWave": {
+    "baseCommit": "a055cc2b08925110a341d329e8319533171c5f6d",
+    "scope": "T033/T034 independent M0 wrapper checks only; C0 freeze and dependent feature readiness remain pending",
+    "readiness": "Clean main, existing wrapper inputs and retained evidence available; three isolated worktrees with disjoint ownership; no Unity editor/project opening permitted",
+    "fixtureVersion": "specification-v1.1",
+    "seed": "460072030",
+    "status": "Integrated and reviewed: 83 wrapper regressions pass; actual wrapper checks and final evidence recorded in M0 handoff; task worktrees/branches retired",
+    "evidence": "Artifacts/m0-foundation/aec716585c861ec011d168e4dd7f1bbd54c0f812/wrapper-validation-20261111T225312Z",
+    "cleanupEvidence": "Artifacts/workspace-cleanup/wrapper-wave-preservation.json"
+  }
 }

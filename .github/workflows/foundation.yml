@@ -43,6 +43,12 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           python Tools/test_prepare_unity_packages.py
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          ./Tools/test_smoke.ps1
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          ./Tools/test_unity_results.ps1
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          ./Tools/test_source_provenance.ps1
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
           ./Tools/Test-SourceProvenance.ps1
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           ./Tools/Test-Contracts.ps1
