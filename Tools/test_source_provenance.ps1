@@ -82,6 +82,7 @@ try {
     $summary = [ordered]@{ result = 'PASS'; testCount = $results.Count; scope = 'Synthetic standalone provenance wrapper regressions only'; cases = @($results) }
     $summary | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $evidence 'results.json') -Encoding utf8NoBOM
     Write-Host "PASS: $($results.Count) provenance wrapper cases; evidence: $evidence"
+    exit 0
 }
 catch {
     [ordered]@{ result = 'FAIL'; testCount = $results.Count; error = $_.Exception.Message; cases = @($results) } | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $evidence 'results.json') -Encoding utf8NoBOM
