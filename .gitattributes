@@ -8,3 +8,8 @@
 *.unity text
 *.asset text
 *.bin binary
+# Unity serializes empty YAML scalar values with a trailing space; retain native output.
+*.meta whitespace=-blank-at-eol
+*.unity whitespace=-blank-at-eol
+*.asset whitespace=-blank-at-eol
+*.mat whitespace=-blank-at-eol

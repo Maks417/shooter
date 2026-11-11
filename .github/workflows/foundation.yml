@@ -1,0 +1,80 @@
+name: M0 foundation
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      run_unity:
+        description: Run the prelicensed Unity 6000.3.28f1 Windows runner
+        type: boolean
+        default: false
+permissions:
+  contents: read
+jobs:
+  fast:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+          architecture: x64
+      - name: Verify source, fixtures and pure foundation
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          python -m venv .local/fixtures-venv
+          ./.local/fixtures-venv/Scripts/python.exe -m pip install --require-hashes -r Tools/requirements-fixtures.lock
+          ./.local/fixtures-venv/Scripts/python.exe Tools/verify_schemas.py --report Artifacts/schemas.json
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          python docs/fixtures/verify_fixtures.py
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          python docs/verify_docs.py
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          python Tools/test_benchmark_analysis.py
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          ./Tools/Test-SourceProvenance.ps1
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          ./Tools/Test-Contracts.ps1
+          exit $LASTEXITCODE
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        if: always()
+        with:
+          name: pure-foundation-results
+          path: Artifacts
+          retention-days: 14
+  unity:
+    if: github.event_name == 'workflow_dispatch' && inputs.run_unity
+    runs-on: [self-hosted, Windows, X64, unity-6000.3.28f1]
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Configure and verify exact installed editor
+        shell: pwsh
+        run: ./Tools/Configure-Unity.ps1 -EditorPath $env:SHOOTER_UNITY_EDITOR
+      - name: Unity tests and player smoke
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          ./Tools/Test-Unity.ps1 -Mode EditMode
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          ./Tools/Test-Unity.ps1 -Mode PlayMode
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          foreach ($target in @('Client', 'Server')) {
+            ./Tools/Build.ps1 -Target $target
+            if ($LASTEXITCODE) { exit $LASTEXITCODE }
+            $base = Join-Path $PWD ('Artifacts/m0-foundation/' + (git rev-parse HEAD).Trim())
+            $build = Get-ChildItem $base -Directory -Filter ('build-' + $target.ToLowerInvariant() + '-*') | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+            ./Tools/Smoke.ps1 -BuildRunDirectory $build.FullName
+            if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          }
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        if: always()
+        with:
+          name: unity-foundation-results
+          path: Artifacts
+          retention-days: 14

@@ -1,6 +1,6 @@
 # M0 — Foundation — implementation sequence
 
-Read [pack entry](index.md) first. Scope: Pin Unity 6/URP; establish assembly boundaries, contracts C0, client/server composition, three quality profiles, tests and benchmark capture from day one. Use [repo paths](../../repo-layout.md), [architecture](../../architecture.md) and [original task dependencies](../../backlog.md). All paths remain proposed until implemented. Do not add unrelated future features while a required check is failing.
+Read [pack entry](index.md) first. Scope: Pin Unity 6/URP; establish assembly boundaries, contracts C0, client/server composition, three quality profiles, tests and benchmark capture from day one. Use [repo paths](../../repo-layout.md), [architecture](../../architecture.md) and [original task dependencies](../../backlog.md). Foundation paths now exist; actual test/build/capture evidence and remaining acceptance conditions are in [handoff](handoff.md). Do not add unrelated future features while a required check is failing.
 
 | Step | Owner | Prerequisite | Completion check |
 |---|---|---|---|
@@ -54,4 +54,4 @@ Keep previous passing source/content pair, capture failing seed and diagnostic s
 
 [Bootstrap runbook](../../bootstrap-runbook.md), [C0 details](../../contract-details.md), [fixture catalog](../../fixtures/index.md) and T026/T033/T034 are required F01–F04 inputs. Freeze B01-minimal-v1 only; do not require the M1 material library at M0.
 
-These refinements are specifications, not completed tasks. Record actual checks and pending evidence in the milestone handoff.
+These refinements define acceptance; implementation alone does not close a gate. Record actual checks and pending evidence in the milestone handoff.

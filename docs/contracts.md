@@ -2,7 +2,7 @@
 
 Freeze these shapes in M0 through compilable C# contracts and fixtures before dependent work merges. The pseudocode below is normative about semantics; C# representation can use structs/classes without silently changing behavior. [Agents](agent-coordination.md) must propose an ADR for breaking changes.
 
-Current implementation is C0-candidate.1 under `UnityProject/Assets/Shooter/Contracts`; `Tools/Test-Contracts.ps1` builds the same source as .NET Standard 2.1/C# 9 and executes pure fixture/conformance tests. Test-only diagnostic codecs and reference PRNG/encoding live under `Tools/Contracts.Tests`. They do not freeze production geometry/wire formats or implement T005. Adapter and Unity smoke acceptance still prevent a C0 freeze; see [handoff](milestones/m0-foundation/handoff.md).
+Current implementation is C0-candidate.1 under `UnityProject/Assets/Shooter/Contracts`; `Tools/Test-Contracts.ps1` builds the same source as .NET Standard 2.1/C# 9 and executes pure fixture/conformance tests. Real Unity adapter tests and release client/server smoke now pass. Test-only diagnostic codecs and reference PRNG/encoding live under `Tools/Contracts.Tests`. They do not freeze production geometry/wire formats or implement T005. Explicit C0 freeze/reviewer acceptance remains pending; no dependent parallel feature integration is authorized by these results. See [handoff](milestones/m0-foundation/handoff.md).
 
 ## Common rules
 

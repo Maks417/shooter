@@ -1,0 +1,18 @@
+{
+  "name": "Shooter.Tests.PlayMode",
+  "references": [
+    "GUID:866ac9eb8b8b4a898facdc4644ba5881",
+    "GUID:2f81031656904f76bc568ad4324ed4fb",
+    "GUID:6d63cb1ee6734e3bbd9e5905e3b6e783"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS",
+    "!UNITY_SERVER"
+  ],
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

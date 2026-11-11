@@ -78,6 +78,8 @@ try {
     $sourcePaths = @(& git -C $repoRoot ls-files --cached --others --exclude-standard)
     $report.sourceTreeSha256 = Get-InventoryHash $sourcePaths
     $report.fixtureTreeSha256 = Get-InventoryHash @($sourcePaths | Where-Object { $_ -like 'docs/fixtures/*' })
+    $lockPath = Join-Path $repoRoot 'toolchain-lock.json'
+    if (Test-Path -LiteralPath $lockPath -PathType Leaf) { $report.toolchainLockHash = (Get-FileHash -LiteralPath $lockPath -Algorithm SHA256).Hash.ToLowerInvariant() }
     $report.dotnetSdk = (Invoke-CheckedProcess 'sdk' @('--version')).Trim()
     $expectedSdk = (Get-Content -LiteralPath (Join-Path $repoRoot 'global.json') -Raw | ConvertFrom-Json).sdk.version
     if ($report.dotnetSdk -ne $expectedSdk) { throw "Expected SDK $expectedSdk; got $($report.dotnetSdk)" }

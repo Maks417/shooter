@@ -1,0 +1,16 @@
+{
+  "name": "Shooter.Bootstrap.Runtime",
+  "rootNamespace": "Shooter.Bootstrap.Runtime",
+  "references": [
+    "GUID:866ac9eb8b8b4a898facdc4644ba5881",
+    "GUID:0969fe6d805743708affa53e597c282c",
+    "GUID:8863b724bde74e23a67edc4756bec1fe",
+    "GUID:2f81031656904f76bc568ad4324ed4fb"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "autoReferenced": false,
+  "allowUnsafeCode": false,
+  "noEngineReferences": false,
+  "defineConstraints": []
+}

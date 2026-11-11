@@ -6,10 +6,26 @@ $policy = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'provenance-allowlis
 $assetRoot = Join-Path $repoRoot 'UnityProject/Assets'
 $failures = [Collections.Generic.List[string]]::new()
 $guids = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+$generated = @{}
+$manifestPath = Join-Path $repoRoot $policy.generatedAssetsManifest
+function Test-ProofFile($Proof) {
+    $path = [IO.Path]::GetFullPath((Join-Path $repoRoot $Proof.path))
+    if (!$path.StartsWith($repoRoot + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) { throw 'Escaping provenance path' }
+    if (!(Test-Path -LiteralPath $path -PathType Leaf) -or (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant() -cne $Proof.sha256) { $failures.Add("Provenance hash mismatch: $path") }
+    return $path
+}
+if (Test-Path -LiteralPath $manifestPath -PathType Leaf) {
+    $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
+    if ($manifest.schemaVersion -ne 1 -or $manifest.generatorId -cne 'shooter.foundation.settings' -or $manifest.generatorVersion -cne '1.0.0') { $failures.Add('Unknown settings generator/version') }
+    if ((Get-FileHash -LiteralPath (Join-Path $repoRoot 'toolchain-lock.json') -Algorithm SHA256).Hash.ToLowerInvariant() -cne $manifest.toolchainHash) { $failures.Add('Generated settings toolchain mismatch') }
+    foreach ($source in $manifest.sources) { $null = Test-ProofFile $source }
+    foreach ($artifact in $manifest.artifacts) { $generated[(Test-ProofFile $artifact)] = $true }
+}
+else { $failures.Add('Generated settings provenance is missing') }
 $assetFiles = @(Get-ChildItem -LiteralPath $assetRoot -Recurse -Force)
 foreach ($item in $assetFiles) {
     if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) { $failures.Add("Unreviewed reparse point: $($item.FullName)") }
-    if (!$item.PSIsContainer -and $item.Extension -notin $policy.assetSourceExtensions) { $failures.Add("Unapproved asset source: $($item.FullName)") }
+    if (!$item.PSIsContainer -and $item.Extension -notin $policy.assetSourceExtensions -and !$generated.ContainsKey($item.FullName)) { $failures.Add("Unapproved asset source: $($item.FullName)") }
     if ($item.Extension -eq '.meta') {
         $target = $item.FullName.Substring(0, $item.FullName.Length - 5)
         if (!(Test-Path -LiteralPath $target)) { $failures.Add("Orphan metadata: $($item.FullName)") }

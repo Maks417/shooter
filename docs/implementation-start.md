@@ -1,10 +1,10 @@
 # Start implementation here
 
-Design revision 1.1, 2026-11-11. M0 has started with one integrator. Independent C0 candidate source and pure tests now exist; this is not yet an importable or running Unity project. No installed Unity editor was found through the recorded discovery. Specification JSON remains fixtures, not generated game assets. No performance or Unity test result is claimed. See the [M0 handoff](milestones/m0-foundation/handoff.md) for evidence and pending gates.
+Design revision 1.1, 2026-11-11. M0 now has an importable Unity project, verified editor/package lock, C0 source, a code-generated box harness and cleanly booting release client/dedicated-server players. Pure and Unity checks have actual evidence. This is a foundation diagnostic, not playable combat. Specification JSON remains fixtures. Reference B01 measurement and remaining acceptance status are recorded in the [M0 handoff](milestones/m0-foundation/handoff.md); no combat-performance or realism claim is made.
 
 ## First assignment
 
-Start M0 with one integrator. Read the repository AGENTS.md, [vision](vision.md), [architecture](architecture.md), [contract details](contract-details.md), [bootstrap runbook](bootstrap-runbook.md) and [M0 pack](milestones/m0-foundation/index.md). Implement F01 and F02, then F03/F04. Do not start whole-game implementation or independent agents modifying shared contracts. Once C0 compiles and adapter fixtures pass, geometry, rendering, character and simulation workers may start within assigned paths.
+Start M0 with one integrator. Read the repository AGENTS.md, [vision](vision.md), [architecture](architecture.md), [contract details](contract-details.md), [bootstrap runbook](bootstrap-runbook.md) and [M0 pack](milestones/m0-foundation/index.md). Implement F01 and F02, then F03/F04. Do not start whole-game implementation or independent agents modifying shared contracts. Once C0 is explicitly frozen and the readiness checkpoint passes, geometry, rendering, character and simulation workers may start within assigned paths.
 
 ## Newly resolved design details
 
@@ -23,7 +23,7 @@ The original feature docs remain shared architecture. These linked detail pages 
 
 ## What remains intentionally empirical
 
-Exact Unity/URP versions must come from an installed supported toolchain at F01; no version has been invented. Default installation path was not present during review; this does not prove Unity is absent elsewhere. F01 must discover Hub/editor locations and install missing modules if authorized. Actual soldier realism, shader cost, mesh quality, reference-machine timings and network framework suitability require their documented spikes. They cannot be resolved by writing more documentation.
+F01 selected the verified installed Unity 6000.3.28f1 revision 8f082d2fe476 with URP 17.3.0 and matching Windows modules; root `toolchain-lock.json` records actual resolution. Fresh machines must verify that lock rather than select another editor or accept upgrades. Actual soldier realism, shader cost, mesh quality, reference-machine acceptance and network framework suitability require their documented spikes. They cannot be resolved by writing more documentation.
 
 ## Ready-to-parallelize checkpoint
 

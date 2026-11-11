@@ -1,60 +1,73 @@
 # M0 — Foundation — handoff and gate record
 
-Status: **IN PROGRESS / PENDING UNITY INSTALLATION**, 2026-11-11. Independent contract work is implemented and tested. No milestone sign-off, C0 freeze, Unity build or hardware acceptance is claimed. See [acceptance](validation-acceptance.md) and [entry](index.md).
+Status: **IN PROGRESS / ACCEPTANCE PENDING**, 2026-11-11. The locked Unity project, foundation authority/adapters, generated box/floor client, dedicated server and verification wrappers exist. Real pure/Unity tests and release player smoke pass. Benchmark counters/conditions, clean-checkout reproduction and explicit C0/reviewer sign-off remain tracked below. M1 has not started. See [acceptance](validation-acceptance.md), [entry](index.md) and [bootstrap runbook](../../bootstrap-runbook.md).
 
-| Field | Value to fill at execution |
+| Field | Actual record |
 |---|---|
-| Owner / integrator / reviewer | Codex, one integrator; no parallel workers; reviewer unassigned; ownership in root `coordination.json` |
-| Source commit and upstream tag | Docs baseline `55cfe5644a383e2c2bbcbdedacb1e600b7cf3b3e`; tested implementation committed as `e7838a9fde3dd0202b173980a533a0e0b0ed163f`; no accepted milestone tag |
-| Editor/URP/toolchain hash | No editor found; no editor/package/toolchain lock invented. SDK 10.0.301 pinned in `global.json`; Unity compiler/import unverified |
-| Contract/schema/generator/protocol versions | C0-candidate.1; prediction schema 1; specification/fixtures v1.1 unchanged; no shipping generator or transport format frozen |
-| Seed/content/world/workload manifests | Existing seed 460072030 specification vectors only; no generated shipping content/world/B01 evidence |
-| Client/server build artifacts | Pending editor, URP and Windows IL2CPP/Dedicated Server module selection plus license/build verification |
-| Test results and benchmark evidence | 47/47 pure C# tests pass, zero skipped; 6/6 full Draft 2020-12 schema cases pass; 35 standard-library fixture assertions pass; source-only provenance and documentation checks pass. Benchmark pending |
-| Hardware/power/driver details | Not measured; no reference-machine claim |
-| Accepted ADRs and known issues | Existing ADRs unchanged; no normative units/enums/seeds/schema changes. Pending integration and environment issues below |
-| Gate status / reviewer / date | M0 PENDING, 2026-11-11; not ready for parallel feature integration; reviewer sign-off absent |
+| Owner / integrator / reviewer | Codex, one integrator; no parallel workers; reviewer unassigned; root `coordination.json` |
+| Source identity | Baseline `55cfe5644a383e2c2bbcbdedacb1e600b7cf3b3e`; independent contracts `e7838a9fde3dd0202b173980a533a0e0b0ed163f`; current runs record HEAD `b858cba5d51fc49b3cdc1b86c36f785cdf5a40f9` plus dirty implementation. Build source/harness hashes identify tested files; no clean-source acceptance claim or milestone tag |
+| Editor / packages | Unity 6000.3.28f1 revision 8f082d2fe476; URP/Core 17.3.0; Input System 1.20.1; Test Framework 1.6.0; AI Navigation 2.0.0; SDK 10.0.301. Verified installed modules and actual builds; portable `toolchain-lock.json`, project/package locks; local path/license ignored |
+| Toolchain / content identity | Lock SHA256 `3d5d2b28c22a9be3425712bc8507402ab3c14b841f95193032c069aac5369223`; final local client/server source SHA256 `7969c2e42b210cfa836068bab02061e456b2199b225617d5583cfcc7c7aa74a3`; harness SHA256 `469850f06e16b1bc887d180976f9a75c9699565403793ff56142fd30936c268b`. Subsequent build manifests are authoritative for their source |
+| Contract / schema / protocol | C0-candidate.1; prediction schema 1; specification/fixtures v1.1 unchanged. No C0 freeze, production geometry format or transport format claimed |
+| Generated workload | `B01-minimal-v1`, seed 460072030, zero actors; numeric floor/box, fixed camera and constant-color URP Lit materials. No gameplay content compiler, combat, motor, bots, objective or networking |
+| Gate | M0 PENDING; `readyForParallelIntegration=false`; missing counters/conditions and reviewer decision cannot be replaced by fast box rendering |
 
-## Step status
+## Implemented scope
 
-- [ ] F01: Git baseline/policy and SDK pin done; Unity installation/selection, packages, license and real client/server toolchain verification pending.
-- [ ] F02: independent candidate implemented and pure tests pass; freeze awaits F01, Unity compilation and adapter/composition acceptance. Do not assign dependent workers yet.
-- [ ] F03: not started; no scene, scheduler, shipping composition, Editor build entry points or real world/navigation adapters.
-- [ ] F04: independent fixture/provenance tooling done; quality assets, B01 capture, full generated/package/font provenance and CI integration pending.
+- F01: official Unity CLI/browser sign-in and user-approved installer; active local Unity Personal entitlement; exact editor, Windows IL2CPP and Dedicated Server modules installed. Actual release client uses IL2CPP/D3D11; server uses Dedicated Server subtarget/Mono. Fresh-checkout reproduction remains a separate check.
+- F02: BCL-only contracts and independent fixtures compile in .NET Standard 2.1/C# 9 and Unity. Explicit C0 freeze remains pending; no units, seeds, hit poses, schema or golden payload changes.
+- F03: `Bootstrap/Core/FixedTickClock.cs` services fixed 60Hz with bounded catch-up/debt handling. `Simulation/Foundation/FoundationSimulation.cs` has an empty authority, bounded snapshot/event publication slots and zero measured steady Step allocation. `World/Foundation` implements real main-thread physics/navigation ports. `Bootstrap/Runtime/FoundationEntry.cs` composes them and rejects required fake adapters. Client composition and `Presentation/Rendering/FoundationView.cs` are excluded from server compilation.
+- F04: generated Low/Balanced/High presets, code-owned `Bootstrap/Scenes/Bootstrap.unity`, source/generated provenance, packed-player dependency audits and real B01 capture/analyzer. `Tools` implements Configure, Unity tests, builds, smoke and benchmark wrappers. `.github/workflows/foundation.yml` pins actions and configures fast/self-hosted Unity lanes; no hosted execution is claimed.
 
-## Actual source and checks
+The view is read-only. Two code-created BoxColliders provide quality-independent world collision. Navigation has no actors/navmesh at M0: requests explicitly fail MissingContent; tests cover bounded/stale/cancel behavior, not successful M3 navigation. Acquiring publication leases allocates; the measured allocation claim covers the empty authority's Step, not future gameplay or presentation consumers. No full-game performance or realism claim follows from this harness.
 
-`UnityProject/Assets/Shooter/Contracts` contains the no-engine asmdef plus validated IDs/math/enums, wrap-aware serial rules, physics/nav results and bounded buffers, commands/network port buffers, snapshot/event/prediction DTOs, typed generation/content payloads and lease types. `Tools/Contracts/Shooter.Contracts.csproj` compiles these exact files as .NET Standard 2.1 with C# 9 and warnings as errors. Source `.meta` GUIDs are committed; no generated visual assets or caches exist.
+## Actual test and player evidence
 
-`Tools/Contracts.Tests` pins xUnit 2.9.3, runner 4.0.1 and Microsoft.NET.Test.Sdk 18.11.0 with a committed dependency lock. Tests consume independent command/snapshot/prediction and hash/vector fixtures, reject nonfinite/invalid values, test serial/ordinal limits, overlap overflow including the 257 sentinel, path capacity/stale/cancel consumption, eight held snapshot/event buffers, content cancellation isolation, payload copying/backpressure and typed content limits. Test-only synthetic world/nav/content/pool/queue adapters are outside Unity. They establish port conformance scenarios, not actual physics, simulation, content loading or network acceptance.
+Evidence root is `Artifacts/m0-foundation/b858cba5d51fc49b3cdc1b86c36f785cdf5a40f9/` unless stated otherwise. Artifacts are local ignored outputs, not committed binaries. Each wrapper creates fresh logs/reports with actual commands and identity.
 
-Fixture JSON codecs and C# reference PCG/canonical encoding are test-only. Production T005 generators, P02 geometry formats and N01 transport formats remain future tasks. No fixture values or binary payloads changed from the Git baseline. Text line endings follow root `.gitattributes`; documentation hashes were intentionally refreshed for source/status changes and LF checkout consistency.
+| Check | Result / run directory |
+|---|---|
+| Pure contracts/foundation | 54/54 pass, zero skipped; `20261111T201158108Z-94de4040`; independent golden/conformance tests plus fixed-clock/debt, fake rejection, publication backpressure and steady Step allocation |
+| EditMode | 6/6 pass; `tests-editmode-20261111T214210975Z-a0057dbb`; real locked toolchain/settings and physics adapter |
+| PlayMode | 5/5 pass; `tests-playmode-20261111T214237635Z-07a5fcf2`; actual physics penetration/overflow/order and navigation failure/ticket cases |
+| Release client | `build-client-20261111T214301083Z-fce44265`; successful Windows x64 IL2CPP build; `build-manifest.json` lists all packed source assets |
+| Client smoke | `smoke-client-20261111T214357060Z-20a57114`; readiness, ≥60 fixed ticks and clean player exit |
+| Dedicated server | `build-server-20261111T214133819Z-fbe9cfd5`; successful Windows Dedicated Server Mono build, 92,171,067 bytes; `graphicsSourceAssets=[]` |
+| Server smoke | `smoke-server-20261111T214201325Z-0f7e3690`; readiness, ≥60 ticks, clean exit, no client/presentation assemblies or graphics payload |
+| Short rendered diagnostic | `benchmark-diagnostic-20261111T211324138Z-c551855c`; actual Radeon/D3D11 native 1280×720 Low, 5636 frames / 300 ticks; 2s/5s diagnostic only, never acceptance |
 
-Latest C# evidence directory:
+Pure tests include test-only reference codecs/PCG encoding; production T005/P02/N01 implementations remain future work. Full Draft 2020-12 schema verification has six expected valid/invalid cases; the standard-library verifier has 35 assertions over 17 JSON files. Both reran successfully after documentation changes. All three actual B01 reports also conform to the unchanged full schema (`Artifacts/toolchain-discovery/b01-schema-results.json`). Analyzer percentile/invalid-sample tests pass (2/2), and PowerShell wrappers parse without syntax errors. Source provenance checks generated hashes and metadata/GUIDs. Documentation hashes certify documentation only. Source provenance passes (128 entries, 64 unique GUIDs); docs verification passes (84 pages, 531 local links, 104 integrity files). No fixture payload or schema changed.
 
-`Artifacts/m0-foundation/55cfe5644a383e2c2bbcbdedacb1e600b7cf3b3e/20261111T193712678Z-6f28e6d4/`
+## Art and generated provenance
 
-Contains `run.json`, `contracts.trx`, portable `test-results.xml` and SDK/restore/test logs. The run explicitly records baseline HEAD plus dirty source, source-tree SHA256 `c2d769df11e64477af64af898b4ee009baf491c8639cb7c56eaa263da2c788d0` and fixture-tree SHA256 `e474640f6649945f5fd8f907b7338e6b9ca8f16806ecdc5b00286b84ea53c97f`. The tested implementation source was then committed as `e7838a9`; subsequent changes are documentation/handoff only. `Tools/Test-Contracts.ps1` succeeded with online locked restore and advisory checks enabled for all dependency levels.
+`Tools/prepare_unity_packages.py` reconstructs and verifies the exact installed Core RP source with two unused Resources debug UI prefabs and their metadata omitted. The explicit local UPM dependency is hash-pinned in the portable lock. [ADR-013](../../decisions.md#adr-013--accepted-initial-m0-toolchain-and-explicit-engine-resource-curation) records the real inclusion failure and migration. No installed source or Library payload was hand-edited; no golden fixture changed. Fresh setup must run Configure before resolving this local package.
 
-Other local evidence:
+`ShooterBuild.InitializeFoundation` generates presets, native material/scene settings and numeric ordered dither lookups; view meshes are generated at runtime. The 64×64 lookup is not a blue-noise quality claim; M0 does not exercise LOD/post. A persistent generated one-pixel lookup replaces the unused debug font atlas reference. M0 uses no font. `Assets/Shooter/Settings/provenance.json` hashes generator source, toolchain and actual generated outputs, including locked URP build-generated shader-prefilter fields. Packed-player checks reject imported image/model/animation/audio sources; server checks additionally reject shader/material sources. Disabling both splash and Unity-logo flags removed all built-in sprite/logo entries from the rebuilt client report. The shared Tools guard rejects the earlier report and accepts the cleaned report; no visual exception was added.
 
-- `Artifacts/toolchain-discovery/discovery.json` and `dotnet-info.txt`: discovery outside the sandbox; no registered editor or Hub configurations found in checked locations. Visual Studio 18 Community C++ tools and Windows SDK include versions 10.0.19041.0/10.0.26100.0 exist, but actual Unity builds are still required.
-- `Artifacts/toolchain-discovery/schema-results.json`: jsonschema 4.26.0, all six cases and expected invalid paths pass. Wheel versions/hashes in `Tools/requirements-fixtures.lock`; repository-local CPython 3.12 environment only.
-- `Artifacts/source-provenance/result.json`: present Assets tree has 28 source/metadata entries and 14 unique GUIDs; named three-byte codec fixture hash matches. No engine font is used or allowlisted yet.
-- `docs/verification-report.json`: documentation scope only; `docs/fixtures/verify_fixtures.py` separately checks 17 JSON files and 35 assertions. Neither is a Unity/game test.
+## Hardware and benchmark gate
 
-## Failures and pending prerequisites
+Actual machine: AMD Ryzen 5 4600H, rendered AMD Radeon(TM) Graphics (D3D11), driver 31.0.21923.11000, 16 GiB populated RAM configured at 3200, system disk WDC PC SN730 NVMe. The virtual display adapter is listed in hardware evidence but is not the rendered adapter. Captures record actual power plan and AC state.
 
-The first sandboxed VSTest run aborted after its local testhost connection timed out (`Artifacts/initial-contracts/contracts.trx`). Running the suite outside the sandbox resolved it. The first sandboxed `dotnet --info` also failed service enumeration; the outside-sandbox discovery captured a successful full report. Initial sandboxed NuGet advisory access failed; the final wrapper run completed online audit-enabled restore. No test or requirement was disabled to claim the final C# result.
+**RAM channel mode remains unverified at the user's explicit request.** Two populated A/B bank labels do not certify operating interleaving. Thermal stabilization is unverified. Process memory uses external 1Hz samples and can miss subsecond peaks. Unavailable render/GPU/per-frame allocation counters are JSON null with reasons, never invented zero values. Full B01 uses three runs of 60s warmup/180s capture, 10800 consecutive simulation ticks per run, with unchanged binary/content/route. A result with missing required evidence is PendingHardware even when observed timing budgets pass. A measured budget breach remains ComputedFail.
 
-No Unity editor or Hub was found via PATH, standard installs, uninstall/Unity registry entries, Hub configuration locations, or an additional accessible search of Program Files, Job, app-data and alternate software directories. This does not certify every arbitrary filesystem location. Next integrator action is to locate or install an authorized supported Unity 6 LTS editor plus matching Windows IL2CPP/Dedicated Server modules, verify entitlement and real builds, then pin its exact revision and package versions. Do not open the partial source directory with an arbitrary editor and accept upgrades.
+All three historical full runs completed against `build-client-20261111T210759401Z-78b35d1a`, superseded by the cleaned build in the evidence table. Each captured exactly 10800 consecutive ticks and measured zero managed bytes per empty-authority Step. Route SHA256 is `786aaefd68873583e51b00b5b2f8b24441a54c3d2dbb9df0773ead9eae89dc1a`. Raw frame/tick CSV, external memory samples, hardware JSON and player logs are retained in each directory.
 
-No `ProjectVersion.txt`, package locks, toolchain-lock, profile assets, Bootstrap scene, Unity test/build/content/benchmark wrappers or CI jobs exist yet. Their results are pending, never PASS. Generated-content provenance, font exception and actual Ryzen 4600H iGPU measurements also remain pending.
+| Full B01 run directory | Frames | Frame p95 / p99 / max (ms) | Sampled private bytes peak | Result |
+|---|---:|---|---:|---|
+| `benchmark-1-20261111T211733845Z-07c671bb` | 220393 | 1.0895 / 1.4101 / 27.8278 | 254681088 | PendingHardware |
+| `benchmark-2-20261111T212221845Z-42ad6d59` | 225003 | 1.1008 / 1.5174 / 62.5075 | 254562304 | PendingHardware |
+| `benchmark-3-20261111T212632312Z-2a45e4ae` | 218755 | 1.1914 / 1.6377 / 31.1034 | 254590976 | PendingHardware |
 
-## Downstream handoff
+Measured budgets did not fail. GPU and per-frame allocation metrics were unavailable in all three; render timing was unavailable for part/all of runs 1–2, while run 3 has measured render p95 0.1924ms. These are historical empty-box diagnostics with incomplete required counters. Their initial player still had unused built-in splash/logo entries and is rejected by the strengthened provenance guard. They cannot pass final acceptance. Later splash/logging/restoration cleanup builds are separate source identities and are not silently substituted into these captures. Replacement captures against a cleaned source-matched build remain pending.
 
-Publish C0 fixtures, fake ports, build entry points and toolchain hash. WP-01 starts generation; WP-05 may start motor tests against fakes. Render/geometry/character workers consume frozen DTOs.
+No 30-minute soak, B01-materials, B02/B03/B04, combat performance or hosted CI acceptance is claimed. C0/reviewer sign-off remains pending. Do not start dependent feature integration or mark M0 PASS from a diagnostic capture.
 
-## Sign-off rule
+## Failures, limitations and next actions
 
-Use PASS only when every required check has evidence. Use BLOCKED/PENDING with exact owner/dependency when required evidence is absent. Stretch/deferred work has separate status and cannot be represented as completed by the mandatory gate. Record measured differences from upstream baseline, data migrations, rollback tag and artifacts to retain. A reviewer signs the gate; an implementation agent cannot certify hardware it has not tested.
+Retained setup logs show resolved failures: bundled Input System 1.12.0 did not compile against this editor (initial F01 resolution selected verified 1.20.1); initial API/settings persistence errors; a disabled penetration probe returned no valid penetration; template quality exclusions removed Low from player; stock debug UI Resources and legacy URP lookup references imported images; a transient built-in black lookup reloaded the stock atlas. A final manual Initialize invocation omitted its required report argument and correctly failed; the corrected invocation succeeded (`initialize-foundation-20261111T213304700Z-792e02d0`). Tests after a previous server build discovered zero cases because of persisted UNITY_SERVER context; the wrapper rejected that run and now explicitly selects Player before project load. Each issue was corrected at its source/composition/generation/tool boundary and relevant checks rerun. Earlier sandboxed testhost/NuGet issues are recorded in the prior handoff commit; no test or requirement was disabled.
+
+`CompileContent` deliberately fails with an explicit unsupported-M0 message. There is no offline content compiler or slice cache to certify. Source/build manifests record dirty state while implementation is being integrated. Post-server tests exposed null graphics references restored from stale native object handles: build cleanup now reloads the configured asset paths. The new registered-pipeline assertion and both suites pass after the server build (`tests-editmode-20261111T214210975Z-a0057dbb`, `tests-playmode-20261111T214237635Z-07a5fcf2`). An initial attempt referenced URP's internal global-settings class; using its public Core base resolved compilation. These failing diagnostics are retained.
+
+Clean-checkout import/tests, final documentation/provenance checks, replacement full B01 reports and source commit remain execution items; absent evidence stays pending. Hosted CI requires a configured remote and prelicensed runner. Hardware counter availability/thermal conditions and C0/reviewer decision require separate resolution; RAM channel mode is to remain unknown.
+
+Preserve source-matched players, raw captures and failing diagnostics for review. Freeze C0 explicitly before assigning downstream workers, then publish exact contract/fixture/toolchain identities. M1 starts only after the readiness gate; no automatic downstream assignment is made here.

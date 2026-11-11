@@ -1,6 +1,6 @@
 # Vision, scope and requirements
 
-Status: implementation specification, 2026-11-11. M0 independent contract source and pure tests now exist; there is no running game or measured benchmark result. Paths and APIs remain specifications except where the [M0 handoff](milestones/m0-foundation/handoff.md) records actual implementation. The earlier ChatGPT discussion supplies intent; this set supersedes its HDRP suggestion with Unity 6 URP.
+Status: implementation specification, 2026-11-11. M0 has a running generated-box foundation harness and verified client/server smoke; there is no playable FPS/combat slice. Paths and APIs remain specifications except where the [M0 handoff](milestones/m0-foundation/handoff.md) records actual implementation and measurements. The earlier ChatGPT discussion supplies intent; this set supersedes its HDRP suggestion with Unity 6 URP.
 
 ## Product
 

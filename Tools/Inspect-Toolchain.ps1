@@ -14,6 +14,11 @@ $hubConfigs = @(
 $editorRoots = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
 $null = $editorRoots.Add((Join-Path $env:ProgramFiles 'Unity/Hub/Editor'))
 $null = $candidatePaths.Add((Join-Path $env:ProgramFiles 'Unity/Editor/Unity.exe'))
+$localSettings = Join-Path $repoRoot '.local/unity.json'
+if (Test-Path -LiteralPath $localSettings -PathType Leaf) {
+    $localEditor = Get-Content -LiteralPath $localSettings -Raw | ConvertFrom-Json
+    $null = $candidatePaths.Add($localEditor.editorPath)
+}
 function Add-ConfigPaths($Value) {
     if ($Value -is [string]) {
         if ([IO.Path]::IsPathRooted($Value)) {
@@ -52,7 +57,10 @@ foreach ($root in $editorRoots) {
 $editors = @(foreach ($path in $candidatePaths) {
     if (Test-Path -LiteralPath $path -PathType Leaf) {
         $file = Get-Item -LiteralPath $path
-        [ordered]@{ path = $file.FullName; productVersion = $file.VersionInfo.ProductVersion; fileVersion = $file.VersionInfo.FileVersion; selected = $false }
+        # The standalone Unity CLI also installs a unity.exe alias; it is not an Editor.
+        if ($file.VersionInfo.ProductVersion -match '^\d+\.\d+\.\d+[abfp]\d+_[0-9a-f]{12}$') {
+            [ordered]@{ path = $file.FullName; productVersion = $file.VersionInfo.ProductVersion; fileVersion = $file.VersionInfo.FileVersion; selected = $false }
+        }
     }
 })
 $dotnet = Get-Command dotnet -ErrorAction SilentlyContinue

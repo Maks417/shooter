@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "editorVersion": "6000.3.28f1",
+  "editorRevision": "8f082d2fe476",
+  "urpVersion": "17.3.0",
+  "inputSystemVersion": "1.20.1",
+  "testFrameworkVersion": "1.6.0",
+  "aiNavigationVersion": "2.0.0",
+  "graphicsApi": "Direct3D11",
+  "clientBackend": "IL2CPP",
+  "serverBackend": "Mono",
+  "clientTarget": "Windows64",
+  "serverTarget": "Windows64Server",
+  "dotnetSdk": "10.0.301",
+  "requiredModules": [
+    "windows-il2cpp",
+    "windows-server"
+  ],
+  "provenanceAllowlistVersion": 1,
+  "transportVersion": null,
+  "corePackageCuration": {
+    "schemaVersion": 1,
+    "package": "com.unity.render-pipelines.core",
+    "version": "17.3.0",
+    "upstreamInventorySha256": "6dfa8cac7cd5145c23024aba1377cb17c2029edbb397bdc4d28cdc29c21daaa5",
+    "curatedInventorySha256": "78b5c9080d73ed97ee71e2dfa4d0bc2ee847834074a5aca31e18b57c3c926de2",
+    "removedPaths": [
+      "Runtime/Debugging/Prefabs/Resources/DebugUICanvas.prefab",
+      "Runtime/Debugging/Prefabs/Resources/DebugUICanvas.prefab.meta",
+      "Runtime/Debugging/Prefabs/Resources/DebugUIPersistentCanvas.prefab",
+      "Runtime/Debugging/Prefabs/Resources/DebugUIPersistentCanvas.prefab.meta"
+    ],
+    "reason": "Exclude unused Resources debug UI prefabs and their authored sprite dependencies from client/server players; see ADR-013"
+  }
+}

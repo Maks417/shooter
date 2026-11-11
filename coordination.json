@@ -3,7 +3,7 @@
   "updatedDate": "2026-11-11",
   "integrator": "Codex (single integrator)",
   "branch": "main",
-  "baseCommit": "55cfe5644a383e2c2bbcbdedacb1e600b7cf3b3e",
+  "baseCommit": "b858cba5d51fc49b3cdc1b86c36f785cdf5a40f9",
   "contractVersion": "C0-candidate.1",
   "readyForParallelIntegration": false,
   "packages": [
@@ -11,22 +11,22 @@
       "packageId": "WP-00",
       "owner": "Codex (single integrator)",
       "branch": "main",
-      "baseCommit": "55cfe5644a383e2c2bbcbdedacb1e600b7cf3b3e",
-      "paths": ["UnityProject/Assets/Shooter/Contracts", "Tools", "global.json", "coordination.json", "docs", ".gitattributes", ".gitignore"],
+      "baseCommit": "b858cba5d51fc49b3cdc1b86c36f785cdf5a40f9",
+      "paths": ["UnityProject/Assets/Shooter/Contracts", "UnityProject/Assets/Shooter/Bootstrap", "UnityProject/Assets/Shooter/Settings", "UnityProject/Assets/Shooter/Simulation/Foundation", "UnityProject/Assets/Shooter/World/Foundation", "UnityProject/Assets/Shooter/Presentation/Rendering", "UnityProject/Assets/Shooter/Tests", "UnityProject/Packages", "UnityProject/ProjectSettings", "Tools", "global.json", "toolchain-lock.json", "coordination.json", "docs", "AGENTS.md", ".github", ".gitattributes", ".gitignore"],
       "dependencies": [],
       "contractVersion": "C0-candidate.1",
-      "status": "F01 pending Unity installation; independent F02 candidate implemented; freeze awaits editor/adapters/smoke evidence",
+      "status": "M0 toolchain/project, foundation clock/authority/adapters and release client/server smoke implemented and locally verified; explicit C0 freeze/reviewer and remaining acceptance evidence pending; no M1 work",
       "leaseExpiry": null
     },
     {
       "packageId": "WP-09",
-      "owner": "Codex (same integrator; independent fixture/source-audit tooling only)",
+      "owner": "Codex (same integrator; M0 evidence scaffolds only)",
       "branch": "main",
-      "baseCommit": "55cfe5644a383e2c2bbcbdedacb1e600b7cf3b3e",
+      "baseCommit": "b858cba5d51fc49b3cdc1b86c36f785cdf5a40f9",
       "paths": ["Tools"],
       "dependencies": ["WP-00"],
       "contractVersion": "C0-candidate.1",
-      "status": "No Unity/performance integration or benchmark implementation started",
+      "status": "M0 source/generated provenance, fixtures, real B01-minimal capture/analyzer and CI configuration implemented; missing timing counters/reference conditions and hosted CI execution remain pending; RAM channel mode deliberately unverified",
       "leaseExpiry": null
     }
   ]

@@ -2,7 +2,7 @@
 
 Read [vision](vision.md), [contracts](contracts.md) and [repo layout](repo-layout.md) before changing boundaries.
 
-Implementation status: only `Shooter.Contracts` currently exists, as a BCL-only C0 candidate compiled by `Tools/Contracts/Shooter.Contracts.csproj`. Other assemblies, adapters and composition below remain planned. Pure test doubles live only in `Tools/Contracts.Tests`, outside Unity imports. See the [M0 handoff](milestones/m0-foundation/handoff.md).
+Implementation status: `Shooter.Contracts`, `Shooter.Simulation` (empty foundation authority), `Shooter.World.Unity`, `Shooter.Presentation`, separate Bootstrap Core/Runtime/Client assemblies, and `Shooter.Build.Editor` exist. Client and presentation assemblies exclude UNITY_SERVER; the core entry never references presentation types. `Tools/Foundation` independently compiles the pure clock/publication source. Test doubles remain outside shipping assemblies. Feature simulation, content compilation/loading, soldier rigs and networking below remain planned. See the [M0 handoff](milestones/m0-foundation/handoff.md).
 
 ## Components and dependency rules
 

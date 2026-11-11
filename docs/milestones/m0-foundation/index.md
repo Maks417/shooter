@@ -1,6 +1,6 @@
 # M0 — Foundation — implementation pack
 
-Status: in progress, 2026-11-11. Independent C0 candidate source and pure tests exist. F01 lacks Unity installation/selection; no Unity/game/hardware acceptance is claimed. See [handoff](handoff.md). Canonical backlog tasks: T001–T004. Assigned packages: WP-00, WP-09, both held by one integrator.
+Status: in progress, 2026-11-11. Editor/packages are locked, the project imports, pure and Unity suites pass, release client/dedicated server boot and exit, and the generated-box capture harness exists. Remaining acceptance and real benchmark evidence are in [handoff](handoff.md). No combat/gameplay or whole-milestone performance claim is made. Canonical backlog tasks: T001–T004. Assigned packages: WP-00, WP-09, both held by one integrator.
 
 ## Goal and entry gate
 

@@ -1,0 +1,16 @@
+{
+  "name": "Shooter.Build.Editor",
+  "rootNamespace": "Shooter.Build",
+  "references": [
+    "GUID:866ac9eb8b8b4a898facdc4644ba5881",
+    "GUID:15fc0a57446b3144c949da3e2b9737a9",
+    "GUID:e7b42d4a103143d58fb3deddc9dbace7"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "autoReferenced": false,
+  "noEngineReferences": false
+}

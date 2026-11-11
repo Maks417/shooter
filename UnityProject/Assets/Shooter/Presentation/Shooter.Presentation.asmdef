@@ -1,0 +1,15 @@
+{
+  "name": "Shooter.Presentation",
+  "rootNamespace": "Shooter.Presentation",
+  "references": [
+    "GUID:866ac9eb8b8b4a898facdc4644ba5881"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "autoReferenced": false,
+  "allowUnsafeCode": false,
+  "noEngineReferences": false,
+  "defineConstraints": [
+    "!UNITY_SERVER"
+  ]
+}

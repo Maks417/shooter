@@ -1,0 +1,13 @@
+{
+  "name": "Shooter.Simulation",
+  "rootNamespace": "Shooter.Simulation",
+  "references": [
+    "GUID:866ac9eb8b8b4a898facdc4644ba5881"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "autoReferenced": false,
+  "allowUnsafeCode": false,
+  "noEngineReferences": true,
+  "defineConstraints": []
+}

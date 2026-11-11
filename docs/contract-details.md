@@ -1,6 +1,6 @@
 # Contract details — C0 freeze specification
 
-This refines [contracts](contracts.md). Integrator implements these shapes in M0 with compiling C# and tests before parallel feature merges. Names/fields below are normative; allocation/layout optimizations may not change semantics. `UnityProject/Assets/Shooter/Contracts` now implements C0-candidate.1, compiled independently through `Tools/Contracts/Shooter.Contracts.csproj`; freeze and Unity integration remain pending. Evidence is in the [M0 handoff](milestones/m0-foundation/handoff.md). All DTO fields public read-only to consumers; serializers use explicit construction. No reflection-based arbitrary type deserialization.
+This refines [contracts](contracts.md). Integrator implements these shapes in M0 with compiling C# and tests before parallel feature merges. Names/fields below are normative; allocation/layout optimizations may not change semantics. `UnityProject/Assets/Shooter/Contracts` implements C0-candidate.1, compiled independently through `Tools/Contracts/Shooter.Contracts.csproj` and in real Unity client/server builds; explicit freeze/reviewer acceptance remains pending. Evidence is in the [M0 handoff](milestones/m0-foundation/handoff.md). All DTO fields public read-only to consumers; serializers use explicit construction. No reflection-based arbitrary type deserialization.
 
 ## Primitive values and enum registry
 

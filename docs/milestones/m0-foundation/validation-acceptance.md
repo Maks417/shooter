@@ -1,6 +1,6 @@
 # M0 — Foundation — validation and acceptance
 
-Status: not run. Use [global validation](../../validation.md) and [build lanes](../../build-ci.md); this file selects the checks required at this stage. Implement actual test/build entry points before reporting execution. Absence of hardware, credentials or dependencies means pending evidence, not PASS.
+Status: pure tests, Unity tests and player smoke have run; reference capture and remaining gate status are recorded in [handoff](handoff.md). Use [global validation](../../validation.md) and [build lanes](../../build-ci.md). Missing evidence remains pending; a successful diagnostic box run is not combat or milestone acceptance.
 
 | Suite | Scenario | Required result |
 |---|---|---|
@@ -30,7 +30,7 @@ Final criterion: Exact toolchain recorded; C0 frozen; three profiles exist; clea
 
 ## Evidence location
 
-Store run artifacts under repository `Artifacts/m0-foundation/<source-commit>/<run-id>/` (proposed path). Include test XML, JSON reports, build/content manifests, toolchain lock, raw timing/memory logs and visual captures when relevant. [Handoff](handoff.md) links actual artifacts and records reviewer/date. Do not create fake passing reports from this checklist.
+Wrappers store run artifacts under repository `Artifacts/m0-foundation/<source-commit>/<run-id>/`. Include test XML, JSON reports, build/content manifests, toolchain lock, raw timing/memory logs and visual captures when relevant. [Handoff](handoff.md) links actual artifacts and records reviewer/date. Do not create fake passing reports from this checklist.
 
 
 ## Revision 1.1 implementation refinements

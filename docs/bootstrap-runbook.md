@@ -1,6 +1,6 @@
 # M0 bootstrap runbook
 
-Owner: integrator/WP-00. Follow [M0](milestones/m0-foundation/implementation.md). Repository root is `C:\Job\shooter`; future Unity project is `C:\Job\shooter\UnityProject`. Git, independent Contracts source and pure verification tools now exist; remaining editor/project/build steps are pending. Preserve docs, AGENTS.md and the existing Contracts source when creating the project. See [handoff](milestones/m0-foundation/handoff.md).
+Owner: integrator/WP-00. Follow [M0](milestones/m0-foundation/implementation.md). Repository root is `C:\Job\shooter`; project is `C:\Job\shooter\UnityProject`. The locked editor, project, contracts, generated-box composition, quality presets, test/build/smoke/capture wrappers now exist. Acceptance and limitations are in [handoff](milestones/m0-foundation/handoff.md). Preserve source, settings, metadata and package locks; do not recreate the project over them.
 
 ## F01 — establish the actual toolchain
 
@@ -10,7 +10,7 @@ Owner: integrator/WP-00. Follow [M0](milestones/m0-foundation/implementation.md)
 4. Create the project from the selected editor's URP template into UnityProject. Remove template/demo art; retain only permitted engine/package assets named in provenance allowlist. Enable visible meta files and force-text serialization. Set +Y up/+Z forward and meter units in project conventions; enforce these in fixtures.
 5. Commit ProjectVersion.txt, manifest.json, packages-lock.json and toolchain-lock.json. Lock fields: schemaVersion, editorVersion, editorRevision, urpVersion, inputSystemVersion, testFrameworkVersion, aiNavigationVersion, graphicsApi=`Direct3D11`, clientBackend=`IL2CPP`, clientTarget=`Windows64`, serverTarget=`Windows64Server`, dotnetSdk, requiredModules and provenanceAllowlistVersion. Record machine-local editor path in ignored local settings, not portable lock. Transport is null until M5.
 
-No hard-coded editor path or package version is provided because neither has been verified on this machine. Once F01 runs, the lock becomes mandatory rather than an optional placeholder.
+F01 selected and verified Unity 6000.3.28f1 revision 8f082d2fe476, URP/Core 17.3.0, Input System 1.20.1, Test Framework 1.6.0 and AI Navigation 2.0.0. Root `toolchain-lock.json` and the resolved package lock are mandatory. The machine-local installation path is deliberately separate.
 
 ## F02 — compile C0
 
@@ -37,12 +37,46 @@ Add provenance allowlist, schema/docs checks and client/server smoke jobs. After
 | Action | Required implemented wrapper | Success evidence |
 |---|---|---|
 | Pure tests (implemented) | `Tools/Test-Contracts.ps1` | Fresh TRX + JUnit `test-results.xml`, run.json with source/fixture hashes and pinned SDK; nonzero on failure/skip/timeout |
-| EditMode/PlayMode | `Tools/Test-Unity.ps1 -Mode EditMode` / `-Mode PlayMode` | Editor log + fresh XML, no stale-output pass |
-| Compile content | `Tools/Compile-Content.ps1 -RecipeSet slice-v1 -Profile Low` | Verified manifest or explicit not-yet-implemented diagnostic at M0 |
-| Build | `Tools/Build.ps1 -Target Client` / `-Target Server` | Clean build/report and matching lock hash |
-| Benchmark | `Tools/Benchmark.ps1 -Workload B01-minimal-v1 -Profile Low` | Versioned result JSON; real reference-machine report |
+| EditMode/PlayMode (implemented) | `Tools/Test-Unity.ps1 -Mode EditMode` / `-Mode PlayMode` | Editor log + fresh XML; failure/skip/zero tests never pass |
+| Compile content (explicit M0 diagnostic) | `Tools/Compile-Content.ps1 -RecipeSet slice-v1 -Profile Low` | Nonzero not-yet-implemented diagnostic; no fabricated cache manifest |
+| Build (implemented) | `Tools/Build.ps1 -Target Client` / `-Target Server` | Release player, source/content/toolchain manifest and packed-source audit |
+| Smoke (implemented) | `Tools/Smoke.ps1 -BuildRunDirectory <build-run>` | Ready marker, ≥60 ticks, clean exit; server client-assembly/graphics exclusion |
+| Benchmark (implemented) | `Tools/Benchmark.ps1 -BuildRunDirectory <client-build-run> -Workload B01-minimal-v1 -Profile Low -RunIndex 1` | Raw frame/tick CSV, external memory samples, machine and versioned result JSON; no stale/synthetic pass |
 
-Only the pure-test wrapper exists. The Unity test/content/build/benchmark wrappers and Editor entry points remain F03/F04 deliverables. Do not present them as working commands. M0 content compilation may only support the box recipe; full slice compilation is M1–M3 work.
+These wrappers and `ShooterBuild` entry points now exist. Full offline content compilation remains M1–M3 work: M0 draws the fixed box/floor directly from numeric code and reports this limitation explicitly. `CompileContent` does not pretend to implement a compiler or a slice cache.
+
+## Fresh checkout and locked editor
+
+Select/install exactly the editor and Windows IL2CPP/Dedicated Server modules recorded in root `toolchain-lock.json`. An appropriate Unity license must be active on each build machine; the local development account activated Unity Personal through the official CLI/browser flow. CI uses a prelicensed Windows runner; no account credentials, serials or license files belong in this repository.
+
+```powershell
+./Tools/Configure-Unity.ps1 -EditorPath '<installed editor>/Editor/Unity.exe'
+./Tools/Test-Unity.ps1 -Mode EditMode
+./Tools/Test-Unity.ps1 -Mode PlayMode
+./Tools/Build.ps1 -Target Client
+```
+
+Configure prepares the exact Core RP source curation from the installed editor before project resolution, verifies its upstream/curated inventory hashes, and imports through `ShooterBuild.VerifyToolchain`. Local editor path/executable hash live only in ignored `.local/unity.json`. The portable lock records editor revision, packages, backends, modules and curation. [ADR-013](decisions.md#adr-013--accepted-initial-m0-toolchain-and-explicit-engine-resource-curation) explains why the unused debug UI Resources and image-backed shader lookup references are excluded. It also records the initial bundled-template Input System incompatibility; no later feature may silently change the selected toolchain.
+
+`ShooterBuild.InitializeFoundation` regenerates the numeric presets/material/lookup assets and code-owned scene; it is a deliberate generator operation, not a routine way to accept changed golden output. Source/toolchain/generated-file hashes are in `Assets/Shooter/Settings/provenance.json`. Native URP build preprocessors populate shader-prefilter cache fields; the build stage records that real generated output after restoring project state. A mismatched source/package/asset hash must be investigated.
+
+The current camera is fixed and the authority contains zero actors. It validates composition/clock/publication, never movement, weapons, bots or an objective. Client view construction is in Bootstrap/Client; Presentation and Bootstrap/Client exclude UNITY_SERVER. Server construction uses no presentation types or graphics cache. All three presets share the same collision and navigation adapter/data. Unity tests explicitly select StandaloneWindows64/Player before loading, avoiding a previous server build's persisted UNITY_SERVER context; zero discovered tests is a failure. See the [editor command-line reference](https://docs.unity.com/en-us/engine/6000.3/manual/unity-editor/command-line-arguments/editor).
+
+## Player and benchmark evidence
+
+Build prints a unique run directory containing `player/Shooter.exe`, `build-manifest.json`, `harness-manifest.json` and logs. Pass that directory to Smoke or Benchmark. The release client is IL2CPP; the Windows Dedicated Server is Mono. Packed-source audits reject imported art, extensionless built-in sprite/logo entries, and any graphics payload in the server. Both splash and Unity-logo flags are disabled; there is no logo art exception. Dedicated builds temporarily clear render dependencies, then reload the three configured pipeline assets/global settings by path to restore the client project; stale native object handles must not restore null references. No package/version upgrade or fallback is allowed by a wrapper.
+
+```powershell
+./Tools/Smoke.ps1 -BuildRunDirectory '<printed build-run directory>'
+./Tools/Benchmark.ps1 -BuildRunDirectory '<client build-run>' -Diagnostic
+./Tools/Benchmark.ps1 -BuildRunDirectory '<client build-run>' -RunIndex 1
+```
+
+Diagnostic capture is 2s warmup/5s sampling and writes a separate diagnostic report, never B01 acceptance. Full B01 uses 60s/180s, exactly 10800 captured ticks, and run indices 1–3. Keep the client/content/route/toolchain fixed across all three. CSV capacity overflow, missing tick/frame samples, wrong GPU/API/resolution/profile, clock overload or process timeout invalidate the run. Raw unavailable timings use a negative sentinel only in CSV; the analyzer emits JSON null plus reasons. Percentiles use nearest rank. Runtime CPU/GPU/GC timing availability is explicit; process memory is sampled externally at 1Hz and may miss subsecond peaks. Do not call those peaks exact.
+
+The wrapper discovers CPU, actual rendered GPU, RAM topology/speed, driver, power plan, AC power and system-disk bus. RAM channel mode remains unverified at the user's request; populated A/B slots do not prove operating interleaving. Thermal stabilization is not inferred from a timer. Such missing conditions keep acceptance pending; timing-budget failures remain failures. No B01 result establishes combat performance or a 30-minute soak. The versioned benchmark schema is unchanged.
+
+`.github/workflows/foundation.yml` provides hosted Windows fast checks and a manually requested sequential Unity lane on a prelicensed `unity-6000.3.28f1` runner using `SHOOTER_UNITY_EDITOR`. Action commits are pinned. Local wrapper execution is not evidence that hosted CI ran.
 
 ## Implemented independent checks
 
@@ -56,7 +90,7 @@ python docs/fixtures/verify_fixtures.py
 python docs/verify_docs.py
 ```
 
-Discovery writes `Artifacts/toolchain-discovery/discovery.json` plus `dotnet-info.txt`; no editor candidates gives a nonzero pending-installation result, not acceptance. The test wrapper pins installed SDK 10.0.301 via `global.json`, restores exact `packages.lock.json` dependencies, audits all dependency levels and fails on warnings. `-Offline` uses only the local NuGet cache and records advisory lookup as pending. Tests need local VSTest/testhost connectivity; the sandboxed run aborted, while the same tests passed outside the sandbox. Reports use a fresh `Artifacts/m0-foundation/<source-commit>/<run-id>/` folder, capture dirty state/source/fixture fingerprints, and cannot pass from stale XML. No Unity toolchain hash is fabricated.
+Discovery writes `Artifacts/toolchain-discovery/discovery.json` plus `dotnet-info.txt`; no editor candidates gives a nonzero pending-installation result, not acceptance. It distinguishes the standalone `unity.exe` CLI alias from an editor. The pure test wrapper pins SDK 10.0.301 via `global.json`, restores exact `packages.lock.json` dependencies, audits all dependency levels and fails on warnings. `-Offline` uses only the local NuGet cache and records advisory lookup as pending. Tests need local VSTest/testhost connectivity; the sandboxed run aborted, while the same tests passed outside the sandbox. Reports use a fresh `Artifacts/m0-foundation/<source-commit>/<run-id>/` folder, capture dirty state/source/fixture fingerprints and the real toolchain hash, and cannot pass from stale XML.
 
 Full JSON Schema checks use a repository-local environment. The hash-pinned wheel lock currently targets Windows x64 / CPython 3.12:
 
@@ -66,7 +100,7 @@ python -m venv .local/fixtures-venv
 ./.local/fixtures-venv/Scripts/python.exe Tools/verify_schemas.py --report Artifacts/toolchain-discovery/schema-results.json
 ```
 
-`jsonschema` 4.26.0 verifies all six schema cases and expected negative paths. The standard-library fixture verifier separately checks semantics/hashes/vectors. `Test-SourceProvenance.ps1` covers the present source-only Assets tree, metadata/GUID uniqueness and the named nonshipping `abc` fixture. It does not certify future generated content or package/font provenance. No font is currently used; record the named engine exception once the editor is selected and before UI is implemented.
+`jsonschema` 4.26.0 verifies all six schema cases and expected negative paths. The standard-library fixture verifier separately checks semantics/hashes/vectors. `Test-SourceProvenance.ps1` checks Assets sources, metadata/GUID uniqueness, generated settings provenance and the named nonshipping `abc` fixture; player builds additionally audit packed dependencies. It does not certify future M1 content caches. M0 uses no font, sprite UI or imported surface texture. `python Tools/test_benchmark_analysis.py` tests nearest-rank analysis and invalid-sample rejection.
 
 ## Foundation completion
 

@@ -1,0 +1,59 @@
+{
+    "schemaVersion": 1,
+    "generatorId": "shooter.foundation.settings",
+    "generatorVersion": "1.0.0",
+    "toolchainHash": "3d5d2b28c22a9be3425712bc8507402ab3c14b841f95193032c069aac5369223",
+    "sources": [
+        {
+            "path": "UnityProject/Assets/Shooter/Bootstrap/Editor/ShooterBuild.cs",
+            "sha256": "d14194be15dd9822befe0a63fb61adba5958d0418c06437956e7fadbeda6fa5e"
+        }
+    ],
+    "artifacts": [
+        {
+            "path": "UnityProject/Assets/Shooter/Bootstrap/Scenes/Bootstrap.unity",
+            "sha256": "b8a4419173f3d8befdd7a86611290bad6cf1f06571585b3b8e1890297453bb17"
+        },
+        {
+            "path": "UnityProject/Assets/Shooter/Settings/Balanced.asset",
+            "sha256": "6d5b983aa65ab126fbd2816f8e2a07b153f4d6100a99339978eccfe5b23900d2"
+        },
+        {
+            "path": "UnityProject/Assets/Shooter/Settings/DefaultVolumeProfile.asset",
+            "sha256": "e306923f932277eb1699cb3ccfafafa48a3c1133ad8b0895825c8805e224dcdc"
+        },
+        {
+            "path": "UnityProject/Assets/Shooter/Settings/FoundationRenderer.asset",
+            "sha256": "314a580ceaf6dff9f1d815b5e0726e7c731a1899a12f84a212bce5528b99f561"
+        },
+        {
+            "path": "UnityProject/Assets/Shooter/Settings/HarnessMaterial.mat",
+            "sha256": "0c8e3c0aa8be29bb91c21e18813a411f96fceadc01452af1a705d4cfbd6eafa5"
+        },
+        {
+            "path": "UnityProject/Assets/Shooter/Settings/High.asset",
+            "sha256": "7f48700c27fea0771daf99864361a51e880d941b8788e2a9d40db0412c008a14"
+        },
+        {
+            "path": "UnityProject/Assets/Shooter/Settings/Low.asset",
+            "sha256": "c7d7f023c5ba7ec2247b8e631c9e33b5cd25e7b26a051b7d70f705b072556d62"
+        },
+        {
+            "path": "UnityProject/Assets/Shooter/Settings/OrderedDither64.asset",
+            "sha256": "f8961904d8f8bb7003a2073e5d5e49d14ac4e8f029294e010600d2c2bb353ea9"
+        },
+        {
+            "path": "UnityProject/Assets/Shooter/Settings/OrderedDither8.asset",
+            "sha256": "55ce01887fc96100235227decd4d3dbf5b6036629ab5f780a2e7b18379dafff6"
+        },
+        {
+            "path": "UnityProject/Assets/Shooter/Settings/UniversalRenderPipelineGlobalSettings.asset",
+            "sha256": "077404b926db56d58d29ecbfbc377f409f5eb5fcdd4e32bf3b349673b1d0200b"
+        },
+        {
+            "path": "UnityProject/Assets/Shooter/Settings/UnusedDebugLookup.asset",
+            "sha256": "a08b13e109af5715b3188319d71b8fbf868375885cd7c794e84e04629995d39f"
+        }
+    ],
+    "artPolicy": "Code/numeric settings and code-owned bootstrap scene only; no imported art. Source .meta GUIDs are retained across regeneration."
+}
