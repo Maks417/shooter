@@ -1,0 +1,14 @@
+{
+  "schemaId": "shooter.recipe.box.v1",
+  "recipeId": "fixtures/box",
+  "generatorId": "geometry.box",
+  "generatorVersion": "1.0.0",
+  "seed": "460072030",
+  "parameters": {
+    "widthMm": -1,
+    "heightMm": 1000,
+    "depthMm": 1000,
+    "bevelMm": 0
+  },
+  "dependencies": []
+}

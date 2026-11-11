@@ -1,0 +1,60 @@
+{
+  "schemaId": "shooter.gameplay.v1",
+  "tickRate": 60,
+  "motor": {
+    "standingHeightMm": 1800,
+    "crouchHeightMm": 1200,
+    "radiusMm": 320,
+    "standingEyeMm": 1650,
+    "crouchEyeMm": 1050,
+    "walkMmPerSecond": 3500,
+    "sprintMmPerSecond": 5500,
+    "crouchMmPerSecond": 2000,
+    "gravityMmPerSecondSquared": -20000,
+    "jumpMmPerSecond": 5000,
+    "groundAccelMmPerSecondSquared": 20000,
+    "groundDecelMmPerSecondSquared": 25000,
+    "airAccelMmPerSecondSquared": 5000,
+    "stepMm": 250,
+    "skinMm": 20,
+    "snapMm": 80,
+    "slopeMillidegrees": 45000
+  },
+  "weapons": {
+    "rifle": {
+      "fireTicks": 6,
+      "reloadTicks": 144,
+      "equipTicks": 24,
+      "magazine": 30,
+      "reserve": 90,
+      "damage": 30,
+      "hipSpreadMillidegrees": 1000,
+      "adsSpreadMillidegrees": 150
+    },
+    "pistol": {
+      "fireTicks": 10,
+      "reloadTicks": 108,
+      "equipTicks": 18,
+      "magazine": 15,
+      "reserve": 45,
+      "damage": 25,
+      "hipSpreadMillidegrees": 1500,
+      "adsSpreadMillidegrees": 300
+    }
+  },
+  "objective": {
+    "mode": "compound-clear-v1",
+    "captureTicks": 120,
+    "radiusMm": 3000,
+    "botCount": 8,
+    "respawn": false
+  },
+  "collisionLayers": {
+    "WorldSolid": 8,
+    "ActorMotor": 9,
+    "ActorHit": 10,
+    "Cosmetic": 11,
+    "ObjectiveTrigger": 12,
+    "SensorTrigger": 13
+  }
+}

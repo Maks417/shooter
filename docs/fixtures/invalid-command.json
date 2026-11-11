@@ -1,0 +1,11 @@
+{
+  "entityId": "1",
+  "clientTick": 0,
+  "sequence": 1,
+  "moveX": 2,
+  "moveY": 1,
+  "aimYaw": 0,
+  "aimPitch": 0,
+  "buttons": 32768,
+  "selectedSlot": 0
+}

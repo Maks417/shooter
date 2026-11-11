@@ -1,0 +1,24 @@
+# Shooter implementation rules
+
+Repository: C:\Job\shooter. Implement a Unity 6 URP procedural military FPS under UnityProject. Current baseline is documentation only; start M0, not the entire game. Read docs/implementation-start.md, docs/vision.md, docs/architecture.md, docs/contract-details.md and your assigned milestone index before edits.
+
+## Scope and ownership
+
+- One integrator owns Contracts, Bootstrap, project/package settings, schemas, benchmark definitions and coordination.json. No parallel workers edit these without explicit assignment. Use worktrees and one Unity editor/project copy per worker.
+- Implement only the assigned milestone/task and permitted folders from docs/backlog.md and docs/task-supplement.md. Use fakes in tests to unblock independent work; shipping composition must reject required fake adapters.
+- Freeze compiling C0 contracts/fixtures before parallel feature integration. Changes to units, seeds, hit poses, packet layout or schemas need ADR plus migration/fixtures before dependent merges.
+- No automatic delegation is required by this file. If the user requests parallel agents, assign bounded tasks after readiness gate; avoid shared-file races.
+
+## Hard requirements
+
+No imported/manually modeled meshes, painted/photo/AI image textures, sprites, authored skeletal clips or mocap. Geometry, materials, rigs and motion come from code/numeric recipes. Generated caches require provenance; engine font is named allowlist exception. No silent external art fallback. Unity URP/C#/HLSL, native720p Low30FPS reference gate; 60FPS stretch separate. Ryzen4600H integrated Radeon,16GB DDR4-3200,NVMe; temporary historical memory utilization is not a requirement.
+
+Gameplay collision/nav/hit volumes/weapon behavior identical across quality tiers. Fixed60Hz simulation, presentation read-only, authoritative dedicated-server-compatible design. No AAA performance/realism claim without actual evidence. Choose exact editor/packages from verified installation and pin them; do not invent versions or upgrade toolchain during feature work.
+
+## Verification and completion
+
+Run docs/fixtures/verify_fixtures.py and docs/verify_docs.py for specification changes. When implementation exists run Tools/Test-Contracts.ps1 and relevant Unity/build/benchmark wrappers described in docs/bootstrap-runbook.md. These wrappers are implementation deliverables, not assumed present now. Missing tools/hardware => pending, never PASS.
+
+Never edit generated payloads/goldens just to pass tests. Record source/toolchain/content/seed/workload with results; reference-machine performance measured in release player, not editor. Update affected shared docs with real code paths and milestone handoff with evidence/limitations. Keep shared docs once at docs root; milestone folders link them. Do not recreate duplicated reference folders.
+
+Before finishing: required checks pass, no out-of-scope files changed, provenance valid, correct contract versions, handoff updated and actual failures/pending checks stated. Documentation hashes are not game test results. Do not relax requirements to close milestone.

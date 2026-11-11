@@ -1,0 +1,41 @@
+{
+  "pcg": {
+    "initstate": "42",
+    "initseq": "54",
+    "outputsHex": [
+      "a15c02b7",
+      "7b47f409",
+      "ba1d3330",
+      "83d2f293",
+      "bfa4784b",
+      "cbed606e"
+    ]
+  },
+  "canonicalUtf8": "{\"dependencies\":[],\"generatorId\":\"geometry.box\",\"generatorVersion\":\"1.0.0\",\"parameters\":{\"bevelMm\":0,\"depthMm\":1000,\"heightMm\":1000,\"widthMm\":1000},\"recipeId\":\"fixtures/box\",\"schemaId\":\"shooter.recipe.box.v1\",\"seed\":\"460072030\"}",
+  "canonicalSha256": "acc550845cb38f1be6e52effc8d28ea295dd666608f36de9eb525c67515cef67",
+  "sourceHash": "b42ba515ac2e46f825cef3ca2cbc0f79ca05563068f76a806af270660b6a1570",
+  "contentKeyInputs": {
+    "sourceHash": "b42ba515ac2e46f825cef3ca2cbc0f79ca05563068f76a806af270660b6a1570",
+    "generatorId": "geometry.box",
+    "generatorVersion": "1.0.0",
+    "seed": "460072030",
+    "dependencies": [],
+    "targetPlatform": "windows64",
+    "visualProfile": "Low",
+    "formatVersion": 1,
+    "toolchainHash": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "contentId": "ea8aae7467c825ba64f03f2f9bff6dd68bbd524eee6331dbb3c0736f9fc2d4ce",
+  "namedStream": {
+    "domain": "shooter.stream.v1",
+    "rootSeed": "460072030",
+    "recipeId": "fixtures/box",
+    "featureKey": "wear/00",
+    "bytesHex": "1100000073686f6f7465722e73747265616d2e76315e246c1b000000000c00000066697874757265732f626f7807000000776561722f3030",
+    "sha256": "1fd3becc011e75a06d2a89a85426ccd335259b27a1be04d7b882b4dd94a5dedf",
+    "initstate": "11562180611422475039",
+    "initseq": "15261615382298438253"
+  },
+  "logicalAssetId": "fixtures/box/mesh/lod0",
+  "unityGuid": "47f902c4ab9b44b0b53e9f5553244acf"
+}

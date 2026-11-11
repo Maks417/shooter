@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "tick": 0,
+  "actorId": "1",
+  "worldRevision": 1,
+  "collisionRevision": 1,
+  "definitionHash": "0000000000000000000000000000000000000000000000000000000000000000",
+  "position": [
+    0,
+    0,
+    0
+  ],
+  "velocity": [
+    0,
+    0,
+    0
+  ],
+  "aimYaw": 0,
+  "aimPitch": 0,
+  "grounded": true,
+  "groundSurfaceId": "100",
+  "groundNormal": [
+    0,
+    1,
+    0
+  ],
+  "stance": 0,
+  "capsuleHeight": 1.8,
+  "lastGroundedTick": 0,
+  "jumpConsumedSequence": 0,
+  "activeSlot": 0,
+  "desiredSlot": 0,
+  "weaponSlots": [
+    {
+      "definitionId": "weapons/rifle",
+      "action": 0,
+      "ammoInMagazine": 30,
+      "reserve": 90,
+      "nextAllowedFireTick": 0,
+      "phaseStartTick": 0,
+      "phaseEndTick": 0,
+      "shotIndex": 0,
+      "previousFireHeld": false
+    },
+    {
+      "definitionId": "weapons/pistol",
+      "action": 0,
+      "ammoInMagazine": 15,
+      "reserve": 45,
+      "nextAllowedFireTick": 0,
+      "phaseStartTick": 0,
+      "phaseEndTick": 0,
+      "shotIndex": 0,
+      "previousFireHeld": false
+    }
+  ],
+  "recoilYaw": 0,
+  "recoilPitch": 0,
+  "recoilYawVelocity": 0,
+  "recoilPitchVelocity": 0,
+  "locomotionDistanceMeters": 0,
+  "lastProcessedSequence": 0,
+  "lastButtons": 0,
+  "lastValidCommandTick": 0,
+  "alive": true,
+  "health": 100
+}

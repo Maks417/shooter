@@ -1,0 +1,34 @@
+# Start implementation here
+
+Design revision 1.1, 2026-11-11. This is the implementation entry point following the readiness review. The repository is still a documentation/specification baseline, not a running Unity project. Added JSON files are executable specification fixtures, not generated game assets. No performance or Unity test result is claimed.
+
+## First assignment
+
+Start M0 with one integrator. Read the repository AGENTS.md, [vision](vision.md), [architecture](architecture.md), [contract details](contract-details.md), [bootstrap runbook](bootstrap-runbook.md) and [M0 pack](milestones/m0-foundation/index.md). Implement F01 and F02, then F03/F04. Do not start whole-game implementation or independent agents modifying shared contracts. Once C0 compiles and adapter fixtures pass, geometry, rendering, character and simulation workers may start within assigned paths.
+
+## Newly resolved design details
+
+| Decision or artifact | Specification |
+|---|---|
+| Exact query result types, leases, enums, DTOs, thread model | [Contract details](contract-details.md) |
+| Tick ordering, full prediction state, death/shot ordering | [Simulation protocol](simulation-protocol.md) |
+| Gameplay defaults, collision masks, objective and respawn | [Gameplay baseline](gameplay-baseline.md) |
+| PCG variant, canonical encoding, IDs and telemetry separation | [Deterministic format](deterministic-format.md) |
+| Seeded body, bind pose, topology, gait and IK defaults | [Soldier baseline](soldier-baseline.md) |
+| Exact benchmark routes, action schedules, result semantics | [Benchmark fixtures](benchmark-fixtures.md) |
+| Audio, collapse, lighting and pose-validation task owners | [Additional task cards](task-supplement.md) |
+| Valid/invalid machine-readable examples and expected outcomes | [Fixture catalog](fixtures/index.md) |
+
+The original feature docs remain shared architecture. These linked detail pages refine their underspecified fields; the explicit corrections in the original pages remove the earlier conflicts. New breaking changes require an ADR and fixture revision.
+
+## What remains intentionally empirical
+
+Exact Unity/URP versions must come from an installed supported toolchain at F01; no version has been invented. Default installation path was not present during review; this does not prove Unity is absent elsewhere. F01 must discover Hub/editor locations and install missing modules if authorized. Actual soldier realism, shader cost, mesh quality, reference-machine timings and network framework suitability require their documented spikes. They cannot be resolved by writing more documentation.
+
+## Ready-to-parallelize checkpoint
+
+C0 assembly builds without Unity, serialized fixtures pass, all port adapters/fakes have conformance tests, client/server smoke entry points work, ownership is assigned and fixture/generator versions recorded. At that checkpoint, each worker receives its milestone folder plus access to the shared docs root. Include source tag, permitted folders, fixture IDs and exact tests in each assignment.
+
+## Current limits
+
+No imported art or animation; no replicated physics lockstep; static cover; offline first. Rig spike uses scripted test action phases before combat implementation. Cold regeneration and actual minimum-hardware acceptance remain mandatory gates. Temporary historical memory utilization is excluded.

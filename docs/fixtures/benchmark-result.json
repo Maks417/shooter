@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "workloadId": "B01-minimal-v1",
+  "seed": "460072030",
+  "sourceCommit": null,
+  "toolchainHash": null,
+  "contentManifestHash": null,
+  "routeHash": null,
+  "profile": "Low",
+  "internalWidth": 1280,
+  "internalHeight": 720,
+  "warmupSeconds": 60,
+  "captureSeconds": 180,
+  "runIndex": 1,
+  "machine": {
+    "cpu": null,
+    "gpuAdapter": null,
+    "ramBytes": null,
+    "ramSpeed": null,
+    "channelMode": null,
+    "os": null,
+    "driver": null,
+    "powerPlan": null,
+    "acPower": null
+  },
+  "metrics": {
+    "frameMs": {
+      "p50": null,
+      "p95": null,
+      "p99": null,
+      "max": null
+    },
+    "mainMs": null,
+    "renderMs": null,
+    "gpuMs": null,
+    "privateCommitBytesPeak": null,
+    "rssBytesPeak": null,
+    "managedBytesPerFrame": null,
+    "managedBytesPerTick": null,
+    "uploadMsP95": null
+  },
+  "counters": {
+    "actors": null,
+    "shotsAccepted": null,
+    "impactPeak": null,
+    "smokeProxies": null,
+    "chunkTransitions": null
+  },
+  "unavailableMetrics": [
+    "All runtime metrics: specification fixture; no game build or hardware test executed."
+  ],
+  "gateStatus": "PendingHardware"
+}

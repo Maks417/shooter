@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "entityId": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]{0,19})$"
+    },
+    "clientTick": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4294967295
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4294967295
+    },
+    "moveX": {
+      "type": "number",
+      "minimum": -1,
+      "maximum": 1
+    },
+    "moveY": {
+      "type": "number",
+      "minimum": -1,
+      "maximum": 1
+    },
+    "aimYaw": {
+      "type": "number",
+      "minimum": -3.141592653589793,
+      "exclusiveMaximum": 3.141592653589793
+    },
+    "aimPitch": {
+      "type": "number",
+      "minimum": -1.5533430342749532,
+      "maximum": 1.5533430342749532
+    },
+    "buttons": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 127
+    },
+    "selectedSlot": {
+      "enum": [
+        0,
+        1
+      ]
+    }
+  },
+  "required": [
+    "entityId",
+    "clientTick",
+    "sequence",
+    "moveX",
+    "moveY",
+    "aimYaw",
+    "aimPitch",
+    "buttons",
+    "selectedSlot"
+  ]
+}

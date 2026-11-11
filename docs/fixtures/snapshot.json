@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "tick": 0,
+  "worldRevision": 1,
+  "matchState": 1,
+  "eventHighWater": {
+    "authoritySessionId": "0",
+    "tick": 0,
+    "entityId": "0",
+    "ordinal": 0
+  },
+  "entities": [
+    {
+      "id": "1",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "yaw": 0,
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "stance": 0,
+      "health": 100,
+      "team": 1,
+      "activeSlot": 0,
+      "weapon": {
+        "definitionId": "weapons/rifle",
+        "action": 0,
+        "ammoInMagazine": 30,
+        "reserve": 90,
+        "nextAllowedFireTick": 0,
+        "phaseStartTick": 0,
+        "phaseEndTick": 0,
+        "shotIndex": 0,
+        "previousFireHeld": false
+      },
+      "locomotionDistanceMeters": 0,
+      "aimPitch": 0,
+      "gameplayPoseVersion": 1
+    }
+  ],
+  "hitVolumes": []
+}

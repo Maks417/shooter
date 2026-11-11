@@ -1,0 +1,325 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "workloadId": {
+      "type": "string"
+    },
+    "seed": {
+      "type": "string"
+    },
+    "sourceCommit": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "toolchainHash": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "contentManifestHash": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "routeHash": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "profile": {
+      "type": "string"
+    },
+    "internalWidth": {
+      "type": "integer"
+    },
+    "internalHeight": {
+      "type": "integer"
+    },
+    "warmupSeconds": {
+      "type": "integer"
+    },
+    "captureSeconds": {
+      "type": "integer"
+    },
+    "runIndex": {
+      "type": "integer"
+    },
+    "machine": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "cpu": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "gpuAdapter": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "channelMode": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "os": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "driver": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "powerPlan": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "ramBytes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "ramSpeed": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "acPower": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "cpu",
+        "gpuAdapter",
+        "channelMode",
+        "os",
+        "driver",
+        "powerPlan",
+        "ramBytes",
+        "ramSpeed",
+        "acPower"
+      ]
+    },
+    "metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "frameMs": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "p50": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "p95": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "p99": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "max": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            }
+          },
+          "required": [
+            "p50",
+            "p95",
+            "p99",
+            "max"
+          ]
+        },
+        "mainMs": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "renderMs": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "gpuMs": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "uploadMsP95": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "privateCommitBytesPeak": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "rssBytesPeak": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "managedBytesPerFrame": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "managedBytesPerTick": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        }
+      },
+      "required": [
+        "frameMs",
+        "mainMs",
+        "renderMs",
+        "gpuMs",
+        "uploadMsP95",
+        "privateCommitBytesPeak",
+        "rssBytesPeak",
+        "managedBytesPerFrame",
+        "managedBytesPerTick"
+      ]
+    },
+    "counters": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "actors": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "shotsAccepted": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "impactPeak": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "smokeProxies": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "chunkTransitions": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        }
+      },
+      "required": [
+        "actors",
+        "shotsAccepted",
+        "impactPeak",
+        "smokeProxies",
+        "chunkTransitions"
+      ]
+    },
+    "unavailableMetrics": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "gateStatus": {
+      "enum": [
+        "ComputedPass",
+        "ComputedFail",
+        "PendingHardware"
+      ]
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "workloadId",
+    "seed",
+    "sourceCommit",
+    "toolchainHash",
+    "contentManifestHash",
+    "routeHash",
+    "profile",
+    "internalWidth",
+    "internalHeight",
+    "warmupSeconds",
+    "captureSeconds",
+    "runIndex",
+    "machine",
+    "metrics",
+    "counters",
+    "unavailableMetrics",
+    "gateStatus"
+  ]
+}

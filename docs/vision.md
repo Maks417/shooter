@@ -1,0 +1,46 @@
+# Vision, scope and requirements
+
+Status: implementation specification, 2026-11-11. No game code or measured benchmark results exist in the inspected project. Every proposed path, API, numerical tuning value and visual token in this set is a specification to implement, not a claim about existing code. The earlier ChatGPT discussion supplies intent; this set supersedes its HDRP suggestion with Unity 6 URP.
+
+## Product
+
+A grounded, modern-world military FPS whose geometry, surface detail and motion come from algorithms and numeric definitions. Build a small, convincing combined indoor/outdoor combat space before expanding content. Realism means believable scale, silhouettes, material response, motion, lighting and feedback; visual parity with commercial AAA shooters is an aspiration, not an acceptance claim.
+
+The first playable slice is an offline 256 × 256 m training compound, one local player, eight hostile soldiers, one rifle and one pistol, a single objective, solid cover, repeatable lighting and a replayable benchmark. Networking follows the offline slice, but simulation boundaries and command IDs exist from the first milestone. Initial multiplayer validation is four players plus eight bots; eight players is a later capacity gate, not a promise of large battles.
+
+## Confirmed constraints
+
+| ID | Requirement | Evidence of acceptance |
+|---|---|---|
+| R01 | Unity 6, URP, C# gameplay/generation, HLSL shading | Clean client/server builds and locked toolchain |
+| R02 | No imported or manually modeled 3D meshes, painted/image-authored surface textures, sprites, authored skeletal clips or motion-capture animation | Provenance scan plus regeneration from source definitions |
+| R03 | Generated meshes, PBR texture arrays, LODs, skeletons, skin weights and algorithmically sampled motion caches are allowed | Cache manifests identify generator and inputs |
+| R04 | Ryzen 5 4600H Radeon integrated graphics, 16 GB DDR4-3200 with two slots occupied, NVMe SSD is minimum reference | Hardware report records adapter, driver, actual RAM channel mode and power conditions |
+| R05 | 1280 × 720 internal render, Low, 30 FPS initial target; 60 FPS stretch | [Performance gates](performance.md) on actual reference hardware |
+| R06 | Quality profiles and repeatable performance tests begin in foundation milestone | Profiles and benchmark artifacts exist at M0 |
+| R07 | Collision, cover, hit volumes, AI visibility and weapon rules do not change with graphics profile | Cross-profile simulation tests |
+| R08 | Asset generation is reproducible and versioned; expensive generation moves out of gameplay | [Generation contract](generation.md) and cache tests |
+| R09 | Independent agents implement bounded modules against frozen shared contracts | [Coordination rules](agent-coordination.md) |
+| R10 | Modern weapons, procedural soldiers, environments, AI, FPS combat and staged networking | Feature acceptance tests and [milestone gates](milestones.md) |
+
+Two occupied memory slots do not prove dual-channel operation. The temporary memory-usage screenshot is explicitly excluded from requirements, budgets and diagnosis.
+
+## Art boundary
+
+Permitted source: code, numeric measurements, analytic curves, rule grammars, JSON definitions, scalar/vector key parameters and test fixtures. Human-written code and dimensions are necessary and allowed. Not permitted: hand-edited mesh vertices, sculpted surfaces, photo/PBR libraries, scanned assets, downloaded character rigs, AI image textures, hand-keyed joint pose sequences, exported DCC models or third-party visual asset packs. AI coding tools may write generators but may not smuggle authored assets into output.
+
+Generated textures are algorithmic raster caches, not painted art. Generated geometry may be serialized in Unity native form with provenance. Runtime animation uses gait/IK dynamics; optional sampled caches must be regenerated from those equations. Generated particles use analytic geometry/materials rather than sprite atlases. No mesh impostor/billboard texture requirement is assumed; low detail uses simplified mesh geometry.
+
+Fonts and sound are not 3D/surface/animation assets. Baseline UI uses an engine-supplied licensed font with a recorded exception in the provenance allowlist. Baseline sound is synthesized. Any later recorded sound or external font needs an explicit provenance policy update; neither is necessary for M0–M4.
+
+## Non-goals for the first release slice
+
+No open world, vehicles, playable aircraft, structural destruction, deformable terrain, weapon attachments marketplace, cinematic faces, lip sync, full cloth simulation, licensed brands, ranked matchmaking, persistent progression, console/mobile support, VR, full photorealistic skin or ray-traced lighting. No deterministic PhysX lockstep, whole-world ray marching, general-purpose DCC replacement or custom engine. Do not silently trade these constraints for better visuals.
+
+## Defaults requiring validation, not a blocking user decision
+
+Windows x64/D3D11 is the first client target; Windows headless is the first server target. Use fictional factions and unbranded weapons. Medium/high profiles are scalability probes. Player capsule defaults: 1.8 m standing, 0.32 m radius; walk 3.5 m/s, sprint 5.5 m/s; all tuning lives in versioned data. Networking transport selection and exact Unity patch are M0/M5 gates, recorded in [decisions](decisions.md). There is no commercial scope or schedule commitment.
+
+## Definition of implementation-ready
+
+Every package has an owner, permitted folders, input/output contracts, dependencies, failure behavior and acceptance checks. Unknowns have a spike, a measurable exit and a fallback within the art constraint. Each milestone produces an executable artifact and evidence; completion cannot be claimed from documentation or screenshots alone.

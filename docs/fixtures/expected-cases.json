@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "cases": [
+    {
+      "fixture": "box-recipe.json",
+      "schema": "recipe.schema.json",
+      "expected": "Valid"
+    },
+    {
+      "fixture": "invalid-box-recipe.json",
+      "schema": "recipe.schema.json",
+      "expected": "InvalidInput",
+      "path": "$.parameters.widthMm"
+    },
+    {
+      "fixture": "command.json",
+      "schema": "command.schema.json",
+      "expected": "Valid"
+    },
+    {
+      "fixture": "invalid-command.json",
+      "schema": "command.schema.json",
+      "expected": "InvalidInput",
+      "paths": [
+        "$.moveX",
+        "$.buttons"
+      ]
+    },
+    {
+      "fixture": "manifest.json",
+      "schema": "manifest.schema.json",
+      "expected": "ValidWithPayloadHashCheck"
+    },
+    {
+      "fixture": "benchmark-result.json",
+      "schema": "benchmark-result.schema.json",
+      "expected": "ValidUnmeasuredOnly"
+    }
+  ]
+}

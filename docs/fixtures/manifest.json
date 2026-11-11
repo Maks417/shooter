@@ -1,0 +1,30 @@
+{
+  "manifestSchema": 1,
+  "contentId": "ea8aae7467c825ba64f03f2f9bff6dd68bbd524eee6331dbb3c0736f9fc2d4ce",
+  "logicalAssetId": "fixtures/box/mesh/lod0",
+  "recipeId": "fixtures/box",
+  "sourceHash": "b42ba515ac2e46f825cef3ca2cbc0f79ca05563068f76a806af270660b6a1570",
+  "generatorVersions": {
+    "geometry.box": "1.0.0"
+  },
+  "seed": "460072030",
+  "toolchainHash": "0000000000000000000000000000000000000000000000000000000000000000",
+  "buildPlatform": "windows64",
+  "visualProfile": "Low",
+  "dependencies": [],
+  "artifacts": [
+    {
+      "kind": "fixture-codec",
+      "path": "codec-payload.bin",
+      "sha256": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+      "compressedBytes": 3,
+      "uncompressedBytes": 3,
+      "formatVersion": 1,
+      "compression": "none"
+    }
+  ],
+  "provenance": {
+    "sourceKind": "specification-fixture",
+    "shippingAsset": false
+  }
+}

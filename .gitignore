@@ -1,0 +1,14 @@
+/Artifacts/
+/.local/
+**/bin/
+**/obj/
+**/__pycache__/
+/.vs/
+/UnityProject/[Ll]ibrary/
+/UnityProject/[Tt]emp/
+/UnityProject/[Oo]bj/
+/UnityProject/[Ll]ogs/
+/UnityProject/[Uu]serSettings/
+/UnityProject/[Mm]emoryCaptures/
+/UnityProject/[Rr]ecordings/
+*.csproj.user

@@ -1,0 +1,129 @@
+{
+  "schemaVersion": 1,
+  "seed": "460072030",
+  "warmupTicks": 3600,
+  "captureTicks": 10800,
+  "runs": 3,
+  "internalResolution": [
+    1280,
+    720
+  ],
+  "workloads": [
+    {
+      "id": "B01-minimal-v1",
+      "stage": "M0",
+      "cameraMm": [
+        0,
+        1650,
+        -6000
+      ],
+      "bots": 0
+    },
+    {
+      "id": "B01-materials-v1",
+      "stage": "M1",
+      "families": [
+        "metal",
+        "polymer",
+        "concrete",
+        "plaster",
+        "asphalt",
+        "soil",
+        "fabric"
+      ],
+      "cycleTicks": 2520
+    },
+    {
+      "id": "B02-compound-v1",
+      "stage": "M3",
+      "shells": 12,
+      "props": 120,
+      "bots": 8,
+      "route": [
+        [
+          0,
+          -104000,
+          1650,
+          -104000,
+          0
+        ],
+        [
+          900,
+          104000,
+          1650,
+          -104000,
+          90000
+        ],
+        [
+          1800,
+          104000,
+          1650,
+          104000,
+          180000
+        ],
+        [
+          2700,
+          -104000,
+          1650,
+          104000,
+          -90000
+        ],
+        [
+          3600,
+          -104000,
+          1650,
+          -104000,
+          0
+        ]
+      ]
+    },
+    {
+      "id": "B03-combat-v1",
+      "stage": "M3",
+      "actors": 9,
+      "bots": 8,
+      "invulnerable": true,
+      "botFireSuppressed": true,
+      "playerFireEveryTicks": 6,
+      "expectedCaptureShots": 1800,
+      "impactCap": 20,
+      "smokeProxies": 1,
+      "routeKind": "nav-perimeter",
+      "speedMmPerSecond": 3500,
+      "benchmarkMagazine": 65535,
+      "benchmarkReserve": 0,
+      "initialWeaponReady": true,
+      "benchmarkWeaponId": "benchmarks/rifle-extended-mag-v1",
+      "steelPlatesMm": [
+        [
+          114000,
+          1500,
+          -104000
+        ],
+        [
+          104000,
+          1500,
+          114000
+        ],
+        [
+          -114000,
+          1500,
+          104000
+        ],
+        [
+          -104000,
+          1500,
+          -114000
+        ]
+      ]
+    },
+    {
+      "id": "B04-network-v1",
+      "stage": "M6",
+      "players": 4,
+      "bots": 8,
+      "serverPlacement": "separate-host",
+      "packetSeed": 42
+    }
+  ]
+}

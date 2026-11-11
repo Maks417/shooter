@@ -1,0 +1,33 @@
+# M7 — Release hardening and 60 FPS experiment — contracts and integration
+
+## Entry and frozen boundary
+
+M4 offline and M6 network gates pass; previous passing binary/content pair retained; all mandatory issues triaged.
+
+Freeze release schema/protocol/generator set. Any optimization that changes artifact bytes bumps generator/version and regenerates fixtures; any gameplay change reopens affected milestones. Golden/budget changes need explicit integrator review with old/new evidence.
+
+The normative definitions live in the shared docs root: [DTOs and ports](../../contracts.md), [domain invariants](../../domain-model.md), [seed/cache rules](../../generation.md), [assembly boundaries](../../architecture.md). Do not fork these definitions inside feature code.
+
+## Input and output checklist
+
+- Record upstream source tag, toolchain lock, contract/schema versions and required content hashes in [handoff](handoff.md).
+- Validate source recipes, settings and fixtures before allocating resources or running code generation. Unknown required versions fail explicitly.
+- Publish only validated immutable artifacts; content leases and snapshot buffers follow declared ownership and cancellation rules.
+- Record changed generator/schema/protocol versions and all new fixtures; never reinterpret existing seeds or units silently.
+- Output includes executable/harness changes, tests, manifest/report evidence and updated implementation references; documents alone do not complete this milestone.
+
+## Stage-specific integration checkpoints
+
+- **H01 Clean reproducibility:** No local hand-edited asset dependency; clean install loads and server strips graphics payloads.
+- **H02 Regression matrix:** All required gates pass with no disabled core test or unexplained changed hash/image.
+- **H03 Release rehearsal:** Candidate launches outside editor, objective completes, peers join correctly and rollback restores a valid pair.
+- **H04 60 FPS experiment:** Stretch passes only at p95 ≤16.67ms/p99 ≤25ms, GPU p95 ≤14ms/main ≤8ms. Failure recorded does not invalidate passed30FPS release.
+- **H05 Deferred scope ledger:** No unmeasured 60FPS, large-battle or public-deployment claim appears in release status.
+
+## Budget and failure contracts
+
+Use [performance allocations](../../performance.md); numbers are targets until measured on named hardware. All living collision/nav/hit rules stay independent of graphics quality. Reject invalid/nonfinite DTOs, cap queues/pools/payload sizes and expose diagnostics for cancellation/overload. Missing critical content blocks load/spawn. No prohibited imported art or authored motion is a valid fallback.
+
+## Change control
+
+An agent submits shared boundary changes to integrator with old/new fixtures, affected owners and migration plan before dependent merges. Re-run [validation](validation-acceptance.md), preserve previous passing tag, and update shared specifications in the docs root and verify all milestone links. Record pending integration honestly.
