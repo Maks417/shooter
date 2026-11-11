@@ -1,25 +1,52 @@
 [CmdletBinding()]
 param()
 $ErrorActionPreference = 'Stop'
-$repoRoot = Split-Path -Parent $PSScriptRoot
+$repoRoot = [IO.Path]::GetFullPath((Split-Path -Parent $PSScriptRoot))
 $policy = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'provenance-allowlist.json') -Raw | ConvertFrom-Json
 $assetRoot = Join-Path $repoRoot 'UnityProject/Assets'
 $failures = [Collections.Generic.List[string]]::new()
 $guids = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
 $generated = @{}
 $manifestPath = Join-Path $repoRoot $policy.generatedAssetsManifest
-function Test-ProofFile($Proof) {
+function Test-ProofFile($Proof, [string]$Kind) {
+    if ($Proof -isnot [pscustomobject] -or $Proof.path -isnot [string] -or [string]::IsNullOrWhiteSpace($Proof.path) -or
+        $Proof.sha256 -isnot [string] -or $Proof.sha256 -cnotmatch '^[0-9a-f]{64}$') { throw "Malformed $Kind provenance proof" }
+    if ([IO.Path]::IsPathRooted($Proof.path) -or $Proof.path.Contains(':')) { throw 'Provenance paths must be relative' }
     $path = [IO.Path]::GetFullPath((Join-Path $repoRoot $Proof.path))
     if (!$path.StartsWith($repoRoot + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) { throw 'Escaping provenance path' }
-    if (!(Test-Path -LiteralPath $path -PathType Leaf) -or (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant() -cne $Proof.sha256) { $failures.Add("Provenance hash mismatch: $path") }
+    # Windows aliases must not turn one file into distinct proof identities.
+    foreach ($part in ($Proof.path -split '[/\\]')) {
+        if ($part -notin @('.', '..') -and ($part.EndsWith('.') -or $part.EndsWith(' '))) { throw 'Ambiguous provenance path' }
+    }
+    if ($path.Equals($manifestPath, [StringComparison]::OrdinalIgnoreCase)) { throw 'Self-referencing provenance proof' }
+    if (!$proofPaths.Add($path)) { throw "Duplicate or overlapping provenance proof: $path" }
+    if (!(Test-Path -LiteralPath $path -PathType Leaf) -or (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant() -cne $Proof.sha256) { throw "Provenance hash mismatch: $path" }
+    if ($Kind -eq 'artifact') {
+        # shooter.foundation.settings v1.0.0 emits only numeric Settings assets/materials and its code-owned scene.
+        $settings = Join-Path $assetRoot 'Shooter/Settings'
+        $scene = Join-Path $assetRoot 'Shooter/Bootstrap/Scenes/Bootstrap.unity'
+        if (!($path.Equals($scene, [StringComparison]::OrdinalIgnoreCase) -or
+            ([IO.Path]::GetDirectoryName($path).Equals($settings, [StringComparison]::OrdinalIgnoreCase) -and
+             [IO.Path]::GetExtension($path) -cin @('.asset', '.mat')))) { throw "Unexpected settings generator artifact: $path" }
+    }
     return $path
 }
 if (Test-Path -LiteralPath $manifestPath -PathType Leaf) {
-    $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
-    if ($manifest.schemaVersion -ne 1 -or $manifest.generatorId -cne 'shooter.foundation.settings' -or $manifest.generatorVersion -cne '1.0.0') { $failures.Add('Unknown settings generator/version') }
-    if ((Get-FileHash -LiteralPath (Join-Path $repoRoot 'toolchain-lock.json') -Algorithm SHA256).Hash.ToLowerInvariant() -cne $manifest.toolchainHash) { $failures.Add('Generated settings toolchain mismatch') }
-    foreach ($source in $manifest.sources) { $null = Test-ProofFile $source }
-    foreach ($artifact in $manifest.artifacts) { $generated[(Test-ProofFile $artifact)] = $true }
+    try {
+        $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
+        if ($manifest.schemaVersion -ne 1 -or $manifest.generatorId -cne 'shooter.foundation.settings' -or $manifest.generatorVersion -cne '1.0.0') { throw 'Unknown settings generator/version' }
+        if ($manifest.toolchainHash -isnot [string] -or $manifest.toolchainHash -cnotmatch '^[0-9a-f]{64}$' -or
+            (Get-FileHash -LiteralPath (Join-Path $repoRoot 'toolchain-lock.json') -Algorithm SHA256).Hash.ToLowerInvariant() -cne $manifest.toolchainHash) { throw 'Generated settings toolchain mismatch' }
+        foreach ($kind in @('sources', 'artifacts')) {
+            if ($manifest.$kind -isnot [array] -or $manifest.$kind.Count -eq 0) { throw "Missing or malformed provenance $kind collection" }
+        }
+        $proofPaths = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+        foreach ($source in $manifest.sources) { $null = Test-ProofFile $source 'source' }
+        $artifactPaths = foreach ($artifact in $manifest.artifacts) { Test-ProofFile $artifact 'artifact' }
+        # No proof may whitelist an asset until the entire manifest has validated.
+        foreach ($path in $artifactPaths) { $generated[$path] = $true }
+    }
+    catch { $failures.Add($_.Exception.Message) }
 }
 else { $failures.Add('Generated settings provenance is missing') }
 $assetFiles = @(Get-ChildItem -LiteralPath $assetRoot -Recurse -Force)
