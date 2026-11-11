@@ -2,11 +2,11 @@
     "schemaVersion": 1,
     "generatorId": "shooter.foundation.settings",
     "generatorVersion": "1.0.0",
-    "toolchainHash": "3d5d2b28c22a9be3425712bc8507402ab3c14b841f95193032c069aac5369223",
+    "toolchainHash": "9ac31fe82117043e2bba3bfb843dd1ca32834b15425188e96d6f3369e2c627a8",
     "sources": [
         {
             "path": "UnityProject/Assets/Shooter/Bootstrap/Editor/ShooterBuild.cs",
-            "sha256": "d14194be15dd9822befe0a63fb61adba5958d0418c06437956e7fadbeda6fa5e"
+            "sha256": "6311cf81502c0039986933430a6a81dba332d93cbf7d74e223bd9bfac97b579d"
         }
     ],
     "artifacts": [

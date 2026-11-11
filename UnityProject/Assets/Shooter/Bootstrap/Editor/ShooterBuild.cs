@@ -62,12 +62,13 @@ public static class ShooterBuild
             if (packages.SingleOrDefault(p => p.name == name)?.version != version) throw new InvalidOperationException("Package does not match toolchain lock: " + name);
         }
         RequirePackage("com.unity.render-pipelines.universal", expected.urpVersion);
+        RequirePackage("com.unity.render-pipelines.core", expected.urpVersion);
         RequirePackage("com.unity.inputsystem", expected.inputSystemVersion);
         RequirePackage("com.unity.test-framework", expected.testFrameworkVersion);
         RequirePackage("com.unity.ai.navigation", expected.aiNavigationVersion);
-        string curatedCore = Path.GetFullPath(Path.Combine(RepositoryRoot, ".local/engine-packages/com.unity.render-pipelines.core"));
-        if (!string.Equals(Path.GetFullPath(packages.Single(p => p.name == "com.unity.render-pipelines.core").resolvedPath), curatedCore, StringComparison.OrdinalIgnoreCase))
-            throw new InvalidOperationException("Core RP curation was not prepared; no stock debug-UI Resources fallback is permitted");
+        var core = packages.Single(p => p.name == "com.unity.render-pipelines.core");
+        if (core.source.ToString() != "LocalTarball" || !core.packageId.Replace('\\', '/').EndsWith("/com.unity.render-pipelines.core-" + expected.urpVersion + "-shooter.tgz", StringComparison.Ordinal))
+            throw new InvalidOperationException("Core RP must resolve the pinned immutable archive; no mutable folder or stock debug-UI fallback is permitted");
         return expected;
     }
     public static void WriteJson(string path, object report)

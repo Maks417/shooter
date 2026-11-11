@@ -19,7 +19,7 @@
   "provenanceAllowlistVersion": 1,
   "transportVersion": null,
   "corePackageCuration": {
-    "schemaVersion": 1,
+    "schemaVersion": 2,
     "package": "com.unity.render-pipelines.core",
     "version": "17.3.0",
     "upstreamInventorySha256": "6dfa8cac7cd5145c23024aba1377cb17c2029edbb397bdc4d28cdc29c21daaa5",
@@ -30,6 +30,9 @@
       "Runtime/Debugging/Prefabs/Resources/DebugUIPersistentCanvas.prefab",
       "Runtime/Debugging/Prefabs/Resources/DebugUIPersistentCanvas.prefab.meta"
     ],
+    "archiveFormat": "pax-tar-gzip-stored-v1",
+    "archivePath": ".local/engine-packages/com.unity.render-pipelines.core-17.3.0-shooter.tgz",
+    "archiveSha256": "ac919cdfbb561e93be0fc4b0a3c65ee998fd382d9933d1046785dba70ae74c8e",
     "reason": "Exclude unused Resources debug UI prefabs and their authored sprite dependencies from client/server players; see ADR-013"
   }
 }

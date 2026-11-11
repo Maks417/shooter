@@ -37,6 +37,8 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           python Tools/test_benchmark_analysis.py
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          python Tools/test_prepare_unity_packages.py
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
           ./Tools/Test-SourceProvenance.ps1
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           ./Tools/Test-Contracts.ps1
