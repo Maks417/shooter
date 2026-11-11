@@ -2,6 +2,8 @@
 
 Freeze these shapes in M0 through compilable C# contracts and fixtures before dependent work merges. The pseudocode below is normative about semantics; C# representation can use structs/classes without silently changing behavior. [Agents](agent-coordination.md) must propose an ADR for breaking changes.
 
+Current implementation is C0-candidate.1 under `UnityProject/Assets/Shooter/Contracts`; `Tools/Test-Contracts.ps1` builds the same source as .NET Standard 2.1/C# 9 and executes pure fixture/conformance tests. Test-only diagnostic codecs and reference PRNG/encoding live under `Tools/Contracts.Tests`. They do not freeze production geometry/wire formats or implement T005. Adapter and Unity smoke acceptance still prevent a C0 freeze; see [handoff](milestones/m0-foundation/handoff.md).
+
 ## Common rules
 
 Pure DTOs use BCL primitive fields and project Float2/Float3/Quat structs; no UnityEngine, GameObject, Transform, NativeArray or transport-specific types cross the Contracts boundary. Read-only arrays are immutable for the lifetime of a published snapshot; use buffer leases when pooling. Every async operation accepts CancellationToken, yields an explicit result/error, and releases partial resources on cancellation. Only adapters create Unity resources. Never pass engine objects to workers.

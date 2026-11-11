@@ -1,6 +1,6 @@
 # Start implementation here
 
-Design revision 1.1, 2026-11-11. This is the implementation entry point following the readiness review. The repository is still a documentation/specification baseline, not a running Unity project. Added JSON files are executable specification fixtures, not generated game assets. No performance or Unity test result is claimed.
+Design revision 1.1, 2026-11-11. M0 has started with one integrator. Independent C0 candidate source and pure tests now exist; this is not yet an importable or running Unity project. No installed Unity editor was found through the recorded discovery. Specification JSON remains fixtures, not generated game assets. No performance or Unity test result is claimed. See the [M0 handoff](milestones/m0-foundation/handoff.md) for evidence and pending gates.
 
 ## First assignment
 

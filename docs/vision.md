@@ -1,6 +1,6 @@
 # Vision, scope and requirements
 
-Status: implementation specification, 2026-11-11. No game code or measured benchmark results exist in the inspected project. Every proposed path, API, numerical tuning value and visual token in this set is a specification to implement, not a claim about existing code. The earlier ChatGPT discussion supplies intent; this set supersedes its HDRP suggestion with Unity 6 URP.
+Status: implementation specification, 2026-11-11. M0 independent contract source and pure tests now exist; there is no running game or measured benchmark result. Paths and APIs remain specifications except where the [M0 handoff](milestones/m0-foundation/handoff.md) records actual implementation. The earlier ChatGPT discussion supplies intent; this set supersedes its HDRP suggestion with Unity 6 URP.
 
 ## Product
 

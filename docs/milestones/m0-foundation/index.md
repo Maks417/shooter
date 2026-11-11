@@ -1,6 +1,6 @@
 # M0 — Foundation — implementation pack
 
-Status: planned; no implementation or game test is claimed. Baseline 2026-11-11. Canonical backlog tasks: T001–T004. Assigned packages: WP-00, WP-09.
+Status: in progress, 2026-11-11. Independent C0 candidate source and pure tests exist. F01 lacks Unity installation/selection; no Unity/game/hardware acceptance is claimed. See [handoff](handoff.md). Canonical backlog tasks: T001–T004. Assigned packages: WP-00, WP-09, both held by one integrator.
 
 ## Goal and entry gate
 

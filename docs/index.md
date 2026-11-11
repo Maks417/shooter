@@ -2,7 +2,7 @@
 
 Unity 6 URP / C# / HLSL design for a realistic modern-world shooter generated from code and numeric recipes. No imported/manual meshes, painted textures, sprites or authored animation. Initial hardware target: Ryzen 5 4600H integrated Radeon, 16 GB DDR4-3200, NVMe; native 720p Low at 30 FPS, 60 FPS stretch.
 
-**Status:** design baseline v1.1, 2026-11-11. The inspected project contained no code and an empty docs directory. These are proposed implementation contracts and gates, not implemented systems or measured performance. Start with foundation and soldier feasibility before expanding scope. Historical temporary memory use is not a requirement.
+**Status:** design baseline v1.1, 2026-11-11; M0 implementation started. `UnityProject/Assets/Shooter/Contracts` contains an independently compiled C0 candidate and `Tools/Contracts.Tests` contains pure tests. Unity installation/selection, project import, builds and performance evidence remain pending. Most systems below are specifications. See the [M0 handoff](milestones/m0-foundation/handoff.md). Historical temporary memory use is not a requirement.
 
 ## Reading order
 

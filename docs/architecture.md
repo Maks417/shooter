@@ -2,6 +2,8 @@
 
 Read [vision](vision.md), [contracts](contracts.md) and [repo layout](repo-layout.md) before changing boundaries.
 
+Implementation status: only `Shooter.Contracts` currently exists, as a BCL-only C0 candidate compiled by `Tools/Contracts/Shooter.Contracts.csproj`. Other assemblies, adapters and composition below remain planned. Pure test doubles live only in `Tools/Contracts.Tests`, outside Unity imports. See the [M0 handoff](milestones/m0-foundation/handoff.md).
+
 ## Components and dependency rules
 
 | Layer / proposed assembly | Owns | May depend on |

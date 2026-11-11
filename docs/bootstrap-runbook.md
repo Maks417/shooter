@@ -1,6 +1,6 @@
 # M0 bootstrap runbook
 
-Owner: integrator/WP-00. Follow [M0](milestones/m0-foundation/implementation.md). These are steps for the implementation task, not actions already executed. Repository root is `C:\Job\shooter`; Unity project is `C:\Job\shooter\UnityProject`. Preserve docs and AGENTS.md when creating the project.
+Owner: integrator/WP-00. Follow [M0](milestones/m0-foundation/implementation.md). Repository root is `C:\Job\shooter`; future Unity project is `C:\Job\shooter\UnityProject`. Git, independent Contracts source and pure verification tools now exist; remaining editor/project/build steps are pending. Preserve docs, AGENTS.md and the existing Contracts source when creating the project. See [handoff](milestones/m0-foundation/handoff.md).
 
 ## F01 — establish the actual toolchain
 
@@ -36,13 +36,37 @@ Add provenance allowlist, schema/docs checks and client/server smoke jobs. After
 
 | Action | Required implemented wrapper | Success evidence |
 |---|---|---|
-| Pure tests | `Tools/Test-Contracts.ps1` | Nonzero on failure, test-results.xml and fixture version |
+| Pure tests (implemented) | `Tools/Test-Contracts.ps1` | Fresh TRX + JUnit `test-results.xml`, run.json with source/fixture hashes and pinned SDK; nonzero on failure/skip/timeout |
 | EditMode/PlayMode | `Tools/Test-Unity.ps1 -Mode EditMode` / `-Mode PlayMode` | Editor log + fresh XML, no stale-output pass |
 | Compile content | `Tools/Compile-Content.ps1 -RecipeSet slice-v1 -Profile Low` | Verified manifest or explicit not-yet-implemented diagnostic at M0 |
 | Build | `Tools/Build.ps1 -Target Client` / `-Target Server` | Clean build/report and matching lock hash |
 | Benchmark | `Tools/Benchmark.ps1 -Workload B01-minimal-v1 -Profile Low` | Versioned result JSON; real reference-machine report |
 
-These wrappers do not exist yet. F03/F04 must implement them and update this table with actual usage. Until then, do not give a user a success command that merely creates an empty report. M0 content compilation may only support the box recipe; full slice compilation is M1–M3 work.
+Only the pure-test wrapper exists. The Unity test/content/build/benchmark wrappers and Editor entry points remain F03/F04 deliverables. Do not present them as working commands. M0 content compilation may only support the box recipe; full slice compilation is M1–M3 work.
+
+## Implemented independent checks
+
+Run from the repository root in PowerShell 7:
+
+```powershell
+./Tools/Inspect-Toolchain.ps1
+./Tools/Test-Contracts.ps1
+./Tools/Test-SourceProvenance.ps1
+python docs/fixtures/verify_fixtures.py
+python docs/verify_docs.py
+```
+
+Discovery writes `Artifacts/toolchain-discovery/discovery.json` plus `dotnet-info.txt`; no editor candidates gives a nonzero pending-installation result, not acceptance. The test wrapper pins installed SDK 10.0.301 via `global.json`, restores exact `packages.lock.json` dependencies, audits all dependency levels and fails on warnings. `-Offline` uses only the local NuGet cache and records advisory lookup as pending. Tests need local VSTest/testhost connectivity; the sandboxed run aborted, while the same tests passed outside the sandbox. Reports use a fresh `Artifacts/m0-foundation/<source-commit>/<run-id>/` folder, capture dirty state/source/fixture fingerprints, and cannot pass from stale XML. No Unity toolchain hash is fabricated.
+
+Full JSON Schema checks use a repository-local environment. The hash-pinned wheel lock currently targets Windows x64 / CPython 3.12:
+
+```powershell
+python -m venv .local/fixtures-venv
+./.local/fixtures-venv/Scripts/python.exe -m pip install --require-hashes -r Tools/requirements-fixtures.lock
+./.local/fixtures-venv/Scripts/python.exe Tools/verify_schemas.py --report Artifacts/toolchain-discovery/schema-results.json
+```
+
+`jsonschema` 4.26.0 verifies all six schema cases and expected negative paths. The standard-library fixture verifier separately checks semantics/hashes/vectors. `Test-SourceProvenance.ps1` covers the present source-only Assets tree, metadata/GUID uniqueness and the named nonshipping `abc` fixture. It does not certify future generated content or package/font provenance. No font is currently used; record the named engine exception once the editor is selected and before UI is implemented.
 
 ## Foundation completion
 

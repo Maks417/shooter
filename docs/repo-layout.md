@@ -1,6 +1,6 @@
 # Proposed repository and toolchain
 
-These are paths to create during implementation; `docs/` and root AGENTS.md exist at specification revision 1.1; Unity implementation is not yet created. See [architecture](architecture.md) for allowed assembly dependencies.
+The layout below remains the target. M0 has created `UnityProject/Assets/Shooter/Contracts` with source `.meta` files and asmdef, `Tools/Contracts`, `Tools/Contracts.Tests`, verification tools, `global.json` and `coordination.json`. Packages and ProjectSettings have intentionally not been invented without an installed editor, so UnityProject is not yet an importable project. See [handoff](milestones/m0-foundation/handoff.md) and [architecture](architecture.md).
 
 ```text
 shooter/
