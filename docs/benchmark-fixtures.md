@@ -1,6 +1,6 @@
 # Reproducible benchmark fixtures v1
 
-Owner WP-09; [performance](performance.md) remains authoritative for budgets. [Machine fixture](fixtures/benchmark-workloads.json) defines semantic workloads and scripts; results are not measured yet. M0 freezes B01-minimal; M1 introduces distinct B01-materials; B02/B03 content may only freeze after M3 planner integration. Changes require workload version, never silent substitutions.
+Owner WP-09; [performance](performance.md) remains authoritative for budgets. [Machine fixture](fixtures/benchmark-workloads.json) defines semantic workloads and scripts; bundled result JSON is an unmeasured schema fixture. Actual M0 captures and their pending acceptance conditions are in the [M0 handoff](milestones/m0-foundation/handoff.md). M0 freezes B01-minimal; M1 introduces distinct B01-materials; B02/B03 content may only freeze after M3 planner integration. Changes require workload version, never silent substitutions.
 
 ## Workloads
 

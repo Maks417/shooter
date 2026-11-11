@@ -1,8 +1,8 @@
 # Implementation readiness review — closure record
 
-Revision1.1, 2026-11-11. This records resolution of the pre-implementation documentation review. Status is ready to begin M0 under one integrator; parallel feature implementation still waits for compiling C0 and working adapters. No Unity/gameplay/graphics/performance result is implied.
+Revision1.1, 2026-11-11. This historical record resolves the pre-implementation documentation review, which authorized M0 under one integrator. Current implementation/tests/builds and remaining acceptance conditions are in the [M0 handoff](milestones/m0-foundation/handoff.md); this review itself implies no Unity/gameplay/graphics/performance result.
 
-| Finding | Resolution | Remaining implementation evidence |
+| Finding | Resolution | Implementation evidence required at review time |
 |---|---|---|
 | Ambiguous contracts/leases/overflows | [Contract details](contract-details.md), corrected original port signatures, explicit enums/limits | F02 compiling C# and lease/adapter conformance tests |
 | No repository entry rules | Root AGENTS.md supplied alongside docs | Named ownership and actual coordination ledger at M0 |
@@ -18,6 +18,6 @@ Revision1.1, 2026-11-11. This records resolution of the pre-implementation docum
 
 ## Delivery checks versus future gates
 
-Documentation verifier checks local links, reachable pages and SHA256 inventory including all fixtures/scripts. Fixture verifier checks published PCG outputs, byte encodings/hashes, schema keyword subset, valid/invalid examples, benchmark shot count and unmeasured results. These are specification checks. A full JSON Schema validator is not installed in this documentation environment; the schemas must also pass a pinned standards-compliant validator in M0 CI. No C#/Unity runtime exists yet, so it has not been tested.
+Documentation verifier checks local links, reachable pages and SHA256 inventory including all fixtures/scripts. Fixture verifier checks published PCG outputs, byte encodings/hashes, schema keyword subset, valid/invalid examples, benchmark shot count and unmeasured result fixtures. These are specification checks. M0 subsequently installed the pinned full JSON Schema validator and ran real pure/Unity foundation tests and player builds; the handoff records their actual scope. Local execution does not prove hosted CI execution or full gameplay acceptance.
 
 Do not delay M0 awaiting empirical answers only a build/spike can provide. Do not start parallel shared-contract edits before F02/F03 pass. Exact toolchain and real hardware timings remain explicit tasks, not documentation omissions or permission to invent values. [Start here](implementation-start.md).

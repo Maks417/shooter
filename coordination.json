@@ -3,7 +3,7 @@
   "updatedDate": "2026-11-11",
   "integrator": "Codex (single integrator)",
   "branch": "main",
-  "baseCommit": "b858cba5d51fc49b3cdc1b86c36f785cdf5a40f9",
+  "baseCommit": "a983a7bbd776dcdcb5be6aab9359944350d660ec",
   "contractVersion": "C0-candidate.1",
   "readyForParallelIntegration": false,
   "packages": [
@@ -11,22 +11,45 @@
       "packageId": "WP-00",
       "owner": "Codex (single integrator)",
       "branch": "main",
-      "baseCommit": "b858cba5d51fc49b3cdc1b86c36f785cdf5a40f9",
-      "paths": ["UnityProject/Assets/Shooter/Contracts", "UnityProject/Assets/Shooter/Bootstrap", "UnityProject/Assets/Shooter/Settings", "UnityProject/Assets/Shooter/Simulation/Foundation", "UnityProject/Assets/Shooter/World/Foundation", "UnityProject/Assets/Shooter/Presentation/Rendering", "UnityProject/Assets/Shooter/Tests", "UnityProject/Packages", "UnityProject/ProjectSettings", "Tools", "global.json", "toolchain-lock.json", "coordination.json", "docs", "AGENTS.md", ".github", ".gitattributes", ".gitignore"],
+      "baseCommit": "a983a7bbd776dcdcb5be6aab9359944350d660ec",
+      "paths": [
+        "UnityProject/Assets/Shooter/Contracts",
+        "UnityProject/Assets/Shooter/Bootstrap",
+        "UnityProject/Assets/Shooter/Settings",
+        "UnityProject/Assets/Shooter/Simulation/Foundation",
+        "UnityProject/Assets/Shooter/World/Foundation",
+        "UnityProject/Assets/Shooter/Presentation/Rendering",
+        "UnityProject/Assets/Shooter/Tests",
+        "UnityProject/Packages",
+        "UnityProject/ProjectSettings",
+        "Tools",
+        "global.json",
+        "toolchain-lock.json",
+        "coordination.json",
+        "docs",
+        "AGENTS.md",
+        ".github",
+        ".gitattributes",
+        ".gitignore"
+      ],
       "dependencies": [],
       "contractVersion": "C0-candidate.1",
-      "status": "M0 toolchain/project, foundation clock/authority/adapters and release client/server smoke implemented and locally verified; explicit C0 freeze/reviewer and remaining acceptance evidence pending; no M1 work",
+      "status": "M0 immutable locked project reproduces from clean worktree; 54 pure, 6 EditMode and 5 PlayMode tests and release client/server build/smoke pass; C0 freeze/reviewer and remaining acceptance conditions pending; no M1 work",
       "leaseExpiry": null
     },
     {
       "packageId": "WP-09",
       "owner": "Codex (same integrator; M0 evidence scaffolds only)",
       "branch": "main",
-      "baseCommit": "b858cba5d51fc49b3cdc1b86c36f785cdf5a40f9",
-      "paths": ["Tools"],
-      "dependencies": ["WP-00"],
+      "baseCommit": "a983a7bbd776dcdcb5be6aab9359944350d660ec",
+      "paths": [
+        "Tools"
+      ],
+      "dependencies": [
+        "WP-00"
+      ],
       "contractVersion": "C0-candidate.1",
-      "status": "M0 source/generated provenance, fixtures, real B01-minimal capture/analyzer and CI configuration implemented; missing timing counters/reference conditions and hosted CI execution remain pending; RAM channel mode deliberately unverified",
+      "status": "M0 provenance/fixtures, real B01 capture/analyzer and CI configuration implemented; three complete captures pending required counters/reference conditions, plus retained failed overload/shutdown attempt; hosted CI unrun; RAM channel mode deliberately unverified",
       "leaseExpiry": null
     }
   ]

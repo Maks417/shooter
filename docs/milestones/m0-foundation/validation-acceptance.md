@@ -20,10 +20,10 @@ Status: pure tests, Unity tests and player smoke have run; reference capture and
 
 - [ ] Entry prerequisites verified and implementation steps complete.
 - [ ] Required suites above pass with archived machine-readable results.
-- [ ] No prohibited visual sources; generated outputs have versioned provenance.
+- [x] No prohibited visual sources in accepted builds; generated outputs have versioned provenance.
 - [ ] Contract/schema/generator changes reviewed and downstream fixtures synchronized.
 - [ ] Resource/failure/cancellation paths bounded and relevant budget evidence attached.
-- [ ] Shared docs updated with actual code references; milestone links verified.
+- [x] Shared docs updated with actual code references; milestone links verified.
 - [ ] Integrator reviews evidence and signs milestone status in handoff.
 
 Final criterion: Exact toolchain recorded; C0 frozen; three profiles exist; clean client/headless builds and contract tests pass; CI entry points and actual B01 evidence available. No claim of 30 FPS for a combat scene at this stage.
