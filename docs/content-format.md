@@ -1,0 +1,19 @@
+# Compiler artifact format v1
+
+P02 initial format assignment, 2026-11-12. This additive compiler format leaves frozen C0 DTOs and specification-v1.1 fixtures unchanged. No shipping content existed in P01. The compiler owner is the integrator; dependent generator adapters merge only after actual codec/negative/golden checks. See [generation](generation.md), [deterministic identities](deterministic-format.md) and [M1 handoff](milestones/m1-procedural-feasibility/handoff.md).
+
+## Envelope and primitive encoding
+
+Every production artifact uses magic ASCII SGAF, uint32 version=1, uint32 ContentKind, uint32 compression=0, uint32 body byte length, SHA256(body) 32 raw bytes, generator fingerprint 32 raw bytes, toolchain hash 32 raw bytes, then body. Header size is 116 bytes. File length equals header plus body, with no trailing bytes. Maximum entire file is 64 MiB. Integers and IEEE float32 are little endian, finite floats only. Strings are uint32 byte length plus printable ASCII bytes, at most 4096 bytes. No native struct dumps, runtime type names or compression. Artifact manifest hash covers the whole file. The generator fingerprint is SHA256 of LP(generatorId)+LP(generatorVersion). Decoder verifies expected kind/fingerprints and body hash before typed decode.
+
+## Typed bodies
+
+- Mesh: uint32 vertex/index/submesh counts, uint32 skin flag (0/1); vertex records in order position float3, normal float3, tangent float4, UV float2, plus joints uint16x4 and weights float4 when skinned; uint32 indices; submesh records firstIndex/indexCount uint32, materialSlot uint16. Counts bounded by C0 and remaining bytes before allocation. Index ranges, finite vectors, submesh coverage, unit normals/tangents, weights and nondegenerate triangles validate before acceptance.
+- Skeleton: uint32 joint count (1..256), then id/parentId uint16, local bind position float3, local bind quaternion float4, min/max angles float3 each. Parent 65535 is root. Exactly one root, unique IDs, no missing parents/cycles; no semantic soldier joint registry is invented here.
+- Material: width/height uint16, LP(channelFormat), uint32 mip count, each mip as uint32 byte count plus bytes. Formats rgba8-linear / rgba8-srgb only. Complete mip chain to 1x1; each level has width*height*4 bytes. Albedo uses sRGB RGB, A opacity; normal uses linear tangent XYZ encoded to 0..255, A=255; mask uses linear R metallic/G occlusion/B roughness/A=255. Plane semantic is its variant name, not a new ContentKind.
+- Collision: uint32 capsule/box/height-grid counts; capsules bottom/top sphere centers float3, radius float32, surfaceTag uint16; boxes center/size float3, rotation float4, surfaceTag uint16; grids origin float3, width/depth uint16, spacing float32, surfaceTag uint16, then width*depth float32 heights. C0 validation applies and all count products check before allocation.
+- Navigation: LP(adapter format), uint32 adapter version, settings hash 32 bytes, uint32 blob bytes followed by opaque validated adapter data. Decode validates envelope/size only; actual navigation adapter acceptance remains M3.
+
+## Manifest and migration boundary
+
+Production uses a separate shooter.content.manifest.v1 schema; the C0 manifest is explicitly a nonshipping three-byte diagnostic and remains unchanged. Production JSON is bounded canonical v1 with deterministic inputs, bounds/counts, artifacts and numeric-source provenance. Build timings and worker identity stay in external reports. Exact production manifest fields and tested limitations are recorded with P02 implementation. There is no pre-existing shipping cache to migrate; unsupported envelope/schema versions fail, and old diagnostic caches are not reinterpreted. Future layout or generator algorithm changes require a new version, independent fixtures and reviewed migration policy.

@@ -59,3 +59,5 @@ Recipe schema major changes require explicit migration tool and before/after fix
 ## Exact format refinement
 
 [Deterministic format v1](deterministic-format.md) defines PCG-XSH-RR initialization, canonical integer units, binary tuple encoding, stable logical identity and independent artifact hashes. [Fixtures](fixtures/index.md) include golden bytes/vectors. Build duration/timestamps/worker/driver and validation run logs belong in separate Artifacts build-report.json; never inside immutable content manifests or cache byte comparisons. Same request key with different payload hashes is an error. Compression v1 is none. Exact geometry binary codec freezes at P02 before worker adapters merge.
+
+P02 artifact layout is assigned in [compiler artifact format v1](content-format.md); implementation and freeze evidence remain in the milestone handoff.

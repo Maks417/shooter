@@ -220,6 +220,44 @@
       "contractVersion": "C0-v1",
       "status": "Integrated P01 foundations; full M1 remains open",
       "leaseExpiry": null
+    },
+    {
+      "packageId": "WP-01/P02/codecs",
+      "owner": "/root/codecs",
+      "branch": "codex/m1-p02-codecs",
+      "baseCommit": "ce7abbac96fd55dc15501c17135ea44c36086bac",
+      "paths": [
+        "UnityProject/Assets/Shooter/Generation/Core/Codecs",
+        "Tools/Generation.Tests/CodecTests.cs",
+        "Tools/Generation.Tests/CodecFixtures"
+      ],
+      "dependencies": [
+        "P01",
+        "C0-v1",
+        "docs/content-format.md"
+      ],
+      "contractVersion": "C0-v1",
+      "status": "Assigned isolated pure source/test worker; no Unity editor or shared edits",
+      "leaseExpiry": null
+    },
+    {
+      "packageId": "WP-01/P02/recipes",
+      "owner": "/root/recipes",
+      "branch": "codex/m1-p02-recipes",
+      "baseCommit": "ce7abbac96fd55dc15501c17135ea44c36086bac",
+      "paths": [
+        "UnityProject/Assets/Shooter/Generation/Core/Recipes",
+        "UnityProject/Assets/Shooter/Generation/Core/Canonical/JsonValue.cs",
+        "Tools/Generation.Tests/RecipeTests.cs"
+      ],
+      "dependencies": [
+        "P01",
+        "C0-v1",
+        "docs/content-format.md"
+      ],
+      "contractVersion": "C0-v1",
+      "status": "Assigned isolated pure source/test worker; no Unity editor or shared edits",
+      "leaseExpiry": null
     }
   ],
   "validationWave": {
@@ -312,5 +350,12 @@
     "integrationCommit": "dad9785e273d02c6fd623f1abb334d4d59aca085",
     "evidence": "Artifacts/m1-procedural-feasibility/dad9785e273d02c6fd623f1abb334d4d59aca085",
     "cleanupEvidence": "Artifacts/m1-procedural-feasibility/dad9785e273d02c6fd623f1abb334d4d59aca085/worker-preservation/preservation.json"
+  },
+  "m1P02": {
+    "baseCommit": "ce7abbac96fd55dc15501c17135ea44c36086bac",
+    "scope": "P02 only: recipes/codecs, manifests, DAG compiler/cache, content leases, Editor entry and tests",
+    "format": "docs/content-format.md",
+    "contractVersion": "C0-v1 unchanged",
+    "status": "Assigned; no dependent P03/P04 merge before codec/manifest freeze validation"
   }
 }
