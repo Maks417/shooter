@@ -2,6 +2,12 @@
 
 See [contracts](contracts.md), [materials](features/materials-rendering.md), [environment](features/environment.md) and [CI](build-ci.md).
 
+## P01 implementation status (2026-11-12)
+
+`UnityProject/Assets/Shooter/Generation/Core` now contains `Random/Pcg32.cs`, `Random/NamedRandomStream.cs`, `Canonical/CanonicalJson.cs`, `Identity/ContentIdentity.cs` and `Dependencies/DependencyOrder.cs`. Production code is BCL-only .NET Standard 2.1/C# 9 and compiles in the locked Unity editor. `Tools/Test-Generation.ps1 -Offline` runs 69 pure tests against unchanged specification-v1.1 fixtures. Eight EditMode tests pass, including two generation checks. Evidence and limits are in the [M1 handoff](milestones/m1-procedural-feasibility/handoff.md).
+
+`CanonicalJson.Encode` validates the bounded v1 JSON subset, not recipe schemas or physical ranges. `ContentIdentity.SourceHash` requires schema-valid input; future P02 adapters must validate before calling it. `DependencyOrder.Sort` preflights at most 4096 nodes and 256 dependencies per node, rejects missing/duplicate/cyclic edges and returns a stable dependency-first order. It does not execute generators. P02 compiler/loader, codec freeze, cache publication and generated topology remain pending.
+
 ## Source → compiler → shipping content
 
 Source is validated JSON plus generator code. Editor/compiler resolves dependencies, generates collision and render payloads, builds LODs, packs material arrays, binds rigs, builds navigation, validates and publishes a manifest. Shipping clients load precompiled content; runtime generation is limited to cheap bounded variations, particles, motion and optional background development preview. Expensive topology/remeshing, skin-weight solves, texture baking and navigation builds never occur in the combat frame loop.

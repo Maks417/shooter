@@ -2,7 +2,7 @@
 
 Milestones are dependency gates, not calendar promises. [Backlog](backlog.md) gives ordered tasks. No milestone is complete until implementation exists and attached evidence passes [validation](validation.md).
 
-Owner disposition on 2026-11-12: **M0 closed with explicit user waiver; one of eight milestones closed.** This recorded exception accepts the implemented foundation while leaving render/thermal acceptance and observed preconditioning pauses unverified. It is not an all-gates-pass claim; see the [M0 handoff](milestones/m0-foundation/handoff.md). M1–M7 remain unstarted, and future performance gates are unchanged.
+Owner disposition on 2026-11-12: **M0 closed with explicit user waiver; one of eight milestones closed.** This recorded exception accepts the implemented foundation while leaving render/thermal acceptance and observed preconditioning pauses unverified. It is not an all-gates-pass claim; see the [M0 handoff](milestones/m0-foundation/handoff.md). M1 has started with P01 deterministic foundations; compiler, geometry, materials and soldier acceptance remain pending in the [M1 handoff](milestones/m1-procedural-feasibility/handoff.md). M2-M7 have not started; future performance gates are unchanged.
 
 | Gate | Deliverable | Required exit evidence |
 |---|---|---|

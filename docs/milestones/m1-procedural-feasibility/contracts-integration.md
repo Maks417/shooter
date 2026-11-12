@@ -2,7 +2,7 @@
 
 ## Entry and frozen boundary
 
-M0 passes. C0 fixtures and toolchain locks exist. Geometry/material/rig workers may prototype against fakes, but generated-output integration waits for compiler schema freeze.
+M0 is closed with the explicit owner hardware-validation waiver (ADR-017); its unverified gates are retained. The owner assigned M1 on 2026-11-12. Frozen C0-v1 fixtures and toolchain locks exist. Geometry/material/rig workers may prototype against fakes, but generated-output integration waits for compiler schema freeze.
 
 Freeze compiler manifest v1, recipe schemas, material channel layout, stable socket IDs and skeleton joint hierarchy. Visual LODs preserve gameplay socket semantics. Record generator/toolchain versions for all outputs; never use GPU results as canonical gameplay hashes.
 

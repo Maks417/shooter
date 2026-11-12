@@ -164,7 +164,7 @@
     {
       "packageId": "WP-01/P01/random",
       "owner": "/root/random",
-      "branch": "codex/m1-random",
+      "branch": "main",
       "baseCommit": "ba44c9f1f5cdd4fa8be044a04b4af528306d06fa",
       "paths": [
         "UnityProject/Assets/Shooter/Generation/Core/Random",
@@ -175,13 +175,15 @@
         "specification-v1.1"
       ],
       "contractVersion": "C0-v1",
-      "status": "Assigned P01 only; pure source/tests; no shared contract, schema, project or editor edits",
-      "leaseExpiry": null
+      "status": "Integrated P01 foundations; full M1 remains open",
+      "leaseExpiry": null,
+      "integratedFromBranch": "codex/m1-random",
+      "workspaceStatus": "Merged into main; evidence preserved and verified; temporary worktree/branch removed"
     },
     {
       "packageId": "WP-01/P01/canonical",
       "owner": "/root/canonical",
-      "branch": "codex/m1-canonical",
+      "branch": "main",
       "baseCommit": "ba44c9f1f5cdd4fa8be044a04b4af528306d06fa",
       "paths": [
         "UnityProject/Assets/Shooter/Generation/Core/Canonical",
@@ -192,8 +194,10 @@
         "specification-v1.1"
       ],
       "contractVersion": "C0-v1",
-      "status": "Assigned P01 only; pure source/tests; no shared contract, schema, project or editor edits",
-      "leaseExpiry": null
+      "status": "Integrated P01 foundations; full M1 remains open",
+      "leaseExpiry": null,
+      "integratedFromBranch": "codex/m1-canonical",
+      "workspaceStatus": "Merged into main; evidence preserved and verified; temporary worktree/branch removed"
     },
     {
       "packageId": "WP-01/P01/integration",
@@ -214,7 +218,7 @@
         "specification-v1.1"
       ],
       "contractVersion": "C0-v1",
-      "status": "P01 identity, DAG validation, assembly/test scaffolds and serialized integration",
+      "status": "Integrated P01 foundations; full M1 remains open",
       "leaseExpiry": null
     }
   ],
@@ -303,6 +307,10 @@
     "contractVersion": "C0-v1",
     "fixtureVersion": "specification-v1.1",
     "seed": "460072030",
-    "readiness": "M0 owner-qualified closure accepted; frozen C0 source and fixtures retained; pure worker harness only, no Unity editor in worker worktrees"
+    "readiness": "M0 owner-qualified closure accepted; frozen C0 source and fixtures retained; pure worker harness only, no Unity editor in worker worktrees",
+    "status": "P01 deterministic primitives integrated; 69 generation, 62 existing pure and 8 Unity EditMode tests pass; P02-P05 and topology/visual/performance acceptance pending",
+    "integrationCommit": "dad9785e273d02c6fd623f1abb334d4d59aca085",
+    "evidence": "Artifacts/m1-procedural-feasibility/dad9785e273d02c6fd623f1abb334d4d59aca085",
+    "cleanupEvidence": "Artifacts/m1-procedural-feasibility/dad9785e273d02c6fd623f1abb334d4d59aca085/worker-preservation/preservation.json"
   }
 }

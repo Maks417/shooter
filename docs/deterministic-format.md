@@ -1,6 +1,6 @@
 # Deterministic format and asset identity v1
 
-Normative refinement of [generation](generation.md). The [fixture catalog](fixtures/index.md) supplies vectors and [verifier](fixtures/verify_fixtures.py). PRNG source reference: [PCG minimal C implementation](https://www.pcg-random.org/using-pcg-c-basic.html); selected scheme is PCG-XSH-RR 64/32 set-sequence, not another PCG family member.
+Normative refinement of [generation](generation.md). P01 production implementations now live in `UnityProject/Assets/Shooter/Generation/Core/{Random,Canonical,Identity,Dependencies}`; `Tools/Test-Generation.ps1` reproduces the unchanged golden fixtures. Recipe-specific schema validation remains required before source hashing. See the [M1 handoff](milestones/m1-procedural-feasibility/handoff.md) for evidence and pending compiler/topology gates. The [fixture catalog](fixtures/index.md) supplies vectors and [verifier](fixtures/verify_fixtures.py). PRNG source reference: [PCG minimal C implementation](https://www.pcg-random.org/using-pcg-c-basic.html); selected scheme is PCG-XSH-RR 64/32 set-sequence, not another PCG family member.
 
 ## PRNG exact algorithm
 

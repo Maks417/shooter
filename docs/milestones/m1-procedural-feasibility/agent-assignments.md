@@ -1,6 +1,6 @@
 # M1 — Procedural feasibility — agent assignments
 
-Packages: WP-01, WP-02, WP-03, WP-04. Follow [ownership rules](../../agent-coordination.md) and [package path table](../../backlog.md). This pack plans future work; it does not launch agents or authorize concurrent edits to shared files.
+Packages: WP-01, WP-02, WP-03, WP-04. Follow [ownership rules](../../agent-coordination.md) and [package path table](../../backlog.md). The owner requested M1 implementation with multiple agents on 2026-11-12. The first bounded P01 wave is integrated into main: `/root/random` implemented `Generation/Core/Random` and its tests on `codex/m1-random`; `/root/canonical` implemented `Generation/Core/Canonical` and its tests on `codex/m1-canonical`. The integrator owns Identity/Dependencies, assembly/test scaffolds, metadata, documentation and coordination. Both workers used isolated worktrees and no Unity editor; the integrator ran the single main-project editor. Their branches/worktrees were retired after merge and evidence preservation. P02-P05 assignments remain future work; no shared contract edits were delegated.
 
 ## Assignment cards
 

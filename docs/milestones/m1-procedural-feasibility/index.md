@@ -1,12 +1,12 @@
 # M1 — Procedural feasibility — implementation pack
 
-Status: planned; no implementation or game test is claimed. Baseline 2026-11-11. Canonical backlog tasks: T005–T010. Assigned packages: WP-01, WP-02, WP-03, WP-04.
+Status: **IN PROGRESS**, 2026-11-12. P01 deterministic foundations are implemented with 69 pure tests and eight passing Unity EditMode tests. Compiler, generated geometry/materials and rig acceptance remain pending; no new playable content or performance claim. Canonical backlog tasks: T005–T010. Assigned packages: WP-01, WP-02, WP-03, WP-04.
 
 ## Goal and entry gate
 
 Prove reproducible compilation, primitive/weapon LODs, procedural PBR and a believable generated soldier with analytical gait/IK before content expansion.
 
-M0 passes. C0 fixtures and toolchain locks exist. Geometry/material/rig workers may prototype against fakes, but generated-output integration waits for compiler schema freeze.
+M0 is closed with the explicit owner hardware-validation waiver (ADR-017); its unverified gates are retained. The owner assigned M1 on 2026-11-12. Frozen C0-v1 fixtures and toolchain locks exist. Geometry/material/rig workers may prototype against fakes, but generated-output integration waits for compiler schema freeze.
 
 ## Read and execute
 
