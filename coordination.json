@@ -312,6 +312,60 @@
       "contractVersion": "C0-v1",
       "status": "P02 source integrated and tested; manifests/compiler/formats and shared composition owned serially; full M1 remains open",
       "leaseExpiry": null
+    },
+    {
+      "packageId": "WP-02/P03/geometry",
+      "owner": "/root/geometry",
+      "branch": "codex/m1-geometry",
+      "baseCommit": "73cb8a7008f5dd8025bc418a78e1d75986f71147",
+      "paths": [
+        "UnityProject/Assets/Shooter/Generation/Core/Geometry",
+        "Tools/Generation.Tests/GeometryTests.cs"
+      ],
+      "dependencies": [
+        "P02 SGAF v1",
+        "C0-v1",
+        "docs/weapon-recipe-baseline.md"
+      ],
+      "contractVersion": "C0-v1",
+      "status": "Assigned pure source/tests; no worker Unity editor or shared files",
+      "leaseExpiry": null
+    },
+    {
+      "packageId": "WP-02/P03/weapons",
+      "owner": "/root/weapons",
+      "branch": "codex/m1-weapons",
+      "baseCommit": "73cb8a7008f5dd8025bc418a78e1d75986f71147",
+      "paths": [
+        "UnityProject/Assets/Shooter/Generation/Core/Weapons",
+        "Tools/Generation.Tests/WeaponTests.cs"
+      ],
+      "dependencies": [
+        "P02 SGAF v1",
+        "C0-v1",
+        "docs/weapon-recipe-baseline.md"
+      ],
+      "contractVersion": "C0-v1",
+      "status": "Assigned pure source/tests; no worker Unity editor or shared files",
+      "leaseExpiry": null
+    },
+    {
+      "packageId": "WP-03/P04/materials",
+      "owner": "/root/materials",
+      "branch": "codex/m1-materials",
+      "baseCommit": "73cb8a7008f5dd8025bc418a78e1d75986f71147",
+      "paths": [
+        "UnityProject/Assets/Shooter/Generation/Core/Materials",
+        "Tools/Generation.Tests/MaterialTests.cs"
+      ],
+      "dependencies": [
+        "P02 SGAF v1",
+        "C0-v1",
+        "docs/weapon-recipe-baseline.md"
+      ],
+      "contractVersion": "C0-v1",
+      "status": "Assigned pure source/tests; no worker Unity editor or shared files",
+      "leaseExpiry": null
     }
   ],
   "validationWave": {
@@ -419,5 +473,13 @@
     "cleanupEvidence": "Artifacts/m1-p02/worker-preservation/preservation.json",
     "remaining": "P03/P04 explicit feature ownership and generator registry additions, P05 rig, full slice content/performance acceptance",
     "summaryEvidence": "Artifacts/m1-p02/validation-summary.json"
+  },
+  "m1P03P04": {
+    "baseCommit": "73cb8a7008f5dd8025bc418a78e1d75986f71147",
+    "scope": "P03 primitive/weapon generators and P04 CPU material generators plus bounded rendering diagnostic; P05 and combat excluded",
+    "contractVersion": "C0-v1",
+    "formatVersion": 1,
+    "socketBaseline": "docs/weapon-recipe-baseline.md",
+    "status": "Assigned isolated pure workers; integrator owns registry/compiler/rendering/shader/metadata/shared checks; full visual/performance gates require real evidence"
   }
 }
