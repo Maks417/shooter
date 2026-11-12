@@ -2,7 +2,8 @@
 param([Parameter(Mandatory)][string]$BuildRunDirectory,
     [ValidateSet('B01-minimal-v1')][string]$Workload = 'B01-minimal-v1',
     [ValidateSet('Low')][string]$Profile = 'Low', [ValidateRange(1,3)][int]$RunIndex = 1, [switch]$Diagnostic,
-    [string]$HardwareEvidence = '', [switch]$DiagnosticAllocate, [switch]$PresentMon)
+    [string]$HardwareEvidence = '', [switch]$DiagnosticAllocate, [switch]$PresentMon, [ValidateRange(0,1800)][int]$PreconditionSeconds = 0)
+if ($Diagnostic -and $PreconditionSeconds) { throw 'Extra preconditioning is for full reference captures only.' }
 if ($DiagnosticAllocate -and !$Diagnostic) { throw 'Allocation injection is diagnostic only.' }
 . (Join-Path $PSScriptRoot 'Unity.Common.ps1')
 $unity = Get-ShooterUnity
@@ -28,6 +29,7 @@ try {
     $hardwarePath = Join-Path $run.Path 'hardware.json'; $hardware | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $hardwarePath -Encoding utf8NoBOM
     $player = Join-Path $buildRoot 'player/Shooter.exe'; $log = Join-Path $run.Path 'player.log'
     $arguments = @('-force-d3d11','-logFile',$log,'-shooterProfile',$Profile,'-shooterBenchmark',$Workload,'-shooterBenchmarkOutput',$run.Path,'-shooterBenchmarkDiagnostic',([bool]$Diagnostic).ToString().ToLowerInvariant())
+    $arguments += @('-shooterPreconditionSeconds', $PreconditionSeconds.ToString())
     if ($DiagnosticAllocate) { $arguments += @('-shooterDiagnosticAllocate', 'true') }
     $run.Report.commands += [ordered]@{ executable=$player; arguments=$arguments }
     if ($PresentMon) {
@@ -37,7 +39,7 @@ try {
         $traceInfo = [Diagnostics.ProcessStartInfo]::new(); $traceInfo.FileName=$traceExe
         $traceInfo.UseShellExecute=$false; $traceInfo.CreateNoWindow=$true; $traceInfo.RedirectStandardOutput=$true; $traceInfo.RedirectStandardError=$true
         $traceSession = 'Shooter-' + [Guid]::NewGuid().ToString('N')
-        $traceArgs = @('--process_name','Shooter.exe','--output_file',(Join-Path $run.Path 'presentmon.csv'),'--qpc_time','--no_console_stats','--no_track_input','--set_circular_buffer_size','65536','--session_name',$traceSession,'--timed',$(if ($Diagnostic) { '15' } else { '250' }),'--terminate_after_timed')
+        $traceArgs = @('--process_name','Shooter.exe','--output_file',(Join-Path $run.Path 'presentmon.csv'),'--qpc_time','--no_console_stats','--no_track_input','--set_circular_buffer_size','65536','--session_name',$traceSession,'--timed',$(if ($Diagnostic) { '15' } else { (330 + $PreconditionSeconds).ToString() }),'--terminate_after_timed')
         foreach ($a in $traceArgs) { $traceInfo.ArgumentList.Add($a) }
         $run.Report.commands += [ordered]@{ executable=$traceExe; arguments=$traceArgs }
         $trace=[Diagnostics.Process]::new(); $trace.StartInfo=$traceInfo; $null=$trace.Start()
@@ -45,9 +47,12 @@ try {
         Start-Sleep -Milliseconds 700
         if ($trace.HasExited) { throw 'External GPU trace exited during startup.' }
     }
-    Invoke-ShooterProcess -Executable $player -ProcessArguments $arguments -WorkingDirectory (Split-Path -Parent $player) -LogPath (Join-Path $run.Path 'process.log') -MemorySamplePath (Join-Path $run.Path 'memory.csv') -TimeoutSeconds $(if ($Diagnostic) { 60 } else { 330 }) -ProcessRecord $launch
+    Invoke-ShooterProcess -Executable $player -ProcessArguments $arguments -WorkingDirectory (Split-Path -Parent $player) -LogPath (Join-Path $run.Path 'process.log') -MemorySamplePath (Join-Path $run.Path 'memory.csv') -TimeoutSeconds $(if ($Diagnostic) { 60 } else { 330 + $PreconditionSeconds }) -ProcessRecord $launch
     $launch | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $run.Path 'player-launch.json') -Encoding utf8NoBOM
     if ($PresentMon) {
+        $stopArgs=@('--session_name',$traceSession,'--terminate_existing_session')
+        $run.Report.commands += [ordered]@{executable=$traceExe;arguments=$stopArgs}
+        & $traceExe @stopArgs 2>&1 | Out-Null
         if (!$trace.WaitForExit(30000)) { throw 'External GPU trace did not finish within its bounded timer.' }
         $traceLog = Join-Path $run.Path 'presentmon.log'
         [IO.File]::WriteAllText($traceLog, $traceOut.GetAwaiter().GetResult() + $traceError.GetAwaiter().GetResult())
@@ -58,7 +63,7 @@ try {
     }
     if (!(Test-Path -LiteralPath $log) -or !(Select-String -LiteralPath $log -SimpleMatch 'SHOOTER_BENCHMARK_COMPLETE' -Quiet) -or (Select-String -LiteralPath $log -SimpleMatch 'SHOOTER_FAILURE' -Quiet)) { throw 'Player capture failed or did not finish.' }
     $output = Join-Path $run.Path $(if ($Diagnostic) { 'diagnostic-result.json' } else { 'benchmark-result.json' })
-    $analysisArgs = @((Join-Path $PSScriptRoot 'analyze_benchmark.py'), '--capture', $run.Path, '--build-manifest', $buildManifest, '--hardware', $hardwarePath, '--run-index', $RunIndex, '--output', $output)
+    $analysisArgs = @((Join-Path $PSScriptRoot 'analyze_benchmark.py'), '--capture', $run.Path, '--build-manifest', $buildManifest, '--hardware', $hardwarePath, '--run-index', $RunIndex, '--output', $output, '--render-application', (Join-Path $run.Path 'render-budget-proof.json'))
     if ($HardwareEvidence) { $analysisArgs += @('--hardware-evidence', (Resolve-Path -LiteralPath $HardwareEvidence).Path, '--evidence-application', (Join-Path $run.Path 'evidence-application.json')) }
     if ($PresentMon) { $analysisArgs += @('--external-gpu-manifest', (Join-Path $run.Path 'external-gpu.json'), '--gpu-application', (Join-Path $run.Path 'gpu-application.json')) }
     $run.Report.commands += [ordered]@{ executable='python'; arguments=$analysisArgs }

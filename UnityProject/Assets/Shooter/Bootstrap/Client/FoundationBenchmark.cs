@@ -22,7 +22,10 @@ namespace Shooter.Bootstrap
             public string captureStartUtc, captureEndUtc;
             public float[] cameraMeters;
             public bool frameTimingEnabled, mainRecorderAvailable, renderRecorderAvailable, allocationRecorderAvailable;
-            public int collectorVersion = 2, mappedTimings, ambiguousTimings, drainFrames;
+            public int collectorVersion = 3, mappedTimings, ambiguousTimings, drainFrames;
+            public int preconditionSeconds;
+            public uint captureStartTick;
+            public string renderBudgetMethod = "nativeCpuFrameStartToPresentUpperBound-v1";
             public bool frameAllocationAvailable, tickAllocationAvailable, timestampFrequencyMatches;
             public long allocationMainControlBytes, allocationWorkerControlBytes, stopwatchFrequency, nativeCpuFrequency;
             public long allocationEndControlBytes, tickAllocationEndControlBytes, legacyBclControlBytes;
@@ -45,7 +48,7 @@ namespace Shooter.Bootstrap
         private ProfilerRecorder mainRecorder, renderRecorder, allocationRecorder;
         private FoundationEntry authority;
         private string output;
-        private int frameCount, tickCount, warmupSeconds, captureSeconds;
+        private int frameCount, tickCount, warmupSeconds, captureSeconds, preconditionSeconds;
         private uint firstTick, endTick;
         private long previousTimestamp, beforePreviousTimestamp, previousAllocated;
         private uint previousTick;
@@ -68,7 +71,9 @@ namespace Shooter.Bootstrap
             injectAllocation = FoundationEntry.CommandLine("-shooterDiagnosticAllocate", "false") == "true";
             if ((injectOverload || injectAllocation) && !diagnostic) throw new ArgumentException("Fault injection is restricted to diagnostic captures");
             warmupSeconds = diagnostic ? 2 : 60; captureSeconds = diagnostic ? 5 : 180;
-            firstTick = (uint)(warmupSeconds * 60); endTick = firstTick + (uint)(captureSeconds * 60);
+            preconditionSeconds = diagnostic ? 0 : int.Parse(FoundationEntry.CommandLine("-shooterPreconditionSeconds", "0"), CultureInfo.InvariantCulture);
+            if (preconditionSeconds < 0 || preconditionSeconds > 1800) throw new ArgumentException("Preconditioning must be between zero and 1800 seconds");
+            firstTick = (uint)((preconditionSeconds + warmupSeconds) * 60); endTick = firstTick + (uint)(captureSeconds * 60);
             ticks = new TickSample[captureSeconds * 60];
             output = Path.GetFullPath(FoundationEntry.CommandLine("-shooterBenchmarkOutput", ""));
             if (!Directory.Exists(output)) throw new ArgumentException("Benchmark output directory must already exist");
@@ -162,7 +167,8 @@ namespace Shooter.Bootstrap
                 var t = timings[i];
                 // Check epoch/range as well as frequency; never infer a value across clock domains.
                 if (t.frameStartTimestamp > (ulong)now || (ulong)now - t.frameStartTimestamp > timingFrequency * 30) continue;
-                ledger.Observe(t.frameStartTimestamp, t.cpuMainThreadFrameTime, t.cpuRenderThreadFrameTime, t.gpuFrameTime);
+                if (t.cpuTimePresentCalled > (ulong)now) continue;
+                ledger.Observe(t.frameStartTimestamp, t.cpuMainThreadFrameTime, t.cpuRenderThreadFrameTime, t.gpuFrameTime, t.cpuTimePresentCalled, t.firstSubmitTimestamp);
             }
         }
         private void Abort(Exception error)
@@ -195,7 +201,7 @@ namespace Shooter.Bootstrap
             int mapped = 0, ambiguous = 0;
             using (var writer = new StreamWriter(Path.Combine(output, "frames.csv")))
             {
-                writer.WriteLine("tick,frameMs,mainMs,renderMs,gpuMs,managedFrameBytes,nativeFrameStartTimestamp,lowerTimestamp,upperTimestamp,endTimestamp,ambiguous,recorderMainNanoseconds,recorderRenderNanoseconds,recorderMainCount,recorderRenderCount");
+                writer.WriteLine("tick,frameMs,mainMs,renderMs,gpuMs,managedFrameBytes,nativeFrameStartTimestamp,lowerTimestamp,upperTimestamp,endTimestamp,ambiguous,recorderMainNanoseconds,recorderRenderNanoseconds,recorderMainCount,recorderRenderCount,nativePresentCalledTimestamp,nativeFirstSubmitTimestamp");
                 for (int i = 0; i < frameCount; i++)
                 {
                     var f = frames[i]; var t = ledger[i];
@@ -203,7 +209,8 @@ namespace Shooter.Bootstrap
                     if (t.Ambiguous) ambiguous++;
                     writer.WriteLine(f.Tick + "," + N(f.Frame) + "," + N(t.Main) + "," + N(t.Render) + "," + N(t.Gpu) + "," + f.Allocated + "," + t.NativeTimestamp
                         + "," + t.LowerExclusive + "," + t.UpperInclusive + "," + f.EndTimestamp + "," + t.Ambiguous
-                        + "," + f.RecorderMain + "," + f.RecorderRender + "," + f.MainCount + "," + f.RenderCount);
+                        + "," + f.RecorderMain + "," + f.RecorderRender + "," + f.MainCount + "," + f.RenderCount
+                        + "," + t.PresentTimestamp + "," + t.FirstSubmitTimestamp);
                 }
             }
             using (var writer = new StreamWriter(Path.Combine(output, "ticks.csv")))
@@ -225,6 +232,7 @@ namespace Shooter.Bootstrap
                 allocationEndControlBytes = endControl, tickAllocationEndControlBytes = tickEndControl, legacyBclControlBytes = legacyControl,
                 configuredVSyncCount = QualitySettings.vSyncCount, targetFrameRate = Application.targetFrameRate,
                 presentationConfigurationChecks = presentationConfigurationChecks,
+                preconditionSeconds = preconditionSeconds, captureStartTick = firstTick,
                 stopwatchFrequency = Stopwatch.Frequency, nativeCpuFrequency = (long)timingFrequency,
                 timestampFrequencyMatches = timingFrequency == (ulong)Stopwatch.Frequency, mappedTimings = mapped, ambiguousTimings = ambiguous, drainFrames = drainFrames };
             File.WriteAllText(Path.Combine(output, "capture.json"), JsonUtility.ToJson(metadata, true) + "\n");

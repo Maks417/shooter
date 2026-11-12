@@ -30,5 +30,23 @@ namespace Shooter.Contracts.Tests
             Assert.Throws<InvalidOperationException>(() => ledger.Add(30, 40));
             Assert.Throws<ArgumentOutOfRangeException>(() => ledger[-1]);
         }
+        [Fact] public void PresentationEndpointBelongsToOneNativeFrameAndCannotBeReassigned()
+        {
+            var ledger = new FrameTimingLedger(1); ledger.Add(10,20);
+            Assert.True(ledger.Observe(15,2,0,1,25,18));
+            Assert.Equal((ulong)25,ledger[0].PresentTimestamp);
+            Assert.Equal(-1,ledger[0].Render); // Native zero remains unknown.
+            Assert.False(ledger.Observe(15,2,1,1,26,18));
+            Assert.True(ledger[0].Ambiguous);
+        }
+        [Fact] public void InvalidPresentationEndpointCannotCertifyAnEnvelope()
+        {
+            foreach (ulong end in new ulong[] {14,15,ulong.MaxValue})
+            {
+                var ledger = new FrameTimingLedger(1);ledger.Add(10,20);
+                Assert.False(ledger.Observe(15,2,1,1,end));
+                Assert.True(ledger[0].Ambiguous);
+            }
+        }
     }
 }

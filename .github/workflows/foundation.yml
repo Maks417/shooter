@@ -45,6 +45,8 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           python Tools/test_external_gpu.py
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          python Tools/test_render_budget.py
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
           python Tools/test_prepare_unity_packages.py
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           python Tools/verify_contract_lock.py

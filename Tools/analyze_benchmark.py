@@ -8,6 +8,7 @@ import math
 from pathlib import Path
 from hardware_evidence import apply_evidence
 from external_gpu import gpu_samples
+from render_budget import render_budget_samples
 
 
 def percentile(values, probability):
@@ -30,7 +31,7 @@ def utc(text):
     return datetime.fromisoformat(text.replace("Z", "+00:00"))
 
 
-def analyze(capture_path, build_path, hardware_path, run_index, evidence_path=None, application_path=None, external_gpu_path=None, gpu_application_path=None):
+def analyze(capture_path, build_path, hardware_path, run_index, evidence_path=None, application_path=None, external_gpu_path=None, gpu_application_path=None, render_application_path=None):
     meta = json.loads((capture_path / "capture.json").read_text(encoding="utf-8-sig"))
     build = json.loads(build_path.read_text(encoding="utf-8-sig"))
     hardware = json.loads(hardware_path.read_text(encoding="utf-8-sig"))
@@ -48,14 +49,19 @@ def analyze(capture_path, build_path, hardware_path, run_index, evidence_path=No
         raise ValueError("Workload/profile/render configuration mismatch")
     if len(rows) != meta["frames"] or len(ticks) != meta["ticks"] or not rows:
         raise ValueError("Capture counts mismatch")
-    first, count = meta["warmupSeconds"] * 60, meta["captureSeconds"] * 60
+    precondition = meta.get("preconditionSeconds", 0)
+    if type(precondition) is not int or not 0 <= precondition <= 1800:
+        raise ValueError("Invalid preconditioning duration")
+    first, count = (precondition + meta["warmupSeconds"]) * 60, meta["captureSeconds"] * 60
+    if meta.get("collectorVersion") == 3 and meta.get("captureStartTick") != first:
+        raise ValueError("Preconditioning/capture tick identity mismatch")
     if [int(t["tick"]) for t in ticks] != list(range(first, first + count)):
         raise ValueError("Tick capture is incomplete, duplicated or reordered")
     frame_values = [float(row["frameMs"]) for row in rows]
     frame_ms = {key: percentile(frame_values, p) for key, p in [("p50", .5), ("p95", .95), ("p99", .99), ("max", 1)]}
     allocations = [int(t["managedTickBytes"]) for t in ticks]
-    calibrated = meta.get("collectorVersion") == 2 and meta.get("tickAllocationAvailable") is True and meta.get("allocationMainControlBytes", 0) >= 4352 and meta.get("tickAllocationEndControlBytes", 0) >= 4096
-    unavailable_tick = meta.get("collectorVersion") == 2 and meta.get("tickAllocationAvailable") is False
+    calibrated = meta.get("collectorVersion") in (2, 3) and meta.get("tickAllocationAvailable") is True and meta.get("allocationMainControlBytes", 0) >= 4352 and meta.get("tickAllocationEndControlBytes", 0) >= 4096
+    unavailable_tick = meta.get("collectorVersion") in (2, 3) and meta.get("tickAllocationAvailable") is False
     if any(value < 0 and not (unavailable_tick and value == -1) for value in allocations):
         raise ValueError("Invalid allocation sample")
     raw_allocated_tick = max(allocations)
@@ -68,6 +74,14 @@ def analyze(capture_path, build_path, hardware_path, run_index, evidence_path=No
         if gpu_application_path is not None:
             if gpu_application_path.exists(): raise ValueError("Refusing to overwrite GPU evidence application")
             gpu_application_path.write_text(json.dumps(gpu_application, indent=2) + "\n")
+    enclosing = render_proof = None
+    if meta.get("collectorVersion") == 3:
+        enclosing, render_proof = render_budget_samples(meta, rows)
+        render_proof["rawCaptureSha256"] = sha(capture_path / "capture.json")
+        render_proof["rawFramesSha256"] = sha(capture_path / "frames.csv")
+        if render_application_path is not None:
+            if render_application_path.exists(): raise ValueError("Refusing to overwrite render proof")
+            render_application_path.write_text(json.dumps(render_proof, indent=2) + "\n")
     if meta["diagnostic"]:
         return {"schemaVersion": 1, "scope": "Short diagnostic capture only; not B01 acceptance", "diagnostic": True,
                 "frames": len(rows), "ticks": len(ticks), "frameMs": frame_ms, "gpuAdapter": meta["gpuAdapter"], "gateStatus": "PendingHardware"}
@@ -84,7 +98,12 @@ def analyze(capture_path, build_path, hardware_path, run_index, evidence_path=No
             return None
         return percentile(values, probability)
 
-    main, render = measured("mainMs"), measured("renderMs")
+    main = measured("mainMs")
+    if meta.get("collectorVersion") == 3:
+        render = percentile(enclosing, .95) if enclosing is not None else None
+        if enclosing is None: unavailable.append("renderMs: " + render_proof["unavailable"])
+    else:
+        render = measured("renderMs")
     if external_gpu_path is None:
         gpu = measured("gpuMs")
     else:
@@ -92,7 +111,7 @@ def analyze(capture_path, build_path, hardware_path, run_index, evidence_path=No
         if external_values is None:
             unavailable.append("gpuMs: " + gpu_application["unavailable"])
     allocated_frame = measured("managedFrameBytes", 1)
-    if meta.get("collectorVersion") != 2 or meta.get("frameAllocationAvailable") is not True or meta.get("allocationWorkerControlBytes", 0) < 4352 or meta.get("allocationEndControlBytes", 0) < 4096:
+    if meta.get("collectorVersion") not in (2, 3) or meta.get("frameAllocationAvailable") is not True or meta.get("allocationWorkerControlBytes", 0) < 4352 or meta.get("allocationEndControlBytes", 0) < 4096:
         allocated_frame = None
         unavailable.append("managedFrameBytes: all-thread allocation positive control unavailable/unverified")
     memory = [r for r in read_rows(capture_path / "memory.csv") if utc(meta["captureStartUtc"]) <= utc(r["utc"]) <= utc(meta["captureEndUtc"])]
@@ -141,10 +160,11 @@ def main():
     parser.add_argument("--evidence-application", type=Path)
     parser.add_argument("--external-gpu-manifest", type=Path)
     parser.add_argument("--gpu-application", type=Path)
+    parser.add_argument("--render-application", type=Path)
     args = parser.parse_args()
     if args.output.exists():
         raise ValueError("Refusing to overwrite a benchmark result; use a new review directory")
-    report = analyze(args.capture, args.build_manifest, args.hardware, args.run_index, args.hardware_evidence, args.evidence_application, args.external_gpu_manifest, args.gpu_application)
+    report = analyze(args.capture, args.build_manifest, args.hardware, args.run_index, args.hardware_evidence, args.evidence_application, args.external_gpu_manifest, args.gpu_application, args.render_application)
     args.output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(report, indent=2))
 

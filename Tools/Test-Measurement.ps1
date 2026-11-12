@@ -15,7 +15,7 @@ try {
         $base = Join-Path (Get-ShooterRoot) ('Artifacts/m0-foundation/' + (git rev-parse HEAD).Trim())
         $capture = Get-ChildItem -LiteralPath $base -Directory -Filter 'benchmark-diagnostic-*' | Sort-Object LastWriteTime -Descending | Select-Object -First 1
         $meta = Get-Content -LiteralPath (Join-Path $capture.FullName 'capture.json') -Raw | ConvertFrom-Json
-        if ($meta.collectorVersion -ne 2 -or !$meta.frameAllocationAvailable -or !$meta.tickAllocationAvailable -or $meta.allocationMainControlBytes -lt 4352 -or $meta.allocationWorkerControlBytes -lt 4352 -or $meta.allocationEndControlBytes -lt 4096 -or $meta.tickAllocationEndControlBytes -lt 4096) { throw 'Release allocation positive controls are unavailable or failed.' }
+        if ($meta.collectorVersion -notin @(2,3) -or !$meta.frameAllocationAvailable -or !$meta.tickAllocationAvailable -or $meta.allocationMainControlBytes -lt 4352 -or $meta.allocationWorkerControlBytes -lt 4352 -or $meta.allocationEndControlBytes -lt 4096 -or $meta.tickAllocationEndControlBytes -lt 4096) { throw 'Release allocation positive controls are unavailable or failed.' }
         $samples = @(Import-Csv -LiteralPath (Join-Path $capture.FullName 'frames.csv'))
         $bytes = @($samples | ForEach-Object { [long]$_.managedFrameBytes })
         if (@($bytes | Where-Object { $_ -lt 0 }).Count) { throw 'Calibrated whole-frame allocation has missing samples.' }

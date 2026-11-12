@@ -8,7 +8,7 @@ namespace Shooter.Bootstrap
         public struct Sample
         {
             public long LowerExclusive, UpperInclusive;
-            public ulong NativeTimestamp;
+            public ulong NativeTimestamp, PresentTimestamp, FirstSubmitTimestamp;
             public double Main, Render, Gpu;
             public bool Ambiguous;
         }
@@ -24,7 +24,7 @@ namespace Shooter.Bootstrap
                 throw new ArgumentException("Non-monotonic frame bounds");
             samples[Count++] = new Sample { LowerExclusive = lowerExclusive, UpperInclusive = upperInclusive, Main = -1, Render = -1, Gpu = -1 };
         }
-        public bool Observe(ulong timestamp, double main, double render, double gpu)
+        public bool Observe(ulong timestamp, double main, double render, double gpu, ulong presentTimestamp = 0, ulong firstSubmitTimestamp = 0)
         {
             if (timestamp == 0 || timestamp > long.MaxValue || Count == 0) return false;
             int low = 0, high = Count - 1;
@@ -34,6 +34,14 @@ namespace Shooter.Bootstrap
             if (sample.NativeTimestamp != 0 && sample.NativeTimestamp != timestamp) { sample.Ambiguous = true; sample.Main = sample.Render = sample.Gpu = -1; }
             if (sample.Ambiguous) return false;
             sample.NativeTimestamp = timestamp;
+            if (presentTimestamp != 0)
+            {
+                if (presentTimestamp <= timestamp || presentTimestamp > long.MaxValue ||
+                    sample.PresentTimestamp != 0 && sample.PresentTimestamp != presentTimestamp)
+                { sample.Ambiguous = true; sample.Main = sample.Render = sample.Gpu = -1; return false; }
+                sample.PresentTimestamp = presentTimestamp;
+            }
+            if (firstSubmitTimestamp != 0) sample.FirstSubmitTimestamp = firstSubmitTimestamp;
             // Re-reading the same native frame may complete previously unavailable GPU results.
             // Never use another frame's timing to fill a gap.
             if (Valid(main)) sample.Main = main;

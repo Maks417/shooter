@@ -15,7 +15,7 @@ def gpu_samples(manifest_path, capture_path, frames):
     manifest_path = Path(manifest_path)
     manifest = json.loads(manifest_path.read_text(encoding="utf-8-sig"))
     meta = json.loads((capture_path / "capture.json").read_text(encoding="utf-8-sig"))
-    if not frames or meta.get("collectorVersion") != 2 or not meta.get("timestampFrequencyMatches") or meta.get("stopwatchFrequency", 0) <= 0 or meta.get("nativeCpuFrequency") != meta.get("stopwatchFrequency"):
+    if not frames or meta.get("collectorVersion") not in (2, 3) or not meta.get("timestampFrequencyMatches") or meta.get("stopwatchFrequency", 0) <= 0 or meta.get("nativeCpuFrequency") != meta.get("stopwatchFrequency"):
         raise ValueError("External GPU correlation requires verified native QPC clock identity")
     previous_end = None
     for frame in frames:

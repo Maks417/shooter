@@ -13,7 +13,7 @@ try {
     $argsForAnalysis = @((Join-Path $PSScriptRoot 'analyze_benchmark.py'), '--capture', $capture,
         '--build-manifest', (Join-Path $build 'build-manifest.json'), '--hardware', (Join-Path $capture 'hardware.json'),
         '--run-index', $RunIndex, '--hardware-evidence', $evidence, '--evidence-application', (Join-Path $run.Path 'evidence-application.json'),
-        '--output', (Join-Path $run.Path 'benchmark-result.json'))
+        '--output', (Join-Path $run.Path 'benchmark-result.json'), '--render-application', (Join-Path $run.Path 'render-budget-proof.json'))
     if (Test-Path -LiteralPath (Join-Path $capture 'external-gpu.json')) { $argsForAnalysis += @('--external-gpu-manifest', (Join-Path $capture 'external-gpu.json'), '--gpu-application', (Join-Path $run.Path 'gpu-application.json')) }
     $run.Report.commands += [ordered]@{ executable='python'; arguments=$argsForAnalysis }
     & python @argsForAnalysis
