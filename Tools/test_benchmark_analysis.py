@@ -66,6 +66,34 @@ class CaptureAnalysisTests(unittest.TestCase):
         self.assertEqual(report["metrics"]["frameMs"], {"p50": 10, "p95": 10, "p99": 10, "max": 10})
         self.assertEqual(report["sourceCommit"], "synthetic-test-only")
 
+    def configure_enclosing_intervals(self):
+        self.meta.update(collectorVersion=3, captureStartTick=3600, preconditionSeconds=0,
+                         renderBudgetMethod="nativeCpuFrameStartToPresentUpperBound-v1",
+                         timestampFrequencyMatches=True,nativeCpuFrequency=1000000,stopwatchFrequency=1000000)
+        for i,row in enumerate(self.frames):
+            start=10000+i*10000
+            row.update(nativeFrameStartTimestamp=start,nativePresentCalledTimestamp=start+1000,
+                       nativeFirstSubmitTimestamp=start+500,lowerTimestamp=start-100,
+                       upperTimestamp=start+100,endTimestamp=start+10100,ambiguous='False')
+
+    def test_conservative_interval_certifies_unchanged_budget_without_filling_native_gap(self):
+        self.configure_enclosing_intervals(); self.frames[1]['renderMs']=-1
+        report=self.report()
+        self.assertEqual(report['metrics']['renderMs'],1.002)
+        self.assertEqual(self.frames[1]['renderMs'],-1)
+        self.assertEqual(report['gateStatus'],'ComputedPass')
+
+    def test_conservative_interval_can_fail_the_original_budget_despite_fast_native_work(self):
+        self.configure_enclosing_intervals();self.frames[0]['nativePresentCalledTimestamp']=19000
+        report=self.report()
+        self.assertEqual(report['gateStatus'],'ComputedFail')
+
+    def test_missing_interval_stays_pending_and_preconditioning_tick_identity_is_checked(self):
+        self.configure_enclosing_intervals();self.frames[1]['nativePresentCalledTimestamp']=0
+        self.assertEqual(self.report()['gateStatus'],'PendingHardware')
+        self.meta['preconditionSeconds']=1200
+        with self.assertRaisesRegex(ValueError,'tick identity'):self.report()
+
     def test_negative_tick_allocation_cannot_hide_behind_valid_sample(self):
         self.ticks[0]["managedTickBytes"] = -1
         with self.assertRaisesRegex(ValueError, "allocation"):
