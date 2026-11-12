@@ -50,7 +50,7 @@
         "WP-00"
       ],
       "contractVersion": "C0-v1",
-      "status": "Three native injected overload/shutdown checks and three full B01 captures completed; all benchmark reports remain PendingHardware for required counters/reference conditions. User CPU-Z evidence now verifies software-reported dual-channel DDR4. The supplied 88-second HWiNFO sample targets dwm.exe for frame telemetry and does not establish Shooter thermal/timing acceptance. Hosted CI remains deferred.",
+      "status": "Three new full B01 captures with concurrent HWiNFO observations completed; measured budgets pass and no sampled thermal-throttling flags, but all raw reports remain PendingHardware for incomplete GPU/render/frame-allocation evidence and reference review. RAM dual-channel is separately software-verified. Raw benchmark reports unchanged; hosted CI deferred.",
       "leaseExpiry": null
     },
     {
@@ -195,8 +195,8 @@
     "hostedCi": "Explicitly deferred by user on 2026-11-12; no configured Git remote or hosted execution claimed",
     "validationReport": "Artifacts/m0-foundation/a4afce68fbe6dc4420d0d820cfba3b0abf197d1d/continuation-validation.json",
     "remainingGates": [
-      "Complete required GPU/render/per-frame-allocation measurements in release player",
-      "Verified thermal/reference conditions during an identified benchmark; RAM dual-channel observation resolved separately by user CPU-Z screenshot, historical reports unchanged",
+      "Complete supported GPU/render/per-frame-allocation measurements in release player",
+      "Review concurrent thermal/reference observations and monitor-version limitation; link/import verified external hardware evidence explicitly for future reports",
       "Review historical hitch/native-hang limitation and final milestone sign-off"
     ]
   },
@@ -207,5 +207,15 @@
     "memory": "CPU-Z 3.02.0 x64: DDR4, 16 GBytes, 2 x 64-bit; software-reported dual-channel verified",
     "sensorLog": "45 samples / 88.023 seconds; thermal flags No; frame telemetry scope PresentMon [dwm.exe]; one GPU-clock anomaly preserved",
     "gateImpact": "RAM observation resolved; thermal/workload/per-frame counter and final milestone acceptance pending. No historical reports edited."
+  },
+  "monitoredBenchmark": {
+    "date": "2026-11-12",
+    "orchestrationCommit": "6a5864163336628074095e6a989dc0c09d0f93af",
+    "playerSourceCommit": "a4afce68fbe6dc4420d0d820cfba3b0abf197d1d",
+    "evidence": "Artifacts/m0-foundation/6a5864163336628074095e6a989dc0c09d0f93af/monitored-20261112T081650Z/monitored-review.json",
+    "workload": "B01-minimal-v1, seed 460072030, native 1280x720 Low/D3D11, 60s warmup + 180s capture, 10800 ticks each",
+    "status": "Three completed native captures; all PendingHardware. Concurrent sensors bracket each measured window, 90/90/89 samples; thermal flags No at sampled points. Thermal stabilization and incomplete counters remain for review.",
+    "sourceChanges": "Evidence/docs/coordination only; no game code, settings, package, fixture/schema or workload changes",
+    "readyForParallelIntegration": false
   }
 }
