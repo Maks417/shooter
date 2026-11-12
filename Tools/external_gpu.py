@@ -3,6 +3,7 @@ import csv
 import hashlib
 import json
 import math
+from collections import Counter
 from pathlib import Path
 
 
@@ -57,8 +58,20 @@ def gpu_samples(manifest_path, capture_path, frames):
     timestamps = [int(row["TimeInQPC"]) for row in selected]
     if any(b <= a for a, b in zip(timestamps, timestamps[1:])) or len(set(row["SwapChainAddress"] for row in selected)) != 1:
         raise ValueError("Duplicate/reordered presents or multiple swapchains in GPU trace")
-    if any(row["PresentRuntime"] != "DXGI" or int(row["SyncInterval"]) != 0 for row in selected):
-        raise ValueError("External trace API/VSync differs from B01")
+    if any(row["PresentRuntime"] != "DXGI" for row in selected):
+        raise ValueError("External trace API differs from B01")
+    intervals = Counter(int(row["SyncInterval"]) for row in selected)
+    if any(interval < 0 or interval > 4 for interval in intervals):
+        raise ValueError("Invalid driver/compositor flip interval")
+    # PresentMon 2.6.0 overwrites application SyncInterval with kernel FlipInterval
+    # in HandleDxgkFlip/IndependentFlip. Nonzero CSV values cannot establish app VSync.
+    # Require independent per-frame application guards before accepting that case.
+    if any(interval != 0 for interval in intervals) and not (
+            meta.get("configuredVSyncCount") == 0 and meta.get("targetFrameRate") == -1
+            and meta.get("presentationConfigurationChecks") == len(frames)):
+        raise ValueError("Nonzero driver flip interval requires independently verified per-frame application VSync/uncapped configuration")
+    details["driverFlipIntervals"] = dict(intervals)
+    details["applicationVSyncGuardedFrames"] = meta.get("presentationConfigurationChecks")
     values = []
     for row in selected:
         try: value = float(row["MsGPUTime"])

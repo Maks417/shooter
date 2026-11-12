@@ -84,5 +84,17 @@ class ExternalGpuTests(unittest.TestCase):
         self.frames[1]["upperTimestamp"] = 111
         with self.assertRaises(ValueError): self.run_trace()
 
+    def test_driver_flip_interval_needs_independent_application_configuration(self):
+        self.rows[1]["SyncInterval"] = 1
+        with self.assertRaisesRegex(ValueError, "independently verified"): self.run_trace()
+        self.meta.update(configuredVSyncCount=0, targetFrameRate=-1, presentationConfigurationChecks=2)
+        values, proof = self.run_trace()
+        self.assertEqual(values, [2, 2])
+        self.assertEqual(proof["driverFlipIntervals"], {0: 1, 1: 1})
+        for key, bad in (("configuredVSyncCount", 1), ("targetFrameRate", 30), ("presentationConfigurationChecks", 1)):
+            original = self.meta[key]; self.meta[key] = bad
+            with self.assertRaises(ValueError): self.run_trace()
+            self.meta[key] = original
+
 
 if __name__ == "__main__": unittest.main()

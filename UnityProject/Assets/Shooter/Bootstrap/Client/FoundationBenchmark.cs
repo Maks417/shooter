@@ -26,6 +26,7 @@ namespace Shooter.Bootstrap
             public bool frameAllocationAvailable, tickAllocationAvailable, timestampFrequencyMatches;
             public long allocationMainControlBytes, allocationWorkerControlBytes, stopwatchFrequency, nativeCpuFrequency;
             public long allocationEndControlBytes, tickAllocationEndControlBytes, legacyBclControlBytes;
+            public int configuredVSyncCount, targetFrameRate, presentationConfigurationChecks;
             public string allocationMethod, allocationDiagnostic;
         }
         [Serializable] private sealed class FailureMetadata
@@ -50,6 +51,7 @@ namespace Shooter.Bootstrap
         private uint previousTick;
         private ulong timingFrequency;
         private int drainFrames;
+        private int presentationConfigurationChecks;
         private bool previousValid, injectAllocation;
         private object diagnosticAllocationRoot;
         private DateTime previousUtc, endUtc;
@@ -89,6 +91,7 @@ namespace Shooter.Bootstrap
         {
             if (QualitySettings.names[QualitySettings.GetQualityLevel()] != "Low" || Screen.width != 1280 || Screen.height != 720 || SystemInfo.graphicsDeviceType != UnityEngine.Rendering.GraphicsDeviceType.Direct3D11)
                 throw new InvalidOperationException("B01 reference configuration requires native 1280x720 Low/D3D11");
+            ValidatePresentationConfiguration();
             var camera = UnityEngine.Object.FindFirstObjectByType<Camera>();
             if (camera == null || Vector3.Distance(camera.transform.position, new Vector3(0, 1.65f, -6)) > .0001f || Quaternion.Angle(camera.transform.rotation, Quaternion.identity) > .0001f)
                 throw new InvalidOperationException("B01 camera recipe mismatch");
@@ -103,6 +106,11 @@ namespace Shooter.Bootstrap
             if (!floor || !box) throw new InvalidOperationException("B01 generated geometry recipe mismatch");
             validated = true;
         }
+        private static void ValidatePresentationConfiguration()
+        {
+            if (QualitySettings.vSyncCount != 0 || Application.targetFrameRate != -1)
+                throw new InvalidOperationException("B01 requires application VSync off and uncapped presentation");
+        }
         private void Update()
         {
             if (authority == null || complete || authority.Failed) return;
@@ -113,6 +121,7 @@ namespace Shooter.Bootstrap
                 // Close the preceding frame, including its LateUpdate/engine/worker managed work.
                 if (previousValid && previousTick >= firstTick && previousTick < endTick)
                 {
+                    ValidatePresentationConfiguration(); presentationConfigurationChecks++;
                     if (frameCount == frames.Length) throw new InvalidOperationException("Benchmark frame capacity exceeded; no samples silently dropped");
                     if (!captureStarted) { captureStarted = true; startUtc = previousUtc; }
                     var mainSample = mainRecorder.Valid && mainRecorder.Count == 1 ? mainRecorder.GetSample(0) : default;
@@ -214,6 +223,8 @@ namespace Shooter.Bootstrap
                 allocationMethod = AllocationMeter.Method, allocationDiagnostic = AllocationMeter.Diagnostic,
                 allocationMainControlBytes = AllocationMeter.MainControlBytes, allocationWorkerControlBytes = AllocationMeter.WorkerControlBytes,
                 allocationEndControlBytes = endControl, tickAllocationEndControlBytes = tickEndControl, legacyBclControlBytes = legacyControl,
+                configuredVSyncCount = QualitySettings.vSyncCount, targetFrameRate = Application.targetFrameRate,
+                presentationConfigurationChecks = presentationConfigurationChecks,
                 stopwatchFrequency = Stopwatch.Frequency, nativeCpuFrequency = (long)timingFrequency,
                 timestampFrequencyMatches = timingFrequency == (ulong)Stopwatch.Frequency, mappedTimings = mapped, ambiguousTimings = ambiguous, drainFrames = drainFrames };
             File.WriteAllText(Path.Combine(output, "capture.json"), JsonUtility.ToJson(metadata, true) + "\n");
