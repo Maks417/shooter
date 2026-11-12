@@ -26,6 +26,18 @@ namespace Shooter.Contracts.Tests
             clock.Advance(1, _ => steps++); Assert.Equal(4, steps); Assert.Equal(debt, clock.DebtSeconds);
         }
         [Fact]
+        public void DiagnosticSizedHitchRetainsEveryUnservicedTickAndNeverResumesOffline()
+        {
+            var clock = new FixedTickClock(false); var ticks = new List<uint>();
+            for (int i = 0; i < 120; i++) clock.Advance(1.0 / 60, ticks.Add);
+            clock.Advance(.2, ticks.Add);
+            Assert.Equal(124u, clock.NextTick); Assert.Equal(4, clock.LastAdvanceTicks);
+            Assert.True(clock.Overloaded); Assert.Equal(8.0 / 60, clock.DebtSeconds, 10);
+            clock.Advance(0, ticks.Add); clock.Advance(10, ticks.Add);
+            Assert.Equal(124, ticks.Count); Assert.Equal(124u, clock.NextTick);
+            Assert.Equal(8.0 / 60, clock.DebtSeconds, 10);
+        }
+        [Fact]
         public void ServerCatchesUpButTerminatesSustainedOneSecondDebt()
         {
             var clock = new FixedTickClock(true); int steps = 0; clock.Advance(.1, _ => steps++); clock.Advance(0, _ => steps++);

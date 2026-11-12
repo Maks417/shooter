@@ -21,6 +21,16 @@ namespace Shooter.Bootstrap
             public int width, height, frames, ticks, warmupSeconds, captureSeconds;
             public string captureStartUtc, captureEndUtc;
             public float[] cameraMeters;
+            public bool frameTimingEnabled, mainRecorderAvailable, renderRecorderAvailable, allocationRecorderAvailable;
+        }
+        [Serializable] private sealed class FailureMetadata
+        {
+            public int schemaVersion = 1;
+            public string result = "FAIL", reason, utc;
+            public bool diagnostic, injectedOverload;
+            public uint completedTicks;
+            public int frames, ticks, lastAdvanceTicks;
+            public double elapsedSeconds, debtSeconds;
         }
         private readonly FrameSample[] frames = new FrameSample[262144];
         private TickSample[] ticks;
@@ -32,6 +42,7 @@ namespace Shooter.Bootstrap
         private uint firstTick, endTick;
         private long lastFrame;
         private bool diagnostic, validated, captureStarted, complete;
+        private bool recordersDisposed, injectOverload;
         private DateTime startUtc;
         public void Initialize(FoundationEntry entry)
         {
@@ -39,6 +50,8 @@ namespace Shooter.Bootstrap
             string workload = FoundationEntry.CommandLine("-shooterBenchmark", "");
             if (workload != "B01-minimal-v1") throw new ArgumentException("Only B01-minimal-v1 exists at M0");
             diagnostic = FoundationEntry.CommandLine("-shooterBenchmarkDiagnostic", "false") == "true";
+            injectOverload = FoundationEntry.CommandLine("-shooterDiagnosticOverload", "false") == "true";
+            if (injectOverload && !diagnostic) throw new ArgumentException("Overload injection is restricted to diagnostic captures");
             warmupSeconds = diagnostic ? 2 : 60; captureSeconds = diagnostic ? 5 : 180;
             firstTick = (uint)(warmupSeconds * 60); endTick = firstTick + (uint)(captureSeconds * 60);
             ticks = new TickSample[captureSeconds * 60];
@@ -48,6 +61,7 @@ namespace Shooter.Bootstrap
             renderRecorder = Recorder(ProfilerCategory.Internal, "Render Thread");
             allocationRecorder = Recorder(ProfilerCategory.Memory, "GC Allocated In Frame");
             authority.StepCompleted += RecordTick;
+            authority.SessionFailed += Abort;
             lastFrame = Stopwatch.GetTimestamp();
         }
         private static ProfilerRecorder Recorder(ProfilerCategory category, string name)
@@ -78,12 +92,20 @@ namespace Shooter.Bootstrap
         }
         private void Update()
         {
-            if (authority == null || complete) return;
+            if (authority == null || complete || authority.Failed) return;
             try
             {
                 long now = Stopwatch.GetTimestamp(); double frameMs = (now - lastFrame) * 1000.0 / Stopwatch.Frequency; lastFrame = now;
                 FrameTimingManager.CaptureFrameTimings();
                 if (!authority.Ready) return;
+                if (injectOverload && authority.CompletedTicks >= firstTick)
+                {
+                    // Stall one diagnostic frame; the real clock must retain debt and fail.
+                    injectOverload = false;
+                    Debug.Log("SHOOTER_DIAGNOSTIC_OVERLOAD_INJECTED");
+                    System.Threading.Thread.Sleep(200);
+                    return;
+                }
                 if (!validated) { ValidateWorkload(); return; }
                 if (authority.CompletedTicks >= endTick) { Finish(); return; }
                 if (authority.CompletedTicks < firstTick) return;
@@ -101,13 +123,28 @@ namespace Shooter.Bootstrap
                 frames[frameCount++] = new FrameSample { Frame = frameMs, Main = main, Render = render, Gpu = gpu,
                     Allocated = allocationRecorder.Valid && allocationRecorder.Count > 0 ? allocationRecorder.LastValue : -1, Tick = authority.CompletedTicks };
             }
-            catch (Exception error) { complete = true; Debug.LogError("SHOOTER_FAILURE: " + error); Application.Quit(1); }
+            catch (Exception error) { authority.Fail(error); }
+        }
+        private void Abort(Exception error)
+        {
+            if (complete) return;
+            complete = true; enabled = false;
+            DisposeRecorders();
+            // Never emit capture.json or a successful completion marker from a partial capture.
+            File.WriteAllText(Path.Combine(output, "failure.json"), JsonUtility.ToJson(new FailureMetadata {
+                reason = error.ToString(), utc = DateTime.UtcNow.ToString("o"), diagnostic = diagnostic,
+                injectedOverload = diagnostic && FoundationEntry.CommandLine("-shooterDiagnosticOverload", "false") == "true",
+                completedTicks = authority.CompletedTicks, frames = frameCount, ticks = tickCount,
+                elapsedSeconds = authority.LastElapsedSeconds, debtSeconds = authority.TickDebtSeconds, lastAdvanceTicks = authority.LastAdvanceTicks
+            }, true) + "\n");
+            Debug.Log("SHOOTER_BENCHMARK_ABORTED");
         }
         private static string N(double value) => value.ToString("R", CultureInfo.InvariantCulture);
         private void Finish()
         {
             if (tickCount != ticks.Length || frameCount == 0 || !captureStarted) throw new InvalidOperationException("Incomplete benchmark capture");
-            complete = true; DateTime endUtc = DateTime.UtcNow;
+            DateTime endUtc = DateTime.UtcNow;
+            DisposeRecorders();
             using (var writer = new StreamWriter(Path.Combine(output, "frames.csv")))
             {
                 writer.WriteLine("tick,frameMs,mainMs,renderMs,gpuMs,managedFrameBytes");
@@ -122,14 +159,25 @@ namespace Shooter.Bootstrap
             var metadata = new Metadata { diagnostic = diagnostic, profile = QualitySettings.names[QualitySettings.GetQualityLevel()], width = Screen.width, height = Screen.height,
                 cpu = SystemInfo.processorType, gpuAdapter = SystemInfo.graphicsDeviceName, graphicsApi = SystemInfo.graphicsDeviceType.ToString(), frames = frameCount, ticks = tickCount,
                 warmupSeconds = warmupSeconds, captureSeconds = captureSeconds, captureStartUtc = startUtc.ToString("o"), captureEndUtc = endUtc.ToString("o"),
-                cameraMeters = new[] { camera.transform.position.x, camera.transform.position.y, camera.transform.position.z } };
+                cameraMeters = new[] { camera.transform.position.x, camera.transform.position.y, camera.transform.position.z },
+                frameTimingEnabled = FrameTimingManager.IsFeatureEnabled(), mainRecorderAvailable = mainAvailable,
+                renderRecorderAvailable = renderAvailable, allocationRecorderAvailable = allocationAvailable };
             File.WriteAllText(Path.Combine(output, "capture.json"), JsonUtility.ToJson(metadata, true) + "\n");
+            complete = true;
             Debug.Log("SHOOTER_BENCHMARK_COMPLETE diagnostic=" + diagnostic + " frames=" + frameCount + " ticks=" + tickCount);
             Application.Quit(0);
         }
         private void OnDestroy()
         {
-            if (authority != null) authority.StepCompleted -= RecordTick;
+            if (authority != null) { authority.StepCompleted -= RecordTick; authority.SessionFailed -= Abort; }
+            DisposeRecorders();
+        }
+        private bool mainAvailable, renderAvailable, allocationAvailable;
+        private void DisposeRecorders()
+        {
+            if (recordersDisposed) return;
+            recordersDisposed = true;
+            mainAvailable = mainRecorder.Valid; renderAvailable = renderRecorder.Valid; allocationAvailable = allocationRecorder.Valid;
             mainRecorder.Dispose(); renderRecorder.Dispose(); allocationRecorder.Dispose();
         }
     }

@@ -17,6 +17,8 @@ function Assert-ShooterPackedProvenance($Manifest) {
 
 function Get-ShooterUnity {
     $root = Get-ShooterRoot
+    & python (Join-Path $PSScriptRoot 'verify_contract_lock.py') | Out-Host
+    if ($LASTEXITCODE -ne 0) { throw 'Frozen C0 identity check failed.' }
     $lockPath = Join-Path $root 'toolchain-lock.json'
     if (!(Test-Path -LiteralPath $lockPath -PathType Leaf)) { throw 'F01 pending: toolchain-lock.json is missing. Install/select the editor before running Unity checks.' }
     $lock = Get-Content -LiteralPath $lockPath -Raw | ConvertFrom-Json
@@ -69,7 +71,8 @@ function New-ShooterRun([string]$Action, $Unity) {
 
 function Invoke-ShooterProcess {
     param([string]$Executable, [string[]]$ProcessArguments, [string]$WorkingDirectory,
-        [string]$LogPath, [ValidateRange(1, 7200)][int]$TimeoutSeconds = 1200, [string]$MemorySamplePath = '')
+        [string]$LogPath, [ValidateRange(1, 7200)][int]$TimeoutSeconds = 1200, [string]$MemorySamplePath = '',
+        [int]$ExpectedExitCode = 0)
     $start = [Diagnostics.ProcessStartInfo]::new()
     $start.FileName = $Executable; $start.WorkingDirectory = $WorkingDirectory
     $start.UseShellExecute = $false; $start.CreateNoWindow = $true
@@ -97,7 +100,7 @@ function Invoke-ShooterProcess {
             throw "Process timed out after $TimeoutSeconds seconds: $Executable; see $LogPath"
         }
         [IO.File]::WriteAllText($LogPath, $stdout.GetAwaiter().GetResult() + $stderr.GetAwaiter().GetResult())
-        if ($process.ExitCode -ne 0) { throw "Process exited $($process.ExitCode): $Executable; see $LogPath" }
+        if ($process.ExitCode -ne $ExpectedExitCode) { throw "Process exited $($process.ExitCode), expected ${ExpectedExitCode}: $Executable; see $LogPath" }
     }
     finally { if ($memoryWriter) { $memoryWriter.Dispose() }; $process.Dispose() }
 }

@@ -15,7 +15,7 @@ $dotnet = (Get-Command dotnet -ErrorAction Stop).Source
 $projectPath = Join-Path $repoRoot 'Tools/Contracts.Tests/Contracts.Tests.csproj'
 $report = [ordered]@{
     schemaVersion = 1
-    contractVersion = 'C0-candidate.1'
+    contractVersion = 'C0-v1'
     fixtureVersion = 'specification-v1.1'
     sourceCommit = $sourceCommit
     sourceDirty = [bool](& git -C $repoRoot status --porcelain)
@@ -75,6 +75,8 @@ function Invoke-CheckedProcess([string]$Name, [string[]]$ProcessArguments) {
 }
 try {
     Write-Host "Contracts report: $reportDirectory"
+    & python (Join-Path $PSScriptRoot 'verify_contract_lock.py') | Out-Host
+    if ($LASTEXITCODE -ne 0) { throw 'Frozen C0 identity check failed.' }
     $sourcePaths = @(& git -C $repoRoot ls-files --cached --others --exclude-standard)
     $report.sourceTreeSha256 = Get-InventoryHash $sourcePaths
     $report.fixtureTreeSha256 = Get-InventoryHash @($sourcePaths | Where-Object { $_ -like 'docs/fixtures/*' })

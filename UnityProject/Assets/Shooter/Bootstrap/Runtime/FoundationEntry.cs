@@ -27,10 +27,15 @@ namespace Shooter.Bootstrap
         private double smokeSeconds;
         private bool reportedOverload;
         public bool Ready { get; private set; }
+        public bool Failed { get; private set; }
+        public double LastElapsedSeconds { get; private set; }
+        public double TickDebtSeconds => clock == null ? 0 : clock.DebtSeconds;
+        public int LastAdvanceTicks => clock == null ? 0 : clock.LastAdvanceTicks;
         public uint CompletedTicks => clock == null ? 0 : clock.NextTick;
         public long LastStepAllocatedBytes { get; private set; }
         public double LastStepMilliseconds { get; private set; }
         public event Action<uint, double, long> StepCompleted;
+        public event Action<Exception> SessionFailed;
         public void InstallView(Action<FoundationEntry> factory)
         {
             if (Ready || viewFactory != null || IsServer) throw new InvalidOperationException("Invalid client composition order");
@@ -87,7 +92,7 @@ namespace Shooter.Bootstrap
         }
         private void Update()
         {
-            if (clock == null) return;
+            if (clock == null || Failed) return;
             try
             {
                 if (!Ready)
@@ -99,12 +104,14 @@ namespace Shooter.Bootstrap
                     return;
                 }
                 long now = monotonic.ElapsedTicks;
-                clock.Advance((now - previousTimestamp) / (double)Stopwatch.Frequency, tickAction);
+                LastElapsedSeconds = (now - previousTimestamp) / (double)Stopwatch.Frequency;
+                clock.Advance(LastElapsedSeconds, tickAction);
                 previousTimestamp = now;
                 if (IsServer && clock.Overloaded && !reportedOverload)
                     Debug.LogWarning("SHOOTER_TICK_OVERLOAD debtSeconds=" + clock.DebtSeconds.ToString("R", CultureInfo.InvariantCulture));
                 reportedOverload = clock.Overloaded;
-                if (clock.Overloaded && !IsServer) throw new InvalidOperationException("Offline tick overload; simulation paused with debt=" + clock.DebtSeconds);
+                if (clock.Overloaded && !IsServer) throw new InvalidOperationException("Offline tick overload; simulation paused with debt=" + clock.DebtSeconds.ToString("R", CultureInfo.InvariantCulture)
+                    + " elapsed=" + LastElapsedSeconds.ToString("R", CultureInfo.InvariantCulture) + " serviced=" + clock.LastAdvanceTicks + " nextTick=" + clock.NextTick);
                 if (smokeSeconds > 0 && monotonic.Elapsed.TotalSeconds >= smokeSeconds)
                 {
                     if (CompletedTicks < 60) throw new InvalidOperationException("Smoke did not service 60 simulation ticks");
@@ -114,8 +121,19 @@ namespace Shooter.Bootstrap
             }
             catch (Exception error) { Fail(error); }
         }
-        private void Fail(Exception error)
-        { Debug.LogError("SHOOTER_FAILURE: " + error); enabled = false; if (!Application.isEditor) Application.Quit(1); }
+        public void Fail(Exception error)
+        {
+            if (error == null) throw new ArgumentNullException(nameof(error));
+            if (Failed) return;
+            Failed = true; enabled = false;
+            Debug.LogError("SHOOTER_FAILURE: " + error);
+            // Release observers' native recorders before requesting native player shutdown.
+            // One failed observer must not prevent other cleanup or change the failure exit code.
+            if (SessionFailed != null)
+                foreach (Action<Exception> observer in SessionFailed.GetInvocationList())
+                    try { observer(error); } catch (Exception cleanup) { Debug.LogError("SHOOTER_CLEANUP_FAILURE: " + cleanup); }
+            if (!Application.isEditor) Application.Quit(1);
+        }
         private void OnDestroy() { world?.Dispose(); }
     }
 }

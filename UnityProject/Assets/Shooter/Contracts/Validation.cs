@@ -6,7 +6,7 @@ namespace Shooter.Contracts
 {
     public static class ContractVersion
     {
-        public const string Candidate = "C0-candidate.1";
+        public const string Current = "C0-v1";
         public const uint PredictionSchema = 1;
         public const int SimulationHz = 60;
         public const int MaxActors = 64;
