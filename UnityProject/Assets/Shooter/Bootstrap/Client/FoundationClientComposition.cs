@@ -30,8 +30,7 @@ namespace Shooter.Bootstrap
                         if (FoundationEntry.CommandLine("-shooterBenchmark", "").Length != 0)
                             throw new System.ArgumentException("M1-content-gallery-v1 is a diagnostic, not a B01 benchmark substitution.");
                         var hash = new Shooter.Contracts.ContentId(FoundationEntry.CommandLine("-shooterContentToolchainHash", ""));
-                        var view = GeneratedGallery.Create(gallery, hash, Shader.Find("Shooter/ProceduralSurface"));
-                        view.CaptureDiagnosticFrame(FoundationEntry.CommandLine("-shooterGalleryCapture", ""));
+                        GeneratedGallery.Create(gallery, hash, Shader.Find("Shooter/ProceduralSurface"));
                     }
                     if (FoundationEntry.CommandLine("-shooterBenchmark", "").Length > 0)
                         new GameObject("Benchmark recorder").AddComponent<FoundationBenchmark>().Initialize(authority);

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Collections;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -54,7 +53,10 @@ namespace Shooter.Presentation
                     materials[i].SetTexture(plane == "albedo" ? "_BaseMap" : plane == "normal" ? "_NormalMap" : "_MaskMap", texture);
                 }
                 materials[i].EnableKeyword("_NORMALMAP");
-                materials[i].SetFloat("_Tiling", 1000f / item["tileMm"].Number);
+                int tileMm = item["tileMm"].Number;
+                if (tileMm < 100 || tileMm > 8000 || manifest.RecipeId != "materials/" + Families[i] || manifest.MaterialLayerIds.Count != 1 || manifest.MaterialLayerIds[0] != Families[i])
+                    throw new InvalidDataException("Gallery material identity or physical scale mismatch.");
+                materials[i].SetFloat("_Tiling", 1000f / tileMm);
             }
             var box = Own(FoundationView.CreateUnitBox()); box.RecalculateTangents();
             for (int i = 0; i < 7; i++) Place("Material " + Families[i], box, new[] { materials[i] }, new Vector3(-6 + 2 * i, .5f, 0), Vector3.one);
@@ -98,30 +100,6 @@ namespace Shooter.Presentation
             if (Application.isPlaying) Screen.SetResolution(1280, 720, FullScreenMode.Windowed);
             Debug.Log("SHOOTER_CONTENT_GALLERY_READY textures=" + TextureBytes + " meshBytes=" + MeshBytes + " trianglesAllLods=" + Triangles + " textureFormat=RGBA32");
         }
-        public void CaptureDiagnosticFrame(string path)
-        {
-            if (string.IsNullOrEmpty(path)) return;
-            string output = Path.GetFullPath(path);
-            if (!Directory.Exists(Path.GetDirectoryName(output)) || File.Exists(output)) throw new IOException("Diagnostic capture needs a fresh file in an existing output directory.");
-            StartCoroutine(CaptureFrame(output));
-        }
-        private IEnumerator CaptureFrame(string path)
-        {
-            yield return new WaitForSeconds(1);
-            yield return new WaitForEndOfFrame();
-            Texture2D image = null;
-            try
-            {
-                image = ScreenCapture.CaptureScreenshotAsTexture();
-                int pink = 0; var pixels = image.GetPixels32();
-                foreach (var p in pixels) if (p.r > 220 && p.b > 220 && p.g < 40) pink++;
-                if (pink > pixels.Length / 100) throw new InvalidOperationException("Procedural surface shader failed in player capture.");
-                using (var stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write)) { byte[] bytes = image.EncodeToPNG(); stream.Write(bytes, 0, bytes.Length); }
-                Debug.Log("SHOOTER_GALLERY_CAPTURE_PASS width=" + image.width + " height=" + image.height);
-            }
-            catch (Exception error) { Debug.LogError("SHOOTER_FAILURE: gallery capture " + error); Application.Quit(1); }
-            finally { if (image != null) Destroy(image); }
-        }
         public void FocusWeapon(int index, int lod, string angle)
         {
             if (index < 0 || index >= weaponRoots.Count || lod < 0 || lod > 3) throw new ArgumentOutOfRangeException();
@@ -133,7 +111,7 @@ namespace Shooter.Presentation
             Vector3 target = weaponRoots[index].transform.position + new Vector3(0, .02f, index == 0 ? .14f : .03f);
             if (angle == "ads")
             {
-                ViewCamera.transform.position = weaponRoots[index].transform.position + new Vector3(0, index == 0 ? .115f : .1f, index == 0 ? -.04f : -.07f);
+                ViewCamera.transform.position = weaponRoots[index].transform.position + new Vector3(0, index == 0 ? .115f : .1f, index == 0 ? -.16f : -.15f);
                 ViewCamera.transform.rotation = Quaternion.identity; ViewCamera.nearClipPlane = .005f; return;
             }
             ViewCamera.nearClipPlane = .03f;
