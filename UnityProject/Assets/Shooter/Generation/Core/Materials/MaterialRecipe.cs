@@ -11,7 +11,7 @@ namespace Shooter.Generation
     {
         public const string Schema = "shooter.recipe.material.v1";
         public const string Generator = "material.surface";
-        public const string Version = "1.0.0";
+        public const string Version = "1.0.1";
         private readonly byte[] source;
         public RecipeDocument Document { get; }
         public byte[] CanonicalSource => (byte[])source.Clone();
