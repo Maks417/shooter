@@ -1,17 +1,17 @@
 {
   "schemaVersion": 1,
-  "updatedDate": "2026-11-11",
+  "updatedDate": "2026-11-12",
   "integrator": "Codex (M0 integrator)",
   "branch": "main",
-  "baseCommit": "a983a7bbd776dcdcb5be6aab9359944350d660ec",
-  "contractVersion": "C0-candidate.1",
+  "baseCommit": "a4afce68fbe6dc4420d0d820cfba3b0abf197d1d",
+  "contractVersion": "C0-v1",
   "readyForParallelIntegration": false,
   "packages": [
     {
       "packageId": "WP-00",
       "owner": "Codex (single integrator)",
       "branch": "main",
-      "baseCommit": "a983a7bbd776dcdcb5be6aab9359944350d660ec",
+      "baseCommit": "a4afce68fbe6dc4420d0d820cfba3b0abf197d1d",
       "paths": [
         "UnityProject/Assets/Shooter/Contracts",
         "UnityProject/Assets/Shooter/Bootstrap",
@@ -30,26 +30,27 @@
         "AGENTS.md",
         ".github",
         ".gitattributes",
-        ".gitignore"
+        ".gitignore",
+        "contract-lock.json"
       ],
       "dependencies": [],
-      "contractVersion": "C0-candidate.1",
-      "status": "M0 immutable locked project reproduces from clean worktree; 54 pure, 6 EditMode and 5 PlayMode tests and release client/server build/smoke pass; C0 freeze/reviewer and remaining acceptance conditions pending; no M1 work",
+      "contractVersion": "C0-v1",
+      "status": "C0-v1 frozen by single integrator with hash-checked source/fixture/toolchain baseline; 57 pure tests with online advisory check, 6 EditMode and 5 PlayMode tests, new release client/server builds and smoke pass; three native injected overload/shutdown tests pass; final M0 reviewer/hardware acceptance remains pending; no M1 work",
       "leaseExpiry": null
     },
     {
       "packageId": "WP-09",
       "owner": "Codex (same integrator; M0 evidence scaffolds only)",
       "branch": "main",
-      "baseCommit": "a983a7bbd776dcdcb5be6aab9359944350d660ec",
+      "baseCommit": "a4afce68fbe6dc4420d0d820cfba3b0abf197d1d",
       "paths": [
         "Tools"
       ],
       "dependencies": [
         "WP-00"
       ],
-      "contractVersion": "C0-candidate.1",
-      "status": "M0 provenance/fixtures, real B01 capture/analyzer and CI configuration implemented; three complete captures pending required counters/reference conditions, plus retained failed overload/shutdown attempt; hosted CI unrun; RAM channel mode deliberately unverified",
+      "contractVersion": "C0-v1",
+      "status": "Three native injected overload/shutdown checks and all three current full B01 captures complete without overload or shutdown failure; available measured budgets pass but all B01 reports remain PendingHardware for required counters/reference conditions; hosted CI explicitly deferred by user; RAM channel mode deliberately unverified",
       "leaseExpiry": null
     },
     {
@@ -181,5 +182,22 @@
     "status": "Integrated and reviewed: 83 wrapper regressions pass; actual wrapper checks and final evidence recorded in M0 handoff; task worktrees/branches retired",
     "evidence": "Artifacts/m0-foundation/aec716585c861ec011d168e4dd7f1bbd54c0f812/wrapper-validation-20261111T225312Z",
     "cleanupEvidence": "Artifacts/workspace-cleanup/wrapper-wave-preservation.json"
+  },
+  "m0Continuation": {
+    "sourceCommit": "a4afce68fbe6dc4420d0d820cfba3b0abf197d1d",
+    "contractVersion": "C0-v1",
+    "contractLock": "contract-lock.json",
+    "review": "Single-integrator initial C0 freeze; no independent milestone review or hardware sign-off claimed",
+    "scope": "M0 only: contract baseline, test-only generation ports, failure lifecycle and actual release validation",
+    "readyForParallelIntegration": false,
+    "evidence": "Artifacts/m0-foundation/a4afce68fbe6dc4420d0d820cfba3b0abf197d1d",
+    "status": "57 pure tests with online advisory lookup, 6 EditMode, 5 PlayMode, client/server builds/smoke and three native failure-shutdown tests pass; three full B01 reports remain PendingHardware; M0 final acceptance pending",
+    "hostedCi": "Explicitly deferred by user on 2026-11-12; no configured Git remote or hosted execution claimed",
+    "validationReport": "Artifacts/m0-foundation/a4afce68fbe6dc4420d0d820cfba3b0abf197d1d/continuation-validation.json",
+    "remainingGates": [
+      "Complete required GPU/render/per-frame-allocation measurements in release player",
+      "Verified thermal/reference conditions; RAM channel mode intentionally unverified",
+      "Review historical hitch/native-hang limitation and final milestone sign-off"
+    ]
   }
 }

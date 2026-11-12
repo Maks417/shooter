@@ -1,10 +1,10 @@
 # M0 â€” Foundation â€” handoff and gate record
 
-Status: **IMPLEMENTED / ACCEPTANCE PENDING**, 2026-11-11. The foundation imports from a clean worktree, compiles, runs native client/server players and records real benchmark data. M0 is not signed off: required performance counters/reference conditions and explicit C0/reviewer acceptance remain pending. M1 has not started. See [acceptance](validation-acceptance.md), [entry](index.md) and [bootstrap runbook](../../bootstrap-runbook.md).
+Status: **IMPLEMENTED / ACCEPTANCE PENDING**, 2026-11-12. C0-v1 is now frozen by the single integrator, online dependency advisories have been checked, and the revised failure-recording/shutdown path passes three real release-player overload tests. M0 is not signed off: required performance counters/reference conditions, final reviewer acceptance and hosted CI remain pending. The current continuation below supersedes historical candidate/failure-lifecycle status; original records and failed attempts remain preserved. M1 has not started. See [acceptance](validation-acceptance.md), [entry](index.md) and [bootstrap runbook](../../bootstrap-runbook.md).
 
 ## Source, ownership and versions
 
-The original foundation implementation used one integrator, Codex. A subsequent independent tooling-validation wave is recorded below; root `coordination.json` retains `readyForParallelIntegration=false`. Implementation commit `e94ca642b05442252789ca45502de89e6adcb4e7` added the Unity foundation; `a983a7bbd776dcdcb5be6aab9359944350d660ec` corrected package immutability after real clean-import failure. Subsequent documentation/tooling changes do not replace these tested player-source identities. No milestone tag or C0 freeze is claimed.
+The original foundation implementation used one integrator, Codex. Subsequent tooling-validation waves and the current M0 continuation are recorded below; root `coordination.json` retains `readyForParallelIntegration=false`. Implementation commit `e94ca642b05442252789ca45502de89e6adcb4e7` added the Unity foundation; `a983a7bbd776dcdcb5be6aab9359944350d660ec` corrected package immutability after real clean-import failure. The table and clean-checkout reports in this section retain those historical player identities; current C0-v1 builds are identified in the continuation. No milestone tag or milestone acceptance is claimed.
 
 | Identity | Verified value |
 |---|---|
@@ -112,3 +112,56 @@ The required offline pure suite passes 54/54 with zero skipped in `Artifacts/m0-
 Real Unity tests with the strengthened result parser pass 6/6 EditMode and 5/5 PlayMode at `Artifacts/m0-foundation/aec716585c861ec011d168e4dd7f1bbd54c0f812/tests-editmode-20261111T225546627Z-b569ae9c/` and `tests-playmode-20261111T225637383Z-a83cd1a2/`. The preceding sandboxed EditMode attempt `tests-editmode-20261111T225309486Z-b176feea` failed licensing IPC before producing test XML; the stalled wrapper was interrupted and its logs retained. The passing retry used approved execution outside the sandbox. No tests are counted from the failed environment attempt. Final documentation verification passes 84 pages, 533 local links and 104 integrity files; documentation integrity is separate from these test results.
 
 Worker commits `759558e`, `c9728aa` and `2fe69db` are ancestors of main. Their clean sources match main after repository LF normalization. Before removing all three worktrees/branches, 1622 ignored worker evidence files were retained in hash-verified ZIP archives under `Artifacts/workspace-cleanup/wrapper-wave/`; ZIP retention avoids Windows path-length expansion. `Artifacts/workspace-cleanup/wrapper-wave-preservation.json` records every member hash, source identities, ancestry and completed cleanup. Only the main worktree remains. Hosted CI, advisory lookup, C0/reviewer acceptance, required hardware/counter conditions and the earlier overload/shutdown defect remain pending. M0 acceptance is unchanged; no M1 feature work started.
+
+## M0 continuation — C0 freeze and failure lifecycle, 2026-11-12
+
+Single integrator, no new agents or worktrees. Source commit `a4afce68fbe6dc4420d0d820cfba3b0abf197d1d` contains the C0-v1 freeze, completed test-only generation-port coverage and revised capture/failure lifecycle. Root `contract-lock.json` records the explicit integrator review and unchanged specification-v1.1 fixture/toolchain identities. `ContractVersion.Current` replaces the unused candidate label; no DTO semantics, units, seeds, enum values, prediction schema, package versions or workload definitions changed. Geometry codecs/compiler and networking remain outside M0. See [ADR-014](../../decisions.md#adr-014--accepted-initial-c0-source-freeze-and-failure-capture-lifecycle).
+
+`FoundationEntry.Fail` transitions once, disables further authority updates and notifies cleanup observers before failure exit. `FoundationBenchmark` stops recording and releases native profiler recorders before shutdown on both failure and success. Failure produces separate `failure.json` with elapsed interval, serviced ticks, next tick and retained debt; it does not publish a successful partial capture. The clock still services at most four ticks per frame and freezes offline on overload. No timing/debt threshold was relaxed.
+
+The following retained evidence is relative to `Artifacts/m0-foundation/a4afce68fbe6dc4420d0d820cfba3b0abf197d1d/` unless explicitly stated. Client/server source SHA256 is `5c4643be5e88c3c7faefad9d0460ab3f48c19a8b173b89db4114c8be3b21631d`; harness SHA256 is `c3385f9b70014c21162b5213793bf1adf78ddf99214257633dab7197de2faef0`; toolchain identity remains the historical locked hash above. Build entry source was clean; build manifests still record the temporary BuildPipeline settings/Resources state as `sourceDirty=true`, as described in the historical clean-checkout section. These continuation builds used the existing verified project/Library; they are not a new clean-checkout or M1 cold-generation claim. Documentation/coordination edits after the source commit do not change these player identities.
+
+| Check | Actual result / retained run |
+|---|---|
+| Frozen C0 baseline | PASS; 24 source/assembly/metadata files, 18 JSON/binary fixtures; committed blob hashes independently compared to the lock; five baseline/drift tests pass |
+| Pure contracts/foundation, online restore | 57/57 PASS, zero skipped, all-level dependency advisory lookup completed; clean-source run `20261112T072357183Z-f90656bc` |
+| Release IL2CPP client | PASS, packed-source art audit included; `build-client-20261112T072207249Z-99c9e0ba` |
+| Native injected overload/shutdown | 3/3 PASS; `failure-shutdown-20261112T072424896Z-310172f7`; every process exits naturally with code 1, 5.72–6.66 seconds from launch, no successful capture files |
+| Client smoke | PASS, readiness and at least 60 ticks; `smoke-client-20261112T072522164Z-a08af5fd` |
+| Short real diagnostic capture | PASS as diagnostic only, 5457 frames/300 ticks; `benchmark-diagnostic-20261112T072533530Z-b5f0eccc` |
+| Dedicated server | PASS, no client/presentation assemblies or graphics payload; `build-server-20261112T072617722Z-0f9c21a7` |
+| Server smoke | PASS; `smoke-server-20261112T072757073Z-e915aa0b` |
+| Post-server EditMode / PlayMode | 6/6 and 5/5 PASS; `tests-editmode-20261112T072808401Z-4218825e`, `tests-playmode-20261112T072836351Z-10fc75ef` |
+| Existing tooling/wrapper checks | 30 Python tooling and 83 PowerShell wrapper cases PASS; logs under `Artifacts/tooling-tests` and `Artifacts/wrapper-tests`, stamped 20261112T0721–0722 |
+| Schema/fixture checks | Six schema cases and 35 fixture assertions PASS; `Artifacts/m0-current-schemas.json`; original fixture bytes unchanged |
+
+Each injected failure uses a real 200 ms diagnostic-only stall. In all three, the next clock update serviced four ticks and stopped at tick 124 with approximately 0.135–0.137 seconds retained debt. The complete diagnostic process exited normally rather than requiring the wrapper's 30-second kill. This validates the revised shutdown path under a controlled overload; the historical uninstrumented hitch/driver-hang cause remains unproven, and its failed report is not erased.
+
+The short capture reports `frameTimingEnabled=true`, valid main-thread recorder and unavailable render/allocation recorders. FrameTimingManager supplied render timing for all 5457 short-capture frames and GPU timing for 4138; GPU was unavailable for 1319. All frame-allocation samples were unavailable. Per-frame raw validity remains authoritative even when an API/recorder is enabled. This diagnostic is not a full B01 pass and does not replace required supported external measurement.
+
+The first sandboxed online pure-suite attempt at base `9f73624` failed restore before tests (`20261112T071753667Z-a3549c7d`). The approved outside-sandbox runs completed online restore/advisory lookup and actual tests. The historical advisory-lookup pending item is therefore resolved for this locked dependency set at the recorded date; it is not a future vulnerability guarantee. All Unity/build/player runs here used approved outside-sandbox execution for licensing IPC and native machine access.
+
+### Full B01 continuation results
+
+All three prescribed attempts completed with the same release IL2CPP client/content/route above, 1280×720 Low/D3D11, seed 460072030, 60 seconds warmup and 180 seconds capture. Each contains exactly 10800 consecutive measured ticks, no overload/failure marker and a successful native process exit. There were no additional retries or discarded continuation attempts. All three actual result JSON files validate against the unchanged full Draft 2020-12 schema. The wrapper returns nonzero for PendingHardware; the orchestration's completion is not an acceptance pass.
+
+| Capture directory | Frames / ticks | Frame p95 / p99 / max (ms) | Sampled private bytes peak | Gate |
+|---|---|---|---:|---|
+| `benchmark-1-20261112T072940756Z-77e87720` | 213135 / 10800 | 1.2669 / 2.1468 / 44.7044 | 248373248 | PendingHardware |
+| `benchmark-2-20261112T073354699Z-b3825522` | 110199 / 10800 | 2.9644 / 3.5060 / 25.5277 | 248541184 | PendingHardware |
+| `benchmark-3-20261112T073814774Z-95f09569` | 181836 / 10800 | 1.3768 / 2.4881 / 33.3064 | 248188928 | PendingHardware |
+
+Worst frame p95 is 2.9644 ms; median across runs is 1.3768 ms. The available measured budgets do not fail. Each run measured zero managed bytes per empty-authority Step; this does not establish whole-frame allocation or combat performance. GPU sample coverage is 145730/213135, 85198/110199 and 105129/181836 respectively. No missing GPU value was filled or omitted to compute a passing percentile. Frame-allocation coverage is zero in every run. Run 1 has one missing render sample, so its render p95 remains null; runs 2–3 have measured render p95 of 0.3272/0.2078 ms. Reference NVMe and AC power are verified in these raw machine reports, while thermal stabilization and RAM channel mode remain unverified. The analyzer's combined thermal/NVMe reason does not mean NVMe failed discovery.
+
+`b01-continuation-attempts.json` retains all wrapper outcomes. `continuation-validation.json` records each report's actual metrics/sample coverage, source/contract identity, schema validation outcome, final provenance result, hardware limitations and SHA256 of raw capture/report/log files. Historical failed attempts remain separately retained. These are empty-box results; there is no new 30-minute soak, combat, realism, M1 compiler or cold-regeneration claim.
+
+Final source provenance passes with 128 asset entries and 64 unique GUIDs. The frozen contract/fixture identity check and standard-library fixture verifier pass unchanged. Final documentation verification passes 84 pages, 538 local links and 104 integrity files; these hashes are separate from runtime test results. The sole registered worktree remains `C:\Job\shooter` on main; no temporary branches/worktrees were created in this continuation. Required ignored evidence stays under Artifacts and no player/cache/evidence payload is added to Git.
+
+### Remaining acceptance and ownership
+
+- WP-09/integrator: acquire supported complete GPU/render/frame-allocation evidence in a release player. Enabled APIs or partial samples cannot close this item.
+- Hardware reviewer: verify thermal reference conditions; RAM channel mode remains intentionally unverified under the existing user instruction. No channel mode is inferred from slot labels.
+- Integrator/reviewer: review the current code, full reports and historical failure; the controlled shutdown mitigation passes, but the original uninstrumented hitch/native-hang cause remains unproven. Final M0 sign-off and a passing milestone tag remain pending.
+- Hosted CI: explicitly deferred by the user on 2026-11-12. `git remote -v` returned no configured remote; no hosted Actions execution or prelicensed runner registration is claimed. CI entry points include C0 drift tests and the native failure-shutdown checks.
+
+`readyForParallelIntegration=false` remains deliberate. No milestone is closed and no M1/dependent feature integration is authorized by this continuation.

@@ -21,7 +21,7 @@ Status: pure tests, Unity tests and player smoke have run; reference capture and
 - [ ] Entry prerequisites verified and implementation steps complete.
 - [ ] Required suites above pass with archived machine-readable results.
 - [x] No prohibited visual sources in accepted builds; generated outputs have versioned provenance.
-- [ ] Contract/schema/generator changes reviewed and downstream fixtures synchronized.
+- [x] Contract/schema/generator changes reviewed and downstream fixtures synchronized (single-integrator initial C0-v1 freeze; no independent milestone review implied).
 - [ ] Resource/failure/cancellation paths bounded and relevant budget evidence attached.
 - [x] Shared docs updated with actual code references; milestone links verified.
 - [ ] Integrator reviews evidence and signs milestone status in handoff.

@@ -4,7 +4,7 @@ Design revision 1.1, 2026-11-11. M0 now has an importable Unity project, verifie
 
 ## First assignment
 
-Start M0 with one integrator. Read the repository AGENTS.md, [vision](vision.md), [architecture](architecture.md), [contract details](contract-details.md), [bootstrap runbook](bootstrap-runbook.md) and [M0 pack](milestones/m0-foundation/index.md). Implement F01 and F02, then F03/F04. Do not start whole-game implementation or independent agents modifying shared contracts. Once C0 is explicitly frozen and the readiness checkpoint passes, geometry, rendering, character and simulation workers may start within assigned paths.
+Continue remaining M0 acceptance with one integrator. Read the repository AGENTS.md, [vision](vision.md), [architecture](architecture.md), [contract details](contract-details.md), [bootstrap runbook](bootstrap-runbook.md) and [M0 pack](milestones/m0-foundation/index.md). F01–F04 implementation exists and C0-v1 is frozen in root `contract-lock.json`; pending hardware/final review and readiness remain recorded in the handoff. Do not start whole-game implementation or independent agents modifying shared contracts. Dependent feature assignments require the readiness checkpoint and an explicit milestone assignment.
 
 ## Newly resolved design details
 

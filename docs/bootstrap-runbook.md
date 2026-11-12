@@ -80,6 +80,8 @@ The wrapper discovers CPU, actual rendered GPU, RAM topology/speed, driver, powe
 
 ## Implemented independent checks
 
+C0-v1 is frozen by the M0 integrator in root `contract-lock.json`. `python Tools/verify_contract_lock.py` checks the exact contract/metadata inventory, JSON/binary specification fixtures and toolchain hash. `python Tools/test_contract_lock.py` exercises rejected source/fixture drift and unfrozen status. The pure and Unity wrappers run the identity check before tests/builds; no command implicitly refreshes the frozen baseline. This is contract identity enforcement, not hardware or milestone acceptance. See [ADR-014](decisions.md#adr-014--accepted-initial-c0-source-freeze-and-failure-capture-lifecycle).
+
 Run from the repository root in PowerShell 7:
 
 ```powershell
@@ -107,5 +109,9 @@ python -m venv .local/fixtures-venv
 Wrapper regressions run without Unity or Pester using `./Tools/test_smoke.ps1`, `./Tools/test_unity_results.ps1` and `./Tools/test_source_provenance.ps1`. They invoke the real wrappers in isolated synthetic repositories with test-only process adapters. Smoke acceptance requires the matching ready marker and a complete mode/tick marker proving at least 60 ticks. Unity result acceptance checks individual test cases against the summary. Provenance verification rejects incomplete or duplicate proofs and limits the named settings generator to its existing output boundary. These checks run in the fast CI lane; synthetic logs and miniature assets do not count as player, generated-content or hardware evidence.
 
 ## Foundation completion
+
+`Tools/Test-FailureShutdown.ps1 -BuildRunDirectory <client-build-run>` runs three explicitly diagnostic 200 ms stall injections in the release IL2CPP player. Each must retain clock debt after the unchanged four-tick cap, emit `failure.json`, exit naturally with code 1 within 30 seconds and leave no successful capture files. `FoundationEntry` notifies failure observers once; `FoundationBenchmark` disposes recorders before requesting native shutdown, including the success path. Failed captures remain failures. The wrapper preserves per-attempt telemetry/logs and never treats a killed process as a successful exit. These controlled tests do not explain the historical hitch/driver cause or count toward B01 acceptance.
+
+Successful `capture.json` now also records whether frame timing is enabled and whether each profiler recorder is valid. These diagnostic flags do not replace per-frame sample validity: intermittent missing GPU samples and unavailable frame-allocation samples still keep acceptance pending. Unity documents delayed/asynchronous timing and possible missing GPU results in its [Frame Timing Manager guidance](https://docs.unity.com/en-us/engine/6000.3/manual/analysis/graphics-performance-profiling/profile-rendering/frame-timing-manager/manager). Required external timing, thermal conditions and final review cannot be fabricated from these flags. RAM channel mode remains intentionally unverified.
 
 Fresh checkout reproduces import; pure contracts compile; blank client/server boot and terminate; B01-minimal records real counters; lock/provenance/docs checks run; AGENTS and ownership ledger reflect actual work. Exact missing dependencies and hardware measurements remain pending until proven.
