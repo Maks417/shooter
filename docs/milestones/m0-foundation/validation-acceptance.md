@@ -1,6 +1,6 @@
 # M0 — Foundation — validation and acceptance
 
-Status: final-source pure/Unity tests, clean client/server builds, player smoke, allocation controls and failure shutdown pass. Required V10 acceptance remains pending M0-RT-001 and M0-THERM-001; exact reports and reviewer decision are in [handoff](handoff.md). Use [global validation](../../validation.md) and [build lanes](../../build-ci.md). Missing evidence remains pending; a successful diagnostic box run is not combat or milestone acceptance.
+Status: M0 closed with Max's explicit hardware-validation waiver, 2026-11-12. Pure/Unity tests, clean client/server builds, player smoke, allocation controls and failure shutdown pass. V10 render/thermal acceptance remains technically unverified; no automated result is upgraded. The owner decision, retained preconditioning failures and exact reports are in [handoff](handoff.md) and [ADR-017](../../decisions.md#adr-017--accepted-m0-owner-waiver-of-remaining-hardware-validation). Use [global validation](../../validation.md) and [build lanes](../../build-ci.md). This M0 exception does not waive future gameplay performance gates.
 
 | Suite | Scenario | Required result |
 |---|---|---|
@@ -19,12 +19,12 @@ Status: final-source pure/Unity tests, clean client/server builds, player smoke,
 ## Gate checklist
 
 - [x] Entry prerequisites verified and implementation steps complete.
-- [ ] Required suites above pass with archived machine-readable results.
+- [ ] All required suites pass without exceptions: V10 render/thermal acceptance remains unverified; owner waived it for M0 closure.
 - [x] No prohibited visual sources in accepted builds; generated outputs have versioned provenance.
 - [x] Contract/schema/generator changes reviewed and downstream fixtures synchronized (single-integrator initial C0-v1 freeze; no independent milestone review implied).
 - [x] M0 resource/failure paths bounded and actual budget evidence attached; incomplete render and thermal acceptance remain pending in the required-suites item.
 - [x] Shared docs updated with actual code references; milestone links verified.
-- [ ] Integrator reviews evidence and signs milestone status in handoff.
+- [x] Integrator reviews actual evidence and records owner acceptance with explicit waiver in handoff.
 
 Final criterion: Exact toolchain recorded; C0 frozen; three profiles exist; clean client/headless builds and contract tests pass; CI entry points and actual B01 evidence available. No claim of 30 FPS for a combat scene at this stage.
 

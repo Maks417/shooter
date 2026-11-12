@@ -4,7 +4,7 @@ Design revision 1.1, 2026-11-11. M0 now has an importable Unity project, verifie
 
 ## First assignment
 
-Continue remaining M0 acceptance with one integrator. Read the repository AGENTS.md, [vision](vision.md), [architecture](architecture.md), [contract details](contract-details.md), [bootstrap runbook](bootstrap-runbook.md) and [M0 pack](milestones/m0-foundation/index.md). F01–F04 implementation exists and C0-v1 is frozen in root `contract-lock.json`; pending hardware/final review and readiness remain recorded in the handoff. Do not start whole-game implementation or independent agents modifying shared contracts. Dependent feature assignments require the readiness checkpoint and an explicit milestone assignment.
+M0 is closed with the owner's explicit hardware-validation waiver; one of eight milestones is closed. Read the repository AGENTS.md, [vision](vision.md), [architecture](architecture.md), [contract details](contract-details.md), [bootstrap runbook](bootstrap-runbook.md) and [M0 pack](milestones/m0-foundation/index.md). F01–F04 implementation exists, C0-v1 is frozen in root `contract-lock.json`, and the contract/build readiness checkpoint is enabled. Unverified render/thermal acceptance and retained native preconditioning failures remain in the handoff. No M1 task is assigned by this closure. Dependent feature work still requires an explicit milestone assignment and ownership; do not start whole-game implementation or independent agents modifying shared contracts.
 
 ## Newly resolved design details
 

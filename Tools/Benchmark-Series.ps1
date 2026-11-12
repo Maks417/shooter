@@ -13,7 +13,7 @@ function Copy-LiveSensorSnapshot([string]$Destination) {
     $outputStream=$null
     try {
         $remaining=$inputStream.Length
-        if ($remaining -gt 64MB) { throw 'Sensor snapshot exceeds the bounded64 MiB limit.' }
+        if ($remaining -gt 64MB) { throw 'Sensor snapshot exceeds the bounded 64 MiB limit.' }
         $outputStream=[IO.File]::Open($Destination,[IO.FileMode]::CreateNew,[IO.FileAccess]::Write,[IO.FileShare]::Read)
         $buffer=[byte[]]::new(65536)
         while ($remaining -gt 0) {
@@ -33,6 +33,7 @@ try {
     $run.Report['preconditionSeconds']=$PreconditionSeconds
     $run.Report['attempts']=@()
     $run.Report.result='Collecting'
+    Save-ShooterRun $run
     Copy-LiveSensorSnapshot (Join-Path $run.Path 'sensor-before.csv')
     $base=Split-Path -Parent $run.Path
     for ($index=1;$index -le 3;$index++) {
@@ -41,6 +42,7 @@ try {
         if ($index -eq 1) { $argsForWrapper+=@('-PreconditionSeconds',$PreconditionSeconds) }
         if ($HardwareEvidence) { $argsForWrapper+=@('-HardwareEvidence',(Resolve-Path -LiteralPath $HardwareEvidence).Path) }
         $run.Report.commands+= [ordered]@{executable=(Join-Path $PSHOME 'pwsh.exe');arguments=$argsForWrapper}
+        Save-ShooterRun $run
         $started=[DateTime]::UtcNow.ToString('o')
         & (Join-Path $PSHOME 'pwsh.exe') @argsForWrapper 2>&1 | Tee-Object -FilePath (Join-Path $run.Path "run-$index-console.log")
         $code=$LASTEXITCODE
@@ -58,7 +60,7 @@ try {
     $run.Report.result='PendingHardware'
     $run.Report['collectionComplete']=$true
 }
-catch { $run.Report.error=$_.Exception.Message;Write-Warning $run.Report.error }
+catch { $run.Report.result='FAIL';$run.Report.error=$_.Exception.Message;Write-Warning $run.Report.error }
 finally {
     $run.Report['snapshotReadStartedUtc']=[DateTime]::UtcNow.ToString('o')
     try { Copy-LiveSensorSnapshot (Join-Path $run.Path 'sensor-log-snapshot.csv') }

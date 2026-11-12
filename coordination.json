@@ -3,15 +3,15 @@
   "updatedDate": "2026-11-12",
   "integrator": "Codex (M0 integrator)",
   "branch": "main",
-  "baseCommit": "896e6a85c1f6cc02dc82ba2ab20f0f9c23ef561f",
+  "baseCommit": "40de8f9405f1fa8414a338ccfcca8a7f643466bb",
   "contractVersion": "C0-v1",
-  "readyForParallelIntegration": false,
+  "readyForParallelIntegration": true,
   "packages": [
     {
       "packageId": "WP-00",
       "owner": "Codex (single integrator)",
       "branch": "main",
-      "baseCommit": "896e6a85c1f6cc02dc82ba2ab20f0f9c23ef561f",
+      "baseCommit": "40de8f9405f1fa8414a338ccfcca8a7f643466bb",
       "paths": [
         "UnityProject/Assets/Shooter/Contracts",
         "UnityProject/Assets/Shooter/Bootstrap",
@@ -35,14 +35,14 @@
       ],
       "dependencies": [],
       "contractVersion": "C0-v1",
-      "status": "M0 implementation integrated; C0-v1 unchanged. Exact-commit clean client/server builds and smoke, 60 pure tests, 11 Unity tests, 55 Python tooling tests, release allocation controls and three shutdown checks pass. Acceptance pending M0-RT-001 and M0-THERM-001; no M1 work; zero milestones closed.",
+      "status": "M0 closed with explicit owner hardware-validation waiver (ADR-017), 1/8 milestones closed. C0-v1 unchanged; clean-entry client/server builds and smoke, 62 pure tests, 11 Unity tests, 64 Python tooling tests, allocation controls and 3 shutdown checks pass. Contract/build readiness enabled; M1 unassigned.",
       "leaseExpiry": null
     },
     {
       "packageId": "WP-09",
       "owner": "Codex (same integrator; M0 evidence scaffolds only)",
       "branch": "main",
-      "baseCommit": "896e6a85c1f6cc02dc82ba2ab20f0f9c23ef561f",
+      "baseCommit": "40de8f9405f1fa8414a338ccfcca8a7f643466bb",
       "paths": [
         "Tools"
       ],
@@ -50,7 +50,7 @@
         "WP-00"
       ],
       "contractVersion": "C0-v1",
-      "status": "Three prescribed final-source monitored captures retained: 689652 GPU/allocation samples complete; measured budgets do not fail. Four render samples and unaccepted thermal stabilization keep every report PendingHardware. Dual-channel proof applied only to fresh reviews; raw reports unchanged. Hosted CI explicitly deferred.",
+      "status": "Collector v3 conservative render bound validated in real 4160-frame diagnostic; full 3-run render/thermal acceptance unverified and owner-waived for M0 closure. Two pre-measurement offline overload failures and one inventory-access failure retained. All historical FAIL/PendingHardware reports unchanged. Hosted CI explicitly deferred.",
       "leaseExpiry": null
     },
     {
@@ -217,5 +217,26 @@
     "status": "Three completed native captures; all PendingHardware. Concurrent sensors bracket each measured window, 90/90/89 samples; thermal flags No at sampled points. Thermal stabilization and incomplete counters remain for review.",
     "sourceChanges": "Evidence/docs/coordination only; no game code, settings, package, fixture/schema or workload changes",
     "readyForParallelIntegration": false
+  },
+  "milestoneAcceptance": {
+    "milestone": "M0",
+    "status": "CLOSED_WITH_USER_WAIVER",
+    "closedCount": 1,
+    "totalCount": 8,
+    "acceptedBy": "Max (project owner)",
+    "date": "2026-11-12",
+    "decision": "docs/decisions.md#adr-017--accepted-m0-owner-waiver-of-remaining-hardware-validation",
+    "hardwareValidation": "Unverified; waived for M0 closure only. Automated failed/pending reports unchanged.",
+    "hostedCI": "User-deferred",
+    "nextMilestoneAssigned": false,
+    "runtimeBuildSourceCommit": "19118a029d45ff5a930d00525565465cf6740c18",
+    "collectionSourceCommit": "40de8f9405f1fa8414a338ccfcca8a7f643466bb",
+    "evidenceDirectory": "Artifacts/m0-foundation/40de8f9405f1fa8414a338ccfcca8a7f643466bb/owner-acceptance-20261112",
+    "unverifiedItems": [
+      "M0-RT-001",
+      "M0-THERM-001",
+      "Preconditioning hitch causes"
+    ],
+    "supersedesHistoricalDisposition": true
   }
 }

@@ -2,6 +2,8 @@
 
 Each folder contains only its milestone entry, detailed sequence, contracts/integration, agent assignment cards, validation/acceptance and handoff record. Requirements and feature specifications live once in the docs root, reached through relative links from each milestone. Code and accepted artifacts from prerequisite milestones are still required to execute.
 
+Current disposition, 2026-11-12: one of eight milestones closed. M0 has owner acceptance with an explicit hardware-validation waiver; M1–M7 have not started. See the [M0 handoff](m0-foundation/handoff.md) for actual passing checks and retained unverified gates.
+
 | Milestone | Implementation pack |
 |---|---|
 | M0 — Foundation | [Open pack](m0-foundation/index.md) |

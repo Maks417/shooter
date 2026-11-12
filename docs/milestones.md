@@ -2,6 +2,8 @@
 
 Milestones are dependency gates, not calendar promises. [Backlog](backlog.md) gives ordered tasks. No milestone is complete until implementation exists and attached evidence passes [validation](validation.md).
 
+Owner disposition on 2026-11-12: **M0 closed with explicit user waiver; one of eight milestones closed.** This recorded exception accepts the implemented foundation while leaving render/thermal acceptance and observed preconditioning pauses unverified. It is not an all-gates-pass claim; see the [M0 handoff](milestones/m0-foundation/handoff.md). M1–M7 remain unstarted, and future performance gates are unchanged.
+
 | Gate | Deliverable | Required exit evidence |
 |---|---|---|
 | M0 Foundation | Pinned Unity/URP, asmdefs, pure contracts, fake world, Low/Balanced/High settings, build scripts, benchmark shell | Clean client and headless builds, contract fixtures, B01 capture on reference machine, provenance policy, toolchain lock |

@@ -1,6 +1,6 @@
 # M0 — Foundation — implementation pack
 
-Status: implemented, acceptance pending, 2026-11-12. Locked editor/C0-v1, clean client/server builds and smoke, 60 pure tests, 11 Unity tests, allocation controls and bounded failure shutdown pass. Three final monitored B01 captures have complete GPU/allocation evidence; four render timings and thermal stabilization remain pending. No milestone is closed. Exact evidence and owners are in [handoff](handoff.md). Canonical tasks T001–T004; WP-00/WP-09 held by one integrator. No combat performance claim is made.
+Status: closed with user waiver, 2026-11-12; one of eight milestones closed. Locked editor/C0-v1, clean client/server builds and smoke, 62 pure tests, 11 Unity tests, allocation controls and bounded failure shutdown pass. Full reference render/thermal acceptance remains unverified and is explicitly waived for M0 closure by Max; historical failures and pending reports remain intact. Hosted CI is deferred. Exact evidence and owner decision are in [handoff](handoff.md). Canonical tasks T001–T004; WP-00/WP-09 held by one integrator. M1 has not started; no combat performance claim is made.
 
 ## Goal and entry gate
 
