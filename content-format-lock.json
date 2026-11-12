@@ -15,9 +15,9 @@
     }
   ],
   "sources": {
-    "docs/content-format.md": "41a435104deed31058409196ab34b70a2ec096a2004130819b9bb572200eef65",
-    "docs/content-schemas/box-collision.schema.json": "e69dcd849b2738373e04713d58f227b343fae6c781411512324f075de01043da",
-    "docs/content-schemas/manifest.schema.json": "a602eac6b5a948fdc9ebe85def496ba2e9168a7c0ec52ca47c0e088f4bff4b27",
+    "docs/content-format.md": "bf62d3e7dadbbb66840a69c8fc60e80bf64c7130837a9308bc10d2db3549d157",
+    "docs/content-schemas/box-collision.schema.json": "17277a6adf06647ded09757975b580646a4eab572c754c148c0142e8f803d5d6",
+    "docs/content-schemas/manifest.schema.json": "75a05692bc925f130dd4ff27874cff51cce5018b2421c71b21dbe8e293ec931c",
     "Tools/Generation.Tests/CodecFixtures/generate_vectors.py": "5ef90986cc65590226deec5e35dcfd0d6b0fafa26cb181d49ba6d67870b96489",
     "Tools/Generation.Tests/CodecTests.cs": "ab606b851ca802673d6c8891185beb78d3eebde8901d68ca9fec82ddb4c20d48",
     "UnityProject/Assets/Shooter/Generation/Core/Canonical/CanonicalJson.cs": "64bc7ea7f4bcf1ecde9dfaec40a71b4cd575e3c0ae59b957614fc4e1498aecc9",
@@ -31,11 +31,11 @@
     "UnityProject/Assets/Shooter/Generation/Core/Codecs/GeometryCodec.cs": "c13ceb2fa80565c186f8370913fcc8971f29035c9840323308153a1e2f655072",
     "UnityProject/Assets/Shooter/Generation/Core/Codecs/GeometryCodec.cs.meta": "cdb79683c4fc42e7f07f25232e05301303a97106de5b949005f64bdb067acd13",
     "UnityProject/Assets/Shooter/Generation/Core/Identity/ContentIdentity.cs": "20fe157e4f0dd5c49bc75be49c3e926d2c2b3ff918fb362cb75603ffcca1d9bc",
-    "UnityProject/Assets/Shooter/Generation/Core/Identity/ContentIdentity.cs.meta": "49d4d9b2c9822c6bfd2944ea5566a7ad4963731550ecc84af9dc66413a67fdf5",
-    "UnityProject/Assets/Shooter/Generation/Core/Manifests/ArtifactBounds.cs": "03279c44391b15f09e5675d1d53f36f9f9dab7cb263ab6cbe51f11e5c44b4095",
-    "UnityProject/Assets/Shooter/Generation/Core/Manifests/ArtifactBounds.cs.meta": "ace883ae5e4470bbe75a2710304d1f748f6533bf3582dd769a9b1699d0f9e99d",
+    "UnityProject/Assets/Shooter/Generation/Core/Identity/ContentIdentity.cs.meta": "71ab27cc24f9e48c8e3f6b40bc944b5905cd8ba750e36ab64f2842265c0789dc",
+    "UnityProject/Assets/Shooter/Generation/Core/Manifests/ArtifactBounds.cs": "341d507e4816729feeb87882f0a672430bb3dfc8649b4f0ca5d56a98ebd1fef6",
+    "UnityProject/Assets/Shooter/Generation/Core/Manifests/ArtifactBounds.cs.meta": "a2f1526abfcd06feaf40c48370ac1d2ceb81e063a6fd358468ad396111e1c92b",
     "UnityProject/Assets/Shooter/Generation/Core/Manifests/ContentManifest.cs": "ea539bec3191fefab4f9706cef1163e42840d8fbfad82171ae93d3d70efef8e2",
-    "UnityProject/Assets/Shooter/Generation/Core/Manifests/ContentManifest.cs.meta": "5d25406ba394d7c1801a4c822c3b5fa670ae3c2b35d926c220d485234481e543",
+    "UnityProject/Assets/Shooter/Generation/Core/Manifests/ContentManifest.cs.meta": "1836155bcf9c5ad53bf7a5992ed89f81e69749ab2fa3a4c765994c1acb4dc167",
     "UnityProject/Assets/Shooter/Generation/Core/Random/NamedRandomStream.cs": "ee98adb79260b2f949c3aa0555b3ca77000cbd77b5a129ea219c19ae46931ed4",
     "UnityProject/Assets/Shooter/Generation/Core/Random/NamedRandomStream.cs.meta": "2fda728e12d34554a50118ed0055a470e1e26f5c4e735f00b820b4702523c171",
     "UnityProject/Assets/Shooter/Generation/Core/Random/Pcg32.cs": "fcf068cee7d73386bd5f5948828e249cc26fb2285ed8acf53111a72dc49cd419",
@@ -46,6 +46,7 @@
     "UnityProject/Assets/Shooter/Generation/Core/Recipes/CpuBoxCollisionGenerator.cs.meta": "0a440d4796eec346f762d19d346ec0507a21793f5c70e8126ed073c7dd90e4ee",
     "UnityProject/Assets/Shooter/Generation/Core/Recipes/GeneratorFingerprint.cs": "d9675fc3270cc94713a67cd02fc101a26abc8904e4225bd6bd55cf2683315e3e",
     "UnityProject/Assets/Shooter/Generation/Core/Recipes/GeneratorFingerprint.cs.meta": "9289e5dc28635fbb110e1336fd071dca1b55431c52026684591a8bf57275eeb3",
-    "UnityProject/Assets/Shooter/Generation/Recipes/box-collision.json": "8a30c122cd40fc5b31e1de724794de1a99aae7c7b8ed93cbf42e39d4312755cc"
-  }
+    "UnityProject/Assets/Shooter/Generation/Recipes/box-collision.json": "1f14eebbcf45d018b9cf32e5419d96815636b0e84d822b65bb18bd259cbcd564"
+  },
+  "sourceBytePolicy": "Repository LF text bytes as enforced by .gitattributes; newline-only initial lock correction under ADR-019"
 }

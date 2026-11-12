@@ -15,14 +15,18 @@ namespace Shooter.Generation
     /// <summary>Only schema-validated recipes enter compilation; generators are explicitly injected.</summary>
     public sealed class CompilationNode
     {
-        public BoxRecipe Source { get; }
+        public ValidatedRecipe Source { get; }
         public GenerationRequest Request { get; }
         public IAssetGenerator Generator { get; }
         public ContentId Id { get; }
+        public FrozenList<string> MaterialLayerIds { get; }
         public CompilationNode(ReadOnlySpan<byte> source, string platform, string profile, ContentId toolchainHash, IAssetGenerator generator)
+            : this(ValidatedRecipe.FromBox(source), platform, profile, toolchainHash, generator) { }
+        public CompilationNode(ValidatedRecipe source, string platform, string profile, ContentId toolchainHash, IAssetGenerator generator, IReadOnlyList<string>? materialLayerIds = null)
         {
-            Source = BoxRecipe.Parse(source);
+            Source = source ?? throw new ArgumentNullException(nameof(source));
             Request = new GenerationRequest(Source.Document, platform, profile, toolchainHash);
+            MaterialLayerIds = new FrozenList<string>(materialLayerIds ?? Array.Empty<string>(), 256);
             Generator = generator ?? throw new ArgumentNullException(nameof(generator));
             Id = ContentIdentity.ContentKey(Source.SourceHash, Source.Document.GeneratorId, Source.Document.GeneratorVersion,
                 Source.Document.SeedValue, Source.Document.Dependencies, platform, profile, 1, toolchainHash);
@@ -146,7 +150,7 @@ namespace Shooter.Generation
             GenerationResult result = node.Generator.Generate(node.Request, cancel);
             cancel.ThrowIfCancellationRequested();
             if (result.Error != ErrorCode.None) throw new Failure(result.Error, "Generator rejected recipe: " + result.Error);
-            var manifest = ContentManifest.Create(node.Request, node.Source.SourceHash, result);
+            var manifest = ContentManifest.Create(node.Request, node.Source.SourceHash, result, node.MaterialLayerIds);
             if (manifest.ContentId != node.Id) throw new FormatException("Compiler identity mismatch.");
             byte[] manifestBytes = manifest.Encode();
             if (previous != null)
