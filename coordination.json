@@ -3,7 +3,7 @@
   "updatedDate": "2026-11-12",
   "integrator": "Codex (M1 integrator)",
   "branch": "main",
-  "baseCommit": "ba44c9f1f5cdd4fa8be044a04b4af528306d06fa",
+  "baseCommit": "912be99bdc47dd2112e0379cf641a6e1f5220e28",
   "contractVersion": "C0-v1",
   "readyForParallelIntegration": true,
   "packages": [
@@ -224,7 +224,7 @@
     {
       "packageId": "WP-01/P02/codecs",
       "owner": "/root/codecs",
-      "branch": "codex/m1-p02-codecs",
+      "branch": "main",
       "baseCommit": "ce7abbac96fd55dc15501c17135ea44c36086bac",
       "paths": [
         "UnityProject/Assets/Shooter/Generation/Core/Codecs",
@@ -237,13 +237,15 @@
         "docs/content-format.md"
       ],
       "contractVersion": "C0-v1",
-      "status": "Assigned isolated pure source/test worker; no Unity editor or shared edits",
-      "leaseExpiry": null
+      "status": "Integrated and validated; runtime draft finished by integrator; shared format frozen under ADR-018",
+      "leaseExpiry": null,
+      "integratedFromBranch": "codex/m1-p02-codecs",
+      "workspaceStatus": "Merged main ancestor; evidence preserved/hash-verified; temporary worktree and branch removed"
     },
     {
       "packageId": "WP-01/P02/recipes",
       "owner": "/root/recipes",
-      "branch": "codex/m1-p02-recipes",
+      "branch": "main",
       "baseCommit": "ce7abbac96fd55dc15501c17135ea44c36086bac",
       "paths": [
         "UnityProject/Assets/Shooter/Generation/Core/Recipes",
@@ -256,13 +258,15 @@
         "docs/content-format.md"
       ],
       "contractVersion": "C0-v1",
-      "status": "Assigned isolated pure source/test worker; no Unity editor or shared edits",
-      "leaseExpiry": null
+      "status": "Integrated and validated; runtime draft finished by integrator; shared format frozen under ADR-018",
+      "leaseExpiry": null,
+      "integratedFromBranch": "codex/m1-p02-recipes",
+      "workspaceStatus": "Merged main ancestor; evidence preserved/hash-verified; temporary worktree and branch removed"
     },
     {
       "packageId": "WP-01/P02/runtime",
       "owner": "/root/runtime",
-      "branch": "codex/m1-p02-runtime",
+      "branch": "main",
       "baseCommit": "1627230456939ec583a89dd80859aab102236fdd",
       "paths": [
         "UnityProject/Assets/Shooter/Content/Runtime",
@@ -273,7 +277,40 @@
         "P02 ArtifactCodec/GeometryCodec"
       ],
       "contractVersion": "C0-v1",
-      "status": "Assigned bounded byte-cache reader and reference-counted content store; pure worker, no editor/shared edits",
+      "status": "Integrated and validated; runtime draft finished by integrator; shared format frozen under ADR-018",
+      "leaseExpiry": null,
+      "integratedFromBranch": "codex/m1-p02-runtime",
+      "workspaceStatus": "Merged main ancestor; evidence preserved/hash-verified; temporary worktree and branch removed"
+    },
+    {
+      "packageId": "WP-01/P02/integration",
+      "owner": "Codex integrator",
+      "branch": "main",
+      "baseCommit": "ce7abba",
+      "paths": [
+        "UnityProject/Assets/Shooter/Generation/Core/Manifests",
+        "UnityProject/Assets/Shooter/Generation/Editor",
+        "UnityProject/Assets/Shooter/Generation/Recipes",
+        "UnityProject/Assets/Shooter/Bootstrap/Editor",
+        "UnityProject/Assets/Shooter/Settings/provenance.json",
+        "UnityProject/Assets/Shooter/Tests/EditMode",
+        "Tools/ContentCompiler",
+        "Tools/ContentRuntime",
+        "Tools/Generation.Tests",
+        "Tools/Test-Generation.ps1",
+        "Tools/Compile-Content.ps1",
+        "Tools/verify_content_format.py",
+        "Tools/verify_content_schemas.py",
+        "content-format-lock.json",
+        "docs",
+        "coordination.json"
+      ],
+      "dependencies": [
+        "P01",
+        "C0-v1"
+      ],
+      "contractVersion": "C0-v1",
+      "status": "P02 source integrated and tested; manifests/compiler/formats and shared composition owned serially; full M1 remains open",
       "leaseExpiry": null
     }
   ],
@@ -373,6 +410,14 @@
     "scope": "P02 only: recipes/codecs, manifests, DAG compiler/cache, content leases, Editor entry and tests",
     "format": "docs/content-format.md",
     "contractVersion": "C0-v1 unchanged",
-    "status": "Assigned; no dependent P03/P04 merge before codec/manifest freeze validation"
+    "status": "P02 diagnostic skeleton complete: 150 generation/content tests,62 contracts,9 EditMode,5 PlayMode,client/server release builds+smoke,cold/warm/force/dry-run and source provenance pass; M1 remains open",
+    "integrationCommit": "912be99bdc47dd2112e0379cf641a6e1f5220e28",
+    "formatLock": "content-format-lock.json",
+    "formatVersion": 1,
+    "decision": "docs/decisions.md#adr-018--accepted-initial-p02-compiler-format-and-byte-cache-boundary",
+    "evidence": "Artifacts/m1-p02",
+    "cleanupEvidence": "Artifacts/m1-p02/worker-preservation/preservation.json",
+    "remaining": "P03/P04 explicit feature ownership and generator registry additions, P05 rig, full slice content/performance acceptance",
+    "summaryEvidence": "Artifacts/m1-p02/validation-summary.json"
   }
 }

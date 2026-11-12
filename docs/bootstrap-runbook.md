@@ -38,12 +38,12 @@ Add provenance allowlist, schema/docs checks and client/server smoke jobs. After
 |---|---|---|
 | Pure tests (implemented) | `Tools/Test-Contracts.ps1` | Fresh TRX + JUnit `test-results.xml`, run.json with source/fixture hashes and pinned SDK; nonzero on failure/skip/timeout |
 | EditMode/PlayMode (implemented) | `Tools/Test-Unity.ps1 -Mode EditMode` / `-Mode PlayMode` | Editor log + fresh XML; failure/skip/zero tests never pass |
-| Compile content (explicit M0 diagnostic) | `Tools/Compile-Content.ps1 -RecipeSet slice-v1 -Profile Low` | Nonzero not-yet-implemented diagnostic; no fabricated cache manifest |
+| Compile P02 collision diagnostic | `Tools/Compile-Content.ps1 -RecipeSet box-collision-v1 -Profile Low` | Verified immutable collision cache and byte lease; full slice-v1 remains unsupported |
 | Build (implemented) | `Tools/Build.ps1 -Target Client` / `-Target Server` | Release player, source/content/toolchain manifest and packed-source audit |
 | Smoke (implemented) | `Tools/Smoke.ps1 -BuildRunDirectory <build-run>` | Ready marker, ≥60 ticks, clean exit; server client-assembly/graphics exclusion |
 | Benchmark (implemented) | `Tools/Benchmark.ps1 -BuildRunDirectory <client-build-run> -Workload B01-minimal-v1 -Profile Low -RunIndex 1` | Raw frame/tick CSV, external memory samples, machine and versioned result JSON; no stale/synthetic pass |
 
-These wrappers and `ShooterBuild` entry points now exist. Full offline content compilation remains M1–M3 work: M0 draws the fixed box/floor directly from numeric code and reports this limitation explicitly. `CompileContent` does not pretend to implement a compiler or a slice cache.
+These wrappers and `ShooterBuild` entry points now exist. Full offline content compilation remains M1–M3 work: M0 draws the fixed box/floor directly from numeric code and reports this limitation explicitly. P02 now supplies a real diagnostic compiler/cache, while the full slice cache remains pending.
 
 ## Fresh checkout and locked editor
 
@@ -150,4 +150,10 @@ M0 was subsequently closed with the owner's explicit waiver under [ADR-017](deci
 
 `Tools/Test-Generation.ps1 -Offline` builds the BCL-only production source under `Generation/Core` through `Tools/Generation/Shooter.Generation.Core.csproj` and runs the independent fixture/negative tests in `Tools/Generation.Tests`. It uses the existing pinned SDK/test dependencies and frozen C0 guard, writing fresh TRX/XML and a source/toolchain/seed report under `Artifacts/m1-procedural-feasibility/<source-commit>/<run-id>/`. Offline advisory lookup stays PendingNetwork. The default command requests online advisory checks. This is a P01 primitive check, not a compiler, content, release-player or hardware pass.
 
-The locked-editor `Tools/Test-Unity.ps1 -Mode EditMode` also compiles the generation assembly and executes two generation smoke cases. Its shared wrapper still writes into the historical `Artifacts/m0-foundation` root; retain that exact path in evidence. P02 must implement schema validation, codec freeze, compiler/cache and lease tests before feature integration. See the [M1 handoff](milestones/m1-procedural-feasibility/handoff.md).
+The locked-editor `Tools/Test-Unity.ps1 -Mode EditMode` also compiles the generation assembly and executes two generation smoke cases. Its shared wrapper still writes into the historical `Artifacts/m0-foundation` root; retain that exact path in evidence. P02 schema validation, format freeze, compiler/cache and byte-lease tests now exist. Full feature content and Unity resource installation remain pending. See the [M1 handoff](milestones/m1-procedural-feasibility/handoff.md).
+
+## M1 P02 compiler and byte-cache checks
+
+`Tools/Test-Generation.ps1 -Offline` now runs 150 P01/P02 cases across the pure generation, runtime byte-store and Editor-only compiler projects. It checks both C0 and the new frozen `content-format-lock.json` before restore/build. Offline advisory checks remain PendingNetwork. `Tools/Compile-Content.ps1 -CacheRoot <repository Artifacts path>` runs the real numeric collision diagnostic. Reuse that exact cache root for a warm run; add `-Force` to regenerate and compare every immutable byte, or `-DryRun` to validate the recipe and key without creating content. A High request must reuse the same gameplay identity as Low. Unknown recipe sets reject; no default fake generator is composed.
+
+`Tools/verify_content_format.py` checks the initial source/schema registry. Use the pinned `.local/fixtures-venv/Scripts/python.exe Tools/verify_content_schemas.py --manifest <published manifest.json> --report <Artifacts report.json>` to validate the new production schemas with full Draft 2020-12 validation. These are separate from frozen C0 fixtures. The existing wrapper report root remains `Artifacts/m0-foundation` for Unity entry/test/build calls; retain actual paths rather than rename evidence. `ShooterBuild.WriteSettingsProvenance` regenerated the source proof after the editor entry change; generated payloads were not hand-edited. See [ADR-018](decisions.md#adr-018--accepted-initial-p02-compiler-format-and-byte-cache-boundary) and [handoff](milestones/m1-procedural-feasibility/handoff.md).

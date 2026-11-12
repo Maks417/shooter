@@ -31,3 +31,5 @@ Use [performance allocations](../../performance.md); numbers are targets until m
 ## Change control
 
 An agent submits shared boundary changes to integrator with old/new fixtures, affected owners and migration plan before dependent merges. Re-run [validation](validation-acceptance.md), preserve previous passing tag, and update shared specifications in the docs root and verify all milestone links. Record pending integration honestly.
+
+The P02 initial codec/manifest/recipe freeze now exists in [content format v1](../../content-format.md) and root `content-format-lock.json`, accepted under [ADR-018](../../decisions.md#adr-018--accepted-initial-p02-compiler-format-and-byte-cache-boundary). Codecs remain outside unchanged C0. P03/P04 may target these APIs once explicitly assigned; socket semantics and soldier joint registry still require their own later freeze.

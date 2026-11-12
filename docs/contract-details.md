@@ -62,3 +62,5 @@ ContentLease exposes ContentId, Kind, read-only verified payload and Dispose. Co
 ## Freeze artifacts
 
 At F02 implement all core port/DTO types and negative/lease tests; at P02 freeze exact typed binary geometry formats before worker adapters merge. Network wire schema freezes at N01 after transport selection. Do not force future codecs into M0 or leave motor/prediction state unspecified until M5. [Fixtures](fixtures/index.md) provide independent examples, not an exhaustive replacement for C# contracts.
+
+P02 now implements the initial field-by-field compiler codecs in `Generation/Core/Codecs`, separately frozen by root `content-format-lock.json`; see [format v1](content-format.md). C0 DTO/port bytes and specification fixtures are unchanged.

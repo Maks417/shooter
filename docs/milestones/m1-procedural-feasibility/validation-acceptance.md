@@ -1,6 +1,6 @@
 # M1 — Procedural feasibility — validation and acceptance
 
-Status: P01 foundations tested (69 pure generation, 62 existing contracts/foundation, eight EditMode tests); all full-milestone suites below remain pending. See [handoff](handoff.md) for actual report directories and limits. Use [global validation](../../validation.md) and [build lanes](../../build-ci.md); this file selects the checks required at this stage. Implement actual test/build entry points before reporting execution. Absence of hardware, credentials or dependencies means pending evidence, not PASS.
+Status: P01/P02 foundations tested (150 pure generation/content and 62 existing contracts/foundation tests); actual locked-editor collision compilation and byte loading pass. Full-milestone visual/rig/slice resource suites below remain pending. See [handoff](handoff.md) for actual report directories and limits. Use [global validation](../../validation.md) and [build lanes](../../build-ci.md); this file selects the checks required at this stage. Implement actual test/build entry points before reporting execution. Absence of hardware, credentials or dependencies means pending evidence, not PASS.
 
 | Suite | Scenario | Required result |
 |---|---|---|

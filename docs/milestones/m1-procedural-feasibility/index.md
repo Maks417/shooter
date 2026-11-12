@@ -1,6 +1,6 @@
 # M1 — Procedural feasibility — implementation pack
 
-Status: **IN PROGRESS**, 2026-11-12. P01 deterministic foundations are implemented with 69 pure tests and eight passing Unity EditMode tests. Compiler, generated geometry/materials and rig acceptance remain pending; no new playable content or performance claim. Canonical backlog tasks: T005–T010. Assigned packages: WP-01, WP-02, WP-03, WP-04.
+Status: **IN PROGRESS**, 2026-11-12. P01/P02 foundations now include a frozen typed format, CPU collision diagnostic compiler/cache and bounded byte leases, with 150 pure generation/content tests passing. Generated visual geometry/materials, rig and full-slice acceptance remain pending; no new playable content or performance claim. Canonical backlog tasks: T005–T010. Assigned packages: WP-01, WP-02, WP-03, WP-04.
 
 ## Goal and entry gate
 
