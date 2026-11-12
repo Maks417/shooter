@@ -1,7 +1,9 @@
 [CmdletBinding()]
 param([Parameter(Mandatory)][string]$BuildRunDirectory,
     [ValidateSet('B01-minimal-v1')][string]$Workload = 'B01-minimal-v1',
-    [ValidateSet('Low')][string]$Profile = 'Low', [ValidateRange(1,3)][int]$RunIndex = 1, [switch]$Diagnostic)
+    [ValidateSet('Low')][string]$Profile = 'Low', [ValidateRange(1,3)][int]$RunIndex = 1, [switch]$Diagnostic,
+    [string]$HardwareEvidence = '', [switch]$DiagnosticAllocate)
+if ($DiagnosticAllocate -and !$Diagnostic) { throw 'Allocation injection is diagnostic only.' }
 . (Join-Path $PSScriptRoot 'Unity.Common.ps1')
 $unity = Get-ShooterUnity
 $buildRoot = (Resolve-Path -LiteralPath $BuildRunDirectory).Path
@@ -25,10 +27,15 @@ try {
     $hardwarePath = Join-Path $run.Path 'hardware.json'; $hardware | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $hardwarePath -Encoding utf8NoBOM
     $player = Join-Path $buildRoot 'player/Shooter.exe'; $log = Join-Path $run.Path 'player.log'
     $arguments = @('-force-d3d11','-logFile',$log,'-shooterProfile',$Profile,'-shooterBenchmark',$Workload,'-shooterBenchmarkOutput',$run.Path,'-shooterBenchmarkDiagnostic',([bool]$Diagnostic).ToString().ToLowerInvariant())
+    if ($DiagnosticAllocate) { $arguments += @('-shooterDiagnosticAllocate', 'true') }
+    $run.Report.commands += [ordered]@{ executable=$player; arguments=$arguments }
     Invoke-ShooterProcess -Executable $player -ProcessArguments $arguments -WorkingDirectory (Split-Path -Parent $player) -LogPath (Join-Path $run.Path 'process.log') -MemorySamplePath (Join-Path $run.Path 'memory.csv') -TimeoutSeconds $(if ($Diagnostic) { 60 } else { 330 })
     if (!(Test-Path -LiteralPath $log) -or !(Select-String -LiteralPath $log -SimpleMatch 'SHOOTER_BENCHMARK_COMPLETE' -Quiet) -or (Select-String -LiteralPath $log -SimpleMatch 'SHOOTER_FAILURE' -Quiet)) { throw 'Player capture failed or did not finish.' }
     $output = Join-Path $run.Path $(if ($Diagnostic) { 'diagnostic-result.json' } else { 'benchmark-result.json' })
-    & python (Join-Path $PSScriptRoot 'analyze_benchmark.py') --capture $run.Path --build-manifest $buildManifest --hardware $hardwarePath --run-index $RunIndex --output $output
+    $analysisArgs = @((Join-Path $PSScriptRoot 'analyze_benchmark.py'), '--capture', $run.Path, '--build-manifest', $buildManifest, '--hardware', $hardwarePath, '--run-index', $RunIndex, '--output', $output)
+    if ($HardwareEvidence) { $analysisArgs += @('--hardware-evidence', (Resolve-Path -LiteralPath $HardwareEvidence).Path, '--evidence-application', (Join-Path $run.Path 'evidence-application.json')) }
+    $run.Report.commands += [ordered]@{ executable='python'; arguments=$analysisArgs }
+    & python @analysisArgs
     if ($LASTEXITCODE -ne 0) { throw 'Capture analysis failed.' }
     $result = Get-Content -LiteralPath $output -Raw | ConvertFrom-Json
     $run.Report['gateStatus'] = $result.gateStatus

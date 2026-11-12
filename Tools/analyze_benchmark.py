@@ -6,6 +6,7 @@ import hashlib
 import json
 import math
 from pathlib import Path
+from hardware_evidence import apply_evidence
 
 
 def percentile(values, probability):
@@ -28,10 +29,17 @@ def utc(text):
     return datetime.fromisoformat(text.replace("Z", "+00:00"))
 
 
-def analyze(capture_path, build_path, hardware_path, run_index):
+def analyze(capture_path, build_path, hardware_path, run_index, evidence_path=None, application_path=None):
     meta = json.loads((capture_path / "capture.json").read_text(encoding="utf-8-sig"))
     build = json.loads(build_path.read_text(encoding="utf-8-sig"))
     hardware = json.loads(hardware_path.read_text(encoding="utf-8-sig"))
+    if evidence_path is not None:
+        hardware, application = apply_evidence(Path(__file__).resolve().parents[1], evidence_path, hardware, meta, capture_path / "capture.json")
+        application["rawHardwareSha256"] = sha(hardware_path)
+        if application_path is not None:
+            if application_path.exists():
+                raise ValueError("Refusing to overwrite an evidence application report")
+            application_path.write_text(json.dumps(application, indent=2) + "\n", encoding="utf-8")
     rows, ticks = read_rows(capture_path / "frames.csv"), read_rows(capture_path / "ticks.csv")
     if build["result"] != "Succeeded" or build["target"] != "Client" or build["backend"] != "IL2CPP" or build["development"]:
         raise ValueError("Acceptance requires a release IL2CPP client")
@@ -45,9 +53,12 @@ def analyze(capture_path, build_path, hardware_path, run_index):
     frame_values = [float(row["frameMs"]) for row in rows]
     frame_ms = {key: percentile(frame_values, p) for key, p in [("p50", .5), ("p95", .95), ("p99", .99), ("max", 1)]}
     allocations = [int(t["managedTickBytes"]) for t in ticks]
-    if any(value < 0 for value in allocations):
+    calibrated = meta.get("collectorVersion") == 2 and meta.get("tickAllocationAvailable") is True and meta.get("allocationMainControlBytes", 0) >= 4352
+    unavailable_tick = meta.get("collectorVersion") == 2 and meta.get("tickAllocationAvailable") is False
+    if any(value < 0 and not (unavailable_tick and value == -1) for value in allocations):
         raise ValueError("Invalid allocation sample")
-    allocated_tick = max(allocations)
+    raw_allocated_tick = max(allocations)
+    allocated_tick = raw_allocated_tick if calibrated else None
     simulation = [float(t["simulationMs"]) for t in ticks]
     simulation_p95 = percentile(simulation, .95)
     if meta["diagnostic"]:
@@ -56,6 +67,8 @@ def analyze(capture_path, build_path, hardware_path, run_index):
     if (meta["warmupSeconds"], meta["captureSeconds"]) != (60, 180):
         raise ValueError("B01 acceptance durations were changed")
     unavailable = []
+    if not calibrated:
+        unavailable.append("managedTickBytes: allocation positive control unavailable/unverified; legacy zeros are not measurements")
 
     def measured(column, probability=.95):
         values = [float(row[column]) for row in rows]
@@ -66,6 +79,9 @@ def analyze(capture_path, build_path, hardware_path, run_index):
 
     main, render, gpu = measured("mainMs"), measured("renderMs"), measured("gpuMs")
     allocated_frame = measured("managedFrameBytes", 1)
+    if meta.get("collectorVersion") != 2 or meta.get("frameAllocationAvailable") is not True or meta.get("allocationWorkerControlBytes", 0) < 4352:
+        allocated_frame = None
+        unavailable.append("managedFrameBytes: all-thread allocation positive control unavailable/unverified")
     memory = [r for r in read_rows(capture_path / "memory.csv") if utc(meta["captureStartUtc"]) <= utc(r["utc"]) <= utc(meta["captureEndUtc"])]
     private_samples = [int(r["privateBytes"]) for r in memory]
     rss_samples = [int(r["rssBytes"]) for r in memory]
@@ -84,7 +100,7 @@ def analyze(capture_path, build_path, hardware_path, run_index):
         unavailable.append("reference hardware/power conditions not fully verified")
     fail = frame_ms["p95"] > 33.33 or frame_ms["p99"] > 50 or frame_ms["max"] > 100
     fail |= sum(50 < value <= 100 for value in frame_values) > 3
-    fail |= allocated_tick > 0 or simulation_p95 > 6 or sum(simulation) / len(simulation) > 4
+    fail |= (allocated_tick is not None and allocated_tick > 0) or simulation_p95 > 6 or sum(simulation) / len(simulation) > 4
     for value, limit in [(main, 12), (render, 8), (gpu, 27), (private_peak, 3 * 1024 ** 3), (allocated_frame, 0)]:
         fail |= value is not None and value > limit
     if not all(hardware.get(key) for key in ["thermalStabilized", "nvmeVerified"]):
@@ -108,8 +124,12 @@ def main():
     parser.add_argument("--hardware", type=Path, required=True)
     parser.add_argument("--run-index", type=int, choices=(1, 2, 3), default=1)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--hardware-evidence", type=Path)
+    parser.add_argument("--evidence-application", type=Path)
     args = parser.parse_args()
-    report = analyze(args.capture, args.build_manifest, args.hardware, args.run_index)
+    if args.output.exists():
+        raise ValueError("Refusing to overwrite a benchmark result; use a new review directory")
+    report = analyze(args.capture, args.build_manifest, args.hardware, args.run_index, args.hardware_evidence, args.evidence_application)
     args.output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(report, indent=2))
 

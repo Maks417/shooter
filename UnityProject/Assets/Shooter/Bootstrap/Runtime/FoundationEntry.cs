@@ -55,6 +55,7 @@ namespace Shooter.Bootstrap
                 simulation = new FoundationSimulation();
                 CompositionPolicy.RequireReal(world, navigation, simulation);
                 clock = new FixedTickClock(IsServer);
+                AllocationMeter.Initialize();
                 tickAction = Step;
                 string seconds = CommandLine("-shooterSmokeSeconds", "0");
                 smokeSeconds = double.Parse(seconds, CultureInfo.InvariantCulture);
@@ -84,9 +85,9 @@ namespace Shooter.Bootstrap
         }
         private void Step(uint tick)
         {
-            long before = GC.GetAllocatedBytesForCurrentThread(), start = Stopwatch.GetTimestamp();
+            long before = AllocationMeter.ThreadBytes, start = Stopwatch.GetTimestamp();
             simulation.Step(tick, ReadOnlyMemory<InputCommand>.Empty);
-            LastStepAllocatedBytes = GC.GetAllocatedBytesForCurrentThread() - before;
+            LastStepAllocatedBytes = before < 0 ? -1 : AllocationMeter.ThreadBytes - before;
             LastStepMilliseconds = (Stopwatch.GetTimestamp() - start) * 1000.0 / Stopwatch.Frequency;
             StepCompleted?.Invoke(tick, LastStepMilliseconds, LastStepAllocatedBytes);
         }

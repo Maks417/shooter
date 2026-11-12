@@ -11,7 +11,7 @@ namespace Shooter.Bootstrap
     [DefaultExecutionOrder(1000)]
     public sealed class FoundationBenchmark : MonoBehaviour
     {
-        private struct FrameSample { public double Frame, Main, Render, Gpu; public long Allocated; public uint Tick; }
+        private struct FrameSample { public double Frame; public long Allocated, EndTimestamp; public uint Tick; }
         private struct TickSample { public uint Tick; public double Ms; public long Allocated; }
         [Serializable] private sealed class Metadata
         {
@@ -22,6 +22,10 @@ namespace Shooter.Bootstrap
             public string captureStartUtc, captureEndUtc;
             public float[] cameraMeters;
             public bool frameTimingEnabled, mainRecorderAvailable, renderRecorderAvailable, allocationRecorderAvailable;
+            public int collectorVersion = 2, mappedTimings, ambiguousTimings, drainFrames;
+            public bool frameAllocationAvailable, tickAllocationAvailable, timestampFrequencyMatches;
+            public long allocationMainControlBytes, allocationWorkerControlBytes, stopwatchFrequency, nativeCpuFrequency;
+            public string allocationMethod, allocationDiagnostic;
         }
         [Serializable] private sealed class FailureMetadata
         {
@@ -34,13 +38,20 @@ namespace Shooter.Bootstrap
         }
         private readonly FrameSample[] frames = new FrameSample[262144];
         private TickSample[] ticks;
-        private readonly FrameTiming[] timings = new FrameTiming[1];
+        private readonly FrameTiming[] timings = new FrameTiming[32];
+        private readonly FrameTimingLedger ledger = new FrameTimingLedger(262144);
         private ProfilerRecorder mainRecorder, renderRecorder, allocationRecorder;
         private FoundationEntry authority;
         private string output;
         private int frameCount, tickCount, warmupSeconds, captureSeconds;
         private uint firstTick, endTick;
-        private long lastFrame;
+        private long previousTimestamp, beforePreviousTimestamp, previousAllocated;
+        private uint previousTick;
+        private ulong timingFrequency;
+        private int drainFrames;
+        private bool previousValid, injectAllocation;
+        private object diagnosticAllocationRoot;
+        private DateTime previousUtc, endUtc;
         private bool diagnostic, validated, captureStarted, complete;
         private bool recordersDisposed, injectOverload;
         private DateTime startUtc;
@@ -51,7 +62,8 @@ namespace Shooter.Bootstrap
             if (workload != "B01-minimal-v1") throw new ArgumentException("Only B01-minimal-v1 exists at M0");
             diagnostic = FoundationEntry.CommandLine("-shooterBenchmarkDiagnostic", "false") == "true";
             injectOverload = FoundationEntry.CommandLine("-shooterDiagnosticOverload", "false") == "true";
-            if (injectOverload && !diagnostic) throw new ArgumentException("Overload injection is restricted to diagnostic captures");
+            injectAllocation = FoundationEntry.CommandLine("-shooterDiagnosticAllocate", "false") == "true";
+            if ((injectOverload || injectAllocation) && !diagnostic) throw new ArgumentException("Fault injection is restricted to diagnostic captures");
             warmupSeconds = diagnostic ? 2 : 60; captureSeconds = diagnostic ? 5 : 180;
             firstTick = (uint)(warmupSeconds * 60); endTick = firstTick + (uint)(captureSeconds * 60);
             ticks = new TickSample[captureSeconds * 60];
@@ -62,7 +74,7 @@ namespace Shooter.Bootstrap
             allocationRecorder = Recorder(ProfilerCategory.Memory, "GC Allocated In Frame");
             authority.StepCompleted += RecordTick;
             authority.SessionFailed += Abort;
-            lastFrame = Stopwatch.GetTimestamp();
+            timingFrequency = FrameTimingManager.GetCpuTimerFrequency();
         }
         private static ProfilerRecorder Recorder(ProfilerCategory category, string name)
         { try { return ProfilerRecorder.StartNew(category, name, 1); } catch { return default; } }
@@ -95,8 +107,24 @@ namespace Shooter.Bootstrap
             if (authority == null || complete || authority.Failed) return;
             try
             {
-                long now = Stopwatch.GetTimestamp(); double frameMs = (now - lastFrame) * 1000.0 / Stopwatch.Frequency; lastFrame = now;
+                long now = Stopwatch.GetTimestamp(), allocated = AllocationMeter.TotalBytes;
+                DateTime utc = DateTime.UtcNow;
+                // Close the preceding frame, including its LateUpdate/engine/worker managed work.
+                if (previousValid && previousTick >= firstTick && previousTick < endTick)
+                {
+                    if (frameCount == frames.Length) throw new InvalidOperationException("Benchmark frame capacity exceeded; no samples silently dropped");
+                    if (!captureStarted) { captureStarted = true; startUtc = previousUtc; }
+                    frames[frameCount++] = new FrameSample { Frame = (now - previousTimestamp) * 1000.0 / Stopwatch.Frequency,
+                        Allocated = allocated < 0 || previousAllocated < 0 ? -1 : allocated - previousAllocated,
+                        EndTimestamp = now, Tick = previousTick };
+                    ledger.Add(beforePreviousTimestamp, previousTimestamp);
+                    endUtc = utc;
+                }
+                PollTimings(now);
                 FrameTimingManager.CaptureFrameTimings();
+                bool ready = authority.Ready; uint tick = authority.CompletedTicks;
+                beforePreviousTimestamp = previousTimestamp; previousTimestamp = now;
+                previousAllocated = allocated; previousTick = tick; previousUtc = utc; previousValid = ready && validated;
                 if (!authority.Ready) return;
                 if (injectOverload && authority.CompletedTicks >= firstTick)
                 {
@@ -107,23 +135,22 @@ namespace Shooter.Bootstrap
                     return;
                 }
                 if (!validated) { ValidateWorkload(); return; }
-                if (authority.CompletedTicks >= endTick) { Finish(); return; }
-                if (authority.CompletedTicks < firstTick) return;
-                if (!captureStarted) { captureStarted = true; startUtc = DateTime.UtcNow; }
-                if (frameCount == frames.Length) throw new InvalidOperationException("Benchmark frame capacity exceeded; no samples silently dropped");
-                double main = mainRecorder.Valid && mainRecorder.Count > 0 ? mainRecorder.LastValue / 1e6 : -1;
-                double render = renderRecorder.Valid && renderRecorder.Count > 0 ? renderRecorder.LastValue / 1e6 : -1;
-                double gpu = -1;
-                if (FrameTimingManager.GetLatestTimings(1, timings) > 0)
-                {
-                    if (timings[0].cpuMainThreadFrameTime > 0) main = timings[0].cpuMainThreadFrameTime;
-                    if (timings[0].cpuRenderThreadFrameTime > 0) render = timings[0].cpuRenderThreadFrameTime;
-                    if (timings[0].gpuFrameTime > 0) gpu = timings[0].gpuFrameTime;
-                }
-                frames[frameCount++] = new FrameSample { Frame = frameMs, Main = main, Render = render, Gpu = gpu,
-                    Allocated = allocationRecorder.Valid && allocationRecorder.Count > 0 ? allocationRecorder.LastValue : -1, Tick = authority.CompletedTicks };
+                if (tick >= endTick) { if (++drainFrames >= 64) Finish(); return; }
+                if (injectAllocation && tick >= firstTick) diagnosticAllocationRoot = new byte[4096];
             }
             catch (Exception error) { authority.Fail(error); }
+        }
+        private void PollTimings(long now)
+        {
+            uint count = FrameTimingManager.GetLatestTimings((uint)timings.Length, timings);
+            if (timingFrequency == 0 || timingFrequency != (ulong)Stopwatch.Frequency) return;
+            for (int i = 0; i < count; i++)
+            {
+                var t = timings[i];
+                // Check epoch/range as well as frequency; never infer a value across clock domains.
+                if (t.frameStartTimestamp > (ulong)now || (ulong)now - t.frameStartTimestamp > timingFrequency * 30) continue;
+                ledger.Observe(t.frameStartTimestamp, t.cpuMainThreadFrameTime, t.cpuRenderThreadFrameTime, t.gpuFrameTime);
+            }
         }
         private void Abort(Exception error)
         {
@@ -143,12 +170,19 @@ namespace Shooter.Bootstrap
         private void Finish()
         {
             if (tickCount != ticks.Length || frameCount == 0 || !captureStarted) throw new InvalidOperationException("Incomplete benchmark capture");
-            DateTime endUtc = DateTime.UtcNow;
             DisposeRecorders();
+            int mapped = 0, ambiguous = 0;
             using (var writer = new StreamWriter(Path.Combine(output, "frames.csv")))
             {
-                writer.WriteLine("tick,frameMs,mainMs,renderMs,gpuMs,managedFrameBytes");
-                for (int i = 0; i < frameCount; i++) { var f = frames[i]; writer.WriteLine(f.Tick + "," + N(f.Frame) + "," + N(f.Main) + "," + N(f.Render) + "," + N(f.Gpu) + "," + f.Allocated); }
+                writer.WriteLine("tick,frameMs,mainMs,renderMs,gpuMs,managedFrameBytes,nativeFrameStartTimestamp,lowerTimestamp,upperTimestamp,endTimestamp,ambiguous");
+                for (int i = 0; i < frameCount; i++)
+                {
+                    var f = frames[i]; var t = ledger[i];
+                    if (t.NativeTimestamp != 0 && !t.Ambiguous) mapped++;
+                    if (t.Ambiguous) ambiguous++;
+                    writer.WriteLine(f.Tick + "," + N(f.Frame) + "," + N(t.Main) + "," + N(t.Render) + "," + N(t.Gpu) + "," + f.Allocated + "," + t.NativeTimestamp
+                        + "," + t.LowerExclusive + "," + t.UpperInclusive + "," + f.EndTimestamp + "," + t.Ambiguous);
+                }
             }
             using (var writer = new StreamWriter(Path.Combine(output, "ticks.csv")))
             {
@@ -161,9 +195,15 @@ namespace Shooter.Bootstrap
                 warmupSeconds = warmupSeconds, captureSeconds = captureSeconds, captureStartUtc = startUtc.ToString("o"), captureEndUtc = endUtc.ToString("o"),
                 cameraMeters = new[] { camera.transform.position.x, camera.transform.position.y, camera.transform.position.z },
                 frameTimingEnabled = FrameTimingManager.IsFeatureEnabled(), mainRecorderAvailable = mainAvailable,
-                renderRecorderAvailable = renderAvailable, allocationRecorderAvailable = allocationAvailable };
+                renderRecorderAvailable = renderAvailable, allocationRecorderAvailable = allocationAvailable,
+                frameAllocationAvailable = AllocationMeter.AllThreadsAvailable, tickAllocationAvailable = AllocationMeter.ThreadAvailable,
+                allocationMethod = AllocationMeter.Method, allocationDiagnostic = AllocationMeter.Diagnostic,
+                allocationMainControlBytes = AllocationMeter.MainControlBytes, allocationWorkerControlBytes = AllocationMeter.WorkerControlBytes,
+                stopwatchFrequency = Stopwatch.Frequency, nativeCpuFrequency = (long)timingFrequency,
+                timestampFrequencyMatches = timingFrequency == (ulong)Stopwatch.Frequency, mappedTimings = mapped, ambiguousTimings = ambiguous, drainFrames = drainFrames };
             File.WriteAllText(Path.Combine(output, "capture.json"), JsonUtility.ToJson(metadata, true) + "\n");
             complete = true;
+            GC.KeepAlive(diagnosticAllocationRoot);
             Debug.Log("SHOOTER_BENCHMARK_COMPLETE diagnostic=" + diagnostic + " frames=" + frameCount + " ticks=" + tickCount);
             Application.Quit(0);
         }

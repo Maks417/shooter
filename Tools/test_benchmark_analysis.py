@@ -27,6 +27,8 @@ class CaptureAnalysisTests(unittest.TestCase):
         self.addCleanup(self.directory.cleanup)
         self.root = Path(self.directory.name)
         self.meta = {"workloadId": "B01-minimal-v1", "seed": "460072030", "profile": "Low",
+                     "collectorVersion": 2, "tickAllocationAvailable": True, "frameAllocationAvailable": True,
+                     "allocationMainControlBytes": 4424, "allocationWorkerControlBytes": 4424,
                      "width": 1280, "height": 720, "graphicsApi": "Direct3D11", "frames": 2,
                      "ticks": 10800, "warmupSeconds": 60, "captureSeconds": 180, "diagnostic": False,
                      "gpuAdapter": "AMD Radeon(TM) Graphics", "cameraMeters": [0, 1.65, -6],
@@ -135,6 +137,24 @@ class CaptureAnalysisTests(unittest.TestCase):
         self.ticks[0]["managedTickBytes"] = -1
         with self.assertRaisesRegex(ValueError, "allocation"):
             self.report()
+
+    def test_legacy_zero_allocations_are_not_accepted_without_positive_controls(self):
+        self.meta.pop("collectorVersion")
+        report = self.report()
+        self.assertEqual(report["gateStatus"], "PendingHardware")
+        self.assertIsNone(report["metrics"]["managedBytesPerTick"])
+        self.assertIsNone(report["metrics"]["managedBytesPerFrame"])
+
+    def test_unsupported_tick_meter_sentinel_remains_pending(self):
+        self.meta["tickAllocationAvailable"] = False
+        for tick in self.ticks:
+            tick["managedTickBytes"] = -1
+        self.assertEqual(self.report()["gateStatus"], "PendingHardware")
+
+    def test_known_frame_allocation_fails_even_when_hardware_is_pending(self):
+        self.hardware["thermalStabilized"] = False
+        self.frames[0]["managedFrameBytes"] = 4096
+        self.assertEqual(self.report()["gateStatus"], "ComputedFail")
 
 
 if __name__ == '__main__':

@@ -2,6 +2,7 @@
   "name": "Shooter.Bootstrap.Client",
   "rootNamespace": "Shooter.Bootstrap.Client",
   "references": [
+    "GUID:8863b724bde74e23a67edc4756bec1fe",
     "GUID:df380645f10b7bc4b97d4f5eb6303d95",
     "GUID:e7b42d4a103143d58fb3deddc9dbace7",
     "GUID:6d63cb1ee6734e3bbd9e5905e3b6e783"
