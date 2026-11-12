@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Text;
+using System.Threading;
 using Shooter.Contracts;
 using Shooter.Generation;
 using Xunit;
@@ -129,9 +130,57 @@ public sealed class RecipeTests
     public void FingerprintUsesLengthPrefixedIdentityAndRejectsAmbiguousStrings()
     {
         Assert.NotEqual(GeneratorFingerprint.Compute("ab", "c"), GeneratorFingerprint.Compute("a", "bc"));
+        // Independent Python hashlib/struct.pack('<I') result, not computed by production encoding.
+        Assert.Equal("c4cb26f4cfecdb45517090a00d0a812d65dfbc108b0c51fba7e60e1bbe664447", GeneratorFingerprint.Compute("collision.box", "1.0.0").ToString());
         Assert.Equal(GeneratorFingerprint.Compute("collision.box", "1.0.0"), GeneratorFingerprint.Compute("collision.box", "1.0.0"));
         Assert.Throws<ArgumentException>(() => GeneratorFingerprint.Compute("", "1"));
         Assert.Throws<ArgumentException>(() => GeneratorFingerprint.Compute("bad\n", "1"));
         Assert.Throws<ArgumentException>(() => GeneratorFingerprint.Compute(new string('a', 4097), "1"));
+    }
+
+    [Fact]
+    public void CpuCollisionRegeneratesVerifiedEnvelopeAndConservativeBounds()
+    {
+        BoxRecipe recipe = BoxRecipe.Parse(Bytes(DiagnosticSource));
+        ContentId toolchain = new ContentId(new string('a', 64));
+        var request = new GenerationRequest(recipe.Document, "windows64", "gameplay", toolchain);
+        var generator = new CpuBoxCollisionGenerator();
+        var first = generator.Generate(request, CancellationToken.None);
+        var second = generator.Generate(request, CancellationToken.None);
+        Assert.Equal(ErrorCode.None, first.Error); Assert.Empty(first.Diagnostics);
+        var artifact = Assert.Single(first.Artifacts);
+        Assert.Equal(ContentKind.Collision, artifact.Kind); Assert.Equal("main", artifact.Variant); Assert.Equal(1U, artifact.FormatVersion);
+        Assert.Equal(artifact.Payload.ToArray(), Assert.Single(second.Artifacts).Payload.ToArray());
+        Assert.Equal(artifact.Sha256, ContentIdentity.Hash(artifact.Payload));
+        byte[] body = ArtifactCodec.Decode(artifact.Payload, ContentKind.Collision,
+            GeneratorFingerprint.Compute("collision.box", "1.0.0"), toolchain);
+        CollisionData data = GeometryCodec.DecodeCollision(body);
+        Assert.Empty(data.Capsules); Assert.Empty(data.HeightGrids);
+        var box = Assert.Single(data.Boxes).Shape;
+        Assert.Equal(1f, box.Size.X); Assert.Equal(1f, box.Size.Y); Assert.Equal(1f, box.Size.Z);
+        Assert.Equal(-.5f, first.Bounds.Min.X); Assert.Equal(.5f, first.Bounds.Max.Y);
+        Assert.Equal(0f, box.Center.Y);
+    }
+
+    [Fact]
+    public void CpuCollisionRejectsUnsupportedSchemasProfilesDependenciesAndBevels()
+    {
+        var generator = new CpuBoxCollisionGenerator();
+        var diagnostic = BoxRecipe.Parse(Bytes(DiagnosticSource));
+        GenerationRequest Request(BoxRecipe recipe, string profile = "gameplay") => new GenerationRequest(recipe.Document, "windows64", profile, default);
+        Assert.Equal(ErrorCode.UnsupportedVersion, generator.Generate(Request(BoxRecipe.Parse(Bytes(Source))), CancellationToken.None).Error);
+        Assert.Equal(ErrorCode.InvalidInput, generator.Generate(Request(diagnostic, "Low"), CancellationToken.None).Error);
+        Assert.Equal(ErrorCode.InvalidInput, generator.Generate(Request(BoxRecipe.Parse(Bytes(DiagnosticSource.Replace("\"bevelMm\": 0", "\"bevelMm\": 1")))), CancellationToken.None).Error);
+        string dependency = new string('a', 64);
+        var withDependency = BoxRecipe.Parse(Bytes(DiagnosticSource.Replace("\"dependencies\": []", "\"dependencies\": [\"" + dependency + "\"]")));
+        Assert.Equal(ErrorCode.InvalidInput, generator.Generate(Request(withDependency), CancellationToken.None).Error);
+        Assert.Equal(ErrorCode.InvalidInput, generator.Generate(null!, CancellationToken.None).Error);
+        var invalidParameters = new RecipeDocument(diagnostic.Document.RecipeId, BoxRecipe.CollisionSchema, "collision.box", "1.0.0", "0",
+            Bytes("{\"bevelMm\":0,\"depthMm\":1000,\"heightMm\":1000,\"widthMm\":-1}"), Array.Empty<ContentId>());
+        Assert.Equal(ErrorCode.InvalidInput, generator.Generate(new GenerationRequest(invalidParameters, "windows64", "gameplay", default), CancellationToken.None).Error);
+        using var cancel = new CancellationTokenSource(); cancel.Cancel();
+        var cancelled = generator.Generate(Request(diagnostic), cancel.Token);
+        Assert.Equal(ErrorCode.Cancelled, cancelled.Error); Assert.Empty(cancelled.Artifacts);
+        Assert.Single(cancelled.Diagnostics);
     }
 }
