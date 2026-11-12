@@ -16,6 +16,8 @@
     <ProjectReference Include="../Generation/Shooter.Generation.Core.csproj" />
     <ProjectReference Include="../ContentRuntime/Shooter.Content.Runtime.csproj" />
     <ProjectReference Include="../ContentCompiler/Shooter.AssetCompiler.Editor.csproj" />
+    <None Include="../../docs/feature-fixtures/*.json" Link="FeatureFixtures/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../UnityProject/Assets/Shooter/Generation/FeatureRecipes/*.json" Link="FeatureRecipes/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../../docs/fixtures/*" Link="Fixtures/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
