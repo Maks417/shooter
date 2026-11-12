@@ -50,7 +50,7 @@
         "WP-00"
       ],
       "contractVersion": "C0-v1",
-      "status": "Three native injected overload/shutdown checks and all three current full B01 captures complete without overload or shutdown failure; available measured budgets pass but all B01 reports remain PendingHardware for required counters/reference conditions; hosted CI explicitly deferred by user; RAM channel mode deliberately unverified",
+      "status": "Three native injected overload/shutdown checks and three full B01 captures completed; all benchmark reports remain PendingHardware for required counters/reference conditions. User CPU-Z evidence now verifies software-reported dual-channel DDR4. The supplied 88-second HWiNFO sample targets dwm.exe for frame telemetry and does not establish Shooter thermal/timing acceptance. Hosted CI remains deferred.",
       "leaseExpiry": null
     },
     {
@@ -196,8 +196,16 @@
     "validationReport": "Artifacts/m0-foundation/a4afce68fbe6dc4420d0d820cfba3b0abf197d1d/continuation-validation.json",
     "remainingGates": [
       "Complete required GPU/render/per-frame-allocation measurements in release player",
-      "Verified thermal/reference conditions; RAM channel mode intentionally unverified",
+      "Verified thermal/reference conditions during an identified benchmark; RAM dual-channel observation resolved separately by user CPU-Z screenshot, historical reports unchanged",
       "Review historical hitch/native-hang limitation and final milestone sign-off"
     ]
+  },
+  "hardwareObservation": {
+    "date": "2026-11-12",
+    "reviewer": "Codex single M0 integrator",
+    "evidence": "Artifacts/m0-foundation/c6492343b21623f7be7ffbd030eada1c2e4248ca/user-hardware-20261112T080735Z/hardware-observation.json",
+    "memory": "CPU-Z 3.02.0 x64: DDR4, 16 GBytes, 2 x 64-bit; software-reported dual-channel verified",
+    "sensorLog": "45 samples / 88.023 seconds; thermal flags No; frame telemetry scope PresentMon [dwm.exe]; one GPU-clock anomaly preserved",
+    "gateImpact": "RAM observation resolved; thermal/workload/per-frame counter and final milestone acceptance pending. No historical reports edited."
   }
 }

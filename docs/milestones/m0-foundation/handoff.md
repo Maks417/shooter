@@ -1,6 +1,6 @@
 # M0 â€” Foundation â€” handoff and gate record
 
-Status: **IMPLEMENTED / ACCEPTANCE PENDING**, 2026-11-12. C0-v1 is now frozen by the single integrator, online dependency advisories have been checked, and the revised failure-recording/shutdown path passes three real release-player overload tests. M0 is not signed off: required performance counters/reference conditions, final reviewer acceptance and hosted CI remain pending. The current continuation below supersedes historical candidate/failure-lifecycle status; original records and failed attempts remain preserved. M1 has not started. See [acceptance](validation-acceptance.md), [entry](index.md) and [bootstrap runbook](../../bootstrap-runbook.md).
+Status: **IMPLEMENTED / ACCEPTANCE PENDING**, 2026-11-12. C0-v1 is frozen by the single integrator, online dependency advisories have been checked, and the revised failure-recording/shutdown path passes three real release-player overload tests. The user-supplied CPU-Z screenshot now verifies software-reported dual-channel DDR4; the short desktop sensor log does not establish B01 thermal/timing acceptance. M0 is not signed off: required performance counters/reference conditions and final reviewer acceptance remain pending, with hosted CI explicitly deferred by the user. The current continuation and hardware observation below supersede historical candidate/failure-lifecycle and unverified-channel status; original records and failed attempts remain preserved. M1 has not started. See [acceptance](validation-acceptance.md), [entry](index.md) and [bootstrap runbook](../../bootstrap-runbook.md).
 
 ## Source, ownership and versions
 
@@ -160,8 +160,32 @@ Final source provenance passes with 128 asset entries and 64 unique GUIDs. The f
 ### Remaining acceptance and ownership
 
 - WP-09/integrator: acquire supported complete GPU/render/frame-allocation evidence in a release player. Enabled APIs or partial samples cannot close this item.
-- Hardware reviewer: verify thermal reference conditions; RAM channel mode remains intentionally unverified under the existing user instruction. No channel mode is inferred from slot labels.
+- Hardware reviewer: verify thermal reference conditions during an identified benchmark. RAM channel mode is now software-verified from the user's CPU-Z screenshot below; historical reports retain their original null channel values. No channel mode is inferred from slot labels.
 - Integrator/reviewer: review the current code, full reports and historical failure; the controlled shutdown mitigation passes, but the original uninstrumented hitch/native-hang cause remains unproven. Final M0 sign-off and a passing milestone tag remain pending.
 - Hosted CI: explicitly deferred by the user on 2026-11-12. `git remote -v` returned no configured remote; no hosted Actions execution or prelicensed runner registration is claimed. CI entry points include C0 drift tests and the native failure-shutdown checks.
 
 `readyForParallelIntegration=false` remains deliberate. No milestone is closed and no M1/dependent feature integration is authorized by this continuation.
+
+### User-supplied hardware observation, 2026-11-12
+
+The user supplied a CPU-Z Memory-tab screenshot and `C:\Users\Max\Downloads\1.CSV` after the continuation captures. Read-only review preserved both files byte-for-byte, with SHA256 proofs and a derived `hardware-observation.json`, under `Artifacts/m0-foundation/c6492343b21623f7be7ffbd030eada1c2e4248ca/user-hardware-20261112T080735Z/`. These are hardware evidence files outside shipping Assets, not imported game art. No raw benchmark, hardware.json, schema, fixture or golden result was edited.
+
+CPU-Z 3.02.0 x64 reports 16 GBytes DDR4 and `Channel # 2 x 64-bit`, establishing software-reported dual-channel operation for this observation. Its DRAM clock is 1596.1 MHz, approximately 3192.2 MT/s after the DDR factor, consistent with the nominal DDR4-3200 configuration. This replaces the earlier intentionally unverified channel observation; it does not retroactively reissue or pass the existing B01 reports. The screenshot itself has no capture timestamp or workload identity.
+
+The HWiNFO file decodes as Windows-1252 and contains 45 time samples across 88.023 seconds, from local unzoned `2026-11-12 09:01:10.245` to `09:02:38.268`. Intervals range from 1.989 to 2.024 seconds. A repeated header and the device/process footer are metadata, not additional samples; all 48 CSV rows are accounted for. The log does not identify a Shooter build, seed, workload or matching benchmark capture.
+
+| Sensor | Observed range / flags | Scope |
+|---|---|---|
+| CPU Tctl/Tdie | 48.2–65.6 °C | AMD Ryzen 5 4600H Enhanced |
+| iGPU temperature | 42–49 °C | AMD Radeon Vega |
+| CPU thermal flags (HTC, PROCHOT CPU/EXT) | No in all 45 samples for every flag | CPU |
+| iGPU thermal-throttle flag | No in all 45 samples | iGPU |
+| iGPU power-throttle flag | Yes in 4/45 samples | iGPU; no causal diagnosis inferred |
+| Average total CPU usage / GPU usage | 6.23% / 1.36% | Whole-device sampled usage; not workload attribution |
+| Memory clock | 1597.1 MHz throughout | CPU memory controller observation |
+
+The footer explicitly identifies presented-frame/FPS and GPU-busy fields as `PresentMon [dwm.exe]`, the Windows desktop compositor. These are process-specific sampled averages, not Shooter per-frame telemetry or evidence against its budgets. The GPU Clock column has an invalid-looking `263397376.0 MHz` value at CSV line 13 (`09:01:32.243`); the raw value is preserved and flagged, and no GPU-clock average/stability claim is made from that column. No driver/hardware fault cause is inferred from this isolated sensor anomaly.
+
+This short low-load sample reports no thermal-throttling flags, but cannot establish stabilization under the B01 workload or cover a prescribed 60-second warmup plus 180-second capture. Thermal acceptance, complete release-player GPU/render/allocation measurements, review of the historical hitch limitation and final M0 sign-off remain pending. Hosted CI remains deferred by the user. The next useful sensor capture must run concurrently with an identified Shooter benchmark; check process targeting and timestamp coverage before interpreting its frame data.
+
+Verification for this evidence-only documentation update: `Tools/Test-Contracts.ps1` passes 57/57, zero skipped, with online dependency advisory lookup completed in `Artifacts/m0-foundation/c6492343b21623f7be7ffbd030eada1c2e4248ca/20261112T080937145Z-306f2768/`. The contract lock and 35 fixture assertions pass unchanged; documentation verification passes 84 pages, 539 links and 104 integrity files. Source input copies match their original SHA256 values. No runtime code, package, settings, schema, fixture or workload changed, and no new Unity/player/benchmark performance result is claimed.
