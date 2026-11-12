@@ -18,19 +18,21 @@ using Debug = UnityEngine.Debug;
 
 public static class ShooterFeatureBuild
 {
-    [Serializable] public sealed class Item { public string recipeId, profile, contentId, manifestSha256; public int vertices, triangles, bytes; public bool reused; }
+    [Serializable] public sealed class Item { public string recipeId, profile, contentId, manifestSha256, sourceHash, seed; public int vertices, triangles, bytes; public bool reused; }
     [Serializable] public sealed class Socket { public string id; public float[] position, rotation; }
     [Serializable] public sealed class Weapon { public string kind; public int[] lodTriangles; public Socket[] sockets; }
     [Serializable] public sealed class CompileProof
     {
         public string result = "Verified", scope = "M1 P03/P04 diagnostic content; no soldier, combat or hardware gate", profile, toolchainHash, galleryPlanSha256;
         public Item[] content; public Weapon[] weapons; public double elapsedMilliseconds;
+        public ShooterBuild.FileProof[] sources;
     }
     [Serializable] public sealed class CaptureProof
     {
         public string result = "Verified", workload = "M1-content-gallery-v1", scope = "Editor visual diagnostic only; not B01-materials-v1 performance acceptance";
         public string[] captures; public long textureBytes, meshBytes; public int trianglesAllLods; public ulong shaderVariants;
-        public bool compressedTextures = false;
+        public bool compressedTextures = false, shaderVariantCountAvailable = false;
+        public int declaredKeywordCombinations = 25;
     }
     public static void Compile() => Guard(() =>
     {
@@ -55,7 +57,7 @@ public static class ShooterFeatureBuild
         var timer = Stopwatch.StartNew();
         var result = new ContentCompiler(files).CompileAsync(nodes, force, CancellationToken.None).GetAwaiter().GetResult();
         if (result.Error != ErrorCode.None) throw new InvalidOperationException(result.Error + ": " + result.Diagnostic);
-        Item[] items = result.Entries.Select(e => new Item { recipeId = e.Manifest.RecipeId, profile = e.Manifest.VisualProfile, contentId = e.Manifest.ContentId.ToString(), manifestSha256 = ContentIdentity.Hash(e.Manifest.Encode()).ToString(), vertices = e.Manifest.VertexCount, triangles = e.Manifest.TriangleCount, bytes = e.Manifest.Artifacts.Sum(a => a.Bytes), reused = e.Reused }).ToArray();
+        Item[] items = result.Entries.Select(e => new Item { recipeId = e.Manifest.RecipeId, profile = e.Manifest.VisualProfile, contentId = e.Manifest.ContentId.ToString(), manifestSha256 = ContentIdentity.Hash(e.Manifest.Encode()).ToString(), sourceHash = e.Manifest.SourceHash.ToString(), seed = e.Manifest.Seed.ToString(System.Globalization.CultureInfo.InvariantCulture), vertices = e.Manifest.VertexCount, triangles = e.Manifest.TriangleCount, bytes = e.Manifest.Artifacts.Sum(a => a.Bytes), reused = e.Reused }).ToArray();
         string Id(string recipe, string tier) => items.Single(e => e.recipeId == recipe && e.profile == tier).contentId;
         string materials = string.Join(",", materialRecipes.Select(r => "{\"family\":\"" + r.Family + "\",\"tileMm\":" + r.TileMm + ",\"contentId\":\"" + Id(r.Document.RecipeId.ToString(), profile) + "\"}"));
         string plan = "{\"schema\":\"shooter.gallery.v1\",\"toolchainHash\":\"" + hash + "\",\"profile\":\"" + profile + "\",\"materials\":[" + materials + "],\"rifleVisual\":\"" + Id("weapons/rifle", profile) + "\",\"pistolVisual\":\"" + Id("weapons/pistol", profile) + "\",\"rifleGameplay\":\"" + Id("weapons/rifle", "gameplay") + "\",\"pistolGameplay\":\"" + Id("weapons/pistol", "gameplay") + "\"}";
@@ -66,7 +68,10 @@ public static class ShooterFeatureBuild
         if (File.Exists(target)) File.Replace(temporary, target, null); else File.Move(temporary, target);
         timer.Stop();
         var weapons = weaponRecipes.Select(r => new Weapon { kind = r.Kind, lodTriangles = WeaponGeometry.Build(r).Lods.Select(m => m.Indices.Count / 3).ToArray(), sockets = WeaponGeometry.Sockets(r).Select(s => new Socket { id = s.Id, position = new[] { s.Position.X, s.Position.Y, s.Position.Z }, rotation = new[] { s.Rotation.X, s.Rotation.Y, s.Rotation.Z, s.Rotation.W } }).ToArray() }).ToArray();
-        ShooterBuild.WriteJson(ShooterBuild.Argument("-shooterReport"), new CompileProof { profile = profile, toolchainHash = hash.ToString(), content = items, weapons = weapons, elapsedMilliseconds = timer.Elapsed.TotalMilliseconds, galleryPlanSha256 = ContentIdentity.Hash(planBytes).ToString() });
+        var sources = Directory.GetFiles(Path.Combine(Application.dataPath, "Shooter"), "*", SearchOption.AllDirectories)
+            .Where(p => p.EndsWith(".cs", StringComparison.Ordinal) || p.EndsWith(".shader", StringComparison.Ordinal) || p.Replace('\\', '/').Contains("/FeatureRecipes/") && p.EndsWith(".json", StringComparison.Ordinal))
+            .OrderBy(p => p, StringComparer.Ordinal).Select(p => new ShooterBuild.FileProof { path = "UnityProject/" + p.Substring(Path.GetFullPath(Path.Combine(Application.dataPath, "..")).Length + 1).Replace('\\', '/'), sha256 = ShooterBuild.HashFile(p) }).ToArray();
+        ShooterBuild.WriteJson(ShooterBuild.Argument("-shooterReport"), new CompileProof { profile = profile, toolchainHash = hash.ToString(), content = items, weapons = weapons, elapsedMilliseconds = timer.Elapsed.TotalMilliseconds, galleryPlanSha256 = ContentIdentity.Hash(planBytes).ToString(), sources = sources });
         Debug.Log("SHOOTER_FEATURE_CONTENT_VERIFIED content=" + items.Length);
     });
     public static void Capture() => Guard(() =>
@@ -94,7 +99,7 @@ public static class ShooterFeatureBuild
                 for (int lod = 1; lod < 4; lod++) { gallery.FocusWeapon(weapon, lod, "side"); Shot(kind + "-lod" + lod); }
             }
             if (ShaderUtil.GetShaderMessages(shader).Any(m => m.severity.ToString() == "Error")) throw new InvalidOperationException("Procedural shader failed during rendering.");
-            ShooterBuild.WriteJson(ShooterBuild.Argument("-shooterReport"), new CaptureProof { captures = paths.ToArray(), textureBytes = gallery.TextureBytes, meshBytes = gallery.MeshBytes, trianglesAllLods = gallery.Triangles, shaderVariants = ShaderUtil.GetVariantCount(shader, true) });
+            ShooterBuild.WriteJson(ShooterBuild.Argument("-shooterReport"), new CaptureProof { captures = paths.ToArray(), textureBytes = gallery.TextureBytes, meshBytes = gallery.MeshBytes, trianglesAllLods = gallery.Triangles, shaderVariants = 0 });
         }
         finally { UnityEngine.Object.DestroyImmediate(gallery.gameObject); }
     });

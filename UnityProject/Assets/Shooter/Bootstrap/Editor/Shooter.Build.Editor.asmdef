@@ -7,8 +7,7 @@
     "GUID:e7b42d4a103143d58fb3deddc9dbace7",
     "Shooter.Generation.Core",
     "Shooter.Content.Runtime",
-    "Shooter.AssetCompiler.Editor",
-    "Shooter.Presentation"
+    "Shooter.AssetCompiler.Editor"
   ],
   "includePlatforms": [
     "Editor"

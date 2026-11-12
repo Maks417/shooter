@@ -25,13 +25,13 @@ try {
         $captureRoot = Join-Path $run.Path 'captures'
         $captureProof = Join-Path $run.Path 'capture-proof.json'
         Invoke-ShooterEditor $unity $run @('-quit','-executeMethod','ShooterFeatureBuild.Capture','-shooterCacheRoot',$CacheRoot,'-shooterCaptureRoot',$captureRoot,'-shooterReport',$captureProof) $TimeoutSeconds
-        $capture = Get-Content -LiteralPath $captureProof -Raw | ConvertFrom-Json
-        if ($capture.result -cne 'Verified' -or $capture.workload -cne 'M1-content-gallery-v1' -or $capture.captures.Count -ne 22) { throw 'Gallery capture proof mismatch.' }
-        foreach ($path in $capture.captures) {
+        $captureProofData = Get-Content -LiteralPath $captureProof -Raw | ConvertFrom-Json
+        if ($captureProofData.result -cne 'Verified' -or $captureProofData.workload -cne 'M1-content-gallery-v1' -or $captureProofData.captures.Count -ne 22) { throw 'Gallery capture proof mismatch.' }
+        foreach ($path in $captureProofData.captures) {
             if (![IO.Path]::GetFullPath($path).StartsWith($captureRoot + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase) -or !(Test-Path -LiteralPath $path -PathType Leaf)) { throw 'Capture missing or outside run directory.' }
         }
-        $run.Report['textureBytes'] = $capture.textureBytes
-        $run.Report['meshBytes'] = $capture.meshBytes
+        $run.Report['textureBytes'] = $captureProofData.textureBytes
+        $run.Report['meshBytes'] = $captureProofData.meshBytes
     }
     $run.Report['cacheRoot'] = $CacheRoot
     $run.Report['galleryPlanSha256'] = $proof.galleryPlanSha256

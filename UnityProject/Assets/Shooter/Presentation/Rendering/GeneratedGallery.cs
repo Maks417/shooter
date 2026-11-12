@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -58,7 +59,18 @@ namespace Shooter.Presentation
             var box = Own(FoundationView.CreateUnitBox()); box.RecalculateTangents();
             for (int i = 0; i < 7; i++) Place("Material " + Families[i], box, new[] { materials[i] }, new Vector3(-6 + 2 * i, .5f, 0), Vector3.one);
             var floor = Own(new Material(shader) { name = "Generated gallery floor" }); floor.CopyPropertiesFromMaterial(materials[2]);
-            Place("Gallery floor", box, new[] { floor }, new Vector3(0, -.06f, 0), new Vector3(16, .1f, 8));
+            Mesh floorMesh = Own(FoundationView.CreateUnitBox());
+            var floorVertices = floorMesh.vertices; var floorNormals = floorMesh.normals; var floorUv = floorMesh.uv;
+            for (int i = 0; i < floorVertices.Length; i++)
+            {
+                floorVertices[i] = Vector3.Scale(floorVertices[i], new Vector3(16, .1f, 8));
+                Vector3 p = floorVertices[i], n = floorNormals[i];
+                floorUv[i] = Mathf.Abs(n.x) > .5f ? new Vector2(p.z, p.y) : Mathf.Abs(n.y) > .5f ? new Vector2(p.x, p.z) : new Vector2(p.x, p.y);
+            }
+            floorMesh.vertices = floorVertices; floorMesh.uv = floorUv; floorMesh.RecalculateTangents(); floorMesh.RecalculateBounds();
+            Place("Gallery floor", floorMesh, new[] { floor }, new Vector3(0, -.06f, 0), Vector3.one);
+            // Inventory counts include eight scene instances and two shared analytic mesh buffers.
+            Triangles += 8 * 12; MeshBytes += 2 * (24 * 48 + 36 * 4);
             for (int weapon = 0; weapon < 2; weapon++)
             {
                 string kind = weapon == 0 ? "rifle" : "pistol";
@@ -83,7 +95,32 @@ namespace Shooter.Presentation
             sun.type = LightType.Directional; sun.transform.rotation = Quaternion.Euler(45, 135, 0); sun.intensity = 1; sun.shadows = LightShadows.Hard;
             RenderSettings.ambientMode = AmbientMode.Flat; RenderSettings.ambientLight = new Color(.25f, .28f, .33f);
             QualitySettings.vSyncCount = 0; Application.targetFrameRate = -1;
+            if (Application.isPlaying) Screen.SetResolution(1280, 720, FullScreenMode.Windowed);
             Debug.Log("SHOOTER_CONTENT_GALLERY_READY textures=" + TextureBytes + " meshBytes=" + MeshBytes + " trianglesAllLods=" + Triangles + " textureFormat=RGBA32");
+        }
+        public void CaptureDiagnosticFrame(string path)
+        {
+            if (string.IsNullOrEmpty(path)) return;
+            string output = Path.GetFullPath(path);
+            if (!Directory.Exists(Path.GetDirectoryName(output)) || File.Exists(output)) throw new IOException("Diagnostic capture needs a fresh file in an existing output directory.");
+            StartCoroutine(CaptureFrame(output));
+        }
+        private IEnumerator CaptureFrame(string path)
+        {
+            yield return new WaitForSeconds(1);
+            yield return new WaitForEndOfFrame();
+            Texture2D image = null;
+            try
+            {
+                image = ScreenCapture.CaptureScreenshotAsTexture();
+                int pink = 0; var pixels = image.GetPixels32();
+                foreach (var p in pixels) if (p.r > 220 && p.b > 220 && p.g < 40) pink++;
+                if (pink > pixels.Length / 100) throw new InvalidOperationException("Procedural surface shader failed in player capture.");
+                using (var stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write)) { byte[] bytes = image.EncodeToPNG(); stream.Write(bytes, 0, bytes.Length); }
+                Debug.Log("SHOOTER_GALLERY_CAPTURE_PASS width=" + image.width + " height=" + image.height);
+            }
+            catch (Exception error) { Debug.LogError("SHOOTER_FAILURE: gallery capture " + error); Application.Quit(1); }
+            finally { if (image != null) Destroy(image); }
         }
         public void FocusWeapon(int index, int lod, string angle)
         {

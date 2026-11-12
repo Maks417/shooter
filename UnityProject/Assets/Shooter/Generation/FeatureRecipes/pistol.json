@@ -2,7 +2,7 @@
   "schemaId": "shooter.recipe.weapon.v1",
   "recipeId": "weapons/pistol",
   "generatorId": "geometry.weapon",
-  "generatorVersion": "1.0.0",
+  "generatorVersion": "1.0.1",
   "seed": "460072030",
   "parameters": {
     "kind": "pistol"

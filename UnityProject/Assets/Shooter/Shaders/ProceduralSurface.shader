@@ -93,9 +93,9 @@ Shader "Shooter/ProceduralSurface"
                 float3 world=TransformObjectToWorld(positionOS.xyz);
                 float4 clip=TransformWorldToHClip(ApplyShadowBias(world,TransformObjectToWorldNormal(normalOS),_LightDirection));
                 #if UNITY_REVERSED_Z
-                    clip.z=min(clip.z,UNITY_NEAR_CLIP_VALUE);
+                    clip.z=min(clip.z,clip.w*UNITY_NEAR_CLIP_VALUE);
                 #else
-                    clip.z=max(clip.z,UNITY_NEAR_CLIP_VALUE);
+                    clip.z=max(clip.z,clip.w*UNITY_NEAR_CLIP_VALUE);
                 #endif
                 return clip;
             }

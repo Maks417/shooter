@@ -1,0 +1,19 @@
+{
+  "name": "Shooter.FeatureBuild.Editor",
+  "references": [
+    "Shooter.Build.Editor",
+    "Shooter.Contracts",
+    "Shooter.Generation.Core",
+    "Shooter.AssetCompiler.Editor",
+    "Shooter.Content.Runtime",
+    "Shooter.Presentation",
+    "Unity.RenderPipelines.Universal.Runtime"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "!UNITY_SERVER"
+  ]
+}
