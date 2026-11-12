@@ -81,6 +81,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Frozen C0 identity check failed.' }
     & python (Join-Path $PSScriptRoot 'verify_content_format.py') | Out-Host
     if ($LASTEXITCODE -ne 0) { throw 'Frozen P02 format identity check failed.' }
+    & python (Join-Path $PSScriptRoot 'verify_feature_registry.py') | Out-Host
+    if ($LASTEXITCODE -ne 0) { throw 'Feature source registry check failed.' }
     $sourcePaths = @(& git -C $repoRoot ls-files --cached --others --exclude-standard)
     $report.sourceTreeSha256 = Get-InventoryHash $sourcePaths
     $report.fixtureTreeSha256 = Get-InventoryHash @($sourcePaths | Where-Object { $_ -like 'docs/fixtures/*' })

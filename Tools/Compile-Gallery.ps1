@@ -4,6 +4,8 @@ param([string]$CacheRoot = '', [ValidateSet('Low','Balanced','High')][string]$Pr
 . (Join-Path $PSScriptRoot 'Unity.Common.ps1')
 & python (Join-Path $PSScriptRoot 'verify_content_format.py') | Out-Host
 if ($LASTEXITCODE -ne 0) { throw 'Frozen P02 format verification failed.' }
+& python (Join-Path $PSScriptRoot 'verify_feature_registry.py') | Out-Host
+if ($LASTEXITCODE -ne 0) { throw 'Feature source registry check failed.' }
 $unity = Get-ShooterUnity
 $run = New-ShooterRun 'compile-gallery' $unity
 try {
