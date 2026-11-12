@@ -258,6 +258,23 @@
       "contractVersion": "C0-v1",
       "status": "Assigned isolated pure source/test worker; no Unity editor or shared edits",
       "leaseExpiry": null
+    },
+    {
+      "packageId": "WP-01/P02/runtime",
+      "owner": "/root/runtime",
+      "branch": "codex/m1-p02-runtime",
+      "baseCommit": "1627230456939ec583a89dd80859aab102236fdd",
+      "paths": [
+        "UnityProject/Assets/Shooter/Content/Runtime",
+        "Tools/Generation.Tests/ContentStoreTests.cs"
+      ],
+      "dependencies": [
+        "P02 ContentManifest API",
+        "P02 ArtifactCodec/GeometryCodec"
+      ],
+      "contractVersion": "C0-v1",
+      "status": "Assigned bounded byte-cache reader and reference-counted content store; pure worker, no editor/shared edits",
+      "leaseExpiry": null
     }
   ],
   "validationWave": {
