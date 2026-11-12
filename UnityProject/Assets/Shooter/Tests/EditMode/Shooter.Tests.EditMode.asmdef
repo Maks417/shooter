@@ -3,7 +3,8 @@
   "references": [
     "GUID:866ac9eb8b8b4a898facdc4644ba5881",
     "GUID:d6b8950653f138846a982f38fe9db643",
-    "GUID:15fc0a57446b3144c949da3e2b9737a9"
+    "GUID:15fc0a57446b3144c949da3e2b9737a9",
+    "Shooter.Generation.Core"
   ],
   "includePlatforms": [
     "Editor"
