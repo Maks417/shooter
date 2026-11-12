@@ -37,7 +37,7 @@ try {
         $traceInfo = [Diagnostics.ProcessStartInfo]::new(); $traceInfo.FileName=$traceExe
         $traceInfo.UseShellExecute=$false; $traceInfo.CreateNoWindow=$true; $traceInfo.RedirectStandardOutput=$true; $traceInfo.RedirectStandardError=$true
         $traceSession = 'Shooter-' + [Guid]::NewGuid().ToString('N')
-        $traceArgs = @('--process_name','Shooter.exe','--output_file',(Join-Path $run.Path 'presentmon.csv'),'--qpc_time','--no_console_stats','--no_track_input','--no_track_display','--set_circular_buffer_size','65536','--session_name',$traceSession,'--timed',$(if ($Diagnostic) { '15' } else { '250' }),'--terminate_after_timed')
+        $traceArgs = @('--process_name','Shooter.exe','--output_file',(Join-Path $run.Path 'presentmon.csv'),'--qpc_time','--no_console_stats','--no_track_input','--set_circular_buffer_size','65536','--session_name',$traceSession,'--timed',$(if ($Diagnostic) { '15' } else { '250' }),'--terminate_after_timed')
         foreach ($a in $traceArgs) { $traceInfo.ArgumentList.Add($a) }
         $run.Report.commands += [ordered]@{ executable=$traceExe; arguments=$traceArgs }
         $trace=[Diagnostics.Process]::new(); $trace.StartInfo=$traceInfo; $null=$trace.Start()

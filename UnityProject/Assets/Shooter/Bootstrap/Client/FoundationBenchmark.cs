@@ -11,7 +11,7 @@ namespace Shooter.Bootstrap
     [DefaultExecutionOrder(1000)]
     public sealed class FoundationBenchmark : MonoBehaviour
     {
-        private struct FrameSample { public double Frame; public long Allocated, EndTimestamp; public uint Tick; }
+        private struct FrameSample { public double Frame; public long Allocated, EndTimestamp, RecorderMain, RecorderRender, MainCount, RenderCount; public uint Tick; }
         private struct TickSample { public uint Tick; public double Ms; public long Allocated; }
         [Serializable] private sealed class Metadata
         {
@@ -115,9 +115,12 @@ namespace Shooter.Bootstrap
                 {
                     if (frameCount == frames.Length) throw new InvalidOperationException("Benchmark frame capacity exceeded; no samples silently dropped");
                     if (!captureStarted) { captureStarted = true; startUtc = previousUtc; }
+                    var mainSample = mainRecorder.Valid && mainRecorder.Count == 1 ? mainRecorder.GetSample(0) : default;
+                    var renderSample = renderRecorder.Valid && renderRecorder.Count == 1 ? renderRecorder.GetSample(0) : default;
                     frames[frameCount++] = new FrameSample { Frame = (now - previousTimestamp) * 1000.0 / Stopwatch.Frequency,
                         Allocated = allocated < 0 || previousAllocated < 0 ? -1 : allocated - previousAllocated,
-                        EndTimestamp = now, Tick = previousTick };
+                        EndTimestamp = now, Tick = previousTick, RecorderMain = mainSample.Value, RecorderRender = renderSample.Value,
+                        MainCount = mainSample.Count, RenderCount = renderSample.Count };
                     ledger.Add(beforePreviousTimestamp, previousTimestamp);
                     endUtc = utc;
                 }
@@ -183,14 +186,15 @@ namespace Shooter.Bootstrap
             int mapped = 0, ambiguous = 0;
             using (var writer = new StreamWriter(Path.Combine(output, "frames.csv")))
             {
-                writer.WriteLine("tick,frameMs,mainMs,renderMs,gpuMs,managedFrameBytes,nativeFrameStartTimestamp,lowerTimestamp,upperTimestamp,endTimestamp,ambiguous");
+                writer.WriteLine("tick,frameMs,mainMs,renderMs,gpuMs,managedFrameBytes,nativeFrameStartTimestamp,lowerTimestamp,upperTimestamp,endTimestamp,ambiguous,recorderMainNanoseconds,recorderRenderNanoseconds,recorderMainCount,recorderRenderCount");
                 for (int i = 0; i < frameCount; i++)
                 {
                     var f = frames[i]; var t = ledger[i];
                     if (t.NativeTimestamp != 0 && !t.Ambiguous) mapped++;
                     if (t.Ambiguous) ambiguous++;
                     writer.WriteLine(f.Tick + "," + N(f.Frame) + "," + N(t.Main) + "," + N(t.Render) + "," + N(t.Gpu) + "," + f.Allocated + "," + t.NativeTimestamp
-                        + "," + t.LowerExclusive + "," + t.UpperInclusive + "," + f.EndTimestamp + "," + t.Ambiguous);
+                        + "," + t.LowerExclusive + "," + t.UpperInclusive + "," + f.EndTimestamp + "," + t.Ambiguous
+                        + "," + f.RecorderMain + "," + f.RecorderRender + "," + f.MainCount + "," + f.RenderCount);
                 }
             }
             using (var writer = new StreamWriter(Path.Combine(output, "ticks.csv")))
