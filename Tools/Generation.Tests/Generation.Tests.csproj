@@ -14,6 +14,8 @@
     <PackageReference Include="xunit" Version="[2.9.3]" />
     <PackageReference Include="xunit.runner.visualstudio" Version="[4.0.1]" PrivateAssets="all" />
     <ProjectReference Include="../Generation/Shooter.Generation.Core.csproj" />
+    <ProjectReference Include="../ContentRuntime/Shooter.Content.Runtime.csproj" />
+    <ProjectReference Include="../ContentCompiler/Shooter.AssetCompiler.Editor.csproj" />
     <None Include="../../docs/fixtures/*" Link="Fixtures/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

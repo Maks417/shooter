@@ -1,0 +1,14 @@
+{
+  "name": "Shooter.AssetCompiler.Editor",
+  "rootNamespace": "Shooter.AssetCompiler.Editor",
+  "references": [
+    "Shooter.Contracts",
+    "Shooter.Generation.Core",
+    "Shooter.Content.Runtime"
+  ],
+  "autoReferenced": true,
+  "noEngineReferences": true,
+  "includePlatforms": [
+    "Editor"
+  ]
+}

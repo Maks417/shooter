@@ -1,0 +1,10 @@
+{
+  "name": "Shooter.Content.Runtime",
+  "rootNamespace": "Shooter.Content.Runtime",
+  "references": [
+    "Shooter.Contracts",
+    "Shooter.Generation.Core"
+  ],
+  "autoReferenced": true,
+  "noEngineReferences": true
+}
