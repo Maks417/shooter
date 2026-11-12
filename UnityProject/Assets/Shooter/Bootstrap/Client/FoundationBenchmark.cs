@@ -70,8 +70,8 @@ namespace Shooter.Bootstrap
             ticks = new TickSample[captureSeconds * 60];
             output = Path.GetFullPath(FoundationEntry.CommandLine("-shooterBenchmarkOutput", ""));
             if (!Directory.Exists(output)) throw new ArgumentException("Benchmark output directory must already exist");
-            mainRecorder = Recorder(ProfilerCategory.Internal, "Main Thread");
-            renderRecorder = Recorder(ProfilerCategory.Internal, "Render Thread");
+            mainRecorder = Recorder(ProfilerCategory.Internal, "CPU Main Thread Frame Time");
+            renderRecorder = Recorder(ProfilerCategory.Internal, "CPU Render Thread Frame Time");
             allocationRecorder = Recorder(ProfilerCategory.Memory, "GC Allocated In Frame");
             authority.StepCompleted += RecordTick;
             authority.SessionFailed += Abort;

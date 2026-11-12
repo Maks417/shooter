@@ -59,8 +59,9 @@ class ExternalGpuTests(unittest.TestCase):
             self.run_trace(lambda: (self.root / "presentmon.csv").write_text("changed"))
 
     def test_event_loss_wrong_process_and_duplicate_are_rejected(self):
-        self.log += "Events lost: 1"
-        with self.assertRaises(ValueError): self.run_trace()
+        for warning in ("Events lost: 1", "1 ETW events were lost", "1 ETW buffers were lost", "8919 overflowed present events detected"):
+            self.log = warning
+            with self.assertRaises(ValueError): self.run_trace()
         self.log = "Stopped recording"
         self.rows[0]["ProcessID"] = 43
         with self.assertRaises(ValueError): self.run_trace()

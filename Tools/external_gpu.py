@@ -36,7 +36,7 @@ def gpu_samples(manifest_path, capture_path, frames):
     if sha(csv_path) != manifest.get("csvSha256") or sha(log_path) != manifest.get("logSha256"):
         raise ValueError("External GPU source hash mismatch")
     text = log_path.read_text(encoding="utf-8-sig").lower()
-    if "events lost" in text or "buffers lost" in text or "failed" in text or "error:" in text:
+    if any(marker in text for marker in ("events lost", "buffers lost", "events were lost", "buffers were lost", "overflowed present", "failed", "error:")):
         raise ValueError("External GPU trace reported errors or event loss")
     low, high = int(frames[0]["upperTimestamp"]), int(frames[-1]["endTimestamp"])
     selected = []
