@@ -117,6 +117,8 @@ public sealed class GeometryTests
         Assert.Throws<InvalidOperationException>(() => assembly.Bounds);
         var box = PrimitiveGeometry.Box(new Float3(1, 1, 1));
         Assert.Throws<ArgumentException>(() => assembly.Add(box, new Float3(0, 0, 0), default));
+        var invalidFrames = new MeshData(box.Positions, Enumerable.Repeat(new Float3(2, 0, 0), box.Positions.Count).ToArray(), box.Tangents, box.Uv, box.Indices, box.Submeshes);
+        Assert.Throws<FormatException>(() => assembly.Add(invalidFrames, new Float3(0, 0, 0), Quat.Identity));
         Assert.Equal(0, assembly.VertexCount);
         assembly.Add(box, new Float3(0, 0, 0), Quat.Identity); var first = assembly.Build(); byte[] before = GeometryCodec.EncodeMesh(first);
         assembly.Add(box, new Float3(3, 0, 0), Quat.Identity);
