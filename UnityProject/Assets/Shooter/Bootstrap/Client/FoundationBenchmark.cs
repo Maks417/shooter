@@ -25,6 +25,7 @@ namespace Shooter.Bootstrap
             public int collectorVersion = 2, mappedTimings, ambiguousTimings, drainFrames;
             public bool frameAllocationAvailable, tickAllocationAvailable, timestampFrequencyMatches;
             public long allocationMainControlBytes, allocationWorkerControlBytes, stopwatchFrequency, nativeCpuFrequency;
+            public long allocationEndControlBytes, tickAllocationEndControlBytes, legacyBclControlBytes;
             public string allocationMethod, allocationDiagnostic;
         }
         [Serializable] private sealed class FailureMetadata
@@ -171,6 +172,14 @@ namespace Shooter.Bootstrap
         {
             if (tickCount != ticks.Length || frameCount == 0 || !captureStarted) throw new InvalidOperationException("Incomplete benchmark capture");
             DisposeRecorders();
+            // Outside sampling: reject a constant-zero or disconnected meter, even after a long capture.
+            long allBefore = AllocationMeter.TotalBytes, threadBefore = AllocationMeter.ThreadBytes, legacyBefore = -1;
+            try { legacyBefore = GC.GetAllocatedBytesForCurrentThread(); } catch { }
+            diagnosticAllocationRoot = new byte[4096];
+            long endControl = allBefore < 0 ? -1 : AllocationMeter.TotalBytes - allBefore;
+            long tickEndControl = threadBefore < 0 ? -1 : AllocationMeter.ThreadBytes - threadBefore;
+            long legacyControl = -1;
+            if (legacyBefore >= 0) try { legacyControl = GC.GetAllocatedBytesForCurrentThread() - legacyBefore; } catch { }
             int mapped = 0, ambiguous = 0;
             using (var writer = new StreamWriter(Path.Combine(output, "frames.csv")))
             {
@@ -196,9 +205,11 @@ namespace Shooter.Bootstrap
                 cameraMeters = new[] { camera.transform.position.x, camera.transform.position.y, camera.transform.position.z },
                 frameTimingEnabled = FrameTimingManager.IsFeatureEnabled(), mainRecorderAvailable = mainAvailable,
                 renderRecorderAvailable = renderAvailable, allocationRecorderAvailable = allocationAvailable,
-                frameAllocationAvailable = AllocationMeter.AllThreadsAvailable, tickAllocationAvailable = AllocationMeter.ThreadAvailable,
+                frameAllocationAvailable = AllocationMeter.AllThreadsAvailable && endControl >= 4096,
+                tickAllocationAvailable = AllocationMeter.ThreadAvailable && tickEndControl >= 4096,
                 allocationMethod = AllocationMeter.Method, allocationDiagnostic = AllocationMeter.Diagnostic,
                 allocationMainControlBytes = AllocationMeter.MainControlBytes, allocationWorkerControlBytes = AllocationMeter.WorkerControlBytes,
+                allocationEndControlBytes = endControl, tickAllocationEndControlBytes = tickEndControl, legacyBclControlBytes = legacyControl,
                 stopwatchFrequency = Stopwatch.Frequency, nativeCpuFrequency = (long)timingFrequency,
                 timestampFrequencyMatches = timingFrequency == (ulong)Stopwatch.Frequency, mappedTimings = mapped, ambiguousTimings = ambiguous, drainFrames = drainFrames };
             File.WriteAllText(Path.Combine(output, "capture.json"), JsonUtility.ToJson(metadata, true) + "\n");

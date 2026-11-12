@@ -43,6 +43,8 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           python Tools/test_hardware_evidence.py
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          python Tools/test_external_gpu.py
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
           python Tools/test_prepare_unity_packages.py
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           python Tools/verify_contract_lock.py
@@ -90,6 +92,8 @@ jobs:
             ./Tools/Smoke.ps1 -BuildRunDirectory $build.FullName
             if ($LASTEXITCODE) { exit $LASTEXITCODE }
             if ($target -eq 'Client') {
+              ./Tools/Test-Measurement.ps1 -BuildRunDirectory $build.FullName
+              if ($LASTEXITCODE) { exit $LASTEXITCODE }
               ./Tools/Test-FailureShutdown.ps1 -BuildRunDirectory $build.FullName
               if ($LASTEXITCODE) { exit $LASTEXITCODE }
             }

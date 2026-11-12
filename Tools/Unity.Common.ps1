@@ -72,7 +72,7 @@ function New-ShooterRun([string]$Action, $Unity) {
 function Invoke-ShooterProcess {
     param([string]$Executable, [string[]]$ProcessArguments, [string]$WorkingDirectory,
         [string]$LogPath, [ValidateRange(1, 7200)][int]$TimeoutSeconds = 1200, [string]$MemorySamplePath = '',
-        [int]$ExpectedExitCode = 0)
+        [int]$ExpectedExitCode = 0, [Collections.IDictionary]$ProcessRecord = $null)
     $start = [Diagnostics.ProcessStartInfo]::new()
     $start.FileName = $Executable; $start.WorkingDirectory = $WorkingDirectory
     $start.UseShellExecute = $false; $start.CreateNoWindow = $true
@@ -82,6 +82,11 @@ function Invoke-ShooterProcess {
     $memoryWriter = $null
     try {
         if (!$process.Start()) { throw "Cannot start $Executable" }
+        if ($null -ne $ProcessRecord) {
+            $ProcessRecord['processId'] = $process.Id
+            $ProcessRecord['executableSha256'] = Get-ShooterHash $Executable
+            $ProcessRecord['startedUtc'] = [DateTime]::UtcNow.ToString('o')
+        }
         $stdout = $process.StandardOutput.ReadToEndAsync(); $stderr = $process.StandardError.ReadToEndAsync()
         $elapsed = [Diagnostics.Stopwatch]::StartNew()
         if ($MemorySamplePath) {
@@ -100,6 +105,7 @@ function Invoke-ShooterProcess {
             throw "Process timed out after $TimeoutSeconds seconds: $Executable; see $LogPath"
         }
         [IO.File]::WriteAllText($LogPath, $stdout.GetAwaiter().GetResult() + $stderr.GetAwaiter().GetResult())
+        if ($null -ne $ProcessRecord) { $ProcessRecord['exitCode'] = $process.ExitCode; $ProcessRecord['endedUtc'] = [DateTime]::UtcNow.ToString('o') }
         if ($process.ExitCode -ne $ExpectedExitCode) { throw "Process exited $($process.ExitCode), expected ${ExpectedExitCode}: $Executable; see $LogPath" }
     }
     finally { if ($memoryWriter) { $memoryWriter.Dispose() }; $process.Dispose() }

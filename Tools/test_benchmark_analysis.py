@@ -29,6 +29,7 @@ class CaptureAnalysisTests(unittest.TestCase):
         self.meta = {"workloadId": "B01-minimal-v1", "seed": "460072030", "profile": "Low",
                      "collectorVersion": 2, "tickAllocationAvailable": True, "frameAllocationAvailable": True,
                      "allocationMainControlBytes": 4424, "allocationWorkerControlBytes": 4424,
+                     "allocationEndControlBytes": 4128, "tickAllocationEndControlBytes": 4128,
                      "width": 1280, "height": 720, "graphicsApi": "Direct3D11", "frames": 2,
                      "ticks": 10800, "warmupSeconds": 60, "captureSeconds": 180, "diagnostic": False,
                      "gpuAdapter": "AMD Radeon(TM) Graphics", "cameraMeters": [0, 1.65, -6],

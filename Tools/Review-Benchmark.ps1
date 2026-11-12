@@ -14,6 +14,7 @@ try {
         '--build-manifest', (Join-Path $build 'build-manifest.json'), '--hardware', (Join-Path $capture 'hardware.json'),
         '--run-index', $RunIndex, '--hardware-evidence', $evidence, '--evidence-application', (Join-Path $run.Path 'evidence-application.json'),
         '--output', (Join-Path $run.Path 'benchmark-result.json'))
+    if (Test-Path -LiteralPath (Join-Path $capture 'external-gpu.json')) { $argsForAnalysis += @('--external-gpu-manifest', (Join-Path $capture 'external-gpu.json'), '--gpu-application', (Join-Path $run.Path 'gpu-application.json')) }
     $run.Report.commands += [ordered]@{ executable='python'; arguments=$argsForAnalysis }
     & python @argsForAnalysis
     if ($LASTEXITCODE -ne 0) { throw 'Evidence validation or analysis failed.' }

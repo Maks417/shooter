@@ -7,6 +7,7 @@ import json
 import math
 from pathlib import Path
 from hardware_evidence import apply_evidence
+from external_gpu import gpu_samples
 
 
 def percentile(values, probability):
@@ -29,7 +30,7 @@ def utc(text):
     return datetime.fromisoformat(text.replace("Z", "+00:00"))
 
 
-def analyze(capture_path, build_path, hardware_path, run_index, evidence_path=None, application_path=None):
+def analyze(capture_path, build_path, hardware_path, run_index, evidence_path=None, application_path=None, external_gpu_path=None, gpu_application_path=None):
     meta = json.loads((capture_path / "capture.json").read_text(encoding="utf-8-sig"))
     build = json.loads(build_path.read_text(encoding="utf-8-sig"))
     hardware = json.loads(hardware_path.read_text(encoding="utf-8-sig"))
@@ -53,7 +54,7 @@ def analyze(capture_path, build_path, hardware_path, run_index, evidence_path=No
     frame_values = [float(row["frameMs"]) for row in rows]
     frame_ms = {key: percentile(frame_values, p) for key, p in [("p50", .5), ("p95", .95), ("p99", .99), ("max", 1)]}
     allocations = [int(t["managedTickBytes"]) for t in ticks]
-    calibrated = meta.get("collectorVersion") == 2 and meta.get("tickAllocationAvailable") is True and meta.get("allocationMainControlBytes", 0) >= 4352
+    calibrated = meta.get("collectorVersion") == 2 and meta.get("tickAllocationAvailable") is True and meta.get("allocationMainControlBytes", 0) >= 4352 and meta.get("tickAllocationEndControlBytes", 0) >= 4096
     unavailable_tick = meta.get("collectorVersion") == 2 and meta.get("tickAllocationAvailable") is False
     if any(value < 0 and not (unavailable_tick and value == -1) for value in allocations):
         raise ValueError("Invalid allocation sample")
@@ -61,6 +62,12 @@ def analyze(capture_path, build_path, hardware_path, run_index, evidence_path=No
     allocated_tick = raw_allocated_tick if calibrated else None
     simulation = [float(t["simulationMs"]) for t in ticks]
     simulation_p95 = percentile(simulation, .95)
+    external_values = gpu_application = None
+    if external_gpu_path is not None:
+        external_values, gpu_application = gpu_samples(external_gpu_path, capture_path, rows)
+        if gpu_application_path is not None:
+            if gpu_application_path.exists(): raise ValueError("Refusing to overwrite GPU evidence application")
+            gpu_application_path.write_text(json.dumps(gpu_application, indent=2) + "\n")
     if meta["diagnostic"]:
         return {"schemaVersion": 1, "scope": "Short diagnostic capture only; not B01 acceptance", "diagnostic": True,
                 "frames": len(rows), "ticks": len(ticks), "frameMs": frame_ms, "gpuAdapter": meta["gpuAdapter"], "gateStatus": "PendingHardware"}
@@ -77,9 +84,15 @@ def analyze(capture_path, build_path, hardware_path, run_index, evidence_path=No
             return None
         return percentile(values, probability)
 
-    main, render, gpu = measured("mainMs"), measured("renderMs"), measured("gpuMs")
+    main, render = measured("mainMs"), measured("renderMs")
+    if external_gpu_path is None:
+        gpu = measured("gpuMs")
+    else:
+        gpu = percentile(external_values, .95) if external_values is not None else None
+        if external_values is None:
+            unavailable.append("gpuMs: " + gpu_application["unavailable"])
     allocated_frame = measured("managedFrameBytes", 1)
-    if meta.get("collectorVersion") != 2 or meta.get("frameAllocationAvailable") is not True or meta.get("allocationWorkerControlBytes", 0) < 4352:
+    if meta.get("collectorVersion") != 2 or meta.get("frameAllocationAvailable") is not True or meta.get("allocationWorkerControlBytes", 0) < 4352 or meta.get("allocationEndControlBytes", 0) < 4096:
         allocated_frame = None
         unavailable.append("managedFrameBytes: all-thread allocation positive control unavailable/unverified")
     memory = [r for r in read_rows(capture_path / "memory.csv") if utc(meta["captureStartUtc"]) <= utc(r["utc"]) <= utc(meta["captureEndUtc"])]
@@ -126,10 +139,12 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--hardware-evidence", type=Path)
     parser.add_argument("--evidence-application", type=Path)
+    parser.add_argument("--external-gpu-manifest", type=Path)
+    parser.add_argument("--gpu-application", type=Path)
     args = parser.parse_args()
     if args.output.exists():
         raise ValueError("Refusing to overwrite a benchmark result; use a new review directory")
-    report = analyze(args.capture, args.build_manifest, args.hardware, args.run_index, args.hardware_evidence, args.evidence_application)
+    report = analyze(args.capture, args.build_manifest, args.hardware, args.run_index, args.hardware_evidence, args.evidence_application, args.external_gpu_manifest, args.gpu_application)
     args.output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(report, indent=2))
 
