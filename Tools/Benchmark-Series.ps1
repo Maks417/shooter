@@ -8,6 +8,22 @@ $unity=Get-ShooterUnity
 $run=New-ShooterRun 'benchmark-series' $unity
 $build=(Resolve-Path -LiteralPath $BuildRunDirectory).Path
 $sensor=(Resolve-Path -LiteralPath $SensorLog).Path
+function Copy-LiveSensorSnapshot([string]$Destination) {
+    $inputStream=[IO.File]::Open($sensor,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::ReadWrite)
+    $outputStream=$null
+    try {
+        $remaining=$inputStream.Length
+        if ($remaining -gt 64MB) { throw 'Sensor snapshot exceeds the bounded64 MiB limit.' }
+        $outputStream=[IO.File]::Open($Destination,[IO.FileMode]::CreateNew,[IO.FileAccess]::Write,[IO.FileShare]::Read)
+        $buffer=[byte[]]::new(65536)
+        while ($remaining -gt 0) {
+            $count=$inputStream.Read($buffer,0,[int][Math]::Min($remaining,$buffer.Length))
+            if ($count -eq 0) { throw 'Sensor file was truncated during snapshot.' }
+            $outputStream.Write($buffer,0,$count);$remaining-=$count
+        }
+    }
+    finally { if ($outputStream) {$outputStream.Dispose()};$inputStream.Dispose() }
+}
 try {
     $run.Report['scope']='Three prescribed release captures, no retries; additional same-player conditioning precedes run1 warmup. Hardware review remains explicit.'
     $run.Report['buildDirectory']=$build
@@ -17,7 +33,7 @@ try {
     $run.Report['preconditionSeconds']=$PreconditionSeconds
     $run.Report['attempts']=@()
     $run.Report.result='Collecting'
-    [IO.File]::WriteAllBytes((Join-Path $run.Path 'sensor-before.csv'),[IO.File]::ReadAllBytes($sensor))
+    Copy-LiveSensorSnapshot (Join-Path $run.Path 'sensor-before.csv')
     $base=Split-Path -Parent $run.Path
     for ($index=1;$index -le 3;$index++) {
         $before=@(Get-ChildItem -LiteralPath $base -Directory -Filter "benchmark-$index-*" | ForEach-Object Name)
@@ -45,9 +61,10 @@ try {
 catch { $run.Report.error=$_.Exception.Message;Write-Warning $run.Report.error }
 finally {
     $run.Report['snapshotReadStartedUtc']=[DateTime]::UtcNow.ToString('o')
-    [IO.File]::WriteAllBytes((Join-Path $run.Path 'sensor-log-snapshot.csv'),[IO.File]::ReadAllBytes($sensor))
+    try { Copy-LiveSensorSnapshot (Join-Path $run.Path 'sensor-log-snapshot.csv') }
+    catch { $run.Report['snapshotError']=$_.Exception.Message;$run.Report.result='FAIL' }
     $run.Report['snapshotReadEndedUtc']=[DateTime]::UtcNow.ToString('o')
-    $run.Report['sensorSnapshotSha256']=Get-ShooterHash (Join-Path $run.Path 'sensor-log-snapshot.csv')
+    if (Test-Path -LiteralPath (Join-Path $run.Path 'sensor-log-snapshot.csv')) { $run.Report['sensorSnapshotSha256']=Get-ShooterHash (Join-Path $run.Path 'sensor-log-snapshot.csv') }
     Save-ShooterRun $run
 }
 if ($run.Report.result -ne 'PASS') { exit 1 }
