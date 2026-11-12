@@ -1,6 +1,6 @@
 # M0 — Foundation — validation and acceptance
 
-Status: pure tests, Unity tests and player smoke have run; reference capture and remaining gate status are recorded in [handoff](handoff.md). Use [global validation](../../validation.md) and [build lanes](../../build-ci.md). Missing evidence remains pending; a successful diagnostic box run is not combat or milestone acceptance.
+Status: final-source pure/Unity tests, clean client/server builds, player smoke, allocation controls and failure shutdown pass. Required V10 acceptance remains pending M0-RT-001 and M0-THERM-001; exact reports and reviewer decision are in [handoff](handoff.md). Use [global validation](../../validation.md) and [build lanes](../../build-ci.md). Missing evidence remains pending; a successful diagnostic box run is not combat or milestone acceptance.
 
 | Suite | Scenario | Required result |
 |---|---|---|
@@ -18,11 +18,11 @@ Status: pure tests, Unity tests and player smoke have run; reference capture and
 
 ## Gate checklist
 
-- [ ] Entry prerequisites verified and implementation steps complete.
+- [x] Entry prerequisites verified and implementation steps complete.
 - [ ] Required suites above pass with archived machine-readable results.
 - [x] No prohibited visual sources in accepted builds; generated outputs have versioned provenance.
 - [x] Contract/schema/generator changes reviewed and downstream fixtures synchronized (single-integrator initial C0-v1 freeze; no independent milestone review implied).
-- [ ] Resource/failure/cancellation paths bounded and relevant budget evidence attached.
+- [x] M0 resource/failure paths bounded and actual budget evidence attached; incomplete render and thermal acceptance remain pending in the required-suites item.
 - [x] Shared docs updated with actual code references; milestone links verified.
 - [ ] Integrator reviews evidence and signs milestone status in handoff.
 

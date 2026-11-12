@@ -3,7 +3,7 @@
   "updatedDate": "2026-11-12",
   "integrator": "Codex (M0 integrator)",
   "branch": "main",
-  "baseCommit": "a4afce68fbe6dc4420d0d820cfba3b0abf197d1d",
+  "baseCommit": "896e6a85c1f6cc02dc82ba2ab20f0f9c23ef561f",
   "contractVersion": "C0-v1",
   "readyForParallelIntegration": false,
   "packages": [
@@ -11,7 +11,7 @@
       "packageId": "WP-00",
       "owner": "Codex (single integrator)",
       "branch": "main",
-      "baseCommit": "a4afce68fbe6dc4420d0d820cfba3b0abf197d1d",
+      "baseCommit": "896e6a85c1f6cc02dc82ba2ab20f0f9c23ef561f",
       "paths": [
         "UnityProject/Assets/Shooter/Contracts",
         "UnityProject/Assets/Shooter/Bootstrap",
@@ -35,14 +35,14 @@
       ],
       "dependencies": [],
       "contractVersion": "C0-v1",
-      "status": "C0-v1 frozen by single integrator with hash-checked source/fixture/toolchain baseline; 57 pure tests with online advisory check, 6 EditMode and 5 PlayMode tests, new release client/server builds and smoke pass; three native injected overload/shutdown tests pass; final M0 reviewer/hardware acceptance remains pending; no M1 work",
+      "status": "M0 implementation integrated; C0-v1 unchanged. Exact-commit clean client/server builds and smoke, 60 pure tests, 11 Unity tests, 55 Python tooling tests, release allocation controls and three shutdown checks pass. Acceptance pending M0-RT-001 and M0-THERM-001; no M1 work; zero milestones closed.",
       "leaseExpiry": null
     },
     {
       "packageId": "WP-09",
       "owner": "Codex (same integrator; M0 evidence scaffolds only)",
       "branch": "main",
-      "baseCommit": "a4afce68fbe6dc4420d0d820cfba3b0abf197d1d",
+      "baseCommit": "896e6a85c1f6cc02dc82ba2ab20f0f9c23ef561f",
       "paths": [
         "Tools"
       ],
@@ -50,7 +50,7 @@
         "WP-00"
       ],
       "contractVersion": "C0-v1",
-      "status": "Three new full B01 captures with concurrent HWiNFO observations completed; measured budgets pass and no sampled thermal-throttling flags, but all raw reports remain PendingHardware for incomplete GPU/render/frame-allocation evidence and reference review. RAM dual-channel is separately software-verified. Raw benchmark reports unchanged; hosted CI deferred.",
+      "status": "Three prescribed final-source monitored captures retained: 689652 GPU/allocation samples complete; measured budgets do not fail. Four render samples and unaccepted thermal stabilization keep every report PendingHardware. Dual-channel proof applied only to fresh reviews; raw reports unchanged. Hosted CI explicitly deferred.",
       "leaseExpiry": null
     },
     {

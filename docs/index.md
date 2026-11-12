@@ -2,7 +2,7 @@
 
 Unity 6 URP / C# / HLSL design for a realistic modern-world shooter generated from code and numeric recipes. No imported/manual meshes, painted textures, sprites or authored animation. Initial hardware target: Ryzen 5 4600H integrated Radeon, 16 GB DDR4-3200, NVMe; native 720p Low at 30 FPS, 60 FPS stretch.
 
-**Status:** design baseline v1.1; implementation update 2026-11-12. M0 foundation has a locked Unity project and frozen C0-v1, generated box view, fixed-tick empty authority, native world-query adapters, tests, client/server smoke and validated controlled failure shutdown. Three current full B01 captures completed with acceptance still pending required counter/reference evidence and final review; hosted CI is deferred by the user. Most gameplay/generation systems below remain specifications. Exact evidence is in the [M0 handoff](milestones/m0-foundation/handoff.md). Historical temporary memory use is not a requirement.
+**Status:** design baseline v1.1; implementation update 2026-11-12. M0 foundation implementation and clean-source client/server validation pass, including frozen C0-v1, 60 pure tests and 11 Unity tests. The final three monitored B01 captures have complete calibrated allocation/GPU evidence, but four render timings and unaccepted thermal stabilization keep M0 open. Zero of eight milestones are closed; hosted CI is deferred by the user. Gameplay/generation systems below remain specifications. Exact results and the two pending gates are in the [M0 handoff](milestones/m0-foundation/handoff.md). Historical temporary memory use is not a requirement.
 
 ## Reading order
 

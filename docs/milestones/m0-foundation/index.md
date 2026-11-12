@@ -1,6 +1,6 @@
 # M0 — Foundation — implementation pack
 
-Status: in progress, 2026-11-12. Editor/packages and C0-v1 are locked; the project imports, pure and Unity suites pass, release client/dedicated server boot and exit, and the generated-box capture harness exists. The revised failure lifecycle also passes three real release-player overload/shutdown checks. Remaining acceptance and real benchmark evidence are in [handoff](handoff.md). No combat/gameplay or whole-milestone performance claim is made. Canonical backlog tasks: T001–T004. Assigned packages: WP-00, WP-09, both held by one integrator.
+Status: implemented, acceptance pending, 2026-11-12. Locked editor/C0-v1, clean client/server builds and smoke, 60 pure tests, 11 Unity tests, allocation controls and bounded failure shutdown pass. Three final monitored B01 captures have complete GPU/allocation evidence; four render timings and thermal stabilization remain pending. No milestone is closed. Exact evidence and owners are in [handoff](handoff.md). Canonical tasks T001–T004; WP-00/WP-09 held by one integrator. No combat performance claim is made.
 
 ## Goal and entry gate
 

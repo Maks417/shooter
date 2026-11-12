@@ -1,6 +1,6 @@
-# M0 â€” Foundation â€” handoff and gate record
+# M0 — Foundation — handoff and gate record
 
-Status: **IMPLEMENTED / ACCEPTANCE PENDING**, 2026-11-12. C0-v1 is frozen by the single integrator, online dependency advisories have been checked, and the revised failure-recording/shutdown path passes three real release-player overload tests. The user's CPU-Z screenshot verifies software-reported dual-channel DDR4. Three new full release captures now have concurrent sensor observations; thermal stabilization still requires review, and incomplete GPU/render/frame-allocation counters prevent full acceptance. M0 is not signed off, with hosted CI explicitly deferred by the user. The current continuation, hardware observation and monitored captures below supersede historical candidate/failure-lifecycle and unverified-channel status; original records and failed attempts remain preserved. M1 has not started. See [acceptance](validation-acceptance.md), [entry](index.md) and [bootstrap runbook](../../bootstrap-runbook.md).
+Status: **IMPLEMENTED / ACCEPTANCE PENDING**, 2026-11-12. The remaining M0 measurement implementation is committed and validated: calibrated release allocation callbacks, delayed timing correlation, pinned process-specific GPU capture, per-frame presentation guards and immutable hardware-evidence review. Clean-source client/server builds and smoke, 60 pure tests, 11 Unity tests, 55 Python tooling tests, allocation controls and three controlled shutdown tests pass. Three final-source B01 captures have complete GPU/allocation coverage, but four render timings and unaccepted thermal stabilization keep M0 open. **Zero of eight milestones are closed**; hosted CI remains explicitly deferred by the user. The final-source review below supersedes historical interpretations while retaining original reports. M1 has not started. See [acceptance](validation-acceptance.md), [entry](index.md) and [bootstrap runbook](../../bootstrap-runbook.md).
 
 ## Source, ownership and versions
 
@@ -219,3 +219,86 @@ Release timing coverage remains incomplete: valid GPU samples are 124545/168505,
 Concurrent thermal data is now available for all three identified captures. Remaining work is complete supported release GPU/render/frame-allocation measurement, explicit handling of verified external hardware evidence for future reports, thermal/reference review including the monitor-version limitation, review of the historical hitch limitation and final milestone sign-off. Hosted CI remains deferred by the user. M0 and `readyForParallelIntegration` remain pending/false. No runtime, settings, package, schema, fixture or workload was changed for this monitored run.
 
 Final handoff checks: pure contracts pass 57/57 with zero skipped and online advisory lookup completed in `20261112T083914625Z-74170673` under this orchestration commit's evidence directory. Source provenance passes 128 asset entries/64 GUIDs, the frozen C0/fixture identity check passes, and fixture verification passes 35 assertions. Documentation verification passes 84 pages, 540 links and 104 integrity files; it does not certify benchmark counters. Only the main worktree is registered, with no temporary branch/worktree created. Required raw evidence remains ignored under Artifacts, separate from the committed handoff/coordination changes.
+
+
+### Calibrated measurement continuation, 2026-11-12
+
+Source commits `66123bbe9bf17bc6b3f8f03389ff1be342bb8114` and `bdcc9dd1111a3064d43261b8dc9aa226118260a4` implement [ADR-015](../../decisions.md#adr-015--accepted-calibrated-release-measurement-and-immutable-evidence-review). C0-v1, specification fixtures, workload/seed and toolchain hashes are unchanged. No engine installation, Library package, curated package, game-art source or future feature was edited. This continuation uses the verified existing project/Library; the earlier clean-checkout reproduction remains historical, not a new cold-build claim.
+
+**Historical allocation correction:** the locked IL2CPP BCL `GetAllocatedBytesForCurrentThread` is an unsupported zero-returning stub. Historical native 0 B/tick reports above do not establish zero allocation; their raw files remain unchanged. New analysis marks them unavailable. Pure .NET tests remain valid for their tested runtime. The final release positive control demonstrates the distinction directly: a known byte-array allocation reports 4128 bytes through the callback counter and zero through the legacy BCL API.
+
+Collector version 2 observes all-thread managed object sizes plus thread-local tick allocations. Before warmup, rooted object/string/array controls report 4426 bytes on both main and worker threads. End-of-capture controls report 4128 bytes outside the measured window. The normal diagnostic measures zero B/frame; the injected diagnostic measures 4128 B/frame. Both map every main/render timing, with no ambiguous joins. The separate process-specific GPU diagnostic has 2847 valid GPU durations for exactly 2847 measured frames; native GPU gaps remain preserved. These diagnostics validate collection and are not full B01 acceptance.
+
+Evidence below is relative to `Artifacts/m0-foundation/bdcc9dd1111a3064d43261b8dc9aa226118260a4/`:
+
+| Check | Actual retained result |
+|---|---|
+| Pure contracts/foundation | 60/60 PASS, zero skipped, online restore/advisory lookup; `20261112T093320208Z-0e44522c` |
+| Release IL2CPP client | PASS, packed-source audit; `build-client-20261112T093305882Z-1f0dd7d5` |
+| Dedicated server | PASS, graphics/client assemblies excluded; `build-server-20261112T093730484Z-d5f753a5` |
+| Client/server smoke | PASS; `smoke-client-20261112T093558499Z-53ec3791`, `smoke-server-20261112T093854991Z-790523ac` |
+| Release allocation controls | PASS normal/injected; `measurement-controls-20261112T093610104Z-5466d6a0` |
+| Native overload/shutdown | 3/3 PASS; `failure-shutdown-20261112T093658348Z-475ee487` |
+| EditMode / PlayMode | 6/6 and 5/5 PASS; `tests-editmode-20261112T093907176Z-e71dc4be`, `tests-playmode-20261112T093935770Z-624b3862` |
+| Process-targeted GPU diagnostic | PASS validation; `benchmark-diagnostic-20261112T093719279Z-2ef700e3/gpu-application.json` |
+| Python validation suites | 54/54 actual tests PASS: analyzer 14, hardware evidence 8, external GPU 8, package preparation 10, schema tooling 9, frozen contract 5; synthetic tests are not player evidence |
+| PowerShell wrapper regressions | 24 smoke, 31 Unity-result and 28 provenance cases PASS; retained under `Artifacts/tooling-tests` and `Artifacts/wrapper-tests`, stamped 20261112T093614–093704 |
+
+Client/server source SHA256 is `3483e99821fcdf86847fad8beb75e18d266f0b926875eb8897f9d1aea9d04d5a`; client harness SHA256 is `349c10311d95bc1a5784be8955c36aa9e0bf9a8130190d6c34b2231f51506323`. Client wrapper entry is recorded clean. Build manifests still record temporary BuildPipeline state as dirty; later documentation edits do not alter source identity. Full protocol evidence and final acceptance will be recorded after the live monitored runs complete.
+
+
+### Final-source validation and acceptance review, 2026-11-12
+
+Reviewer/owner: Codex as the sole M0 integrator; no independent reviewer is implied. Final implementation commit `896e6a85c1f6cc02dc82ba2ab20f0f9c23ef561f` includes the preceding calibration/correlation commits plus corrected named recorder capture and independent application presentation guards. C0-v1, specification fixtures, seed 460072030, B01-minimal-v1, numeric geometry, quality profiles and the locked Unity toolchain are unchanged. No M1 code or installed/curated package patch was introduced. [ADR-015](../../decisions.md#adr-015--accepted-calibrated-release-measurement-and-immutable-evidence-review) records the measurement changes.
+
+Evidence in this section is relative to `Artifacts/m0-foundation/896e6a85c1f6cc02dc82ba2ab20f0f9c23ef561f/`. All 36 harness source proofs match current committed source. Source SHA256 is `169a49dd6b43394d6e0060b960ea5d5dc3e5f279c31aea20a21cee50870f7ef8`; harness SHA256 is `c0312e09ac527cfd0feed9a0480cd09b53e177d07c6441bf190e2c3a93321d11`. The toolchain hash remains `9ac31fe82117043e2bba3bfb843dd1ca32834b15425188e96d6f3369e2c627a8`.
+
+| Final-source check | Actual result and retained directory |
+|---|---|
+| Pure contracts/foundation | 60/60 PASS, zero skipped, online restore/advisory lookup; `20261112T102121341Z-aab4c1ed` |
+| Unity integration | EditMode 6/6 and PlayMode 5/5 PASS; `tests-editmode-20261112T102245246Z-3e6c5d32`, `tests-playmode-20261112T102315085Z-9d545ebb` |
+| Final release allocation controls | Normal/injected PASS; `measurement-controls-20261112T102341217Z-b1e4ec01`; object/string/array controls 4426 bytes on main and worker, end controls 4128 bytes; normal frame maximum zero, injected maximum at least 4096 bytes |
+| Final native overload/shutdown | 3/3 PASS with retained debt, natural expected failure exit and no successful capture; `failure-shutdown-20261112T102425800Z-154387e1` |
+| Python tooling | 55/55 PASS: benchmark 14, hardware evidence 8, GPU evidence 9, packages 10, schema tooling 9, contract lock 5; `fast-validation-console.log` |
+| Clean Git-entry client/server builds | Both PASS, fresh output directories; `build-client-20261112T125111287Z-26b13af5`, `build-server-20261112T125232710Z-eac5897d`; `clean-entry-validation.json` records clean entry/end |
+| Clean-build player smoke | Both PASS; `smoke-client-20261112T125221992Z-4929b859`, `smoke-server-20261112T125338396Z-783d4d24`; server has no graphics sources/client assemblies |
+| Source provenance / frozen identities | PASS, 132 asset entries / 66 GUIDs; C0 source 24 and fixture files 18 unchanged |
+| Specification schemas/fixtures | Six schema cases and 35 semantic fixture assertions PASS; `schemas-final.json`; these checks do not pass hardware gates |
+
+The earlier final-source builds also pass: captured client `build-client-20261112T101852405Z-8f09aaa2` and server `build-server-20261112T102104567Z-54e37912`, with both smoke runs. The clean-entry repeat uses the same commit, source and harness hashes and the existing verified Library/package caches. It is not a new clean-Library import or M1 cold-regeneration claim. The benchmark and clean-build GameAssembly DLLs are byte-identical, SHA256 `cf597e36ce4241f6a783581f51f00cf4feffd95831af37a15a3ff68cfe48f819`. Build manifests still observe temporary BuildPipeline settings/Resources as dirty; wrapper clean entry/end and exact binary/source proofs are recorded separately.
+
+### Final monitored B01 series
+
+`release-acceptance-20261112T122259Z/` retains the plan, every attempt, conditioning review, raw sensor snapshot, source hashes, reproducible analysis/plot scripts, standalone figures and final gate review. After the usage-limit pause, the user restarted HWiNFO at the same CSV path; this fresh log begins at local 13:21:50.697. The earlier live file was reset on restart. Previously archived sensor snapshots remain retained; unsnapshotted preliminary observations from earlier source investigations are not used for final acceptance. HWiNFO's executable/version could not be read and remains explicitly unavailable.
+
+One full conditioning attempt (`benchmark-1-20261112T122305226Z-25355811`, 192286 frames) preceded the three prescribed attempts below. Conditioning is separately labeled before launch and excluded from the three-run set. All four native processes completed successfully. Every prescribed capture is release IL2CPP, native 1280×720 Low/D3D11, zero actors, 60-second warmup, 180-second measurement and exactly 10800 consecutive ticks. No prescribed run was discarded or retried. Raw reports and wrapper nonzero PendingHardware outcomes remain unchanged.
+
+| Prescribed capture | Frames | Frame p95 / p99 / max (ms) | GPU p95 (ms) | Missing render samples | Sampled private peak (bytes) |
+|---|---:|---|---:|---:|---:|
+| `benchmark-1-20261112T122850187Z-c3070425` | 221027 | 1.1020 / 1.8939 / 29.7714 | 0.6911 | 1 | 268902400 |
+| `benchmark-2-20261112T123729524Z-add2add7` | 233913 | 0.9980 / 1.3810 / 40.3944 | 0.6566 | 0 | 269221888 |
+| `benchmark-3-20261112T124326876Z-fe923c6c` | 234712 | 0.9844 / 1.4829 / 40.4717 | 0.6545 | 3 | 268963840 |
+
+Worst frame p95 is 1.102 ms and the three-run median is 0.998 ms. All 689652 main timing, calibrated all-thread frame-allocation and external GPU samples are available; every measured frame has independent application VSync-off/uncapped checks. All 32400 measured ticks and all measured frames report zero managed allocation with passing positive controls. No frame exceeds 50 ms. Known measured budgets do not fail. These are empty-foundation results, not combat performance or a 30 FPS game claim.
+
+The complete GPU results come from the pinned, hash-verified PresentMon per-process series with exactly matching present counts, no trace loss/overflow and all per-present durations. Incomplete native GPU values remain in raw files. Corrected source uses a 65536-entry present buffer. An earlier `bdcc9dd` conditioning trace overflowed its default buffer; it remains retained and cannot pass. An earlier source `28df022` prescribed attempt was rejected after two CSV SyncInterval values became 1. The pinned PresentMon source confirms kernel flip events can overwrite that field; source `896e6a8` independently checks the actual application configuration on every frame and records driver flip histograms. Earlier failed reports are not rewritten or counted toward the final set.
+
+**M0-RT-001 — Pending, integrator:** four native render timings remain unverifiable, one in run 1 and three in run 3. All frame-start timestamps map unambiguously. Across 689640 comparable frames, native main timing agrees with the direct recorder at its documented four-frame delay, allowing the observed one-nanosecond integer conversion. At each missing render frame, that aligned direct recorder also emits zero with sample count 1. This does not establish a valid render-work duration. The analyzer retains null render percentiles for incomplete runs; no adjacent-frame fill, invented zero or incomplete percentile is accepted. Run 2's complete native render p95 is 0.1821 ms. `final-gate-review.json` retains every affected CSV line, timestamp, tick and direct recorder sample. The underlying zero-validity/root cause is unproven. Resolve with upstream clarification of this case or a validated supported independent release render measurement, then repeat the required set.
+
+### Final thermal and memory review
+
+The byte-exact sensor snapshot brackets all measured windows. Its 792 complete samples, explicit +01:00 host offset and source hash are in `monitored-review.json`; no device/process footer is present, and no HWiNFO sampled frame statistic is used as Shooter timing. No GPU-clock anomaly appears in this fresh snapshot. Each prescribed window contains 90 thermal samples. All three CPU thermal flags and the GPU thermal flag are No at every sampled point. GPU power-limit Yes counts are 16, 8 and 17 of 90 respectively; these are retained separately from thermal flags.
+
+| Run | CPU range / first→last 30s mean (°C) | GPU range / first→last 30s mean (°C) |
+|---|---|---|
+| 1 | 75.1–92.6 / 79.37→85.78 | 63–70 / 64.73→68.47 |
+| 2 | 75.6–91.4 / 80.32→84.81 | 63–70 / 64.47→68.67 |
+| 3 | 75.8–92.0 / 80.29→85.32 | 64–71 / 64.80→69.20 |
+
+**M0-THERM-001 — Pending, hardware/integrator:** thermal stabilization is not accepted. The initial conditioning's late plateau did not persist through the prescribed windows: measured CPU means rise about 4.49–6.41 °C and GPU means about 3.73–4.40 °C. Sequential launch/review gaps and the complete temperature curves are retained. Sampled No throttling flags are useful observations, not proof of stabilization or absence of shorter events. No new numerical acceptance threshold is invented. A repeat must maintain consistent conditioning through a reviewed stable-temperature capture set. `final-gate-review.json` explicitly records acceptedStabilization=false; no thermal-acceptance manifest is fabricated.
+
+Private-memory sampling contains 178, 178 and 177 measured points at approximately 1 Hz, with peak 256.75 MiB. First/last 30-second private means decline slightly in all three windows; fitted short-window slopes are approximately −188, −515 and −659 bytes/s. This does not establish a 30-minute leak/soak pass. Actual RSS, private-byte curves, raw sample counts, plots and plotting tool identities are in `plot-and-memory-review.json`, `frame-times.png`, `frame-distributions.png`, `memory-trends.png` and `thermal-observations.png`. Visual inspection confirmed readable, complete plotted traces.
+
+Fresh evidence reviews `benchmark-evidence-review-20261112T125319710Z-d19cdd2d`, `benchmark-evidence-review-20261112T125329815Z-b2629afd` and `benchmark-evidence-review-20261112T125339828Z-2d5eff28` apply only the reviewed dual-channel memory proof and validated GPU sources. All remain PendingHardware. All three raw and three derived result JSON files pass the unchanged full Draft 2020-12 schema; schema validity is separate from acceptance. `final-validation-v2.json` verifies all source/build/report hashes and the exact clean-build identity; the retained v1 report has the same substantive findings.
+
+Final integrator decision: M0 implementation work is integrated, but acceptance and a passing milestone tag remain pending M0-RT-001 and M0-THERM-001. Zero of eight milestones are closed; readyForParallelIntegration remains false. Hosted CI is deferred by the user's explicit instruction, and no hosted execution is claimed. The historical overload/native-hang cause remains unproven; controlled shutdown checks pass and these final captures exit normally. No M1, combat, realism, cold-regeneration or 30-minute soak acceptance is claimed. Required ignored evidence remains in Artifacts; only main is used, with no temporary worktree/branch or retained task stash.
