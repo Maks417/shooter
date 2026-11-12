@@ -10,7 +10,7 @@ namespace Shooter.Generation
     {
         public const string Schema = "shooter.recipe.weapon.v1";
         public const string GeneratorId = "geometry.weapon";
-        public const string GeneratorVersion = "1.0.0";
+        public const string GeneratorVersion = "1.0.1";
         public RecipeDocument Document { get; }
         public string Kind { get; }
         private readonly byte[] source;

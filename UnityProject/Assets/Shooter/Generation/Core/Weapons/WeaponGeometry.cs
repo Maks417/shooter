@@ -25,6 +25,9 @@ namespace Shooter.Generation
     /// <summary>Rule-built fictional weapons. No combat rules, authored mesh vertices or seed-dependent mechanics.</summary>
     public static class WeaponGeometry
     {
+        // Shared mechanical dimensions drive the visual part and its independent gameplay proxy.
+        private const float RifleMagazineCenterY = -.080f;
+        private const float RifleMagazineHeight = .200f;
         public static WeaponBuild Build(WeaponRecipe recipe)
         {
             if (recipe == null) throw new ArgumentNullException(nameof(recipe));
@@ -76,7 +79,7 @@ namespace Shooter.Generation
                 Box(0, .06f, -.25f, .060f, .11f, .14f, 1); // butt stock
                 Box(0, .065f, -.11f, .030f, .035f, .16f, 0); // stock tube
                 Box(0, -.045f, -.015f, .037f, .13f, .055f, 1, 15); // grip
-                Box(0, -.115f, .07f, .032f, .14f, .055f, 0, -8); // magazine
+                Box(0, RifleMagazineCenterY, .07f, .032f, RifleMagazineHeight, .055f, 0, -8); // magazine penetrates receiver/well
                 Barrel(.08f, .21f, .64f, .009f);
                 // Trigger guard is assembled from closed strips around an actual open gap.
                 Box(0, -.041f, .055f, .014f, .010f, .085f);
@@ -95,7 +98,7 @@ namespace Shooter.Generation
                 }
                 if (lod < 2)
                 {
-                    Box(0, -.011f, .053f, .008f, .024f, .009f, 0, -15); // trigger
+                    Box(0, .003f, .053f, .008f, .050f, .009f, 0, -15); // upper trigger joins receiver; lower guard remains open
                     Box(0, .013f, .068f, .047f, .018f, .074f); // magazine well
                     for (int i = 0; i < (lod == 0 ? 6 : 3); i++)
                     {
@@ -120,7 +123,7 @@ namespace Shooter.Generation
                 if (lod < 3) Box(.018f, .045f, -.010f, .009f, .008f, .035f); // slide release
                 if (lod < 2)
                 {
-                    Box(0, .003f, .030f, .007f, .020f, .009f, 0, -14); // trigger
+                    Box(0, .010f, .030f, .007f, .030f, .009f, 0, -14); // upper trigger joins frame; lower guard remains open
                     for (int i = 0; i < (lod == 0 ? 5 : 2); i++)
                     {
                         float z = -.062f + i * (lod == 0 ? .008f : .024f);
@@ -140,7 +143,7 @@ namespace Shooter.Generation
             {
                 Add(.065f, .09f, .058f, .09f, .27f); Add(.08f, .345f, .056f, .06f, .28f);
                 Add(.06f, -.25f, .06f, .11f, .14f); Add(.065f, -.11f, .03f, .035f, .16f);
-                Add(-.045f, -.015f, .037f, .13f, .055f, 15); Add(-.115f, .07f, .032f, .14f, .055f, -8);
+                Add(-.045f, -.015f, .037f, .13f, .055f, 15); Add(RifleMagazineCenterY, .07f, .032f, RifleMagazineHeight, .055f, -8);
                 return new CollisionData(new[] { new TaggedCapsule(new Capsule(new Float3(0, .08f, .221f), new Float3(0, .08f, .629f), .011f), 0) }, boxes, Array.Empty<TaggedHeightGrid>());
             }
             Add(.07f, .005f, .032f, .034f, .17f); Add(.035f, .012f, .032f, .035f, .15f);

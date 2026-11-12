@@ -12,7 +12,7 @@ public sealed class WeaponTests
     private readonly ITestOutputHelper output;
     public WeaponTests(ITestOutputHelper output) { this.output = output; }
     private static byte[] Source(string kind = "rifle", string seed = "460072030", string deps = "[]") => Encoding.UTF8.GetBytes(
-        "{\"recipeId\":\"weapons/" + kind + "\",\"schemaId\":\"shooter.recipe.weapon.v1\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.0.0\",\"seed\":\"" + seed + "\",\"parameters\":{\"kind\":\"" + kind + "\"},\"dependencies\":" + deps + "}");
+        "{\"recipeId\":\"weapons/" + kind + "\",\"schemaId\":\"shooter.recipe.weapon.v1\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.0.1\",\"seed\":\"" + seed + "\",\"parameters\":{\"kind\":\"" + kind + "\"},\"dependencies\":" + deps + "}");
     private static GenerationRequest Request(WeaponRecipe recipe, string profile) => new GenerationRequest(recipe.Document, "windows64", profile, new ContentId(new string('1', 64)));
     [Theory]
     [InlineData("rifle")][InlineData("pistol")]
@@ -95,7 +95,7 @@ public sealed class WeaponTests
             source.Replace("\"kind\":\"rifle\"", "\"kind\":\"rifle\",\"vertices\":[[0,0,0]]"),
             source.Replace("\"seed\":\"460072030\"", "\"seed\":\"01\""),
             source.Replace("\"seed\":\"460072030\"", "\"seed\":\"18446744073709551616\""),
-            source.Replace("\"generatorVersion\":\"1.0.0\"", "\"generatorVersion\":\"2.0.0\""),
+            source.Replace("\"generatorVersion\":\"1.0.1\"", "\"generatorVersion\":\"2.0.0\""),
             source.Replace("\"dependencies\":[]", "\"dependencies\":[],\"unexpected\":0"),
             source.Replace("\"kind\":\"rifle\"", "\"kind\":\"rifle\",\"kind\":\"pistol\"") })
             Assert.Throws<FormatException>(() => WeaponRecipe.Parse(Encoding.UTF8.GetBytes(bad)));
@@ -120,5 +120,44 @@ public sealed class WeaponTests
         var badVersion = new RecipeDocument(new DefinitionId("weapons/rifle"), WeaponRecipe.Schema, WeaponRecipe.GeneratorId, "9.0.0", "0", recipe.Document.Parameters, Array.Empty<ContentId>());
         Assert.False(new WeaponRecipeValidator().Validate(badVersion).Valid);
         Assert.Equal(ErrorCode.UnsupportedVersion, generator.Generate(new GenerationRequest(badVersion,"windows64","Low",new ContentId(new string('1',64))),CancellationToken.None).Error);
+    }
+    [Fact]
+    public void OldGeneratorVersionRejectsInsteadOfReinterpretingExistingContent()
+    {
+        var source = Encoding.UTF8.GetString(Source()).Replace("\"generatorVersion\":\"1.0.1\"", "\"generatorVersion\":\"1.0.0\"");
+        Assert.Throws<FormatException>(() => WeaponRecipe.Parse(Encoding.UTF8.GetBytes(source)));
+        var current = WeaponRecipe.Parse(Source());
+        var old = new RecipeDocument(current.Document.RecipeId, WeaponRecipe.Schema, WeaponRecipe.GeneratorId, "1.0.0", current.Document.Seed, current.Document.Parameters, Array.Empty<ContentId>());
+        Assert.False(new WeaponRecipeValidator().Validate(old).Valid);
+        Assert.Equal(ErrorCode.UnsupportedVersion, new WeaponAssetGenerator().Generate(new GenerationRequest(old, "windows64", "gameplay", new ContentId(new string('1',64))), CancellationToken.None).Error);
+    }
+    [Fact]
+    public void RifleMagazineVisualAndProxyJoinTheReceiverAndMagazineWell()
+    {
+        var build = WeaponGeometry.Build(WeaponRecipe.Parse(Source()));
+        var magazine = Assert.Single(build.Collision.Boxes, b => Math.Abs(b.Shape.Center.Z - .07f) < 1e-6 && b.Shape.Center.Y < -.05f).Shape;
+        var rotation = magazine.Rotation;
+        float yExtent = Math.Abs(1 - 2 * rotation.X * rotation.X) * magazine.Size.Y / 2 + Math.Abs(2 * rotation.X * rotation.W) * magazine.Size.Z / 2;
+        Assert.True(magazine.Center.Y + yExtent >= .02f, "Magazine must overlap the receiver bottom at .020m, not float below its well.");
+        Assert.True(magazine.Center.Y - yExtent >= build.Bounds.Min.Y);
+        // LOD2 has hard edges. Its actual magazine corner must use the same mechanical dimensions as the proxy.
+        float halfY = magazine.Size.Y / 2, halfZ = magazine.Size.Z / 2;
+        float expectedY = magazine.Center.Y + (1 - 2 * rotation.X * rotation.X) * halfY - 2 * rotation.X * rotation.W * halfZ;
+        float expectedZ = magazine.Center.Z + 2 * rotation.X * rotation.W * halfY + (1 - 2 * rotation.X * rotation.X) * halfZ;
+        Assert.Contains(build.Lods[2].Positions, p => Math.Abs(p.X - magazine.Size.X / 2) < 1e-6 && Math.Abs(p.Y - expectedY) < 1e-6 && Math.Abs(p.Z - expectedZ) < 1e-6);
+    }
+    [Theory]
+    [InlineData("rifle", .0041f, .03f, .07f, .020f, -.036f)]
+    [InlineData("pistol", .0036f, .01f, .05f, .0175f, -.016f)]
+    public void TriggerTopJoinsBodyWhileLowerGuardOpeningStaysClear(string kind, float halfWidth, float zMin, float zMax, float bodyBottom, float guardTop)
+    {
+        var build = WeaponGeometry.Build(WeaponRecipe.Parse(Source(kind)));
+        foreach (var lod in build.Lods.Take(2))
+        {
+            var trigger = lod.Positions.Where(p => Math.Abs(p.X) <= halfWidth && p.Z >= zMin && p.Z <= zMax && p.Y > -.03f && p.Y < .035f).ToArray();
+            Assert.NotEmpty(trigger);
+            Assert.True(trigger.Max(p => p.Y) > bodyBottom, "Trigger must enter the receiver/frame rather than float in its guard.");
+            Assert.True(trigger.Min(p => p.Y) > guardTop + .005f, "Trigger must leave an open gap above the lower trigger guard.");
+        }
     }
 }
