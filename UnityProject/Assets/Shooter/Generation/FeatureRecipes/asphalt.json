@@ -1,0 +1,13 @@
+{
+  "schemaId": "shooter.recipe.material.v1",
+  "recipeId": "materials/asphalt",
+  "generatorId": "material.surface",
+  "generatorVersion": "1.0.0",
+  "seed": "460072030",
+  "parameters": {
+    "family": "asphalt",
+    "resolution": 256,
+    "tileMm": 2000
+  },
+  "dependencies": []
+}

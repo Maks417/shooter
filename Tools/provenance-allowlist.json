@@ -1,7 +1,13 @@
 {
   "schemaVersion": 1,
   "scope": "M0 code/numeric sources, hash-verified generated settings/bootstrap scene and named engine shader support; no M1 content-cache or release approval",
-  "assetSourceExtensions": [".cs", ".asmdef", ".meta", ".json"],
+  "assetSourceExtensions": [
+    ".cs",
+    ".asmdef",
+    ".meta",
+    ".json",
+    ".shader"
+  ],
   "generatedAssetsManifest": "UnityProject/Assets/Shooter/Settings/provenance.json",
   "nonShippingFixtures": [
     {
@@ -11,8 +17,18 @@
     }
   ],
   "engineAndPackageVisualExceptions": [
-    {"package": "com.unity.render-pipelines.universal", "version": "17.3.0", "asset": "Shaders/Lit.shader", "reason": "Engine URP shading for a code-created constant-color material, no surface textures"},
-    {"package": "com.unity.render-pipelines.core", "version": "17.3.0", "asset": "Runtime shader support and numeric engine fallback white/normal resources", "reason": "Required locked render-pipeline implementation; no sample content or external surface art"}
+    {
+      "package": "com.unity.render-pipelines.universal",
+      "version": "17.3.0",
+      "asset": "Shaders/Lit.shader",
+      "reason": "Engine URP shading for a code-created constant-color material, no surface textures"
+    },
+    {
+      "package": "com.unity.render-pipelines.core",
+      "version": "17.3.0",
+      "asset": "Runtime shader support and numeric engine fallback white/normal resources",
+      "reason": "Required locked render-pipeline implementation; no sample content or external surface art"
+    }
   ],
   "fontPolicy": "No font is used yet. Name and verify the engine font exception after selecting the editor, before any UI implementation."
 }

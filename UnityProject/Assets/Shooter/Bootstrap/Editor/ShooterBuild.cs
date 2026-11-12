@@ -295,7 +295,7 @@ public static class ShooterBuild
                 for (int i = 0; i < qualityPaths.Length; i++) { QualitySettings.SetQualityLevel(i, false); QualitySettings.renderPipeline = null; }
                 UnityEditor.Rendering.EditorGraphicsSettings.SetRenderPipelineGlobalSettingsAsset<UniversalRenderPipeline>(null); PlayerSettings.SetPreloadedAssets(Array.Empty<UnityEngine.Object>());
             }
-            else PlayerSettings.SetPreloadedAssets(preloaded.Concat(new UnityEngine.Object[] { AssetDatabase.LoadAssetAtPath<Material>("Assets/Shooter/Settings/HarnessMaterial.mat") }).ToArray());
+            else PlayerSettings.SetPreloadedAssets(preloaded.Concat(new UnityEngine.Object[] { AssetDatabase.LoadAssetAtPath<Material>("Assets/Shooter/Settings/HarnessMaterial.mat"), AssetDatabase.LoadAssetAtPath<Shader>("Assets/Shooter/Shaders/ProceduralSurface.shader") }).ToArray());
             QualitySettings.SetQualityLevel(0, false);
             var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
             {

@@ -2,7 +2,9 @@
   "name": "Shooter.Presentation",
   "rootNamespace": "Shooter.Presentation",
   "references": [
-    "GUID:866ac9eb8b8b4a898facdc4644ba5881"
+    "GUID:866ac9eb8b8b4a898facdc4644ba5881",
+    "Shooter.Generation.Core",
+    "Shooter.Content.Runtime"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],
