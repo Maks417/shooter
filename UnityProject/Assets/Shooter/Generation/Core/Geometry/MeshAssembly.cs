@@ -21,6 +21,7 @@ namespace Shooter.Generation
         {
             if (mesh == null) throw new ArgumentNullException(nameof(mesh));
             if (!rotation.IsValid || mesh.Joints != null) throw new ArgumentException("Rigid unskinned composition requires a unit quaternion.");
+            GeometryCodec.EncodeMesh(mesh); // Reject invalid source frames/ranges instead of silently repairing them.
             long vertices = (long)positions.Count + mesh.Positions.Count, indices = (long)indexCount + mesh.Indices.Count;
             if (vertices > 2000000 || indices > 6000000 || vertices * 48 + indices * 4 + (groups.Count + 1L) * 10 > ArtifactCodec.MaxBodyBytes - 16)
                 throw new ArgumentException("Assembly byte/count limit.");
