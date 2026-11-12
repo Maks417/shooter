@@ -87,6 +87,19 @@
           "xunit.extensibility.core": "[2.9.3]"
         }
       },
+      "shooter.assetcompiler.editor": {
+        "type": "Project",
+        "dependencies": {
+          "Shooter.Content.Runtime": "[1.0.0, )",
+          "Shooter.Generation.Core": "[1.0.0, )"
+        }
+      },
+      "shooter.content.runtime": {
+        "type": "Project",
+        "dependencies": {
+          "Shooter.Generation.Core": "[1.0.0, )"
+        }
+      },
       "shooter.contracts": {
         "type": "Project"
       },

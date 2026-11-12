@@ -48,6 +48,11 @@ namespace Shooter.Generation
     /// <summary>Editor/tools-only CPU orchestration. Never called by gameplay or the runtime store.</summary>
     public sealed class ContentCompiler
     {
+        private sealed class Failure : Exception
+        {
+            public ErrorCode Error { get; }
+            public Failure(ErrorCode error, string message) : base(message) { Error = error; }
+        }
         private readonly CacheFiles files;
         private readonly TimeSpan lockTimeout;
         private readonly long maxCacheBytes;
@@ -71,12 +76,14 @@ namespace Shooter.Generation
                 foreach (var node in nodes)
                 {
                     if (node == null || byId.ContainsKey(node.Id)) throw new ArgumentException("Null/duplicate compilation node.");
+                    if (node.Request.ToolchainHash != files.ExpectedToolchainHash) throw new Failure(ErrorCode.UnsupportedVersion, "Compiler request uses a different toolchain than the cache.");
                     byId.Add(node.Id, node); graph.Add(node.Id, node.Request.Recipe.Dependencies);
                 }
                 foreach (var node in nodes)
                     foreach (var dependency in node.Request.Recipe.Dependencies)
                         if (!graph.ContainsKey(dependency))
                         {
+                            if (graph.Count >= DependencyOrder.MaxNodes) throw new Failure(ErrorCode.LimitExceeded, "Dependency graph node limit.");
                             var external = files.ReadManifest(dependency); files.VerifyContent(external);
                             // External content must already be a completely published dependency closure.
                             ValidateExternal(external, new HashSet<ContentId>(), cancel);
@@ -92,6 +99,8 @@ namespace Shooter.Generation
                 return new CompilationResult(ErrorCode.None, "", entries);
             }
             catch (OperationCanceledException) { return new CompilationResult(ErrorCode.Cancelled, "Compilation cancelled; no incomplete content or index published.", entries); }
+            catch (Failure error) { return new CompilationResult(error.Error, error.Message, entries); }
+            catch (CacheReadException error) { return new CompilationResult(error.Error, error.Message, entries); }
             catch (TimeoutException error) { return new CompilationResult(ErrorCode.Busy, error.Message, entries); }
             catch (FileNotFoundException error) { return new CompilationResult(ErrorCode.MissingContent, error.Message, entries); }
             catch (DirectoryNotFoundException error) { return new CompilationResult(ErrorCode.MissingContent, error.Message, entries); }
@@ -136,7 +145,7 @@ namespace Shooter.Generation
             cancel.ThrowIfCancellationRequested();
             GenerationResult result = node.Generator.Generate(node.Request, cancel);
             cancel.ThrowIfCancellationRequested();
-            if (result.Error != ErrorCode.None) throw new ArgumentException("Generator rejected recipe: " + result.Error);
+            if (result.Error != ErrorCode.None) throw new Failure(result.Error, "Generator rejected recipe: " + result.Error);
             var manifest = ContentManifest.Create(node.Request, node.Source.SourceHash, result);
             if (manifest.ContentId != node.Id) throw new FormatException("Compiler identity mismatch.");
             byte[] manifestBytes = manifest.Encode();
@@ -146,7 +155,8 @@ namespace Shooter.Generation
                 foreach (var artifact in manifest.Artifacts)
                 {
                     var output = result.Artifacts.Single(a => a.Kind == artifact.Kind && a.Variant == artifact.Variant);
-                    if (!output.Payload.SequenceEqual(files.ReadArtifact(previous, artifact))) throw new FormatException("Reproducibility failure: same key produced different bytes.");
+                    var priorArtifact = previous.Artifacts.Single(a => a.Path == artifact.Path);
+                    if (!output.Payload.SequenceEqual(files.ReadArtifact(previous, priorArtifact))) throw new FormatException("Reproducibility failure: same key produced different bytes.");
                 }
                 return new CompilationEntry(previous, true, clock.Elapsed.TotalMilliseconds);
             }
@@ -167,11 +177,21 @@ namespace Shooter.Generation
                 foreach (var artifact in manifest.Artifacts)
                 {
                     string path = Path.Combine(stage, artifact.Path); files.AssertSafePath(path);
-                    byte[] payload = File.ReadAllBytes(path);
+                    using var input = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+                    if (input.Length != artifact.Bytes || input.Length > ContractVersion.MaxArtifactBytes) throw new FormatException("Staged artifact size mismatch.");
+                    byte[] payload = new byte[artifact.Bytes];
+                    int offset = 0;
+                    while (offset < payload.Length)
+                    {
+                        int read = input.Read(payload, offset, payload.Length - offset);
+                        if (read == 0) throw new FormatException("Truncated staged artifact.");
+                        offset += read;
+                    }
+                    if (input.ReadByte() != -1) throw new FormatException("Staged artifact grew during verification.");
                     if (ContentIdentity.Hash(payload) != artifact.Sha256 || payload.Length != artifact.Bytes) throw new FormatException("Staged artifact verification failed.");
                 }
                 using var publication = await Lock("publication", cancel).ConfigureAwait(false);
-                if (CacheBytes() > maxCacheBytes) throw new ArgumentException("Local cache capacity exceeded; no automatic deletion is performed.");
+                if (CacheBytes() > maxCacheBytes) throw new Failure(ErrorCode.LimitExceeded, "Local cache capacity exceeded; no automatic deletion is performed.");
                 cancel.ThrowIfCancellationRequested();
                 files.AssertSafePath(stage); files.AssertSafePath(destination);
                 Directory.Move(stage, destination);

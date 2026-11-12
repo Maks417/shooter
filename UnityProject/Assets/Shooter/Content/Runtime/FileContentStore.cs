@@ -136,6 +136,7 @@ namespace Shooter.Content
 
         private ContentLeaseResult Lease(ContentId id, ContentKind kind, string? variant, Loaded content)
         {
+            if (activeLeases >= maxWaiters) return Failure(ErrorCode.Busy, "Active content lease limit reached.");
             var matches = content.Manifest.Artifacts.Where(a => a.Kind == kind && (variant == null || a.Variant == variant)).ToArray();
             if (matches.Length == 0) return Failure(ErrorCode.MissingContent, "Requested content kind/variant is missing.");
             if (matches.Length != 1) return Failure(ErrorCode.InvalidInput, "Several variants match; request an explicit variant.");

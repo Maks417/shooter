@@ -326,5 +326,5 @@ public static class ShooterBuild
             WriteSettingsProvenance();
         }
     }
-    public static void CompileContent() => Guard(() => throw new NotSupportedException("M0 uses the code-generated box harness. The offline content compiler and slice-v1 recipes are not implemented; no cache manifest is fabricated."));
+    public static void CompileContent() => Guard(ShooterContentBuild.Compile);
 }

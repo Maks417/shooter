@@ -75,6 +75,7 @@ namespace Shooter.Generation
             if (vertices < 0 || triangles < 0 || submeshes < 0 || bones < 0) throw new FormatException("Negative content counts.");
             ContentId computed = ContentIdentity.ContentKey(sourceHash, generatorId, generatorVersion, seed, dependencies, platform, profile, 1, toolchainHash);
             if (computed != contentId) throw new FormatException("Manifest request identity mismatch.");
+            for (int i = 0; i < 3; i++) if (min[i] > max[i]) throw new FormatException("Inverted integer bounds.");
             minMm = (int[])min.Clone(); maxMm = (int[])max.Clone();
             Bounds = new Aabb(new Float3(min[0] / 1000f, min[1] / 1000f, min[2] / 1000f), new Float3(max[0] / 1000f, max[1] / 1000f, max[2] / 1000f));
             ContentId = contentId; SourceHash = sourceHash; RecipeId = recipeId; GeneratorId = generatorId; GeneratorVersion = generatorVersion;
@@ -107,8 +108,11 @@ namespace Shooter.Generation
             int[] Max(Float3 v) => new[] { Quantize(v.X, true), Quantize(v.Y, true), Quantize(v.Z, true) };
             var recipe = request.Recipe;
             var id = ContentIdentity.ContentKey(sourceHash, recipe.GeneratorId, recipe.GeneratorVersion, recipe.SeedValue, recipe.Dependencies, request.OutputPlatform, request.VisualProfile, 1, request.ToolchainHash);
-            return new ContentManifest(id, sourceHash, recipe.RecipeId.ToString(), recipe.GeneratorId, recipe.GeneratorVersion, recipe.SeedValue,
+            var manifest = new ContentManifest(id, sourceHash, recipe.RecipeId.ToString(), recipe.GeneratorId, recipe.GeneratorVersion, recipe.SeedValue,
                 request.ToolchainHash, request.OutputPlatform, request.VisualProfile, recipe.Dependencies, artifacts, Min(result.Bounds.Min), Max(result.Bounds.Max), vertices, triangles, submeshes, bones);
+            foreach (var output in result.Artifacts)
+                ArtifactBounds.Validate(manifest.Bounds, output.Kind, ArtifactCodec.Decode(output.Payload, output.Kind, generator, request.ToolchainHash));
+            return manifest;
         }
 
         public byte[] Encode()
@@ -132,6 +136,7 @@ namespace Shooter.Generation
             if (root["manifestSchema"].String != Schema || root["validationSummary"].String != "validated-v1") throw new FormatException("Unsupported manifest version.");
             var provenance = root["provenance"].Object; Keys(provenance, "sourceKind", "policy");
             if (provenance["sourceKind"].String != "numeric-recipes" || provenance["policy"].String != "procedural-v1" || root["materialLayerIds"].Array.Count != 0) throw new FormatException("Unsupported provenance/material registry.");
+            if (root["dependencies"].Array.Count > 256 || root["artifacts"].Array.Count == 0 || root["artifacts"].Array.Count > 256) throw new FormatException("Manifest count limits.");
             var dependencies = root["dependencies"].Array.Select(d => new ContentId(d.String)).ToArray();
             var artifacts = new List<ManifestArtifact>();
             foreach (var item in root["artifacts"].Array)

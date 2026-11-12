@@ -1,0 +1,14 @@
+{
+  "schemaId": "shooter.recipe.box-collision.v1",
+  "recipeId": "diagnostics/box-collision",
+  "generatorId": "collision.box",
+  "generatorVersion": "1.0.0",
+  "seed": "460072030",
+  "parameters": {
+    "widthMm": 1000,
+    "heightMm": 1000,
+    "depthMm": 1000,
+    "bevelMm": 0
+  },
+  "dependencies": []
+}
