@@ -175,9 +175,13 @@ namespace Shooter.Generation
                 switch (definition.Family)
                 {
                     case "metal":
-                        double exposed = Smooth(.62, .78, Noise(u, v, 8, wearSeed)); metal = exposed;
-                        baseColor = Mix(baseColor, new Float3(.36f, .38f, .39f), exposed);
-                        rough = .5 - .24 * exposed + .08 * (grain - .5);
+                        // Narrow smooth scuffs, interrupted by a finer periodic wear field.
+                        // Broad value-noise threshold islands read as camouflage instead of wear.
+                        double scratchDistance = Math.Abs(Math.Sin(Tau * (u * 24 + phase + .06 * Math.Sin(Tau * (v * 2 + phase)))));
+                        double scratch = 1 - Smooth(.05, .16, scratchDistance);
+                        double exposed = scratch * Smooth(.68, .88, Noise(u, v, 32, wearSeed)); metal = exposed;
+                        baseColor = Mix(baseColor, new Float3(.13f, .14f, .145f), exposed);
+                        rough = .5 - .18 * exposed + .08 * (grain - .5);
                         h = .12 * Math.Sin(Tau * (u * 48 + phase)) + .35 * (grain - .5) + .15 * (broad - .5);
                         brightness = .96 + .08 * medium;
                         break;

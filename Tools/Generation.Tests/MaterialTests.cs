@@ -13,7 +13,7 @@ public sealed class MaterialTests
     private static MaterialRecipe Recipe(string family = "metal", ulong seed = 460072030, int resolution = 32, int? tileMm = null)
         => MaterialRecipe.Parse(Encoding.UTF8.GetBytes(Source(family, seed.ToString(CultureInfo.InvariantCulture), resolution, tileMm ?? MaterialFamilyDefinition.For(family).RecommendedTileMm)));
     private static string Source(string family = "metal", string seed = "460072030", int resolution = 32, int tileMm = 1000) =>
-        "{\"schemaId\":\"shooter.recipe.material.v1\",\"recipeId\":\"materials/" + family + "\",\"generatorId\":\"material.surface\",\"generatorVersion\":\"1.0.0\",\"seed\":\"" + seed + "\",\"parameters\":{\"family\":\"" + family + "\",\"resolution\":" + resolution.ToString(CultureInfo.InvariantCulture) + ",\"tileMm\":" + tileMm.ToString(CultureInfo.InvariantCulture) + "},\"dependencies\":[]}";
+        "{\"schemaId\":\"shooter.recipe.material.v1\",\"recipeId\":\"materials/" + family + "\",\"generatorId\":\"material.surface\",\"generatorVersion\":\"1.0.1\",\"seed\":\"" + seed + "\",\"parameters\":{\"family\":\"" + family + "\",\"resolution\":" + resolution.ToString(CultureInfo.InvariantCulture) + ",\"tileMm\":" + tileMm.ToString(CultureInfo.InvariantCulture) + "},\"dependencies\":[]}";
     public static IEnumerable<object[]> Families => new[] { "metal", "polymer", "concrete", "plaster", "asphalt", "soil", "fabric" }.Select(name => new object[] { name });
     private static byte[] Bytes(FrozenList<byte> bytes) => bytes.ToArray();
 
@@ -46,7 +46,7 @@ public sealed class MaterialTests
             Assert.InRange(mask[i + 1], (byte)165, (byte)255);
         }
         int pixels = mask.Count / 4; metal /= pixels; rough /= pixels; luminance /= pixels;
-        if (family == "metal") Assert.InRange(metal, .01, .45); else Assert.Equal(0, metal);
+        if (family == "metal") Assert.InRange(metal, .00001, .05); else Assert.Equal(0, metal);
         Assert.InRange(rough, .3, .98); Assert.InRange(luminance, .08, .85);
         foreach (var mip in bake.Normal.MipBytes)
             for (int i = 0; i < mip.Count; i += 4)
@@ -131,6 +131,48 @@ public sealed class MaterialTests
         Assert.NotEqual(ContentIdentity.Hash(GeometryCodec.EncodeMaterial(a.Albedo)), ContentIdentity.Hash(GeometryCodec.EncodeMaterial(b.Albedo)));
     }
     [Theory]
+    [InlineData(0UL)] [InlineData(42UL)] [InlineData(460072030UL)] [InlineData(ulong.MaxValue)]
+    public void MetalWearIsSparseFineScuffingWithoutLargeBrightIslands(ulong seed)
+    {
+        const int size = 256;
+        var bake = MaterialBaker.Bake(Recipe("metal", seed, size));
+        var mask = bake.Mask.MipBytes[0]; var albedo = bake.Albedo.MipBytes[0];
+        int exposed = 0; double meanMetal = 0;
+        var visited = new bool[size * size]; int largestIsland = 0;
+        for (int pixel = 0; pixel < size * size; pixel++)
+        {
+            meanMetal += mask[pixel * 4] / 255.0;
+            if (mask[pixel * 4] >= 128) exposed++;
+            // Linear reflectance stays restrained even where paint reveals the dark substrate.
+            Assert.InRange(albedo[pixel * 4], (byte)0, (byte)128);
+            Assert.InRange(albedo[pixel * 4 + 1], (byte)0, (byte)128);
+            Assert.InRange(albedo[pixel * 4 + 2], (byte)0, (byte)128);
+            if (visited[pixel] || mask[pixel * 4] < 128) continue;
+            var pending = new Queue<int>(); pending.Enqueue(pixel); visited[pixel] = true; int island = 0;
+            while (pending.Count > 0)
+            {
+                int p = pending.Dequeue(); island++; int x = p % size, y = p / size;
+                foreach (int next in new[] { y * size + (x + 1) % size, y * size + (x + size - 1) % size, ((y + 1) % size) * size + x, ((y + size - 1) % size) * size + x })
+                    if (!visited[next] && mask[next * 4] >= 128) { visited[next] = true; pending.Enqueue(next); }
+            }
+            largestIsland = Math.Max(largestIsland, island);
+        }
+        Assert.InRange(exposed / (double)(size * size), .00001, .05);
+        Assert.InRange(meanMetal / (size * size), .00001, .03);
+        Assert.InRange(largestIsland, 1, size * size / 500); // Less than0.2% of the tile per connected metallic mark, including wrap.
+        Assert.Contains(mask.Where((_, i) => i % 4 == 0), value => value >= 230); // Actual exposed substrate still reaches metallic response.
+    }
+    [Fact]
+    public void OldMaterialGeneratorVersionRejectsRatherThanReinterpretsSource()
+    {
+        var recipe = Recipe();
+        var old = new RecipeDocument(recipe.Document.RecipeId, MaterialRecipe.Schema, MaterialRecipe.Generator, "1.0.0", recipe.Document.Seed,
+            recipe.Document.Parameters, Array.Empty<ContentId>());
+        Assert.False(new MaterialRecipeValidator().Validate(old).Valid);
+        var result = new MaterialAssetGenerator().Generate(new GenerationRequest(old, "windows64", "Low", default), CancellationToken.None);
+        Assert.Equal(ErrorCode.UnsupportedVersion, result.Error); Assert.Empty(result.Artifacts);
+    }
+    [Theory]
     [InlineData("\"family\":\"metal\"", "\"family\":\"wood\"")]
     [InlineData("\"resolution\":32", "\"resolution\":1024")]
     [InlineData("\"resolution\":32", "\"resolution\":33")]
@@ -140,7 +182,8 @@ public sealed class MaterialTests
     [InlineData("\"seed\":\"460072030\"", "\"seed\":\"01\"")]
     [InlineData("shooter.recipe.material.v1", "shooter.recipe.material.v2")]
     [InlineData("material.surface", "material.other")]
-    [InlineData("\"generatorVersion\":\"1.0.0\"", "\"generatorVersion\":\"2.0.0\"")]
+    [InlineData("\"generatorVersion\":\"1.0.1\"", "\"generatorVersion\":\"2.0.0\"")]
+    [InlineData("\"generatorVersion\":\"1.0.1\"", "\"generatorVersion\":\"1.0.0\"")]
     public void RecipeRejectsUnknownFamiliesRangesSeedsAndVersions(string oldValue, string newValue)
         => Assert.Throws<FormatException>(() => MaterialRecipe.Parse(Encoding.UTF8.GetBytes(Source().Replace(oldValue, newValue))));
     [Fact]
