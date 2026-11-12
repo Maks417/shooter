@@ -1,0 +1,230 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "manifestSchema": {
+      "const": "shooter.content.manifest.v1"
+    },
+    "contentId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "sourceHash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "recipeId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "generatorId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "generatorVersion": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "seed": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]{0,19})$"
+    },
+    "toolchainHash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "buildPlatform": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "visualProfile": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "dependencies": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{64}$"
+      },
+      "minItems": 0,
+      "maxItems": 256,
+      "uniqueItems": true
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "enum": [
+              "mesh",
+              "material",
+              "skeleton",
+              "collision",
+              "navigation"
+            ]
+          },
+          "variant": {
+            "type": "string",
+            "pattern": "^[a-z0-9_-]{1,64}$"
+          },
+          "path": {
+            "type": "string",
+            "pattern": "^(mesh|material|skeleton|collision|navigation)-[a-z0-9_-]{1,64}\\.bin$"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "compressedBytes": {
+            "type": "integer",
+            "minimum": 116,
+            "maximum": 67108864
+          },
+          "uncompressedBytes": {
+            "type": "integer",
+            "minimum": 116,
+            "maximum": 67108864
+          },
+          "formatVersion": {
+            "const": 1
+          },
+          "compression": {
+            "const": "none"
+          }
+        },
+        "required": [
+          "kind",
+          "variant",
+          "path",
+          "sha256",
+          "compressedBytes",
+          "uncompressedBytes",
+          "formatVersion",
+          "compression"
+        ]
+      },
+      "minItems": 1,
+      "maxItems": 256
+    },
+    "bounds": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "minMm": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": -2147483648,
+            "maximum": 2147483647
+          },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "maxMm": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": -2147483648,
+            "maximum": 2147483647
+          },
+          "minItems": 3,
+          "maxItems": 3
+        }
+      },
+      "required": [
+        "minMm",
+        "maxMm"
+      ]
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "vertices": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "triangles": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "submeshes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "bones": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        }
+      },
+      "required": [
+        "vertices",
+        "triangles",
+        "submeshes",
+        "bones"
+      ]
+    },
+    "materialLayerIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 128
+      },
+      "minItems": 0,
+      "maxItems": 256,
+      "uniqueItems": true
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "sourceKind": {
+          "const": "numeric-recipes"
+        },
+        "policy": {
+          "const": "procedural-v1"
+        }
+      },
+      "required": [
+        "sourceKind",
+        "policy"
+      ]
+    },
+    "validationSummary": {
+      "const": "validated-v1"
+    }
+  },
+  "required": [
+    "manifestSchema",
+    "contentId",
+    "sourceHash",
+    "recipeId",
+    "generatorId",
+    "generatorVersion",
+    "seed",
+    "toolchainHash",
+    "buildPlatform",
+    "visualProfile",
+    "dependencies",
+    "artifacts",
+    "bounds",
+    "counts",
+    "materialLayerIds",
+    "provenance",
+    "validationSummary"
+  ],
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

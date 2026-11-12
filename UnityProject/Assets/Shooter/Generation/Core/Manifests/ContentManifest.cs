@@ -46,6 +46,7 @@ namespace Shooter.Generation
         public string VisualProfile { get; }
         public FrozenList<ContentId> Dependencies { get; }
         public FrozenList<ManifestArtifact> Artifacts { get; }
+        public FrozenList<string> MaterialLayerIds { get; }
         public Aabb Bounds { get; }
         public int VertexCount { get; }
         public int TriangleCount { get; }
@@ -56,7 +57,7 @@ namespace Shooter.Generation
 
         private ContentManifest(ContentId contentId, ContentId sourceHash, string recipeId, string generatorId, string generatorVersion,
             ulong seed, ContentId toolchainHash, string platform, string profile, IReadOnlyList<ContentId> dependencies,
-            IReadOnlyList<ManifestArtifact> artifacts, int[] min, int[] max, int vertices, int triangles, int submeshes, int bones)
+            IReadOnlyList<ManifestArtifact> artifacts, int[] min, int[] max, int vertices, int triangles, int submeshes, int bones, IReadOnlyList<string> materialLayerIds)
         {
             _ = new DefinitionId(recipeId); Text(generatorId); Text(generatorVersion); Text(platform); Text(profile);
             if (dependencies.Count > 256 || artifacts.Count == 0 || artifacts.Count > 256) throw new FormatException("Manifest count limits.");
@@ -73,6 +74,12 @@ namespace Shooter.Generation
             if (total > 256L * 1024 * 1024 || gameplay && (visual || profile != "gameplay") || !gameplay && profile == "gameplay")
                 throw new FormatException("Content size or gameplay/visual key separation violated.");
             if (vertices < 0 || triangles < 0 || submeshes < 0 || bones < 0) throw new FormatException("Negative content counts.");
+            if (materialLayerIds.Count > 256) throw new FormatException("Material layer count limit.");
+            for (int i = 0; i < materialLayerIds.Count; i++)
+            {
+                _ = new DefinitionId(materialLayerIds[i]);
+                if (i > 0 && string.CompareOrdinal(materialLayerIds[i - 1], materialLayerIds[i]) >= 0) throw new FormatException("Material layers must be sorted and unique.");
+            }
             ContentId computed = ContentIdentity.ContentKey(sourceHash, generatorId, generatorVersion, seed, dependencies, platform, profile, 1, toolchainHash);
             if (computed != contentId) throw new FormatException("Manifest request identity mismatch.");
             for (int i = 0; i < 3; i++) if (min[i] > max[i]) throw new FormatException("Inverted integer bounds.");
@@ -81,10 +88,11 @@ namespace Shooter.Generation
             ContentId = contentId; SourceHash = sourceHash; RecipeId = recipeId; GeneratorId = generatorId; GeneratorVersion = generatorVersion;
             Seed = seed; ToolchainHash = toolchainHash; BuildPlatform = platform; VisualProfile = profile;
             Dependencies = new FrozenList<ContentId>(dependencies, 256); Artifacts = new FrozenList<ManifestArtifact>(artifacts, 256);
+            MaterialLayerIds = new FrozenList<string>(materialLayerIds, 256);
             VertexCount = vertices; TriangleCount = triangles; SubmeshCount = submeshes; BoneCount = bones;
         }
 
-        public static ContentManifest Create(GenerationRequest request, ContentId sourceHash, GenerationResult result)
+        public static ContentManifest Create(GenerationRequest request, ContentId sourceHash, GenerationResult result, IReadOnlyList<string>? materialLayerIds = null)
         {
             if (result.Error != ErrorCode.None) throw new ArgumentException("Failed generation cannot publish.");
             var artifacts = new List<ManifestArtifact>(); int vertices = 0, triangles = 0, submeshes = 0, bones = 0;
@@ -109,7 +117,7 @@ namespace Shooter.Generation
             var recipe = request.Recipe;
             var id = ContentIdentity.ContentKey(sourceHash, recipe.GeneratorId, recipe.GeneratorVersion, recipe.SeedValue, recipe.Dependencies, request.OutputPlatform, request.VisualProfile, 1, request.ToolchainHash);
             var manifest = new ContentManifest(id, sourceHash, recipe.RecipeId.ToString(), recipe.GeneratorId, recipe.GeneratorVersion, recipe.SeedValue,
-                request.ToolchainHash, request.OutputPlatform, request.VisualProfile, recipe.Dependencies, artifacts, Min(result.Bounds.Min), Max(result.Bounds.Max), vertices, triangles, submeshes, bones);
+                request.ToolchainHash, request.OutputPlatform, request.VisualProfile, recipe.Dependencies, artifacts, Min(result.Bounds.Min), Max(result.Bounds.Max), vertices, triangles, submeshes, bones, materialLayerIds ?? Array.Empty<string>());
             foreach (var output in result.Artifacts)
                 ArtifactBounds.Validate(manifest.Bounds, output.Kind, ArtifactCodec.Decode(output.Payload, output.Kind, generator, request.ToolchainHash));
             return manifest;
@@ -125,7 +133,7 @@ namespace Shooter.Generation
                 ",\"seed\":" + Q(Seed.ToString(CultureInfo.InvariantCulture)) + ",\"toolchainHash\":" + Q(ToolchainHash.ToString()) + ",\"buildPlatform\":" + Q(BuildPlatform) +
                 ",\"visualProfile\":" + Q(VisualProfile) + ",\"dependencies\":[" + deps + "],\"artifacts\":[" + artifacts + "],\"bounds\":{\"minMm\":" + Ints(minMm) + ",\"maxMm\":" + Ints(maxMm) +
                 "},\"counts\":{\"vertices\":" + VertexCount.ToString(CultureInfo.InvariantCulture) + ",\"triangles\":" + TriangleCount.ToString(CultureInfo.InvariantCulture) + ",\"submeshes\":" + SubmeshCount.ToString(CultureInfo.InvariantCulture) + ",\"bones\":" + BoneCount.ToString(CultureInfo.InvariantCulture) +
-                "},\"materialLayerIds\":[],\"provenance\":{\"sourceKind\":\"numeric-recipes\",\"policy\":\"procedural-v1\"},\"validationSummary\":\"validated-v1\"}";
+                "},\"materialLayerIds\":[" + string.Join(",", MaterialLayerIds.Select(Q)) + "],\"provenance\":{\"sourceKind\":\"numeric-recipes\",\"policy\":\"procedural-v1\"},\"validationSummary\":\"validated-v1\"}";
             return CanonicalJson.Encode(Encoding.UTF8.GetBytes(json));
         }
 
@@ -135,7 +143,8 @@ namespace Shooter.Generation
             Keys(root, "manifestSchema", "contentId", "sourceHash", "recipeId", "generatorId", "generatorVersion", "seed", "toolchainHash", "buildPlatform", "visualProfile", "dependencies", "artifacts", "bounds", "counts", "materialLayerIds", "provenance", "validationSummary");
             if (root["manifestSchema"].String != Schema || root["validationSummary"].String != "validated-v1") throw new FormatException("Unsupported manifest version.");
             var provenance = root["provenance"].Object; Keys(provenance, "sourceKind", "policy");
-            if (provenance["sourceKind"].String != "numeric-recipes" || provenance["policy"].String != "procedural-v1" || root["materialLayerIds"].Array.Count != 0) throw new FormatException("Unsupported provenance/material registry.");
+            if (provenance["sourceKind"].String != "numeric-recipes" || provenance["policy"].String != "procedural-v1") throw new FormatException("Unsupported provenance policy.");
+            if (root["materialLayerIds"].Array.Count > 256) throw new FormatException("Material layer count limit.");
             if (root["dependencies"].Array.Count > 256 || root["artifacts"].Array.Count == 0 || root["artifacts"].Array.Count > 256) throw new FormatException("Manifest count limits.");
             var dependencies = root["dependencies"].Array.Select(d => new ContentId(d.String)).ToArray();
             var artifacts = new List<ManifestArtifact>();
@@ -151,7 +160,7 @@ namespace Shooter.Generation
             var counts = root["counts"].Object; Keys(counts, "vertices", "triangles", "submeshes", "bones");
             return new ContentManifest(new ContentId(root["contentId"].String), new ContentId(root["sourceHash"].String), root["recipeId"].String,
                 root["generatorId"].String, root["generatorVersion"].String, ContentIdentity.ParseSeed(root["seed"].String), new ContentId(root["toolchainHash"].String),
-                root["buildPlatform"].String, root["visualProfile"].String, dependencies, artifacts, Vec(bounds["minMm"]), Vec(bounds["maxMm"]), counts["vertices"].Number, counts["triangles"].Number, counts["submeshes"].Number, counts["bones"].Number);
+                root["buildPlatform"].String, root["visualProfile"].String, dependencies, artifacts, Vec(bounds["minMm"]), Vec(bounds["maxMm"]), counts["vertices"].Number, counts["triangles"].Number, counts["submeshes"].Number, counts["bones"].Number, root["materialLayerIds"].Array.Select(v => v.String).ToArray());
         }
 
         private static ContentKind ParseKind(string value)

@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "formatVersion": 1,
+  "status": "FrozenByIntegrator",
+  "contractVersion": "C0-v1",
+  "date": "2026-11-12",
+  "decision": "docs/decisions.md#adr-018--accepted-initial-p02-compiler-format-and-byte-cache-boundary",
+  "toolchainHash": "9ac31fe82117043e2bba3bfb843dd1ca32834b15425188e96d6f3369e2c627a8",
+  "generatorRegistry": [
+    {
+      "id": "collision.box",
+      "version": "1.0.0",
+      "schema": "shooter.recipe.box-collision.v1",
+      "scope": "Numeric CPU collision diagnostic only; not shipping gameplay composition"
+    }
+  ],
+  "sources": {
+    "docs/content-format.md": "41a435104deed31058409196ab34b70a2ec096a2004130819b9bb572200eef65",
+    "docs/content-schemas/box-collision.schema.json": "e69dcd849b2738373e04713d58f227b343fae6c781411512324f075de01043da",
+    "docs/content-schemas/manifest.schema.json": "a602eac6b5a948fdc9ebe85def496ba2e9168a7c0ec52ca47c0e088f4bff4b27",
+    "Tools/Generation.Tests/CodecFixtures/generate_vectors.py": "5ef90986cc65590226deec5e35dcfd0d6b0fafa26cb181d49ba6d67870b96489",
+    "Tools/Generation.Tests/CodecTests.cs": "ab606b851ca802673d6c8891185beb78d3eebde8901d68ca9fec82ddb4c20d48",
+    "UnityProject/Assets/Shooter/Generation/Core/Canonical/CanonicalJson.cs": "64bc7ea7f4bcf1ecde9dfaec40a71b4cd575e3c0ae59b957614fc4e1498aecc9",
+    "UnityProject/Assets/Shooter/Generation/Core/Canonical/CanonicalJson.cs.meta": "f85ecc545a429333a2be4bc75273dc0f8c216eb14d04ac04afa95aa1de34637c",
+    "UnityProject/Assets/Shooter/Generation/Core/Canonical/JsonValue.cs": "6d22c4c3f66c22850b14cb59a7045e8153d79fd2bbc841d62a6f5731d7b0cc72",
+    "UnityProject/Assets/Shooter/Generation/Core/Canonical/JsonValue.cs.meta": "eeb5733b0535a36c97e0da1ab5e81eda60b6714c9a2caeb4e28315fd671ff8eb",
+    "UnityProject/Assets/Shooter/Generation/Core/Codecs/ArtifactCodec.cs": "968a4fa4b9e2e6a4a1f5d3dcaebc5384bcb9e3a0a3d107be20ad7587575c07a6",
+    "UnityProject/Assets/Shooter/Generation/Core/Codecs/ArtifactCodec.cs.meta": "9734fa6b43662a150cffaa28496d2a706f9f6208712babb3d615e03f73c591d5",
+    "UnityProject/Assets/Shooter/Generation/Core/Codecs/CodecPrimitives.cs": "a9f6783c1a1c518d0772ffbd11dc9da5fbbb2db4d0a5de3ca09c374618d40c06",
+    "UnityProject/Assets/Shooter/Generation/Core/Codecs/CodecPrimitives.cs.meta": "0107796b4fd2699ad0a96c04490d1001bee82279c8fc88464cf6f6615e0d4f26",
+    "UnityProject/Assets/Shooter/Generation/Core/Codecs/GeometryCodec.cs": "c13ceb2fa80565c186f8370913fcc8971f29035c9840323308153a1e2f655072",
+    "UnityProject/Assets/Shooter/Generation/Core/Codecs/GeometryCodec.cs.meta": "cdb79683c4fc42e7f07f25232e05301303a97106de5b949005f64bdb067acd13",
+    "UnityProject/Assets/Shooter/Generation/Core/Identity/ContentIdentity.cs": "20fe157e4f0dd5c49bc75be49c3e926d2c2b3ff918fb362cb75603ffcca1d9bc",
+    "UnityProject/Assets/Shooter/Generation/Core/Identity/ContentIdentity.cs.meta": "49d4d9b2c9822c6bfd2944ea5566a7ad4963731550ecc84af9dc66413a67fdf5",
+    "UnityProject/Assets/Shooter/Generation/Core/Manifests/ArtifactBounds.cs": "03279c44391b15f09e5675d1d53f36f9f9dab7cb263ab6cbe51f11e5c44b4095",
+    "UnityProject/Assets/Shooter/Generation/Core/Manifests/ArtifactBounds.cs.meta": "ace883ae5e4470bbe75a2710304d1f748f6533bf3582dd769a9b1699d0f9e99d",
+    "UnityProject/Assets/Shooter/Generation/Core/Manifests/ContentManifest.cs": "ea539bec3191fefab4f9706cef1163e42840d8fbfad82171ae93d3d70efef8e2",
+    "UnityProject/Assets/Shooter/Generation/Core/Manifests/ContentManifest.cs.meta": "5d25406ba394d7c1801a4c822c3b5fa670ae3c2b35d926c220d485234481e543",
+    "UnityProject/Assets/Shooter/Generation/Core/Random/NamedRandomStream.cs": "ee98adb79260b2f949c3aa0555b3ca77000cbd77b5a129ea219c19ae46931ed4",
+    "UnityProject/Assets/Shooter/Generation/Core/Random/NamedRandomStream.cs.meta": "2fda728e12d34554a50118ed0055a470e1e26f5c4e735f00b820b4702523c171",
+    "UnityProject/Assets/Shooter/Generation/Core/Random/Pcg32.cs": "fcf068cee7d73386bd5f5948828e249cc26fb2285ed8acf53111a72dc49cd419",
+    "UnityProject/Assets/Shooter/Generation/Core/Random/Pcg32.cs.meta": "72cad0fe16434e2822dc0f3af0f6e4d438405df146f80d191273f9c0b572233a",
+    "UnityProject/Assets/Shooter/Generation/Core/Recipes/BoxRecipe.cs": "242445e75156cd48b3270eab37690c4f7e6690ca9f29ecf0297719ea715f53a4",
+    "UnityProject/Assets/Shooter/Generation/Core/Recipes/BoxRecipe.cs.meta": "58e7e1bb5937d4a43bf0c481f40923b6e28d4878b60a9748d1c0362e344622ad",
+    "UnityProject/Assets/Shooter/Generation/Core/Recipes/CpuBoxCollisionGenerator.cs": "a01f78a02c2fb56a309099031642733c148175f0ea6f70c597ba35687b8df53e",
+    "UnityProject/Assets/Shooter/Generation/Core/Recipes/CpuBoxCollisionGenerator.cs.meta": "0a440d4796eec346f762d19d346ec0507a21793f5c70e8126ed073c7dd90e4ee",
+    "UnityProject/Assets/Shooter/Generation/Core/Recipes/GeneratorFingerprint.cs": "d9675fc3270cc94713a67cd02fc101a26abc8904e4225bd6bd55cf2683315e3e",
+    "UnityProject/Assets/Shooter/Generation/Core/Recipes/GeneratorFingerprint.cs.meta": "9289e5dc28635fbb110e1336fd071dca1b55431c52026684591a8bf57275eeb3",
+    "UnityProject/Assets/Shooter/Generation/Recipes/box-collision.json": "8a30c122cd40fc5b31e1de724794de1a99aae7c7b8ed93cbf42e39d4312755cc"
+  }
+}

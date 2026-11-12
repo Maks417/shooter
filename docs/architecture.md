@@ -2,7 +2,7 @@
 
 Read [vision](vision.md), [contracts](contracts.md) and [repo layout](repo-layout.md) before changing boundaries.
 
-Implementation status: `Shooter.Contracts`, `Shooter.Simulation` (empty foundation authority), `Shooter.World.Unity`, `Shooter.Presentation`, separate Bootstrap Core/Runtime/Client assemblies, and `Shooter.Build.Editor` exist. Client and presentation assemblies exclude UNITY_SERVER; the core entry never references presentation types. `Tools/Foundation` independently compiles the pure clock/publication source. Test doubles remain outside shipping assemblies. `Shooter.Generation.Core` now implements P01 PCG32/named streams, bounded canonical JSON, v1 identities and dependency preflight without Unity references. Its pure build is `Tools/Generation/Shooter.Generation.Core.csproj`; no production schema validator, compiler or cache loader exists yet. Feature simulation, content compilation/loading, soldier rigs and networking below remain planned. See the [M0 handoff](milestones/m0-foundation/handoff.md).
+Implementation status: `Shooter.Contracts`, `Shooter.Simulation` (empty foundation authority), `Shooter.World.Unity`, `Shooter.Presentation`, separate Bootstrap Core/Runtime/Client assemblies, and `Shooter.Build.Editor` exist. Client and presentation assemblies exclude UNITY_SERVER; the core entry never references presentation types. `Tools/Foundation` independently compiles the pure clock/publication source. Test doubles remain outside shipping assemblies. `Shooter.Generation.Core` now implements P01 PCG32/named streams, bounded canonical JSON, v1 identities and dependency preflight without Unity references. Its pure build is `Tools/Generation/Shooter.Generation.Core.csproj`; P02 now adds strict box recipe validation, SGAF typed codecs/manifests, Editor-only DAG/cache publication and the verified byte-lease loader. These support a CPU collision diagnostic; feature geometry, materials and gameplay content installation remain pending. Feature simulation, content compilation/loading, soldier rigs and networking below remain planned. See the [M0 handoff](milestones/m0-foundation/handoff.md).
 
 ## Components and dependency rules
 
@@ -11,7 +11,7 @@ Implementation status: `Shooter.Contracts`, `Shooter.Simulation` (empty foundati
 | Shooter.Contracts | IDs, immutable DTOs, schema constants, ports | BCL only; no UnityEngine |
 | Shooter.Generation.Core | deterministic primitives, recipes, validation | Contracts; pure math adapter |
 | Shooter.AssetCompiler.Editor | Unity conversion, LOD/material/nav baking, manifests | Generation.Core, Contracts, Unity Editor |
-| Shooter.Content.Runtime | verified cache loading, residency, async handles | Contracts, Unity runtime |
+| Shooter.Content.Runtime | verified cache loading, residency, async handles | Contracts, BCL-only Generation.Core format helpers; future Unity runtime adapter |
 | Shooter.Simulation | tick orchestration, motor rules, weapons, damage, AI decisions | Contracts; world-query interfaces |
 | Shooter.World.Unity | collision queries, navigation adapter, chunk lifecycle | Simulation, Content.Runtime, Unity |
 | Shooter.Presentation | URP rendering, procedural rig, HUD, sound, feedback | Contracts, Content.Runtime, Unity; reads simulation snapshots |
@@ -63,3 +63,5 @@ Only Bootstrap creates services. Constructor injection or explicit factory param
 ## Integration seams
 
 The first vertical harness runs a generated box compound, motor and rifle through fake ports before real art. Every external service (transport, clock, storage, physics, navigation) has an adapter and in-memory test double. A host runs authority and view as separate consumers; avoid code paths that only work when server and local player share objects.
+
+The P02 runtime format-helper dependency and initial codec freeze are recorded in [ADR-018](decisions.md#adr-018--accepted-initial-p02-compiler-format-and-byte-cache-boundary). Runtime never references `Shooter.AssetCompiler.Editor`; the compiler remains Editor/tools-only.

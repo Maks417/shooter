@@ -3,6 +3,8 @@ param([ValidateSet('box-collision-v1')][string]$RecipeSet = 'box-collision-v1', 
     [string]$CacheRoot = '', [switch]$Force, [switch]$DryRun,
     [ValidateRange(30,3600)][int]$TimeoutSeconds = 900)
 . (Join-Path $PSScriptRoot 'Unity.Common.ps1')
+& python (Join-Path $PSScriptRoot 'verify_content_format.py') | Out-Host
+if ($LASTEXITCODE -ne 0) { throw 'Frozen P02 format identity check failed.' }
 $unity = Get-ShooterUnity
 $run = New-ShooterRun 'compile-content' $unity
 try {

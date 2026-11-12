@@ -99,8 +99,15 @@ public sealed class CompilerTests : IDisposable
     public async Task CacheCapacityFailureLeavesNoPartialContentOrIndex()
     {
         var node = Node(); var result = await new ContentCompiler(Files, maxCacheBytes: 1).CompileAsync(new[] { node }, false, CancellationToken.None);
-        Assert.NotEqual(ErrorCode.None, result.Error); Assert.False(Directory.Exists(Files.ContentDirectory(node.Id)));
+        Assert.Equal(ErrorCode.LimitExceeded, result.Error); Assert.False(Directory.Exists(Files.ContentDirectory(node.Id)));
         Assert.Empty(Directory.GetDirectories(root, "*.tmp", SearchOption.AllDirectories)); Assert.False(File.Exists(Path.Combine(root, "index.json")));
+    }
+    [Fact]
+    public async Task InvalidGeneratedBoundsRejectBeforePublication()
+    {
+        var node = Node(new CountingGenerator { BadBounds = true });
+        var result = await new ContentCompiler(Files).CompileAsync(new[] { node }, false, CancellationToken.None);
+        Assert.Equal(ErrorCode.CorruptContent, result.Error); Assert.False(Directory.Exists(Files.ContentDirectory(node.Id)));
     }
     [Fact]
     public async Task BusyKeyLockCanTimeOutOrCancelWithoutPublication()
@@ -117,7 +124,7 @@ public sealed class CompilerTests : IDisposable
     { public GenerationResult Generate(GenerationRequest request, CancellationToken cancel) => throw new OperationCanceledException(); }
     private sealed class CountingGenerator : IAssetGenerator
     {
-        public int Calls; public bool Alternate; private readonly List<string>? sequence;
+        public int Calls; public bool Alternate, BadBounds; private readonly List<string>? sequence;
         public CountingGenerator(List<string>? sequence = null) { this.sequence = sequence; }
         public GenerationResult Generate(GenerationRequest request, CancellationToken cancel)
         {
@@ -126,7 +133,8 @@ public sealed class CompilerTests : IDisposable
             var collision = new CollisionData(Array.Empty<TaggedCapsule>(), new[] { new TaggedBox(new Box(new Float3(0, 0, 0), new Float3(side, side, side), Quat.Identity), 0) }, Array.Empty<TaggedHeightGrid>());
             byte[] payload = ArtifactCodec.Encode(ContentKind.Collision, GeometryCodec.EncodeCollision(collision), GeneratorFingerprint.Compute("collision.box", "1.0.0"), request.ToolchainHash);
             var artifact = new GeneratedArtifact(ContentKind.Collision, "main", 1, payload, ContentIdentity.Hash(payload));
-            return new GenerationResult(ErrorCode.None, new[] { artifact }, new Aabb(new Float3(-side / 2, -side / 2, -side / 2), new Float3(side / 2, side / 2, side / 2)), Array.Empty<Diagnostic>());
+            var bounds = BadBounds ? new Aabb(new Float3(0, 0, 0), new Float3(0, 0, 0)) : new Aabb(new Float3(-side / 2, -side / 2, -side / 2), new Float3(side / 2, side / 2, side / 2));
+            return new GenerationResult(ErrorCode.None, new[] { artifact }, bounds, Array.Empty<Diagnostic>());
         }
     }
 }

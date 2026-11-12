@@ -46,4 +46,14 @@ public sealed class ManifestTests
         root.Remove("unexpected"); root["visualProfile"] = "Low";
         Assert.Throws<FormatException>(() => ContentManifest.Decode(System.Text.Encoding.UTF8.GetBytes(root.ToJsonString())));
     }
+    [Fact]
+    public void MaterialRegistryRoundtripsAndRejectsAmbiguousOrdering()
+    {
+        var root = JsonNode.Parse(Fixture().Encode())!.AsObject(); root["materialLayerIds"] = new JsonArray("metal/steel", "wood");
+        var manifest = ContentManifest.Decode(System.Text.Encoding.UTF8.GetBytes(root.ToJsonString()));
+        Assert.Equal(new[] { "metal/steel", "wood" }, manifest.MaterialLayerIds);
+        Assert.Equal(manifest.Encode(), ContentManifest.Decode(manifest.Encode()).Encode());
+        root["materialLayerIds"] = new JsonArray("wood", "metal/steel");
+        Assert.Throws<FormatException>(() => ContentManifest.Decode(System.Text.Encoding.UTF8.GetBytes(root.ToJsonString())));
+    }
 }

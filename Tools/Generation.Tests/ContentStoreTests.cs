@@ -165,6 +165,17 @@ public sealed class ContentStoreTests
         Assert.Equal(ErrorCode.Busy, (await store.AcquireAsync(manifest.ContentId, ContentKind.Collision, CancellationToken.None)).Error);
         result.Lease.Dispose(); Assert.Equal(0, store.ResidentBytes); Assert.Equal(0, store.ActiveLeases);
     }
+    [Fact]
+    public async Task ActiveLeaseBoundRejectsExcessAndRecoversAfterRelease()
+    {
+        using var f = new Fixture(); var manifest = f.Publish(); using var store = new FileContentStore(f.Files, maxWaiters: 1);
+        var first = await store.AcquireAsync(manifest.ContentId, ContentKind.Collision, CancellationToken.None);
+        Assert.Equal(ErrorCode.None, first.Error);
+        Assert.Equal(ErrorCode.Busy, (await store.AcquireAsync(manifest.ContentId, ContentKind.Collision, CancellationToken.None)).Error);
+        first.Lease!.Dispose();
+        var next = await store.AcquireAsync(manifest.ContentId, ContentKind.Collision, CancellationToken.None);
+        Assert.Equal(ErrorCode.None, next.Error); next.Lease!.Dispose();
+    }
 
     [Fact]
     public async Task MissingCorruptOversizedAndUnsupportedContentReturnExplicitFailures()
