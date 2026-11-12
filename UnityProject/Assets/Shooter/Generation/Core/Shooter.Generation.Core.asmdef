@@ -1,0 +1,9 @@
+{
+  "name": "Shooter.Generation.Core",
+  "rootNamespace": "Shooter.Generation",
+  "references": [
+    "Shooter.Contracts"
+  ],
+  "autoReferenced": true,
+  "noEngineReferences": true
+}

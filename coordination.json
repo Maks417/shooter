@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "updatedDate": "2026-11-12",
-  "integrator": "Codex (M0 integrator)",
+  "integrator": "Codex (M1 integrator)",
   "branch": "main",
-  "baseCommit": "40de8f9405f1fa8414a338ccfcca8a7f643466bb",
+  "baseCommit": "ba44c9f1f5cdd4fa8be044a04b4af528306d06fa",
   "contractVersion": "C0-v1",
   "readyForParallelIntegration": true,
   "packages": [
@@ -160,6 +160,62 @@
       "leaseExpiry": null,
       "integratedFromBranch": "codex/m0-provenance-validation",
       "workspaceStatus": "Merged into main; temporary worktree and branch retired after evidence preservation and ancestry/source verification"
+    },
+    {
+      "packageId": "WP-01/P01/random",
+      "owner": "/root/random",
+      "branch": "codex/m1-random",
+      "baseCommit": "ba44c9f1f5cdd4fa8be044a04b4af528306d06fa",
+      "paths": [
+        "UnityProject/Assets/Shooter/Generation/Core/Random",
+        "Tools/Generation.Tests/RandomTests.cs"
+      ],
+      "dependencies": [
+        "C0-v1",
+        "specification-v1.1"
+      ],
+      "contractVersion": "C0-v1",
+      "status": "Assigned P01 only; pure source/tests; no shared contract, schema, project or editor edits",
+      "leaseExpiry": null
+    },
+    {
+      "packageId": "WP-01/P01/canonical",
+      "owner": "/root/canonical",
+      "branch": "codex/m1-canonical",
+      "baseCommit": "ba44c9f1f5cdd4fa8be044a04b4af528306d06fa",
+      "paths": [
+        "UnityProject/Assets/Shooter/Generation/Core/Canonical",
+        "Tools/Generation.Tests/CanonicalTests.cs"
+      ],
+      "dependencies": [
+        "C0-v1",
+        "specification-v1.1"
+      ],
+      "contractVersion": "C0-v1",
+      "status": "Assigned P01 only; pure source/tests; no shared contract, schema, project or editor edits",
+      "leaseExpiry": null
+    },
+    {
+      "packageId": "WP-01/P01/integration",
+      "owner": "Codex integrator",
+      "branch": "main",
+      "baseCommit": "ba44c9f1f5cdd4fa8be044a04b4af528306d06fa",
+      "paths": [
+        "UnityProject/Assets/Shooter/Generation/Core/Identity",
+        "UnityProject/Assets/Shooter/Generation/Core/Dependencies",
+        "Tools/Generation",
+        "Tools/Generation.Tests",
+        "Tools/Test-Generation.ps1",
+        "docs",
+        "coordination.json"
+      ],
+      "dependencies": [
+        "C0-v1",
+        "specification-v1.1"
+      ],
+      "contractVersion": "C0-v1",
+      "status": "P01 identity, DAG validation, assembly/test scaffolds and serialized integration",
+      "leaseExpiry": null
     }
   ],
   "validationWave": {
@@ -228,7 +284,7 @@
     "decision": "docs/decisions.md#adr-017--accepted-m0-owner-waiver-of-remaining-hardware-validation",
     "hardwareValidation": "Unverified; waived for M0 closure only. Automated failed/pending reports unchanged.",
     "hostedCI": "User-deferred",
-    "nextMilestoneAssigned": false,
+    "nextMilestoneAssigned": true,
     "runtimeBuildSourceCommit": "19118a029d45ff5a930d00525565465cf6740c18",
     "collectionSourceCommit": "40de8f9405f1fa8414a338ccfcca8a7f643466bb",
     "evidenceDirectory": "Artifacts/m0-foundation/40de8f9405f1fa8414a338ccfcca8a7f643466bb/owner-acceptance-20261112",
@@ -238,5 +294,15 @@
       "Preconditioning hitch causes"
     ],
     "supersedesHistoricalDisposition": true
+  },
+  "m1Start": {
+    "date": "2026-11-12",
+    "assignment": "User requested M1 implementation with multiple agents",
+    "scope": "P01/T005 deterministic foundations and dependency graph validation; P02-P05 remain pending",
+    "upstream": "ba44c9f1f5cdd4fa8be044a04b4af528306d06fa",
+    "contractVersion": "C0-v1",
+    "fixtureVersion": "specification-v1.1",
+    "seed": "460072030",
+    "readiness": "M0 owner-qualified closure accepted; frozen C0 source and fixtures retained; pure worker harness only, no Unity editor in worker worktrees"
   }
 }
