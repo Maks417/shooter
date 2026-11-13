@@ -1501,21 +1501,21 @@
     "disposition": "Product OfflineGameSession default Bootstrap; diagnostic smoke retained; named human/P05 Pending",
     "evidence": "Artifacts/m8-runtime-composition/product-player-evidence.json",
     "t025Started": false,
-    "softwareHead": "f9a6a8fdb997589b068692aab9f4c6ebfacf90d8"
+    "softwareHead": "74de1816ecdd0e86375ffcbc5a4416c4612967a5"
   },
   "m9Close": {
     "date": "2026-11-13",
     "status": "CLOSED_SOFTWARE",
     "disposition": "TDM reducer + 11-bot TeamBotPlanner + session Step binding; TDM07/08 Pending",
     "handoff": "docs/milestones/m9-team-deathmatch/handoff.md",
-    "softwareHead": "f9a6a8fdb997589b068692aab9f4c6ebfacf90d8"
+    "softwareHead": "74de1816ecdd0e86375ffcbc5a4416c4612967a5"
   },
   "m10Close": {
     "date": "2026-11-13",
     "status": "CLOSED_SOFTWARE",
     "disposition": "Compound+Depot maps, GameShellMenu, FileUserSettingsStore; named UI/device Pending",
     "handoff": "docs/milestones/m10-maps-shell/handoff.md",
-    "softwareHead": "f9a6a8fdb997589b068692aab9f4c6ebfacf90d8"
+    "softwareHead": "74de1816ecdd0e86375ffcbc5a4416c4612967a5"
   },
   "m11Close": {
     "date": "2026-11-13",
@@ -1523,7 +1523,7 @@
     "disposition": "Package-Release tooling PASS; REL03/04/05 PendingHardware or named review; P05 FAIL retained",
     "handoff": "docs/milestones/m11-playable-release/handoff.md",
     "packageEvidence": "Artifacts/m11-playable-release",
-    "softwareHead": "f9a6a8fdb997589b068692aab9f4c6ebfacf90d8"
+    "softwareHead": "74de1816ecdd0e86375ffcbc5a4416c4612967a5"
   },
   "leftoverNonMilestoneWork": {
     "date": "2026-11-13",
