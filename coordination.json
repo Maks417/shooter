@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
   "updatedDate": "2026-11-13",
-  "integrator": "Cursor M2 integrator (bc-2637951e); Unity smoke bc-ff836dea; V05/V09 scenarios bc-6bff6f6f; closeout bc-457cec93",
+  "integrator": "Cursor M3 integrator (bc-08a335af); WP-06/WP-07 worktrees",
   "branch": "main",
-  "baseCommit": "97f10ef88e17d25df62b8ddbb07f4ec18b8c59f8",
+  "baseCommit": "e7cc49bc7ebaffd674d392488da6e6637f4a3fb4",
   "contractVersion": "C0-v1",
-  "readyForParallelIntegration": false,
+  "readyForParallelIntegration": true,
   "packages": [
     {
       "packageId": "WP-00",
@@ -643,6 +643,153 @@
       "unitySmokeEvidence": "Artifacts/m2-combat-harness/59bd8c6b76ad6824d4369e8bca856cd431b226e4/unity-smoke-20261113T193220046Z/validation.json",
       "scenarioEvidence": "Artifacts/m2-combat-harness/474427d77b6678ee651dfb344c5b0a26539a9b00/v05-v09-scenarios-20261113T185222419Z/validation.json",
       "closureEvidence": "Artifacts/m2-combat-harness/owner-closure-20261113"
+    },
+    {
+      "packageId": "WP-06/environment",
+      "owner": "/root/m3_env",
+      "branch": "cursor/m3-env-bdbf",
+      "baseCommit": "e7cc49bc7ebaffd674d392488da6e6637f4a3fb4",
+      "paths": [
+        "UnityProject/Assets/Shooter/Generation/Core/Environment",
+        "Tools/Generation.Tests/EnvironmentTests.cs"
+      ],
+      "dependencies": [
+        "C0-v1",
+        "M1 geometry",
+        "M2 capsule rules",
+        "docs/features/environment.md",
+        "docs/gameplay-baseline.md"
+      ],
+      "contractVersion": "C0-v1",
+      "status": "Assigned M3 W01; isolated worktree; no Contracts/Bootstrap/Settings edits",
+      "leaseExpiry": null,
+      "forbiddenPaths": [
+        "UnityProject/Assets/Shooter/Contracts",
+        "UnityProject/Assets/Shooter/Bootstrap",
+        "UnityProject/Assets/Shooter/Settings",
+        "UnityProject/ProjectSettings",
+        "UnityProject/Packages",
+        "coordination.json",
+        "contract-lock.json",
+        "docs"
+      ]
+    },
+    {
+      "packageId": "WP-06/streaming",
+      "owner": "/root/m3_streaming",
+      "branch": "cursor/m3-streaming-bdbf",
+      "baseCommit": "e7cc49bc7ebaffd674d392488da6e6637f4a3fb4",
+      "paths": [
+        "UnityProject/Assets/Shooter/World/Streaming",
+        "Tools/Generation.Tests/StreamingTests.cs"
+      ],
+      "dependencies": [
+        "C0-v1",
+        "P02 content leases",
+        "W01 plan fixtures (fakes OK until merge)"
+      ],
+      "contractVersion": "C0-v1",
+      "status": "Assigned M3 W03; isolated worktree; no Contracts/Bootstrap/Settings edits",
+      "leaseExpiry": null,
+      "forbiddenPaths": [
+        "UnityProject/Assets/Shooter/Contracts",
+        "UnityProject/Assets/Shooter/Bootstrap",
+        "UnityProject/Assets/Shooter/Settings",
+        "UnityProject/ProjectSettings",
+        "UnityProject/Packages",
+        "UnityProject/Assets/Shooter/Generation/Core/Environment",
+        "coordination.json",
+        "contract-lock.json",
+        "docs"
+      ]
+    },
+    {
+      "packageId": "WP-06/navigation",
+      "owner": "/root/m3_nav",
+      "branch": "cursor/m3-nav-bdbf",
+      "baseCommit": "e7cc49bc7ebaffd674d392488da6e6637f4a3fb4",
+      "paths": [
+        "UnityProject/Assets/Shooter/World/Navigation",
+        "Tools/Generation.Tests/NavigationTests.cs"
+      ],
+      "dependencies": [
+        "C0-v1",
+        "W01 plan fixtures (fakes OK until merge)",
+        "docs/features/environment.md"
+      ],
+      "contractVersion": "C0-v1",
+      "status": "Assigned M3 W02; isolated worktree; no Contracts/Bootstrap/Settings edits",
+      "leaseExpiry": null,
+      "forbiddenPaths": [
+        "UnityProject/Assets/Shooter/Contracts",
+        "UnityProject/Assets/Shooter/Bootstrap",
+        "UnityProject/Assets/Shooter/Settings",
+        "UnityProject/ProjectSettings",
+        "UnityProject/Packages",
+        "UnityProject/Assets/Shooter/Generation/Core/Environment",
+        "UnityProject/Assets/Shooter/World/Streaming",
+        "coordination.json",
+        "contract-lock.json",
+        "docs"
+      ]
+    },
+    {
+      "packageId": "WP-07/ai",
+      "owner": "/root/m3_ai",
+      "branch": "cursor/m3-ai-bdbf",
+      "baseCommit": "e7cc49bc7ebaffd674d392488da6e6637f4a3fb4",
+      "paths": [
+        "UnityProject/Assets/Shooter/Simulation/AI",
+        "Tools/Simulation.Tests/AI"
+      ],
+      "dependencies": [
+        "C0-v1",
+        "M2 combat",
+        "W02 nav fixtures (fakes OK until merge)",
+        "docs/features/ai.md"
+      ],
+      "contractVersion": "C0-v1",
+      "status": "Assigned M3 W04; isolated worktree; no Contracts/Bootstrap/Settings edits",
+      "leaseExpiry": null,
+      "forbiddenPaths": [
+        "UnityProject/Assets/Shooter/Contracts",
+        "UnityProject/Assets/Shooter/Bootstrap",
+        "UnityProject/Assets/Shooter/Settings",
+        "UnityProject/ProjectSettings",
+        "UnityProject/Packages",
+        "UnityProject/Assets/Shooter/Simulation/Motor",
+        "UnityProject/Assets/Shooter/Simulation/Combat",
+        "UnityProject/Assets/Shooter/World",
+        "coordination.json",
+        "contract-lock.json",
+        "docs"
+      ]
+    },
+    {
+      "packageId": "WP-00/M3-integration",
+      "owner": "Cursor M3 integrator",
+      "branch": "main",
+      "baseCommit": "e7cc49bc7ebaffd674d392488da6e6637f4a3fb4",
+      "paths": [
+        "UnityProject/Assets/Shooter/Simulation/Foundation",
+        "UnityProject/Assets/Shooter/Bootstrap",
+        "UnityProject/Assets/Shooter/World/Foundation",
+        "Tools/Foundation",
+        "Tools/Simulation.Tests",
+        "Tools/Test-Simulation.ps1",
+        "docs/milestones/m3-generated-compound",
+        "coordination.json",
+        "AGENTS.md"
+      ],
+      "dependencies": [
+        "WP-06/environment",
+        "WP-06/streaming",
+        "WP-06/navigation",
+        "WP-07/ai"
+      ],
+      "contractVersion": "C0-v1",
+      "status": "M3 wave started; integrator owns shared composition/docs/coordination",
+      "leaseExpiry": null
     }
   ],
   "validationWave": {
@@ -702,34 +849,16 @@
     "readyForParallelIntegration": false
   },
   "milestoneAcceptance": {
-    "milestone": "M2",
-    "status": "CLOSED_WITH_USER_WAIVER",
+    "milestone": "M3",
+    "status": "IN_PROGRESS",
     "closedCount": 3,
     "totalCount": 8,
-    "acceptedBy": "Max (project owner)",
+    "acceptedBy": null,
     "date": "2026-11-13",
-    "decision": "docs/decisions.md#adr-026--accepted-m2-owner-waiver-of-remaining-hardwarereference-validation-and-milestone-close",
-    "alsoDependsOn": [
-      "ADR-017",
-      "ADR-025"
-    ],
-    "hardwareValidation": "Unverified; waived for M2 closure only. Automated PendingHardware diagnostic unchanged.",
-    "softwareGates": "C01-C04 PASS; EditMode 13/13; PlayMode 11/11; V05/V06/V09 PASS; client/server smoke PASS",
-    "b03CombatPerformance": "Deferred to M3/M4; not an M2 exit gate",
-    "hostedCI": "User-deferred",
+    "decision": null,
+    "priorM2Acceptance": "m2MilestoneAcceptance",
     "nextMilestoneAssigned": false,
-    "evidenceDirectory": "Artifacts/m2-combat-harness/owner-closure-20261113",
-    "unverifiedItems": [
-      "M2 reference-player full three-run series",
-      "Live HWiNFO/thermal review",
-      "channelMode / GPU-memory / variant counters for combat harness"
-    ],
-    "failRetained": [
-      "P05 soldier visual/clearance (upstream ADR-024; not required for M2 harness)"
-    ],
-    "supersedesHistoricalDisposition": true,
-    "priorM1Acceptance": "m1MilestoneAcceptance",
-    "priorM0Acceptance": "m0MilestoneAcceptance"
+    "evidenceDirectory": "Artifacts/m3-generated-compound"
   },
   "m1Start": {
     "date": "2026-11-12",
@@ -891,5 +1020,59 @@
     ],
     "supersedesHistoricalDisposition": true,
     "priorM0Acceptance": "m0MilestoneAcceptance"
+  },
+  "m2MilestoneAcceptance": {
+    "milestone": "M2",
+    "status": "CLOSED_WITH_USER_WAIVER",
+    "closedCount": 3,
+    "totalCount": 8,
+    "acceptedBy": "Max (project owner)",
+    "date": "2026-11-13",
+    "decision": "docs/decisions.md#adr-026--accepted-m2-owner-waiver-of-remaining-hardwarereference-validation-and-milestone-close",
+    "alsoDependsOn": [
+      "ADR-017",
+      "ADR-025"
+    ],
+    "hardwareValidation": "Unverified; waived for M2 closure only. Automated PendingHardware diagnostic unchanged.",
+    "softwareGates": "C01-C04 PASS; EditMode 13/13; PlayMode 11/11; V05/V06/V09 PASS; client/server smoke PASS",
+    "b03CombatPerformance": "Deferred to M3/M4; not an M2 exit gate",
+    "hostedCI": "User-deferred",
+    "nextMilestoneAssigned": false,
+    "evidenceDirectory": "Artifacts/m2-combat-harness/owner-closure-20261113",
+    "unverifiedItems": [
+      "M2 reference-player full three-run series",
+      "Live HWiNFO/thermal review",
+      "channelMode / GPU-memory / variant counters for combat harness"
+    ],
+    "failRetained": [
+      "P05 soldier visual/clearance (upstream ADR-024; not required for M2 harness)"
+    ],
+    "supersedesHistoricalDisposition": true,
+    "priorM1Acceptance": "m1MilestoneAcceptance",
+    "priorM0Acceptance": "m0MilestoneAcceptance"
+  },
+  "m3Start": {
+    "date": "2026-11-13",
+    "assignment": "Owner Max: start M3; once done start M4; multi-agent; no confirmations; hardware PendingHardware may be waived with ADR",
+    "baseCommit": "e7cc49bc7ebaffd674d392488da6e6637f4a3fb4",
+    "contractVersion": "C0-v1 unchanged",
+    "fixtureVersion": "specification-v1.1",
+    "seed": "460072030",
+    "canonicalSeeds": [
+      "460072030",
+      "1",
+      "42",
+      "18446744073709551615"
+    ],
+    "scope": "M3 W01-W05 / T014-T016 (+T033 B02/B03 freeze); no M5+ networking",
+    "status": "IN_PROGRESS",
+    "workers": [
+      "WP-06/environment",
+      "WP-06/streaming",
+      "WP-06/navigation",
+      "WP-07/ai"
+    ],
+    "evidence": "Artifacts/m3-generated-compound",
+    "moveAgentToRoot": "cursor-app-control namespace unavailable in this session; integrator works via absolute paths on C:/Job/shooter"
   }
 }
