@@ -63,6 +63,9 @@ public sealed class SoldierMotionTests
             if(socket.Id=="left-hand-grip") Assert.InRange(Distance(pose.LeftHandTarget,Transform(pose.WeaponPosition,pose.WeaponRotation,socket.Position)),0,1e-6);
         }
         Assert.InRange(pose.RightGripError,0,.02f); Assert.InRange(pose.LeftGripError,0,.02f);
+        Assert.True(pose.WorldPositions[13].Y<pose.WorldPositions[12].Y-.05f, "Held rifle task keeps the trigger elbow below the shoulder instead of raising it beside the face.");
+        Assert.True(pose.WorldPositions[9].Y<pose.WorldPositions[6].Y-.06f, "Support elbow stays below the head center in the neutral held pose.");
+        output.WriteLine("Neutral held trigger elbow height relative to shoulder="+(pose.WorldPositions[13].Y-pose.WorldPositions[12].Y)+"m");
     }
     [Fact]
     public void HeldGripsRemainWithinTwoCentimetersAcrossTheSupportedAimCone()
@@ -108,6 +111,7 @@ public sealed class SoldierMotionTests
             Assert.InRange(pose.PelvisCorrection,-.080001f,0);Assert.InRange(pose.GroundQueries,0,2);
             Assert.InRange(pose.LeftElbowFlexion,0,145*(float)Math.PI/180+1e-5f);Assert.InRange(pose.RightElbowFlexion,0,145*(float)Math.PI/180+1e-5f);
             Assert.InRange(pose.LeftKneeFlexion,0,150*(float)Math.PI/180+1e-5f);Assert.InRange(pose.RightKneeFlexion,0,150*(float)Math.PI/180+1e-5f);
+            AssertShoulderTaskCones(pose);
             for(int j=0;j<23;j++)
             {
                 Assert.True(pose.WorldRotations[j].IsValid);
@@ -174,6 +178,7 @@ public sealed class SoldierMotionTests
             var pose=motion.Evaluate(new SoldierMotionInput(new Float3(0,0,0),0,0,0,crouch,yaw,pitch,phase/100f),ground);
             maxError=Math.Max(maxError,Math.Max(pose.LeftGripError,pose.RightGripError));
             Assert.InRange(pose.LeftGripError,0,.02f);Assert.InRange(pose.RightGripError,0,.02f);
+            AssertShoulderTaskCones(pose);
         }
         output.WriteLine("motion="+SoldierMotion.Version+" reload poses=1818 full supported aim cone maximumTaskError="+maxError+"m; wrist orientation discrepancy reported separately");
     }
@@ -216,5 +221,15 @@ public sealed class SoldierMotionTests
     {
         float tx=2*(q.Y*p.Z-q.Z*p.Y),ty=2*(q.Z*p.X-q.X*p.Z),tz=2*(q.X*p.Y-q.Y*p.X);
         return new Float3(origin.X+p.X+q.W*tx+q.Y*tz-q.Z*ty,origin.Y+p.Y+q.W*ty+q.Z*tx-q.X*tz,origin.Z+p.Z+q.W*tz+q.X*ty-q.Y*tx);
+    }
+    private static void AssertShoulderTaskCones(SoldierPose pose)
+    {
+        var down=Transform(new Float3(0,0,0),pose.WorldRotations[4],new Float3(0,-1,0));
+        foreach(int shoulder in new[]{8,12})
+        {
+            var a=pose.WorldPositions[shoulder];var b=pose.WorldPositions[shoulder+1];
+            double projection=(b.X-a.X)*down.X+(b.Y-a.Y)*down.Y+(b.Z-a.Z)*down.Z;
+            Assert.True(projection>=-1e-5,"Upper arm stays within the unchanged90-degree cone around anatomical task-neutral down; T-bind axes remain immutable.");
+        }
     }
 }
