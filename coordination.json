@@ -647,9 +647,9 @@
       "sky_probe": "integrated",
       "lod_transition": "integrated",
       "silhouette_review": "integrated PendingReview",
-      "materials_series": "FAIL recorded",
+      "materials_series": "three-run PendingHardware recorded",
       "p05_scope_docs": "ADR-024 on main"
-    }
+    },
+    "b01SeriesDisposition": "PendingHardware"
   }
 }
-
