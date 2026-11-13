@@ -171,10 +171,12 @@ The submitted candidate is soldier.loft1.0.2/motion.spike.v3, with a generated e
 
 ## ADR-024 — Accepted: P05 soldier visual scope stop after exhausted clearance iterations
 
-Date: 2026-11-13. Status: Accepted (scope decision). After three failed clearance reviews, further P05 soldier visual clearance and parameter search stops. Owner direction to finish remaining M1 work authorizes parallel non-soldier polish only; it does not accept the failed soldier as visual PASS and does not authorize a fourth clearance iteration.
+Date: 2026-11-13. Status: Accepted (scope decision). After iteration2 FAIL and the owner-authorized third candidate FAIL under ADR-023, Max directed remaining M1 work to proceed without a fourth clearance iteration (“do all”). That continues other M1 packages only; it does not accept the failed soldier as visual PASS and does not authorize further clearance/parameter search.
 
 Facts retained for this stop: iteration2 FAIL for arm/torso penetration despite passing numeric grip/contact checks; ADR-023 authorized exactly one third candidate, soldier.loft1.0.2/motion.spike.v3, which also FAIL (~2.18mm dense possible left forearm/strap overlap near down-aim reload phase0.45; eye/sight alignment unresolved). No fourth iteration is authorized.
 
-Decision: stop further P05 clearance/parameter search. Retain non-accepted diagnostic sources, caches and evidence for loft1.0.0/1.0.1/1.0.2 and motion.spike.v1/v2/v3. Soldier visual/clearance acceptance remains FAIL. Numeric grip/contact,1000-pose and eight-rig diagnostics remain spike evidence only and do not override the failed visual gate.
+Decision: stop further P05 soldier clearance/parameter search. Retain loft1.0.0/1.0.1/1.0.2 and motion.spike.v1/v2/v3, including loft1.0.2/motion.spike.v3, as non-accepted diagnostic evidence. Numeric pose/grip/contact and the eight-rig harness remain available as spike evidence only and do not override the failed visual gate. M1 soldier visual/clearance acceptance stays FAIL / not accepted. No realism claim and no tolerance relaxation are authorized. M2 combat still must not depend on accepting this skin.
 
-This ADR does not close M1, does not waive hardware gates, does not claim realism or performance, and does not authorize M2 combat. It allows parallel remaining M1 polish (T031, LOD evidence, B01 three-run and related open gates) without pretending soldier PASS. [Soldier baseline](soldier-baseline.md#scope-stop), [handoff](milestones/m1-procedural-feasibility/handoff.md).
+Alternatives rejected: unlimited further clearance iteration; silently treating numeric or harness passes as visual PASS; deleting spike sources, caches or failure evidence.
+
+This ADR does not close M1, does not waive hardware gates, and does not authorize imported art. It allows parallel remaining M1 polish (T031, LOD evidence, B01 three-run and related open gates) without pretending soldier PASS. Future soldier visual work requires new explicit owner authorization and a new versioned candidate. [Soldier baseline](soldier-baseline.md#scope-stop), [handoff](milestones/m1-procedural-feasibility/handoff.md).

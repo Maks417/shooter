@@ -626,12 +626,16 @@
   "m1Continuation": {
     "assignment": "User renewed M1 implementation with multiple agents",
     "baseCommit": "8f64e54aca2640ad23e735772d652b03b7ee1cae",
-    "status": "267 pure tests and Unity skinning/LOD pass; P05 iteration2 visual failure retained; owner authorized one third bounded body-clearance iteration under ADR-023. Exact material workload and compression measurements implemented; hardware acceptance remains open.",
+    "status": "267 pure tests and Unity skinning/LOD pass; P05 iteration2 and ADR-023 third candidate both FAIL visual/clearance; ADR-024 recorded (owner \"do all\"): stop further clearance search, retain loft1.0.2/motion.spike.v3 as non-accepted evidence; remaining M1 polish may continue without soldier PASS. Exact material workload and compression measurements implemented; hardware acceptance remains open.",
     "contractVersion": "C0-v1 unchanged",
     "formatVersion": 1,
-    "scope": "P03 LOD, P04 material workload/resource evidence, P05 bounded soldier spike; no M2 combat",
+    "scope": "P03 LOD, P04 material workload/resource evidence, P05 bounded soldier spike (visual/clearance scope-stopped under ADR-024); no M2 combat",
     "evidence": "Artifacts/m1-continuation",
     "thirdIterationAuthorization": "Authorize one more bounded body-clearance iteration",
-    "thirdIterationDecision": "ADR-023"
+    "thirdIterationDecision": "ADR-023",
+    "thirdIterationResult": "FAIL",
+    "scopeStopDecision": "ADR-024",
+    "blockedOnOwner": null
   }
 }
+
