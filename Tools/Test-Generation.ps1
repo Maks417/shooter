@@ -30,6 +30,10 @@ $report = [ordered]@{
     result = 'FAIL'
     scope = 'M1 pure generation, compiler/cache, byte leases, geometry/material/weapon/soldier and analytic motion checks. Numeric tests do not establish visual, gameplay-hit or reference-hardware acceptance.'
     testCount = 0
+    executedTestCount = 0
+    failedTestCount = 0
+    skippedTestCount = 0
+    failedTests = @()
     failure = $null
     commands = @()
 }
@@ -132,6 +136,21 @@ try {
 }
 catch { $report.failure = $_.Exception.Message; Write-Warning $report.failure }
 finally {
+    # A failing test process still produces useful fresh TRX. Preserve its actual counts;
+    # never turn a known acceptance failure into a misleading zero-test report.
+    $finalTrxPath = Join-Path $reportDirectory 'generation.trx'
+    if (Test-Path -LiteralPath $finalTrxPath -PathType Leaf) {
+        try {
+            [xml]$finalTrx = Get-Content -LiteralPath $finalTrxPath -Raw
+            $finalCounters = $finalTrx.TestRun.ResultSummary.Counters
+            $report.testCount = [int]$finalCounters.total
+            $report.executedTestCount = [int]$finalCounters.executed
+            $report.failedTestCount = [int]$finalCounters.failed
+            $report.skippedTestCount = [int]$finalCounters.total - [int]$finalCounters.executed
+            $report.failedTests = @($finalTrx.TestRun.Results.UnitTestResult | Where-Object outcome -ne 'Passed' | ForEach-Object testName)
+        }
+        catch { $report['testResultParseFailure'] = $_.Exception.Message; $report.result = 'FAIL' }
+    }
     $report | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $reportDirectory 'run.json') -Encoding utf8NoBOM
 }
 if ($report.result -ne 'PASS') { exit 1 }
