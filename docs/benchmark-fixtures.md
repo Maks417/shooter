@@ -25,3 +25,5 @@ Collector version 3 uses the [ADR-016 conservative render-budget method](decisio
 ## No benchmark shortcut
 
 Fixed workload performance passes do not prove full gameplay correctness. Run normal eight-bot soak with ordinary firing and objective/restart tests. All three timing runs must pass; 60 FPS stretch uses identical B03 ID/content/counters. Do not compare B01-minimal with B01-materials or benchmark-invulnerable scene with playable combat without naming the difference.
+
+The implemented M1-content-gallery-v1 renderer/cache smoke is a separate diagnostic with weapons and seven material cubes. It is deliberately rejected as a `-shooterBenchmark` substitution. B01-materials-v1 camera cycling, exact workload integration and full performance collection remain pending; gallery image/timing/resource inventory does not satisfy them.

@@ -1,6 +1,6 @@
 # Feature: procedural geometry and modern weapons
 
-Owner WP-02; proposed `Generation/Core/Geometry`, `Generation/Core/Weapons`. Consumes [contracts](../contracts.md) and outputs to [compiler](../generation.md). Combat mechanics are owned by [combat](combat.md); geometry cannot alter damage.
+Owner WP-02; implemented initial M1 source in `Generation/Core/Geometry`, `Generation/Core/Weapons`. Consumes [contracts](../contracts.md) and outputs to [compiler](../generation.md). Combat mechanics are owned by [combat](combat.md); geometry cannot alter damage.
 
 ## Construction
 
@@ -23,3 +23,9 @@ Invalid length/radius or socket orientation returns a structured compile error, 
 ## Acceptance
 
 Primitive tests cover bounds, winding, normals, UVs, watertightness for solid primitives and stable hashes. Rifle/pistol regenerate from recipes with all sockets validated, no imported source meshes. Golden silhouette views at front/side/three-quarter and first-person ADS reviewed for plausible scale. LOD transition preserves sights and main silhouette; compiler reports all counts. B02 budgets remain within cap with first-person arms/weapon and eight world weapons. Geometry quality review may reject visually implausible output even if topology tests pass.
+
+## Implemented M1 baseline (2026-11-13)
+
+`Generation/Core/Geometry/PrimitiveGeometry.cs` provides closed hard/beveled boxes and +Z cylinders/cones with metric UVs; `MeshAssembly` joins rigid components into stable material submeshes and `MeshValidation` checks frames/winding and seam-welded solid edges. This is component construction, not general boolean union or a full extrusion/sweep library. `Generation/Core/Weapons` builds four rifle/pistol LODs, bounded blind bores, independent collision proxies and immutable semantic sockets from the [numeric baseline](../weapon-recipe-baseline.md). All mechanical transforms and sockets are seed/profile/LOD invariant. Generator geometry.weapon1.0.1 fixes the initially disconnected magazine/trigger proxies under [ADR-020](../decisions.md#adr-020--accepted-versioned-first-visual-corrections-for-weapon-and-metal-generators); old diagnostic versions remain retained and explicitly reject regeneration.
+
+Rifle triangle counts are3480/2760/312/240; pistol2508/1788/240/180. These pass ceilings and codec/topology tests, not a claim of final realistic detail. [Weapon input schema](../feature-schemas/weapon.schema.json), migration fixtures and root `feature-content-lock.json` record the registry. `ShooterFeatureBuild` compiles visual and gameplay keys separately; `GeneratedGallery` loads all LODs and shows them explicitly for captures. It does not yet implement a production screen-height/hysteresis LOD controller, dropped-weapon physics or combat/viewmodel pose integration. Review evidence and remaining visual/transition gates are in the [M1 handoff](../milestones/m1-procedural-feasibility/handoff.md).

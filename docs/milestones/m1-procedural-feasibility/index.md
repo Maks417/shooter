@@ -1,6 +1,6 @@
 # M1 — Procedural feasibility — implementation pack
 
-Status: **IN PROGRESS**, 2026-11-12. P01/P02 foundations now include a frozen typed format, CPU collision diagnostic compiler/cache and bounded byte leases, with 150 pure generation/content tests passing. Generated visual geometry/materials, rig and full-slice acceptance remain pending; no new playable content or performance claim. Canonical backlog tasks: T005–T010. Assigned packages: WP-01, WP-02, WP-03, WP-04.
+Status: **IN PROGRESS**, 2026-11-12. P01-P04 now have compiler/cache foundations, primitive and weapon LODs, semantic sockets, seven CPU material families and a URP cache-backed diagnostic gallery. All 229 pure tests pass from a clean checkout. Remaining P04 benchmark/compression and formal visual/LOD acceptance, P05 rig and full-slice gates remain pending; no new playable content or performance claim. Canonical backlog tasks: T005–T010. Assigned packages: WP-01, WP-02, WP-03, WP-04.
 
 ## Goal and entry gate
 

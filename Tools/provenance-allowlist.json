@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "scope": "M0 code/numeric sources, hash-verified generated settings/bootstrap scene and named engine shader support; no M1 content-cache or release approval",
+  "scope": "Code/numeric C#/HLSL sources, hash-verified generated settings/bootstrap scene and named engine support; content-cache integrity is verified separately; no release or hardware approval",
   "assetSourceExtensions": [
     ".cs",
     ".asmdef",

@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "updatedDate": "2026-11-12",
+  "updatedDate": "2026-11-13",
   "integrator": "Codex (M1 integrator)",
   "branch": "main",
-  "baseCommit": "912be99bdc47dd2112e0379cf641a6e1f5220e28",
+  "baseCommit": "22942d6ccbbdcb4368bc496d1188c5119b644d24",
   "contractVersion": "C0-v1",
   "readyForParallelIntegration": true,
   "packages": [
@@ -316,7 +316,7 @@
     {
       "packageId": "WP-02/P03/geometry",
       "owner": "/root/geometry",
-      "branch": "codex/m1-geometry",
+      "branch": "main",
       "baseCommit": "73cb8a7008f5dd8025bc418a78e1d75986f71147",
       "paths": [
         "UnityProject/Assets/Shooter/Generation/Core/Geometry",
@@ -328,13 +328,15 @@
         "docs/weapon-recipe-baseline.md"
       ],
       "contractVersion": "C0-v1",
-      "status": "Assigned pure source/tests; no worker Unity editor or shared files",
-      "leaseExpiry": null
+      "status": "Integrated and reviewed, including versioned visual fixes; all pure source tests pass; formal feature acceptance remains qualified in handoff",
+      "leaseExpiry": null,
+      "integratedFromBranch": "codex/m1-geometry",
+      "workspaceStatus": "Main ancestry verified; evidence copied and SHA256 checked; temporary worktree and branch removed"
     },
     {
       "packageId": "WP-02/P03/weapons",
       "owner": "/root/weapons",
-      "branch": "codex/m1-weapons",
+      "branch": "main",
       "baseCommit": "73cb8a7008f5dd8025bc418a78e1d75986f71147",
       "paths": [
         "UnityProject/Assets/Shooter/Generation/Core/Weapons",
@@ -346,13 +348,15 @@
         "docs/weapon-recipe-baseline.md"
       ],
       "contractVersion": "C0-v1",
-      "status": "Assigned pure source/tests; no worker Unity editor or shared files",
-      "leaseExpiry": null
+      "status": "Integrated and reviewed, including versioned visual fixes; all pure source tests pass; formal feature acceptance remains qualified in handoff",
+      "leaseExpiry": null,
+      "integratedFromBranch": "codex/m1-weapons",
+      "workspaceStatus": "Main ancestry verified; evidence copied and SHA256 checked; temporary worktree and branch removed"
     },
     {
       "packageId": "WP-03/P04/materials",
       "owner": "/root/materials",
-      "branch": "codex/m1-materials",
+      "branch": "main",
       "baseCommit": "73cb8a7008f5dd8025bc418a78e1d75986f71147",
       "paths": [
         "UnityProject/Assets/Shooter/Generation/Core/Materials",
@@ -364,7 +368,36 @@
         "docs/weapon-recipe-baseline.md"
       ],
       "contractVersion": "C0-v1",
-      "status": "Assigned pure source/tests; no worker Unity editor or shared files",
+      "status": "Integrated and reviewed, including versioned visual fixes; all pure source tests pass; formal feature acceptance remains qualified in handoff",
+      "leaseExpiry": null,
+      "integratedFromBranch": "codex/m1-materials",
+      "workspaceStatus": "Main ancestry verified; evidence copied and SHA256 checked; temporary worktree and branch removed"
+    },
+    {
+      "packageId": "WP-00/M1-feature-integration",
+      "owner": "Codex integrator",
+      "branch": "main",
+      "baseCommit": "73cb8a7008f5dd8025bc418a78e1d75986f71147",
+      "paths": [
+        "UnityProject/Assets/Shooter/Generation/Core/Compilation",
+        "UnityProject/Assets/Shooter/Generation/Editor/Compilation",
+        "UnityProject/Assets/Shooter/Generation/FeatureRecipes",
+        "UnityProject/Assets/Shooter/Bootstrap",
+        "UnityProject/Assets/Shooter/Presentation/Rendering/GeneratedGallery.cs",
+        "UnityProject/Assets/Shooter/Shaders",
+        "UnityProject/Assets/Shooter/Settings/provenance.json",
+        "Tools",
+        "docs",
+        "coordination.json",
+        "feature-content-lock.json",
+        "content-format-lock.json"
+      ],
+      "dependencies": [
+        "P02 freeze",
+        "P03/P04 pure worker source"
+      ],
+      "contractVersion": "C0-v1 unchanged",
+      "status": "Serialized schema/registry/compiler/render integration and evidence; no package/toolchain upgrade, no M1 completion claim",
       "leaseExpiry": null
     }
   ],
@@ -480,6 +513,21 @@
     "contractVersion": "C0-v1",
     "formatVersion": 1,
     "socketBaseline": "docs/weapon-recipe-baseline.md",
-    "status": "Assigned isolated pure workers; integrator owns registry/compiler/rendering/shader/metadata/shared checks; full visual/performance gates require real evidence"
+    "status": "Generation and gallery implementation integrated;229 pure tests reproduce from clean checkout; release client/gallery/server checks pass. P04 compression/B01/variant/resource gates and formal visual/LOD acceptance remain open; P05 unassigned",
+    "generators": {
+      "geometry.weapon": "1.0.1",
+      "material.surface": "1.0.1"
+    },
+    "sourceRegistry": "feature-content-lock.json",
+    "decisions": [
+      "ADR-019",
+      "ADR-020"
+    ],
+    "codeCommit": "9b5a26a480af4c91fa8bbdacfa9cecacc8015504",
+    "registryCommit": "301eae0f85e4e52bd8db885205e5a2ca5519fe72",
+    "evidence": "Artifacts/m1-p03p04",
+    "cleanupEvidence": "Artifacts/m1-p03p04/worker-preservation/preservation.json",
+    "cleanSourceEvidence": "Artifacts/m1-p03p04/clean-source/preservation.json",
+    "next": "Remaining P04 workload/compression/resource and visual/LOD checks; P05 spike after explicit ownership assignment. No M2/combat expansion."
   }
 }
