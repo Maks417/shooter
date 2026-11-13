@@ -217,6 +217,21 @@ public sealed class SoldierMotionTests
         }
         bytes=GC.GetAllocatedBytesForCurrentThread()-before;Assert.Equal(0,bytes);
     }
+    [Fact]
+    public void UpperBodyReuseIsExactRigidTranslationAndInvalidatesOnAimOrActionChanges()
+    {
+        var motion=new SoldierMotion(Rifle());var ground=new Ground();
+        var pose=motion.Evaluate(new SoldierMotionInput(new Float3(0,0,0),0,0,0),ground);
+        Assert.False(pose.UpperBodyCacheHit);
+        var chest=pose.WorldPositions[4];var hand=pose.WorldPositions[14];var weapon=pose.WeaponPosition;
+        pose=motion.Evaluate(new SoldierMotionInput(new Float3(.1f,0,.1f),0,0,0,1,reset:true),ground);
+        Assert.True(pose.UpperBodyCacheHit);
+        var delta=new Float3(pose.WorldPositions[4].X-chest.X,pose.WorldPositions[4].Y-chest.Y,pose.WorldPositions[4].Z-chest.Z);
+        Assert.InRange(Distance(pose.WorldPositions[14],new Float3(hand.X+delta.X,hand.Y+delta.Y,hand.Z+delta.Z)),0,1e-6);
+        Assert.InRange(Distance(pose.WeaponPosition,new Float3(weapon.X+delta.X,weapon.Y+delta.Y,weapon.Z+delta.Z)),0,1e-6);
+        pose=motion.Evaluate(new SoldierMotionInput(new Float3(0,0,0),0,0,0,aimYawRadians:.1f),ground);Assert.False(pose.UpperBodyCacheHit);
+        pose=motion.Evaluate(new SoldierMotionInput(new Float3(0,0,0),0,0,0,aimYawRadians:.1f,reloadPhase:.5f),ground);Assert.False(pose.UpperBodyCacheHit);
+    }
     private static Float3 Transform(Float3 origin,Quat q,Float3 p)
     {
         float tx=2*(q.Y*p.Z-q.Z*p.Y),ty=2*(q.Z*p.X-q.X*p.Z),tz=2*(q.X*p.Y-q.Y*p.X);
@@ -224,9 +239,9 @@ public sealed class SoldierMotionTests
     }
     private static void AssertShoulderTaskCones(SoldierPose pose)
     {
-        var down=Transform(new Float3(0,0,0),pose.WorldRotations[4],new Float3(0,-1,0));
         foreach(int shoulder in new[]{8,12})
         {
+            var down=Transform(new Float3(0,0,0),pose.WorldRotations[shoulder-1],new Float3(0,-1,0));
             var a=pose.WorldPositions[shoulder];var b=pose.WorldPositions[shoulder+1];
             double projection=(b.X-a.X)*down.X+(b.Y-a.Y)*down.Y+(b.Z-a.Z)*down.Z;
             Assert.True(projection>=-1e-5,"Upper arm stays within the unchanged90-degree cone around anatomical task-neutral down; T-bind axes remain immutable.");
