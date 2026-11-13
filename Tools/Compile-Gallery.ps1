@@ -14,7 +14,7 @@ try {
     $artifacts = [IO.Path]::GetFullPath((Join-Path (Get-ShooterRoot) 'Artifacts')) + [IO.Path]::DirectorySeparatorChar
     if (!$CacheRoot.StartsWith($artifacts, [StringComparison]::OrdinalIgnoreCase)) { throw 'CacheRoot must stay under repository Artifacts.' }
     $proofPath = Join-Path $run.Path 'compile-proof.json'
-    Invoke-ShooterEditor $unity $run @('-quit','-executeMethod','ShooterFeatureBuild.Compile','-shooterCacheRoot',$CacheRoot,'-shooterProfile',$Profile,'-shooterForce',([bool]$Force).ToString().ToLowerInvariant(),'-shooterReport',$proofPath) $TimeoutSeconds
+    Invoke-ShooterEditor $unity $run @('-buildTarget','StandaloneWindows64','-standaloneBuildSubtarget','Player','-quit','-executeMethod','ShooterFeatureBuild.Compile','-shooterCacheRoot',$CacheRoot,'-shooterProfile',$Profile,'-shooterForce',([bool]$Force).ToString().ToLowerInvariant(),'-shooterReport',$proofPath) $TimeoutSeconds
     $proof = Get-Content -LiteralPath $proofPath -Raw | ConvertFrom-Json
     if ($proof.result -cne 'Verified' -or $proof.toolchainHash -cne $unity.LockHash -or $proof.profile -cne $Profile -or $proof.content.Count -ne 11 -or $proof.weapons.Count -ne 2) { throw 'Feature compile proof mismatch.' }
     foreach ($content in $proof.content) {
@@ -26,7 +26,7 @@ try {
     if ($Capture) {
         $captureRoot = Join-Path $run.Path 'captures'
         $captureProof = Join-Path $run.Path 'capture-proof.json'
-        Invoke-ShooterEditor $unity $run @('-quit','-executeMethod','ShooterFeatureBuild.Capture','-shooterCacheRoot',$CacheRoot,'-shooterCaptureRoot',$captureRoot,'-shooterReport',$captureProof) $TimeoutSeconds
+        Invoke-ShooterEditor $unity $run @('-buildTarget','StandaloneWindows64','-standaloneBuildSubtarget','Player','-quit','-executeMethod','ShooterFeatureBuild.Capture','-shooterCacheRoot',$CacheRoot,'-shooterCaptureRoot',$captureRoot,'-shooterReport',$captureProof) $TimeoutSeconds
         $captureProofData = Get-Content -LiteralPath $captureProof -Raw | ConvertFrom-Json
         if ($captureProofData.result -cne 'Verified' -or $captureProofData.workload -cne 'M1-content-gallery-v1' -or $captureProofData.captures.Count -ne 22) { throw 'Gallery capture proof mismatch.' }
         foreach ($path in $captureProofData.captures) {
