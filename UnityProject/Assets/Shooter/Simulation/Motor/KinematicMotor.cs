@@ -1,0 +1,234 @@
+#nullable enable
+using System;
+using Shooter.Contracts;
+
+namespace Shooter.Simulation.Motor
+{
+    public readonly struct MotorBodyState
+    {
+        public Float3 Feet { get; }
+        public Float3 Velocity { get; }
+        public float AimYaw { get; }
+        public float AimPitch { get; }
+        public Stance Stance { get; }
+        public float CapsuleHeight { get; }
+        public bool Grounded { get; }
+        public SurfaceId GroundSurfaceId { get; }
+        public Float3 GroundNormal { get; }
+        public uint LastGroundedTick { get; }
+        public uint JumpConsumedSequence { get; }
+        public float LocomotionDistanceMeters { get; }
+        public bool SprintActive { get; }
+
+        public MotorBodyState(
+            Float3 feet, Float3 velocity, float aimYaw, float aimPitch, Stance stance, float capsuleHeight,
+            bool grounded, SurfaceId groundSurfaceId, Float3 groundNormal, uint lastGroundedTick,
+            uint jumpConsumedSequence, float locomotionDistanceMeters, bool sprintActive)
+        {
+            Feet = feet; Velocity = velocity; AimYaw = aimYaw; AimPitch = aimPitch; Stance = stance; CapsuleHeight = capsuleHeight;
+            Grounded = grounded; GroundSurfaceId = groundSurfaceId; GroundNormal = groundNormal; LastGroundedTick = lastGroundedTick;
+            JumpConsumedSequence = jumpConsumedSequence; LocomotionDistanceMeters = locomotionDistanceMeters; SprintActive = sprintActive;
+        }
+    }
+
+    /// <summary>Authoritative capsule motor. Root translation is never driven by animation.</summary>
+    public sealed class KinematicMotor
+    {
+        private readonly MotorConfig config;
+        private readonly QueryFilter motorFilter = new QueryFilter(CollisionLayers.MotorMask, default, false);
+
+        public KinematicMotor(MotorConfig? config = null) { this.config = config ?? MotorConfig.BaselineV1; }
+        public MotorConfig Config => config;
+
+        public MotorBodyState Step(MotorBodyState previous, InputCommand command, uint tick, IWorldQueries world)
+        {
+            if (world == null) throw new ArgumentNullException(nameof(world));
+            if (previous.Stance == Stance.Dead)
+                return previous;
+
+            bool wantCrouch = (command.Buttons & InputButtons.CrouchHeld) != 0;
+            bool wantAim = (command.Buttons & InputButtons.AimHeld) != 0;
+            bool wantSprint = (command.Buttons & InputButtons.SprintHeld) != 0 && !wantCrouch && !wantAim;
+            bool fireOrReload = (command.Buttons & (InputButtons.FireHeld | InputButtons.FirePressed | InputButtons.ReloadPressed)) != 0;
+            if (fireOrReload) wantSprint = false;
+
+            float targetHeight = wantCrouch ? config.CrouchHeight : config.StandingHeight;
+            Stance stance = wantCrouch ? Stance.Crouching : Stance.Standing;
+            if (!TryResize(previous.Feet, previous.CapsuleHeight, targetHeight, world, out float height))
+            {
+                // Ceiling blocked crouch/stand: keep prior validated height/stance.
+                height = previous.CapsuleHeight;
+                stance = previous.Stance == Stance.Crouching ? Stance.Crouching : Stance.Standing;
+                if (stance == Stance.Crouching) wantSprint = false;
+            }
+
+            float yaw = command.AimYaw;
+            float pitch = command.AimPitch;
+            var velocity = previous.Velocity;
+            uint jumpConsumed = previous.JumpConsumedSequence;
+            bool jumpEdge = (command.Buttons & InputButtons.JumpPressed) != 0
+                && previous.Grounded
+                && command.Sequence != previous.JumpConsumedSequence;
+            if (jumpEdge)
+            {
+                velocity = new Float3(velocity.X, config.JumpSpeed, velocity.Z);
+                jumpConsumed = command.Sequence;
+            }
+
+            float speed = stance == Stance.Crouching ? config.CrouchSpeed : wantSprint ? config.SprintSpeed : config.WalkSpeed;
+            if (wantAim) speed *= config.AdsSpeedMultiplier;
+
+            Float3 wish = MotorMath.Add(
+                MotorMath.Scale(MotorMath.YawForward(yaw), ClampAxis(command.MoveY)),
+                MotorMath.Scale(MotorMath.YawRight(yaw), ClampAxis(command.MoveX)));
+            float wishLen = MotorMath.Length(wish);
+            if (wishLen > 1f) wish = MotorMath.Scale(wish, 1f / wishLen);
+            Float3 wishVel = MotorMath.Scale(wish, speed);
+
+            Float3 horizontal = MotorMath.Horizontal(velocity);
+            float accel = previous.Grounded ? (wishLen > 1e-4f ? config.GroundAccel : config.GroundDecel) : config.AirAccel;
+            horizontal = Accelerate(horizontal, wishVel, accel, MotorMath.TickSeconds);
+            velocity = new Float3(horizontal.X, velocity.Y, horizontal.Z);
+
+            if (!(jumpEdge || velocity.Y > 0f && !previous.Grounded))
+                velocity = new Float3(velocity.X, velocity.Y + config.Gravity * MotorMath.TickSeconds, velocity.Z);
+            else if (!jumpEdge)
+                velocity = new Float3(velocity.X, velocity.Y + config.Gravity * MotorMath.TickSeconds, velocity.Z);
+            if (velocity.Y < config.TerminalFall) velocity = new Float3(velocity.X, config.TerminalFall, velocity.Z);
+
+            Float3 feet = previous.Feet;
+            Float3 displacement = MotorMath.Scale(velocity, MotorMath.TickSeconds);
+            feet = SlideMove(feet, height, ref velocity, displacement, world);
+
+            bool ascendingJump = velocity.Y > 0f && jumpConsumed == command.Sequence && (command.Buttons & InputButtons.JumpPressed) != 0;
+            bool grounded = false;
+            SurfaceId groundId = default;
+            Float3 groundNormal = new Float3(0, 1, 0);
+            uint lastGrounded = previous.LastGroundedTick;
+            if (!ascendingJump || previous.Grounded && jumpEdge == false)
+                ProbeGround(feet, height, velocity.Y, world, out grounded, out groundId, out groundNormal, out feet);
+
+            if (grounded)
+            {
+                lastGrounded = tick;
+                if (velocity.Y < 0f) velocity = new Float3(velocity.X, 0f, velocity.Z);
+            }
+
+            float moved = MotorMath.Length(MotorMath.Horizontal(MotorMath.Sub(feet, previous.Feet)));
+            return new MotorBodyState(
+                feet, velocity, yaw, pitch, stance, height, grounded, groundId, groundNormal,
+                lastGrounded, jumpConsumed, previous.LocomotionDistanceMeters + moved, wantSprint && grounded);
+        }
+
+        private static float ClampAxis(float value)
+        {
+            if (value > 1f) return 1f;
+            if (value < -1f) return -1f;
+            return value;
+        }
+
+        private static Float3 Accelerate(Float3 current, Float3 wish, float accel, float dt)
+        {
+            Float3 delta = MotorMath.Sub(wish, current);
+            float maxDelta = accel * dt;
+            float len = MotorMath.Length(delta);
+            if (len <= maxDelta || len < 1e-8f) return wish;
+            return MotorMath.Add(current, MotorMath.Scale(delta, maxDelta / len));
+        }
+
+        private bool TryResize(Float3 feet, float fromHeight, float toHeight, IWorldQueries world, out float height)
+        {
+            height = fromHeight;
+            if (Math.Abs(fromHeight - toHeight) < 1e-5f) { height = toHeight; return true; }
+            if (toHeight < fromHeight)
+            {
+                // Crouch shrink is always valid for static ceiling; floor already validated.
+                height = toHeight;
+                return true;
+            }
+            // Standing up: ceiling probe from current head sphere upward by the growth delta.
+            float grow = toHeight - fromHeight;
+            var capsule = MotorMath.BodyCapsule(feet, fromHeight, config.Radius);
+            var head = capsule.TopSphereCenter;
+            var ceiling = world.Raycast(head, new Float3(0, 1, 0), grow + config.Radius, motorFilter);
+            if (ceiling.Status == QueryStatus.Hit && ceiling.Hit.DistanceMeters < grow + config.Radius - config.Skin)
+                return false;
+            height = toHeight;
+            return true;
+        }
+
+        private Float3 SlideMove(Float3 feet, float height, ref Float3 velocity, Float3 displacement, IWorldQueries world)
+        {
+            for (int i = 0; i < config.MaxSlideIterations; i++)
+            {
+                if (displacement.LengthSquared <= 1e-12) break;
+                var capsule = MotorMath.BodyCapsule(feet, height, config.Radius);
+                var sweep = world.SweepCapsule(capsule, displacement, motorFilter);
+                if (sweep.Status != QueryStatus.Hit)
+                {
+                    feet = MotorMath.Add(feet, displacement);
+                    break;
+                }
+                var hit = sweep.Hit;
+                float travel = Math.Max(0f, hit.DistanceMeters - config.Skin);
+                Float3 unit = MotorMath.NormalizeOrZero(displacement);
+                feet = MotorMath.Add(feet, MotorMath.Scale(unit, travel));
+                // Step-up: if blocked mostly horizontally and there is room, try lifting by step height.
+                if (hit.Normal.Y < 0.1f && TryStep(feet, height, displacement, world, out Float3 stepped))
+                {
+                    feet = stepped;
+                    continue;
+                }
+                displacement = MotorMath.ProjectOnPlane(MotorMath.Sub(displacement, MotorMath.Scale(unit, travel)), hit.Normal);
+                velocity = MotorMath.ProjectOnPlane(velocity, hit.Normal);
+                if (hit.Normal.Y >= Math.Cos(config.MaxSlopeRadians))
+                {
+                    // Walkable: kill into-slope velocity already projected.
+                }
+                else if (hit.Normal.Y < 0.1f)
+                {
+                    // Steep/wall: keep vertical.
+                }
+            }
+            return feet;
+        }
+
+        private bool TryStep(Float3 feet, float height, Float3 displacement, IWorldQueries world, out Float3 result)
+        {
+            result = feet;
+            Float3 up = new Float3(0, config.StepHeight, 0);
+            var upCapsule = MotorMath.BodyCapsule(feet, height, config.Radius);
+            var upSweep = world.SweepCapsule(upCapsule, up, motorFilter);
+            if (upSweep.Status == QueryStatus.Hit) return false;
+            Float3 raised = MotorMath.Add(feet, up);
+            Float3 horizontal = MotorMath.Horizontal(displacement);
+            if (horizontal.LengthSquared <= 1e-12) return false;
+            var forwardCapsule = MotorMath.BodyCapsule(raised, height, config.Radius);
+            var forward = world.SweepCapsule(forwardCapsule, horizontal, motorFilter);
+            if (forward.Status == QueryStatus.Hit && forward.Hit.DistanceMeters < MotorMath.Length(horizontal) - config.Skin)
+                return false;
+            result = MotorMath.Add(raised, horizontal);
+            // Snap down onto step top.
+            ProbeGround(result, height, -1f, world, out bool grounded, out _, out _, out result);
+            return grounded;
+        }
+
+        private void ProbeGround(Float3 feet, float height, float verticalVelocity, IWorldQueries world,
+            out bool grounded, out SurfaceId groundId, out Float3 groundNormal, out Float3 snappedFeet)
+        {
+            grounded = false; groundId = default; groundNormal = new Float3(0, 1, 0); snappedFeet = feet;
+            if (verticalVelocity > 0.01f) return;
+            float probe = config.Snap + config.Skin;
+            var capsule = MotorMath.BodyCapsule(feet, height, config.Radius);
+            var sweep = world.SweepCapsule(capsule, new Float3(0, -probe, 0), motorFilter);
+            if (sweep.Status != QueryStatus.Hit) return;
+            var hit = sweep.Hit;
+            if (hit.Normal.Y < Math.Cos(config.MaxSlopeRadians)) return;
+            grounded = true;
+            groundId = hit.StaticSurfaceId;
+            groundNormal = hit.Normal;
+            float drop = Math.Max(0f, hit.DistanceMeters - config.Skin);
+            snappedFeet = new Float3(feet.X, feet.Y - drop, feet.Z);
+        }
+    }
+}
