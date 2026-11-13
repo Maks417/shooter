@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
   "updatedDate": "2026-11-13",
-  "integrator": "Cursor M3 integrator (bc-08a335af)",
+  "integrator": "Cursor M4 integrator (bc-08a335af)",
   "branch": "main",
-  "baseCommit": "c594aaf6bfb1fddac2dd1467ad29368e70b1e330",
+  "baseCommit": "2af2e63f805685fb369b4c2c6f851891cb400d15",
   "contractVersion": "C0-v1",
-  "readyForParallelIntegration": false,
+  "readyForParallelIntegration": true,
   "packages": [
     {
       "packageId": "WP-00",
@@ -795,6 +795,74 @@
       "status": "Integrated into main; CLOSED_WITH_USER_WAIVER under ADR-027",
       "leaseExpiry": null,
       "workspaceStatus": "Merged; worktree retirement pending/complete"
+    },
+    {
+      "packageId": "WP-05/match",
+      "owner": "/root/m4_match",
+      "branch": "cursor/m4-match-bdbf",
+      "baseCommit": "2af2e63f805685fb369b4c2c6f851891cb400d15",
+      "paths": [
+        "UnityProject/Assets/Shooter/Simulation/Match",
+        "Tools/Simulation.Tests/Match"
+      ],
+      "dependencies": [
+        "C0-v1",
+        "M3 compound",
+        "docs/gameplay-baseline.md"
+      ],
+      "contractVersion": "C0-v1",
+      "status": "Assigned M4 O01",
+      "forbiddenPaths": [
+        "UnityProject/Assets/Shooter/Contracts",
+        "UnityProject/Assets/Shooter/Bootstrap",
+        "coordination.json",
+        "docs"
+      ]
+    },
+    {
+      "packageId": "WP-03/hud",
+      "owner": "/root/m4_hud",
+      "branch": "cursor/m4-hud-bdbf",
+      "baseCommit": "2af2e63f805685fb369b4c2c6f851891cb400d15",
+      "paths": [
+        "UnityProject/Assets/Shooter/Presentation/Hud",
+        "Tools/Simulation.Tests/Hud"
+      ],
+      "dependencies": [
+        "C0-v1",
+        "O01 fixtures fakes OK"
+      ],
+      "contractVersion": "C0-v1",
+      "status": "Assigned M4 O02",
+      "forbiddenPaths": [
+        "UnityProject/Assets/Shooter/Contracts",
+        "UnityProject/Assets/Shooter/Simulation",
+        "coordination.json",
+        "docs"
+      ]
+    },
+    {
+      "packageId": "WP-03/fx-audio",
+      "owner": "/root/m4_fx",
+      "branch": "cursor/m4-fx-bdbf",
+      "baseCommit": "2af2e63f805685fb369b4c2c6f851891cb400d15",
+      "paths": [
+        "UnityProject/Assets/Shooter/Presentation/Audio",
+        "UnityProject/Assets/Shooter/Presentation/Fx",
+        "Tools/Simulation.Tests/Fx"
+      ],
+      "dependencies": [
+        "C0-v1",
+        "M2 events fakes OK"
+      ],
+      "contractVersion": "C0-v1",
+      "status": "Assigned M4 O03",
+      "forbiddenPaths": [
+        "UnityProject/Assets/Shooter/Contracts",
+        "UnityProject/Assets/Shooter/Simulation",
+        "coordination.json",
+        "docs"
+      ]
     }
   ],
   "validationWave": {
@@ -854,27 +922,12 @@
     "readyForParallelIntegration": false
   },
   "milestoneAcceptance": {
-    "milestone": "M3",
-    "status": "CLOSED_WITH_USER_WAIVER",
+    "milestone": "M4",
+    "status": "IN_PROGRESS",
     "closedCount": 4,
     "totalCount": 8,
-    "acceptedBy": "Max (project owner)",
-    "date": "2026-11-13",
-    "decision": "docs/decisions.md#adr-027--accepted-m3-owner-waiver-of-remaining-unity-tooling-and-hardwarereference-validation-and-milestone-close",
-    "alsoDependsOn": [
-      "ADR-017",
-      "ADR-025",
-      "ADR-026"
-    ],
-    "hardwareValidation": "Unverified; waived for M3 closure only. Automated PendingHardware unchanged.",
-    "unityTooling": "Pending; locked editor absent on closer worker; waived for M3 only",
-    "softwareGates": "W01-W05 pure PASS; contracts 71; simulation 31; M3 generation 16; generation wrapper 298; B02/B03 freeze",
-    "hostedCI": "User-deferred",
-    "nextMilestoneAssigned": true,
-    "nextMilestone": "M4",
-    "evidenceDirectory": "Artifacts/m3-generated-compound/owner-closure-20261113",
-    "supersedesHistoricalDisposition": true,
-    "priorM2Acceptance": "m2MilestoneAcceptance"
+    "priorM3Acceptance": "m3MilestoneAcceptance",
+    "evidenceDirectory": "Artifacts/m4-offline-slice"
   },
   "m1Start": {
     "date": "2026-11-12",
@@ -1121,5 +1174,19 @@
     "evidenceDirectory": "Artifacts/m3-generated-compound/owner-closure-20261113",
     "supersedesHistoricalDisposition": true,
     "priorM2Acceptance": "m2MilestoneAcceptance"
+  },
+  "m4Start": {
+    "date": "2026-11-13",
+    "assignment": "Owner Max: once M3 done start M4; multi-agent; no confirmations; hardware may be waived with ADR",
+    "baseCommit": "2af2e63f805685fb369b4c2c6f851891cb400d15",
+    "contractVersion": "C0-v1 unchanged",
+    "scope": "M4 O01-O05 / T017-T018 (+T029-T032); no M5+ networking",
+    "status": "IN_PROGRESS",
+    "workers": [
+      "WP-05/match",
+      "WP-03/hud",
+      "WP-03/fx-audio"
+    ],
+    "evidence": "Artifacts/m4-offline-slice"
   }
 }
