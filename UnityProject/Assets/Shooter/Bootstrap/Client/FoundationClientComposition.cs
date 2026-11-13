@@ -1,4 +1,5 @@
 using Shooter.Presentation;
+using Shooter.Presentation.Session;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -25,6 +26,13 @@ namespace Shooter.Bootstrap
                     QualitySettings.SetQualityLevel(tier, true);
                     string gallery = FoundationEntry.CommandLine("-shooterContentGallery", "");
                     string soldier = FoundationEntry.CommandLine("-shooterSoldierGallery", "");
+                    if (authority.ProductMode && soldier.Length == 0 && gallery.Length == 0
+                        && FoundationEntry.CommandLine("-shooterBenchmark", "").Length == 0)
+                    {
+                        var view = ProductSessionView.Create(authority.ProductSession);
+                        authority.InstallProductHumanSampler(tick => view.SampleHuman(tick));
+                        return;
+                    }
                     if (soldier.Length != 0)
                     {
                         if (gallery.Length != 0 || FoundationEntry.CommandLine("-shooterBenchmark", "").Length != 0)

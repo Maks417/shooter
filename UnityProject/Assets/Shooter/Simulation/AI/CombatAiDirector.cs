@@ -17,10 +17,10 @@ namespace Shooter.Simulation.AI
         }
     }
 
-    /// <summary>Eight-bot AI: ≤16 vision rays and ≤2 new paths per tick; cover/reload/stuck through normal commands.</summary>
+    /// <summary>Team AI: ≤16 vision rays and ≤2 new paths per tick; cover/reload/stuck through normal commands. Capacity 11 for 6v6.</summary>
     public sealed class CombatAiDirector
     {
-        public const int MaxBots = 8;
+        public const int MaxBots = 11;
         public const int MaxNewPathsPerTick = 2;
         public const float StuckDistance = 0.2f;
         public const uint StuckTicksThreshold = 120; // 2 s at 60 Hz
@@ -59,7 +59,7 @@ namespace Shooter.Simulation.AI
 
         public AiBlackboard RegisterBot(EntityId id, Float3 feet, float yaw)
         {
-            if (botCount >= MaxBots) throw new InvalidOperationException("Eight-bot AI capacity exhausted");
+            if (botCount >= MaxBots) throw new InvalidOperationException("Team AI capacity exhausted");
             var board = boards[botCount++];
             board.Self = id;
             board.Feet = feet;
@@ -105,7 +105,22 @@ namespace Shooter.Simulation.AI
         /// <summary>Plan next-tick commands for all living bots. Caller feeds them through normal simulation command path.</summary>
         public int Plan(uint simulationTick, SenseTarget? playerTarget, InputCommand[] destination, int destinationOffset)
         {
+            SenseTarget[]? single = null;
+            int count = 0;
+            if (playerTarget.HasValue)
+            {
+                single = new[] { playerTarget.Value };
+                count = 1;
+            }
+            return PlanEnemies(simulationTick, single, count, destination, destinationOffset);
+        }
+
+        /// <summary>Multi-enemy sensing with global ray budget and round-robin candidate order.</summary>
+        public int PlanEnemies(uint simulationTick, SenseTarget[]? enemies, int enemyCount, InputCommand[] destination, int destinationOffset)
+        {
             if (destination == null) throw new ArgumentNullException(nameof(destination));
+            if (enemyCount < 0 || (enemies == null && enemyCount != 0) || (enemies != null && enemyCount > enemies.Length))
+                throw new ArgumentOutOfRangeException(nameof(enemyCount));
             tick = simulationTick;
             pathsThisTick = 0;
             counters.VisionRaysThisTick = 0;
@@ -119,18 +134,31 @@ namespace Shooter.Simulation.AI
                 var board = boards[i];
                 if (!board.Alive || board.State == AiState.Dead) continue;
                 UpdateStuck(board);
-                if (playerTarget.HasValue)
+                if (enemies != null && enemyCount > 0)
                 {
                     var eye = new Float3(board.Feet.X, board.Feet.Y + 1.65f, board.Feet.Z);
-                    if (perception.TrySense(board, eye, board.Yaw, playerTarget.Value, counters, out bool acquired) && acquired)
+                    bool any = false;
+                    for (int e = 0; e < enemyCount; e++)
                     {
-                        board.LastSeenTick = tick;
-                        if (board.ReactionReadyTick == 0)
-                            board.ReactionReadyTick = tick + 15 + (uint)(board.Self.Value % 16); // 250–500 ms
-                        if (tick >= board.ReactionReadyTick && board.State != AiState.Engage && board.State != AiState.Reload)
-                            Enter(board, AiState.Engage);
+                        int idx = (i + e) % enemyCount;
+                        var candidate = enemies[idx];
+                        if (candidate.Id.Value == board.Self.Value) continue;
+                        if (perception.TrySense(board, eye, board.Yaw, candidate, counters, out bool acquired) && acquired)
+                        {
+                            board.LastSeenTick = tick;
+                            board.LastSeenEnemy = candidate.Point;
+                            board.HasVisibleTarget = true;
+                            board.VisibleTarget = candidate.Point;
+                            board.Confidence = 1f;
+                            if (board.ReactionReadyTick == 0)
+                                board.ReactionReadyTick = tick + 15 + (uint)(board.Self.Value % 16);
+                            if (tick >= board.ReactionReadyTick && board.State != AiState.Engage && board.State != AiState.Reload)
+                                Enter(board, AiState.Engage);
+                            any = true;
+                            break;
+                        }
                     }
-                    else if (board.HasVisibleTarget == false && board.Confidence > 0)
+                    if (!any && board.HasVisibleTarget == false && board.Confidence > 0)
                     {
                         board.Confidence = Math.Max(0, board.Confidence - 0.02f);
                         if (board.Confidence <= 0 && board.State == AiState.Engage) Enter(board, AiState.Search);
@@ -144,6 +172,7 @@ namespace Shooter.Simulation.AI
                 written++;
             }
             counters.MaxPathQueue = Math.Max(counters.MaxPathQueue, pathsThisTick);
+            counters.VisionRaysThisTick = perception.RaysUsedThisTick;
             return written;
         }
 
