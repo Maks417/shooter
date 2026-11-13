@@ -14,7 +14,7 @@ def main():
     args = parser.parse_args()
     if importlib.metadata.version("jsonschema") != "4.26.0":
         raise RuntimeError("Expected pinned jsonschema 4.26.0")
-    schemas = {name: json.loads((ROOT / f"docs/feature-schemas/{name}.schema.json").read_text(encoding="utf-8")) for name in ("weapon", "material")}
+    schemas = {name: json.loads((ROOT / f"docs/feature-schemas/{name}.schema.json").read_text(encoding="utf-8")) for name in ("weapon", "material", "soldier")}
     for schema in schemas.values():
         Draft202012Validator.check_schema(schema)
     outcomes = []
@@ -22,10 +22,10 @@ def main():
     sources += [(p, "1.0.1" in p.name) for p in sorted((ROOT / "docs/feature-fixtures").glob("*.json"))]
     for path, expected_valid in sources:
         value = json.loads(path.read_text(encoding="utf-8"))
-        schema = schemas["weapon" if value["generatorId"] == "geometry.weapon" else "material"]
+        schema = schemas[{"geometry.weapon": "weapon", "material.surface": "material", "soldier.loft": "soldier"}[value["generatorId"]]]
         errors = list(Draft202012Validator(schema).iter_errors(value))
         outcomes.append({"source": path.relative_to(ROOT).as_posix(), "expectedValid": expected_valid, "passed": (not errors) == expected_valid, "errorPaths": [e.json_path for e in errors]})
-    report = {"result": "PASS" if len(outcomes) == 13 and all(v["passed"] for v in outcomes) else "FAIL", "cases": outcomes,
+    report = {"result": "PASS" if len(outcomes) == 14 and all(v["passed"] for v in outcomes) else "FAIL", "cases": outcomes,
               "scope": "Full Draft 2020-12 structural schemas and explicit version migration; C# tests check all semantic/hash/topology/mip constraints"}
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.report.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")

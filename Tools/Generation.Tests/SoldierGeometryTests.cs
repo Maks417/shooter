@@ -89,8 +89,7 @@ public sealed class SoldierGeometryTests
         Assert.Equal(ErrorCode.None,low.Error);Assert.Equal(4,low.Artifacts.Count);
         Assert.Equal(low.Artifacts.Select(a=>a.Sha256),high.Artifacts.Select(a=>a.Sha256));
         var gameplay=generator.Generate(new GenerationRequest(initial.Document,"windows64","gameplay",toolchain),CancellationToken.None);
-        Assert.Single(gameplay.Artifacts);Assert.Equal(ContentKind.Skeleton,gameplay.Artifacts[0].Kind);
-        Assert.Equal(low.Artifacts[0].Sha256,gameplay.Artifacts[0].Sha256);
+        Assert.Equal(ErrorCode.InvalidInput,gameplay.Error);Assert.Empty(gameplay.Artifacts);
     }
     [Theory]
     [InlineData("1800","1801")][InlineData("420","421")][InlineData("620000","610000")][InlineData("1.0.0","1.0.1")][InlineData("\"dependencies\": []","\"dependencies\": [\"0000000000000000000000000000000000000000000000000000000000000000\"]")]

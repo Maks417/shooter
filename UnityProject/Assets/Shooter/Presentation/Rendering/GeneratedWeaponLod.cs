@@ -8,6 +8,7 @@ namespace Shooter.Presentation
     {
         public Camera ViewCamera;
         public float DiameterMeters;
+        public Vector3 LocalCenter;
         public bool Automatic = true;
         public bool FirstPerson;
         public int Current { get; private set; } = -1;
@@ -15,12 +16,16 @@ namespace Shooter.Presentation
         {
             if (!Automatic || ViewCamera == null) return;
             float scale = Mathf.Max(Mathf.Abs(transform.lossyScale.x), Mathf.Abs(transform.lossyScale.y), Mathf.Abs(transform.lossyScale.z));
-            float depth = Vector3.Dot(transform.position - ViewCamera.transform.position, ViewCamera.transform.forward);
+            float depth = Vector3.Dot(transform.TransformPoint(LocalCenter) - ViewCamera.transform.position, ViewCamera.transform.forward);
             float height = ViewCamera.orthographic ? DiameterMeters * scale / (2 * ViewCamera.orthographicSize) :
                 ScreenHeightLod.PerspectiveHeight(DiameterMeters * scale, depth, ViewCamera.fieldOfView);
             Apply(ScreenHeightLod.Select(height, Current, FirstPerson));
         }
-        public void Inspect(int lod) { Automatic = false; Apply(lod); }
+        public void Inspect(int lod)
+        {
+            if (lod < 0 || lod > 3) throw new System.ArgumentOutOfRangeException(nameof(lod));
+            Automatic = false; Apply(lod);
+        }
         private void Apply(int lod)
         {
             if (lod == Current) return;

@@ -97,6 +97,7 @@ namespace Shooter.Presentation
             {
                 var lod = weaponRoots[i].AddComponent<GeneratedWeaponLod>();
                 lod.ViewCamera = ViewCamera; lod.DiameterMeters = i == 0 ? 1.04f : .30f;
+                lod.LocalCenter = i == 0 ? new Vector3(0,-.025f,.16f) : new Vector3(0,.01f,.025f);
             }
             var sun = new GameObject("Fixed procedural daylight").AddComponent<Light>(); sun.transform.SetParent(transform, false);
             sun.type = LightType.Directional; sun.transform.rotation = Quaternion.Euler(45, 135, 0); sun.intensity = 1; sun.shadows = LightShadows.Hard;

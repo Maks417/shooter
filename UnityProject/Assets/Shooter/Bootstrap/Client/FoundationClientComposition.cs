@@ -24,7 +24,19 @@ namespace Shooter.Bootstrap
                     if (tier < 0) throw new System.ArgumentException("Unknown quality profile: " + profile);
                     QualitySettings.SetQualityLevel(tier, true);
                     string gallery = FoundationEntry.CommandLine("-shooterContentGallery", "");
-                    if (gallery.Length == 0)
+                    string soldier = FoundationEntry.CommandLine("-shooterSoldierGallery", "");
+                    if (soldier.Length != 0)
+                    {
+                        if (gallery.Length != 0 || FoundationEntry.CommandLine("-shooterBenchmark", "").Length != 0)
+                            throw new System.ArgumentException("Soldier diagnostics require their own view, separate from gallery and benchmark.");
+                        var hash = new Shooter.Contracts.ContentId(FoundationEntry.CommandLine("-shooterContentToolchainHash", ""));
+                        string report = FoundationEntry.CommandLine("-shooterRigReport", "");
+                        var view = SoldierGallery.Create(soldier,hash,report.Length == 0 ? 1 : 8);
+                        view.Scenario = FoundationEntry.CommandLine("-shooterRigScenario","walk");
+                        if (report.Length != 0) new GameObject("Eight-rig timing diagnostic").AddComponent<RigTimingDiagnostic>().Initialize(view,report,
+                            FoundationEntry.CommandLine("-shooterSourceCommit",""),hash.ToString());
+                    }
+                    else if (gallery.Length == 0)
                     {
                         if (FoundationEntry.CommandLine("-shooterBenchmark", "") == MaterialBenchmarkRecipe.Workload)
                             MaterialBenchmarkView.Create(FoundationEntry.CommandLine("-shooterMaterialCache", ""),

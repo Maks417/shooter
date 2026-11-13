@@ -103,7 +103,7 @@ public static class ShooterFeatureBuild
         }
         finally { UnityEngine.Object.DestroyImmediate(gallery.gameObject); }
     });
-    private static void Render(Camera camera, string path)
+    internal static void Render(Camera camera, string path)
     {
         var target = new RenderTexture(1280, 720, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB); target.Create();
         var prior = RenderTexture.active; Texture2D pixels = null;

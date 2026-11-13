@@ -9,13 +9,15 @@ DIRECTORIES = (
     "UnityProject/Assets/Shooter/Generation/Core/Weapons",
     "UnityProject/Assets/Shooter/Generation/Core/Materials",
     "UnityProject/Assets/Shooter/Generation/Core/Compilation",
+    "UnityProject/Assets/Shooter/Generation/Core/Soldiers",
+    "UnityProject/Assets/Shooter/Generation/Core/SoldierMotion",
     "UnityProject/Assets/Shooter/Generation/FeatureRecipes",
     "docs/feature-schemas", "docs/feature-fixtures",
 )
 
 
 def inventory(root=ROOT):
-    paths = [root / "docs/weapon-recipe-baseline.md"]
+    paths = [root / "docs/weapon-recipe-baseline.md", root / "docs/soldier-baseline.md"]
     for directory in DIRECTORIES:
         paths.extend(p for p in (root / directory).rglob("*") if p.is_file() and p.suffix in {".cs", ".json"})
     result = {}

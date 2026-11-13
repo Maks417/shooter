@@ -15,7 +15,7 @@ namespace Shooter.Generation
             if(request==null)return Fail(ErrorCode.InvalidInput,"Soldier generation request is required.");
             if(request.Recipe.SchemaId!=SoldierRecipe.Schema || request.Recipe.GeneratorId!=SoldierRecipe.GeneratorId || request.Recipe.GeneratorVersion!=SoldierRecipe.GeneratorVersion)
                 return Fail(ErrorCode.UnsupportedVersion,"Unsupported soldier schema/generator version.");
-            if(request.VisualProfile!="Low" && request.VisualProfile!="Balanced" && request.VisualProfile!="High" && request.VisualProfile!="gameplay")
+            if(request.VisualProfile!="Low" && request.VisualProfile!="Balanced" && request.VisualProfile!="High")
                 return Fail(ErrorCode.InvalidInput,"Unknown soldier profile.");
             try{SoldierRecipe.Validate(request.Recipe);}
             catch(Exception error)when(error is ArgumentException || error is FormatException){return Fail(ErrorCode.InvalidInput,error.Message);}
@@ -26,7 +26,6 @@ namespace Shooter.Generation
                 artifacts.Add(new GeneratedArtifact(kind,variant,1,bytes,ContentIdentity.Hash(bytes)));
             }
             Add(ContentKind.Skeleton,"main",GeometryCodec.EncodeSkeleton(SoldierSkeleton.Definition));
-            if(request.VisualProfile!="gameplay")
             {
                 var source=Encoding.UTF8.GetBytes("{\"schemaId\":\""+SoldierRecipe.Schema+"\",\"recipeId\":\""+request.Recipe.RecipeId+"\",\"generatorId\":\""+SoldierRecipe.GeneratorId+"\",\"generatorVersion\":\""+SoldierRecipe.GeneratorVersion+"\",\"seed\":\""+request.Recipe.Seed+"\",\"parameters\":"+SoldierRecipe.ParametersJson+",\"dependencies\":[]}");
                 var build=SoldierGeometry.Build(SoldierRecipe.Parse(source));

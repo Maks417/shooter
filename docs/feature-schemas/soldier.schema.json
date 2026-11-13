@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:shooter:feature:soldier:v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaId",
+    "recipeId",
+    "generatorId",
+    "generatorVersion",
+    "seed",
+    "parameters",
+    "dependencies"
+  ],
+  "properties": {
+    "schemaId": {
+      "const": "shooter.soldier.v1"
+    },
+    "recipeId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9._/-]{0,127}$"
+    },
+    "generatorId": {
+      "const": "soldier.loft"
+    },
+    "generatorVersion": {
+      "const": "1.0.0"
+    },
+    "seed": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]{0,19})$"
+    },
+    "parameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "heightMm",
+        "shoulderWidthMm",
+        "hipWidthMm",
+        "uniformOffsetMm",
+        "nearTorsoSegments",
+        "nearLimbSegments",
+        "walkCycleMm",
+        "runCycleMm",
+        "walkDutyPpm",
+        "runDutyPpm"
+      ],
+      "properties": {
+        "heightMm": {
+          "const": 1800
+        },
+        "shoulderWidthMm": {
+          "const": 420
+        },
+        "hipWidthMm": {
+          "const": 280
+        },
+        "uniformOffsetMm": {
+          "const": 6
+        },
+        "nearTorsoSegments": {
+          "const": 16
+        },
+        "nearLimbSegments": {
+          "const": 12
+        },
+        "walkCycleMm": {
+          "const": 1400
+        },
+        "runCycleMm": {
+          "const": 2200
+        },
+        "walkDutyPpm": {
+          "const": 620000
+        },
+        "runDutyPpm": {
+          "const": 450000
+        }
+      }
+    },
+    "dependencies": {
+      "type": "array",
+      "maxItems": 0
+    }
+  }
+}
