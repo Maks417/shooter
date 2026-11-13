@@ -1,6 +1,6 @@
 # M1 — Procedural feasibility — implementation pack
 
-Status: **IN PROGRESS**, 2026-11-12. P01-P04 now have compiler/cache foundations, primitive and weapon LODs, semantic sockets, seven CPU material families and a URP cache-backed diagnostic gallery. All 229 pure tests pass from a clean checkout. Remaining P04 benchmark/compression and formal visual/LOD acceptance, P05 rig and full-slice gates remain pending; no new playable content or performance claim. Canonical backlog tasks: T005–T010. Assigned packages: WP-01, WP-02, WP-03, WP-04.
+Status: **IN PROGRESS**, 2026-11-13. P01-P04 have compiler/cache foundations, generated weapon LODs/sockets, seven CPU material families, automatic weapon LOD hysteresis, platform compression measurements and a separate B01-materials workload. P05 has a generated helmeted soldier, semantic23 skeleton, three weighted LODs, analytic gait/IK and cache-backed skinning/eight-rig diagnostics. The integrated iteration2 source passes267 pure tests and real Unity skinning checks, but actual arm/body penetration failed visual review. The owner authorized one third bounded body-clearance iteration under ADR-023. Remaining visual/resource/comparison/three-run hardware gates keep M1 open; no playable combat or realism/performance claim. Canonical backlog tasks: T005–T010. Assigned packages: WP-01, WP-02, WP-03, WP-04.
 
 ## Goal and entry gate
 

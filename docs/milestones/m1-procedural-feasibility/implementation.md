@@ -64,3 +64,8 @@ Keep previous passing source/content pair, capture failing seed and diagnostic s
 [Deterministic format](../../deterministic-format.md), [soldier baseline](../../soldier-baseline.md), [fixture catalog](../../fixtures/index.md) and T028 define P01/P02/P05. M1 reload/aim uses scripted action phases; no dependency on unimplemented M2 combat. B01-materials-v1 is a distinct workload.
 
 These refinements are specifications, not completed tasks. Record actual checks and pending evidence in the milestone handoff.
+
+
+## Owner-authorized continuation
+
+P05 reached the bounded two-iteration stop after actual skinned review found persistent arm/torso penetration despite passing numeric hand/foot tests. The owner then explicitly authorized one further bounded body-clearance iteration under [ADR-023](../../decisions.md#adr-023--accepted-owner-authorized-third-bounded-body-clearance-iteration). This changes the iteration bound only for that focused revision; tolerances, generated-source rules and visual/performance gates remain unchanged. It does not authorize an automatic fourth iteration or whole-game expansion.

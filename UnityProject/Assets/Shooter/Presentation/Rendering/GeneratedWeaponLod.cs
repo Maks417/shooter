@@ -15,7 +15,8 @@ namespace Shooter.Presentation
         private void LateUpdate()
         {
             if (!Automatic || ViewCamera == null) return;
-            float scale = Mathf.Max(Mathf.Abs(transform.lossyScale.x), Mathf.Abs(transform.lossyScale.y), Mathf.Abs(transform.lossyScale.z));
+            Vector3 lossy = transform.lossyScale;
+            float scale = Mathf.Max(Mathf.Abs(lossy.x), Mathf.Max(Mathf.Abs(lossy.y), Mathf.Abs(lossy.z)));
             float depth = Vector3.Dot(transform.TransformPoint(LocalCenter) - ViewCamera.transform.position, ViewCamera.transform.forward);
             float height = ViewCamera.orthographic ? DiameterMeters * scale / (2 * ViewCamera.orthographicSize) :
                 ScreenHeightLod.PerspectiveHeight(DiameterMeters * scale, depth, ViewCamera.fieldOfView);

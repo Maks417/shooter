@@ -3,7 +3,7 @@
   "updatedDate": "2026-11-13",
   "integrator": "Codex (M1 integrator)",
   "branch": "main",
-  "baseCommit": "4d5d67b3036528640a5be5d116d632ce57abca01",
+  "baseCommit": "8f64e54aca2640ad23e735772d652b03b7ee1cae",
   "contractVersion": "C0-v1",
   "readyForParallelIntegration": true,
   "packages": [
@@ -454,6 +454,44 @@
       "contractVersion": "C0-v1",
       "status": "Assigned bounded M1 continuation; isolated source worktree; no worker Unity editor.",
       "leaseExpiry": null
+    },
+    {
+      "packageId": "WP-04/clearance-iteration3",
+      "owner": "/root/clearance_iteration3",
+      "branch": "codex/m1-motion",
+      "baseCommit": "8f64e54aca2640ad23e735772d652b03b7ee1cae",
+      "paths": [
+        "Generation/Core/SoldierMotion",
+        "Tools/Generation.Tests/SoldierMotionTests.cs"
+      ],
+      "dependencies": [
+        "C0-v1",
+        "SGAF-v1",
+        "soldier.semantic23.v1"
+      ],
+      "contractVersion": "C0-v1",
+      "status": "Assigned isolated source worktree; no worker Unity editor; integrator owns version/schema/Unity integration.",
+      "leaseExpiry": null
+    },
+    {
+      "packageId": "WP-09/render-metrics",
+      "owner": "/root/render_metrics",
+      "branch": "codex/m1-render-metrics",
+      "baseCommit": "8f64e54aca2640ad23e735772d652b03b7ee1cae",
+      "paths": [
+        "Bootstrap/Client/FoundationBenchmark.cs",
+        "Tools/analyze_benchmark.py",
+        "Tools/material_benchmark.py",
+        "Tools render-metric parser/tests"
+      ],
+      "dependencies": [
+        "C0-v1",
+        "SGAF-v1",
+        "soldier.semantic23.v1"
+      ],
+      "contractVersion": "C0-v1",
+      "status": "Assigned isolated source worktree; no worker Unity editor; integrator owns version/schema/Unity integration.",
+      "leaseExpiry": null
     }
   ],
   "validationWave": {
@@ -584,5 +622,16 @@
     "cleanupEvidence": "Artifacts/m1-p03p04/worker-preservation/preservation.json",
     "cleanSourceEvidence": "Artifacts/m1-p03p04/clean-source/preservation.json",
     "next": "Remaining P04 workload/compression/resource and visual/LOD checks; P05 spike after explicit ownership assignment. No M2/combat expansion."
+  },
+  "m1Continuation": {
+    "assignment": "User renewed M1 implementation with multiple agents",
+    "baseCommit": "8f64e54aca2640ad23e735772d652b03b7ee1cae",
+    "status": "267 pure tests and Unity skinning/LOD pass; P05 iteration2 visual failure retained; owner authorized one third bounded body-clearance iteration under ADR-023. Exact material workload and compression measurements implemented; hardware acceptance remains open.",
+    "contractVersion": "C0-v1 unchanged",
+    "formatVersion": 1,
+    "scope": "P03 LOD, P04 material workload/resource evidence, P05 bounded soldier spike; no M2 combat",
+    "evidence": "Artifacts/m1-continuation",
+    "thirdIterationAuthorization": "Authorize one more bounded body-clearance iteration",
+    "thirdIterationDecision": "ADR-023"
   }
 }

@@ -1,6 +1,6 @@
 # M1 - Procedural feasibility - handoff and gate record
 
-Status: **IN PROGRESS**, updated 2026-11-13. The owner requested M1 implementation with multiple agents. P01/P02 foundations and P03/P04 generator/URP gallery code are implemented and tested; M1 is not closed. Remaining P03 visual/LOD and P04 benchmark/compression/resource acceptance, P05 and full-slice gates remain pending. M0's explicit owner waiver under ADR-017 is retained and does not waive M1 acceptance. See [acceptance](validation-acceptance.md) and [entry](index.md).
+Status: **IN PROGRESS**, updated 2026-11-13. The owner requested M1 implementation with multiple agents. P01/P02 foundations and P03/P04 generator/URP gallery code are implemented and tested; M1 is not closed. The continuation adds automatic weapon LOD selection, a separate material benchmark, platform compression measurements and the soldier/rig spike. P05 iteration2 passes numeric gates but fails actual arm/body-clearance review; ADR-023 records one owner-authorized third bounded iteration. Formal P03 visual/transition and P04/P05 resource/performance acceptance remain open. M0's explicit owner waiver under ADR-017 is retained and does not waive M1 acceptance. See [acceptance](validation-acceptance.md) and [entry](index.md).
 
 ## Source, ownership and versions
 
@@ -153,3 +153,38 @@ One final forced run failed at atomic index replacement (`compile-gallery-202611
 P03 is implemented at initial prototype quality; production LOD screen-height/hysteresis and formal silhouette/ADS/transition review remain open. P04 has CPU families and a functioning Low shader/view, but platform compression/normal-error comparison, exact B01-materials camera/workload/collector integration, prescribed three-run release timing/thermal/resource evidence, actual variant metrics and sky-gradient/probe polish are incomplete. M1-content-gallery-v1 explicitly rejects benchmark substitution and is not B01-materials-v1. No hardware absence is used to call unimplemented workload code a pass. P05 soldier anatomy/C1/skin/gait/IK/1000-pose/eight-rig timing is unassigned and unimplemented. M2 combat and full gameplay/world content installation remain outside this wave. M1 remains open, with no new hardware waiver, realism or AAA-performance claim.
 
 `Artifacts/m1-p03p04/validation-summary.json` hashes the current reports, emitted players and 22 final captures, preserves passing/failing dispositions separately and lists all open acceptance gates. Final docs/fixture/registry checks pass independently; they do not change runtime or hardware status. Completed source and shared documentation are committed into main, with no task branches/worktrees or uncommitted implementation left.
+
+## P05 and material-workload continuation (2026-11-13)
+
+The renewed M1 assignment used isolated pure-source worktrees for soldier geometry, analytic motion and B01-materials integration. C0/SGAF/toolchain versions remain unchanged. Semantic23 hierarchy/bind/reference frames were frozen before motion work. The integrator owns visual cache composition, schemas/registry, Unity skinning, benchmark coordination and shared documentation. ADR-021 clarifies the exact camera/central cube, ADR-022 versions the second iteration, and ADR-023 records the owner-authorized third clearance iteration.
+
+### Implemented before the third iteration
+
+- SoldierGeometry constructs helmet/hood, torso/pelvis, anchored sleeve/trouser rings, rounded boots/cuffs and equipment from numeric rules. Version1.0.1 LOD triangles are3840/2968/2336, with18/18/15 influencing joints. Runtime skin palettes are compact while the full23 semantic pose remains. Components overlap; this is not a single boolean-union anatomy.
+- Motion v2 has distance gait, planted contacts, bounded two-bone IK/task frames, crouch/aim/reload and reused pose buffers. Expanded tests cover192000 contact samples across16phases,walk/run,standing/fullcrouch,level,±15°slopes and±0.2m steps. Worst plant error/slide is3.96054cm;1818 aim/reload samples meet2cm hand error. Zero Evaluate allocation after warmup and at most2 cosmetic queries/rig are tested. These numeric results did not pass visual review.
+- SoldierGallery loads verified skeleton/mesh leases, real generated weights/bindposes and SkinnedMeshRenderers with conservative posed bounds. The separate release eight-rig diagnostic measures solver/bone/weapon-update CPU work, excluding engine skinning/render cost. No gameplay collider or authority mutation is added.
+- Initial EditMode render requests retained bind geometry. Explicit engine BakeMesh now evaluates generated skin data/current bones for captures; old images remain retained and are not motion acceptance. A real-cache Unity test verifies deformation and compact far palettes.
+- ScreenHeightLod/GeneratedWeaponLod provide visual-only10% hysteresis, first-person/inspection override, correct bounds projection and camera-cut handling. Pure jitter and actual Unity selection tests pass; formal transition acceptance remains separate.
+- MaterialBenchmarkView/MaterialBenchmarkRecipe plus recorder/analyzer/wrappers implement exact B01-materials-v1 independently of the gallery. Real IL2CPP diagnostic collection verifies leases and route/content identity with pinned PresentMon. Seven cube visuals plus floor render96 source triangles; original gameplay colliders remain unchanged.
+- The calibrated Editor compression experiment covers21planes/all9mips. BC7 albedo/mask plus BC5 normals total1835568bytes versus7340004RGBA32bytes, with observed worst normal error about1.003°. Raw compressed bytes/hashes and mip errors are retained. Runtime storage/upload remains RGBA32; its shader does not reconstruct BC5 Z.
+- The twelve-request standalone M1 feasibility set compiles both weapons' visual/gameplay proxies, seven materials and the soldier visual skeleton/LODs. All-thread managed allocations and process-lifetime peak working set are explicitly distinct from compiler-only transient memory or Unity import/loading.
+
+### Actual pre-third-iteration evidence
+
+| Check | Result and retained evidence |
+|---|---|
+| Integrated pure suite |267/267,zero skipped; `Artifacts/m1-procedural-feasibility/29cdf58027da74790ddf262b3133bd64113697fe/20261113T090336110Z-4d826f84/`; includes1000 actual vertex-skinning poses on every LOD |
+| Contracts/foundation and material route |71/71; `Artifacts/m0-foundation/d22257acd029976f1bffdb9589de5aa28714fdd9/20261113T085553976Z-73fa0ad3/` |
+| Actual Unity tests |10EditMode/6PlayMode; `Artifacts/m0-foundation/8f64e54aca2640ad23e735772d652b03b7ee1cae/tests-editmode-20261113T090614386Z-1c822667/` and `tests-playmode-20261113T090717351Z-3d20758b/` |
+| Second-iteration captures |32images; `Artifacts/m0-foundation/29cdf58027da74790ddf262b3133bd64113697fe/compile-soldier-20261113T090411035Z-0657352a/`; execution PASS, visual acceptance FAIL |
+| Compression experiment |`Artifacts/m0-foundation/21eee3f0ba5d053596904f0fe0efa4470c7fd784/measure-material-compression-20261113T084502620Z-4d5512d2/`; byte/readback measurement, not performance acceptance |
+| Full feasibility cold/warm/force |`Artifacts/m1-continuation/compile-set/20261113T090635786Z-21717cfa/`, `20261113T090653983Z-5f0650d7/`, `20261113T090716009Z-fa6f2a06/`;1368.738/360.955/1104.931ms and326233544/172471320/437846584 all-thread allocated bytes; warm/force verify all12 entries |
+| Client release |`Artifacts/m0-foundation/8f64e54aca2640ad23e735772d652b03b7ee1cae/build-client-20261113T090759671Z-4b26bb1a/`; IL2CPP Release/D3D11 |
+| Material release diagnostic |`Artifacts/m0-foundation/8f64e54aca2640ad23e735772d652b03b7ee1cae/benchmark-diagnostic-20261113T091218811Z-db62ddb1/`;7097frames/300ticks, PendingHardware diagnostic only |
+| Production/migration schemas |16/16 pinned jsonschema4.26.0; `Artifacts/m1-continuation/feature-schemas.json`; separate from unchanged C0 fixtures35assertions/17JSON |
+
+### Second visual failure and owner decision
+
+Actual neutral trigger-arm samples persistently penetrate the torso/plate despite exact grip targets. Right shoulder/elbow/hand are approximately(0.210,1.43346,0),(−0.00213,1.26347,0.10101),(0,1.52346,0.10000)m. Interior forearm points through60% of the segment lie inside the actual loft ellipse, and sleeve radius intersects the plate; this persists during reload. The second P05 visual gate is FAIL. Source, raw numeric passes/failures, probes, images and old caches remain retained.
+
+The integrator stopped expansion under the original two-iteration bound and presented the scope decision. The owner explicitly authorized one additional bounded body-clearance iteration. ADR-023 records that authority without accepting this soldier, reducing workload or weakening grip/slide/limit rules. The resumed worker owns motion/tests; the integrator retains version/schema/cache integration. Third-iteration results and final disposition follow separately when actually available. No automatic fourth iteration is authorized.
