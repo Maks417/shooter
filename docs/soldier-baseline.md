@@ -63,3 +63,7 @@ The candidate uses35°cosmetic pelvis/body blade and5°leg heading offset while 
 The exterior reload contact is chest-local(−0.24,−0.28,+0.20)m with+Z grab-face normal. A real numeric pouch, centered(−0.24,−0.28,+0.175)m and sized(0.10,0.13,0.05)m, and its short chest-mounted strap appear on all LODs. Reload uses bounded analytic task arcs and a45°sin²(pi×phase) weapon cant around the unchanged forward axis. These are equipment tasks, not authored joint frames.
 
 This candidate is **not accepted**: the unchanged conservative clearance acceptance probe fails near down-aim reload phase0.45, with a dense possible left forearm/strap overlap of approximately2.18mm. Its120mm shoulder-attachment exclusion and6mm torso margin are explicit source-derived proxy assumptions; they do not replace actual skinned inspection. Neutral eye/sight-line separation is about6.49cm and the worst reported reload value about12.70cm. Hand/contact and finite-pose passes do not override these failures. The third iteration ends at review; no fourth iteration is authorized.
+
+## Scope stop
+
+Under [ADR-024](decisions.md#adr-024--accepted-p05-soldier-visual-scope-stop-after-exhausted-clearance-iterations), P05 clearance/parameter search stops after the three failed reviews. Accepted numeric parameters above remain historical spike inputs; they are not reinterpreted as visual PASS. Soldier visual/clearance acceptance stays FAIL while other M1 polish may continue.

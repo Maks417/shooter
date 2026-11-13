@@ -1,6 +1,6 @@
 # M1 — Procedural feasibility — validation and acceptance
 
-Status: The continuation has267 integrated pure tests, actual cache-backed Unity skinning and camera-driven LOD checks, full twelve-request cold/warm/forced content compilation, compression measurements and a real B01-materials release diagnostic. P05 iteration2 numeric grip/contact checks pass but its actual skinned visual gate fails due arm/body penetration. The owner authorized one third bounded clearance iteration under ADR-023. Full visual/rig/resource and three-run reference acceptance below remain open. See [handoff](handoff.md) for actual report directories and limits. Use [global validation](../../validation.md) and [build lanes](../../build-ci.md); this file selects the checks required at this stage. Implement actual test/build entry points before reporting execution. Absence of hardware, credentials or dependencies means pending evidence, not PASS.
+Status: The continuation has267 integrated pure tests, actual cache-backed Unity skinning and camera-driven LOD checks, full twelve-request cold/warm/forced content compilation, compression measurements and a real B01-materials release diagnostic. P05 soldier visual/clearance gate is FAIL and scope-stopped under ADR-024 after iteration2 arm/torso FAIL and ADR-023 third-candidate FAIL (~2.18mm forearm/strap; eye/sight unresolved); no fourth clearance iteration. Numeric grip/contact/1000-pose/eight-rig results remain spike evidence only. Full resource and three-run reference acceptance below remain open; remaining M1 polish may continue without pretending soldier PASS. See [handoff](handoff.md) for actual report directories and limits. Use [global validation](../../validation.md) and [build lanes](../../build-ci.md); this file selects the checks required at this stage. Implement actual test/build entry points before reporting execution. Absence of hardware, credentials or dependencies means pending evidence, not PASS.
 
 | Suite | Scenario | Required result |
 |---|---|---|
@@ -26,7 +26,7 @@ Status: The continuation has267 integrated pure tests, actual cache-backed Unity
 - [ ] Shared docs updated with actual code references; milestone links verified.
 - [ ] Integrator reviews evidence and signs milestone status in handoff.
 
-Final criterion: Compiler/cache v1 and generation tests pass. Rifle, pistol and one helmeted soldier regenerate from numeric source. Soldier visual and performance spike passes or explicit scope revision is approved before expansion. Cold/warm slice compile allocations/times are recorded; full-map time gate remains for later content.
+Final criterion: Compiler/cache v1 and generation tests pass. Rifle, pistol and one helmeted soldier regenerate from numeric source. Soldier visual and performance spike passes or explicit scope revision is approved before expansion — ADR-024 records the visual/clearance scope stop (FAIL, not PASS). Cold/warm slice compile allocations/times are recorded; full-map time gate remains for later content.
 
 ## Evidence location
 
