@@ -22,6 +22,10 @@ Shared repeated components instance by recipe/material hash. Chunk generation em
 
 Prefetch 3×3 visual chunks around player plus movement look-ahead within a ≤256 MiB visual residency allocation included in total memory budgets; refine with content sizes. Use priority queue nearest/visible first, cancel superseded requests. Upload split into bounded work units. During teleport, hold simulation in loading state until required collision and nearest visuals ready. Shared assets remain reference counted across chunks.
 
+## Implementation (M3)
+
+Pure planner/connectivity live in `UnityProject/Assets/Shooter/Generation/Core/Environment` (`CompoundPlanner` 1.0.0). Runtime streaming scheduler: `World/Streaming/VisualStreamingScheduler`. Nav settings/compile/revisioned adapter: `World/Navigation`. B02/B03 freeze: `Benchmarks/b02-b03-m3-freeze.json`. Milestone status: [M3 handoff](../milestones/m3-generated-compound/handoff.md).
+
 ## Acceptance
 
 All four seed fixtures produce connected spawn/objective graphs and collision-safe paths. Neighbor terrain vertices agree within 1e-4 m; building entrances align with collision within 1 cm. Nav routes have at least capsule radius clearance plus 5 cm margin. Full map collision/nav fit assigned budget and load gates. B02/B03 show no missing collision, cracks, unbounded uploads or content-handle leaks over 100 repeated traversals. Visual profile changes preserve collision and nav hashes byte-for-byte. Invalid recipe fails compiler with slot/building ID and reason; no silently unreachable objective.

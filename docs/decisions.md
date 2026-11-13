@@ -214,3 +214,25 @@ Close M2 administratively as **CLOSED WITH USER WAIVER**. Three of eight milesto
 - Upstream ADR-017/024/025 dispositions are unchanged; P05 soldier visual remains FAIL / not accepted.
 
 Historical failed/pending automated results and raw data are immutable; no missing value is replaced, no automatic hardware gate returns PASS because of this waiver, and no performance threshold changes. ADR-017/025 waivers still do not supply M2 hardware PASS. Future milestone work still needs an explicit assignment; no M3 compound/AI, thermal stability, 30-minute soak, full-map compile budget, B03 eight-bot acceptance or fully verified reference-performance claim follows. The [handoff](milestones/m2-combat-harness/handoff.md) identifies exact source/timestamps, the formal review records and owner disposition. A local `m2-combat-harness-owner-accepted` marker identifies this qualified closure; it is not a passing benchmark tag. Resuming technical hardware acceptance requires actual supported full captures with live sensors, counters and thermal review, preserving these prior reports.
+
+## ADR-027 — Accepted: M3 owner waiver of remaining Unity-tooling and hardwarereference validation and milestone close
+
+Date 2026-11-13; accepted by Max as project owner, recorded by the Cursor M3 integrator (bc-08a335af). After pure software gates for W01–W05 / T014–T016 and T033 B02/B03 freeze PASS, Max’s standing direction for this assignment (“start M3; once done start M4”; “no confirmations”; “just work”; hardware PendingHardware may be waived with an explicit ADR like ADR-017/025/026) authorizes administrative M3 closure without waiting for interactive sign-off. It does **not** authorize inventing PASS evidence, editing goldens/caches, upgrading Unity/packages, starting M5 networking, reopening P05 soldier clearance, or flipping prior PendingHardware reports to PASS.
+
+Tooling/hardware attempt retained (not acceptance):
+
+- Locked Unity `6000.3.28f1` / revision `8f082d2fe476` was sought under `C:\Program Files\Unity\Hub\Editor` and PATH; editor binary was **not present** on this worker, so EditMode/PlayMode, client/server release builds and smoke could not run. Status **Pending** (missing tool), not PASS.
+- Reference-player B02/B03 PresentMon series and live sensor logs were not started without a release player. Status **PendingHardware**. Evidence: `Artifacts/m3-generated-compound/owner-closure-20261113/hardware-attempt.json`.
+- No counters were invented; no golden/cache edits.
+
+Close M3 administratively as **CLOSED WITH USER WAIVER**. Four of eight milestones are closed. Actual dispositions retained:
+
+- W01 compound planner four-seed connectivity / border / spawn-LOS / route checks PASS (pure).
+- W02 nav settings/clearance/revisioned adapter and gameplay-hash profile independence PASS (pure).
+- W03 streaming 3×3 prefetch, ≤2 ms upload split, cancellation, teleport fence, 100-traversal residency PASS (pure).
+- W04 eight-bot AI ≤16 vision rays / ≤2 paths per tick, cover release, occluded non-acquire PASS (pure).
+- W05 108000-tick (30-minute @ 60 Hz) soak without unbounded queues/orphan covers PASS (pure); B02/B03 freeze at `Benchmarks/b02-b03-m3-freeze.json`.
+- Contracts 71/71; simulation 31/31; M3 generation slice 16/16; full generation wrapper 298/298.
+- Unity EditMode/PlayMode/smoke and reference B02/B03 hardware remain **Pending / PendingHardware** and are **Unverified / waived for M3 closure only**. Native-720p timing acceptance remains an M4 gate.
+
+Historical failed/pending automated results are immutable. ADR-017/024/025/026 dispositions are unchanged; P05 soldier visual remains FAIL / not accepted. The [handoff](milestones/m3-generated-compound/handoff.md) identifies exact source/timestamps and owner disposition. A local `m3-generated-compound-owner-accepted` marker identifies this qualified closure; it is not a passing benchmark tag. M4 may proceed under the same owner assignment.

@@ -14,6 +14,10 @@ Cover candidates are generated from cover proxies/nav edges with valid capsule s
 
 Queue path requests with priority, max two new path solves/tick initially; poll through INavigation. Retire stale paths on revision change, release reservations on death/despawn/cancel. Stuck if progress <0.2 m over 2 s while movement requested: attempt replan, change cover, then hold/search after three failures with diagnostic counter. Do not teleport bots to hide path bugs. Replan cooldown and deterministic tie-breaking avoid synchronized spikes. Pure decision code may jobify later; engine navigation queries stay in adapter constraints.
 
+## Implementation (M3)
+
+`UnityProject/Assets/Shooter/Simulation/AI` — `CombatAiDirector`, `PerceptionSystem`, `CoverReservationBoard`. Emits normal `InputCommand` values; shipping `CompositionPolicy.RequireReal` rejects test fakes. Milestone status: [M3 handoff](../milestones/m3-generated-compound/handoff.md).
+
 ## Acceptance
 
 Seeded scripted scenarios: occluded enemy never acquired via vision; hearing triggers investigation at last-known position; target loss decays confidence; bots reload safely without infinite loop; two bots do not permanently reserve same cover; unreachable destination exits bounded retry. Eight bots run 30-minute B03 soak with no unbounded path queue, query cap breaches or orphan reservations. Accuracy/reaction distribution matches configuration, not constant instant headshots. Same command/collision recording across profiles produces equivalent AI decisions within documented adapter nondeterminism. AI counters expose sense age, path latency, state changes, shot rate and CPU budget.

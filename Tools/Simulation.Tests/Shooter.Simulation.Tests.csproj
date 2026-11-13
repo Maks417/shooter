@@ -15,9 +15,12 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="[4.0.1]" PrivateAssets="all" />
     <ProjectReference Include="../Contracts/Shooter.Contracts.csproj" />
     <ProjectReference Include="../Foundation/Shooter.Foundation.csproj" />
+    <ProjectReference Include="../Generation/Shooter.Generation.Core.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <!-- View is presentation-owned; compile BCL-safe sources for pure tests. Motor/Combat/Pose come from Foundation. -->
+    <!-- View is presentation-owned; compile BCL-safe sources for pure tests. Motor/Combat/Pose/AI come from Foundation. -->
     <Compile Include="../../UnityProject/Assets/Shooter/Presentation/View/**/*.cs" Link="View/%(Filename)%(Extension)" />
+    <Compile Include="../../UnityProject/Assets/Shooter/World/Streaming/**/*.cs" Link="WorldStreaming/%(Filename)%(Extension)" />
+    <Compile Include="../../UnityProject/Assets/Shooter/World/Navigation/**/*.cs" Link="WorldNavigation/%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>

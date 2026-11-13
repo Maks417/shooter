@@ -1,6 +1,6 @@
 # M3 — Generated compound and AI — implementation pack
 
-Status: planned; no implementation or game test is claimed. Baseline 2026-11-11. Canonical backlog tasks: T014–T016. Assigned packages: WP-06, WP-07 with WP-01 integration.
+Status: **CLOSED WITH USER WAIVER** (2026-11-13, ADR-027). Pure W01–W05 software PASS; Unity/hardware Pending waived for M3 only. Canonical backlog tasks: T014–T016. Assigned packages: WP-06, WP-07 with WP-01 integration.
 
 ## Goal and entry gate
 

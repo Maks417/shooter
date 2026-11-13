@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
   "updatedDate": "2026-11-13",
-  "integrator": "Cursor M3 integrator (bc-08a335af); WP-06/WP-07 worktrees",
+  "integrator": "Cursor M3 integrator (bc-08a335af)",
   "branch": "main",
-  "baseCommit": "e7cc49bc7ebaffd674d392488da6e6637f4a3fb4",
+  "baseCommit": "c594aaf6bfb1fddac2dd1467ad29368e70b1e330",
   "contractVersion": "C0-v1",
-  "readyForParallelIntegration": true,
+  "readyForParallelIntegration": false,
   "packages": [
     {
       "packageId": "WP-00",
@@ -647,7 +647,7 @@
     {
       "packageId": "WP-06/environment",
       "owner": "/root/m3_env",
-      "branch": "cursor/m3-env-bdbf",
+      "branch": "main",
       "baseCommit": "e7cc49bc7ebaffd674d392488da6e6637f4a3fb4",
       "paths": [
         "UnityProject/Assets/Shooter/Generation/Core/Environment",
@@ -661,7 +661,7 @@
         "docs/gameplay-baseline.md"
       ],
       "contractVersion": "C0-v1",
-      "status": "Assigned M3 W01; isolated worktree; no Contracts/Bootstrap/Settings edits",
+      "status": "Integrated into main; CLOSED_WITH_USER_WAIVER under ADR-027",
       "leaseExpiry": null,
       "forbiddenPaths": [
         "UnityProject/Assets/Shooter/Contracts",
@@ -672,12 +672,13 @@
         "coordination.json",
         "contract-lock.json",
         "docs"
-      ]
+      ],
+      "workspaceStatus": "Merged; worktree retirement pending/complete"
     },
     {
       "packageId": "WP-06/streaming",
       "owner": "/root/m3_streaming",
-      "branch": "cursor/m3-streaming-bdbf",
+      "branch": "main",
       "baseCommit": "e7cc49bc7ebaffd674d392488da6e6637f4a3fb4",
       "paths": [
         "UnityProject/Assets/Shooter/World/Streaming",
@@ -689,7 +690,7 @@
         "W01 plan fixtures (fakes OK until merge)"
       ],
       "contractVersion": "C0-v1",
-      "status": "Assigned M3 W03; isolated worktree; no Contracts/Bootstrap/Settings edits",
+      "status": "Integrated into main; CLOSED_WITH_USER_WAIVER under ADR-027",
       "leaseExpiry": null,
       "forbiddenPaths": [
         "UnityProject/Assets/Shooter/Contracts",
@@ -701,12 +702,13 @@
         "coordination.json",
         "contract-lock.json",
         "docs"
-      ]
+      ],
+      "workspaceStatus": "Merged; worktree retirement pending/complete"
     },
     {
       "packageId": "WP-06/navigation",
       "owner": "/root/m3_nav",
-      "branch": "cursor/m3-nav-bdbf",
+      "branch": "main",
       "baseCommit": "e7cc49bc7ebaffd674d392488da6e6637f4a3fb4",
       "paths": [
         "UnityProject/Assets/Shooter/World/Navigation",
@@ -718,7 +720,7 @@
         "docs/features/environment.md"
       ],
       "contractVersion": "C0-v1",
-      "status": "Assigned M3 W02; isolated worktree; no Contracts/Bootstrap/Settings edits",
+      "status": "Integrated into main; CLOSED_WITH_USER_WAIVER under ADR-027",
       "leaseExpiry": null,
       "forbiddenPaths": [
         "UnityProject/Assets/Shooter/Contracts",
@@ -731,12 +733,13 @@
         "coordination.json",
         "contract-lock.json",
         "docs"
-      ]
+      ],
+      "workspaceStatus": "Merged; worktree retirement pending/complete"
     },
     {
       "packageId": "WP-07/ai",
       "owner": "/root/m3_ai",
-      "branch": "cursor/m3-ai-bdbf",
+      "branch": "main",
       "baseCommit": "e7cc49bc7ebaffd674d392488da6e6637f4a3fb4",
       "paths": [
         "UnityProject/Assets/Shooter/Simulation/AI",
@@ -749,7 +752,7 @@
         "docs/features/ai.md"
       ],
       "contractVersion": "C0-v1",
-      "status": "Assigned M3 W04; isolated worktree; no Contracts/Bootstrap/Settings edits",
+      "status": "Integrated into main; CLOSED_WITH_USER_WAIVER under ADR-027",
       "leaseExpiry": null,
       "forbiddenPaths": [
         "UnityProject/Assets/Shooter/Contracts",
@@ -763,7 +766,8 @@
         "coordination.json",
         "contract-lock.json",
         "docs"
-      ]
+      ],
+      "workspaceStatus": "Merged; worktree retirement pending/complete"
     },
     {
       "packageId": "WP-00/M3-integration",
@@ -788,8 +792,9 @@
         "WP-07/ai"
       ],
       "contractVersion": "C0-v1",
-      "status": "M3 wave started; integrator owns shared composition/docs/coordination",
-      "leaseExpiry": null
+      "status": "Integrated into main; CLOSED_WITH_USER_WAIVER under ADR-027",
+      "leaseExpiry": null,
+      "workspaceStatus": "Merged; worktree retirement pending/complete"
     }
   ],
   "validationWave": {
@@ -850,15 +855,26 @@
   },
   "milestoneAcceptance": {
     "milestone": "M3",
-    "status": "IN_PROGRESS",
-    "closedCount": 3,
+    "status": "CLOSED_WITH_USER_WAIVER",
+    "closedCount": 4,
     "totalCount": 8,
-    "acceptedBy": null,
+    "acceptedBy": "Max (project owner)",
     "date": "2026-11-13",
-    "decision": null,
-    "priorM2Acceptance": "m2MilestoneAcceptance",
-    "nextMilestoneAssigned": false,
-    "evidenceDirectory": "Artifacts/m3-generated-compound"
+    "decision": "docs/decisions.md#adr-027--accepted-m3-owner-waiver-of-remaining-unity-tooling-and-hardwarereference-validation-and-milestone-close",
+    "alsoDependsOn": [
+      "ADR-017",
+      "ADR-025",
+      "ADR-026"
+    ],
+    "hardwareValidation": "Unverified; waived for M3 closure only. Automated PendingHardware unchanged.",
+    "unityTooling": "Pending; locked editor absent on closer worker; waived for M3 only",
+    "softwareGates": "W01-W05 pure PASS; contracts 71; simulation 31; M3 generation 16; generation wrapper 298; B02/B03 freeze",
+    "hostedCI": "User-deferred",
+    "nextMilestoneAssigned": true,
+    "nextMilestone": "M4",
+    "evidenceDirectory": "Artifacts/m3-generated-compound/owner-closure-20261113",
+    "supersedesHistoricalDisposition": true,
+    "priorM2Acceptance": "m2MilestoneAcceptance"
   },
   "m1Start": {
     "date": "2026-11-12",
@@ -1065,7 +1081,7 @@
       "18446744073709551615"
     ],
     "scope": "M3 W01-W05 / T014-T016 (+T033 B02/B03 freeze); no M5+ networking",
-    "status": "IN_PROGRESS",
+    "status": "CLOSED_WITH_USER_WAIVER (ADR-027): pure software PASS; Unity/hardware Pending waived for M3",
     "workers": [
       "WP-06/environment",
       "WP-06/streaming",
@@ -1073,6 +1089,37 @@
       "WP-07/ai"
     ],
     "evidence": "Artifacts/m3-generated-compound",
-    "moveAgentToRoot": "cursor-app-control namespace unavailable in this session; integrator works via absolute paths on C:/Job/shooter"
+    "moveAgentToRoot": "cursor-app-control namespace unavailable in this session; integrator works via absolute paths on C:/Job/shooter",
+    "softwareHead": "c594aaf6bfb1fddac2dd1467ad29368e70b1e330",
+    "closureEvidence": "Artifacts/m3-generated-compound/owner-closure-20261113",
+    "decision": "docs/decisions.md#adr-027--accepted-m3-owner-waiver-of-remaining-unity-tooling-and-hardwarereference-validation-and-milestone-close",
+    "waivedGates": [
+      "Unity EditMode/PlayMode/smoke (editor missing)",
+      "PendingHardware reference B02/B03 (ADR-027; reports immutable)"
+    ],
+    "remainingGates": []
+  },
+  "m3MilestoneAcceptance": {
+    "milestone": "M3",
+    "status": "CLOSED_WITH_USER_WAIVER",
+    "closedCount": 4,
+    "totalCount": 8,
+    "acceptedBy": "Max (project owner)",
+    "date": "2026-11-13",
+    "decision": "docs/decisions.md#adr-027--accepted-m3-owner-waiver-of-remaining-unity-tooling-and-hardwarereference-validation-and-milestone-close",
+    "alsoDependsOn": [
+      "ADR-017",
+      "ADR-025",
+      "ADR-026"
+    ],
+    "hardwareValidation": "Unverified; waived for M3 closure only. Automated PendingHardware unchanged.",
+    "unityTooling": "Pending; locked editor absent on closer worker; waived for M3 only",
+    "softwareGates": "W01-W05 pure PASS; contracts 71; simulation 31; M3 generation 16; generation wrapper 298; B02/B03 freeze",
+    "hostedCI": "User-deferred",
+    "nextMilestoneAssigned": true,
+    "nextMilestone": "M4",
+    "evidenceDirectory": "Artifacts/m3-generated-compound/owner-closure-20261113",
+    "supersedesHistoricalDisposition": true,
+    "priorM2Acceptance": "m2MilestoneAcceptance"
   }
 }

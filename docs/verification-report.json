@@ -2,10 +2,12 @@
   "schemaVersion": 1,
   "root": "C:\\Job\\shooter\\docs",
   "markdownFiles": 86,
-  "wordCount": 69182,
-  "relativeLinksChecked": 641,
+  "wordCount": 69555,
+  "relativeLinksChecked": 644,
   "integrityFiles": 118,
-  "errors": [],
-  "result": "PASS",
+  "errors": [
+    "File inventory or SHA-256 differs from manifest"
+  ],
+  "result": "FAIL",
   "scope": "Documentation existence, index coverage, local links/anchors, fences and hashes including fixtures/scripts. No game implementation or runtime tests."
 }
