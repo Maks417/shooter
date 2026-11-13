@@ -1,6 +1,6 @@
 # M2 — Combat harness — implementation pack
 
-Status: **IN PROGRESS** (C01–C04 + V05/V06/V09 Unity scenarios PASS; PendingHardware blocks CLOSED). Base `925d23f`. Canonical backlog tasks: T011–T013 (+ T027 defaults via integrator). Assigned packages: WP-05 with WP-04/WP-02 adapters. See [handoff](handoff.md) and root `coordination.json`.
+Status: **CLOSED WITH USER WAIVER**, 2026-11-13. C01–C04 + V05/V06/V09 Unity scenarios, EditMode/PlayMode and client/server smoke PASS. Reference-player hardware remains PendingHardware and is Unverified/Waived for M2 under ADR-026. Base `925d23f`; software HEAD `97f10ef`. Canonical backlog tasks: T011–T013 (+ T027 defaults via integrator). Assigned packages: WP-05 with WP-04/WP-02 adapters. See [handoff](handoff.md) and root `coordination.json`.
 
 ## Goal and entry gate
 
@@ -21,7 +21,7 @@ M0 C0 permits early motor/combat work against fakes. M1 rig/socket artifacts and
 
 ## Completion
 
-Movement/combat tests pass; two weapons playable; living hit poses match visible body within declared tolerances; feedback is generated-only. Simulation tests show bounded allocations. Full eight-bot B03 performance gate belongs to M3/M4.
+Movement/combat tests pass; two weapons playable; living hit poses match visible body within declared tolerances; feedback is generated-only. Simulation tests show bounded allocations. Full eight-bot B03 performance gate belongs to M3/M4. M2 closed under ADR-026 with remaining reference-hardware gates waived for this milestone only.
 
 [Previous pack](../m1-procedural-feasibility/index.md) · [Next pack](../m3-generated-compound/index.md) · [Milestone catalog](../index.md).
 

@@ -1,17 +1,17 @@
 {
   "schemaVersion": 1,
   "updatedDate": "2026-11-13",
-  "integrator": "Cursor M2 integrator (bc-2637951e); Unity smoke bc-ff836dea; V05/V09 scenarios bc-6bff6f6f",
+  "integrator": "Cursor M2 integrator (bc-2637951e); Unity smoke bc-ff836dea; V05/V09 scenarios bc-6bff6f6f; closeout bc-457cec93",
   "branch": "main",
-  "baseCommit": "474427d77b6678ee651dfb344c5b0a26539a9b00",
+  "baseCommit": "97f10ef88e17d25df62b8ddbb07f4ec18b8c59f8",
   "contractVersion": "C0-v1",
-  "readyForParallelIntegration": true,
+  "readyForParallelIntegration": false,
   "packages": [
     {
       "packageId": "WP-00",
       "owner": "Codex (single integrator)",
       "branch": "main",
-      "baseCommit": "925d23f74301fd08a6aeccdf977822438b061c4b",
+      "baseCommit": "97f10ef88e17d25df62b8ddbb07f4ec18b8c59f8",
       "paths": [
         "UnityProject/Assets/Shooter/Contracts",
         "UnityProject/Assets/Shooter/Bootstrap",
@@ -35,7 +35,7 @@
       ],
       "dependencies": [],
       "contractVersion": "C0-v1",
-      "status": "M0+M1 closed (ADR-017, ADR-025). C0-v1 frozen. M2 combat wave assigned; integrator owns Contracts/Bootstrap/Settings/docs/coordination and final composition.",
+      "status": "M0+M1+M2 closed (ADR-017, ADR-025, ADR-026). C0-v1 frozen. M3+ require explicit assignment; integrator owns Contracts/Bootstrap/Settings/docs/coordination.",
       "leaseExpiry": null
     },
     {
@@ -638,10 +638,11 @@
         "T027 gameplay defaults"
       ],
       "contractVersion": "C0-v1",
-      "status": "IN PROGRESS: CombatHarnessSimulation composed; pure 23/23 + contracts 71/71; EditMode 13/13; PlayMode 11/11; V05/V06/V09 Unity scenarios PASS; client/server smoke retained on 59bd8c6; PendingHardware remains",
+      "status": "CLOSED_WITH_USER_WAIVER (ADR-026): CombatHarnessSimulation; pure 23/23; EditMode 13/13; PlayMode 11/11; V05/V06/V09 PASS; smoke on 59bd8c6; reference PendingHardware waived for M2",
       "leaseExpiry": null,
       "unitySmokeEvidence": "Artifacts/m2-combat-harness/59bd8c6b76ad6824d4369e8bca856cd431b226e4/unity-smoke-20261113T193220046Z/validation.json",
-      "scenarioEvidence": "Artifacts/m2-combat-harness/474427d77b6678ee651dfb344c5b0a26539a9b00/v05-v09-scenarios-20261113T185222419Z/validation.json"
+      "scenarioEvidence": "Artifacts/m2-combat-harness/474427d77b6678ee651dfb344c5b0a26539a9b00/v05-v09-scenarios-20261113T185222419Z/validation.json",
+      "closureEvidence": "Artifacts/m2-combat-harness/owner-closure-20261113"
     }
   ],
   "validationWave": {
@@ -701,32 +702,33 @@
     "readyForParallelIntegration": false
   },
   "milestoneAcceptance": {
-    "milestone": "M1",
+    "milestone": "M2",
     "status": "CLOSED_WITH_USER_WAIVER",
-    "closedCount": 2,
+    "closedCount": 3,
     "totalCount": 8,
     "acceptedBy": "Max (project owner)",
     "date": "2026-11-13",
-    "decision": "docs/decisions.md#adr-025--accepted-m1-owner-waiver-of-remaining-hardwareresource-validation-and-milestone-close",
+    "decision": "docs/decisions.md#adr-026--accepted-m2-owner-waiver-of-remaining-hardwarereference-validation-and-milestone-close",
     "alsoDependsOn": [
-      "ADR-024"
+      "ADR-017",
+      "ADR-025"
     ],
-    "hardwareValidation": "Unverified; waived for M1 closure only. Automated PendingHardware reports unchanged.",
-    "soldierVisual": "FAIL / not accepted under ADR-024",
-    "p03SilhouetteAds": "PASS_WITH_LIMITS",
-    "p03LodTransition": "PASS (numeric; Unity transition captures Pending/unavailable)",
+    "hardwareValidation": "Unverified; waived for M2 closure only. Automated PendingHardware diagnostic unchanged.",
+    "softwareGates": "C01-C04 PASS; EditMode 13/13; PlayMode 11/11; V05/V06/V09 PASS; client/server smoke PASS",
+    "b03CombatPerformance": "Deferred to M3/M4; not an M2 exit gate",
     "hostedCI": "User-deferred",
-    "nextMilestoneAssigned": true,
-    "evidenceDirectory": "Artifacts/m1-procedural-feasibility/owner-closure-20261113",
+    "nextMilestoneAssigned": false,
+    "evidenceDirectory": "Artifacts/m2-combat-harness/owner-closure-20261113",
     "unverifiedItems": [
-      "B01-materials thermal/HWiNFO",
-      "B01 channelMode/draw/triangle/GPU-memory/variant counters",
-      "Unity LOD transition-frame captures"
+      "M2 reference-player full three-run series",
+      "Live HWiNFO/thermal review",
+      "channelMode / GPU-memory / variant counters for combat harness"
     ],
     "failRetained": [
-      "P05 soldier visual/clearance"
+      "P05 soldier visual/clearance (upstream ADR-024; not required for M2 harness)"
     ],
     "supersedesHistoricalDisposition": true,
+    "priorM1Acceptance": "m1MilestoneAcceptance",
     "priorM0Acceptance": "m0MilestoneAcceptance"
   },
   "m1Start": {
@@ -840,7 +842,7 @@
     "fixtureVersion": "specification-v1.1",
     "seed": "460072030",
     "scope": "M2 combat harness C01-C04 / T011-T013 (+ T027 defaults); no M3+ world/nav",
-    "status": "IN_PROGRESS: C01-C04 pure + CombatHarnessSimulation Unity EditMode/PlayMode/client-server smoke PASS; V05/V06/V09 Unity scenarios PASS; PendingHardware blocks CLOSED",
+    "status": "CLOSED_WITH_USER_WAIVER (ADR-026): software PASS; reference-player PendingHardware waived for M2",
     "workers": [
       "WP-05/motor",
       "WP-05/combat",
@@ -852,9 +854,42 @@
     "unitySmokeEvidence": "Artifacts/m2-combat-harness/59bd8c6b76ad6824d4369e8bca856cd431b226e4/unity-smoke-20261113T193220046Z/validation.json",
     "scenarioCommit": "474427d77b6678ee651dfb344c5b0a26539a9b00",
     "scenarioEvidence": "Artifacts/m2-combat-harness/474427d77b6678ee651dfb344c5b0a26539a9b00/v05-v09-scenarios-20261113T185222419Z/validation.json",
-    "remainingGates": [
-      "PendingHardware reference-player measurement",
-      "Owner sign-off / waiver if hardware unavailable"
+    "remainingGates": [],
+    "closureEvidence": "Artifacts/m2-combat-harness/owner-closure-20261113",
+    "hardwareAttempt": "Artifacts/m2-combat-harness/owner-closure-20261113/hardware-attempt.json",
+    "decision": "docs/decisions.md#adr-026--accepted-m2-owner-waiver-of-remaining-hardwarereference-validation-and-milestone-close",
+    "softwareHead": "97f10ef88e17d25df62b8ddbb07f4ec18b8c59f8",
+    "waivedGates": [
+      "PendingHardware reference-player measurement (ADR-026; reports immutable)"
     ]
+  },
+  "m1MilestoneAcceptance": {
+    "milestone": "M1",
+    "status": "CLOSED_WITH_USER_WAIVER",
+    "closedCount": 2,
+    "totalCount": 8,
+    "acceptedBy": "Max (project owner)",
+    "date": "2026-11-13",
+    "decision": "docs/decisions.md#adr-025--accepted-m1-owner-waiver-of-remaining-hardwareresource-validation-and-milestone-close",
+    "alsoDependsOn": [
+      "ADR-024"
+    ],
+    "hardwareValidation": "Unverified; waived for M1 closure only. Automated PendingHardware reports unchanged.",
+    "soldierVisual": "FAIL / not accepted under ADR-024",
+    "p03SilhouetteAds": "PASS_WITH_LIMITS",
+    "p03LodTransition": "PASS (numeric; Unity transition captures Pending/unavailable)",
+    "hostedCI": "User-deferred",
+    "nextMilestoneAssigned": true,
+    "evidenceDirectory": "Artifacts/m1-procedural-feasibility/owner-closure-20261113",
+    "unverifiedItems": [
+      "B01-materials thermal/HWiNFO",
+      "B01 channelMode/draw/triangle/GPU-memory/variant counters",
+      "Unity LOD transition-frame captures"
+    ],
+    "failRetained": [
+      "P05 soldier visual/clearance"
+    ],
+    "supersedesHistoricalDisposition": true,
+    "priorM0Acceptance": "m0MilestoneAcceptance"
   }
 }

@@ -194,3 +194,23 @@ Close M1 administratively as **CLOSED WITH USER WAIVER**. Two of eight milestone
 - P05 soldier visual/clearance remains **FAIL / not accepted** under ADR-024; loft1.0.2/motion.spike.v3 is non-accepted diagnostic evidence only.
 
 Historical failed/pending automated results and raw data are immutable; no missing value is replaced, no automatic hardware gate returns PASS because of this waiver, and no performance threshold changes. Root `feature-content-lock.json` is corrected only for the already-committed ADR-024 `docs/soldier-baseline.md` LF bytes so the registry matches HEAD; no generator source, schema, recipe or golden payload changed. ADR-017’s M0 waiver is unchanged and still does not supply M1 hardware PASS. Future milestone work still needs an explicit assignment; no M2 combat, thermal stability, 30-minute soak, full-map compile budget or fully verified reference-performance claim follows. The [handoff](milestones/m1-procedural-feasibility/handoff.md) identifies exact source/artifacts, the formal review records and owner disposition. A local `m1-procedural-feasibility-owner-accepted` marker identifies this qualified closure; it is not a passing benchmark tag. Resuming technical hardware acceptance requires actual supported full captures, counters and thermal review, preserving these prior reports.
+## ADR-026 — Accepted: M2 owner waiver of remaining hardware/reference validation and milestone close
+
+Date 2026-11-13; accepted by Max as project owner, recorded by the Cursor M2 integrator. After software gates for C01–C04, Unity V05/V06/V09 scenarios, EditMode/PlayMode and client/server smoke all PASS, Max’s standing direction for this chat (“no confirmations”; “everything should just work”; implement everything for M2 with multiple agents; same pattern as ADR-025) authorizes administrative M2 closure without waiting for interactive sign-off. It does **not** authorize inventing PASS evidence, editing goldens/caches, upgrading Unity/packages, starting M3 world/AI, flipping prior M0/M1 PendingHardware reports to PASS, or claiming eight-bot B03 / reference-performance acceptance.
+
+Hardware attempt retained (not acceptance):
+
+- Pinned PresentMon 2.6.0 was configured and hash-verified via `Tools/Configure-PresentMon.ps1`.
+- A short release-player diagnostic with PresentMon ran against the retained IL2CPP client build (`59bd8c6` player; evidence under HEAD `97f10ef`): `gateStatus` **PendingHardware**; diagnostic scope only (`Artifacts/m0-foundation/97f10ef88e17d25df62b8ddbb07f4ec18b8c59f8/benchmark-diagnostic-20261113T185709203Z-c04346e8/`). No counters were invented.
+- No live HWiNFO/sensor log was available, so `Benchmark-Series.ps1` (mandatory `-SensorLog`) could not run. Full three-run reference capture + thermal review therefore remain incomplete.
+- Full eight-bot B03 performance remains an M3/M4 gate by milestone design; M2 has no separate combat B0x workload that could substitute for that gate.
+
+Close M2 administratively as **CLOSED WITH USER WAIVER**. Three of eight milestones are closed. Actual dispositions retained:
+
+- C01–C04 motor/weapon/pose/view adapters and T027 defaults remain PASS as previously recorded (pure simulation 23/23; contracts 71/71).
+- Unity EditMode 13/13 and PlayMode 11/11 with dedicated V05/V06/V09 scenario harnesses remain PASS (`Artifacts/m2-combat-harness/474427d77b6678ee651dfb344c5b0a26539a9b00/v05-v09-scenarios-20261113T185222419Z/`).
+- Client/server release builds and empty-actor `CombatHarnessSimulation` smoke remain PASS on `59bd8c6`.
+- Reference-player / resource-budget measurement stays **PendingHardware** in its automated diagnostic report and is **Unverified / waived for M2 closure only**.
+- Upstream ADR-017/024/025 dispositions are unchanged; P05 soldier visual remains FAIL / not accepted.
+
+Historical failed/pending automated results and raw data are immutable; no missing value is replaced, no automatic hardware gate returns PASS because of this waiver, and no performance threshold changes. ADR-017/025 waivers still do not supply M2 hardware PASS. Future milestone work still needs an explicit assignment; no M3 compound/AI, thermal stability, 30-minute soak, full-map compile budget, B03 eight-bot acceptance or fully verified reference-performance claim follows. The [handoff](milestones/m2-combat-harness/handoff.md) identifies exact source/timestamps, the formal review records and owner disposition. A local `m2-combat-harness-owner-accepted` marker identifies this qualified closure; it is not a passing benchmark tag. Resuming technical hardware acceptance requires actual supported full captures with live sensors, counters and thermal review, preserving these prior reports.

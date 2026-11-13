@@ -1,6 +1,6 @@
 # M2 — Combat harness — validation and acceptance
 
-Status: **partial**. Pure C01–C04 / simulation suites PASS (23/23 including cover hitscan); Unity EditMode 13/13, PlayMode 11/11 with dedicated V05/V06/V09 scenario harnesses PASS on `474427d` evidence tree (2026-11-13); prior client/server smoke PASS on `59bd8c6`. Reference hardware remains open — see [handoff](handoff.md). Use [global validation](../../validation.md) and [build lanes](../../build-ci.md). Absence of hardware means PendingHardware, not PASS.
+Status: **CLOSED WITH USER WAIVER**, 2026-11-13. Pure C01–C04 / simulation suites PASS (23/23 including cover hitscan); Unity EditMode 13/13, PlayMode 11/11 with dedicated V05/V06/V09 scenario harnesses PASS on `474427d` evidence tree (2026-11-13); prior client/server smoke PASS on `59bd8c6`. Reference-player budget remains PendingHardware and is Unverified/Waived for M2 under [ADR-026](../../decisions.md#adr-026--accepted-m2-owner-waiver-of-remaining-hardwarereference-validation-and-milestone-close). Automated PendingHardware reports are unchanged. See [handoff](handoff.md). Use [global validation](../../validation.md) and [build lanes](../../build-ci.md). Absence of hardware means PendingHardware, not PASS — waived for M2 closure only where ADR-026 applies.
 
 | Suite | Scenario | Required result |
 |---|---|---|
@@ -22,15 +22,15 @@ Status: **partial**. Pure C01–C04 / simulation suites PASS (23/23 including co
 - [x] Required suites above pass with archived machine-readable results — pure + dedicated V05/V06/V09 Unity scenario harnesses PASS; see handoff evidence table.
 - [x] No prohibited visual sources; generated outputs have versioned provenance (unchanged toolchain/provenance).
 - [x] Contract/schema/generator changes reviewed — C0-v1 frozen unchanged for M2.
-- [ ] Resource/failure/cancellation paths bounded and relevant budget evidence attached — no M2 reference-player budget run; PendingHardware.
+- [x] Resource/failure/cancellation paths bounded; M2 reference-player budget remains PendingHardware and waived for M2 under ADR-026 (diagnostic attempt recorded; no invented PASS).
 - [x] Shared docs updated with actual code references; milestone links verified.
-- [ ] Integrator reviews evidence and signs milestone status in handoff — **IN PROGRESS**, not CLOSED (PendingHardware).
+- [x] Integrator reviews evidence and signs milestone status in handoff (owner-directed close; ADR-026).
 
-Final criterion: Movement/combat tests pass; two weapons playable; living hit poses match visible body within declared tolerances; feedback is generated-only. Simulation tests show bounded allocations. Full eight-bot B03 performance gate belongs to M3/M4.
+Final criterion: Movement/combat tests pass; two weapons playable; living hit poses match visible body within declared tolerances; feedback is generated-only. Simulation tests show bounded allocations. Full eight-bot B03 performance gate belongs to M3/M4. M2 closed with user waiver under ADR-026.
 
 ## Evidence location
 
-Store run artifacts under repository `Artifacts/m2-combat-harness/<source-commit>/<run-id>/` (proposed path). Include test XML, JSON reports, build/content manifests, toolchain lock, raw timing/memory logs and visual captures when relevant. [Handoff](handoff.md) links actual artifacts and records reviewer/date. Do not create fake passing reports from this checklist.
+Store run artifacts under repository `Artifacts/m2-combat-harness/<source-commit>/<run-id>/` (proposed path). Include test XML, JSON reports, build/content manifests, toolchain lock, raw timing/memory logs and visual captures when relevant. [Handoff](handoff.md) links actual artifacts and records reviewer/date. Owner closure package: `Artifacts/m2-combat-harness/owner-closure-20261113/`. Do not create fake passing reports from this checklist.
 
 
 ## Revision 1.1 implementation refinements
