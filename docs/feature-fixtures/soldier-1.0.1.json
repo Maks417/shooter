@@ -1,0 +1,20 @@
+{
+  "schemaId": "shooter.soldier.v1",
+  "recipeId": "soldiers/baseline",
+  "generatorId": "soldier.loft",
+  "generatorVersion": "1.0.1",
+  "seed": "460072030",
+  "parameters": {
+    "heightMm": 1800,
+    "shoulderWidthMm": 420,
+    "hipWidthMm": 280,
+    "uniformOffsetMm": 6,
+    "nearTorsoSegments": 16,
+    "nearLimbSegments": 12,
+    "walkCycleMm": 1400,
+    "runCycleMm": 2200,
+    "walkDutyPpm": 500000,
+    "runDutyPpm": 350000
+  },
+  "dependencies": []
+}

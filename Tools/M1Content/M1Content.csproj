@@ -1,0 +1,4 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework><LangVersion>9.0</LangVersion><Nullable>enable</Nullable><TreatWarningsAsErrors>true</TreatWarningsAsErrors></PropertyGroup>
+  <ItemGroup><ProjectReference Include="../Generation/Shooter.Generation.Core.csproj"/><ProjectReference Include="../ContentRuntime/Shooter.Content.Runtime.csproj"/><ProjectReference Include="../ContentCompiler/Shooter.AssetCompiler.Editor.csproj"/></ItemGroup>
+</Project>

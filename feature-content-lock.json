@@ -5,7 +5,9 @@
   "sourceBytePolicy": "Repository LF text bytes; no implicit normalization by verification",
   "decisions": [
     "ADR-019",
-    "ADR-020"
+    "ADR-020",
+    "ADR-021",
+    "ADR-022"
   ],
   "generators": [
     {
@@ -20,7 +22,7 @@
     },
     {
       "id": "soldier.loft",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "schema": "shooter.soldier.v1"
     }
   ],
@@ -29,10 +31,12 @@
     "docs/feature-fixtures/metal-1.0.1.json": "24abac9b9122c4790a84892ad5d2c07948a2261f6de575a995395c6f9a331b54",
     "docs/feature-fixtures/rifle-1.0.0.json": "6dddf63fcc85f88d9182bb02e2125a9165ca825a9e214e6ac515e89586390d7b",
     "docs/feature-fixtures/rifle-1.0.1.json": "4f84ccdc1466105eb7864a7214553555c0080aa68b1b0124d5b50e299957a340",
+    "docs/feature-fixtures/soldier-1.0.0.json": "e0ff283e23e829171d940c0b3f91c5117bdbe51451c05e3ae68bc004cd964314",
+    "docs/feature-fixtures/soldier-1.0.1.json": "d451390ecad776e4b676929e121baab2e227dfdc02bbdddf9640f6b1a8ffccb4",
     "docs/feature-schemas/material.schema.json": "206c101fbd49720e2ab60e0819806c3beaba8e91335de469f2b066f8c769e6c6",
-    "docs/feature-schemas/soldier.schema.json": "e71fb1942c38f8743b8e6b935b1d201ae5273223a956315ffdd10b8c34ae9c6f",
+    "docs/feature-schemas/soldier.schema.json": "3e04dae1cda837dff30bf0af80f58116e82ce9c35d5f9c017e8665aa830e3e5e",
     "docs/feature-schemas/weapon.schema.json": "5cf1f144cc1606eb98b4754ad0717020be0153252c3e0df6eddc3fe599b544b2",
-    "docs/soldier-baseline.md": "c73a06409fe9791fd185f68f36edbded4782d6b9abfd6ba1d6f000fa8200fdb3",
+    "docs/soldier-baseline.md": "f783272eb6786b0d4798c4b9696f3e6fac3ef02ca65df49bff7611f5b9ffb6aa",
     "docs/weapon-recipe-baseline.md": "0e560943c4386152e3febf98038a91325b08233694a8bf2f39e004ffb68b07ee",
     "UnityProject/Assets/Shooter/Generation/Core/Compilation/ValidatedRecipe.cs": "9fd953887e489ddcb8946318243e154671ac95e088d9a6c6a9fd1516cacdc019",
     "UnityProject/Assets/Shooter/Generation/Core/Geometry/MeshAssembly.cs": "b645bbf86612e19e9d01fc6e439a4ac1b161a211a439a19a2b02359288a82c95",
@@ -42,11 +46,11 @@
     "UnityProject/Assets/Shooter/Generation/Core/Materials/MaterialAssetGenerator.cs": "559dfab01c6884df4e3082664a5e1aa9e3a3ca238ea62e25999923f3754ffbd7",
     "UnityProject/Assets/Shooter/Generation/Core/Materials/MaterialBaker.cs": "6b61bd8e6838447ab9a9f2e2f55fad83ec2a69140c9b5734957cda566e75eb96",
     "UnityProject/Assets/Shooter/Generation/Core/Materials/MaterialRecipe.cs": "472e44e53da39ca31c6e45d9aee72ee388740463e9ceac32aeb276f9360ea141",
-    "UnityProject/Assets/Shooter/Generation/Core/SoldierMotion/SoldierMotion.cs": "42fe9865e54b87dfadf3c61658bd6e3a9691a1a9efca8f3a45d2f8430bae0054",
+    "UnityProject/Assets/Shooter/Generation/Core/SoldierMotion/SoldierMotion.cs": "0dbfd975ea35b9d8a7b936760af4eed2b7da23149c3876f82b3abbbcd6fb8dc5",
     "UnityProject/Assets/Shooter/Generation/Core/SoldierMotion/TwoBoneIk.cs": "00ce845975ae961d7834b1821e661df50e9985f095fa27a6b225272df21c65b0",
     "UnityProject/Assets/Shooter/Generation/Core/Soldiers/SoldierAssetGenerator.cs": "d4cb380f003ab2dca358c3926d85a16c2d4ee41ddbc7e574e08166510d1ed440",
     "UnityProject/Assets/Shooter/Generation/Core/Soldiers/SoldierGeometry.cs": "0cd0342dc99d60c5ff8c9185cb23db615585a05987828362b5f216a42c4f626e",
-    "UnityProject/Assets/Shooter/Generation/Core/Soldiers/SoldierRecipe.cs": "6aadacc60fcc443be9db609ed1bcae998182be331a93e0d5caffd34b0760168a",
+    "UnityProject/Assets/Shooter/Generation/Core/Soldiers/SoldierRecipe.cs": "f81f95515e839b8ccf23d44945511d1db2e086a78256634c51a5b9a6b4065984",
     "UnityProject/Assets/Shooter/Generation/Core/Soldiers/SoldierSkeleton.cs": "f3dab186647fbae93ffe531e641ca91b401b4bb1c051c4cbf4c41cd66caf29af",
     "UnityProject/Assets/Shooter/Generation/Core/Weapons/BoredMuzzle.cs": "d8b74b0b987f197f1f240459fc3c38af983defb22c654d0fda0fe27784614c12",
     "UnityProject/Assets/Shooter/Generation/Core/Weapons/WeaponAssetGenerator.cs": "d7b40815333c6653d4ddae596c83a3bb03b437b5a075528d9a7ede41f868659d",
@@ -61,8 +65,8 @@
     "UnityProject/Assets/Shooter/Generation/FeatureRecipes/polymer.json": "99e7c3c913254759f99d1f4ed8fec0eda72e094a518f7ac730639f5c7b808f67",
     "UnityProject/Assets/Shooter/Generation/FeatureRecipes/rifle.json": "4f84ccdc1466105eb7864a7214553555c0080aa68b1b0124d5b50e299957a340",
     "UnityProject/Assets/Shooter/Generation/FeatureRecipes/soil.json": "cc2ebc90846af67d3fad0333f0702b0f27142060a62ed7eb87d49cbe0270f79a",
-    "UnityProject/Assets/Shooter/Generation/FeatureRecipes/soldier.json": "e0ff283e23e829171d940c0b3f91c5117bdbe51451c05e3ae68bc004cd964314"
+    "UnityProject/Assets/Shooter/Generation/FeatureRecipes/soldier.json": "d451390ecad776e4b676929e121baab2e227dfdc02bbdddf9640f6b1a8ffccb4"
   },
-  "motionVersion": "soldier.motion.spike.v1",
+  "motionVersion": "soldier.motion.spike.v2",
   "skeletonVersion": "soldier.semantic23.v1"
 }

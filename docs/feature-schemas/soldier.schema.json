@@ -24,7 +24,7 @@
       "const": "soldier.loft"
     },
     "generatorVersion": {
-      "const": "1.0.0"
+      "const": "1.0.1"
     },
     "seed": {
       "type": "string",
@@ -71,10 +71,10 @@
           "const": 2200
         },
         "walkDutyPpm": {
-          "const": 620000
+          "const": 500000
         },
         "runDutyPpm": {
-          "const": 450000
+          "const": 350000
         }
       }
     },

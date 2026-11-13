@@ -12,7 +12,7 @@ public sealed class SoldierGeometryTests
 {
     private readonly ITestOutputHelper output;
     public SoldierGeometryTests(ITestOutputHelper output){this.output=output;}
-    private static byte[] Source()=>File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory,"Fixtures","soldier-recipe.json"));
+    private static byte[] Source()=>File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory,"FeatureRecipes","soldier.json"));
     [Fact]
     public void Semantic23BindHierarchyAndFramesMatchDocumentedBaseline()
     {
