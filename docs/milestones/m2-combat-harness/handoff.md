@@ -5,7 +5,7 @@ Status: **IN PROGRESS** (implementation wave integrated; milestone not closed). 
 | Field | Actual value |
 |---|---|
 | Owner / integrator / reviewer | Cursor M2 integrator (`bc-2637951e`); workers `/root/m2_motor`, `/root/m2_combat`, `/root/m2_pose`, `/root/m2_view` (integrator-executed on disjoint worktrees; CLI subagents unauthenticated) |
-| Source commit and upstream tag | Base `925d23f`; kickoff `5566cdc`; worker merges through `cc6ad93`; integration commit recorded after this handoff |
+| Source commit and upstream tag | Base `925d23f`; kickoff `5566cdc`; integration HEAD `cb66e0026d0698994dc775d634392f99038d598a` |
 | Editor/URP/toolchain hash | Unity 6000.3.28f1 / URP 17.3.0; toolchain SHA256 `9ac31fe82117043e2bba3bfb843dd1ca32834b15425188e96d6f3369e2c627a8` (unchanged) |
 | Contract/schema/generator/protocol versions | C0-v1 frozen unchanged; specification-v1.1; predictionSchema 1; simulationHz 60; gameplay pose evaluator v1 |
 | Seed/content/world/workload manifests | Fixture seed `460072030`; analytic static-world fakes for pure tests; no new generated content caches |
@@ -31,8 +31,8 @@ Status: **IN PROGRESS** (implementation wave integrated; milestone not closed). 
 
 | Check | Result | Path |
 |---|---|---|
-| Pure contracts | 71/71 PASS | `Artifacts/m0-foundation/cc6ad93a512e65afc04be24e4ae961517e573b32/20261113T181823384Z-344c2d5b/` |
-| M2 simulation | 21/21 PASS | `Artifacts/m2-combat-harness/cc6ad93a512e65afc04be24e4ae961517e573b32/20261113T181835030Z-67b5eccd/` |
+| Pure contracts | 71/71 PASS | `Artifacts/m0-foundation/cb66e0026d0698994dc775d634392f99038d598a/20261113T181944159Z-c785efb2/` |
+| M2 simulation | 21/21 PASS | `Artifacts/m2-combat-harness/cb66e0026d0698994dc775d634392f99038d598a/20261113T181934512Z-8bd4a7d1/` |
 | Docs/fixtures | PASS | `docs/verify_docs.py`, `docs/fixtures/verify_fixtures.py` |
 | Unity EditMode/PlayMode | Pending | Not rerun this wave |
 | Client/server smoke | Pending | Not rerun this wave |
