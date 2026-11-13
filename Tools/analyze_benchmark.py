@@ -9,6 +9,7 @@ from pathlib import Path
 from hardware_evidence import apply_evidence
 from external_gpu import gpu_samples
 from render_budget import render_budget_samples
+import material_benchmark
 
 
 def percentile(values, probability):
@@ -45,7 +46,7 @@ def analyze(capture_path, build_path, hardware_path, run_index, evidence_path=No
     rows, ticks = read_rows(capture_path / "frames.csv"), read_rows(capture_path / "ticks.csv")
     if build["result"] != "Succeeded" or build["target"] != "Client" or build["backend"] != "IL2CPP" or build["development"]:
         raise ValueError("Acceptance requires a release IL2CPP client")
-    if (meta["workloadId"], meta["seed"], meta["profile"], meta["width"], meta["height"], meta["graphicsApi"]) != ("B01-minimal-v1", "460072030", "Low", 1280, 720, "Direct3D11"):
+    if meta["workloadId"] not in ("B01-minimal-v1", "B01-materials-v1") or (meta["seed"], meta["profile"], meta["width"], meta["height"], meta["graphicsApi"]) != ("460072030", "Low", 1280, 720, "Direct3D11"):
         raise ValueError("Workload/profile/render configuration mismatch")
     if len(rows) != meta["frames"] or len(ticks) != meta["ticks"] or not rows:
         raise ValueError("Capture counts mismatch")
@@ -57,6 +58,8 @@ def analyze(capture_path, build_path, hardware_path, run_index, evidence_path=No
         raise ValueError("Preconditioning/capture tick identity mismatch")
     if [int(t["tick"]) for t in ticks] != list(range(first, first + count)):
         raise ValueError("Tick capture is incomplete, duplicated or reordered")
+    materials = meta["workloadId"] == "B01-materials-v1"
+    content_hash = material_benchmark.validate(capture_path, meta, build, ticks) if materials else build["contentManifestHash"]
     frame_values = [float(row["frameMs"]) for row in rows]
     frame_ms = {key: percentile(frame_values, p) for key, p in [("p50", .5), ("p95", .95), ("p99", .99), ("max", 1)]}
     allocations = [int(t["managedTickBytes"]) for t in ticks]
@@ -84,6 +87,8 @@ def analyze(capture_path, build_path, hardware_path, run_index, evidence_path=No
             render_application_path.write_text(json.dumps(render_proof, indent=2) + "\n")
     if meta["diagnostic"]:
         return {"schemaVersion": 1, "scope": "Short diagnostic capture only; not B01 acceptance", "diagnostic": True,
+                "workloadId": meta["workloadId"], "contentManifestHash": content_hash,
+                "routeHash": material_benchmark.route_hash() if materials else None,
                 "frames": len(rows), "ticks": len(ticks), "frameMs": frame_ms, "gpuAdapter": meta["gpuAdapter"], "gateStatus": "PendingHardware"}
     if (meta["warmupSeconds"], meta["captureSeconds"]) != (60, 180):
         raise ValueError("B01 acceptance durations were changed")
@@ -139,13 +144,15 @@ def analyze(capture_path, build_path, hardware_path, run_index, evidence_path=No
         unavailable.append("thermal stabilization / NVMe conditions unverified")
     route = {"cameraMm": [round(value * 1000) for value in meta["cameraMeters"]], "yawMilliDegrees": 0, "pitchMilliDegrees": 0}
     return {"schemaVersion": 1, "workloadId": meta["workloadId"], "seed": meta["seed"], "sourceCommit": build["sourceCommit"],
-            "toolchainHash": build["toolchainHash"], "contentManifestHash": build["contentManifestHash"],
-            "routeHash": hashlib.sha256(json.dumps(route, sort_keys=True, separators=(",", ":")).encode()).hexdigest(),
+            "toolchainHash": build["toolchainHash"], "contentManifestHash": content_hash,
+            "routeHash": material_benchmark.route_hash() if materials else hashlib.sha256(json.dumps(route, sort_keys=True, separators=(",", ":")).encode()).hexdigest(),
             "profile": "Low", "internalWidth": 1280, "internalHeight": 720, "warmupSeconds": 60, "captureSeconds": 180, "runIndex": run_index,
             "machine": machine, "metrics": {"frameMs": frame_ms, "mainMs": main, "renderMs": render, "gpuMs": gpu,
             "privateCommitBytesPeak": private_peak, "rssBytesPeak": rss_peak, "managedBytesPerFrame": allocated_frame, "managedBytesPerTick": allocated_tick, "uploadMsP95": None},
-            "counters": {"actors": 0, "shotsAccepted": 0, "impactPeak": 0, "smokeProxies": 0, "chunkTransitions": 0},
-            "unavailableMetrics": unavailable + ["uploadMsP95: no runtime streaming in B01-minimal; unavailable"],
+            "counters": dict({"actors": 0, "shotsAccepted": 0, "impactPeak": 0, "smokeProxies": 0, "chunkTransitions": 0},
+                             **({"materialCubes": 7, "renderInstances": 8, "sceneTriangles": 96, "texturePayloadBytes": meta["texturePayloadBytes"], "visibleTriangles": None, "drawCalls": None} if materials else {})),
+            "unavailableMetrics": unavailable + ["uploadMsP95: no runtime streaming in " + meta["workloadId"] + "; unavailable"] +
+                                  (["visibleTriangles/drawCalls/GPU resource bytes/shader variants: no validated collector; scene inventory is not per-frame GPU work"] if materials else []),
             "gateStatus": "ComputedFail" if fail else "PendingHardware" if unavailable else "ComputedPass"}
 
 

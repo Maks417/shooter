@@ -1,6 +1,8 @@
 import csv
 import json
 import math
+import hashlib
+import material_benchmark
 from pathlib import Path
 import tempfile
 import unittest
@@ -184,6 +186,71 @@ class CaptureAnalysisTests(unittest.TestCase):
         self.hardware["thermalStabilized"] = False
         self.frames[0]["managedFrameBytes"] = 4096
         self.assertEqual(self.report()["gateStatus"], "ComputedFail")
+
+
+    def configure_materials(self):
+        content = {"floor": "foundation-matte-10m-v1", "materialCubes": 7, "renderInstances": 8,
+                   "schema": "shooter.b01-materials-content.v1", "textureFormat": "RGBA32",
+                   "toolchainHash": self.build["toolchainHash"], "triangles": 96, "workloadId": "B01-materials-v1",
+                   "materials": [{"contentId": format(i + 1, "064x"), "family": family,
+                                  "manifestSha256": "f" * 64, "tileMm": [1000, 500, 2000, 2000, 2000, 2000, 250][i]}
+                                 for i, family in enumerate(material_benchmark.FAMILIES)]}
+        payload = material_benchmark.canonical(content)
+        (self.root / "materials-manifest.json").write_bytes(payload)
+        self.meta.update(workloadId="B01-materials-v1", routeHash=material_benchmark.route_hash(),
+                         contentManifestHash=hashlib.sha256(payload).hexdigest(),
+                         materialContentManifestFile="materials-manifest.json", materialCubes=7, renderInstances=8,
+                         sceneTriangles=96, texturePayloadBytes=7340004, materialCameraChecks=1000)
+        for tick in self.ticks:
+            tick["materialView"] = ((tick["tick"] + 1) % 2520) // 360
+
+    def test_materials_has_separate_route_content_and_scene_inventory(self):
+        self.configure_materials()
+        report = self.report()
+        self.assertEqual(report["workloadId"], "B01-materials-v1")
+        self.assertEqual(report["contentManifestHash"], self.meta["contentManifestHash"])
+        self.assertNotEqual(report["contentManifestHash"], self.build["contentManifestHash"])
+        self.assertEqual(report["routeHash"], material_benchmark.route_hash())
+        self.assertEqual(report["counters"]["sceneTriangles"], 96)
+        self.assertIsNone(report["counters"]["visibleTriangles"])
+        self.assertIsNone(report["counters"]["drawCalls"])
+
+    def test_materials_route_and_inventory_mutations_reject(self):
+        self.configure_materials()
+        for key, value in [("routeHash", "0" * 64), ("materialCubes", 8), ("sceneTriangles", 108),
+                           ("materialCameraChecks", 0), ("contentManifestHash", "0" * 64),
+                           ("materialContentManifestFile", "../materials-manifest.json")]:
+            with self.subTest(key=key):
+                original = self.meta[key]; self.meta[key] = value
+                with self.assertRaises(ValueError): self.report()
+                self.meta[key] = original
+
+    def test_materials_rejects_changed_camera_schedule(self):
+        self.configure_materials()
+        self.ticks[359]["materialView"] = 6
+        with self.assertRaisesRegex(ValueError, "schedule"): self.report()
+
+    def test_materials_rejects_mislabeled_or_duplicate_source_families(self):
+        self.configure_materials()
+        path = self.root / "materials-manifest.json"
+        content = json.loads(path.read_bytes())
+        for field, value in [("family", "soil"), ("contentId", content["materials"][1]["contentId"]), ("tileMm", 500)]:
+            with self.subTest(field=field):
+                old = content["materials"][0][field]; content["materials"][0][field] = value
+                payload = material_benchmark.canonical(content); path.write_bytes(payload)
+                self.meta["contentManifestHash"] = hashlib.sha256(payload).hexdigest()
+                with self.assertRaises(ValueError): self.report()
+                content["materials"][0][field] = old
+
+    def test_materials_short_capture_remains_diagnostic(self):
+        self.configure_materials()
+        self.meta.update(diagnostic=True, warmupSeconds=2, captureSeconds=5, ticks=300)
+        self.ticks = [{"tick": tick, "simulationMs": .1, "managedTickBytes": 0,
+                       "materialView": ((tick + 1) % 2520) // 360} for tick in range(120, 420)]
+        report = self.report()
+        self.assertTrue(report["diagnostic"])
+        self.assertEqual(report["workloadId"], "B01-materials-v1")
+        self.assertEqual(report["gateStatus"], "PendingHardware")
 
 
 if __name__ == '__main__':

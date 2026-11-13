@@ -1,8 +1,8 @@
 [CmdletBinding()]
 param([Parameter(Mandatory)][string]$BuildRunDirectory,
-    [ValidateSet('B01-minimal-v1')][string]$Workload = 'B01-minimal-v1',
+    [ValidateSet('B01-minimal-v1','B01-materials-v1')][string]$Workload = 'B01-minimal-v1',
     [ValidateSet('Low')][string]$Profile = 'Low', [ValidateRange(1,3)][int]$RunIndex = 1, [switch]$Diagnostic,
-    [string]$HardwareEvidence = '', [switch]$DiagnosticAllocate, [switch]$PresentMon, [ValidateRange(0,1800)][int]$PreconditionSeconds = 0)
+    [string]$MaterialCacheRoot = '', [string]$HardwareEvidence = '', [switch]$DiagnosticAllocate, [switch]$PresentMon, [ValidateRange(0,1800)][int]$PreconditionSeconds = 0)
 if ($Diagnostic -and $PreconditionSeconds) { throw 'Extra preconditioning is for full reference captures only.' }
 if ($DiagnosticAllocate -and !$Diagnostic) { throw 'Allocation injection is diagnostic only.' }
 . (Join-Path $PSScriptRoot 'Unity.Common.ps1')
@@ -12,6 +12,11 @@ $buildManifest = Join-Path $buildRoot 'build-manifest.json'
 $build = Get-Content -LiteralPath $buildManifest -Raw | ConvertFrom-Json
 if ($build.result -cne 'Succeeded' -or $build.target -cne 'Client' -or $build.backend -cne 'IL2CPP' -or $build.development -or $build.toolchainHash -cne $unity.LockHash) { throw 'A matching release IL2CPP client build is required.' }
 if ((Get-ShooterHash (Join-Path $buildRoot 'harness-manifest.json')) -cne $build.contentManifestHash) { throw 'Harness content manifest hash mismatch.' }
+if ($Workload -eq 'B01-materials-v1') {
+    if (!$MaterialCacheRoot) { throw 'B01-materials-v1 requires -MaterialCacheRoot from a verified Low compilation.' }
+    $MaterialCacheRoot = (Resolve-Path -LiteralPath $MaterialCacheRoot).Path
+    if (!(Test-Path -LiteralPath (Join-Path $MaterialCacheRoot 'gallery.json') -PathType Leaf)) { throw 'Missing material source plan.' }
+} elseif ($MaterialCacheRoot) { throw 'Material cache is valid only for B01-materials-v1.' }
 $run = New-ShooterRun $(if ($Diagnostic) { 'benchmark-diagnostic' } else { "benchmark-$RunIndex" }) $unity
 $trace = $null; $launch = [ordered]@{}
 try {
@@ -30,6 +35,11 @@ try {
     $player = Join-Path $buildRoot 'player/Shooter.exe'; $log = Join-Path $run.Path 'player.log'
     $arguments = @('-force-d3d11','-logFile',$log,'-shooterProfile',$Profile,'-shooterBenchmark',$Workload,'-shooterBenchmarkOutput',$run.Path,'-shooterBenchmarkDiagnostic',([bool]$Diagnostic).ToString().ToLowerInvariant())
     $arguments += @('-shooterPreconditionSeconds', $PreconditionSeconds.ToString())
+    if ($Workload -eq 'B01-materials-v1') {
+        $arguments += @('-shooterMaterialCache',$MaterialCacheRoot,'-shooterContentToolchainHash',$unity.LockHash)
+        $run.Report['materialSourcePlanSha256'] = Get-ShooterHash (Join-Path $MaterialCacheRoot 'gallery.json')
+    }
+    $run.Report['workloadId'] = $Workload
     if ($DiagnosticAllocate) { $arguments += @('-shooterDiagnosticAllocate', 'true') }
     $run.Report.commands += [ordered]@{ executable=$player; arguments=$arguments }
     if ($PresentMon) {

@@ -24,7 +24,13 @@ namespace Shooter.Bootstrap
                     if (tier < 0) throw new System.ArgumentException("Unknown quality profile: " + profile);
                     QualitySettings.SetQualityLevel(tier, true);
                     string gallery = FoundationEntry.CommandLine("-shooterContentGallery", "");
-                    if (gallery.Length == 0) FoundationView.Create();
+                    if (gallery.Length == 0)
+                    {
+                        if (FoundationEntry.CommandLine("-shooterBenchmark", "") == MaterialBenchmarkRecipe.Workload)
+                            MaterialBenchmarkView.Create(FoundationEntry.CommandLine("-shooterMaterialCache", ""),
+                                new Shooter.Contracts.ContentId(FoundationEntry.CommandLine("-shooterContentToolchainHash", "")), Shader.Find("Shooter/ProceduralSurface"));
+                        else FoundationView.Create();
+                    }
                     else
                     {
                         if (FoundationEntry.CommandLine("-shooterBenchmark", "").Length != 0)

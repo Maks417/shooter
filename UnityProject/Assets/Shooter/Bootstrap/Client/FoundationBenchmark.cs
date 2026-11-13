@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using Unity.Profiling;
+using Shooter.Presentation;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
@@ -16,7 +17,10 @@ namespace Shooter.Bootstrap
         [Serializable] private sealed class Metadata
         {
             public int schemaVersion = 1;
-            public string workloadId = "B01-minimal-v1", seed = "460072030", profile, gpuAdapter, cpu, graphicsApi;
+            public string workloadId, seed = "460072030", profile, gpuAdapter, cpu, graphicsApi;
+            public string routeHash, contentManifestHash, materialContentManifestFile;
+            public int materialCubes, renderInstances, sceneTriangles, materialCameraChecks;
+            public long texturePayloadBytes;
             public bool diagnostic;
             public int width, height, frames, ticks, warmupSeconds, captureSeconds;
             public string captureStartUtc, captureEndUtc;
@@ -47,6 +51,9 @@ namespace Shooter.Bootstrap
         private readonly FrameTimingLedger ledger = new FrameTimingLedger(262144);
         private ProfilerRecorder mainRecorder, renderRecorder, allocationRecorder;
         private FoundationEntry authority;
+        private MaterialBenchmarkView materialView;
+        private string workload;
+        private int materialCameraChecks;
         private string output;
         private int frameCount, tickCount, warmupSeconds, captureSeconds, preconditionSeconds;
         private uint firstTick, endTick;
@@ -64,8 +71,13 @@ namespace Shooter.Bootstrap
         public void Initialize(FoundationEntry entry)
         {
             authority = entry;
-            string workload = FoundationEntry.CommandLine("-shooterBenchmark", "");
-            if (workload != "B01-minimal-v1") throw new ArgumentException("Only B01-minimal-v1 exists at M0");
+            workload = FoundationEntry.CommandLine("-shooterBenchmark", "");
+            if (workload != "B01-minimal-v1" && workload != MaterialBenchmarkRecipe.Workload) throw new ArgumentException("Unsupported benchmark workload");
+            if (workload == MaterialBenchmarkRecipe.Workload)
+            {
+                materialView = UnityEngine.Object.FindFirstObjectByType<MaterialBenchmarkView>();
+                if (materialView == null) throw new InvalidOperationException("Real verified B01 materials adapter is required.");
+            }
             diagnostic = FoundationEntry.CommandLine("-shooterBenchmarkDiagnostic", "false") == "true";
             injectOverload = FoundationEntry.CommandLine("-shooterDiagnosticOverload", "false") == "true";
             injectAllocation = FoundationEntry.CommandLine("-shooterDiagnosticAllocate", "false") == "true";
@@ -77,6 +89,14 @@ namespace Shooter.Bootstrap
             ticks = new TickSample[captureSeconds * 60];
             output = Path.GetFullPath(FoundationEntry.CommandLine("-shooterBenchmarkOutput", ""));
             if (!Directory.Exists(output)) throw new ArgumentException("Benchmark output directory must already exist");
+            if (materialView != null)
+            {
+                string manifestPath = Path.Combine(output, "materials-manifest.json");
+                using (var stream = new FileStream(manifestPath, FileMode.CreateNew, FileAccess.Write, FileShare.Read))
+                {
+                    byte[] bytes = System.Text.Encoding.ASCII.GetBytes(materialView.ContentManifestJson); stream.Write(bytes, 0, bytes.Length);
+                }
+            }
             mainRecorder = Recorder(ProfilerCategory.Internal, "CPU Main Thread Frame Time");
             renderRecorder = Recorder(ProfilerCategory.Internal, "CPU Render Thread Frame Time");
             allocationRecorder = Recorder(ProfilerCategory.Memory, "GC Allocated In Frame");
@@ -88,6 +108,7 @@ namespace Shooter.Bootstrap
         { try { return ProfilerRecorder.StartNew(category, name, 1); } catch { return default; } }
         private void RecordTick(uint tick, double ms, long allocated)
         {
+            if (materialView != null) materialView.SetView(MaterialBenchmarkRecipe.ViewIndex(tick + 1));
             if (tick < firstTick || tick >= endTick) return;
             if (tickCount >= ticks.Length) throw new InvalidOperationException("Benchmark tick capacity exceeded");
             ticks[tickCount++] = new TickSample { Tick = tick, Ms = ms, Allocated = allocated };
@@ -98,8 +119,12 @@ namespace Shooter.Bootstrap
                 throw new InvalidOperationException("B01 reference configuration requires native 1280x720 Low/D3D11");
             ValidatePresentationConfiguration();
             var camera = UnityEngine.Object.FindFirstObjectByType<Camera>();
-            if (camera == null || Vector3.Distance(camera.transform.position, new Vector3(0, 1.65f, -6)) > .0001f || Quaternion.Angle(camera.transform.rotation, Quaternion.identity) > .0001f)
-                throw new InvalidOperationException("B01 camera recipe mismatch");
+            if (materialView == null)
+            {
+                if (camera == null || Vector3.Distance(camera.transform.position, new Vector3(0, 1.65f, -6)) > .0001f || Quaternion.Angle(camera.transform.rotation, Quaternion.identity) > .0001f)
+                    throw new InvalidOperationException("B01 camera recipe mismatch");
+            }
+            else materialView.ValidateView(MaterialBenchmarkRecipe.ViewIndex(authority.CompletedTicks));
             var bodies = UnityEngine.Object.FindObjectsByType<BoxCollider>(FindObjectsSortMode.None);
             if (bodies.Length != 2) throw new InvalidOperationException("B01 must contain exactly floor and box colliders");
             bool floor = false, box = false;
@@ -153,6 +178,13 @@ namespace Shooter.Bootstrap
                     return;
                 }
                 if (!validated) { ValidateWorkload(); return; }
+                if (materialView != null)
+                {
+                    if (Vector3.Distance(materialView.ViewCamera.transform.position, new Vector3(MaterialBenchmarkRecipe.CameraX(tick), 1.65f, -6)) > .0001f ||
+                        Quaternion.Angle(materialView.ViewCamera.transform.rotation, Quaternion.identity) > .0001f)
+                        throw new InvalidOperationException("B01 material camera deviated from fixed-tick route.");
+                    materialCameraChecks++;
+                }
                 if (tick >= endTick) { if (++drainFrames >= 64) Finish(); return; }
                 if (injectAllocation && tick >= firstTick) diagnosticAllocationRoot = new byte[4096];
             }
@@ -215,11 +247,18 @@ namespace Shooter.Bootstrap
             }
             using (var writer = new StreamWriter(Path.Combine(output, "ticks.csv")))
             {
-                writer.WriteLine("tick,simulationMs,managedTickBytes");
-                for (int i = 0; i < tickCount; i++) { var t = ticks[i]; writer.WriteLine(t.Tick + "," + N(t.Ms) + "," + t.Allocated); }
+                writer.WriteLine("tick,simulationMs,managedTickBytes" + (materialView == null ? "" : ",materialView"));
+                for (int i = 0; i < tickCount; i++) { var t = ticks[i]; writer.WriteLine(t.Tick + "," + N(t.Ms) + "," + t.Allocated + (materialView == null ? "" : "," + MaterialBenchmarkRecipe.ViewIndex(t.Tick + 1))); }
             }
             var camera = UnityEngine.Object.FindFirstObjectByType<Camera>();
-            var metadata = new Metadata { diagnostic = diagnostic, profile = QualitySettings.names[QualitySettings.GetQualityLevel()], width = Screen.width, height = Screen.height,
+            var metadata = new Metadata { workloadId = workload, diagnostic = diagnostic,
+                routeHash = materialView == null ? null : MaterialBenchmarkRecipe.RouteHash,
+                contentManifestHash = materialView == null ? null : materialView.ContentManifestHash,
+                materialContentManifestFile = materialView == null ? null : "materials-manifest.json",
+                materialCubes = materialView == null ? 0 : MaterialBenchmarkView.MaterialCubes,
+                renderInstances = materialView == null ? 2 : MaterialBenchmarkView.RenderInstances,
+                sceneTriangles = materialView == null ? 24 : MaterialBenchmarkView.Triangles,
+                texturePayloadBytes = materialView == null ? 0 : materialView.TextureBytes, materialCameraChecks = materialCameraChecks, profile = QualitySettings.names[QualitySettings.GetQualityLevel()], width = Screen.width, height = Screen.height,
                 cpu = SystemInfo.processorType, gpuAdapter = SystemInfo.graphicsDeviceName, graphicsApi = SystemInfo.graphicsDeviceType.ToString(), frames = frameCount, ticks = tickCount,
                 warmupSeconds = warmupSeconds, captureSeconds = captureSeconds, captureStartUtc = startUtc.ToString("o"), captureEndUtc = endUtc.ToString("o"),
                 cameraMeters = new[] { camera.transform.position.x, camera.transform.position.y, camera.transform.position.z },
