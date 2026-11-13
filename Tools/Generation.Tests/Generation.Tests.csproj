@@ -19,5 +19,6 @@
     <None Include="../../docs/feature-fixtures/*.json" Link="FeatureFixtures/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../../UnityProject/Assets/Shooter/Generation/FeatureRecipes/*.json" Link="FeatureRecipes/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../../docs/fixtures/*" Link="Fixtures/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Compile Include="../../UnityProject/Assets/Shooter/World/Navigation/**/*.cs" Link="WorldNavigation/%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>
