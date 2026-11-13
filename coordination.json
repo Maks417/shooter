@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "updatedDate": "2026-11-13",
-  "integrator": "Cursor M2 integrator (bc-2637951e)",
+  "integrator": "Cursor M2 integrator (bc-2637951e); Unity smoke follow-up bc-ff836dea",
   "branch": "main",
-  "baseCommit": "cc6ad93a512e65afc04be24e4ae961517e573b32",
+  "baseCommit": "59bd8c6b76ad6824d4369e8bca856cd431b226e4",
   "contractVersion": "C0-v1",
   "readyForParallelIntegration": true,
   "packages": [
@@ -638,8 +638,9 @@
         "T027 gameplay defaults"
       ],
       "contractVersion": "C0-v1",
-      "status": "IN PROGRESS: CombatHarnessSimulation composed; pure 21/21 + contracts 71/71; Unity/smoke/hardware Pending",
-      "leaseExpiry": null
+      "status": "IN PROGRESS: CombatHarnessSimulation composed; pure 21/21 + contracts 71/71; EditMode 10/10; PlayMode 6/6; client/server smoke 120 ticks PASS on 59bd8c6; V05/V06/V09 Unity scenarios + PendingHardware remain",
+      "leaseExpiry": null,
+      "unitySmokeEvidence": "Artifacts/m2-combat-harness/59bd8c6b76ad6824d4369e8bca856cd431b226e4/unity-smoke-20261113T193220046Z/validation.json"
     }
   ],
   "validationWave": {
@@ -838,13 +839,20 @@
     "fixtureVersion": "specification-v1.1",
     "seed": "460072030",
     "scope": "M2 combat harness C01-C04 / T011-T013 (+ T027 defaults); no M3+ world/nav",
-    "status": "IN_PROGRESS: C01-C04 pure implementation integrated; Unity/smoke/hardware gates open",
+    "status": "IN_PROGRESS: C01-C04 pure + CombatHarnessSimulation Unity EditMode/PlayMode/client-server smoke PASS; V05/V06/V09 broader Unity scenarios and PendingHardware block CLOSED",
     "workers": [
       "WP-05/motor",
       "WP-05/combat",
       "WP-05/pose",
       "WP-04/view-arms"
     ],
-    "evidence": "Artifacts/m2-combat-harness"
+    "evidence": "Artifacts/m2-combat-harness",
+    "unitySmokeCommit": "59bd8c6b76ad6824d4369e8bca856cd431b226e4",
+    "unitySmokeEvidence": "Artifacts/m2-combat-harness/59bd8c6b76ad6824d4369e8bca856cd431b226e4/unity-smoke-20261113T193220046Z/validation.json",
+    "remainingGates": [
+      "V05/V06/V09 Unity harness scenarios beyond pure tests",
+      "PendingHardware reference-player measurement",
+      "Owner sign-off / waiver if hardware unavailable"
+    ]
   }
 }

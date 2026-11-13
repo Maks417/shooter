@@ -1,6 +1,6 @@
 # M2 — Combat harness — validation and acceptance
 
-Status: not run. Use [global validation](../../validation.md) and [build lanes](../../build-ci.md); this file selects the checks required at this stage. Implement actual test/build entry points before reporting execution. Absence of hardware, credentials or dependencies means pending evidence, not PASS.
+Status: **partial**. Pure C01–C04 / simulation suites PASS; Unity EditMode 10/10, PlayMode 6/6, and client/server smoke with `CombatHarnessSimulation` PASS on `59bd8c6` (2026-11-13). Broader V05/V06/V09 Unity harness scenarios (cover/step overlays, two-weapon playable room) and reference hardware remain open — see [handoff](handoff.md). Use [global validation](../../validation.md) and [build lanes](../../build-ci.md). Absence of hardware means PendingHardware, not PASS.
 
 | Suite | Scenario | Required result |
 |---|---|---|
@@ -18,13 +18,13 @@ Status: not run. Use [global validation](../../validation.md) and [build lanes](
 
 ## Gate checklist
 
-- [ ] Entry prerequisites verified and implementation steps complete.
-- [ ] Required suites above pass with archived machine-readable results.
-- [ ] No prohibited visual sources; generated outputs have versioned provenance.
-- [ ] Contract/schema/generator changes reviewed and downstream fixtures synchronized.
-- [ ] Resource/failure/cancellation paths bounded and relevant budget evidence attached.
-- [ ] Shared docs updated with actual code references; milestone links verified.
-- [ ] Integrator reviews evidence and signs milestone status in handoff.
+- [x] Entry prerequisites verified and C01–C04 / T027 implementation steps complete (pure + composition).
+- [ ] Required suites above pass with archived machine-readable results — pure PASS; Unity foundation/smoke PASS; dedicated V05/V06/V09 Unity scenario harnesses still missing.
+- [x] No prohibited visual sources; generated outputs have versioned provenance (unchanged toolchain/provenance).
+- [x] Contract/schema/generator changes reviewed — C0-v1 frozen unchanged for M2.
+- [ ] Resource/failure/cancellation paths bounded and relevant budget evidence attached — no M2 reference-player budget run; PendingHardware.
+- [x] Shared docs updated with actual code references; milestone links verified.
+- [ ] Integrator reviews evidence and signs milestone status in handoff — **IN PROGRESS**, not CLOSED.
 
 Final criterion: Movement/combat tests pass; two weapons playable; living hit poses match visible body within declared tolerances; feedback is generated-only. Simulation tests show bounded allocations. Full eight-bot B03 performance gate belongs to M3/M4.
 
