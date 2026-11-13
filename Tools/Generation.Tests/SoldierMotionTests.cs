@@ -11,13 +11,12 @@ public sealed class SoldierMotionTests
     public SoldierMotionTests(ITestOutputHelper output) { this.output = output; }
     private static WeaponRecipe Rifle() => WeaponRecipe.Parse(File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "FeatureRecipes", "rifle.json")));
     private static double Distance(Float3 a, Float3 b) => Math.Sqrt((double)(a.X - b.X) * (a.X - b.X) + (double)(a.Y - b.Y) * (a.Y - b.Y) + (double)(a.Z - b.Z) * (a.Z - b.Z));
-    private static Float3 Sub(Float3 a, Float3 b) => new Float3(a.X - b.X, a.Y - b.Y, a.Z - b.Z);
-    private static double Dot(Float3 a, Float3 b) => (double)a.X * b.X + (double)a.Y * b.Y + (double)a.Z * b.Z;
     private sealed class Ground : ISoldierGround
     {
         private readonly int mode; public int Queries;
         public Ground(int mode = 0) { this.mode = mode; }
-        public float Height(float z) => mode == 1 ? z * (float)Math.Tan(Math.PI / 12) : mode == 2 && z >= 1 ? .2f : 0;
+        public float Height(float z) => mode == 1 ? z * (float)Math.Tan(Math.PI / 12) : mode == 3 ? -z * (float)Math.Tan(Math.PI / 12)
+            : mode == 2 && z >= 1 ? .2f : mode == 4 && z >= 1 ? -.2f : 0;
         public bool TrySample(float x, float z, out float height) { Queries++; height = Height(z); return true; }
     }
     private sealed class MissingGround : ISoldierGround
@@ -77,7 +76,7 @@ public sealed class SoldierMotionTests
             worst=Math.Max(worst,Math.Max(pose.LeftGripError,pose.RightGripError));
             Assert.InRange(pose.LeftGripError,0,.02f);Assert.InRange(pose.RightGripError,0,.02f);
         }
-        output.WriteLine("Supportedaimcone heldgrip worstpositionresidual="+worst+"m; wristweaponorientation residual remains explicit.");
+        output.WriteLine("Supported aim cone held grip worst position residual="+worst+"m; wrist weapon orientation residual remains explicit.");
     }
     [Fact]
     public void AnalyticReloadFollowsDocumentedEquipmentTaskBoundaries()
@@ -133,17 +132,50 @@ public sealed class SoldierMotionTests
         Assert.InRange(slide,0,.00001f);
     }
     [Fact]
-    public void BaselineWalkReachConflictIsExposedWithoutMovingRootOrChangingBoneLengths()
+    public void InitialUprightWalkBaselineReachConflictRemainsRecordedAsAnExplicitCalculation()
     {
-        var motion=new SoldierMotion(Rifle());var ground=new Ground();float maxError=0,maxSlide=0;
-        for(int i=0;i<180;i++)
+        double oldVertical=.96-.04-.08-.08, oldHalfContact=1.4*.62/2;
+        double oldRequired=Math.Sqrt(oldVertical*oldVertical+oldHalfContact*oldHalfContact);
+        double maximum=(.45+Math.Sqrt(.39*.39+.02*.02))*.98;
+        output.WriteLine("Version1 unmodified upright1.4m/.62duty lower bound reach residual="+(oldRequired-maximum));
+        Assert.True(oldRequired-maximum>.05); // Version2 posture/duty refinement is explicit; old failures remain evidence.
+    }
+    [Theory]
+    [InlineData(0)][InlineData(1)][InlineData(2)][InlineData(3)][InlineData(4)]
+    public void VersionTwoPlantGatePassesSixteenPhasesWalkRunAndBothStanceExtremes(int terrain)
+    {
+        var rifle=Rifle();float maxError=0,maxSlide=0;
+        foreach(float speed in new[]{3.5f,5.5f})foreach(float crouch in new[]{0f,1f})
+        for(int phase=0;phase<16;phase++)
         {
-            float z=i*3.5f/60;
-            var pose=motion.Evaluate(new SoldierMotionInput(new Float3(0,0,z),0,z,3.5f),ground);
-            maxError=Math.Max(maxError,pose.PlantTargetError);maxSlide=Math.Max(maxSlide,pose.PlantSlide);
+            var motion=new SoldierMotion(rifle);var ground=new Ground(terrain);
+            double initial=(speed>3.5f?2.2:1.4)*phase/16;
+            for(int tick=0;tick<600;tick++)
+            {
+                float z=tick*speed/60;var root=new Float3(0,ground.Height(z),z);
+                var pose=motion.Evaluate(new SoldierMotionInput(root,0,initial+z,speed,crouch),ground);
+                maxError=Math.Max(maxError,pose.PlantTargetError);maxSlide=Math.Max(maxSlide,pose.PlantSlide);
+                Assert.InRange(pose.PlantTargetError,0,.05f);Assert.InRange(pose.PlantSlide,0,.05f);
+                Assert.InRange(pose.PelvisCorrection,-.080001f,0);Assert.InRange(pose.GroundQueries,0,2);
+                Assert.Equal(root.Y,pose.WorldPositions[0].Y);
+            }
         }
-        output.WriteLine("Unmodified upright1.4m/.62duty walk: maxContactError="+maxError+" maxSlide="+maxSlide);
-        Assert.True(maxError>.02f); // A disclosed infeasible baseline is not silently counted as a V05 pass.
+        output.WriteLine("motion="+SoldierMotion.Version+" terrain="+terrain+" poses=38400 maxPlantTargetError="+maxError+" maxPlantSlide="+maxSlide+"; numerical contact gate only, not visual/hardware acceptance");
+    }
+    [Fact]
+    public void VersionTwoReloadTaskGatePassesNineAimBoundariesAndAllHundredOnePhases()
+    {
+        var motion=new SoldierMotion(Rifle());var ground=new Ground();float maxError=0;
+        foreach(float crouch in new[]{0f,1f})
+        foreach(float yaw in new[]{-SoldierMotion.MaxAimYawRadians,0,SoldierMotion.MaxAimYawRadians})
+        foreach(float pitch in new[]{-SoldierMotion.MaxAimPitchRadians,0,SoldierMotion.MaxAimPitchRadians})
+        for(int phase=0;phase<=100;phase++)
+        {
+            var pose=motion.Evaluate(new SoldierMotionInput(new Float3(0,0,0),0,0,0,crouch,yaw,pitch,phase/100f),ground);
+            maxError=Math.Max(maxError,Math.Max(pose.LeftGripError,pose.RightGripError));
+            Assert.InRange(pose.LeftGripError,0,.02f);Assert.InRange(pose.RightGripError,0,.02f);
+        }
+        output.WriteLine("motion="+SoldierMotion.Version+" reload poses=1818 full supported aim cone maximumTaskError="+maxError+"m; wrist orientation discrepancy reported separately");
     }
     [Fact]
     public void ResetAndDiscontinuousCorrectionReplanContactsWithinTwoQueries()
@@ -160,7 +192,10 @@ public sealed class SoldierMotionTests
         Assert.Throws<ArgumentOutOfRangeException>(()=>new SoldierMotionInput(new Float3(0,0,0),0,0,6));
         Assert.Throws<ArgumentOutOfRangeException>(()=>new SoldierMotionInput(new Float3(0,0,0),0,0,0,aimYawRadians:1));
         Assert.Throws<ArgumentOutOfRangeException>(()=>new SoldierMotionInput(new Float3(0,0,0),0,0,0,reloadPhase:-.5f));
-        Assert.Throws<InvalidOperationException>(()=>new SoldierMotion(Rifle()).Evaluate(new SoldierMotionInput(new Float3(0,0,0),0,0,0),new MissingGround()));
+        var motion=new SoldierMotion(Rifle());
+        Assert.Throws<InvalidOperationException>(()=>motion.Evaluate(new SoldierMotionInput(new Float3(0,0,0),0,0,0),new MissingGround()));
+        var recovered=motion.Evaluate(new SoldierMotionInput(new Float3(0,0,0),0,0,0),new Ground());
+        Assert.True(recovered.ContactsReset);Assert.Equal(2,recovered.GroundQueries);
     }
     [Fact]
     public void ReusedPoseEvaluationDoesNotAllocateAfterWarmup()
@@ -169,6 +204,13 @@ public sealed class SoldierMotionTests
         var pose=motion.Evaluate(input,ground);for(int i=0;i<100;i++)motion.Evaluate(input,ground);
         long before=GC.GetAllocatedBytesForCurrentThread();for(int i=0;i<1000;i++)motion.Evaluate(input,ground);long bytes=GC.GetAllocatedBytesForCurrentThread()-before;
         Assert.Same(pose,motion.Evaluate(input,ground));Assert.Equal(0,bytes);
+        before=GC.GetAllocatedBytesForCurrentThread();
+        for(int i=0;i<1000;i++)
+        {
+            float z=i*3.5f/60;
+            motion.Evaluate(new SoldierMotionInput(new Float3(0,0,z),0,z,3.5f),ground);
+        }
+        bytes=GC.GetAllocatedBytesForCurrentThread()-before;Assert.Equal(0,bytes);
     }
     private static Float3 Transform(Float3 origin,Quat q,Float3 p)
     {

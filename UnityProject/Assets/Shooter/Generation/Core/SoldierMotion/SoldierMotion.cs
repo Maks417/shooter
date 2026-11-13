@@ -70,14 +70,14 @@ namespace Shooter.Generation
     /// <summary>Initial semantic23 view-only gait/IK spike. No clips, physics mutation or frame-time accumulation.</summary>
     public sealed class SoldierMotion
     {
-        public const string Version = "soldier.motion.spike.v1";
+        public const string Version = "soldier.motion.spike.v2";
         public const float MaxAimYawRadians = (float)Math.PI / 4;
         public const float MaxAimPitchRadians = 25 * (float)Math.PI / 180;
         private const float Radians = (float)Math.PI / 180;
         private readonly SoldierPose pose = new SoldierPose();
         private readonly FootState left = new FootState(), right = new FootState();
         private readonly Float3 grip, support, magazine;
-        private bool initialized, running;
+        private bool initialized, running, wasMoving;
         private double previousDistance;
         private Float3 previousRoot;
         private static readonly Float3 Up = new Float3(0, 1, 0), Forward = new Float3(0, 0, 1);
@@ -102,18 +102,21 @@ namespace Shooter.Generation
         {
             if (ground == null) throw new ArgumentNullException(nameof(ground));
             bool run = input.SpeedMetersPerSecond > 3.5f;
+            bool moving = input.SpeedMetersPerSecond > .001f;
             double travel = input.DistanceMeters - previousDistance;
-            bool reset = !initialized || input.Reset || run != running || travel < 0 || travel > .5 || Sub(input.Root, previousRoot).LengthSquared > .25;
-            initialized = true; running = run; previousDistance = input.DistanceMeters; previousRoot = input.Root;
+            bool reset = !initialized || input.Reset || run != running || moving != wasMoving || travel < 0 || travel > .5 || Sub(input.Root, previousRoot).LengthSquared > .25;
+            initialized = true; running = run; wasMoving = moving; previousDistance = input.DistanceMeters; previousRoot = input.Root;
             pose.ContactsReset = reset; pose.GroundQueries = 0;
             Quat yaw = AxisAngle(Up, input.YawRadians);
-            float cycle = run ? 2.2f : 1.4f, duty = run ? .45f : .62f, clearance = run ? .12f : .08f;
+            float cycle = run ? 2.2f : 1.4f, duty = run ? .35f : .50f, clearance = run ? .12f : .08f;
             double phase = input.DistanceMeters / cycle; phase -= Math.Floor(phase);
-            bool moving = input.SpeedMetersPerSecond > .001f;
             var leftTarget = FootTarget(left, -.1f, phase, cycle, duty, clearance, moving, reset, input.Root, yaw, ground);
             double rightPhase = phase + .5; rightPhase -= Math.Floor(rightPhase);
             var rightTarget = FootTarget(right, .1f, rightPhase, cycle, duty, clearance, moving, reset, input.Root, yaw, ground);
-            float pelvisY = input.Root.Y + .96f - input.Crouch * .30f;
+            // Version2 uses a bent-knee locomotion posture. Full crouch remains the original.66m;
+            // locomotion lowering is interpolated, never stacked onto the crouch displacement.
+            float nominalHeight = moving ? (run ? .76f : .78f) : .96f;
+            float pelvisY = input.Root.Y + nominalHeight + (.66f - nominalHeight) * input.Crouch;
             float desired = Math.Min(RequiredPelvis(leftTarget, -.1f, input.Root, yaw), RequiredPelvis(rightTarget, .1f, input.Root, yaw));
             pose.PelvisCorrection = Clamp(desired - pelvisY, -.08f, 0);
             pelvisY += pose.PelvisCorrection;
@@ -138,7 +141,7 @@ namespace Shooter.Generation
             pose.RightHandTarget = Add(pose.WeaponPosition, Rotate(grip, pose.WeaponRotation));
             var heldSupport = Add(pose.WeaponPosition, Rotate(support, pose.WeaponRotation));
             var mag = Add(pose.WeaponPosition, Rotate(magazine, pose.WeaponRotation));
-            var belt = Add(p[1], Rotate(new Float3(-.15f, -.05f, .1f), yaw));
+            var belt = Add(p[1], Rotate(new Float3(-.15f, .075f, .1f), yaw));
             pose.LeftHandTarget = input.ReloadPhase < 0 ? heldSupport : ReloadTarget(input.ReloadPhase, heldSupport, mag, belt);
             var leftArm = Arm(8, 9, 10, pose.LeftHandTarget, r[4], -1);
             var rightArm = Arm(12, 13, 14, pose.RightHandTarget, r[4], 1);
