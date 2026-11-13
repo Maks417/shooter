@@ -3,6 +3,7 @@ import json
 import math
 import hashlib
 import material_benchmark
+import render_counters
 from pathlib import Path
 import tempfile
 import unittest
@@ -251,6 +252,35 @@ class CaptureAnalysisTests(unittest.TestCase):
         self.assertTrue(report["diagnostic"])
         self.assertEqual(report["workloadId"], "B01-materials-v1")
         self.assertEqual(report["gateStatus"], "PendingHardware")
+
+    def configure_render_counters(self):
+        self.meta.update(renderCounterMethod=render_counters.METHOD, renderCounters=[])
+        for column, (count, name, category, unit) in render_counters.COUNTERS.items():
+            self.meta["renderCounters"].append({"column": column, "requestedCategory": category, "name": name,
+                "category": "actual-native-category", "unit": unit, "dataType": "Int64", "flags": "Counter",
+                "identityValidated": True, "available": True, "capturedFrames": 2, "invalidFrames": 0, "unavailable": None})
+            for i, row in enumerate(self.frames):
+                row[column], row[count] = (1000 + i) if unit == "Bytes" else (12 + i), 1
+
+    def test_optional_material_render_samples_are_distinct_from_inventory(self):
+        self.configure_materials(); self.configure_render_counters()
+        report = self.report()
+        self.assertEqual(report["counters"]["drawCalls"], 13)
+        self.assertEqual(report["counters"]["renderedTriangles"], 13)
+        self.assertEqual(report["counters"]["sceneTriangles"], 96)
+        self.assertIsNone(report["counters"]["visibleTriangles"])
+        self.assertEqual(report["metrics"]["graphicsUsedMemoryBytesPeak"], 1001)
+        self.assertEqual(report["renderMetrics"]["drawCalls"]["samples"], 2)
+        self.assertEqual(report["gateStatus"], "ComputedPass")
+
+    def test_partial_optional_render_samples_stay_null_without_changing_original_timing_gate(self):
+        self.configure_materials(); self.configure_render_counters()
+        self.frames[0]["drawCalls"] = -1; self.frames[0]["drawCallsCount"] = 0
+        self.meta["renderCounters"][0].update(available=False, invalidFrames=1, unavailable="No fresh sample")
+        report = self.report()
+        self.assertIsNone(report["counters"]["drawCalls"])
+        self.assertEqual(report["gateStatus"], "ComputedPass")
+        self.assertTrue(any("drawCalls: No fresh sample" in value for value in report["unavailableMetrics"]))
 
 
 if __name__ == '__main__':

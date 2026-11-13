@@ -10,6 +10,7 @@ from hardware_evidence import apply_evidence
 from external_gpu import gpu_samples
 from render_budget import render_budget_samples
 import material_benchmark
+import render_counters
 
 
 def percentile(values, probability):
@@ -60,6 +61,7 @@ def analyze(capture_path, build_path, hardware_path, run_index, evidence_path=No
         raise ValueError("Tick capture is incomplete, duplicated or reordered")
     materials = meta["workloadId"] == "B01-materials-v1"
     content_hash = material_benchmark.validate(capture_path, meta, build, ticks) if materials else build["contentManifestHash"]
+    render_metrics, unavailable_render = render_counters.analyze(meta, rows) if materials else ({}, [])
     frame_values = [float(row["frameMs"]) for row in rows]
     frame_ms = {key: percentile(frame_values, p) for key, p in [("p50", .5), ("p95", .95), ("p99", .99), ("max", 1)]}
     allocations = [int(t["managedTickBytes"]) for t in ticks]
@@ -89,7 +91,8 @@ def analyze(capture_path, build_path, hardware_path, run_index, evidence_path=No
         return {"schemaVersion": 1, "scope": "Short diagnostic capture only; not B01 acceptance", "diagnostic": True,
                 "workloadId": meta["workloadId"], "contentManifestHash": content_hash,
                 "routeHash": material_benchmark.route_hash() if materials else None,
-                "frames": len(rows), "ticks": len(ticks), "frameMs": frame_ms, "gpuAdapter": meta["gpuAdapter"], "gateStatus": "PendingHardware"}
+                "frames": len(rows), "ticks": len(ticks), "frameMs": frame_ms, "gpuAdapter": meta["gpuAdapter"], "gateStatus": "PendingHardware",
+                **({"renderMetrics": render_metrics, "renderCounterScope": render_counters.SCOPE, "unavailableRenderMetrics": unavailable_render} if materials else {})}
     if (meta["warmupSeconds"], meta["captureSeconds"]) != (60, 180):
         raise ValueError("B01 acceptance durations were changed")
     unavailable = []
@@ -148,11 +151,16 @@ def analyze(capture_path, build_path, hardware_path, run_index, evidence_path=No
             "routeHash": material_benchmark.route_hash() if materials else hashlib.sha256(json.dumps(route, sort_keys=True, separators=(",", ":")).encode()).hexdigest(),
             "profile": "Low", "internalWidth": 1280, "internalHeight": 720, "warmupSeconds": 60, "captureSeconds": 180, "runIndex": run_index,
             "machine": machine, "metrics": {"frameMs": frame_ms, "mainMs": main, "renderMs": render, "gpuMs": gpu,
-            "privateCommitBytesPeak": private_peak, "rssBytesPeak": rss_peak, "managedBytesPerFrame": allocated_frame, "managedBytesPerTick": allocated_tick, "uploadMsP95": None},
+            "privateCommitBytesPeak": private_peak, "rssBytesPeak": rss_peak, "managedBytesPerFrame": allocated_frame, "managedBytesPerTick": allocated_tick, "uploadMsP95": None,
+            **({"graphicsUsedMemoryBytesPeak": render_metrics["graphicsUsedMemoryBytes"]["max"] if render_metrics["graphicsUsedMemoryBytes"] is not None else None} if materials else {})},
             "counters": dict({"actors": 0, "shotsAccepted": 0, "impactPeak": 0, "smokeProxies": 0, "chunkTransitions": 0},
-                             **({"materialCubes": 7, "renderInstances": 8, "sceneTriangles": 96, "texturePayloadBytes": meta["texturePayloadBytes"], "visibleTriangles": None, "drawCalls": None} if materials else {})),
+                             **({"materialCubes": 7, "renderInstances": 8, "sceneTriangles": 96, "texturePayloadBytes": meta["texturePayloadBytes"], "visibleTriangles": None,
+                                 "drawCalls": render_metrics["drawCalls"]["max"] if render_metrics["drawCalls"] is not None else None,
+                                 "renderedTriangles": render_metrics["renderedTriangles"]["max"] if render_metrics["renderedTriangles"] is not None else None} if materials else {})),
+            **({"renderMetrics": render_metrics, "renderCounterScope": render_counters.SCOPE} if materials else {}),
             "unavailableMetrics": unavailable + ["uploadMsP95: no runtime streaming in " + meta["workloadId"] + "; unavailable"] +
-                                  (["visibleTriangles/drawCalls/GPU resource bytes/shader variants: no validated collector; scene inventory is not per-frame GPU work"] if materials else []),
+                                  (unavailable_render + ["visibleTriangles: engine rendered triangle counts include passes; distinct visible triangles unavailable",
+                                    "shader variants: separate build-compiler log proof required; no runtime pipeline-variant count"] if materials else []),
             "gateStatus": "ComputedFail" if fail else "PendingHardware" if unavailable else "ComputedPass"}
 
 

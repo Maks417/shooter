@@ -2,7 +2,10 @@ using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Collections.Generic;
 using Unity.Profiling;
+using Unity.Profiling.LowLevel;
+using Unity.Profiling.LowLevel.Unsafe;
 using Shooter.Presentation;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
@@ -13,6 +16,7 @@ namespace Shooter.Bootstrap
     public sealed class FoundationBenchmark : MonoBehaviour
     {
         private struct FrameSample { public double Frame; public long Allocated, EndTimestamp, RecorderMain, RecorderRender, MainCount, RenderCount; public uint Tick; }
+        private struct RenderFrameSample { public long DrawCalls, RenderedTriangles, GraphicsMemory, DrawCallsCount, RenderedTrianglesCount, GraphicsMemoryCount; }
         private struct TickSample { public uint Tick; public double Ms; public long Allocated; }
         [Serializable] private sealed class Metadata
         {
@@ -35,6 +39,67 @@ namespace Shooter.Bootstrap
             public long allocationEndControlBytes, tickAllocationEndControlBytes, legacyBclControlBytes;
             public int configuredVSyncCount, targetFrameRate, presentationConfigurationChecks;
             public string allocationMethod, allocationDiagnostic;
+            public string renderCounterMethod;
+            public RenderCounterProof[] renderCounters;
+        }
+        [Serializable] private sealed class RenderCounterProof
+        {
+            public string column, requestedCategory, name, category, unit, dataType, flags, unavailable;
+            public bool identityValidated, available;
+            public int capturedFrames, invalidFrames;
+        }
+        private sealed class OptionalRenderCounter : IDisposable
+        {
+            private ProfilerRecorder recorder;
+            private readonly RenderCounterProof proof;
+            public OptionalRenderCounter(string column, string requestedCategory, ProfilerCategory category, string name, ProfilerMarkerDataUnit unit)
+            {
+                proof = new RenderCounterProof { column = column, requestedCategory = requestedCategory, name = name };
+                try
+                {
+                    var handles = new List<ProfilerRecorderHandle>(); ProfilerRecorderHandle.GetAvailable(handles);
+                    int matches = 0;
+                    foreach (var handle in handles)
+                    {
+                        var description = ProfilerRecorderHandle.GetDescription(handle);
+                        if (description.Name != name || description.Category.Name != category.Name) continue;
+                        matches++;
+                        proof.category = description.Category.Name; proof.unit = description.UnitType.ToString();
+                        proof.dataType = description.DataType.ToString(); proof.flags = description.Flags.ToString();
+                        proof.identityValidated = description.UnitType == unit && (description.Flags & MarkerFlags.Counter) != 0;
+                    }
+                    if (matches != 1 || !proof.identityValidated)
+                    { proof.identityValidated = false; proof.unavailable = "Exact counter/category/unit/Counter flag not uniquely available in this player"; return; }
+                    recorder = ProfilerRecorder.StartNew(category, name, 1);
+                    if (!recorder.Valid || !recorder.IsRunning || recorder.UnitType != unit)
+                    { proof.identityValidated = false; proof.unavailable = "Matching counter could not start with the expected unit"; }
+                }
+                catch (Exception error) { proof.identityValidated = false; proof.unavailable = error.GetType().Name + ": counter initialization failed"; }
+            }
+            public void Read(bool capture, out long value, out long count)
+            {
+                value = -1; count = 0;
+                try
+                {
+                    if (proof.identityValidated && recorder.Valid && recorder.IsRunning && recorder.Count == 1)
+                    { var sample = recorder.GetSample(0); value = sample.Value; count = sample.Count; }
+                    // Capacity1 alone retains stale samples. Clear and restart every Update, including warmup.
+                    if (recorder.Valid) { recorder.Reset(); recorder.Start(); }
+                }
+                catch (Exception error) { proof.identityValidated = false; proof.unavailable = error.GetType().Name + ": counter read/reset failed"; value = -1; count = 0; }
+                if (capture)
+                {
+                    proof.capturedFrames++;
+                    if (value <= 0 || count != 1) proof.invalidFrames++;
+                }
+            }
+            public RenderCounterProof Finish()
+            {
+                proof.available = proof.identityValidated && proof.capturedFrames > 0 && proof.invalidFrames == 0;
+                if (!proof.available && proof.unavailable == null) proof.unavailable = "Missing, zero/nonpositive or non-single fresh sample during capture";
+                return proof;
+            }
+            public void Dispose() { recorder.Dispose(); }
         }
         [Serializable] private sealed class FailureMetadata
         {
@@ -46,10 +111,12 @@ namespace Shooter.Bootstrap
             public double elapsedSeconds, debtSeconds;
         }
         private readonly FrameSample[] frames = new FrameSample[262144];
+        private RenderFrameSample[] renderFrames;
         private TickSample[] ticks;
         private readonly FrameTiming[] timings = new FrameTiming[32];
         private readonly FrameTimingLedger ledger = new FrameTimingLedger(262144);
         private ProfilerRecorder mainRecorder, renderRecorder, allocationRecorder;
+        private OptionalRenderCounter drawCalls, renderedTriangles, graphicsMemory;
         private FoundationEntry authority;
         private MaterialBenchmarkView materialView;
         private string workload;
@@ -100,6 +167,13 @@ namespace Shooter.Bootstrap
             mainRecorder = Recorder(ProfilerCategory.Internal, "CPU Main Thread Frame Time");
             renderRecorder = Recorder(ProfilerCategory.Internal, "CPU Render Thread Frame Time");
             allocationRecorder = Recorder(ProfilerCategory.Memory, "GC Allocated In Frame");
+            if (materialView != null)
+            {
+                renderFrames = new RenderFrameSample[frames.Length];
+                drawCalls = new OptionalRenderCounter("drawCalls", "Render", ProfilerCategory.Render, "Draw Calls Count", ProfilerMarkerDataUnit.Count);
+                renderedTriangles = new OptionalRenderCounter("renderedTriangles", "Render", ProfilerCategory.Render, "Triangles Count", ProfilerMarkerDataUnit.Count);
+                graphicsMemory = new OptionalRenderCounter("graphicsUsedMemoryBytes", "Memory", ProfilerCategory.Memory, "Gfx Used Memory", ProfilerMarkerDataUnit.Bytes);
+            }
             authority.StepCompleted += RecordTick;
             authority.SessionFailed += Abort;
             timingFrequency = FrameTimingManager.GetCpuTimerFrequency();
@@ -148,6 +222,14 @@ namespace Shooter.Bootstrap
             {
                 long now = Stopwatch.GetTimestamp(), allocated = AllocationMeter.TotalBytes;
                 DateTime utc = DateTime.UtcNow;
+                bool captureCounter = previousValid && previousTick >= firstTick && previousTick < endTick;
+                long drawValue = -1, triangleValue = -1, graphicsValue = -1, drawCount = 0, triangleCount = 0, graphicsCount = 0;
+                if (materialView != null)
+                {
+                    drawCalls.Read(captureCounter, out drawValue, out drawCount);
+                    renderedTriangles.Read(captureCounter, out triangleValue, out triangleCount);
+                    graphicsMemory.Read(captureCounter, out graphicsValue, out graphicsCount);
+                }
                 // Close the preceding frame, including its LateUpdate/engine/worker managed work.
                 if (previousValid && previousTick >= firstTick && previousTick < endTick)
                 {
@@ -156,10 +238,13 @@ namespace Shooter.Bootstrap
                     if (!captureStarted) { captureStarted = true; startUtc = previousUtc; }
                     var mainSample = mainRecorder.Valid && mainRecorder.Count == 1 ? mainRecorder.GetSample(0) : default;
                     var renderSample = renderRecorder.Valid && renderRecorder.Count == 1 ? renderRecorder.GetSample(0) : default;
-                    frames[frameCount++] = new FrameSample { Frame = (now - previousTimestamp) * 1000.0 / Stopwatch.Frequency,
+                    int slot = frameCount++;
+                    frames[slot] = new FrameSample { Frame = (now - previousTimestamp) * 1000.0 / Stopwatch.Frequency,
                         Allocated = allocated < 0 || previousAllocated < 0 ? -1 : allocated - previousAllocated,
                         EndTimestamp = now, Tick = previousTick, RecorderMain = mainSample.Value, RecorderRender = renderSample.Value,
                         MainCount = mainSample.Count, RenderCount = renderSample.Count };
+                    if (materialView != null) renderFrames[slot] = new RenderFrameSample { DrawCalls = drawValue, RenderedTriangles = triangleValue, GraphicsMemory = graphicsValue,
+                        DrawCallsCount = drawCount, RenderedTrianglesCount = triangleCount, GraphicsMemoryCount = graphicsCount };
                     ledger.Add(beforePreviousTimestamp, previousTimestamp);
                     endUtc = utc;
                 }
@@ -233,16 +318,19 @@ namespace Shooter.Bootstrap
             int mapped = 0, ambiguous = 0;
             using (var writer = new StreamWriter(Path.Combine(output, "frames.csv")))
             {
-                writer.WriteLine("tick,frameMs,mainMs,renderMs,gpuMs,managedFrameBytes,nativeFrameStartTimestamp,lowerTimestamp,upperTimestamp,endTimestamp,ambiguous,recorderMainNanoseconds,recorderRenderNanoseconds,recorderMainCount,recorderRenderCount,nativePresentCalledTimestamp,nativeFirstSubmitTimestamp");
+                writer.WriteLine("tick,frameMs,mainMs,renderMs,gpuMs,managedFrameBytes,nativeFrameStartTimestamp,lowerTimestamp,upperTimestamp,endTimestamp,ambiguous,recorderMainNanoseconds,recorderRenderNanoseconds,recorderMainCount,recorderRenderCount,nativePresentCalledTimestamp,nativeFirstSubmitTimestamp" +
+                    (materialView == null ? "" : ",drawCalls,renderedTriangles,graphicsUsedMemoryBytes,drawCallsCount,renderedTrianglesCount,graphicsUsedMemoryCount"));
                 for (int i = 0; i < frameCount; i++)
                 {
                     var f = frames[i]; var t = ledger[i];
+                    var r = materialView == null ? default : renderFrames[i];
                     if (t.NativeTimestamp != 0 && !t.Ambiguous) mapped++;
                     if (t.Ambiguous) ambiguous++;
                     writer.WriteLine(f.Tick + "," + N(f.Frame) + "," + N(t.Main) + "," + N(t.Render) + "," + N(t.Gpu) + "," + f.Allocated + "," + t.NativeTimestamp
                         + "," + t.LowerExclusive + "," + t.UpperInclusive + "," + f.EndTimestamp + "," + t.Ambiguous
                         + "," + f.RecorderMain + "," + f.RecorderRender + "," + f.MainCount + "," + f.RenderCount
-                        + "," + t.PresentTimestamp + "," + t.FirstSubmitTimestamp);
+                        + "," + t.PresentTimestamp + "," + t.FirstSubmitTimestamp + (materialView == null ? "" :
+                        "," + r.DrawCalls + "," + r.RenderedTriangles + "," + r.GraphicsMemory + "," + r.DrawCallsCount + "," + r.RenderedTrianglesCount + "," + r.GraphicsMemoryCount));
                 }
             }
             using (var writer = new StreamWriter(Path.Combine(output, "ticks.csv")))
@@ -274,6 +362,11 @@ namespace Shooter.Bootstrap
                 preconditionSeconds = preconditionSeconds, captureStartTick = firstTick,
                 stopwatchFrequency = Stopwatch.Frequency, nativeCpuFrequency = (long)timingFrequency,
                 timestampFrequencyMatches = timingFrequency == (ulong)Stopwatch.Frequency, mappedTimings = mapped, ambiguousTimings = ambiguous, drainFrames = drainFrames };
+            if (materialView != null)
+            {
+                metadata.renderCounterMethod = "ProfilerRecorderResetStartEachUpdate-v1";
+                metadata.renderCounters = new[] { drawCalls.Finish(), renderedTriangles.Finish(), graphicsMemory.Finish() };
+            }
             File.WriteAllText(Path.Combine(output, "capture.json"), JsonUtility.ToJson(metadata, true) + "\n");
             complete = true;
             GC.KeepAlive(diagnosticAllocationRoot);
@@ -292,6 +385,7 @@ namespace Shooter.Bootstrap
             recordersDisposed = true;
             mainAvailable = mainRecorder.Valid; renderAvailable = renderRecorder.Valid; allocationAvailable = allocationRecorder.Valid;
             mainRecorder.Dispose(); renderRecorder.Dispose(); allocationRecorder.Dispose();
+            drawCalls?.Dispose(); renderedTriangles?.Dispose(); graphicsMemory?.Dispose();
         }
     }
 }
