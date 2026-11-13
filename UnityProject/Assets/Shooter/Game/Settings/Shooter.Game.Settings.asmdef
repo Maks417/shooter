@@ -1,0 +1,16 @@
+{
+  "name": "Shooter.Game.Settings",
+  "rootNamespace": "Shooter.Game.Settings",
+  "references": [
+    "GUID:2f5e3b101d7540a7ba16be00b4ec5dbe"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": true
+}

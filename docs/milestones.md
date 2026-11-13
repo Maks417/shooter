@@ -2,7 +2,7 @@
 
 Milestones are dependency gates, not calendar promises. [Backlog](backlog.md) gives ordered tasks. No milestone is complete until implementation exists and attached evidence passes [validation](validation.md).
 
-Owner disposition on 2026-11-13: **all eight original milestones M0–M7 closed with explicit owner waivers** (ADR-017/025–028/030–032). Original automated FAIL/Pending results, P05 FAIL under ADR-024 and outstanding real player/hardware evidence are unchanged; see [M7 handoff](milestones/m7-hardening-stretch/handoff.md) and earlier linked packs. The new [playable-release plan](playable-release-plan.md) adds four planned/unassigned gates M8–M11. Eight historical closures out of twelve now-documented milestones does not mean eight technical acceptance passes. Future gates do not inherit the waivers.
+Owner disposition on 2026-11-13: **all eight original milestones M0–M7 closed with explicit owner waivers** (ADR-017/025–028/030–032). Original automated FAIL/Pending results, P05 FAIL under ADR-024 and outstanding real player/hardware evidence are unchanged; see [M7 handoff](milestones/m7-hardening-stretch/handoff.md) and earlier linked packs. The [playable-release plan](playable-release-plan.md) adds four gates M8–M11; **M8 is in progress** (Game-v1 freeze ADR-034; product vertical open). Eight historical closures out of twelve now-documented milestones does not mean eight technical acceptance passes. Future gates do not inherit the waivers.
 
 | Gate | Deliverable | Required exit evidence |
 |---|---|---|

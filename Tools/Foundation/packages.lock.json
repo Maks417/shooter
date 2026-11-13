@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "dependencies": {
+    ".NETStandard,Version=v2.1": {
+      "shooter.contracts": {
+        "type": "Project"
+      },
+      "shooter.game.contracts": {
+        "type": "Project",
+        "dependencies": {
+          "Shooter.Contracts": "[1.0.0, )"
+        }
+      }
+    }
+  }
+}

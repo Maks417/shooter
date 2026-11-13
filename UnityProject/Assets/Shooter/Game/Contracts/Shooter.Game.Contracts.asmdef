@@ -1,0 +1,16 @@
+{
+  "name": "Shooter.Game.Contracts",
+  "rootNamespace": "Shooter.Game.Contracts",
+  "references": [
+    "GUID:866ac9eb8b8b4a898facdc4644ba5881"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": true
+}

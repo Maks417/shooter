@@ -1,12 +1,12 @@
 # Start implementation here
 
-Planning update 2026-11-13. M0–M7 are administratively closed with their recorded owner waivers. Actual sources now include pure combat, compound/nav/AI, objective/HUD/audio, network and release tooling; default Bootstrap still composes the floor/box empty-actor diagnostic. The next product work is [M8–M11](playable-release-plan.md), planned/unassigned, to deliver a real offline team-match build. Specification/fixture checks do not prove player or hardware acceptance.
+Planning update 2026-11-13 (implementation). M0–M7 remain administratively closed with their recorded owner waivers. M8 is **in progress**: Game-v1 frozen (ADR-034), RUN00 provenance repaired, pure OfflineGameSession/TDM reducer landed, diagnostic client/server builds+smoke PASS. Default Bootstrap still composes the floor/box empty-actor diagnostic; product vertical (real map install, input/HUD path, OfflineGameSession as launch) remains open. Specification/fixture checks do not prove product or hardware acceptance.
 
 ## First assignment
 
-**Current next step:** assign [M8 runtime composition](milestones/m8-runtime-composition/index.md), T035–T039. Read [playable release review](playable-release-plan.md), [Game-v1 contract plan](game-session-contracts.md) and M8's complete pack before edits. This documentation assignment does not launch implementation agents or grant worker leases. Integrator freezes compiling Game-v1 and fixture hashes on main before parallel feature dispatch. Then M9 proves TDM, M10 integrates two maps/menu/settings, and M11 delivers the tested build. Original task/milestone IDs and evidence are preserved.
+**Current next step:** continue [M8 runtime composition](milestones/m8-runtime-composition/index.md) T037–T039 (real map runtime, client adapters, product vertical), then M9–M11. Game-v1 is frozen in `game-contract-lock.json`; do not invent parallel session contracts. Read [playable release review](playable-release-plan.md), [Game-v1 contracts](game-session-contracts.md) and the M8 handoff before edits.
 
-M0–M7 are the eight closed historical milestones (ADR-017/025–028/030–032); M8–M11 are the four planned new gates. C0-v1 is frozen in root `contract-lock.json`, SGAF/P02 format v1 in `content-format-lock.json` under ADR-018, and wire N1-v1 under ADR-029. Their compatibility and historical evidence remain binding. P05 FAIL under ADR-024 and waived Unity/hardware limits remain unchanged. T025 alone remains optional/deferred; T035–T051 are the new product plan and require continuing assignment. No worker independently edits shared contracts, Bootstrap, schemas, locks or project settings.
+M0–M7 are the eight closed historical milestones (ADR-017/025–028/030–032); M8–M11 are the four new gates (M8 started). C0-v1 remains frozen in root `contract-lock.json`, SGAF/P02 format v1 in `content-format-lock.json` under ADR-018, wire N1-v1 under ADR-029, Game-v1 under ADR-034. P05 FAIL under ADR-024 unchanged. T025 remains optional/deferred. No worker independently edits shared contracts, Bootstrap, schemas, locks or project settings.
 
 ## Newly resolved design details
 

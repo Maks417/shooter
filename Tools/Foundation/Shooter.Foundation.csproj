@@ -16,7 +16,14 @@
     <Compile Include="../../UnityProject/Assets/Shooter/Simulation/Pose/**/*.cs" />
     <Compile Include="../../UnityProject/Assets/Shooter/Simulation/AI/**/*.cs" />
     <Compile Include="../../UnityProject/Assets/Shooter/Simulation/Match/**/*.cs" />
+    <Compile Include="../../UnityProject/Assets/Shooter/Simulation/Session/**/*.cs" />
+    <Compile Include="../../UnityProject/Assets/Shooter/Simulation/TeamDeathmatch/**/*.cs" />
     <Compile Include="../../UnityProject/Assets/Shooter/Networking/**/*.cs" />
+    <Compile Include="../../UnityProject/Assets/Shooter/Content/Maps/**/*.cs" />
+    <Compile Include="../../UnityProject/Assets/Shooter/World/Runtime/**/*.cs" />
+    <Compile Include="../../UnityProject/Assets/Shooter/Game/Settings/**/*.cs" />
+    <Compile Include="../../UnityProject/Assets/Shooter/Game/Session/**/*.cs" />
     <ProjectReference Include="../Contracts/Shooter.Contracts.csproj" />
+    <ProjectReference Include="../Game.Contracts/Shooter.Game.Contracts.csproj" />
   </ItemGroup>
 </Project>
