@@ -18,5 +18,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="../../UnityProject/Assets/Shooter/Simulation/Motor/**/*.cs" Link="Motor/%(Filename)%(Extension)" />
+    <Compile Include="../../UnityProject/Assets/Shooter/Simulation/Combat/**/*.cs" Link="Combat/%(Filename)%(Extension)" />
+    <Compile Include="../../UnityProject/Assets/Shooter/Simulation/Pose/**/*.cs" Link="Pose/%(Filename)%(Extension)" />
+    <Compile Include="../../UnityProject/Assets/Shooter/Presentation/View/**/*.cs" Link="View/%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>
