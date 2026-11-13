@@ -1,6 +1,6 @@
 # M6 — Four-player network slice — implementation pack
 
-Status: planned; no implementation or game test is claimed. Baseline 2026-11-11. Canonical backlog tasks: T021–T022. Assigned packages: WP-08, WP-09 with simulation owner.
+Status: **CLOSED WITH USER WAIVER** (ADR-031); pure S01–S05 PASS; Unity/B04 hardware PendingHardware waived for M6 only. Baseline 2026-11-11; closed 2026-11-13. Canonical backlog tasks: T021–T022. Assigned packages: WP-08, WP-09 with simulation owner.
 
 ## Goal and entry gate
 

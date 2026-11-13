@@ -1,32 +1,36 @@
 # M6 — Four-player network slice — handoff and gate record
 
-Status: **PLANNED / NOT IMPLEMENTED**. Fill this record during implementation. Unfilled fields below intentionally request evidence; they are not missing design decisions. See [acceptance](validation-acceptance.md) and [entry](index.md).
+Status: **CLOSED WITH USER WAIVER** (ADR-031). Pure S01–S05 software PASS; Unity/30-minute B04 hardware PendingHardware waived for M6 only.
 
-| Field | Value to fill at execution |
+| Field | Value |
 |---|---|
-| Owner / integrator / reviewer | Unassigned |
-| Source commit and upstream tag | Not implemented |
-| Editor/URP/toolchain hash | Not recorded |
-| Contract/schema/generator/protocol versions | Use accepted upstream; record actual values |
-| Seed/content/world/workload manifests | Not generated |
-| Client/server build artifacts | Not built |
-| Test results and benchmark evidence | Not run |
-| Hardware/power/driver details | Not measured |
-| Accepted ADRs and known issues | None recorded for implementation |
-| Gate status / reviewer / date | Pending review |
+| Owner / integrator / reviewer | Cursor M5-M7 integrator (bc-05dea339) / Max (owner waiver) |
+| Source commit | Soft close on `main` after M6 merge; see coordination `m6MilestoneAcceptance` |
+| Contract/protocol | C0-v1 unchanged; wire N1-v1 |
+| Test evidence | Simulation **60/60** (M5 network + M6 lag/recovery/B04/abuse); `Artifacts/m6-network-slice/` |
+| Hardware | PendingHardware (editor absent); waived ADR-031 |
+| ADRs | ADR-031 close; depends ADR-029/030 |
 
 ## Step status
 
-- [ ] S01 Historical hit query: implementation, tests and review attached.
-- [ ] S02 Authoritative fire ordering: implementation, tests and review attached.
-- [ ] S03 Session recovery: implementation, tests and review attached.
-- [ ] S04 Four-peer B04: implementation, tests and review attached.
-- [ ] S05 Exposure review: implementation, tests and review attached.
+- [x] S01 Historical hit query (16-sample/200 ms buffer, eligibility, clamp window)
+- [x] S02 Authoritative fire ordering (dupe/dead/ammo/cadence; same-tick trade)
+- [x] S03 Session recovery (full snapshot, Ready barrier, spectator late join, fresh reconnect)
+- [x] S04 Four-peer B04 software soak (150 ms/3%; 30s proxy); 30-minute hardware Pending
+- [x] S05 Exposure review (LAN/private token; N4 public deferred)
 
-## Downstream handoff
+## Code paths
 
-Tag network release candidate with protocol/content/world hashes, private-session run instructions and B04 evidence. M7 validates clean release and regression coverage without changing workload.
+- `Networking/LagCompensation/` — HitHistoryBuffer, AuthoritativeFireValidator
+- `Networking/Recovery/` — LateJoinSession
+- `Networking/Abuse/` — AbuseLimits, B04SoakCounters
+- `Tools/Simulation.Tests/Network/{LagCompensation,Recovery,Abuse}/`
 
-## Sign-off rule
+## Owner closeout
 
-Use PASS only when every required check has evidence. Use BLOCKED/PENDING with exact owner/dependency when required evidence is absent. Stretch/deferred work has separate status and cannot be represented as completed by the mandatory gate. Record measured differences from upstream baseline, data migrations, rollback tag and artifacts to retain. A reviewer signs the gate; an implementation agent cannot certify hardware it has not tested.
+| Gate | Disposition |
+|---|---|
+| S01–S05 pure software | PASS |
+| 30-minute B04 PresentMon / separate hosts | PendingHardware (waived ADR-031) |
+| Unity builds/smoke | Pending (waived ADR-031) |
+| P05 soldier clearance | FAIL retained (ADR-024) |

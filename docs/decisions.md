@@ -286,3 +286,23 @@ Close M5 administratively as **CLOSED WITH USER WAIVER**. Six of eight milestone
 
 Historical failed/pending results are immutable. ADR-017/024/025/026/027/028 unchanged; P05 soldier visual remains FAIL. The [handoff](milestones/m5-network-foundation/handoff.md) records evidence. A local m5-network-foundation-owner-accepted marker identifies this qualified closure; it is not a passing benchmark tag. M6 may start after this close.
 
+## ADR-031 — Accepted: M6 owner waiver of remaining Unity-tooling and hardwarereference validation and milestone close
+
+Date 2026-11-13; accepted by Max as project owner, recorded by the Cursor M5-M7 integrator (bc-05dea339). After pure software gates for S01–S05 / T021–T022 PASS, Max’s standing direction (“do all next milestones”; no confirmations; hardware PendingHardware may be waived with an explicit ADR) authorizes administrative M6 closure without waiting for interactive sign-off. It does **not** authorize inventing PASS evidence, editing goldens/caches, upgrading Unity/packages, starting M7 before this close is recorded, reopening P05, or flipping prior PendingHardware reports to PASS.
+
+Tooling/hardware attempt retained (not acceptance):
+
+- Locked Unity 6000.3.28f1 editor binary remained absent; EditMode/PlayMode, IL2CPP four-peer builds, 30-minute B04 PresentMon soak could not run. Status **Pending / PendingHardware**. Evidence: Artifacts/m6-network-slice/owner-closure-20261113/hardware-attempt.json.
+- Pure B04 software soak (30s proxy at 150 ms/3% loss, four peers) PASS; full 30-minute separate-host B04 remains PendingHardware.
+
+Close M6 administratively as **CLOSED WITH USER WAIVER**. Seven of eight milestones are closed. Actual dispositions retained:
+
+- S01 historical hit query PASS (pure).
+- S02 authoritative fire ordering/trade PASS (pure).
+- S03 late join/resync/disconnect/fresh session PASS (pure).
+- S04 four-peer B04 software soak PASS; 30-minute hardware soak PendingHardware.
+- S05 exposure review PASS (LAN/private; N4 public deferred).
+- Unity/hardware remain **Unverified / waived for M6 closure only**.
+
+Historical failed/pending results immutable. ADR-017/024–030 unchanged; P05 FAIL retained. M7 may start after this close.
+

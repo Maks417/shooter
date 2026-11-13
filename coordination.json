@@ -3,7 +3,7 @@
   "updatedDate": "2026-11-13",
   "integrator": "Cursor M5-M7 integrator (bc-05dea339)",
   "branch": "main",
-  "baseCommit": "603edc2200b42cdd48d395aa80ed5da885b7d73e",
+  "baseCommit": "c1cee49319d99302f5caa988d0a0aecad06acac8",
   "contractVersion": "C0-v1",
   "readyForParallelIntegration": false,
   "packages": [
@@ -956,6 +956,48 @@
         "docs"
       ],
       "workspaceStatus": "Merged to main; worktrees retired"
+    },
+    {
+      "packageId": "WP-08/lag-comp",
+      "owner": "/root/m6_lag",
+      "branch": "main",
+      "paths": [
+        "UnityProject/Assets/Shooter/Networking/LagCompensation"
+      ],
+      "status": "Integrated; CLOSED_WITH_USER_WAIVER under ADR-031",
+      "contractVersion": "C0-v1"
+    },
+    {
+      "packageId": "WP-08/fire-order",
+      "owner": "/root/m6_fire",
+      "branch": "main",
+      "paths": [
+        "UnityProject/Assets/Shooter/Networking/LagCompensation",
+        "UnityProject/Assets/Shooter/Simulation/Combat"
+      ],
+      "status": "Integrated; CLOSED_WITH_USER_WAIVER under ADR-031",
+      "contractVersion": "C0-v1"
+    },
+    {
+      "packageId": "WP-08/recovery",
+      "owner": "/root/m6_recovery",
+      "branch": "main",
+      "paths": [
+        "UnityProject/Assets/Shooter/Networking/Recovery"
+      ],
+      "status": "Integrated; CLOSED_WITH_USER_WAIVER under ADR-031",
+      "contractVersion": "C0-v1"
+    },
+    {
+      "packageId": "WP-09/b04",
+      "owner": "integrator",
+      "branch": "main",
+      "paths": [
+        "Tools/Simulation.Tests/Network/B04",
+        "UnityProject/Assets/Shooter/Networking/Abuse"
+      ],
+      "status": "Integrated; CLOSED_WITH_USER_WAIVER under ADR-031",
+      "contractVersion": "C0-v1"
     }
   ],
   "validationWave": {
@@ -1015,28 +1057,22 @@
     "readyForParallelIntegration": false
   },
   "milestoneAcceptance": {
-    "milestone": "M5",
+    "milestone": "M6",
     "status": "CLOSED_WITH_USER_WAIVER",
-    "closedCount": 6,
+    "closedCount": 7,
     "totalCount": 8,
     "acceptedBy": "Max (project owner)",
     "date": "2026-11-13",
-    "decision": "docs/decisions.md#adr-030--accepted-m5-owner-waiver-of-remaining-unity-tooling-and-hardwarereference-validation-and-milestone-close",
+    "decision": "docs/decisions.md#adr-031--accepted-m6-owner-waiver-of-remaining-unity-tooling-and-hardwarereference-validation-and-milestone-close",
     "alsoDependsOn": [
-      "ADR-017",
-      "ADR-025",
-      "ADR-026",
-      "ADR-027",
-      "ADR-028",
-      "ADR-029"
+      "ADR-029",
+      "ADR-030"
     ],
-    "hardwareValidation": "Unverified; waived for M5 closure only.",
-    "softwareGates": "N01-N05 pure PASS; simulation 54/54; wire N1-v1",
-    "hostedCI": "User-deferred",
+    "hardwareValidation": "Unverified; waived for M6 closure only.",
+    "softwareGates": "S01-S05 pure PASS; simulation 60/60",
     "nextMilestoneAssigned": true,
-    "nextMilestone": "M6",
-    "evidenceDirectory": "Artifacts/m5-network-foundation/owner-closure-20261113",
-    "priorM4Acceptance": "m4MilestoneAcceptance"
+    "nextMilestone": "M7",
+    "evidenceDirectory": "Artifacts/m6-network-slice/owner-closure-20261113"
   },
   "m1Start": {
     "date": "2026-11-12",
@@ -1366,9 +1402,45 @@
     "softwareGates": "N01-N05 pure PASS; simulation 54/54; wire N1-v1",
     "hostedCI": "User-deferred",
     "nextMilestoneAssigned": true,
-    "nextMilestone": "M6",
+    "nextMilestone": "M7",
     "evidenceDirectory": "Artifacts/m5-network-foundation/owner-closure-20261113",
     "priorM4Acceptance": "m4MilestoneAcceptance",
     "softwareHead": "603edc2200b42cdd48d395aa80ed5da885b7d73e"
+  },
+  "m6Start": {
+    "date": "2026-11-13",
+    "assignment": "Owner Max: M5 closed; continue M6 then M7; multi-agent; no confirmations",
+    "baseCommit": "c1cee49319d99302f5caa988d0a0aecad06acac8",
+    "contractVersion": "C0-v1 unchanged",
+    "scope": "M6 S01-S05 / T021-T022; no M7 until closed",
+    "status": "CLOSED_WITH_USER_WAIVER (ADR-031)",
+    "workers": [
+      "WP-08/lag-comp",
+      "WP-08/fire-order",
+      "WP-08/recovery",
+      "WP-09/b04"
+    ],
+    "evidence": "Artifacts/m6-network-slice",
+    "decision": "docs/decisions.md#adr-031--accepted-m6-owner-waiver-of-remaining-unity-tooling-and-hardwarereference-validation-and-milestone-close",
+    "closureEvidence": "Artifacts/m6-network-slice/owner-closure-20261113",
+    "softwareGates": "S01-S05 pure PASS; simulation 60/60"
+  },
+  "m6MilestoneAcceptance": {
+    "milestone": "M6",
+    "status": "CLOSED_WITH_USER_WAIVER",
+    "closedCount": 7,
+    "totalCount": 8,
+    "acceptedBy": "Max (project owner)",
+    "date": "2026-11-13",
+    "decision": "docs/decisions.md#adr-031--accepted-m6-owner-waiver-of-remaining-unity-tooling-and-hardwarereference-validation-and-milestone-close",
+    "alsoDependsOn": [
+      "ADR-029",
+      "ADR-030"
+    ],
+    "hardwareValidation": "Unverified; waived for M6 closure only.",
+    "softwareGates": "S01-S05 pure PASS; simulation 60/60",
+    "nextMilestoneAssigned": true,
+    "nextMilestone": "M7",
+    "evidenceDirectory": "Artifacts/m6-network-slice/owner-closure-20261113"
   }
 }

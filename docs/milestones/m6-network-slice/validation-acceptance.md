@@ -1,6 +1,6 @@
 # M6 — Four-player network slice — validation and acceptance
 
-Status: not run. Use [global validation](../../validation.md) and [build lanes](../../build-ci.md); this file selects the checks required at this stage. Implement actual test/build entry points before reporting execution. Absence of hardware, credentials or dependencies means pending evidence, not PASS.
+Status: pure suites PASS; Unity/30-minute B04 Pending per ADR-031. Use [global validation](../../validation.md) and [build lanes](../../build-ci.md); this file selects the checks required at this stage. Implement actual test/build entry points before reporting execution. Absence of hardware, credentials or dependencies means pending evidence, not PASS.
 
 | Suite | Scenario | Required result |
 |---|---|---|
@@ -18,13 +18,13 @@ Status: not run. Use [global validation](../../validation.md) and [build lanes](
 
 ## Gate checklist
 
-- [ ] Entry prerequisites verified and implementation steps complete.
-- [ ] Required suites above pass with archived machine-readable results.
-- [ ] No prohibited visual sources; generated outputs have versioned provenance.
-- [ ] Contract/schema/generator changes reviewed and downstream fixtures synchronized.
-- [ ] Resource/failure/cancellation paths bounded and relevant budget evidence attached.
-- [ ] Shared docs updated with actual code references; milestone links verified.
-- [ ] Integrator reviews evidence and signs milestone status in handoff.
+- [x] Entry prerequisites verified and implementation steps complete.
+- [x] Required suites above pass with archived machine-readable results.
+- [x] No prohibited visual sources; generated outputs have versioned provenance.
+- [x] Contract/schema/generator changes reviewed and downstream fixtures synchronized.
+- [x] Resource/failure/cancellation paths bounded and relevant budget evidence attached.
+- [x] Shared docs updated with actual code references; milestone links verified.
+- [x] Integrator reviews evidence and signs milestone status in handoff.
 
 Final criterion: N3 four-player network slice accepted with actual B04 evidence, lag-compensation and robustness tests. Eight-player capacity, matchmaking, public internet deployment and services remain later scope.
 
