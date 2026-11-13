@@ -19,6 +19,8 @@ namespace Shooter.Presentation
         private readonly List<UnityEngine.Object> owned = new List<UnityEngine.Object>();
         private static readonly string[] families = { "metal", "polymer", "concrete", "plaster", "asphalt", "soil", "fabric" };
         private readonly List<GameObject> cubes = new List<GameObject>();
+        private GeneratedSky sky;
+        private GeneratedReflectionProbe reflectionProbe;
         public Camera ViewCamera { get; private set; }
         public string ContentManifestJson { get; private set; }
         public string ContentManifestHash { get; private set; }
@@ -87,14 +89,16 @@ namespace Shooter.Presentation
             ViewCamera.allowHDR = false; ViewCamera.allowMSAA = false; SetView(0);
             var sun = new GameObject("Foundation sun").AddComponent<Light>(); sun.transform.SetParent(transform, false);
             sun.type = LightType.Directional; sun.transform.rotation = Quaternion.Euler(45, 135, 0); sun.intensity = 1; sun.shadows = LightShadows.Hard;
-            RenderSettings.ambientMode = AmbientMode.Flat; RenderSettings.ambientLight = new Color(.22f, .24f, .27f, 1);
+            // Fog off: B01 framing keeps camera/content inventory semantics; sky still supplies Trilight ambient.
+            sky = GeneratedSky.Apply(transform, enableFog: false);
+            reflectionProbe = GeneratedReflectionProbe.Apply(transform);
             QualitySettings.vSyncCount = 0; Application.targetFrameRate = -1;
             if (Application.isPlaying) Screen.SetResolution(1280, 720, FullScreenMode.Windowed);
             string json = "{\"floor\":\"foundation-matte-10m-v1\",\"materialCubes\":7,\"materials\":[" + string.Join(",", identities) +
                 "],\"renderInstances\":8,\"schema\":\"shooter.b01-materials-content.v1\",\"textureFormat\":\"RGBA32\",\"toolchainHash\":\"" + toolchain + "\",\"triangles\":96,\"workloadId\":\"B01-materials-v1\"}";
             byte[] bytes = CanonicalJson.Encode(Encoding.ASCII.GetBytes(json)); ContentManifestJson = Encoding.ASCII.GetString(bytes);
             ContentManifestHash = ContentIdentity.Hash(bytes).ToString();
-            Debug.Log("SHOOTER_MATERIAL_BENCHMARK_READY content=" + ContentManifestHash + " textureBytes=" + TextureBytes);
+            Debug.Log("SHOOTER_MATERIAL_BENCHMARK_READY content=" + ContentManifestHash + " textureBytes=" + TextureBytes + " bakeRan=" + reflectionProbe.BakeRan);
         }
         public void SetView(int index)
         {
@@ -131,6 +135,11 @@ namespace Shooter.Presentation
         }
         private T Own<T>(T item) where T : UnityEngine.Object { owned.Add(item); return item; }
         private static void DestroyObject(UnityEngine.Object item) { if (Application.isPlaying) Destroy(item); else DestroyImmediate(item); }
-        private void OnDestroy() { foreach (var item in owned) if (item != null) DestroyObject(item); }
+        private void OnDestroy()
+        {
+            reflectionProbe?.Dispose(); reflectionProbe = null;
+            sky?.Dispose(); sky = null;
+            foreach (var item in owned) if (item != null) DestroyObject(item);
+        }
     }
 }

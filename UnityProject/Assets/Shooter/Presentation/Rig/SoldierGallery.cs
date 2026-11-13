@@ -19,6 +19,8 @@ namespace Shooter.Presentation
         private readonly List<Avatar> avatars = new List<Avatar>();
         private readonly List<int[]> skinMaps = new List<int[]>();
         private readonly Ground ground = new Ground();
+        private GeneratedSky sky;
+        private GeneratedReflectionProbe reflectionProbe;
         private float originTime;
         private Transform floorRoot;
         private GameObject stepsRoot;
@@ -125,7 +127,9 @@ namespace Shooter.Presentation
             ViewCamera.clearFlags = CameraClearFlags.SolidColor; ViewCamera.backgroundColor = new Color(.14f,.18f,.23f); ViewCamera.allowHDR = false;
             var sun = new GameObject("Soldier fixed sun").AddComponent<Light>(); sun.transform.SetParent(transform, false);
             sun.type = LightType.Directional; sun.transform.rotation = Quaternion.Euler(45,135,0); sun.intensity = 1; sun.shadows = LightShadows.Hard;
-            RenderSettings.ambientMode = AmbientMode.Flat; RenderSettings.ambientLight = new Color(.25f,.28f,.33f);
+            sky = GeneratedSky.Apply(transform);
+            reflectionProbe = GeneratedReflectionProbe.Apply(transform);
+            if (RenderSettings.skybox != null) ViewCamera.clearFlags = CameraClearFlags.Skybox;
             var floor = new GameObject("Numeric ground"); floor.transform.SetParent(transform, false);
             floor.AddComponent<MeshFilter>().sharedMesh = Own(FoundationView.CreateUnitBox()); floor.AddComponent<MeshRenderer>().sharedMaterial = palette[1];
             floor.transform.localPosition = new Vector3(0,-.07f,0); floor.transform.localScale = new Vector3(100,.1f,100);
@@ -140,7 +144,7 @@ namespace Shooter.Presentation
             }
             originTime = Time.time; PoseAt(0,"stand",true); Focus("three-quarter");
             if (Application.isPlaying) Screen.SetResolution(1280,720,FullScreenMode.Windowed);
-            Debug.Log("SHOOTER_SOLDIER_GALLERY_READY rigs=" + count + " joints=23 lods=3");
+            Debug.Log("SHOOTER_SOLDIER_GALLERY_READY rigs=" + count + " joints=23 lods=3 bakeRan=" + reflectionProbe.BakeRan);
         }
         private void Update() { if (Animate) { PoseAt(Time.time - originTime, Scenario); Focus("three-quarter"); } }
         public void SetLod(int lod)
@@ -258,6 +262,11 @@ namespace Shooter.Presentation
         private static Quaternion Q(Quat q) => new Quaternion(q.X,q.Y,q.Z,q.W);
         private T Own<T>(T value) where T : UnityEngine.Object { owned.Add(value); return value; }
         private static void DestroyObject(UnityEngine.Object value) { if (Application.isPlaying) Destroy(value); else DestroyImmediate(value); }
-        private void OnDestroy() { foreach (var value in owned) if (value != null) DestroyObject(value); }
+        private void OnDestroy()
+        {
+            reflectionProbe?.Dispose(); reflectionProbe = null;
+            sky?.Dispose(); sky = null;
+            foreach (var value in owned) if (value != null) DestroyObject(value);
+        }
     }
 }

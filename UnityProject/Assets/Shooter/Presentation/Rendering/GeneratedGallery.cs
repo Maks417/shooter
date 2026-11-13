@@ -16,6 +16,8 @@ namespace Shooter.Presentation
     {
         private readonly List<UnityEngine.Object> owned = new List<UnityEngine.Object>();
         private readonly List<GameObject> weaponRoots = new List<GameObject>();
+        private GeneratedSky sky;
+        private GeneratedReflectionProbe reflectionProbe;
         public Camera ViewCamera { get; private set; }
         public long TextureBytes { get; private set; }
         public long MeshBytes { get; private set; }
@@ -101,10 +103,12 @@ namespace Shooter.Presentation
             }
             var sun = new GameObject("Fixed procedural daylight").AddComponent<Light>(); sun.transform.SetParent(transform, false);
             sun.type = LightType.Directional; sun.transform.rotation = Quaternion.Euler(45, 135, 0); sun.intensity = 1; sun.shadows = LightShadows.Hard;
-            RenderSettings.ambientMode = AmbientMode.Flat; RenderSettings.ambientLight = new Color(.25f, .28f, .33f);
+            sky = GeneratedSky.Apply(transform);
+            reflectionProbe = GeneratedReflectionProbe.Apply(transform);
+            if (RenderSettings.skybox != null) ViewCamera.clearFlags = CameraClearFlags.Skybox;
             QualitySettings.vSyncCount = 0; Application.targetFrameRate = -1;
             if (Application.isPlaying) Screen.SetResolution(1280, 720, FullScreenMode.Windowed);
-            Debug.Log("SHOOTER_CONTENT_GALLERY_READY textures=" + TextureBytes + " meshBytes=" + MeshBytes + " trianglesAllLods=" + Triangles + " textureFormat=RGBA32");
+            Debug.Log("SHOOTER_CONTENT_GALLERY_READY textures=" + TextureBytes + " meshBytes=" + MeshBytes + " trianglesAllLods=" + Triangles + " textureFormat=RGBA32 bakeRan=" + reflectionProbe.BakeRan);
         }
         public void FocusWeapon(int index, int lod, string angle)
         {
@@ -181,6 +185,11 @@ namespace Shooter.Presentation
         }
         private T Own<T>(T value) where T : UnityEngine.Object { owned.Add(value); return value; }
         private static void DestroyObject(UnityEngine.Object value) { if (Application.isPlaying) Destroy(value); else DestroyImmediate(value); }
-        private void OnDestroy() { foreach (var value in owned) if (value != null) DestroyObject(value); owned.Clear(); }
+        private void OnDestroy()
+        {
+            reflectionProbe?.Dispose(); reflectionProbe = null;
+            sky?.Dispose(); sky = null;
+            foreach (var value in owned) if (value != null) DestroyObject(value); owned.Clear();
+        }
     }
 }
