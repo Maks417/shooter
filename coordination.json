@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "updatedDate": "2026-11-13",
-  "integrator": "Codex (M1 integrator)",
+  "integrator": "Codex (M1 integrator; closeout)",
   "branch": "main",
   "baseCommit": "8f64e54aca2640ad23e735772d652b03b7ee1cae",
   "contractVersion": "C0-v1",
@@ -35,7 +35,7 @@
       ],
       "dependencies": [],
       "contractVersion": "C0-v1",
-      "status": "M0 closed with explicit owner hardware-validation waiver (ADR-017), 1/8 milestones closed. C0-v1 unchanged; clean-entry client/server builds and smoke, 62 pure tests, 11 Unity tests, 64 Python tooling tests, allocation controls and 3 shutdown checks pass. Contract/build readiness enabled; M1 unassigned.",
+      "status": "M0+M1 closed with owner hardware waivers (ADR-017, ADR-025), 2/8 milestones closed. C0-v1 unchanged. M2 unassigned.",
       "leaseExpiry": null
     },
     {
@@ -551,25 +551,33 @@
     "readyForParallelIntegration": false
   },
   "milestoneAcceptance": {
-    "milestone": "M0",
+    "milestone": "M1",
     "status": "CLOSED_WITH_USER_WAIVER",
-    "closedCount": 1,
+    "closedCount": 2,
     "totalCount": 8,
     "acceptedBy": "Max (project owner)",
-    "date": "2026-11-12",
-    "decision": "docs/decisions.md#adr-017--accepted-m0-owner-waiver-of-remaining-hardware-validation",
-    "hardwareValidation": "Unverified; waived for M0 closure only. Automated failed/pending reports unchanged.",
-    "hostedCI": "User-deferred",
-    "nextMilestoneAssigned": true,
-    "runtimeBuildSourceCommit": "19118a029d45ff5a930d00525565465cf6740c18",
-    "collectionSourceCommit": "40de8f9405f1fa8414a338ccfcca8a7f643466bb",
-    "evidenceDirectory": "Artifacts/m0-foundation/40de8f9405f1fa8414a338ccfcca8a7f643466bb/owner-acceptance-20261112",
-    "unverifiedItems": [
-      "M0-RT-001",
-      "M0-THERM-001",
-      "Preconditioning hitch causes"
+    "date": "2026-11-13",
+    "decision": "docs/decisions.md#adr-025--accepted-m1-owner-waiver-of-remaining-hardwareresource-validation-and-milestone-close",
+    "alsoDependsOn": [
+      "ADR-024"
     ],
-    "supersedesHistoricalDisposition": true
+    "hardwareValidation": "Unverified; waived for M1 closure only. Automated PendingHardware reports unchanged.",
+    "soldierVisual": "FAIL / not accepted under ADR-024",
+    "p03SilhouetteAds": "PASS_WITH_LIMITS",
+    "p03LodTransition": "PASS (numeric; Unity transition captures Pending/unavailable)",
+    "hostedCI": "User-deferred",
+    "nextMilestoneAssigned": false,
+    "evidenceDirectory": "Artifacts/m1-procedural-feasibility/owner-closure-20261113",
+    "unverifiedItems": [
+      "B01-materials thermal/HWiNFO",
+      "B01 channelMode/draw/triangle/GPU-memory/variant counters",
+      "Unity LOD transition-frame captures"
+    ],
+    "failRetained": [
+      "P05 soldier visual/clearance"
+    ],
+    "supersedesHistoricalDisposition": true,
+    "priorM0Acceptance": "m0MilestoneAcceptance"
   },
   "m1Start": {
     "date": "2026-11-12",
@@ -626,7 +634,7 @@
   "m1Continuation": {
     "assignment": "User renewed M1 implementation with multiple agents",
     "baseCommit": "8f64e54aca2640ad23e735772d652b03b7ee1cae",
-    "status": "267 pure tests and Unity skinning/LOD pass; P05 iteration2 and ADR-023 third candidate both FAIL visual/clearance; ADR-024 recorded (owner \"do all\"): stop further clearance search, retain loft1.0.2/motion.spike.v3 as non-accepted evidence; remaining M1 polish may continue without soldier PASS. Exact material workload and compression measurements implemented; hardware acceptance remains open.",
+    "status": "M1 closed under ADR-025; P05 FAIL retained under ADR-024; B01 hardware Unverified/Waived for M1",
     "contractVersion": "C0-v1 unchanged",
     "formatVersion": 1,
     "scope": "P03 LOD, P04 material workload/resource evidence, P05 bounded soldier spike (visual/clearance scope-stopped under ADR-024); no M2 combat",
@@ -640,16 +648,38 @@
   "m1PostClearanceWave": {
     "date": "2026-11-13",
     "baseCommit": "72c1d78",
-    "status": "Sky/probe wired; LOD harness integrated; silhouette packaging integrated PendingReview; B01 three-run FAIL (tick overload); P05 scope-stopped ADR-024",
+    "status": "M1 CLOSED WITH USER WAIVER (ADR-025): silhouette PASS_WITH_LIMITS; LOD numeric PASS; B01 PendingHardware waived for M1; P05 FAIL ADR-024",
     "silhouetteEvidence": "Artifacts/m1-procedural-feasibility/72c1d78fe9a397b66adb2acba6ceab8b5323bfa4/weapon-silhouette-20261113T170200667Z",
     "b01SeriesSummary": "Artifacts/m1-continuation/b01-materials-series-summary.json",
     "workers": {
       "sky_probe": "integrated",
-      "lod_transition": "integrated",
-      "silhouette_review": "integrated PendingReview",
-      "materials_series": "three-run PendingHardware recorded",
+      "lod_transition": "formal PASS (numeric)",
+      "silhouette_review": "formal PASS_WITH_LIMITS recorded",
+      "materials_series": "PendingHardware retained; waived for M1 under ADR-025",
       "p05_scope_docs": "ADR-024 on main"
     },
-    "b01SeriesDisposition": "PendingHardware"
+    "b01SeriesDisposition": "PendingHardware",
+    "closureEvidence": "Artifacts/m1-procedural-feasibility/owner-closure-20261113"
+  },
+  "m0MilestoneAcceptance": {
+    "milestone": "M0",
+    "status": "CLOSED_WITH_USER_WAIVER",
+    "closedCount": 1,
+    "totalCount": 8,
+    "acceptedBy": "Max (project owner)",
+    "date": "2026-11-12",
+    "decision": "docs/decisions.md#adr-017--accepted-m0-owner-waiver-of-remaining-hardware-validation",
+    "hardwareValidation": "Unverified; waived for M0 closure only. Automated failed/pending reports unchanged.",
+    "hostedCI": "User-deferred",
+    "nextMilestoneAssigned": true,
+    "runtimeBuildSourceCommit": "19118a029d45ff5a930d00525565465cf6740c18",
+    "collectionSourceCommit": "40de8f9405f1fa8414a338ccfcca8a7f643466bb",
+    "evidenceDirectory": "Artifacts/m0-foundation/40de8f9405f1fa8414a338ccfcca8a7f643466bb/owner-acceptance-20261112",
+    "unverifiedItems": [
+      "M0-RT-001",
+      "M0-THERM-001",
+      "Preconditioning hitch causes"
+    ],
+    "supersedesHistoricalDisposition": true
   }
 }

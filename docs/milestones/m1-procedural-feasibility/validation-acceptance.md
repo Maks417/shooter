@@ -1,6 +1,6 @@
 # M1 — Procedural feasibility — validation and acceptance
 
-Status: The continuation has267 integrated pure tests, actual cache-backed Unity skinning and camera-driven LOD checks, full twelve-request cold/warm/forced content compilation, compression measurements and a real B01-materials release diagnostic. P05 soldier visual/clearance gate is FAIL and scope-stopped under ADR-024 after iteration2 arm/torso FAIL and ADR-023 third-candidate FAIL (~2.18mm forearm/strap; eye/sight unresolved); no fourth clearance iteration. Numeric grip/contact/1000-pose/eight-rig results remain spike evidence only. Full resource and three-run reference acceptance below remain open; remaining M1 polish may continue without pretending soldier PASS. See [handoff](handoff.md) for actual report directories and limits. Use [global validation](../../validation.md) and [build lanes](../../build-ci.md); this file selects the checks required at this stage. Implement actual test/build entry points before reporting execution. Absence of hardware, credentials or dependencies means pending evidence, not PASS.
+Status: **CLOSED WITH USER WAIVER**, 2026-11-13. Formal P03 silhouette/ADS is PASS-with-limits; LOD transition formal acceptance is PASS (numeric); P04 B01 hardware remains PendingHardware and is Unverified/Waived for M1 under ADR-025; P05 soldier visual/clearance remains FAIL / not accepted under ADR-024. Automated PendingHardware/FAIL reports are unchanged. See [handoff](handoff.md) for evidence paths and [ADR-025](../../decisions.md#adr-025--accepted-m1-owner-waiver-of-remaining-hardwareresource-validation-and-milestone-close). Use [global validation](../../validation.md) and [build lanes](../../build-ci.md); this file selects the checks required at this stage. Absence of hardware, credentials or dependencies means pending evidence, not PASS — waived for M1 closure only where ADR-025 applies.
 
 | Suite | Scenario | Required result |
 |---|---|---|
@@ -18,19 +18,19 @@ Status: The continuation has267 integrated pure tests, actual cache-backed Unity
 
 ## Gate checklist
 
-- [ ] Entry prerequisites verified and implementation steps complete.
-- [ ] Required suites above pass with archived machine-readable results.
-- [ ] No prohibited visual sources; generated outputs have versioned provenance.
-- [ ] Contract/schema/generator changes reviewed and downstream fixtures synchronized.
-- [ ] Resource/failure/cancellation paths bounded and relevant budget evidence attached.
-- [ ] Shared docs updated with actual code references; milestone links verified.
-- [ ] Integrator reviews evidence and signs milestone status in handoff.
+- [x] Entry prerequisites verified and implementation steps complete.
+- [x] Required suites above pass with archived machine-readable results (P05 visual FAIL retained; numeric spike evidence only).
+- [x] No prohibited visual sources; generated outputs have versioned provenance.
+- [x] Contract/schema/generator changes reviewed and downstream fixtures synchronized.
+- [x] Resource/failure/cancellation paths bounded; B01 hardware counters remain PendingHardware and waived for M1 under ADR-025.
+- [x] Shared docs updated with actual code references; milestone links verified.
+- [x] Integrator reviews evidence and signs milestone status in handoff (owner-directed close; ADR-025).
 
-Final criterion: Compiler/cache v1 and generation tests pass. Rifle, pistol and one helmeted soldier regenerate from numeric source. Soldier visual and performance spike passes or explicit scope revision is approved before expansion — ADR-024 records the visual/clearance scope stop (FAIL, not PASS). Cold/warm slice compile allocations/times are recorded; full-map time gate remains for later content.
+Final criterion: Compiler/cache v1 and generation tests pass. Rifle, pistol and one helmeted soldier regenerate from numeric source. Soldier visual spike is FAIL / not accepted under ADR-024 (scope stop; not PASS). Cold/warm slice compile allocations/times are recorded; full-map time gate remains for later content. M1 closed with user waiver under ADR-025.
 
 ## Evidence location
 
-Store run artifacts under repository `Artifacts/m1-procedural-feasibility/<source-commit>/<run-id>/` (proposed path). Include test XML, JSON reports, build/content manifests, toolchain lock, raw timing/memory logs and visual captures when relevant. [Handoff](handoff.md) links actual artifacts and records reviewer/date. Do not create fake passing reports from this checklist.
+Store run artifacts under repository `Artifacts/m1-procedural-feasibility/<source-commit>/<run-id>/` (proposed path). Include test XML, JSON reports, build/content manifests, toolchain lock, raw timing/memory logs and visual captures when relevant. Owner-closure package: `Artifacts/m1-procedural-feasibility/owner-closure-20261113/`. [Handoff](handoff.md) links actual artifacts and records reviewer/date. Do not create fake passing reports from this checklist.
 
 
 ## Revision 1.1 implementation refinements

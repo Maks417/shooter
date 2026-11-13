@@ -1,6 +1,6 @@
 # M1 - Procedural feasibility - handoff and gate record
 
-Status: **IN PROGRESS**, updated 2026-11-13. The owner requested M1 implementation with multiple agents. P01/P02 foundations and P03/P04 generator/URP gallery code are implemented and tested; M1 is not closed. The continuation adds automatic weapon LOD selection, a separate material benchmark, platform compression measurements and the soldier/rig spike. P05 iteration2 FAIL (arm/torso); ADR-023 third candidate soldier.loft1.0.2/motion.spike.v3 also FAIL (~2.18mm forearm/strap; eye/sight unresolved). ADR-024 records the scope stop: no fourth clearance iteration; soldier visual acceptance remains FAIL. Formal P03 visual/transition and P04/P05 resource/performance acceptance remain open. M0's explicit owner waiver under ADR-017 is retained and does not waive M1 acceptance. See [acceptance](validation-acceptance.md) and [entry](index.md).
+Status: **CLOSED WITH USER WAIVER**, 2026-11-13. Max directed close without further confirmations (“do everything left to close M1; imitate human review”). [ADR-025](../../decisions.md#adr-025--accepted-m1-owner-waiver-of-remaining-hardwareresource-validation-and-milestone-close) records the administrative close. **Two of eight milestones are closed.** P01/P02 PASS; P03 silhouette/ADS **PASS-with-limits**; P03 LOD transition **PASS** (numeric); P04 generation PASS with B01 hardware **Unverified/Waived for M1**; P05 soldier visual **FAIL / not accepted** under [ADR-024](../../decisions.md#adr-024--accepted-p05-soldier-visual-scope-stop-after-exhausted-clearance-iterations). Automated PendingHardware/FAIL reports are unchanged. No AAA realism or reference-performance PASS is claimed. See [acceptance](validation-acceptance.md), closure evidence under `Artifacts/m1-procedural-feasibility/owner-closure-20261113/`, and [entry](index.md).
 
 ## Source, ownership and versions
 
@@ -47,15 +47,15 @@ Offline restores use the existing pinned dependency cache; NuGet advisory lookup
 
 ## Remaining step status and next assignment
 
-- P01/T005: production seed/encoding/identity foundations implemented; exact vectors and failure tests pass. Full topology reproduction criterion remains pending P03.
-- P02/T006: compiler/loader skeleton implemented. Numeric diagnostic cold/warm/force/dry-run, DAG/cache/error/concurrency/cancellation and lease tests pass. Production codec/manifest/recipe v1 freeze is recorded under ADR-018. Full-slice content and resource budgets remain pending.
-- P03/T007,T009: initial primitive/weapon/collision/socket generation implemented, with corrected actual captures and clean-source tests. LOD hysteresis and silhouette packaging harness exist; formal human silhouette/ADS/transition acceptance remains PendingReview.
-- P04/T008,T031: seven CPU material families, cheap URP surface/shadow path and fixed sun/ambient diagnostic implemented. Compression comparison, exact B01-materials workload integration/measurement, actual variant/resource evidence and sky/probe polish remain open; gallery is not the benchmark.
-- P05/T010,T028: spike implemented through loft1.0.2/motion.spike.v3; iteration2 and ADR-023 third candidate FAIL visual/clearance; ADR-024 scope-stops further search (FAIL / not accepted). Numeric grip/contact/1000-pose/eight-rig remain spike evidence only.
+- P01/T005: production seed/encoding/identity foundations implemented; exact vectors and failure tests pass. Topology reproduction covered by later P03 generators.
+- P02/T006: compiler/loader skeleton implemented. Numeric diagnostic cold/warm/force/dry-run, DAG/cache/error/concurrency/cancellation and lease tests pass. Production codec/manifest/recipe v1 freeze is recorded under ADR-018. Full-map compile budgets remain later-content gates.
+- P03/T007,T009: primitive/weapon/collision/socket generation implemented with corrected 1.0.1 captures. Formal silhouette/ADS acceptance PASS-with-limits; LOD transition formal acceptance PASS (numeric). See owner-closeout section.
+- P04/T008,T031: seven CPU material families, URP path, compression experiment, B01 workload integration and sky/probe polish delivered. B01 three-run hardware/thermal/variant acceptance remains PendingHardware and is waived for M1 only under ADR-025.
+- P05/T010,T028: spike implemented through loft1.0.2/motion.spike.v3; ADR-024 scope-stops further search (FAIL / not accepted). Numeric grip/contact/1000-pose/eight-rig remain spike evidence only.
 
 ## Downstream and sign-off
 
-Compiler manifest/codec v1 is now frozen under ADR-018; socket registry and skeleton C1 remain pending. M2/M3 remain unassigned. Keep schema/registry ownership serialized before another feature wave; preserve C0-v1 and pinned editor/packages. Full-M1 slice content, visual and performance suites remain pending. No M1 hardware exception was requested or accepted. Completed P01/P02 work is integrated into main; prior P01 rollback source is ce7abba, with historical M0 artifacts retained.
+Compiler manifest/codec v1 is frozen under ADR-018. M1 is closed under ADR-025 with the gate matrix in the owner-closeout section. M2/M3 remain unassigned and require explicit owner assignment; M2 must not depend on accepting the failed P05 skin. Keep schema/registry ownership serialized; preserve C0-v1 and pinned editor/packages. Full-map content budgets and verified reference-hardware acceptance remain future gates. Completed M1 work is integrated into main; prior P01 rollback source is ce7abba, with historical M0 artifacts retained.
 
 ## P02 implementation continuation (2026-11-12)
 
@@ -195,6 +195,44 @@ The ADR-023 candidate soldier.loft1.0.2/motion.spike.v3 fails the unchanged cons
 
 ### Post-clearance polish evidence (2026-11-13)
 
-- P03 silhouette packaging harness integrated (`Tools/weapon_silhouette.py`, `Tools/Measure-WeaponSilhouette.ps1`). Existing Low gallery captures packaged at `Artifacts/m1-procedural-feasibility/72c1d78fe9a397b66adb2acba6ceab8b5323bfa4/weapon-silhouette-20261113T170200667Z/` with `disposition=PendingReview` and `visualRealismPass=false`. Human silhouette/ADS acceptance remains open.
-- LOD transition numeric harness previously integrated; formal visual transition sign-off still open.
-- B01-materials three-run PresentMon series collected under collection commit `2cbed1a` (player build `8f64e54`): all three runs `PendingHardware` (p95 ≈2.1–2.4 ms). Summary `Artifacts/m1-continuation/b01-materials-series-summary.json`. Gate stays open: no live HWiNFO/thermal review, `channelMode` null, draw/triangle/GPU-memory/variant counters unavailable; 1200s precondition attempt previously FAIL (tick overload). Does not close P04 hardware acceptance.
+- P03 silhouette packaging harness integrated (`Tools/weapon_silhouette.py`, `Tools/Measure-WeaponSilhouette.ps1`). Existing Low gallery captures packaged at `Artifacts/m1-procedural-feasibility/72c1d78fe9a397b66adb2acba6ceab8b5323bfa4/weapon-silhouette-20261113T170200667Z/` with `disposition=PendingReview` and `visualRealismPass=false`. That packaging report remains immutable; formal human review is recorded below.
+- LOD transition numeric harness previously integrated; formal numeric sign-off is recorded below.
+- B01-materials three-run PresentMon series collected under collection commit `2cbed1a` (player build `8f64e54`): all three runs `PendingHardware` (p95 ≈2.1–2.4 ms). Summary `Artifacts/m1-continuation/b01-materials-series-summary.json` left unchanged. No live HWiNFO/thermal review, `channelMode` null, draw/triangle/GPU-memory/variant counters unavailable; 1200s precondition attempt previously FAIL (tick overload). Hardware acceptance is waived for M1 only under ADR-025, not flipped to PASS.
+
+## Owner-directed M1 closeout (2026-11-13)
+
+This section supersedes the preceding open-milestone disposition. Max instructed the integrator to finish M1 without further confirmations and to imitate human visual review. Codex records administrative closure under [ADR-025](../../decisions.md#adr-025--accepted-m1-owner-waiver-of-remaining-hardwareresource-validation-and-milestone-close). **M1 is CLOSED WITH USER WAIVER; two of eight milestones are closed.** No automated PendingHardware or FAIL report was rewritten to PASS; no golden/cache was edited; Unity/packages were not upgraded; M2 combat was not started; P05 clearance search was not reopened.
+
+### Formal P03 silhouette/ADS review
+
+Integrator inspected retained 1.0.1 gallery captures under `Artifacts/m0-foundation/22942d6ccbbdcb4368bc496d1188c5119b644d24/compile-gallery-20261113T082256404Z-691df6c6/captures/` (also packaged at the silhouette path above). Machine-readable record: `Artifacts/m1-procedural-feasibility/owner-closure-20261113/p03-visual-review.json`.
+
+| Criterion | Disposition |
+|---|---|
+| Scale plausible vs material cubes | PASS |
+| Silhouette intact / class-readable | PASS-with-limits (side/3/4 clear; front orthographics abstract) |
+| ADS alignment (rifle + pistol) | PASS |
+| Lower LODs readable (side LOD1–3) | PASS-with-limits (non-side LOD>0 angles not emitted by Compile-Gallery) |
+| Prohibited art absent | PASS |
+| **Overall formal silhouette/ADS** | **PASS-with-limits** |
+
+Limits: prototype greybox only; Low shadow-map stair-step aliasing; no realism claim; gallery is not B01 hardware evidence. Prior packaging `disposition=PendingReview` files remain immutable.
+
+### Formal LOD transition acceptance
+
+Ran `Tools/Measure-WeaponLodTransition.ps1` at source `b191d59`: 9/9 `WeaponLodTransitionTests` PASS; analysis reports 112 samples, 22 switches, zero policy violations, zero flicker events for 10% hysteresis thresholds `[0.5, 0.2, 0.08]`. Evidence: `Artifacts/m1-procedural-feasibility/b191d590b322570b33310141b485e5c02f63bcca/weapon-lod-transition-20261113T175104270Z/` and formal record `Artifacts/m1-procedural-feasibility/owner-closure-20261113/lod-transition-acceptance.json`. Unity transition-frame PNG sequences remain Pending/unavailable and were not fabricated. **Formal transition acceptance: PASS** (numeric policy + documented harness).
+
+### P04 hardware / P05 / matrix
+
+| Gate | Disposition |
+|---|---|
+| P01 foundations | PASS |
+| P02 compiler/cache diagnostic | PASS |
+| P03 silhouette/ADS | PASS-with-limits |
+| P03 LOD transition | PASS (numeric) |
+| P04 material generation/gallery/compression | PASS (implementation) |
+| P04 B01 hardware/thermal/variant counters | Unverified / **Waived for M1** (ADR-025); reports stay PendingHardware |
+| P05 soldier visual/clearance | **FAIL / not accepted** (ADR-024) |
+| P05 numeric grip/contact/1000-pose/eight-rig | Spike evidence only |
+
+Closure package: `Artifacts/m1-procedural-feasibility/owner-closure-20261113/closure-disposition.json`. Marker name: `m1-procedural-feasibility-owner-accepted` (qualified closure, not a passing-performance tag). Closeout pure suite: 283/283 PASS via `Tools/Test-Generation.ps1 -Offline` at `Artifacts/m1-procedural-feasibility/b191d590b322570b33310141b485e5c02f63bcca/20261113T175607370Z-0ec09175/` — including the ADR-024 clearance regression guard that still asserts third-candidate arm/body clearance FAIL and unresolved eye/sight residual (does not flip visual acceptance to PASS). `feature-content-lock.json` synced only to already-committed ADR-024 `docs/soldier-baseline.md` LF bytes. Future M2 assignment must not depend on accepting the failed soldier skin. Completed closeout documentation is committed on main; leftover task worktrees are retired after verifying they match main.

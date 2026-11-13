@@ -1,6 +1,6 @@
 # M1 — Procedural feasibility — implementation pack
 
-Status: **IN PROGRESS**, 2026-11-13. P01-P04 have compiler/cache foundations, generated weapon LODs/sockets, seven CPU material families, automatic weapon LOD hysteresis, platform compression measurements and a separate B01-materials workload. P05 has a generated helmeted soldier, semantic23 skeleton, three weighted LODs, analytic gait/IK and cache-backed skinning/eight-rig diagnostics. Iteration2 and ADR-023 third candidate both FAIL visual/clearance review; ADR-024 stops further P05 clearance search without accepting the soldier. Remaining resource/comparison/three-run hardware gates keep M1 open; no playable combat or realism/performance claim. Canonical backlog tasks: T005–T010. Assigned packages: WP-01, WP-02, WP-03, WP-04.
+Status: **CLOSED WITH USER WAIVER**, 2026-11-13. P01–P04 foundations, generators, gallery, LOD hysteresis, compression and B01 workload are delivered. Formal P03 silhouette/ADS is PASS-with-limits; LOD transition formal acceptance is PASS (numeric). P04 B01 hardware remains PendingHardware and is Unverified/Waived for M1 under ADR-025. P05 soldier visual/clearance remains FAIL / not accepted under ADR-024. No playable combat or realism/performance PASS claim. Canonical backlog tasks: T005–T010. Assigned packages: WP-01, WP-02, WP-03, WP-04.
 
 ## Goal and entry gate
 
@@ -21,7 +21,7 @@ M0 is closed with the explicit owner hardware-validation waiver (ADR-017); its u
 
 ## Completion
 
-Compiler/cache v1 and generation tests pass. Rifle, pistol and one helmeted soldier regenerate from numeric source. Soldier visual and performance spike passes or explicit scope revision is approved before expansion. Cold/warm slice compile allocations/times are recorded; full-map time gate remains for later content.
+Compiler/cache v1 and generation tests pass. Rifle, pistol and one helmeted soldier regenerate from numeric source. Soldier visual spike is FAIL / not accepted under ADR-024; M1 closed under ADR-025 with remaining hardware gates waived for this milestone only. Cold/warm slice compile allocations/times are recorded; full-map time gate remains for later content.
 
 [Previous pack](../m0-foundation/index.md) · [Next pack](../m2-combat-harness/index.md) · [Milestone catalog](../index.md).
 

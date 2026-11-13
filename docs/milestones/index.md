@@ -2,7 +2,7 @@
 
 Each folder contains only its milestone entry, detailed sequence, contracts/integration, agent assignment cards, validation/acceptance and handoff record. Requirements and feature specifications live once in the docs root, reached through relative links from each milestone. Code and accepted artifacts from prerequisite milestones are still required to execute.
 
-Current disposition, 2026-11-12: one of eight milestones closed. M0 has owner acceptance with an explicit hardware-validation waiver; M1 P01/P02 foundations and P03/P04 generation/render diagnostics are implemented; remaining P04 acceptance, P05 and M2-M7 remain pending. See the [M1 handoff](m1-procedural-feasibility/handoff.md). See the [M0 handoff](m0-foundation/handoff.md) for actual passing checks and retained unverified gates.
+Current disposition, 2026-11-13: two of eight milestones closed. M0 and M1 have owner acceptance with explicit hardware-validation waivers (ADR-017, ADR-025). M1 P05 soldier visual remains FAIL / not accepted under ADR-024. M2–M7 remain unassigned. See the [M1 handoff](m1-procedural-feasibility/handoff.md) and [M0 handoff](m0-foundation/handoff.md).
 
 | Milestone | Implementation pack |
 |---|---|

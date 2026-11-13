@@ -1,6 +1,6 @@
 # Shooter implementation rules
 
-Repository: C:\Job\shooter. Implement a Unity 6 URP procedural military FPS under UnityProject. M0 is closed with the explicit owner hardware-validation waiver; M1 procedural feasibility is in progress. Continue only the assigned milestone, not the entire game. Read docs/implementation-start.md, docs/vision.md, docs/architecture.md, docs/contract-details.md and your assigned milestone index before edits. Current M1 evidence and pending gates are in docs/milestones/m1-procedural-feasibility/handoff.md; the M0 handoff retains its historical evidence and waiver limits.
+Repository: C:\Job\shooter. Implement a Unity 6 URP procedural military FPS under UnityProject. M0 and M1 are closed with explicit owner hardware-validation waivers (ADR-017, ADR-025); two of eight milestones are closed. Continue only the assigned milestone, not the entire game. Read docs/implementation-start.md, docs/vision.md, docs/architecture.md, docs/contract-details.md and your assigned milestone index before edits. M1 close disposition (including P05 FAIL under ADR-024 and waived B01 hardware) is in docs/milestones/m1-procedural-feasibility/handoff.md; the M0 handoff retains its historical evidence and waiver limits. M2+ require explicit assignment.
 
 ## Scope and ownership
 

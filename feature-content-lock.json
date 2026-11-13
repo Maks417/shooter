@@ -38,7 +38,7 @@
     "docs/feature-schemas/material.schema.json": "206c101fbd49720e2ab60e0819806c3beaba8e91335de469f2b066f8c769e6c6",
     "docs/feature-schemas/soldier.schema.json": "122520ca7030949ce90e73e815317f5f65412ba8390f87bc049b995f2c3cbe9d",
     "docs/feature-schemas/weapon.schema.json": "5cf1f144cc1606eb98b4754ad0717020be0153252c3e0df6eddc3fe599b544b2",
-    "docs/soldier-baseline.md": "19d7a0e8d867c4d011e0e236eba74dbd5cb830ee08beb4a6b66c4bc230ff794b",
+    "docs/soldier-baseline.md": "27f73bd9f55ed551fb811aa62b798a25cdb547e7f85552b50dafdf29c1546477",
     "docs/weapon-recipe-baseline.md": "0e560943c4386152e3febf98038a91325b08233694a8bf2f39e004ffb68b07ee",
     "UnityProject/Assets/Shooter/Generation/Core/Compilation/ValidatedRecipe.cs": "9fd953887e489ddcb8946318243e154671ac95e088d9a6c6a9fd1516cacdc019",
     "UnityProject/Assets/Shooter/Generation/Core/Geometry/MeshAssembly.cs": "b645bbf86612e19e9d01fc6e439a4ac1b161a211a439a19a2b02359288a82c95",
