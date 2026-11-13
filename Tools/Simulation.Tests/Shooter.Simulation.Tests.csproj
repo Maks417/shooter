@@ -22,5 +22,6 @@
     <Compile Include="../../UnityProject/Assets/Shooter/Presentation/View/**/*.cs" Link="View/%(Filename)%(Extension)" />
     <Compile Include="../../UnityProject/Assets/Shooter/World/Streaming/**/*.cs" Link="WorldStreaming/%(Filename)%(Extension)" />
     <Compile Include="../../UnityProject/Assets/Shooter/World/Navigation/**/*.cs" Link="WorldNavigation/%(Filename)%(Extension)" />
+    <Compile Include="../../UnityProject/Assets/Shooter/Presentation/Hud/**/*.cs" Link="Hud/%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>
