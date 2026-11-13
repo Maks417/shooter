@@ -3,7 +3,7 @@
   "updatedDate": "2026-11-13",
   "integrator": "Cursor M5-M7 integrator (bc-05dea339)",
   "branch": "main",
-  "baseCommit": "d0546a8b83a46f80551f452386e1ec31fd87805d",
+  "baseCommit": "b73132040b543e2b003d6e681146b6a65e7e46d1",
   "contractVersion": "C0-v1",
   "readyForParallelIntegration": false,
   "packages": [
@@ -1448,7 +1448,7 @@
   "m7Start": {
     "date": "2026-11-13",
     "assignment": "Owner Max: after M6 close M7; no T025 unless pack requires",
-    "baseCommit": "2b7a7cc",
+    "baseCommit": "b73132040b543e2b003d6e681146b6a65e7e46d1",
     "status": "CLOSED_WITH_USER_WAIVER (ADR-032)",
     "decision": "docs/decisions.md#adr-032--accepted-m7-owner-waiver-of-remaining-unity-tooling-and-hardwarereference-validation-and-milestone-close",
     "closureEvidence": "Artifacts/m7-hardening-stretch/owner-closure-20261113",
@@ -1457,7 +1457,8 @@
       "WP-09/release-matrix",
       "WP-09/stretch-report",
       "WP-00/deferred-ledger"
-    ]
+    ],
+    "softwareHead": "b73132040b543e2b003d6e681146b6a65e7e46d1"
   },
   "m7MilestoneAcceptance": {
     "milestone": "M7",
@@ -1475,6 +1476,7 @@
     "hardwareValidation": "Unverified; waived for M7 closure only.",
     "stretch60Fps": "PendingHardware; baselinesRelaxed=false",
     "t025Started": false,
-    "evidenceDirectory": "Artifacts/m7-hardening-stretch/owner-closure-20261113"
+    "evidenceDirectory": "Artifacts/m7-hardening-stretch/owner-closure-20261113",
+    "softwareHead": "b73132040b543e2b003d6e681146b6a65e7e46d1"
   }
 }
