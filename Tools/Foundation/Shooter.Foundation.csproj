@@ -9,6 +9,9 @@
   <ItemGroup>
     <Compile Include="../../UnityProject/Assets/Shooter/Bootstrap/Core/*.cs" />
     <Compile Include="../../UnityProject/Assets/Shooter/Simulation/Foundation/*.cs" />
+    <Compile Include="../../UnityProject/Assets/Shooter/Simulation/Motor/**/*.cs" />
+    <Compile Include="../../UnityProject/Assets/Shooter/Simulation/Combat/**/*.cs" />
+    <Compile Include="../../UnityProject/Assets/Shooter/Simulation/Pose/**/*.cs" />
     <ProjectReference Include="../Contracts/Shooter.Contracts.csproj" />
   </ItemGroup>
 </Project>

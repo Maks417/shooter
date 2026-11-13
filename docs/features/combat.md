@@ -30,3 +30,7 @@ Movement tests cover 30/60/144 display FPS with the same 60 Hz command script, s
 ## Complete baseline and match rules
 
 [Gameplay baseline](../gameplay-baseline.md) supplies motor/ADS/spread/recoil/damage defaults, canonical muzzle, collision matrix and Compound Clear objective. [Simulation protocol](../simulation-protocol.md) fixes boundary ordering, actor nonblocking policy, same-tick trades and complete restoration state. These replace unspecified rounding and filter choices in this overview.
+
+## M2 implementation references
+
+Pure-source adapters (C0-v1 unchanged): `Simulation/Motor` (kinematic capsule + `InputEdgeBuffer`), `Simulation/Combat` (weapon/damage/hitscan/recoil), `Simulation/Pose/GameplayPoseEvaluator` (hit capsules + canonical muzzle), `Presentation/View/ProceduralViewModel` (event-deduped cosmetic springs). Shipping composition uses `Simulation/Foundation/CombatHarnessSimulation` from `Bootstrap/Runtime/FoundationEntry` with `CompositionPolicy.RequireReal`. Pure evidence via `Tools/Test-Simulation.ps1`; milestone status in [M2 handoff](../milestones/m2-combat-harness/handoff.md).

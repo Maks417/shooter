@@ -3,7 +3,7 @@
   "updatedDate": "2026-11-13",
   "integrator": "Cursor M2 integrator (bc-2637951e)",
   "branch": "main",
-  "baseCommit": "925d23f74301fd08a6aeccdf977822438b061c4b",
+  "baseCommit": "cc6ad93a512e65afc04be24e4ae961517e573b32",
   "contractVersion": "C0-v1",
   "readyForParallelIntegration": true,
   "packages": [
@@ -509,8 +509,8 @@
         "docs/simulation-protocol.md"
       ],
       "contractVersion": "C0-v1",
-      "status": "Assigned: T011/C01 kinematic motor + input buffering; pure-source worktree; no Unity editor; no Contracts/Bootstrap/Settings edits",
-      "leaseExpiry": "2026-11-14T23:59:59Z",
+      "status": "Integrated into main; temporary worktree/branch pending retirement after preservation",
+      "leaseExpiry": null,
       "forbiddenPaths": [
         "UnityProject/Assets/Shooter/Contracts",
         "UnityProject/Assets/Shooter/Bootstrap",
@@ -520,7 +520,8 @@
         "coordination.json",
         "contract-lock.json",
         "docs"
-      ]
+      ],
+      "workspaceStatus": "Merged; awaiting worktree cleanup"
     },
     {
       "packageId": "WP-05/combat",
@@ -537,8 +538,8 @@
         "docs/features/combat.md"
       ],
       "contractVersion": "C0-v1",
-      "status": "Assigned: T012/C02 weapon/damage/reload/muzzle obstruction; pure-source; fakes for motor/world OK",
-      "leaseExpiry": "2026-11-14T23:59:59Z",
+      "status": "Integrated into main; temporary worktree/branch pending retirement after preservation",
+      "leaseExpiry": null,
       "forbiddenPaths": [
         "UnityProject/Assets/Shooter/Contracts",
         "UnityProject/Assets/Shooter/Bootstrap",
@@ -549,7 +550,8 @@
         "coordination.json",
         "contract-lock.json",
         "docs"
-      ]
+      ],
+      "workspaceStatus": "Merged; awaiting worktree cleanup"
     },
     {
       "packageId": "WP-05/pose",
@@ -567,8 +569,8 @@
         "docs/soldier-baseline.md"
       ],
       "contractVersion": "C0-v1",
-      "status": "Assigned: T013 gameplay hit-pose evaluator + obstruction helpers; pure-source; independent of visual LOD",
-      "leaseExpiry": "2026-11-14T23:59:59Z",
+      "status": "Integrated into main; temporary worktree/branch pending retirement after preservation",
+      "leaseExpiry": null,
       "forbiddenPaths": [
         "UnityProject/Assets/Shooter/Contracts",
         "UnityProject/Assets/Shooter/Bootstrap",
@@ -580,7 +582,8 @@
         "coordination.json",
         "contract-lock.json",
         "docs"
-      ]
+      ],
+      "workspaceStatus": "Merged; awaiting worktree cleanup"
     },
     {
       "packageId": "WP-04/view-arms",
@@ -597,8 +600,8 @@
         "WP-02 weapon sockets read-only"
       ],
       "contractVersion": "C0-v1",
-      "status": "Assigned: T013/C04 procedural view arms ADS/recoil/reload grip; pure-source preferred; no Unity editor unless required for EditMode; no duplicate damage/recoil",
-      "leaseExpiry": "2026-11-14T23:59:59Z",
+      "status": "Integrated into main; temporary worktree/branch pending retirement after preservation",
+      "leaseExpiry": null,
       "forbiddenPaths": [
         "UnityProject/Assets/Shooter/Contracts",
         "UnityProject/Assets/Shooter/Bootstrap",
@@ -609,7 +612,8 @@
         "coordination.json",
         "contract-lock.json",
         "docs"
-      ]
+      ],
+      "workspaceStatus": "Merged; awaiting worktree cleanup"
     },
     {
       "packageId": "WP-05/integration",
@@ -634,7 +638,7 @@
         "T027 gameplay defaults"
       ],
       "contractVersion": "C0-v1",
-      "status": "Active: serialize composition, T027 defaults/layer audit, shipping RequireReal, handoff/evidence",
+      "status": "IN PROGRESS: CombatHarnessSimulation composed; pure 21/21 + contracts 71/71; Unity/smoke/hardware Pending",
       "leaseExpiry": null
     }
   ],
@@ -834,7 +838,7 @@
     "fixtureVersion": "specification-v1.1",
     "seed": "460072030",
     "scope": "M2 combat harness C01-C04 / T011-T013 (+ T027 defaults); no M3+ world/nav",
-    "status": "IN_PROGRESS: multi-agent wave launched after M1 CLOSED_WITH_USER_WAIVER",
+    "status": "IN_PROGRESS: C01-C04 pure implementation integrated; Unity/smoke/hardware gates open",
     "workers": [
       "WP-05/motor",
       "WP-05/combat",

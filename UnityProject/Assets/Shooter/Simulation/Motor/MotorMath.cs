@@ -4,7 +4,7 @@ using Shooter.Contracts;
 
 namespace Shooter.Simulation.Motor
 {
-    internal static class MotorMath
+    public static class MotorMath
     {
         public const float TickSeconds = 1f / 60f;
 

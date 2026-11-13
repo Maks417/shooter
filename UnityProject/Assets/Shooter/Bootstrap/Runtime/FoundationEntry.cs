@@ -17,7 +17,7 @@ namespace Shooter.Bootstrap
         public const bool IsServer = false;
 #endif
         private readonly Stopwatch monotonic = new Stopwatch();
-        private FoundationSimulation simulation;
+        private ISimulation simulation;
         private UnityWorldQueries world;
         private UnityNavigation navigation;
         private FixedTickClock clock;
@@ -52,7 +52,8 @@ namespace Shooter.Bootstrap
                 Physics.SyncTransforms();
                 world = new UnityWorldQueries(1);
                 navigation = new UnityNavigation(1, _ => null); // Empty M0 authority has no actors; queries fail MissingContent.
-                simulation = new FoundationSimulation();
+                // M2: combat harness is the shipping authority adapter (empty-actor mode keeps smoke valid).
+                simulation = new CombatHarnessSimulation(world);
                 CompositionPolicy.RequireReal(world, navigation, simulation);
                 clock = new FixedTickClock(IsServer);
                 AllocationMeter.Initialize();
