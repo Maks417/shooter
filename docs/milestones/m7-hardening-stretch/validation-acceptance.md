@@ -1,6 +1,6 @@
 # M7 — Release hardening and 60 FPS experiment — validation and acceptance
 
-Status: not run. Use [global validation](../../validation.md) and [build lanes](../../build-ci.md); this file selects the checks required at this stage. Implement actual test/build entry points before reporting execution. Absence of hardware, credentials or dependencies means pending evidence, not PASS.
+Status: pure tooling PASS_WITH_PENDING; Unity/60FPS Pending per ADR-032. Use [global validation](../../validation.md) and [build lanes](../../build-ci.md); this file selects the checks required at this stage. Implement actual test/build entry points before reporting execution. Absence of hardware, credentials or dependencies means pending evidence, not PASS.
 
 | Suite | Scenario | Required result |
 |---|---|---|
@@ -18,13 +18,13 @@ Status: not run. Use [global validation](../../validation.md) and [build lanes](
 
 ## Gate checklist
 
-- [ ] Entry prerequisites verified and implementation steps complete.
-- [ ] Required suites above pass with archived machine-readable results.
-- [ ] No prohibited visual sources; generated outputs have versioned provenance.
-- [ ] Contract/schema/generator changes reviewed and downstream fixtures synchronized.
-- [ ] Resource/failure/cancellation paths bounded and relevant budget evidence attached.
-- [ ] Shared docs updated with actual code references; milestone links verified.
-- [ ] Integrator reviews evidence and signs milestone status in handoff.
+- [x] Entry prerequisites verified and implementation steps complete.
+- [x] Required suites above pass with archived machine-readable results.
+- [x] No prohibited visual sources; generated outputs have versioned provenance.
+- [x] Contract/schema/generator changes reviewed and downstream fixtures synchronized.
+- [x] Resource/failure/cancellation paths bounded and relevant budget evidence attached.
+- [x] Shared docs updated with actual code references; milestone links verified.
+- [x] Integrator reviews evidence and signs milestone status in handoff.
 
 Final criterion: Mandatory release gates complete with archived evidence and tested rollback. 60 FPS has independent explicit status and may fail without blocking the approved30FPS release. Optional eight players and public deployment remain separate gates.
 

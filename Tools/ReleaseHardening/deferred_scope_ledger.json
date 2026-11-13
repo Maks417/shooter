@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M7",
+  "decision": "ADR-032 / H05 ledger",
+  "items": [
+    {
+      "id": "T025-projectiles-penetration",
+      "status": "deferred",
+      "requires": "Separate ADR + workload; not mandatory M7 release scope"
+    },
+    {
+      "id": "eight-player-capacity",
+      "status": "deferred",
+      "requires": "New workload/version and measured capacity evidence"
+    },
+    {
+      "id": "public-networking-auth-matchmaking",
+      "status": "deferred-N4",
+      "requires": "Authenticated sessions, encryption/replay protection, deployment review"
+    },
+    {
+      "id": "60fps-stretch",
+      "status": "PendingHardware",
+      "note": "Independent of mandatory 30 FPS; missing captures must not be reported as PASS"
+    }
+  ],
+  "releaseClaimsForbidden": [
+    "unmeasured 60 FPS acceptance",
+    "large-battle eight-player readiness",
+    "public internet deployment readiness"
+  ]
+}

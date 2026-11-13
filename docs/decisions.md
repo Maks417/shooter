@@ -306,3 +306,22 @@ Close M6 administratively as **CLOSED WITH USER WAIVER**. Seven of eight milesto
 
 Historical failed/pending results immutable. ADR-017/024–030 unchanged; P05 FAIL retained. M7 may start after this close.
 
+## ADR-032 — Accepted: M7 owner waiver of remaining Unity-tooling and hardwarereference validation and milestone close
+
+Date 2026-11-13; accepted by Max as project owner, recorded by the Cursor M5-M7 integrator (bc-05dea339). After pure software gates for H01–H05 / T023–T024 PASS_WITH_PENDING (mandatory tools green; Unity/player/60 FPS captures PendingHardware), Max’s standing direction (“do all next milestones”; no confirmations; hardware PendingHardware may be waived with an explicit ADR) authorizes administrative M7 closure without waiting for interactive sign-off. It does **not** authorize inventing PASS evidence, editing goldens/caches, upgrading Unity/packages, claiming unmeasured 60 FPS acceptance, expanding T025 into mandatory release scope, reopening P05, or flipping prior PendingHardware reports to PASS.
+
+Tooling/hardware attempt retained (not acceptance):
+
+- Locked Unity editor absent; clean IL2CPP client/server builds, outside-editor release rehearsal and PresentMon 60 FPS stretch captures could not run. Status **Pending / PendingHardware**. Evidence: Artifacts/m7-hardening-stretch/owner-closure-20261113/hardware-attempt.json.
+- Stretch report explicitly records **PendingHardware** with aselinesRelaxed=false; mandatory 30 FPS baselines unchanged.
+
+Close M7 administratively as **CLOSED WITH USER WAIVER**. Eight of eight milestones are closed under owner tooling/hardware waivers where applicable. Actual dispositions retained:
+
+- H01 clean reproducibility locks/provenance inventory PASS; Unity clean build Pending.
+- H02 regression matrix pure docs/fixtures/contracts/simulation/generation PASS_WITH_PENDING.
+- H03 release rollback pair type + ledger PASS; player rehearsal Pending.
+- H04 60 FPS stretch report **PendingHardware** (does not block mandatory 30 FPS).
+- H05 deferred scope ledger records T025/eight-player/public networking as deferred; forbids unmeasured claims.
+
+Historical failed/pending results immutable. ADR-017/024–031 unchanged; P05 FAIL retained. Optional T025 remains out of scope.
+

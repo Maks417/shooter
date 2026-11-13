@@ -1,6 +1,6 @@
 # M7 — Release hardening and 60 FPS experiment — implementation pack
 
-Status: planned; no implementation or game test is claimed. Baseline 2026-11-11. Canonical backlog tasks: T023–T024; T025 deferred. Assigned packages: WP-09 integrator with all module owners.
+Status: **CLOSED WITH USER WAIVER** (ADR-032); pure tooling PASS_WITH_PENDING; Unity/60FPS PendingHardware waived for M7 only. Baseline 2026-11-11; closed 2026-11-13. Canonical backlog tasks: T023–T024; T025 deferred. Assigned packages: WP-09 integrator with all module owners.
 
 ## Goal and entry gate
 

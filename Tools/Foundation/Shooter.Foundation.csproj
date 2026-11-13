@@ -8,6 +8,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="../../UnityProject/Assets/Shooter/Bootstrap/Core/*.cs" />
+    <Compile Include="../../UnityProject/Assets/Shooter/Bootstrap/Release/*.cs" />
+
     <Compile Include="../../UnityProject/Assets/Shooter/Simulation/Foundation/*.cs" />
     <Compile Include="../../UnityProject/Assets/Shooter/Simulation/Motor/**/*.cs" />
     <Compile Include="../../UnityProject/Assets/Shooter/Simulation/Combat/**/*.cs" />
