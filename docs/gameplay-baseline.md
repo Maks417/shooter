@@ -2,6 +2,8 @@
 
 These are fictional game tuning defaults, not claims about real weapons. Owner WP-05; objective WP-05 with integrator; world consumes this before M3 planning. Numeric values are mirrored in [fixture defaults](fixtures/gameplay-defaults.json); changing them requires tests and version bump. No user clarification is needed to begin with this baseline.
 
+Scope update 2026-11-13: this page and its frozen fixtures retain the historical Compound Clear baseline. New [Team Deathmatch](features/team-deathmatch.md) reuses motor/weapons/layers but defines separate team roster, respawn/refill, scoring and deadline rules through [Game-v1](game-session-contracts.md). These additions do not edit the old fixture or silently change Compound Clear/co-op behavior. The public release selector exposes only TDM; the old mode remains diagnostic/regression scope.
+
 ## Motor, camera and weapons
 
 | Setting | Default |

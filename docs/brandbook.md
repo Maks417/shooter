@@ -2,6 +2,8 @@
 
 Proposed design, not extracted from existing code. See [vision](vision.md) and [rendering](features/materials-rendering.md).
 
+The new [game shell](features/game-shell.md) specifies actual menu/setup/loading/pause/settings/scoreboard/results behavior and working persistence/device controls for M10. Existing HudLayout is a pure helper; its test is not interactive UI evidence. Keep the tokens below as proposed until validated in the real 720p player, including the 12-row tables and 150% scale. No image preview requirement is introduced for map selection.
+
 Grounded, functional, readable modern military training environment. Favor believable proportions, physical material scale, restrained wear and clear player silhouettes over noisy detail. Fictional insignia generated from lines/polygons, no imported logos. Realism review uses silhouette, material response, spatial scale and motion separately; a complex shader cannot compensate for implausible proportions.
 
 | UI token | Proposed value | Use |

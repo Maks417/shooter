@@ -61,6 +61,8 @@ ContentLease exposes ContentId, Kind, read-only verified payload and Dispose. Co
 
 ## Freeze artifacts
 
+New product/session records for M8–M11 are specified separately in [Game-v1](game-session-contracts.md). They do not extend C0 MatchState to represent Draw, repurpose Won/Lost into team outcomes, or promise N1 team-match wire compatibility. The integrator must compile/freeze that separate assembly and executable fixtures in T035 before dependent workers start; this prose plan leaves the existing lock unchanged.
+
 At F02 implement all core port/DTO types and negative/lease tests; at P02 freeze exact typed binary geometry formats before worker adapters merge. Network wire schema freezes at N01 after transport selection. Do not force future codecs into M0 or leave motor/prediction state unspecified until M5. [Fixtures](fixtures/index.md) provide independent examples, not an exhaustive replacement for C# contracts.
 
 P02 now implements the initial field-by-field compiler codecs in `Generation/Core/Codecs`, separately frozen by root `content-format-lock.json`; see [format v1](content-format.md). C0 DTO/port bytes and specification fixtures are unchanged.

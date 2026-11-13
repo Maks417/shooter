@@ -42,3 +42,15 @@ Package ID/title; owner; base commit; contract version; allowed paths; forbidden
 - Wave 3: networking WP-08 and validation/optimization WP-09 use stable offline slice. Performance engineer can measure throughout but cannot change workload to improve numbers.
 
 When staffing is limited, preserve dependencies rather than running all tasks simultaneously. Parallel work reduces contention only after contracts exist; no requirement for a fixed number of agents or simultaneous unreviewed merges.
+
+## New playable release waves — M8–M11
+
+The original waves above describe M0–M7. The [new roadmap](playable-release-plan.md) is a preparation task only; it does not authorize dispatch. Existing coordination.json readiness remains false until an actual integrator verifies the new entry gate. Use each new pack's exclusive assignment table; proposed role names are not active owners.
+
+1. Integrator alone implements T035 Game-v1 and freezes compiling ports, executable fixtures, lifecycle/thread/lease rules, exact input semantics and new workload identities on main. Integrator handles T036 extraction from sealed/private combat harness into Simulation/Session. Changes to C0/content schemas require ADR/migration first.
+2. After freeze, T037 map/runtime and T038 client adapter work in disjoint paths against compiling fakes, integrating only real adapters. T039 proves actual player composition. New settings/map/menu models may be prepared from these seams if explicitly assigned, but no milestone closes before upstream real integration.
+3. M9: rules T040, spawn policy T041 and AI T042 have separate subfolders/tests and a shared frozen lifecycle port. Integrator owns facade/Bootstrap and cross-package tests; merge rules → spawn → AI → T043 real match. The global query budget is shared across both teams.
+4. M10: catalog/compound T044 and depot T045 own distinct map folders; settings T047 and shell T046 communicate through Game-v1. Integrator alone updates compiler entry points, registries, project files and device-service wiring. Limit concurrent workers to available slots rather than launching every role.
+5. M11: one release integrator owns packaging/evidence, one character owner remediates named visual defects, and one validator runs the frozen matrix. Production optimization goes back to the owning module; validators do not tune the workload or relax gates.
+
+Exact source commit, contract/fixture/toolchain hashes, acceptance IDs, per-task budgets, base branch, rollback and evidence retention are required dispatch fields. Do not use `ad4544f` automatically after this planning commit; that SHA identifies the reviewed pre-plan code, and dispatch uses current accepted main. Historical waivers do not authorize new closure. A worker finishing a pure task can merge with explicit Pending player evidence, but the milestone remains open until its required actual exit.

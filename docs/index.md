@@ -2,7 +2,11 @@
 
 Unity 6 URP / C# / HLSL design for a realistic modern-world shooter generated from code and numeric recipes. No imported/manual meshes, painted textures, sprites or authored animation. Initial hardware target: Ryzen 5 4600H integrated Radeon, 16 GB DDR4-3200, NVMe; native 720p Low at 30 FPS, 60 FPS stretch.
 
-**Status:** design baseline v1.1; implementation update 2026-11-13. M0, M1 and M2 are closed with Max's explicit hardware-validation waivers (ADR-017, ADR-025, ADR-026): three of eight milestones closed. Frozen C0-v1 and content-format v1 remain. M1 delivers compiler/cache foundations, procedural rifle/pistol LODs/sockets, seven CPU material families, B01-materials workload, LOD hysteresis and a soldier spike; P03 silhouette/ADS is PASS-with-limits; P05 soldier visual remains FAIL / not accepted under ADR-024; B01 hardware counters stay PendingHardware and are waived for M1 only. M2 delivers the combat harness (C01–C04, V05/V06/V09 Unity scenarios, client/server smoke); reference-player budget stays PendingHardware and is waived for M2 only. Hosted CI is deferred. See the [M2 handoff](milestones/m2-combat-harness/handoff.md), [M1 handoff](milestones/m1-procedural-feasibility/handoff.md) and [M0 handoff](milestones/m0-foundation/handoff.md). M3+ require explicit assignment. Historical temporary memory use is not a requirement.
+**Status, 2026-11-13:** all eight original milestones M0–M7 are closed with the explicit owner waivers recorded in ADR-017/025–028/030–032. Closure does not establish a ready game: later Unity/player/reference gates remain Pending, M4 records no player binary, and M1 P05 remains FAIL / not accepted under ADR-024. C0-v1, content v1 and N1-v1 remain frozen; hosted CI is deferred. Historical handoffs and failed/pending evidence are preserved. The new [playable release roadmap](playable-release-plan.md) defines M8–M11, **planned/unassigned**, for two maps, offline 5v5/6v6 bots, 150 kills / 15 minutes, menus, results and settings. This planning update implements no gameplay and grants no new waiver.
+
+## Next development
+
+Read [the review and ordered plan](playable-release-plan.md), then [M8 runtime composition](milestones/m8-runtime-composition/index.md). Future multi-agent dispatch waits for the compiling [Game-v1 freeze](game-session-contracts.md) and named ownership. The four new packs include task order, exclusive paths, integration contracts, acceptance IDs and pending handoff records.
 
 ## Reading order
 
@@ -17,6 +21,9 @@ Unity 6 URP / C# / HLSL design for a realistic modern-world shooter generated fr
 | Document | Purpose |
 |---|---|
 | [Vision, scope and requirements](vision.md) | Scope, requirements, art constraint and non-goals |
+| [Playable release review and order](playable-release-plan.md) | Current-code gaps, next four gates and deliverable boundary |
+| [Planning validation record](planning-validation.md) | Actual documentation/fixture/tool/source audit outcomes and remaining baseline blockers |
+| [Game session contract plan](game-session-contracts.md) | Planned Game-v1 records/ports, lifecycle, fixtures and compatibility freeze |
 | [Architecture](architecture.md) | Boundaries, dependency rules and lifecycle |
 | [Proposed repository and toolchain](repo-layout.md) | Proposed paths and exact-version pinning procedure |
 | [Domain model](domain-model.md) | Entities, units and invariants |
@@ -29,6 +36,9 @@ Unity 6 URP / C# / HLSL design for a realistic modern-world shooter generated fr
 | [Feature: generated environments and streaming](features/environment.md) | Feature implementation, edge cases and acceptance |
 | [Feature: FPS movement and combat](features/combat.md) | Feature implementation, edge cases and acceptance |
 | [Feature: combat AI](features/ai.md) | Feature implementation, edge cases and acceptance |
+| [Feature: Team Deathmatch](features/team-deathmatch.md) | Rosters, scoring, timer, respawn, team AI and results |
+| [Feature: two playable maps](features/playable-maps.md) | Approved map catalog, procedural layouts, packaging and safety |
+| [Feature: game shell and settings](features/game-shell.md) | Menu flows, interactive tables, persistence, audio/video/controls |
 | [Feature: staged authoritative networking](features/networking.md) | Feature implementation, edge cases and acceptance |
 | [Visual direction and UI design system](brandbook.md) | Proposed visual direction, HUD and accessibility |
 | [Architecture decision records](decisions.md) | Accepted/provisional ADRs and change process |
@@ -53,7 +63,7 @@ Freeze contracts C0 at M0. Treat paths and signatures as specifications to imple
 
 ## Implementation readiness refinements — revision 1.1
 
-Begin with [implementation start](implementation-start.md), then M0. Shared details remain in one place.
+Begin with [implementation start](implementation-start.md), then the assigned milestone; M8 is the recommended next assignment. M0 remains the historical bootstrap reference. Shared details remain in one place.
 
 - [Start implementation here](implementation-start.md)
 - [M0 bootstrap runbook](bootstrap-runbook.md)

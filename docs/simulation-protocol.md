@@ -2,6 +2,8 @@
 
 Normative refinement of [architecture](architecture.md), [contracts](contract-details.md) and [combat](features/combat.md). Offline and dedicated authority use the same 60 Hz Step algorithm. Networking clients replay only own reversible state; they do not predict authoritative remote damage.
 
+The objective/win/loss precedence below belongs to historical Compound Clear. New offline [Team Deathmatch](features/team-deathmatch.md) keeps steps 1–5 and replaces step 6's objective evaluation with the [Game-v1 batch/deadline/respawn publication order](game-session-contracts.md#tick-and-publication-boundary). Resolve the entire death batch, advance active time, finish once, then schedule later respawns/AI only if still playing. No local-player-loss shortcut or prior-mode no-respawn rule applies to TDM. Existing N1/Compound Clear tests remain unchanged.
+
 ## Tick boundary
 
 Tick t consumes commands referring to tick t and reads finalized state t−1. At start: validate world readiness and tick monotonicity; apply queued spawn/despawn/load-boundary operations in stable ID order. Capture actor alive-at-start set and previous stimuli. AI decisions scheduled at end of t−1 produce commands for t; no bot can use a damage event from t before t+1.

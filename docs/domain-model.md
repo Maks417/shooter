@@ -1,5 +1,30 @@
 # Domain model
 
+M8–M11 adds planned product entities specified in [Game-v1](game-session-contracts.md). The existing table below remains the C0/generation baseline. New ParticipantId identifies a scoreboard slot across respawns; LifeId identifies that participant's incarnation and maps to a fresh EntityId, never reused in an authority session. No old death event can score against a newer life. Team scores/results are authority data, independent of local Won/Lost UI labels and frozen C0 MatchState.
+
+## Planned game entities
+
+| Entity | Responsibility / invariant |
+|---|---|
+| MapCatalogEntry | Stable MapId → approved recipe/gameplay/visual identities and supported mode/sizes; two distinct layouts |
+| SessionRequest | Validated map, mode, 5/6 team size, seed and rule version; cannot inject arbitrary recipes/paths |
+| Participant | One human or bot on fixed team; stable name/stats and current life/entity; ≤12 participants |
+| ParticipantLife | Fresh health/ammo/actions and EntityId; death idempotent, safe respawn after 180 active ticks |
+| TeamMatch | Two scores, active tick count, 150-kill/54000-tick limits; full death batch before terminal evaluation |
+| MatchResults | Immutable final team/participant stats, outcome/reason and content/build identity; survives unload |
+| UserSettings | Versioned local sound/video/controls/accessibility values; cannot mutate gameplay rules/content |
+
+```mermaid
+erDiagram
+  MAP_CATALOG_ENTRY ||--o{ GAME_SESSION : selects
+  GAME_SESSION ||--o{ PARTICIPANT : owns
+  PARTICIPANT ||--o{ PARTICIPANT_LIFE : respawns
+  PARTICIPANT_LIFE ||--|| ENTITY_STATE : maps_to
+  GAME_SESSION ||--o| MATCH_RESULTS : finishes
+```
+
+These entities are specifications until T035–T047 compile/implement them. Exact ports, thread/lease ownership, versioning and fixtures stay in the shared contract plan. Existing motor units, team filtering and content lease invariants below continue to apply.
+
 Normative field shapes are in [contracts](contracts.md); deterministic identity is in [generation](generation.md).
 
 | Entity/value | Identity and contents | Owner / invariant |

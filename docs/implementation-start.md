@@ -1,10 +1,12 @@
 # Start implementation here
 
-Design revision 1.1, 2026-11-11. M0 now has an importable Unity project, verified editor/package lock, C0 source, a code-generated box harness and cleanly booting release client/dedicated-server players. Pure and Unity checks have actual evidence. This is a foundation diagnostic, not playable combat. Specification JSON remains fixtures. Reference B01 measurement and remaining acceptance status are recorded in the [M0 handoff](milestones/m0-foundation/handoff.md); no combat-performance or realism claim is made.
+Planning update 2026-11-13. M0–M7 are administratively closed with their recorded owner waivers. Actual sources now include pure combat, compound/nav/AI, objective/HUD/audio, network and release tooling; default Bootstrap still composes the floor/box empty-actor diagnostic. The next product work is [M8–M11](playable-release-plan.md), planned/unassigned, to deliver a real offline team-match build. Specification/fixture checks do not prove player or hardware acceptance.
 
 ## First assignment
 
-M0–M7 are closed with the owner's explicit tooling/hardware-validation waivers (ADR-017, ADR-025, ADR-026, ADR-027, ADR-028, ADR-030, ADR-031, ADR-032); eight of eight milestones are closed. Read the repository AGENTS.md, [vision](vision.md), [architecture](architecture.md), [contract details](contract-details.md), [bootstrap runbook](bootstrap-runbook.md) and milestone packs through [M7](milestones/m7-hardening-stretch/index.md). F01–F04, M1–M5 feature scopes exist; C0-v1 is frozen in root `contract-lock.json`; P02 format v1 is frozen in `content-format-lock.json` under ADR-018; wire protocol N1-v1 under ADR-029. See M1–M5 handoffs for close dispositions (P05 FAIL under ADR-024 retained; hardware/Unity Pending waived per ADR-017/025/026/027/028/030). Do not invent hardware PASS. All eight milestones are closed under owner waivers where noted; optional T025+ must not depend on accepting the failed soldier skin or treating waived hardware as PASS. Do not start independent agents modifying shared contracts.
+**Current next step:** assign [M8 runtime composition](milestones/m8-runtime-composition/index.md), T035–T039. Read [playable release review](playable-release-plan.md), [Game-v1 contract plan](game-session-contracts.md) and M8's complete pack before edits. This documentation assignment does not launch implementation agents or grant worker leases. Integrator freezes compiling Game-v1 and fixture hashes on main before parallel feature dispatch. Then M9 proves TDM, M10 integrates two maps/menu/settings, and M11 delivers the tested build. Original task/milestone IDs and evidence are preserved.
+
+M0–M7 are the eight closed historical milestones (ADR-017/025–028/030–032); M8–M11 are the four planned new gates. C0-v1 is frozen in root `contract-lock.json`, SGAF/P02 format v1 in `content-format-lock.json` under ADR-018, and wire N1-v1 under ADR-029. Their compatibility and historical evidence remain binding. P05 FAIL under ADR-024 and waived Unity/hardware limits remain unchanged. T025 alone remains optional/deferred; T035–T051 are the new product plan and require continuing assignment. No worker independently edits shared contracts, Bootstrap, schemas, locks or project settings.
 
 ## Newly resolved design details
 
@@ -28,6 +30,8 @@ F01 selected the verified installed Unity 6000.3.28f1 revision 8f082d2fe476 with
 ## Ready-to-parallelize checkpoint
 
 C0 assembly builds without Unity, serialized fixtures pass, all port adapters/fakes have conformance tests, client/server smoke entry points work, ownership is assigned and fixture/generator versions recorded. At that checkpoint, each worker receives its milestone folder plus access to the shared docs root. Include source tag, permitted folders, fixture IDs and exact tests in each assignment.
+
+For M8 onward this also requires the new Game-v1 compiling ports/fixtures, real actor lifecycle adapter ownership, map/settings seams and new workload definitions from T035. Historical C0 freeze alone does not authorize workers to invent TDM contracts or change shared Bootstrap. [Agent coordination](agent-coordination.md) defines the new bounded waves.
 
 ## Current limits
 

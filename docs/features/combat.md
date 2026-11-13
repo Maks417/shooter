@@ -1,5 +1,7 @@
 # Feature: FPS movement and combat
 
+Product extension: [Team Deathmatch](team-deathmatch.md) adds team score/time/respawn/results around the existing combat rules, through the planned [session/lifecycle seam](../game-session-contracts.md). It preserves same-tick trades, friendly-body obstruction with zero friendly damage, canonical hit volumes and quality independence. A fresh respawn restores baseline ammo/health under a new life/EntityId; the historical Compound Clear no-refill rule stays confined to that mode. Gameplay authority remains independent of UI and presentation.
+
 Owner WP-05, paths `Simulation/Motor`, `Simulation/Combat`, with presentation adapters owned separately. Consumes [contracts](../contracts.md); authority extension in [networking](networking.md).
 
 ## Player flow and fixed-tick rules

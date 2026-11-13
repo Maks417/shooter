@@ -2,7 +2,7 @@
 
 Milestones are dependency gates, not calendar promises. [Backlog](backlog.md) gives ordered tasks. No milestone is complete until implementation exists and attached evidence passes [validation](validation.md).
 
-Owner disposition on 2026-11-13: **M0, M1 and M2 closed with explicit user waivers; three of eight milestones closed** (ADR-017, ADR-025, ADR-026). These recorded exceptions accept implemented milestone work while leaving unverified hardware/thermal/counter gates unchanged in their automated reports. They are not all-gates-pass claims. M1 P05 soldier visual remains FAIL / not accepted under ADR-024; see the [M2 handoff](milestones/m2-combat-harness/handoff.md), [M1 handoff](milestones/m1-procedural-feasibility/handoff.md) and [M0 handoff](milestones/m0-foundation/handoff.md). M3–M7 remain unassigned; future performance gates are unchanged.
+Owner disposition on 2026-11-13: **all eight original milestones M0–M7 closed with explicit owner waivers** (ADR-017/025–028/030–032). Original automated FAIL/Pending results, P05 FAIL under ADR-024 and outstanding real player/hardware evidence are unchanged; see [M7 handoff](milestones/m7-hardening-stretch/handoff.md) and earlier linked packs. The new [playable-release plan](playable-release-plan.md) adds four planned/unassigned gates M8–M11. Eight historical closures out of twelve now-documented milestones does not mean eight technical acceptance passes. Future gates do not inherit the waivers.
 
 | Gate | Deliverable | Required exit evidence |
 |---|---|---|
@@ -14,8 +14,14 @@ Owner disposition on 2026-11-13: **M0, M1 and M2 closed with explicit user waive
 | M5 Network foundation | Framework decision, loopback/dedicated authority, prediction/interpolation | Client/headless isolation, packet fuzzing, command recovery, two-player impaired-network tests |
 | M6 Network slice | Four players + eight bots, lag compensation, late join | B04 soak, 150 ms/3% loss correctness, security limits, bandwidth and server timing |
 | M7 Hardening/stretch | Reproducible release, broader seed/profile coverage; 60 FPS experiment | Clean CI rebuild, all required gates, 60 FPS labeled passed/failed separately; capacity eight players optional new gate |
+| [M8 Runtime composition](milestones/m8-runtime-composition/index.md) | Source-audit repair, Game-v1 freeze and real one-map input/authority/world/view/audio path | RUN00–RUN05; actual player and lifecycle evidence |
+| [M9 Team Deathmatch](milestones/m9-team-deathmatch/index.md) | 5v5/6v6 team bots, score/time/respawn/results data | TDM01–TDM08; 9/11-bot capacity and complete matches |
+| [M10 Maps and shell](milestones/m10-maps-shell/index.md) | Two distinct maps, menus, tables, applied persistent settings | MAP01–MAP03, UI01–UI02, SET01–SET02 in actual player |
+| [M11 Playable release](milestones/m11-playable-release/index.md) | Clean installable offline archive with accepted content | REL01–REL06; full-roster native720p Low30, review and rollback |
 
 ## Slice acceptance checklist
+
+The checklist below describes the historical Compound Clear slice. New release acceptance is the [M11 matrix](milestones/m11-playable-release/validation-acceptance.md): both maps, both team sizes, score and timeout finish, results/replay, menu/settings and clean independent build. Keep both rule sets explicit rather than overwriting historical evidence.
 
 User can launch Windows release build, select Low, load deterministic compound, move/aim/fire/reload two weapons, fight eight soldiers, complete objective, restart and change settings. No missing colliders, corrupt meshes, persistent animation invalidity, unbounded memory or gameplay rules differing by quality. Content restores without local handcrafted assets. Reference-machine evidence meets [performance](performance.md), with failure honestly reported. R10 networking is met only after M6; M4 is explicitly offline.
 

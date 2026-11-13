@@ -1,12 +1,14 @@
 # Vision, scope and requirements
 
-Status: implementation specification, 2026-11-11. M0 has a running generated-box foundation harness and verified client/server smoke; there is no playable FPS/combat slice. Paths and APIs remain specifications except where the [M0 handoff](milestones/m0-foundation/handoff.md) records actual implementation and measurements. The earlier ChatGPT discussion supplies intent; this set supersedes its HDRP suggestion with Unity 6 URP.
+Status: implementation specification; product scope updated 2026-11-13. M0–M7 are closed under recorded owner waivers, with pure feature implementations and historical Unity foundation evidence. An integrated team-match player and later reference acceptance are not established by those closures. The [review and next-stage plan](playable-release-plan.md) separates actual code from new scope. Unity 6 URP remains fixed.
 
 ## Product
 
 A grounded, modern-world military FPS whose geometry, surface detail and motion come from algorithms and numeric definitions. Build a small, convincing combined indoor/outdoor combat space before expanding content. Realism means believable scale, silhouettes, material response, motion, lighting and feedback; visual parity with commercial AAA shooters is an aspiration, not an acceptance claim.
 
 The first playable slice is an offline 256 × 256 m training compound, one local player, eight hostile soldiers, one rifle and one pistol, a single objective, solid cover, repeatable lighting and a replayable benchmark. Networking follows the offline slice, but simulation boundaries and command IDs exist from the first milestone. Initial multiplayer validation is four players plus eight bots; eight players is a later capacity gate, not a promise of large battles.
+
+That paragraph defines the historical M0–M7 slice. **The next owner-requested deliverable** is a Windows offline game with two distinct procedural maps; one human and allied bots versus enemy bots; 5v5 default and selectable 6v6; Team Deathmatch ends at 150 enemy kills or 15 active minutes, followed by team/player results. A main menu selects map, supported mode (only Team Deathmatch), team size and sound/video/control settings. [Exact rules](features/team-deathmatch.md), [maps](features/playable-maps.md) and [shell](features/game-shell.md) define defaults. This is new M8–M11 work, not a retroactive claim about M4 or a network-capacity expansion. No remote transport is needed to play this release.
 
 ## Confirmed constraints
 
@@ -22,6 +24,10 @@ The first playable slice is an offline 256 × 256 m training compound, one local
 | R08 | Asset generation is reproducible and versioned; expensive generation moves out of gameplay | [Generation contract](generation.md) and cache tests |
 | R09 | Independent agents implement bounded modules against frozen shared contracts | [Coordination rules](agent-coordination.md) |
 | R10 | Modern weapons, procedural soldiers, environments, AI, FPS combat and staged networking | Feature acceptance tests and [milestone gates](milestones.md) |
+| R11 | Offline 5v5/6v6 with one human, allied/enemy bots, 150 kills / 15 minutes, safe respawn and immutable results | M9 TDM01–TDM08 and M11 REL02 |
+| R12 | Two distinct packaged procedural maps, both supporting the team mode and sizes | M10 MAP01–MAP03; clean release REL01 |
+| R13 | Actual main/setup/pause/settings/scoreboard/results UI; persistent applied sound/video/control/accessibility preferences | M10 UI01–UI02, SET01–SET02; M11 player review |
+| R14 | Source-matched Windows archive playable offline without Unity/dev cache and with actual release acceptance | M11 REL01–REL06, including new full-roster performance |
 
 Two occupied memory slots do not prove dual-channel operation. The temporary memory-usage screenshot is explicitly excluded from requirements, budgets and diagnosis.
 

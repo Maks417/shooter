@@ -22,4 +22,13 @@ Likelihood/impact H/M/L are planning judgments, not statistical forecasts. Owner
 
 ## Unresolved implementation choices
 
-Exact Unity LTS patch/package versions: resolve T001 from installed/supported toolchain. Real reference-machine driver/channel mode/thermal behavior: capture T004. Soldier visual feasibility: T010 review. Transport/framework and auth provider: T019 and N4. Audio license expansion and external fonts: deferred unless requested. These are bounded tasks, not gaps that prevent starting foundation work. No transient screenshot memory-use value is an unresolved issue.
+| New release risk | Trigger / response | Owner / gate |
+|---|---|---|
+| RSK16 Closed tools mistaken for usable game | Default Bootstrap still empty-actor diagnostic; require real input/world/AI/view/audio player before expansion | Integrator / M8 |
+| RSK17 11-bot starvation/state drift | Single-target/eight-bot assumptions, reset sequences, stale visibility or fake reload; full-roster fairness and authority-state tests | AI / M9 |
+| RSK18 Respawn traps and map imbalance | Unsafe team slots, all candidates exposed, recurrent spawn failure; native nav/LOS and normal-play route review | World/match / M9–M10 |
+| RSK19 Menu/settings only exist as models | Pure layout serializes but devices/input/storage do not change; real UI/device/relaunch acceptance | Client / M10 |
+| RSK20 Clean build omits a map/dependency | Developer cache hides packaging gap; empty-cache compile and extracted offline launch | Release / M11 |
+| RSK21 Historical waivers silently inherited | Required player/P05/reference checks missing; preserve old reports and keep new exit Pending until actual evidence | Integrator / M8–M11 |
+
+Editor/URP versions are already locked, not an unresolved T001 choice. M5 selected UTP but its remote package version remains pending locked-editor verification; offline M8–M11 does not depend on it. Soldier P05 remains FAIL under ADR-024; new live remediation/review is T039/T049. Actual reference driver/counters/thermal acceptance remains empirical. External sounds/fonts and public authentication stay outside this release. No temporary screenshot memory usage is a requirement. See [playable release review](playable-release-plan.md) for the new dependency order.

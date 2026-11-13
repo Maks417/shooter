@@ -1,6 +1,6 @@
 # Proposed repository and toolchain
 
-The layout below remains the target. M0 has created an importable project with Contracts, Simulation/Foundation, World/Foundation, Presentation/Rendering, split Bootstrap assemblies and code-owned scene, generated Settings and EditMode/PlayMode tests. Root `toolchain-lock.json`, Packages locks, ProjectSettings, pure test projects, Tools wrappers and a CI workflow exist. Future feature folders remain planned. See [handoff](milestones/m0-foundation/handoff.md) and [architecture](architecture.md).
+The layout below is the original target, with existing M0–M7 source described in [architecture](architecture.md) and milestone handoffs. Toolchain/package locks and the Unity project already exist. New M8–M11 proposed directories are documented in [Game-v1](game-session-contracts.md) and each [milestone assignment pack](milestones/index.md); proposal paths are not claims of implementation. Keep pure contracts, authority, Unity world adapters and client-only presentation in separate assemblies. Integrator alone adds assembly/project references and settings.
 
 ```text
 shooter/

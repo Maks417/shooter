@@ -325,3 +325,13 @@ Close M7 administratively as **CLOSED WITH USER WAIVER**. Eight of eight milesto
 
 Historical failed/pending results immutable. ADR-017/024–031 unchanged; P05 FAIL retained. Optional T025 remains out of scope.
 
+## ADR-033 — Accepted: next offline playable product scope and staged delivery
+
+Date 2026-11-13. Context: the owner requests development documentation and next-step order for an actual playable build, after the eight original milestones were closed with explicit waivers. Reviewing current Bootstrap and handoffs reveals pure feature foundations without the requested integrated team-match player. Administrative historical closure is preserved; it is not release acceptance.
+
+Decision: plan M8 runtime composition → M9 Team Deathmatch → M10 two maps and shell/settings → M11 playable release acceptance. Product is one local human plus bots on both teams, 5v5 default with 6v6 selectable, two distinct generated maps, 150 enemy kills or 15 minutes elapsed, immutable final result tables, map/mode selection and persistent applied sound/video/control/accessibility settings. Exact chosen defaults, including full-tick score evaluation, timeout draws and respawn policy, live in [team-match rules](features/team-deathmatch.md), [maps](features/playable-maps.md) and [shell](features/game-shell.md). They are explicit design choices for the requested scope, not measured gameplay quality claims.
+
+Introduce a separate proposed pure Game-v1 boundary for product/session/participant/results/settings semantics; keep frozen C0-v1/content-v1/N1-v1 intact. Actual Game-v1 method signatures, source/schema locks and executable fixtures must be implemented/frozen by T035 under the sole integrator, with a follow-up implementation ADR for any encoding/compatibility decisions. Workers may not invent interfaces or patch shared authority/Bootstrap concurrently. This planning ADR does not itself freeze unimplemented C# or a binary format.
+
+Offline play needs no remote transport, LAN/public UI, extra human-player capacity, T025 weapons/penetration, package upgrade, new asset source or imported art. It retains authoritative 60Hz simulation, presentation-only quality options, procedural provenance and native720p Low30 reference requirements. Old waivers and the P05 FAIL stay intact; new milestone exits require actual player/visual/hardware evidence where specified and cannot automatically inherit waivers. This task prepares docs only; M8–M11 remain unassigned until future implementation assignment. See [ordered review](playable-release-plan.md) and [packs](milestones/index.md).
+

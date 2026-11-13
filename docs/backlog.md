@@ -2,6 +2,8 @@
 
 All paths are relative to `UnityProject/Assets/Shooter` unless noted. Contracts owned by integrator. Every work package must meet [agent done rules](agent-coordination.md). Estimate after spikes; no speculative hour counts.
 
+Current next work: [M8–M11 playable release](playable-release-plan.md). T001–T034 below retain historical scope/dispositions; T025 stays deferred. [T035–T051](task-supplement.md#playable-release-task-cards--t035t051) add new runtime/team-match/maps/shell/release work. No completed historical gate is reopened merely to implement the new mode; historical waivers do not accept the new deliverables.
+
 ## Dependency graph
 
 ```mermaid

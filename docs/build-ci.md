@@ -1,6 +1,6 @@
 # Build, CI and release strategy
 
-Depends on [toolchain layout](repo-layout.md), [compiler](generation.md), [validation](validation.md). M0 client/server, test, smoke and B01 capture entry points are implemented; the offline content compiler and later workload/network lanes remain future tasks. Actual evidence and missing acceptance conditions are in the [M0 handoff](milestones/m0-foundation/handoff.md).
+Depends on [toolchain layout](repo-layout.md), [compiler](generation.md) and [validation](validation.md). Existing client/server/diagnostic/test wrappers and pure M0–M7 feature tools have evidence in the historical handoffs; later real Unity/player/hardware checks remain pending. [M8–M11](playable-release-plan.md) adds genuine two-map team-match compilation, launch/acceptance and local release packaging; diagnostic content/workloads cannot substitute for the game.
 
 ## Pipelines
 
@@ -28,6 +28,8 @@ Block merge for compile/contract/schema/provenance failures, broken links, inval
 Baseline changes need old/new metrics, workload equality, reference-machine conditions and integrator review. Golden image/hash changes require intended generator/schema rationale. Tests cannot update goldens automatically on main. Quarantine flaky tests with issue/owner/time limit; core provenance/combat/codec tests cannot simply be disabled to ship.
 
 ## Artifact retention and release
+
+The next product's clean-package obligations are [M11 REL01–REL06](milestones/m11-playable-release/validation-acceptance.md). T048 implements proposed `Tools/GameRelease/` packaging and normal-menu standalone acceptance (proposed `Tools/Test-Game.ps1`), including both maps and all weapon/rig/profile/font/shader dependencies. Ship relative content roots and validate the catalog before spawn. Installer/public signing/upload/auto-update remain separate decisions; a local extractable archive and usable executable path satisfy delivery format. Package default settings separately from per-user files; clean install must not require editor-generated local caches. Preserve diagnostic smoke as a separate lane and never treat its ≥60 empty-actor ticks as match acceptance.
 
 PR artifacts 14 days, nightly 30 days, milestone/release manifests/reports indefinitely with matching binary/content retention. Retain previous passing release for rollback. Disk budgets and cleanup are CI-owned, never part of game code. Release candidate must install into a clean directory, launch offline without editor/cache, load source-matched content, complete objective, run headless without graphics content and reject incompatible network client.
 

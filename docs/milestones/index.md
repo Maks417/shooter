@@ -2,7 +2,7 @@
 
 Each folder contains only its milestone entry, detailed sequence, contracts/integration, agent assignment cards, validation/acceptance and handoff record. Requirements and feature specifications live once in the docs root, reached through relative links from each milestone. Code and accepted artifacts from prerequisite milestones are still required to execute.
 
-Current disposition, 2026-11-13: three of eight milestones closed. M0, M1 and M2 have owner acceptance with explicit hardware-validation waivers (ADR-017, ADR-025, ADR-026). M1 P05 soldier visual remains FAIL / not accepted under ADR-024. M3–M7 remain unassigned. See the [M2 handoff](m2-combat-harness/handoff.md), [M1 handoff](m1-procedural-feasibility/handoff.md) and [M0 handoff](m0-foundation/handoff.md).
+Current disposition, 2026-11-13: all eight original M0–M7 milestones are administratively closed under the recorded owner waivers, most recently ADR-032 in [M7 handoff](m7-hardening-stretch/handoff.md). Outstanding player/Unity/hardware evidence remains Pending; M1 P05 remains FAIL under ADR-024. New M8–M11 are **planned and unassigned** for the [requested playable game](../playable-release-plan.md). Their packs add no acceptance claim and inherit no waiver.
 
 | Milestone | Implementation pack |
 |---|---|
@@ -14,6 +14,10 @@ Current disposition, 2026-11-13: three of eight milestones closed. M0, M1 and M2
 | M5 — Networking foundation | [Open pack](m5-network-foundation/index.md) |
 | M6 — Four-player network slice | [Open pack](m6-network-slice/index.md) |
 | M7 — Release hardening and 60 FPS experiment | [Open pack](m7-hardening-stretch/index.md) |
+| M8 — Runtime composition and Game-v1 foundation | [Open pack](m8-runtime-composition/index.md) |
+| M9 — Team Deathmatch and bot teams | [Open pack](m9-team-deathmatch/index.md) |
+| M10 — Two maps, menus and settings | [Open pack](m10-maps-shell/index.md) |
+| M11 — Playable build and acceptance | [Open pack](m11-playable-release/index.md) |
 
 ## Maintenance
 

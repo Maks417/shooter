@@ -21,3 +21,29 @@ Cosmetic physics ragdolls are optional and bounded. Analytic collapse is require
 ## Integration order
 
 T026/T034 first; T027 and T028 share pose schema and merge through integrator; T029 rules feed W01 before environment acceptance; T030/T031/T032 can work independently on event fixtures after C0, integrate only after real events/rig. T033 starts immediately and never waits until optimization to define workload. No benchmark owner changes gameplay defaults to improve timings; optional ragdoll failure keeps analytic collapse and records measured spike outcome.
+
+## Playable release task cards — T035–T051
+
+Status: planned/unassigned, 2026-11-13. These extend the original backlog for [M8–M11](playable-release-plan.md), without reassigning T025. Exact exclusive paths, future worker roles, fixtures and evidence are in each pack's agent/validation pages. All tasks use locked Unity 6000.3.28f1/URP17.3.0, C0-v1/content-v1/N1-v1 and the T035 Game-v1 freeze; changes require integrator ADR/migration. Default resource envelope is [performance](performance.md), with a global 16 AI vision rays and 2 new paths/tick at the new 11-bot capacity. No speculative timing estimates or active leases are created here.
+
+| Task / milestone | Dependency | Owner / output | Required acceptance |
+|---|---|---|---|
+| T035 / M8 | Historical locks and code reviewed | Integrator: repair baseline source-audit/metadata first; compiling separate Game-v1, executable fixture/schema registry, authority/map/menu/settings seams, TDM workload definitions | RUN00–RUN01; source audit and version/count/lease/life/clock/stale-session fixtures; freeze on main before feature dispatch |
+| T036 / M8 | T035 | Integrator: reusable actor authority and real session Bootstrap, local input/tick/pause/cancel lifecycle | RUN03–RUN04; C0 harness regression unchanged |
+| T037 / M8 | T035; integrate T036 | World/content: first full compound package, native collision/nav install, map compile/test wrappers | RUN02; manifests/cold-warm hashes, real path/corner and corrupt-load cases |
+| T038 / M8 | T035; integrate T036–T037 | Client: real input/camera/weapon/rig/HUD/synth device adapters | RUN03–RUN04; actual player uses input, sees/receives combat and hears effects |
+| T039 / M8 | T036–T038 | Integrator/visual owner: executable vertical review, bounded P05 defect triage and live fixes | RUN05, real builds/smoke; visual acceptance remains pending until T049 |
+| T040 / M9 | M8 exit | Match: authoritative scoring/deadline/results reducer | TDM01–TDM02,TDM06; full-tick trades, draw, immutable results |
+| T041 / M9 | T035 lifecycle; integrate T040 | Spawning: participant/life reset, safe team spawn and failure policy | TDM03,TDM06; 180/30/600-tick boundaries |
+| T042 / M9 | M8 real adapters; integrate T040–T041 | AI: 9/11 bots, both teams, multi-enemy sensing, state/sequence/path lifecycle | TDM04–TDM05; global budget and fair opportunities |
+| T043 / M9 | T040–T042 | Integrator: one-map complete 5v5/6v6 with minimal diagnostic score/results view | TDM01–TDM08; actual score and unshortened timer matches |
+| T044 / M10 | T035,T037; acceptance after M9 | Catalog/map: approved map/mode/size metadata, compound team spawns, packaged closure | MAP01–MAP03 on compound |
+| T045 / M10 | T035,T037; integrate T044 | Depot: distinct numeric grammar, native nav/spawn/route/visual package | MAP01–MAP03 on depot; distinct topology and identity |
+| T046 / M10 | T035; integrate T043–T045,T047 | Shell: menus/load/pause, team HUD, live scoreboard/final results | UI01–UI02, both maps/sizes, keyboard/mouse/focus |
+| T047 / M10 | T035; integrate real M8 services | Settings: validated store/migration and actual device application | SET01–SET02; relaunch, storage errors, display revert, audible mute/gains |
+| T048 / M11 | M10 exit | Release integrator: cold regenerate/build/package/clean install | REL01,REL05; no dev cache/editor/network dependency |
+| T049 / M11 | T039 defects, M10 live views | Character/presentation: procedural source fixes and named new visual review | REL03; original P05 FAIL retained, new review is separate |
+| T050 / M11 | T048,T049 stable candidate | Validation/perf: complete match matrix, real hardware and soak | REL02,REL04–REL05; all four map/size workloads, normal-AI capacity |
+| T051 / M11 | T048–T050 accepted | Integrator: playable local archive/hash, controls, evidence/rollback handoff and main cleanup | REL06; all required checks actual PASS or explicitly unresolved, no inherited waiver |
+
+Future task dispatch replaces role placeholders with actual owner/base SHA/branch/allowed files, accepted fixture hashes and exact commands. Proposed wrappers and APIs are deliverables, not currently executable instructions. Workers return a versioned evidence record and rollback reference; integrator updates shared docs and the assigned pack handoff once. All completed work lands on main before verified branch/worktree cleanup.

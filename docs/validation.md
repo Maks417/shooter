@@ -44,8 +44,14 @@ Gameplay random property tests preserve ammo ≥0, health monotonic under damage
 | R08 deterministic compiler/cache | V02,V04,V12 | M1 |
 | R09 parallel boundaries | V01,V14 and PR ownership audit | Every merge |
 | R10 full feature phases | V03,V05–V08,V11,V13 | M2–M6 |
+| R11 offline team-match rules/capacity | TDM01–TDM08, V06,V08,V09 | M9 and REL02/REL04 |
+| R12 two distinct packaged maps | MAP01–MAP03, V02,V04,V07,V12 | M10 and REL01 |
+| R13 real shell/settings/results | UI01–UI02, SET01–SET02, V13 | M10 and REL02/REL03 |
+| R14 independently playable build | REL01–REL06, V10,V12 | M11 |
 
 No tests have been executed against game code at documentation creation. Documentation delivery verification is separate: local file existence, relative links/anchors, index coverage and integrity manifest. This cannot substitute for future Unity/runtime testing.
+
+That statement describes the original documentation creation. Historical M0–M7 handoffs now record actual pure and selected Unity foundation checks, with later player/hardware/visual gaps retained. New M8–M11 scenario IDs are defined in their [validation packs](milestones/index.md); they are **NotRun** until implemented/executed. Game-v1 fixture/schema validators must be added through T035, with independent C# reproduction and explicit test discovery counts. Refreshing documentation hashes does not generate any of that evidence.
 
 
 ## Specification fixture validation

@@ -2,6 +2,8 @@
 
 Owner WP-07, proposed `Simulation/AI`; uses [world/navigation contracts](../contracts.md) and emits [combat commands](combat.md). No direct Animator/renderer access and no privileged damage calls.
 
+Current pure implementation exists at `UnityProject/Assets/Shooter/Simulation/AI/CombatAiDirector.cs` and `PerceptionSystem.cs`: capacity eight, one optional player target. M9 extends this under [Team Deathmatch](team-deathmatch.md#team-bot-behavior-and-capacity) to 9/11 bots and both teams; the initial global 16-ray/2-path limits remain shared. T042 explicitly tests real path corners, authoritative reload/state, persistent sequences, sensing fairness and stale-visibility cleanup. Historical eight-bot pure acceptance is not evidence for this new runtime capacity.
+
 ## Model
 
 Per-agent blackboard: current goal, last seen/heard enemy positions and ticks, confidence, cover reservation, health/ammo, path ticket and stuck timer. Small explicit state machine: Idle/Patrol → Investigate → Engage → SeekCover → Reload/Reposition → Search → Patrol; Dead terminal. Score utilities inside states for cover and threat choice, rather than building a general behavior-tree editor.
