@@ -44,19 +44,21 @@ namespace Shooter.Bootstrap
         }
         [Serializable] private sealed class RenderCounterProof
         {
-            public string column, requestedCategory, name, category, unit, dataType, flags, unavailable;
+            public string column, requestedCategory, expectedNativeCategoryName, name, category, unit, dataType, flags, unavailable;
             public bool identityValidated, available;
             public int capturedFrames, invalidFrames;
         }
         private sealed class OptionalRenderCounter : IDisposable
         {
             private ProfilerRecorder recorder;
+            private ProfilerMarkerDataType dataType;
             private readonly RenderCounterProof proof;
             public OptionalRenderCounter(string column, string requestedCategory, ProfilerCategory category, string name, ProfilerMarkerDataUnit unit)
             {
                 proof = new RenderCounterProof { column = column, requestedCategory = requestedCategory, name = name };
                 try
                 {
+                    proof.expectedNativeCategoryName = category.Name;
                     var handles = new List<ProfilerRecorderHandle>(); ProfilerRecorderHandle.GetAvailable(handles);
                     int matches = 0;
                     foreach (var handle in handles)
@@ -66,13 +68,16 @@ namespace Shooter.Bootstrap
                         matches++;
                         proof.category = description.Category.Name; proof.unit = description.UnitType.ToString();
                         proof.dataType = description.DataType.ToString(); proof.flags = description.Flags.ToString();
-                        proof.identityValidated = description.UnitType == unit && (description.Flags & MarkerFlags.Counter) != 0;
+                        dataType = description.DataType;
+                        proof.identityValidated = description.UnitType == unit && (description.Flags & MarkerFlags.Counter) != 0 &&
+                            IsSupportedInteger(description.DataType);
                     }
                     if (matches != 1 || !proof.identityValidated)
-                    { proof.identityValidated = false; proof.unavailable = "Exact counter/category/unit/Counter flag not uniquely available in this player"; return; }
+                    { proof.identityValidated = false; proof.unavailable = "Exact integer counter/category/unit/Counter flag not uniquely available in this player"; return; }
                     recorder = ProfilerRecorder.StartNew(category, name, 1);
-                    if (!recorder.Valid || !recorder.IsRunning || recorder.UnitType != unit)
-                    { proof.identityValidated = false; proof.unavailable = "Matching counter could not start with the expected unit"; }
+                    if (!recorder.Valid || !recorder.IsRunning || recorder.UnitType != unit ||
+                        !IsSupportedInteger(recorder.DataType) || recorder.DataType != dataType)
+                    { proof.identityValidated = false; proof.unavailable = "Matching counter could not start with the expected unit/integer datatype"; }
                 }
                 catch (Exception error) { proof.identityValidated = false; proof.unavailable = error.GetType().Name + ": counter initialization failed"; }
             }
@@ -90,9 +95,14 @@ namespace Shooter.Bootstrap
                 if (capture)
                 {
                     proof.capturedFrames++;
-                    if (value <= 0 || count != 1) proof.invalidFrames++;
+                    if (value <= 0 || value > MaximumValue(dataType) || count != 1) proof.invalidFrames++;
                 }
             }
+            private static bool IsSupportedInteger(ProfilerMarkerDataType type) => type == ProfilerMarkerDataType.Int32 || type == ProfilerMarkerDataType.UInt32 ||
+                type == ProfilerMarkerDataType.Int64 || type == ProfilerMarkerDataType.UInt64;
+            // ProfilerRecorderSample.Value is normalized long, not a bitcast of the counter's source type.
+            private static long MaximumValue(ProfilerMarkerDataType type) => type == ProfilerMarkerDataType.Int32 ? int.MaxValue :
+                type == ProfilerMarkerDataType.UInt32 ? uint.MaxValue : long.MaxValue;
             public RenderCounterProof Finish()
             {
                 proof.available = proof.identityValidated && proof.capturedFrames > 0 && proof.invalidFrames == 0;

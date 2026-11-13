@@ -257,7 +257,8 @@ class CaptureAnalysisTests(unittest.TestCase):
         self.meta.update(renderCounterMethod=render_counters.METHOD, renderCounters=[])
         for column, (count, name, category, unit) in render_counters.COUNTERS.items():
             self.meta["renderCounters"].append({"column": column, "requestedCategory": category, "name": name,
-                "category": "actual-native-category", "unit": unit, "dataType": "Int64", "flags": "Counter",
+                "category": render_counters.NATIVE_CATEGORIES[category], "expectedNativeCategoryName": render_counters.NATIVE_CATEGORIES[category],
+                "unit": unit, "dataType": "Int64", "flags": "Counter",
                 "identityValidated": True, "available": True, "capturedFrames": 2, "invalidFrames": 0, "unavailable": None})
             for i, row in enumerate(self.frames):
                 row[column], row[count] = (1000 + i) if unit == "Bytes" else (12 + i), 1

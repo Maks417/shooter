@@ -8,7 +8,8 @@ class RenderCounterTests(unittest.TestCase):
         self.rows = [{}, {}]
         self.meta = {"frames": 2, "renderCounterMethod": render_counters.METHOD, "renderCounters": []}
         for column, (count, name, category, unit) in render_counters.COUNTERS.items():
-            self.meta["renderCounters"].append({"column": column, "requestedCategory": category, "name": name, "category": "native-category",
+            self.meta["renderCounters"].append({"column": column, "requestedCategory": category, "name": name,
+                "category": render_counters.NATIVE_CATEGORIES[category], "expectedNativeCategoryName": render_counters.NATIVE_CATEGORIES[category],
                 "unit": unit, "dataType": "Int64", "flags": "Counter", "identityValidated": True, "available": True,
                 "capturedFrames": 2, "invalidFrames": 0, "unavailable": None})
             for i, row in enumerate(self.rows):
@@ -37,6 +38,8 @@ class RenderCounterTests(unittest.TestCase):
 
     def test_sample_availability_and_metadata_mutations_reject(self):
         for field, value in [("name", "Scene triangles inventory"), ("unit", "Bytes"), ("flags", "Default"),
+                             ("category", "Memory"), ("expectedNativeCategoryName", "OtherCategory"),
+                             ("dataType", "Float"), ("dataType", "Double"), ("dataType", "String"),
                              ("capturedFrames", 1), ("invalidFrames", 1), ("available", False), ("identityValidated", False)]:
             with self.subTest(field=field):
                 meta = copy.deepcopy(self.meta); meta["renderCounters"][0][field] = value
@@ -63,6 +66,23 @@ class RenderCounterTests(unittest.TestCase):
             with self.subTest(value=value):
                 rows = copy.deepcopy(self.rows); rows[0]["drawCalls"] = value
                 with self.assertRaises(ValueError): render_counters.analyze(self.meta, rows)
+
+    def test_unsigned64_counter_is_accepted_only_with_signed_sample_range(self):
+        for proof in self.meta["renderCounters"]:
+            proof["dataType"] = "UInt64"
+        result, unavailable = render_counters.analyze(self.meta, self.rows)
+        self.assertEqual(result["drawCalls"]["max"], 11); self.assertEqual(unavailable, [])
+
+    def test_declared_integer_datatypes_enforce_normalized_sample_bounds(self):
+        for data_type, maximum in render_counters.TYPE_MAXIMUM.items():
+            with self.subTest(data_type=data_type):
+                meta, rows = copy.deepcopy(self.meta), copy.deepcopy(self.rows)
+                meta["renderCounters"][0]["dataType"] = data_type
+                rows[0]["drawCalls"] = str(maximum)
+                result, unavailable = render_counters.analyze(meta, rows)
+                self.assertEqual(result["drawCalls"]["max"], maximum); self.assertEqual(unavailable, [])
+                rows[0]["drawCalls"] = str(maximum + 1)
+                with self.assertRaises(ValueError): render_counters.analyze(meta, rows)
 
 
 if __name__ == "__main__":

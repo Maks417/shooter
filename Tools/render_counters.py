@@ -8,6 +8,10 @@ COUNTERS = {
     "renderedTriangles": ("renderedTrianglesCount", "Triangles Count", "Render", "Count"),
     "graphicsUsedMemoryBytes": ("graphicsUsedMemoryCount", "Gfx Used Memory", "Memory", "Bytes"),
 }
+# Explicit native labels observed in the locked Editor inventory. Release descriptors must match too.
+NATIVE_CATEGORIES = {"Render": "Render", "Memory": "Memory"}
+# Even UInt64 is bounded to signed64 because ProfilerRecorderSample.Value is a normalized long.
+TYPE_MAXIMUM = {"Int32": 2**31 - 1, "UInt32": 2**32 - 1, "Int64": 2**63 - 1, "UInt64": 2**63 - 1}
 SCOPE = ("Fresh engine ProfilerRecorder counters per Update interval. Triangles include engine-reported "
          "render work/passes, not distinct visible triangles. Gfx Used Memory is engine accounting, "
          "not dedicated VRAM, residency or total driver allocation.")
@@ -35,8 +39,9 @@ def analyze(meta, rows):
         if type(proof.get("identityValidated")) is not bool or type(proof.get("available")) is not bool:
             raise ValueError("Invalid render counter availability flag")
         identity = proof["identityValidated"]
-        if identity and (proof.get("unit") != unit or not proof.get("category") or
-                         not proof.get("dataType") or "Counter" not in (proof.get("flags") or "").split(", ")):
+        if identity and (proof.get("unit") != unit or proof.get("category") != NATIVE_CATEGORIES[category] or
+                         proof.get("expectedNativeCategoryName") != NATIVE_CATEGORIES[category] or
+                         proof.get("dataType") not in TYPE_MAXIMUM or "Counter" not in (proof.get("flags") or "").split(", ")):
             raise ValueError("Validated render counter descriptor mismatch")
         values = []
         invalid = 0
@@ -50,6 +55,8 @@ def analyze(meta, rows):
                 raise ValueError("Missing/malformed raw render counter sample") from error
             if value < -1 or value > 2**63 - 1 or count > 2**63 - 1:
                 raise ValueError("Invalid raw render counter sentinel/count")
+            if identity and value > TYPE_MAXIMUM[proof["dataType"]]:
+                raise ValueError("Raw render counter exceeds declared integer datatype")
             invalid += value <= 0 or count != 1
             values.append(value)
         if (type(proof.get("capturedFrames")) is not int or proof["capturedFrames"] != len(rows) or
