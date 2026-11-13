@@ -93,6 +93,11 @@ namespace Shooter.Presentation
             ViewCamera.transform.position = new Vector3(0, 2.5f, -10); ViewCamera.transform.LookAt(new Vector3(0, .7f, 0));
             ViewCamera.fieldOfView = 55; ViewCamera.nearClipPlane = .03f; ViewCamera.farClipPlane = 50;
             ViewCamera.clearFlags = CameraClearFlags.SolidColor; ViewCamera.backgroundColor = new Color(.14f, .18f, .23f); ViewCamera.allowHDR = false; ViewCamera.allowMSAA = false;
+            for (int i = 0; i < weaponRoots.Count; i++)
+            {
+                var lod = weaponRoots[i].AddComponent<GeneratedWeaponLod>();
+                lod.ViewCamera = ViewCamera; lod.DiameterMeters = i == 0 ? 1.04f : .30f;
+            }
             var sun = new GameObject("Fixed procedural daylight").AddComponent<Light>(); sun.transform.SetParent(transform, false);
             sun.type = LightType.Directional; sun.transform.rotation = Quaternion.Euler(45, 135, 0); sun.intensity = 1; sun.shadows = LightShadows.Hard;
             RenderSettings.ambientMode = AmbientMode.Flat; RenderSettings.ambientLight = new Color(.25f, .28f, .33f);
@@ -106,7 +111,7 @@ namespace Shooter.Presentation
             for (int i = 0; i < weaponRoots.Count; i++)
             {
                 var root = weaponRoots[i]; root.SetActive(i == index); root.transform.rotation = Quaternion.identity;
-                for (int j = 0; j < root.transform.childCount; j++) root.transform.GetChild(j).gameObject.SetActive(j == lod);
+                root.GetComponent<GeneratedWeaponLod>().Inspect(lod);
             }
             Vector3 target = weaponRoots[index].transform.position + new Vector3(0, .02f, index == 0 ? .14f : .03f);
             if (angle == "ads")

@@ -31,6 +31,7 @@
     "UnityProject/Assets/Shooter/Generation/Core/Geometry/MeshAssembly.cs": "b645bbf86612e19e9d01fc6e439a4ac1b161a211a439a19a2b02359288a82c95",
     "UnityProject/Assets/Shooter/Generation/Core/Geometry/MeshValidation.cs": "9e15759d3f536c985087f5bb7b1083796fb2205790e2ffb1c3f940bae692d4d3",
     "UnityProject/Assets/Shooter/Generation/Core/Geometry/PrimitiveGeometry.cs": "4a5279e8bbb80b0fa446dc9df91f526d9e01615fe5825da38cc6f91632020d5e",
+    "UnityProject/Assets/Shooter/Generation/Core/Geometry/ScreenHeightLod.cs": "5e97c224b31a939b21d57ced683228a98e664fb5ced6c14945163d70a5625b4a",
     "UnityProject/Assets/Shooter/Generation/Core/Materials/MaterialAssetGenerator.cs": "559dfab01c6884df4e3082664a5e1aa9e3a3ca238ea62e25999923f3754ffbd7",
     "UnityProject/Assets/Shooter/Generation/Core/Materials/MaterialBaker.cs": "6b61bd8e6838447ab9a9f2e2f55fad83ec2a69140c9b5734957cda566e75eb96",
     "UnityProject/Assets/Shooter/Generation/Core/Materials/MaterialRecipe.cs": "472e44e53da39ca31c6e45d9aee72ee388740463e9ceac32aeb276f9360ea141",
