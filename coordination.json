@@ -3,7 +3,7 @@
   "updatedDate": "2026-11-13",
   "integrator": "Cursor M5-M7 integrator (bc-05dea339)",
   "branch": "main",
-  "baseCommit": "b73132040b543e2b003d6e681146b6a65e7e46d1",
+  "baseCommit": "5d1455fec803d76e5eec2f7b8bf799188efffd04",
   "contractVersion": "C0-v1",
   "readyForParallelIntegration": false,
   "packages": [
@@ -1458,7 +1458,7 @@
       "WP-09/stretch-report",
       "WP-00/deferred-ledger"
     ],
-    "softwareHead": "b73132040b543e2b003d6e681146b6a65e7e46d1"
+    "softwareHead": "5d1455fec803d76e5eec2f7b8bf799188efffd04"
   },
   "m7MilestoneAcceptance": {
     "milestone": "M7",
@@ -1477,6 +1477,6 @@
     "stretch60Fps": "PendingHardware; baselinesRelaxed=false",
     "t025Started": false,
     "evidenceDirectory": "Artifacts/m7-hardening-stretch/owner-closure-20261113",
-    "softwareHead": "b73132040b543e2b003d6e681146b6a65e7e46d1"
+    "softwareHead": "5d1455fec803d76e5eec2f7b8bf799188efffd04"
   }
 }
