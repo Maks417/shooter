@@ -176,8 +176,11 @@ namespace Shooter.Generation
         private TwoBoneResult Arm(int upper, int forearm, int hand, Float3 target, Quat chest, float side)
         {
             var p = pose.Positions; var r = pose.Rotations;
-            var result = TwoBoneIk.Solve(p[upper], target, Rotate(new Float3(0, 0, -1), chest), .29f, .26f, 145 * Radians, .98f,
-                Rotate(new Float3(side, 0, 0), chest), 90 * Radians);
+            // Version2 shoulder task-neutral cone axis and preferred elbow pole point down in chest
+            // space. The immutable T-bind segment frame/reference pole remains unchanged. The90deg
+            // shoulder limit is unchanged; knee task cones/poles also remain unchanged.
+            var result = TwoBoneIk.Solve(p[upper], target, Rotate(new Float3(0, -1, 0), chest), .29f, .26f, 145 * Radians, .98f,
+                Rotate(new Float3(0, -1, 0), chest), 90 * Radians);
             p[forearm] = result.Joint; p[hand] = result.End;
             r[upper] = SegmentRotation(upper, forearm, chest); r[forearm] = SegmentRotation(forearm, hand, chest);
             // The baseline has no authored palm frame. Respect a conservative45deg swing/30deg twist
