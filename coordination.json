@@ -3,7 +3,7 @@
   "updatedDate": "2026-11-13",
   "integrator": "Cursor M8 integrator (bc-b005c261)",
   "branch": "main",
-  "baseCommit": "bf464240d8a3d43276dd33afe7f80f6abfa1c11c",
+  "baseCommit": "8a575c88854660f8c55590b9e3af52f08efc67c2",
   "contractVersion": "C0-v1",
   "readyForParallelIntegration": false,
   "packages": [
@@ -1508,7 +1508,8 @@
     "evidence": "Artifacts/m8-runtime-composition",
     "readyForParallelIntegration": false,
     "t025Started": false,
-    "softwareHead": "bf464240d8a3d43276dd33afe7f80f6abfa1c11c"
+    "softwareHead": "8a575c88854660f8c55590b9e3af52f08efc67c2",
+    "note": "softwareHead is tip at time of coordination write; verify with git rev-parse main"
   },
   "leftoverNonMilestoneWork": {
     "date": "2026-11-13",
