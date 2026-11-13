@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "updatedDate": "2026-11-13",
-  "integrator": "Cursor M8 integrator (bc-b005c261)",
+  "integrator": "Cursor M8-M11 integrator (bc-c6e6a4b4)",
   "branch": "main",
-  "baseCommit": "8a575c88854660f8c55590b9e3af52f08efc67c2",
+  "baseCommit": "5fb3e30dbac31d4d587a81d4105717984eb88a83",
   "contractVersion": "C0-v1",
   "readyForParallelIntegration": false,
   "packages": [
@@ -1489,27 +1489,37 @@
     "gameContractVersion": "Game-v1",
     "gameContractLock": "game-contract-lock.json",
     "decision": "docs/decisions.md#adr-034--accepted-initial-game-v1-freeze-t035",
-    "status": "IN_PROGRESS",
-    "completed": [
-      "RUN00 provenance repair",
-      "T035 Game-v1 freeze",
-      "T036 OfflineGameSession + HarnessActorLifecycle",
-      "TeamDeathmatchMatch pure reducer",
-      "diagnostic Configure-Unity + client/server Build + Smoke PASS"
-    ],
-    "pending": [
-      "T037 real Unity collision/nav install",
-      "T038 client input/camera/HUD/audio product path",
-      "T039 product vertical (OfflineGameSession as launch)",
-      "M9\u2013M11 remaining product gates",
-      "T025 deferred",
-      "P05 FAIL retained ADR-024"
-    ],
+    "status": "SUPERSEDED_BY_m8Close",
     "evidence": "Artifacts/m8-runtime-composition",
-    "readyForParallelIntegration": false,
-    "t025Started": false,
-    "softwareHead": "8a575c88854660f8c55590b9e3af52f08efc67c2",
-    "note": "softwareHead is tip at time of coordination write; verify with git rev-parse main"
+    "t025Started": false
+  },
+  "m8Close": {
+    "date": "2026-11-13",
+    "status": "CLOSED_SOFTWARE",
+    "integrator": "Cursor M8-M11 integrator (bc-c6e6a4b4)",
+    "branch": "cursor/m8-m11-product-vertical-b8b8",
+    "disposition": "Product OfflineGameSession default Bootstrap; diagnostic smoke retained; named human/P05 Pending",
+    "evidence": "Artifacts/m8-runtime-composition/product-player-evidence.json",
+    "t025Started": false
+  },
+  "m9Close": {
+    "date": "2026-11-13",
+    "status": "CLOSED_SOFTWARE",
+    "disposition": "TDM reducer + 11-bot TeamBotPlanner + session Step binding; TDM07/08 Pending",
+    "handoff": "docs/milestones/m9-team-deathmatch/handoff.md"
+  },
+  "m10Close": {
+    "date": "2026-11-13",
+    "status": "CLOSED_SOFTWARE",
+    "disposition": "Compound+Depot maps, GameShellMenu, FileUserSettingsStore; named UI/device Pending",
+    "handoff": "docs/milestones/m10-maps-shell/handoff.md"
+  },
+  "m11Close": {
+    "date": "2026-11-13",
+    "status": "CLOSED_SOFTWARE_PACKAGE",
+    "disposition": "Package-Release tooling PASS; REL03/04/05 PendingHardware or named review; P05 FAIL retained",
+    "handoff": "docs/milestones/m11-playable-release/handoff.md",
+    "packageEvidence": "Artifacts/m11-playable-release"
   },
   "leftoverNonMilestoneWork": {
     "date": "2026-11-13",
@@ -1519,8 +1529,9 @@
       "Hosted CI (user-deferred)",
       "Waived PendingHardware items across M0\u2013M7 (immutable; not flipped to PASS)",
       "P05 soldier visual FAIL (ADR-024; no fourth clearance without new owner auth)",
-      "Product OfflineGameSession not yet default Bootstrap launch path",
-      "M8 RUN02\u2013RUN05 product vertical / M9\u2013M11 unfinished"
+      "Named human vertical / UI / soldier visual review (RUN03/REL03/T049)",
+      "Native-720p matrix and soak (REL04/REL05/T050) PendingHardware",
+      "Unshortened 15-minute / score-limit player matches (TDM07)"
     ]
   }
 }

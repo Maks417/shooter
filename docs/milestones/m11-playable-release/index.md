@@ -1,6 +1,6 @@
 # M11 — Playable build and acceptance — implementation pack
 
-Status: **PLANNED / UNASSIGNED**, 2026-11-13. Tasks T048–T051. This pack defines future implementation; no workers, tests or closure are claimed by publishing it.
+Status: **CLOSED (software package tooling)**, 2026-11-13. Tasks T048–T051. Local package tooling PASS; named visual/720p/soak PendingHardware. See [handoff](handoff.md).
 
 ## Goal
 

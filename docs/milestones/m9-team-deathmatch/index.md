@@ -1,6 +1,6 @@
 # M9 — Team Deathmatch and bot teams — implementation pack
 
-Status: **PLANNED / UNASSIGNED**, 2026-11-13. Tasks T040–T043. This pack defines future implementation; no workers, tests or closure are claimed by publishing it.
+Status: **CLOSED (software)**, 2026-11-13. Tasks T040–T043. Pure TDM + 11-bot planner + session binding on main; unshortened player matrix Pending. See [handoff](handoff.md).
 
 ## Goal
 

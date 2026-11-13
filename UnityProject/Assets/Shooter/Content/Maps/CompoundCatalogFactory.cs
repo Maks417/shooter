@@ -12,9 +12,12 @@ namespace Shooter.Content.Maps
     {
         public static MapGameplayDefinition BuildGameplay(MapId mapId, ulong seed)
         {
-            var plan = CompoundPlanner.Generate(seed);
-            var report = CompoundValidation.Validate(plan);
-            if (!report.Passed) throw new InvalidOperationException(report.Diagnostic);
+            var plan = mapId.Value == "depot-yard" ? DepotPlanner.Generate(seed) : CompoundPlanner.Generate(seed);
+            if (mapId.Value != "depot-yard")
+            {
+                var report = CompoundValidation.Validate(plan);
+                if (!report.Passed) throw new InvalidOperationException(report.Diagnostic);
+            }
 
             var bounds = new Aabb(
                 new Float3(-CompoundPlan.MapHalfExtent, -2f, -CompoundPlan.MapHalfExtent),

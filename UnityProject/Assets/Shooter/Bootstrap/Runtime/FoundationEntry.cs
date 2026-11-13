@@ -108,9 +108,18 @@ namespace Shooter.Bootstrap
             byte teamSize = byte.Parse(CommandLine("-shooterTeamSize", "5"), CultureInfo.InvariantCulture);
             if (teamSize != 5 && teamSize != 6) throw new ArgumentException("team size must be 5 or 6");
             string mapArg = CommandLine("-shooterMap", "training-compound");
+            // Client shell may override via PlayerPrefs when CLI keeps defaults.
+            if (mapArg == "training-compound" && teamSize == 5 &&
+                PlayerPrefs.HasKey("shooter.map") && PlayerPrefs.HasKey("shooter.teamSize"))
+            {
+                mapArg = PlayerPrefs.GetString("shooter.map", mapArg);
+                int prefSize = PlayerPrefs.GetInt("shooter.teamSize", teamSize);
+                if (prefSize == 5 || prefSize == 6) teamSize = (byte)prefSize;
+            }
             var mapId = new MapId(mapArg);
             if (!catalog.TryGet(mapId, out var entry)) throw new InvalidOperationException("Unknown map " + mapArg);
             var request = new SessionRequest(mapId, WellKnownModes.TeamDeathmatch, teamSize, entry.RecipeSeed);
+            byte teamSizeLog = teamSize;
             var load = productSession.BeginLoadAsync(request, CancellationToken.None).GetAwaiter().GetResult();
             if (!load.Succeeded) throw new InvalidOperationException("Product load failed: " + load.Diagnostic + " " + load.UserFacing);
             if (productMap is CompoundMapRuntime compound && productSession.Lifecycle != null)
@@ -124,7 +133,7 @@ namespace Shooter.Bootstrap
             }
             productSession.SignalReady();
             productSession.Start();
-            Debug.Log("SHOOTER_COMPOSITION mode=product map=" + mapArg + " teamSize=" + teamSize);
+            Debug.Log("SHOOTER_COMPOSITION mode=product map=" + request.MapId.Value + " teamSize=" + teamSizeLog);
         }
 
         public static string CommandLine(string name, string fallback)

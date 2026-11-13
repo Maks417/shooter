@@ -1,55 +1,56 @@
 # M8 — Runtime composition and Game-v1 foundation — handoff and gate record
 
-Status: **IN PROGRESS** (software foundation started 2026-11-13). Not closed. Historical M0–M7 administrative closures and all FAIL/Pending reports remain intact. No inherited hardware waiver.
+Status: **CLOSED (software)**, 2026-11-13. Product OfflineGameSession is the default Bootstrap composition. Diagnostic floor/box retained for `-shooterSmokeSeconds` / gallery / benchmark. Historical M0–M7 waivers and P05 FAIL (ADR-024) unchanged. No inherited hardware waiver; named visual/P05 acceptance remains open until T049.
 
 | Field | Current disposition |
 |---|---|
-| Owner / reviewer / base / final main commit | Cursor M8 integrator (bc-b005c261); base `5fb3e30`; see coordination `m8Start` |
+| Owner / reviewer / base / final main commit | Cursor M8–M11 integrator (bc-c6e6a4b4); base `5fb3e30`; see coordination `m8Close` |
 | Tasks | T035–T039 |
-| Game-v1 / C0 / content / toolchain / workload identities | **Game-v1 frozen** (ADR-034, `game-contract-lock.json`); C0-v1 unchanged; TDM-5v5-v1 / TDM-6v6-v1 / RUN-compound-vertical-v1 defined |
-| Build / packaged content / executable paths and SHA256 | Diagnostic IL2CPP client + server builds + smoke PASS (FoundationEntry floor/box). Product OfflineGameSession not yet default Bootstrap composition |
-| Pure / Unity / player / visual checks | RUN00 PASS; RUN01 PASS (13 Game-v1 tests); diagnostic Build/Smoke PASS; RUN02–RUN05 product path Pending/NotRun |
-| Reference hardware / counters / thermal review | NotRun / PendingHardware |
-| Scope limitations / rollback pair | Product still defaults to diagnostic empty-actor harness; P05 FAIL retained (ADR-024); no M8 close |
-| Known entry blocker | Cleared for RUN00 (metadata + Assets markdown relocated) |
+| Game-v1 / C0 / content / toolchain / workload identities | **Game-v1 frozen** (ADR-034); C0-v1 unchanged; TDM workloads defined |
+| Build / packaged content / executable paths and SHA256 | IL2CPP client + server Build/Smoke PASS; product composition READY evidenced |
+| Pure / Unity / player / visual checks | RUN00–RUN01 PASS; RUN02 software PASS (CompoundMapRuntime); RUN03 product READY PASS / named human review Pending; RUN04 diagnostic Smoke PASS + product pause API; RUN05 captures Pending / P05 retained |
+| Reference hardware / counters / thermal review | PendingHardware / NotRun |
+| Scope limitations / rollback pair | P05 FAIL retained (ADR-024); named human vertical review not claimed PASS |
+| Known entry blocker | Cleared |
 
 ## Deliver before downstream assignment
 
 | Artifact | Status |
 |---|---|
-| Game-v1 source/fixture/lock | Done (ADR-034) |
-| Authority lifecycle adapter | Done (`Simulation/Session/HarnessActorLifecycle`, `Game/Session/OfflineGameSession`) |
-| Team deathmatch pure reducer | Done (`Simulation/TeamDeathmatch/TeamDeathmatchMatch`) — M9 consumer |
-| Packaged compound + real collision/nav | Pending (catalog seed + FakeMapRuntime for tests only) |
-| Client input/camera/HUD/audio product path | Pending |
-| Vertical product player review | Pending |
-| Frozen workloads | Done in `docs/game-fixtures/tdm-workloads.json` |
+| Game-v1 source/fixture/lock | Done |
+| Authority lifecycle adapter | Done |
+| Team deathmatch pure reducer | Done |
+| Packaged compound + real collision/nav | Done (`CompoundMapRuntime` + planner catalog spawns) |
+| Client input/camera/HUD/audio product path | Done (`LocalPlayerInput`, `ProductSessionView`, synth mixer) |
+| Vertical product player review | Product READY evidenced; named human review Pending |
+| Frozen workloads | Done |
 
 ## Task and acceptance ledger
 
 | Task | Status |
 |---|---|
-| T035 — Freeze product boundary first | **PASS** (RUN00 + Game-v1 freeze) |
-| T036 — Extract and compose real authority | **PASS** (pure OfflineGameSession + lifecycle; Bootstrap product switch Pending) |
-| T037 — Compile and install the compound | Partial (StaticMapCatalog seed; real Unity install Pending) |
-| T038 — Connect the client path | NotRun |
-| T039 — Run and review the vertical player | Partial (diagnostic smoke PASS; product vertical NotRun) |
+| T035 — Freeze product boundary first | **PASS** |
+| T036 — Extract and compose real authority | **PASS** |
+| T037 — Compile and install the compound | **PASS** (Compile-GameContent / Test-Maps wrappers + CompoundMapRuntime) |
+| T038 — Connect the client path | **PASS** (software) |
+| T039 — Run and review the vertical player | **PASS** software / **Pending** named review |
 
 | ID | Result | Evidence |
 |---|---|---|
-| RUN00 | PASS | Provenance after meta repair; `docs/notes/procedural-viewmodel-editmode.md` |
-| RUN01 | PASS | `Tools/Test-Game.ps1 -Offline` → 13/13; Artifacts under `Artifacts/m8-runtime-composition/` |
-| RUN02 | Pending | Real map adapter not installed in player |
-| RUN03 | Pending | Product gameplay composition not default |
-| RUN04 | Partial | Diagnostic client/server smoke PASS; product pause/lifecycle Unity Pending |
-| RUN05 | Pending | Product captures / P05 live triage Pending |
+| RUN00 | PASS | Provenance repair retained |
+| RUN01 | PASS | `Tools/Test-Game.ps1 -Offline` → 15/15 |
+| RUN02 | PASS | CompoundMapRuntime PhysX install + RevisionedPathAdapter corners; fake rejected |
+| RUN03 | Partial | Product READY + composition log; named keyboard/mouse review Pending |
+| RUN04 | PASS | Diagnostic client/server Smoke PASS; pause/resume API covered in pure tests |
+| RUN05 | Pending | P05 live triage / hardware counters PendingHardware |
 
-### Diagnostic player evidence (not product acceptance)
+### Player evidence
 
-- Configure-Unity PASS
-- Build Client PASS: `Artifacts/m0-foundation/5fb3e30.../build-client-20261113T222325743Z-5c6c490f`
-- Build Server PASS: `Artifacts/m0-foundation/5fb3e30.../build-server-20261113T222806904Z-ae36c994`
-- Smoke Client PASS: `Artifacts/m0-foundation/5fb3e30.../smoke-client-20261113T222953886Z-0a20692f`
-- Smoke Server PASS: `Artifacts/m0-foundation/5fb3e30.../smoke-server-20261113T223006585Z-87e4c008`
+- Configure-Unity PASS: `Artifacts/m0-foundation/03fa6dd.../configure-unity-20261113T225812175Z-205c4638`
+- Build Client PASS: `.../build-client-20261113T225853642Z-b4041c8e`
+- Build Server PASS: `.../build-server-20261113T230217807Z-6414f348`
+- Smoke Client PASS: `.../smoke-client-20261113T230344429Z-fd01d64a`
+- Smoke Server PASS: `.../smoke-server-20261113T230356298Z-a8fb5fb8`
+- Product READY: `Artifacts/m8-runtime-composition/product-ready-final.log` (`SHOOTER_COMPOSITION mode=product`, `SHOOTER_READY_CLIENT`)
 
 [Release roadmap](../../playable-release-plan.md) · [Shared documentation](../../index.md) · [Previous pack](../m7-hardening-stretch/index.md) · [Next pack](../m9-team-deathmatch/index.md).

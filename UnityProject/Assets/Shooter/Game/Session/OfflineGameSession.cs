@@ -50,10 +50,8 @@ namespace Shooter.Game.Session
         public SessionPauseState PauseState => pause;
         public uint CompletedTick => tick == 0 && phase != GameMatchPhase.Playing ? 0 : tick;
         public EntityId HumanEntityId => humanEntity;
-        public HarnessActorLifecycle? Lifecycle => lifecycle;
-        public CombatHarnessSimulation? Harness => harness;
+        public IActorLifecycle? Lifecycle => lifecycle;
         public IMapRuntime? MapRuntime => mapRuntime;
-        public TeamBotPlanner? Bots => bots;
 
         public GameOperationResult Validate(SessionRequest request)
         {

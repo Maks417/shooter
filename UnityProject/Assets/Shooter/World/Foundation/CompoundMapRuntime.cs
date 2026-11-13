@@ -8,7 +8,7 @@ using Shooter.Game.Contracts;
 using Shooter.Generation.Environment;
 using Shooter.World.Navigation;
 using UnityEngine;
-using UnityEngine.AI;
+using EntityId = Shooter.Contracts.EntityId;
 
 namespace Shooter.World
 {
@@ -24,8 +24,6 @@ namespace Shooter.World
         private CompoundPlan? plan;
         private UnityWorldQueries? world;
         private RevisionedPathAdapter? navigation;
-        private NavMeshDataInstance navInstance;
-        private bool hasNavInstance;
         private bool disposed;
 
         public CompoundMapRuntime(Transform? parent = null)
@@ -55,8 +53,9 @@ namespace Shooter.World
             if (seed == 0)
                 return Task.FromResult(new GameOperationResult(GameErrorCode.MissingContent, "unknown-map-seed", "No packaged compound seed for map."));
 
-            // Depot uses the same planner grammar with a distinct seed until T045 ships a dedicated recipe.
-            plan = CompoundPlanner.Generate(seed);
+            plan = definition.MapId.Value == "depot-yard"
+                ? DepotPlanner.Generate(seed)
+                : CompoundPlanner.Generate(seed);
             var report = CompoundValidation.Validate(plan);
             if (!report.Passed)
                 return Task.FromResult(new GameOperationResult(GameErrorCode.CorruptContent, "compound-invalid", report.Diagnostic));
@@ -76,7 +75,7 @@ namespace Shooter.World
                     return CompoundConnectivity.TryFindPath(boxes, a, b, corners, clearance);
                 });
 
-            TryInstallWalkableFloorNavMesh();
+            // Gameplay navigation is RevisionedPathAdapter (real compound path corners). Unity NavMesh bake is not required for M8 AI.
             return Task.FromResult(GameOperationResult.Ok);
         }
 
@@ -123,11 +122,6 @@ namespace Shooter.World
 
         private void UnloadInternal()
         {
-            if (hasNavInstance)
-            {
-                NavMesh.RemoveNavMeshData(navInstance);
-                hasNavInstance = false;
-            }
             for (int i = 0; i < solids.Count; i++)
                 if (solids[i] != null) UnityEngine.Object.Destroy(solids[i]);
             solids.Clear();
@@ -182,27 +176,5 @@ namespace Shooter.World
             solids.Add(item);
         }
 
-        private void TryInstallWalkableFloorNavMesh()
-        {
-            // Optional Unity NavMesh floor for UnityNavigation consumers. Gameplay AI uses RevisionedPathAdapter corners.
-            var sources = new List<NavMeshBuildSource>(1)
-            {
-                new NavMeshBuildSource
-                {
-                    shape = NavMeshBuildSourceShape.Box,
-                    size = new Vector3(CompoundPlan.MapHalfExtent * 2f, 0.1f, CompoundPlan.MapHalfExtent * 2f),
-                    area = 0,
-                    transform = Matrix4x4.TRS(new Vector3(0f, -0.05f, 0f), Quaternion.identity, Vector3.one)
-                }
-            };
-            var bounds = new Bounds(Vector3.zero, new Vector3(CompoundPlan.MapHalfExtent * 2f, 40f, CompoundPlan.MapHalfExtent * 2f));
-            var settings = NavMesh.GetSettingsByID(0);
-            var data = NavMeshBuilder.BuildNavMeshData(settings, sources, bounds, Vector3.zero, Quaternion.identity);
-            if (data != null)
-            {
-                navInstance = NavMesh.AddNavMeshData(data);
-                hasNavInstance = true;
-            }
-        }
     }
 }

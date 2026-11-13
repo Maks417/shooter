@@ -2,7 +2,7 @@
 
 All paths are relative to `UnityProject/Assets/Shooter` unless noted. Contracts owned by integrator. Every work package must meet [agent done rules](agent-coordination.md). Estimate after spikes; no speculative hour counts.
 
-Current next work: finish [M8](milestones/m8-runtime-composition/index.md) T037–T039 product vertical, then M9–M11. Game-v1 is frozen (ADR-034). T001–T034 retain historical scope/dispositions; T025 stays deferred. [T035–T051](task-supplement.md#playable-release-task-cards--t035t051) are the playable-release cards. No completed historical gate is reopened merely to implement the new mode; historical waivers do not accept the new deliverables.
+Current next work: M8–M11 software closed 2026-11-13 with honest Pending/PendingHardware leftovers (named review, P05, 720p/soak). Game-v1 is frozen (ADR-034). T001–T034 retain historical scope/dispositions; T025 stays deferred. [T035–T051](task-supplement.md#playable-release-task-cards--t035t051) retain cards. No completed historical gate is reopened merely to implement the new mode; historical waivers do not accept the new deliverables.
 
 ## Dependency graph
 

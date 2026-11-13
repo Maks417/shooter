@@ -1,6 +1,6 @@
 # M8 — Runtime composition and Game-v1 foundation — implementation pack
 
-Status: **IN PROGRESS**, 2026-11-13. Tasks T035–T039. T035 Game-v1 freeze (ADR-034) and RUN00 complete; T036 pure session/lifecycle landed; T037–T039 product vertical still open. See [handoff](handoff.md).
+Status: **CLOSED (software)**, 2026-11-13. Tasks T035–T039. Product OfflineGameSession is default Bootstrap; diagnostic smoke retained. Named human/P05 review Pending. See [handoff](handoff.md).
 
 ## Goal
 

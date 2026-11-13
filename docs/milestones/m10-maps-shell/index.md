@@ -1,6 +1,6 @@
 # M10 — Two maps, menus and settings — implementation pack
 
-Status: **PLANNED / UNASSIGNED**, 2026-11-13. Tasks T044–T047. This pack defines future implementation; no workers, tests or closure are claimed by publishing it.
+Status: **CLOSED (software)**, 2026-11-13. Tasks T044–T047. Two maps, shell menu, file settings on main; named UI/device review Pending. See [handoff](handoff.md).
 
 ## Goal
 

@@ -2,6 +2,7 @@
 using Shooter.Contracts;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using EntityId = Shooter.Contracts.EntityId;
 
 namespace Shooter.Presentation.Input
 {

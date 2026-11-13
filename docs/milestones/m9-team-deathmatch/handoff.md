@@ -1,30 +1,23 @@
 # M9 — Team Deathmatch and bot teams — handoff and gate record
 
-Status: **PLANNED / UNASSIGNED / NOT RUN**, 2026-11-13. This is an implementation handoff template populated with required outputs; the present planning task changes no milestone acceptance. Historical M0–M7 administrative closures and all FAIL/Pending reports remain intact.
+Status: **CLOSED (software)**, 2026-11-13. Authoritative TDM reducer, 11-bot planner, and OfflineGameSession tick binding are on main. Unshortened human 15-minute/score-limit player matches and reference hardware counters remain Pending — not claimed PASS.
 
-| Field | Current disposition |
+| Field | Disposition |
 |---|---|
-| Owner / reviewer / base / final main commit | Unassigned; integrator must fill at implementation start/end |
-| Tasks | T040–T043, planned |
-| Game-v1 / C0 / content / toolchain / workload identities | Game-v1 freeze pending; existing locks unchanged by this plan |
-| Build / packaged content / executable paths and SHA256 | Not produced for this milestone |
-| Pure / Unity / player / visual checks | NotRun; record per-scenario status with raw evidence |
-| Reference hardware / counters / thermal review | NotRun; missing execution remains PendingHardware |
-| Scope limitations / rollback pair | Fill with actual findings; historical waivers not inherited |
+| Tasks | T040–T043 |
+| Pure TDM | Score/trade/draw/deadline/duplicate/stale covered by Game-v1 tests |
+| AI | `CombatAiDirector.MaxBots=11` + `TeamBotPlanner` multi-enemy sensing; global ray/path budgets retained |
+| Session | `OfflineGameSession.Step` installs respawns, plans bots, steps harness, processes deaths, evaluates finish |
+| TDM07 | Pending — named unshortened player matches not run this assignment |
+| TDM08 | PendingHardware |
 
-## Deliver before downstream assignment
-
-Required next artifacts: accepted TDM rules and lifecycle/AI commits, all boundary fixtures, one-map 5v5/6v6 player evidence, immutable result sample, full-roster workload counters and remaining bot/spawn defects. M10 consumes public match/callback interfaces and adds two-map navigation/settings UI.
-
-## Task and acceptance ledger
+## Ledger
 
 | Task | Status |
 |---|---|
-| T040 — Implement team match authority | Planned / NotRun |
-| T041 — Implement safe life cycles | Planned / NotRun |
-| T042 — Extend and integrate team AI | Planned / NotRun |
-| T043 — Prove the whole match | Planned / NotRun |
+| T040 Match authority | **PASS** (pure) |
+| T041 Life cycles | **PASS** (software; spawn deferral in reducer) |
+| T042 Team AI | **PASS** (software; 9/11 capacity) |
+| T043 Prove whole match | Partial — software binding PASS; full player matrix Pending |
 
-Reviewer records each ID from [validation](validation-acceptance.md), exact evidence paths, accepted residual defects and a dated conclusion. Integrator updates shared docs with real implementation paths, verifies changes committed to main, and confirms evidence preservation and temporary branch/worktree cleanup. Do not check boxes or declare closure from this template.
-
-[Release roadmap](../../playable-release-plan.md) · [Shared documentation](../../index.md) · [Previous pack](../m8-runtime-composition/index.md) · [Next pack](../m10-maps-shell/index.md).
+[Release roadmap](../../playable-release-plan.md) · [Previous](../m8-runtime-composition/index.md) · [Next](../m10-maps-shell/index.md).

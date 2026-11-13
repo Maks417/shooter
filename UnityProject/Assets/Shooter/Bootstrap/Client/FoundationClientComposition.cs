@@ -1,5 +1,6 @@
 using Shooter.Presentation;
 using Shooter.Presentation.Session;
+using GameShellMenu = Shooter.Presentation.Session.GameShellMenu;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -29,6 +30,7 @@ namespace Shooter.Bootstrap
                     if (authority.ProductMode && soldier.Length == 0 && gallery.Length == 0
                         && FoundationEntry.CommandLine("-shooterBenchmark", "").Length == 0)
                     {
+                        GameShellMenu.Create();
                         var view = ProductSessionView.Create(authority.ProductSession);
                         authority.InstallProductHumanSampler(tick => view.SampleHuman(tick));
                         return;
