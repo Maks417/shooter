@@ -255,3 +255,34 @@ Close M4 administratively as **CLOSED WITH USER WAIVER**. Five of eight mileston
 - Simulation suite 39/39 on close HEAD including prior M2/M3 pure tests.
 
 Historical failed/pending results are immutable. ADR-017/024/025/026/027 unchanged; P05 soldier visual remains FAIL. The [handoff](milestones/m4-offline-slice/handoff.md) records evidence. A local `m4-offline-slice-owner-accepted` marker identifies this qualified closure; it is not a passing benchmark tag. M5 networking remains unassigned until explicit owner assignment.
+
+## ADR-029 — Accepted: M5 Unity Transport behind INetworkChannel; custom prediction retained
+
+Date 2026-11-13; recorded by the Cursor M5-M7 integrator (bc-05dea339). Spike compared the existing pure INetworkChannel port surface against Unity Transport (UTP) and NGO-style anticipation.
+
+Decision: pin **Unity Transport behind INetworkChannel** for remote peers. Keep **custom** 256-tick prediction/reconciliation and remote interpolation in Shooter.Networking. **Reject** treating NGO/Netcode anticipation as FPS rollback/replay. Netcode for Entities remains a separate ECS migration ADR if ever pursued.
+
+Measured software evidence (pure): loopback duplex, seeded impairment simulator, codec fuzz/truncation, handshake reject-before-spawn, command ownership/tick/rate validation, prediction p95 ≤0.1 m at 100 ms/1% loss on static plane, bounded snapshot interpolation/resync. Wire protocol **N1-v1**. Shipping composition rejects the impairment fake; LoopbackNetworkChannel is a real local/dedicated adapter.
+
+Exact UTP package version remains **null** in 	oolchain-lock.json until the locked Unity 6000.3.28f1 editor verifies and pins it; no package upgrade is introduced by this ADR. C0-v1 unchanged.
+
+## ADR-030 — Accepted: M5 owner waiver of remaining Unity-tooling and hardwarereference validation and milestone close
+
+Date 2026-11-13; accepted by Max as project owner, recorded by the Cursor M5-M7 integrator (bc-05dea339). After pure software gates for N01–N05 / T019–T020 PASS, Max’s standing direction (“do all next milestones”; “no confirmations”; hardware PendingHardware may be waived with an explicit ADR like ADR-017/025–028) authorizes administrative M5 closure without waiting for interactive sign-off. It does **not** authorize inventing PASS evidence, editing goldens/caches, upgrading Unity/packages, starting M6 before this close is recorded, reopening P05 soldier clearance, or flipping prior PendingHardware reports to PASS.
+
+Tooling/hardware attempt retained (not acceptance):
+
+- Locked Unity 6000.3.28f1 editor binary remained absent on this worker; EditMode/PlayMode, IL2CPP client/dedicated-server builds, smoke and PresentMon captures could not run. Status **Pending / PendingHardware**. Evidence: Artifacts/m5-network-foundation/owner-closure-20261113/hardware-attempt.json.
+- UTP package pin remains null pending editor verification (ADR-029). No counters invented.
+
+Close M5 administratively as **CLOSED WITH USER WAIVER**. Six of eight milestones are closed. Actual dispositions retained:
+
+- N01 transport spike ADR-029 PASS (software selection; UTP version Pending).
+- N02 session/commands/codec fuzz PASS (pure).
+- N03 local prediction/reconciliation PASS (pure; static-map correction p95 gate).
+- N04 remote snapshots/interpolation/resync bounds PASS (pure).
+- N05 two-peer impairment matrix PASS (pure); headless channel has no presentation dependency.
+- Unity/process two-peer player evidence and reference hardware remain **PendingHardware** and are **Unverified / waived for M5 closure only**.
+
+Historical failed/pending results are immutable. ADR-017/024/025/026/027/028 unchanged; P05 soldier visual remains FAIL. The [handoff](milestones/m5-network-foundation/handoff.md) records evidence. A local m5-network-foundation-owner-accepted marker identifies this qualified closure; it is not a passing benchmark tag. M6 may start after this close.
+

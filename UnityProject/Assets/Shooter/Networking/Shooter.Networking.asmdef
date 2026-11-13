@@ -1,0 +1,15 @@
+{
+  "name": "Shooter.Networking",
+  "rootNamespace": "Shooter.Networking",
+  "references": [
+    "GUID:866ac9eb8b8b4a898facdc4644ba5881",
+    "GUID:8863b724bde74e23a67edc4756bec1fe",
+    "GUID:0969fe6d805743708affa53e597c282c"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "autoReferenced": false,
+  "allowUnsafeCode": false,
+  "noEngineReferences": true,
+  "defineConstraints": []
+}

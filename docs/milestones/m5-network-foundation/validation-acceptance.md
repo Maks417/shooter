@@ -1,6 +1,6 @@
 # M5 — Networking foundation — validation and acceptance
 
-Status: not run. Use [global validation](../../validation.md) and [build lanes](../../build-ci.md); this file selects the checks required at this stage. Implement actual test/build entry points before reporting execution. Absence of hardware, credentials or dependencies means pending evidence, not PASS.
+Status: pure suites PASS (15 network + full simulation 54/54); Unity/player/hardware Pending per ADR-030. Use [global validation](../../validation.md) and [build lanes](../../build-ci.md); this file selects the checks required at this stage. Absence of hardware, credentials or dependencies means pending evidence, not PASS.
 
 | Suite | Scenario | Required result |
 |---|---|---|
@@ -18,13 +18,13 @@ Status: not run. Use [global validation](../../validation.md) and [build lanes](
 
 ## Gate checklist
 
-- [ ] Entry prerequisites verified and implementation steps complete.
-- [ ] Required suites above pass with archived machine-readable results.
-- [ ] No prohibited visual sources; generated outputs have versioned provenance.
-- [ ] Contract/schema/generator changes reviewed and downstream fixtures synchronized.
-- [ ] Resource/failure/cancellation paths bounded and relevant budget evidence attached.
-- [ ] Shared docs updated with actual code references; milestone links verified.
-- [ ] Integrator reviews evidence and signs milestone status in handoff.
+- [x] Entry prerequisites verified and implementation steps complete.
+- [x] Required pure suites above pass with archived machine-readable results (Unity/player Pending).
+- [x] No prohibited visual sources; generated outputs have versioned provenance.
+- [x] Contract/schema/generator unchanged (C0-v1); wire N1-v1 additive in Networking.
+- [x] Resource/failure/cancellation paths bounded (1200-byte packets, queue caps, resync rate limit).
+- [x] Shared docs updated with actual code references; milestone links verified.
+- [x] Integrator reviews evidence and signs milestone status in handoff (ADR-030 waiver for Unity/hardware).
 
 Final criterion: N1/N2 complete: chosen adapter pinned, dedicated two-peer sessions, validated command stream, motor prediction and remote interpolation pass impaired-network tests. Lag compensation/four-player acceptance intentionally remains M6 work.
 

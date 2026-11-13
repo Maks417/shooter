@@ -14,6 +14,7 @@
     <Compile Include="../../UnityProject/Assets/Shooter/Simulation/Pose/**/*.cs" />
     <Compile Include="../../UnityProject/Assets/Shooter/Simulation/AI/**/*.cs" />
     <Compile Include="../../UnityProject/Assets/Shooter/Simulation/Match/**/*.cs" />
+    <Compile Include="../../UnityProject/Assets/Shooter/Networking/**/*.cs" />
     <ProjectReference Include="../Contracts/Shooter.Contracts.csproj" />
   </ItemGroup>
 </Project>

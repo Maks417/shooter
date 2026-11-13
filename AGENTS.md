@@ -1,6 +1,6 @@
 # Shooter implementation rules
 
-Repository: C:\Job\shooter. Implement a Unity 6 URP procedural military FPS under UnityProject. M0–M4 are closed with explicit owner tooling/hardware-validation waivers (ADR-017, ADR-025, ADR-026, ADR-027, ADR-028); five of eight milestones are closed. Continue only the assigned milestone, not the entire game. Read docs/implementation-start.md, docs/vision.md, docs/architecture.md, docs/contract-details.md and your assigned milestone index before edits. M4 close disposition (pure O01–O03 PASS; native-720p PendingHardware waived under ADR-028) is in docs/milestones/m4-offline-slice/handoff.md; M3 compound/AI remains available; M1 retains P05 FAIL under ADR-024; the M0 handoff retains its historical evidence and waiver limits. M5+ networking require explicit assignment.
+Repository: C:\Job\shooter. Implement a Unity 6 URP procedural military FPS under UnityProject. M0–M4 are closed with explicit owner tooling/hardware-validation waivers (ADR-017, ADR-025, ADR-026, ADR-027, ADR-028); six of eight milestones are closed. Continue only the assigned milestone, not the entire game. Read docs/implementation-start.md, docs/vision.md, docs/architecture.md, docs/contract-details.md and your assigned milestone index before edits. M4 close disposition (pure O01–O03 PASS; native-720p PendingHardware waived under ADR-028) is in docs/milestones/m4-offline-slice/handoff.md; M3 compound/AI remains available; M1 retains P05 FAIL under ADR-024; the M0 handoff retains its historical evidence and waiver limits. M6+ require continuing assignment.
 
 ## Scope and ownership
 
@@ -24,3 +24,4 @@ Run docs/fixtures/verify_fixtures.py and docs/verify_docs.py for specification c
 Never edit generated payloads/goldens just to pass tests. Record source/toolchain/content/seed/workload with results; reference-machine performance measured in release player, not editor. Update affected shared docs with real code paths and milestone handoff with evidence/limitations. Keep shared docs once at docs root; milestone folders link them. Do not recreate duplicated reference folders.
 
 Before finishing: required checks pass, no out-of-scope files changed, provenance valid, correct contract versions, handoff updated and actual failures/pending checks stated. Documentation hashes are not game test results. Do not relax requirements to close milestone.
+

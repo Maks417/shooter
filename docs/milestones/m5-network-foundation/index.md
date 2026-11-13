@@ -1,6 +1,6 @@
 # M5 — Networking foundation — implementation pack
 
-Status: planned; no implementation or game test is claimed. Baseline 2026-11-11. Canonical backlog tasks: T019–T020. Assigned packages: WP-08 plus integrator.
+Status: **CLOSED WITH USER WAIVER** (ADR-030); pure N01–N05 PASS; Unity/hardware PendingHardware waived for M5 only. Baseline 2026-11-11; closed 2026-11-13. Canonical backlog tasks: T019–T020. Assigned packages: WP-08 plus integrator.
 
 ## Goal and entry gate
 
