@@ -17,9 +17,11 @@ namespace Shooter.Presentation
     {
         private readonly List<UnityEngine.Object> owned = new List<UnityEngine.Object>();
         private readonly List<Avatar> avatars = new List<Avatar>();
+        private readonly List<int[]> skinMaps = new List<int[]>();
         private readonly Ground ground = new Ground();
         private float originTime;
         private Transform floorRoot;
+        private GameObject stepsRoot;
         public Camera ViewCamera { get; private set; }
         public string Scenario = "walk";
         public bool Animate = true;
@@ -106,7 +108,7 @@ namespace Shooter.Presentation
                     bone.localPosition = V(definition.LocalBindPosition); bone.localRotation = Quaternion.identity;
                 }
                 avatar.Renderer = avatar.Root.gameObject.AddComponent<SkinnedMeshRenderer>(); avatar.Renderer.sharedMesh = meshes[0];
-                avatar.Renderer.bones = avatar.Bones; avatar.Renderer.rootBone = avatar.Bones[0]; avatar.Renderer.sharedMaterials = palette;
+                avatar.Renderer.bones = skinMaps[0].Select(j=>avatar.Bones[j]).ToArray(); avatar.Renderer.rootBone = avatar.Bones[0]; avatar.Renderer.sharedMaterials = palette;
                 avatar.Renderer.quality = SkinQuality.Bone4; avatar.Renderer.updateWhenOffscreen = true;
                 // Includes all supported scripted poses; bind bounds are deliberately not reused as posed bounds.
                 avatar.Renderer.localBounds = new Bounds(new Vector3(0, 1, 0), new Vector3(4, 4, 4));
@@ -125,6 +127,14 @@ namespace Shooter.Presentation
             floor.AddComponent<MeshFilter>().sharedMesh = Own(FoundationView.CreateUnitBox()); floor.AddComponent<MeshRenderer>().sharedMaterial = palette[1];
             floor.transform.localPosition = new Vector3(0,-.07f,0); floor.transform.localScale = new Vector3(100,.1f,100);
             floorRoot = floor.transform;
+            stepsRoot = new GameObject("Analytic twenty-centimeter steps"); stepsRoot.transform.SetParent(transform,false);
+            for(int step=-10;step<40;step++)
+            {
+                var tile=new GameObject("Numeric step "+step);tile.transform.SetParent(stepsRoot.transform,false);
+                tile.AddComponent<MeshFilter>().sharedMesh=floor.GetComponent<MeshFilter>().sharedMesh;
+                tile.AddComponent<MeshRenderer>().sharedMaterial=palette[1];
+                tile.transform.localScale=new Vector3(20,.2f,.8f);tile.transform.localPosition=new Vector3(0,step*.2f-.1f,(step+.5f)*.8f);
+            }
             originTime = Time.time; PoseAt(0,"stand",true); Focus("three-quarter");
             if (Application.isPlaying) Screen.SetResolution(1280,720,FullScreenMode.Windowed);
             Debug.Log("SHOOTER_SOLDIER_GALLERY_READY rigs=" + count + " joints=23 lods=3");
@@ -134,7 +144,11 @@ namespace Shooter.Presentation
         {
             if (lod < 0 || lod > 2) throw new ArgumentOutOfRangeException(nameof(lod));
             // Shared generated meshes are the first three owned objects.
-            foreach (var avatar in avatars) avatar.Renderer.sharedMesh = (Mesh)owned[lod];
+            foreach (var avatar in avatars)
+            {
+                avatar.Renderer.sharedMesh = (Mesh)owned[lod];
+                avatar.Renderer.bones = skinMaps[lod].Select(j=>avatar.Bones[j]).ToArray();
+            }
         }
         public void BakeForCapture()
         {
@@ -163,6 +177,8 @@ namespace Shooter.Presentation
             }
             ground.Scenario = scenario;
             floorRoot.localRotation = Quaternion.Euler(scenario == "slope" ? -15 : 0,0,0);
+            floorRoot.localPosition = -floorRoot.up*.05f;
+            floorRoot.gameObject.SetActive(scenario!="steps");stepsRoot.SetActive(scenario=="steps");
             float speed = scenario == "run" ? 5.5f : scenario == "walk" || scenario == "slope" || scenario == "steps" ? 3.5f : 0;
             float z = seconds * speed;
             long start = System.Diagnostics.Stopwatch.GetTimestamp();
@@ -209,15 +225,24 @@ namespace Shooter.Presentation
             if (skin)
             {
                 if (data.Joints == null || data.Weights == null) throw new InvalidDataException("Missing required soldier skin weights.");
+                var retained = new SortedSet<int>();
+                for (int i=0;i<data.Positions.Count;i++)
+                {
+                    var j=data.Joints[i];var w=data.Weights[i];
+                    if(w.X>0)retained.Add(j.X);if(w.Y>0)retained.Add(j.Y);if(w.Z>0)retained.Add(j.Z);if(w.W>0)retained.Add(j.W);
+                }
+                int[] map=retained.ToArray();skinMaps.Add(map);
+                if(map.Any(j=>j>=23)||map.Length>20)throw new InvalidDataException("Soldier visual palette exceeds bounded semantic mapping.");
+                int Compact(int joint,float weight)=>weight==0?0:Array.IndexOf(map,joint);
                 var weights = new BoneWeight[data.Positions.Count];
                 for (int i = 0; i < weights.Length; i++)
                 {
                     var j = data.Joints[i]; var w = data.Weights[i];
                     if (j.X >= 23 || j.Y >= 23 || j.Z >= 23 || j.W >= 23) throw new InvalidDataException("Invalid soldier bone mapping.");
-                    weights[i] = new BoneWeight { boneIndex0=j.X,boneIndex1=j.Y,boneIndex2=j.Z,boneIndex3=j.W,weight0=w.X,weight1=w.Y,weight2=w.Z,weight3=w.W };
+                    weights[i] = new BoneWeight { boneIndex0=Compact(j.X,w.X),boneIndex1=Compact(j.Y,w.Y),boneIndex2=Compact(j.Z,w.Z),boneIndex3=Compact(j.W,w.W),weight0=w.X,weight1=w.Y,weight2=w.Z,weight3=w.W };
                 }
                 mesh.boneWeights = weights;
-                mesh.bindposes = SoldierSkeleton.BindPositions.Select(p => Matrix4x4.TRS(V(p),Quaternion.identity,Vector3.one).inverse).ToArray();
+                mesh.bindposes = map.Select(j => Matrix4x4.TRS(V(SoldierSkeleton.BindPositions[j]),Quaternion.identity,Vector3.one).inverse).ToArray();
             }
             mesh.RecalculateBounds(); mesh.UploadMeshData(true); return mesh;
         }

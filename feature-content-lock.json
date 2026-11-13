@@ -49,7 +49,7 @@
     "UnityProject/Assets/Shooter/Generation/Core/SoldierMotion/SoldierMotion.cs": "0dbfd975ea35b9d8a7b936760af4eed2b7da23149c3876f82b3abbbcd6fb8dc5",
     "UnityProject/Assets/Shooter/Generation/Core/SoldierMotion/TwoBoneIk.cs": "00ce845975ae961d7834b1821e661df50e9985f095fa27a6b225272df21c65b0",
     "UnityProject/Assets/Shooter/Generation/Core/Soldiers/SoldierAssetGenerator.cs": "d4cb380f003ab2dca358c3926d85a16c2d4ee41ddbc7e574e08166510d1ed440",
-    "UnityProject/Assets/Shooter/Generation/Core/Soldiers/SoldierGeometry.cs": "0cd0342dc99d60c5ff8c9185cb23db615585a05987828362b5f216a42c4f626e",
+    "UnityProject/Assets/Shooter/Generation/Core/Soldiers/SoldierGeometry.cs": "66ea81bde7cbebb5def8c1fcebd279018f762c5ef98684151255bf65a3ae919f",
     "UnityProject/Assets/Shooter/Generation/Core/Soldiers/SoldierRecipe.cs": "f81f95515e839b8ccf23d44945511d1db2e086a78256634c51a5b9a6b4065984",
     "UnityProject/Assets/Shooter/Generation/Core/Soldiers/SoldierSkeleton.cs": "f3dab186647fbae93ffe531e641ca91b401b4bb1c051c4cbf4c41cd66caf29af",
     "UnityProject/Assets/Shooter/Generation/Core/Weapons/BoredMuzzle.cs": "d8b74b0b987f197f1f240459fc3c38af983defb22c654d0fda0fe27784614c12",

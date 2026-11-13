@@ -14,6 +14,7 @@ using UnityEngine.Rendering;
 
 public static class ShooterSoldierBuild
 {
+    [Serializable] public sealed class Frame { public int id; public string name; public float[] x,y,z,pole; }
     [Serializable] public sealed class Proof
     {
         public string result = "Verified", scope = "M1 helmeted soldier spike; no hit evaluator or performance/visual acceptance", toolchainHash, planSha256;
@@ -24,6 +25,9 @@ public static class ShooterSoldierBuild
         public string[] captures;
         public float maxGripError, maxPlantSlide, maxPlantTargetError;
         public string frameBaseline = SoldierSkeleton.Version;
+        public string motionVersion = SoldierMotion.Version;
+        public string motionFrameOverrides = "Shoulder task-neutral cone90deg and elbow preferred pole local-Y; knee task pole+Z; immutable bind reference frames below";
+        public Frame[] frames;
         public ShooterBuild.FileProof[] sources;
     }
     public static void Compile() => Guard(() =>
@@ -54,7 +58,8 @@ public static class ShooterSoldierBuild
             .OrderBy(p=>p,StringComparer.Ordinal).Select(p=>new ShooterBuild.FileProof{path="UnityProject/"+p.Substring(Path.GetFullPath(Path.Combine(Application.dataPath,"..")).Length+1).Replace('\\','/'),sha256=ShooterBuild.HashFile(p)}).ToArray();
         ShooterBuild.WriteJson(ShooterBuild.Argument("-shooterReport"),new Proof{toolchainHash=hash.ToString(),planSha256=ContentIdentity.Hash(plan).ToString(),content=items,
             compileMilliseconds=watch.Elapsed.TotalMilliseconds,triangles=build.Lods.Select(m=>m.Indices.Count/3).ToArray(),vertices=build.Lods.Select(m=>m.Positions.Count).ToArray(),
-            activeBones=build.Lods.Select(m=>m.Joints.SelectMany((j,i)=>new[]{(j.X,m.Weights[i].X),(j.Y,m.Weights[i].Y),(j.Z,m.Weights[i].Z),(j.W,m.Weights[i].W)}).Where(w=>w.Item2>0).Select(w=>w.Item1).Distinct().Count()).ToArray(),sources=sources});
+            activeBones=build.Lods.Select(m=>m.Joints.SelectMany((j,i)=>new[]{(j.X,m.Weights[i].X),(j.Y,m.Weights[i].Y),(j.Z,m.Weights[i].Z),(j.W,m.Weights[i].W)}).Where(w=>w.Item2>0).Select(w=>w.Item1).Distinct().Count()).ToArray(),sources=sources,
+            frames=SoldierSkeleton.Frames.Select((f,i)=>new Frame{id=i,name=SoldierSkeleton.Names[i],x=new[]{f.X.X,f.X.Y,f.X.Z},y=new[]{f.Y.X,f.Y.Y,f.Y.Z},z=new[]{f.Z.X,f.Z.Y,f.Z.Z},pole=new[]{f.Pole.X,f.Pole.Y,f.Pole.Z}}).ToArray()});
     });
     public static void Capture() => Guard(() =>
     {
