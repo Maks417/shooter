@@ -73,6 +73,39 @@ public sealed class SoldierGeometryTests
         }
     }
     [Fact]
+    public void ClothingRootsBlendIntoChestAndPelvisAndBootsHaveRoundedCuffs()
+    {
+        var build=SoldierGeometry.Build(SoldierRecipe.Parse(Source()));
+        foreach(var mesh in build.Lods)
+        {
+            for(int side=-1;side<=1;side+=2)
+            {
+                ushort arm=(ushort)(side<0?8:12),thigh=(ushort)(side<0?15:19),foot=(ushort)(thigh+2);
+                int chestAnchors=0,shoulderBlends=0,pelvisAnchors=0,hipBlends=0,roundedBootVertices=0;
+                float highestBoot=0,furthestToe=0;
+                for(int v=0;v<mesh.Positions.Count;v++)
+                {
+                    var p=mesh.Positions[v];var j=mesh.Joints![v];var w=mesh.Weights![v];
+                    if(j.X==4 && j.Y==arm)
+                    {
+                        if(w.X>.999f && Math.Abs(p.X-side*.145f)<.0001f)chestAnchors++;
+                        if(w.X>.1f && w.Y>.1f)shoulderBlends++;
+                    }
+                    if(j.X==1 && j.Y==thigh)
+                    {if(w.X>.999f && p.Y>.97f)pelvisAnchors++;if(w.X>.1f && w.Y>.1f)hipBlends++;}
+                    if(j.X==foot && j.Y==foot)
+                    {
+                        highestBoot=Math.Max(highestBoot,p.Y);furthestToe=Math.Max(furthestToe,p.Z);
+                        var n=mesh.Normals[v];if(Math.Abs(n.X)>.1f && (Math.Abs(n.Y)>.1f || Math.Abs(n.Z)>.1f))roundedBootVertices++;
+                    }
+                }
+                Assert.InRange(chestAnchors,7,40);Assert.InRange(shoulderBlends,7,13);
+                Assert.InRange(pelvisAnchors,7,40);Assert.InRange(hipBlends,7,13);
+                Assert.True(roundedBootVertices>20);Assert.InRange(highestBoot,.184f,.186f);Assert.InRange(furthestToe,.242f,.243f);
+            }
+        }
+    }
+    [Fact]
     public void MeshesAreRepeatableAcrossSeedExtremesAndProfiles()
     {
         var initial=SoldierRecipe.Parse(Source());var baseline=SoldierGeometry.Build(initial);

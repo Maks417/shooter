@@ -32,29 +32,40 @@ namespace Shooter.Generation
             b.Loft(new Float3(0,.88f,0), new Float3(0,1.48f,0), new Float3(1,0,0), torso, 8,
                 t => { float width = t < .35f ? Lerp(.156f,.156f,t/.35f) : t < .8f ? Lerp(.156f,.216f,(t-.35f)/.45f) : Lerp(.216f,.12f,(t-.8f)/.2f); return new Float2(width, t<.8f ? Lerp(.106f,.126f,t/.8f) : Lerp(.126f,.09f,(t-.8f)/.2f)); },
                 t => TorsoSkin(Lerp(.88f,1.48f,t)), 0);
+            // A rounded pelvis shell bridges jacket, belt and trouser roots, including during thigh rotation.
+            Ellipsoid(b,new Float3(0,.91f,0),new Float3(.176f,.132f,.126f),torso,8,1,0);
             b.Loft(new Float3(0,1.48f,0), new Float3(0,1.59f,0), new Float3(1,0,0), radial, 3,
-                t => new Float2(.06f,.065f), t => new Skin(5,6,t*.3f), 2);
+                t => new Float2(.064f,.069f), t => new Skin(5,6,t*.3f), 0);
             Ellipsoid(b,new Float3(0,1.66f,0),new Float3(.09f,.12f,.10f),torso,new[]{10,8,6}[lod],6,2);
-            // Helmet follows an ellipsoidal upper cranium with the mandated 10 mm clearance.
-            b.Loft(new Float3(0,1.69f,0),new Float3(0,1.80f,0),new Float3(1,0,0),torso,6,
+            // Covered anatomy is the bounded first-slice policy: a generated cloth hood under the helmet.
+            Ellipsoid(b,new Float3(0,1.652f,0),new Float3(.096f,.123f,.108f),torso,8,6,0);
+            // Lower rim protects side silhouette instead of leaving an exposed upper-head block.
+            b.Loft(new Float3(0,1.665f,0),new Float3(0,1.805f,0),new Float3(1,0,0),torso,6,
                 t => {float r=(float)Math.Sqrt(Math.Max(.0064,1-t*t)); return new Float2(.106f*r,.116f*r);},t=>new Skin(6),1);
-            b.Box(new Float3(.165f,.042f,.025f),new Float3(0,1.681f,.097f),6,3); // grouped goggles
-            b.Box(new Float3(.075f,.055f,.025f),new Float3(0,1.59f,.09f),6,0); // mask/jaw proxy
+            b.Box(new Float3(.21f,.014f,.065f),new Float3(0,1.681f,.096f),6,1,.005f); // numeric helmet brim
+            b.Box(new Float3(.165f,.042f,.025f),new Float3(0,1.655f,.103f),6,3,.008f); // grouped goggles
+            b.Box(new Float3(.11f,.075f,.035f),new Float3(0,1.60f,.098f),6,0,.012f); // covered jaw
             foreach (int side in new[]{-1,1})
             {
                 ushort upper=(ushort)(side<0?8:12), lower=(ushort)(upper+1), hand=(ushort)(upper+2);
-                b.Loft(new Float3(side*.21f,1.45f,0),new Float3(side*.76f,1.45f,0),new Float3(0,1,0),radial,8,
-                    t=>new Float2(ArmRadius(t)+.006f,(ArmRadius(t)+.006f)*.92f),t=>LimbSkin(t,.29f/.55f,upper,lower,hand),0,.29f/.55f);
-                b.Box(new Float3(.09f,.07f,.045f),new Float3(side*.797f,1.45f,.008f),hand,1); // palm/grouped fingers
+                // Sleeve root lies inside the torso; its first rings inherit the chest before transitioning to humerus.
+                b.Loft(new Float3(side*.145f,1.45f,0),new Float3(side*.76f,1.45f,0),new Float3(0,1,0),radial,10,
+                    t=>new Float2(ArmRadius(t),(ArmRadius(t))*.94f),
+                    t=>t<.17f?new Skin(4,upper,Smooth(t/.17f)):LimbSkin(t,.355f/.615f,upper,lower,hand),0,-1,
+                    new[]{0f,.065f/.615f,.17f,.30f,.45f,.355f/.615f,.67f,.78f,.88f,.95f,1f});
+                b.Box(new Float3(.09f,.07f,.045f),new Float3(side*.797f,1.45f,.008f),hand,1,.008f); // covered palm/grouped fingers
                 ushort thigh=(ushort)(side<0?15:19),calf=(ushort)(thigh+1),foot=(ushort)(thigh+2);
-                b.Loft(new Float3(side*.10f,.92f,0),new Float3(side*.10f,.08f,.02f),new Float3(1,0,0),radial,8,
-                    t=>new Float2(LegRadius(t)+.006f,(LegRadius(t)+.006f)*.92f),t=>LimbSkin(t,.45f/.84f,thigh,calf,foot),0,.45f/.84f);
-                b.Box(new Float3(.12f,.13f,.28f),new Float3(side*.10f,.065f,.10f),foot,1);
-                // Shoulder pads overlap the loft start with numerical shell clearance.
-                Ellipsoid(b,new Float3(side*.20f,1.45f,0),new Float3(.075f,.075f,.08f),radial,6,upper,0);
+                b.Loft(new Float3(side*.10f,.98f,0),new Float3(side*.10f,.08f,.02f),new Float3(1,0,0),radial,10,
+                    t=>new Float2(LegRadius(t),LegRadius(t)*.96f),
+                    t=>t<.16f?new Skin(1,thigh,Smooth(t/.16f)):LimbSkin(t,.51f/.90f,thigh,calf,foot),0,-1,
+                    new[]{0f,.06f/.90f,.16f,.29f,.43f,.51f/.90f,.68f,.78f,.88f,.95f,1f});
+                // Rounded toe/heel and a tall cuff overlap trouser ends instead of a detached cuboid foot.
+                b.Box(new Float3(.125f,.10f,.285f),new Float3(side*.10f,.05f,.10f),foot,1,.024f);
+                b.Loft(new Float3(side*.10f,.045f,.015f),new Float3(side*.10f,.185f,.015f),new Float3(1,0,0),radial,4,
+                    t=>new Float2(Lerp(.059f,.052f,t),Lerp(.075f,.063f,t)),t=>new Skin(foot),1);
             }
-            b.Box(new Float3(.31f,.30f,.045f),new Float3(0,1.255f,.153f),4,1); // plate +12mm clearance
-            b.Box(new Float3(.28f,.34f,.13f),new Float3(0,1.245f,-.198f),4,0); // pack
+            b.Box(new Float3(.31f,.30f,.045f),new Float3(0,1.255f,.153f),4,1,.012f); // plate +12mm clearance
+            b.Box(new Float3(.28f,.34f,.13f),new Float3(0,1.245f,-.198f),4,0,.018f); // pack
             b.Box(new Float3(.32f,.06f,.232f),new Float3(0,.96f,0),1,1); // belt
             if(lod<2) foreach(int side in new[]{-1,1})
                 b.Box(new Float3(.026f,.30f,.025f),new Float3(side*.125f,1.255f,.181f),4,0); // straps
@@ -64,8 +75,20 @@ namespace Shooter.Generation
                     throw new InvalidOperationException("Soldier escaped bind bounds.");
             return mesh;
         }
-        private static float ArmRadius(float t) => t<.5272727f ? Lerp(.055f,.041f,t/.5272727f) : Lerp(.041f,.030f,(t-.5272727f)/.4727273f);
-        private static float LegRadius(float t) => t<.5357143f ? Lerp(.095f,.060f,t/.5357143f) : Lerp(.060f,.040f,(t-.5357143f)/.4642857f);
+        private static float ArmRadius(float t)
+        {
+            const float elbow=.355f/.615f;
+            float radius=t<elbow?Lerp(.080f,.054f,t/elbow):Lerp(.054f,.039f,(t-elbow)/(1-elbow));
+            return radius+.006f*(float)Math.Sin(Math.PI*Math.Min(1,t/elbow));
+        }
+        private static float LegRadius(float t)
+        {
+            const float knee=.51f/.90f;
+            float radius=t<knee?Lerp(.108f,.073f,t/knee):Lerp(.073f,.054f,(t-knee)/(1-knee));
+            // Broad analytic cloth fullness, not image displacement or authored folds.
+            return radius+.010f*(float)Math.Sin(Math.PI*Math.Min(1,t/knee));
+        }
+        private static float Smooth(float t) {t=Math.Max(0,Math.Min(1,t));return t*t*(3-2*t);}
         private static float Lerp(float a,float c,float t)=>a+(c-a)*t;
         private static Skin TorsoSkin(float height)
         {
@@ -118,13 +141,13 @@ namespace Shooter.Generation
             }
             private void Triangle(ushort slot,uint a,uint c,uint d)
             {if(!groups.TryGetValue(slot,out var g)){g=new List<uint>();groups.Add(slot,g);}g.Add(a);g.Add(c);g.Add(d);}
-            internal void Box(Float3 size,Float3 center,ushort joint,ushort slot)
+            internal void Box(Float3 size,Float3 center,ushort joint,ushort slot,float bevel=0)
             {
-                MeshData box=PrimitiveGeometry.Box(size);uint offset=(uint)positions.Count;
+                MeshData box=PrimitiveGeometry.Box(size,bevel);uint offset=(uint)positions.Count;
                 for(int i=0;i<box.Positions.Count;i++){var t=box.Tangents[i]; uint id=Vertex(GeometryMath.Add(center,box.Positions[i]),box.Normals[i],new Float3(t.X,t.Y,t.Z),box.Uv[i],new Skin(joint));tangents[(int)id]=t;}
                 for(int i=0;i<box.Indices.Count;i+=3)Triangle(slot,offset+box.Indices[i],offset+box.Indices[i+1],offset+box.Indices[i+2]);
             }
-            internal void Loft(Float3 start,Float3 end,Float3 u,int radial,int rings,Func<float,Float2> radius,Func<float,Skin> skin,ushort slot,float seam=-1)
+            internal void Loft(Float3 start,Float3 end,Float3 u,int radial,int rings,Func<float,Float2> radius,Func<float,Skin> skin,ushort slot,float seam=-1,float[]? stations=null)
             {
                 Float3 delta=GeometryMath.Sub(end,start);float length=(float)Math.Sqrt(delta.LengthSquared); Float3 axis=GeometryMath.Normalize(delta);
                 u=GeometryMath.Normalize(GeometryMath.Sub(u,GeometryMath.Scale(axis,GeometryMath.Dot(u,axis))));
@@ -132,7 +155,7 @@ namespace Shooter.Generation
                 uint first=(uint)positions.Count;
                 for(int ring=0;ring<=rings;ring++)
                 {
-                    float t=seam<0?ring/(float)rings:ring<=rings/2?seam*ring/(rings/2):seam+(1-seam)*(ring-rings/2)/(rings-rings/2);var r=radius(t);float lo=Math.Max(0,t-.001f),hi=Math.Min(1,t+.001f);var ra=radius(lo);var rb=radius(hi);
+                    float t=stations!=null?stations[ring]:seam<0?ring/(float)rings:ring<=rings/2?seam*ring/(rings/2):seam+(1-seam)*(ring-rings/2)/(rings-rings/2);var r=radius(t);float lo=Math.Max(0,t-.001f),hi=Math.Min(1,t+.001f);var ra=radius(lo);var rb=radius(hi);
                     float dx=(rb.X-ra.X)/((hi-lo)*length),dz=(rb.Y-ra.Y)/((hi-lo)*length);
                     var center=GeometryMath.Add(start,GeometryMath.Scale(delta,t));
                     for(int i=0;i<=radial;i++)
