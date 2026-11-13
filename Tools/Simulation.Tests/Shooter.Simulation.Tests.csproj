@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <IsTestProject>true</IsTestProject>
+    <IsPackable>false</IsPackable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="[18.11.0]" />
+    <PackageReference Include="xunit" Version="[2.9.3]" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="[4.0.1]" PrivateAssets="all" />
+    <ProjectReference Include="../Contracts/Shooter.Contracts.csproj" />
+    <ProjectReference Include="../Foundation/Shooter.Foundation.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="../../UnityProject/Assets/Shooter/Presentation/View/**/*.cs" Link="View/%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>
