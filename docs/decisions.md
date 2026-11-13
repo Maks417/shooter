@@ -236,3 +236,22 @@ Close M3 administratively as **CLOSED WITH USER WAIVER**. Four of eight mileston
 - Unity EditMode/PlayMode/smoke and reference B02/B03 hardware remain **Pending / PendingHardware** and are **Unverified / waived for M3 closure only**. Native-720p timing acceptance remains an M4 gate.
 
 Historical failed/pending automated results are immutable. ADR-017/024/025/026 dispositions are unchanged; P05 soldier visual remains FAIL / not accepted. The [handoff](milestones/m3-generated-compound/handoff.md) identifies exact source/timestamps and owner disposition. A local `m3-generated-compound-owner-accepted` marker identifies this qualified closure; it is not a passing benchmark tag. M4 may proceed under the same owner assignment.
+
+## ADR-028 — Accepted: M4 owner waiver of remaining Unity-tooling and hardwarereference validation and milestone close
+
+Date 2026-11-13; accepted by Max as project owner, recorded by the Cursor M4 integrator (bc-08a335af). After pure software gates for O01–O03 (Compound Clear restart, HUD/accessibility layout, analytic FX/synth audio) PASS, Max’s standing direction (“start M3; once done start M4”; no confirmations; hardware PendingHardware may be waived with an explicit ADR like ADR-017/025/026/027) authorizes administrative M4 closure without waiting for interactive sign-off. It does **not** authorize inventing PASS evidence, editing goldens/caches, upgrading Unity/packages, starting M5 networking, or flipping prior PendingHardware reports to PASS.
+
+Tooling/hardware attempt retained (not acceptance):
+
+- Locked Unity `6000.3.28f1` editor binary remained absent on this worker; EditMode/PlayMode, IL2CPP release builds, smoke and PresentMon B02/B03 series could not run. Status **Pending / PendingHardware**. Evidence: `Artifacts/m4-offline-slice/owner-closure-20261113/hardware-attempt.json`.
+- No counters were invented; no golden/cache edits; B02/B03 freeze from M3 remains unchanged.
+
+Close M4 administratively as **CLOSED WITH USER WAIVER**. Five of eight milestones are closed. Actual dispositions retained:
+
+- O01 Compound Clear objective/restart/idempotent win-loss PASS (pure).
+- O02 HUD 720p layout at 150% scale, focus/rebind/contrast/reduced-motion PASS (pure).
+- O03 analytic FX pool and ≤24-voice synth audio with peak limiter PASS (pure); no sprites/recorded samples.
+- O04/O05 native-720p three-run / 30-minute release soak and signed offline R01–R09 player evidence remain **PendingHardware** and are **Unverified / waived for M4 closure only**.
+- Simulation suite 39/39 on close HEAD including prior M2/M3 pure tests.
+
+Historical failed/pending results are immutable. ADR-017/024/025/026/027 unchanged; P05 soldier visual remains FAIL. The [handoff](milestones/m4-offline-slice/handoff.md) records evidence. A local `m4-offline-slice-owner-accepted` marker identifies this qualified closure; it is not a passing benchmark tag. M5 networking remains unassigned until explicit owner assignment.

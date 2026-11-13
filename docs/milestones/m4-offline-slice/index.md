@@ -1,6 +1,6 @@
 # M4 — Offline playable slice — implementation pack
 
-Status: planned; no implementation or game test is claimed. Baseline 2026-11-11. Canonical backlog tasks: T017–T018. Assigned packages: WP-09 integrator with feature owners.
+Status: **CLOSED WITH USER WAIVER** (2026-11-13, ADR-028). Pure O01–O03 software PASS; native-720p hardware Pending waived for M4 only. Canonical backlog tasks: T017–T018. Assigned packages: WP-09 integrator with feature owners.
 
 ## Goal and entry gate
 
