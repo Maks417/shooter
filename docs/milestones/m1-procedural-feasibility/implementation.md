@@ -8,7 +8,7 @@ Read [pack entry](index.md) first. Scope: Prove reproducible compilation, primit
 | P02 Compiler and loader skeleton | Content owner | P01 | Cold/warm and concurrent/cancel tests pass without partial published artifacts or leaked leases. |
 | P03 Geometry and weapons | Geometry owner | P02 API | All required sockets stable within 1 mm/0.1 degrees; bounds/topology/count reports and silhouette review pass. |
 | P04 Materials | Render owner | P02 API; parallel P03 | No painted sources; normal orientation/roughness mapping correct; Low shader/texture allocation measured. |
-| P05 Soldier spike | Character owner | P03 primitives/sockets; early test-only stubs allowed | Finite 1000-pose sweep, grip/foot-slide limits and visual review pass; stop expansion after two failed iterations and record scope ADR. |
+| P05 Soldier spike | Character owner | P03 primitives/sockets; early test-only stubs allowed | Finite 1000-pose sweep, grip/foot-slide limits and visual review pass; stop expansion after failed iterations and record scope ADR (ADR-023 third FAIL; ADR-024 scope stop — visual FAIL, not PASS). |
 
 ## P01 Reproducible seeds
 
@@ -48,7 +48,7 @@ Owner: Character owner. Dependencies: P03 primitives/sockets; early test-only st
 
 Generate anatomy/rings/skeleton/weights; implement walk/run/crouch/aim/reload IK and eight-rig timing harness. Freeze semantic joints after review.
 
-Completion check: Finite 1000-pose sweep, grip/foot-slide limits and visual review pass; stop expansion after two failed iterations and record scope ADR.
+Completion check: Finite 1000-pose sweep, grip/foot-slide limits and visual review pass; stop expansion after failed iterations and record scope ADR (ADR-023 third FAIL; ADR-024 scope stop — visual FAIL, not PASS).
 
 ## Integration checkpoints
 
