@@ -24,9 +24,10 @@ public static class ShooterSoldierBuild
         public ShooterFeatureBuild.Item[] content;
         public string[] captures;
         public float maxGripError, maxPlantSlide, maxPlantTargetError;
+        public float minArmBodyClearance, maxEyeSightLineError, maxStockError;
         public string frameBaseline = SoldierSkeleton.Version;
         public string motionVersion = SoldierMotion.Version;
-        public string motionFrameOverrides = "Shoulder task-neutral cone90deg and elbow preferred pole local-Y; knee task pole+Z; immutable bind reference frames below";
+        public string motionFrameOverrides = "V3 cosmetic body blade35deg/leg heading5deg; bounded clavicle and clearance-aware elbow-circle tasks; immutable semantic bind frames below; input root unchanged";
         public Frame[] frames;
         public ShooterBuild.FileProof[] sources;
     }
@@ -77,7 +78,10 @@ public static class ShooterSoldierBuild
                 foreach(string angle in new[]{"front","side","three-quarter"}){view.Focus(angle);Shot(scenario+"-"+angle);}
             }
             for(int lod=1;lod<3;lod++){view.SetLod(lod);view.PoseAt(0,"stand",true);view.Focus("three-quarter");Shot("soldier-lod"+lod);}
-            ShooterBuild.WriteJson(ShooterBuild.Argument("-shooterReport"),new Proof{toolchainHash=ShooterBuild.HashFile(ShooterBuild.LockPath),captures=paths.ToArray(),maxGripError=view.MaxGripError,maxPlantSlide=view.MaxPlantSlide,maxPlantTargetError=view.MaxPlantTargetError});
+            view.SetLod(0);view.PoseAt(.45f,"reload-down",true);
+            foreach(string angle in new[]{"front","side","three-quarter"}){view.Focus(angle);Shot("third-iteration-worst-"+angle);}
+            ShooterBuild.WriteJson(ShooterBuild.Argument("-shooterReport"),new Proof{toolchainHash=ShooterBuild.HashFile(ShooterBuild.LockPath),captures=paths.ToArray(),maxGripError=view.MaxGripError,maxPlantSlide=view.MaxPlantSlide,maxPlantTargetError=view.MaxPlantTargetError,
+                minArmBodyClearance=view.MinArmBodyClearance,maxEyeSightLineError=view.MaxEyeSightLineError,maxStockError=view.MaxStockError});
         }
         finally{UnityEngine.Object.DestroyImmediate(view.gameObject);}
     });

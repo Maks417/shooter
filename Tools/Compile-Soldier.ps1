@@ -21,7 +21,7 @@ try {
         $captureRoot=Join-Path $run.Path 'captures';$captureProof=Join-Path $run.Path 'capture-proof.json'
         Invoke-ShooterEditor $unity $run @('-buildTarget','StandaloneWindows64','-standaloneBuildSubtarget','Player','-quit','-executeMethod','ShooterSoldierBuild.Capture','-shooterCacheRoot',$CacheRoot,'-shooterCaptureRoot',$captureRoot,'-shooterReport',$captureProof) $TimeoutSeconds
         $captured=Get-Content -LiteralPath $captureProof -Raw | ConvertFrom-Json
-        if ($captured.result -cne 'Verified' -or $captured.captures.Count -ne 32) { throw 'Incomplete soldier image diagnostic.' }
+        if ($captured.result -cne 'Verified' -or $captured.captures.Count -ne 35) { throw 'Incomplete soldier image diagnostic.' }
         foreach ($path in $captured.captures) { if (!(Test-Path -LiteralPath $path -PathType Leaf)) { throw 'Soldier capture missing.' } }
     }
     $run.Report['cacheRoot']=$CacheRoot;$run.Report['scope']='M1 soldier regeneration/skinning capture diagnostic; V05 acceptance remains separate'

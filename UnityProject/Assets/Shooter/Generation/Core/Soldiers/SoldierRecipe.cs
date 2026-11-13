@@ -11,7 +11,7 @@ namespace Shooter.Generation
     {
         public const string Schema = "shooter.soldier.v1";
         public const string GeneratorId = "soldier.loft";
-        public const string GeneratorVersion = "1.0.1";
+        public const string GeneratorVersion = "1.0.2";
         public const string ParametersJson = "{\"heightMm\":1800,\"hipWidthMm\":280,\"nearLimbSegments\":12,\"nearTorsoSegments\":16,\"runCycleMm\":2200,\"runDutyPpm\":350000,\"shoulderWidthMm\":420,\"uniformOffsetMm\":6,\"walkCycleMm\":1400,\"walkDutyPpm\":500000}";
         public RecipeDocument Document { get; }
         public ContentId SourceHash { get; }

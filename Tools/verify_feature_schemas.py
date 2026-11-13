@@ -19,13 +19,16 @@ def main():
         Draft202012Validator.check_schema(schema)
     outcomes = []
     sources = [(p, True) for p in sorted((ROOT / "UnityProject/Assets/Shooter/Generation/FeatureRecipes").glob("*.json"))]
-    sources += [(p, "1.0.1" in p.name) for p in sorted((ROOT / "docs/feature-fixtures").glob("*.json"))]
+    current_versions = {"geometry.weapon": "1.0.1", "material.surface": "1.0.1", "soldier.loft": "1.0.2"}
+    sources += [(p, json.loads(p.read_text(encoding="utf-8"))["generatorVersion"] ==
+                 current_versions[json.loads(p.read_text(encoding="utf-8"))["generatorId"]])
+                for p in sorted((ROOT / "docs/feature-fixtures").glob("*.json"))]
     for path, expected_valid in sources:
         value = json.loads(path.read_text(encoding="utf-8"))
         schema = schemas[{"geometry.weapon": "weapon", "material.surface": "material", "soldier.loft": "soldier"}[value["generatorId"]]]
         errors = list(Draft202012Validator(schema).iter_errors(value))
         outcomes.append({"source": path.relative_to(ROOT).as_posix(), "expectedValid": expected_valid, "passed": (not errors) == expected_valid, "errorPaths": [e.json_path for e in errors]})
-    report = {"result": "PASS" if len(outcomes) == 16 and all(v["passed"] for v in outcomes) else "FAIL", "cases": outcomes,
+    report = {"result": "PASS" if len(outcomes) == 17 and all(v["passed"] for v in outcomes) else "FAIL", "cases": outcomes,
               "scope": "Full Draft 2020-12 structural schemas and explicit version migration; C# tests check all semantic/hash/topology/mip constraints"}
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.report.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")

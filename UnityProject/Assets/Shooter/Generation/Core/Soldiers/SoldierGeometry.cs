@@ -65,6 +65,9 @@ namespace Shooter.Generation
                     t=>new Float2(Lerp(.059f,.052f,t),Lerp(.075f,.063f,t)),t=>new Skin(foot),1);
             }
             b.Box(new Float3(.31f,.30f,.045f),new Float3(0,1.255f,.153f),4,1,.012f); // plate +12mm clearance
+            // Versioned exterior reload task: the +Z grab face is chest-local(-.24,-.28,.20).
+            b.Box(new Float3(.10f,.13f,.05f),new Float3(-.24f,1.10f,.175f),4,1,.006f);
+            b.Box(new Float3(.05f,.08f,.025f),new Float3(-.178f,1.12f,.16f),4,0,.004f);
             b.Box(new Float3(.28f,.34f,.13f),new Float3(0,1.245f,-.198f),4,0,.018f); // pack
             b.Box(new Float3(.32f,.06f,.232f),new Float3(0,.96f,0),1,1); // belt
             if(lod<2) foreach(int side in new[]{-1,1})

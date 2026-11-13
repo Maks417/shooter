@@ -28,6 +28,9 @@ namespace Shooter.Presentation
         public float MaxGripError { get; private set; }
         public float MaxPlantSlide { get; private set; }
         public float MaxPlantTargetError { get; private set; }
+        public float MinArmBodyClearance { get; private set; } = float.MaxValue;
+        public float MaxEyeSightLineError { get; private set; }
+        public float MaxStockError { get; private set; }
         public double LastEightRigMilliseconds { get; private set; }
         public uint PoseSequence { get; private set; }
         public string ContentPlanHash { get; private set; }
@@ -128,7 +131,7 @@ namespace Shooter.Presentation
             floor.transform.localPosition = new Vector3(0,-.07f,0); floor.transform.localScale = new Vector3(100,.1f,100);
             floorRoot = floor.transform;
             stepsRoot = new GameObject("Analytic twenty-centimeter steps"); stepsRoot.transform.SetParent(transform,false);
-            for(int step=-10;step<40;step++)
+            for(int step=-10;step<80;step++)
             {
                 var tile=new GameObject("Numeric step "+step);tile.transform.SetParent(stepsRoot.transform,false);
                 tile.AddComponent<MeshFilter>().sharedMesh=floor.GetComponent<MeshFilter>().sharedMesh;
@@ -172,7 +175,7 @@ namespace Shooter.Presentation
             if (seconds < 0 || float.IsNaN(seconds) || float.IsInfinity(seconds)) throw new ArgumentOutOfRangeException(nameof(seconds));
             switch (scenario)
             {
-                case "bind": case "stand": case "walk": case "run": case "crouch": case "aim": case "reload": case "slope": case "steps": case "turn": break;
+                case "bind": case "stand": case "walk": case "run": case "crouch": case "aim": case "reload": case "reload-down": case "reload-up": case "slope": case "steps": case "turn": break;
                 default: throw new ArgumentException("Unknown soldier scenario.");
             }
             ground.Scenario = scenario;
@@ -195,13 +198,18 @@ namespace Shooter.Presentation
                 avatar.Weapon.gameObject.SetActive(true);
                 var input = new SoldierMotionInput(new Float3(x,ground.Height(dz),dz), scenario == "turn" ? seconds : 0,
                     seconds * speed, speed, scenario == "crouch" ? 1 : 0,
-                    scenario == "aim" ? .6f : 0, scenario == "aim" ? .3f : 0, scenario == "reload" ? seconds % 1 : -1, reset);
+                    scenario == "aim" ? .6f : 0,
+                    scenario == "reload-down" ? -SoldierMotion.MaxAimPitchRadians : scenario == "reload-up" ? SoldierMotion.MaxAimPitchRadians : scenario == "aim" ? .3f : 0,
+                    scenario == "reload" || scenario == "reload-down" || scenario == "reload-up" ? seconds % 1 : -1, reset);
                 avatar.Root.position = V(input.Root);
                 var pose = avatar.Motion.Evaluate(input, ground);
                 for (int j = 0; j < 23; j++) avatar.Bones[j].SetPositionAndRotation(V(pose.WorldPositions[j]), Q(pose.WorldRotations[j]));
                 avatar.Weapon.SetPositionAndRotation(V(pose.WeaponPosition),Q(pose.WeaponRotation));
                 MaxGripError = Mathf.Max(MaxGripError,Mathf.Max(pose.LeftGripError,pose.RightGripError));
                 MaxPlantSlide = Mathf.Max(MaxPlantSlide,pose.PlantSlide); MaxPlantTargetError = Mathf.Max(MaxPlantTargetError,pose.PlantTargetError);
+                MinArmBodyClearance = Mathf.Min(MinArmBodyClearance,pose.ArmBodyClearanceMeters);
+                MaxEyeSightLineError = Mathf.Max(MaxEyeSightLineError,pose.EyeSightLineErrorMeters);
+                MaxStockError = Mathf.Max(MaxStockError,pose.RightStockErrorMeters);
             }
             LastEightRigMilliseconds = (System.Diagnostics.Stopwatch.GetTimestamp() - start) * 1000d / System.Diagnostics.Stopwatch.Frequency;
             PoseSequence++;

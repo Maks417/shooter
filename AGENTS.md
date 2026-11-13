@@ -1,6 +1,6 @@
 # Shooter implementation rules
 
-Repository: C:\Job\shooter. Implement a Unity 6 URP procedural military FPS under UnityProject. M0 now has a locked editor, pure contracts and a client/server foundation harness; continue only the assigned milestone, not the entire game. Read docs/implementation-start.md, docs/vision.md, docs/architecture.md, docs/contract-details.md and your assigned milestone index before edits. Current evidence and pending gates are in docs/milestones/m0-foundation/handoff.md.
+Repository: C:\Job\shooter. Implement a Unity 6 URP procedural military FPS under UnityProject. M0 is closed with the explicit owner hardware-validation waiver; M1 procedural feasibility is in progress. Continue only the assigned milestone, not the entire game. Read docs/implementation-start.md, docs/vision.md, docs/architecture.md, docs/contract-details.md and your assigned milestone index before edits. Current M1 evidence and pending gates are in docs/milestones/m1-procedural-feasibility/handoff.md; the M0 handoff retains its historical evidence and waiver limits.
 
 ## Scope and ownership
 
@@ -19,7 +19,7 @@ Gameplay collision/nav/hit volumes/weapon behavior identical across quality tier
 
 ## Verification and completion
 
-Run docs/fixtures/verify_fixtures.py and docs/verify_docs.py for specification changes. Run Tools/Test-Contracts.ps1 and relevant Unity/build/benchmark wrappers described in docs/bootstrap-runbook.md; M0 wrappers now exist, while CompileContent explicitly reports unsupported at this milestone. Missing tools/hardware/counters => pending, never PASS.
+Run docs/fixtures/verify_fixtures.py and docs/verify_docs.py for specification changes. Run Tools/Test-Contracts.ps1, Tools/Test-Generation.ps1 and relevant Unity/build/benchmark wrappers described in docs/bootstrap-runbook.md. Compile-Content supports the box-collision diagnostic; Compile-Gallery, Compile-Soldier and Compile-M1Content support their explicit M1 content sets, not arbitrary/full-map content. Missing tools/hardware/counters => pending, never PASS.
 
 Never edit generated payloads/goldens just to pass tests. Record source/toolchain/content/seed/workload with results; reference-machine performance measured in release player, not editor. Update affected shared docs with real code paths and milestone handoff with evidence/limitations. Keep shared docs once at docs root; milestone folders link them. Do not recreate duplicated reference folders.
 

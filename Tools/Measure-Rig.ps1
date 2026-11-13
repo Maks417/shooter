@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param([Parameter(Mandatory)][string]$BuildRunDirectory, [Parameter(Mandatory)][string]$CacheRoot,
-    [ValidateSet('walk','run','crouch','aim','reload','slope','steps','turn')][string]$Scenario='walk')
+    [ValidateSet('walk','run','crouch','aim','reload','reload-down','reload-up','slope','steps','turn')][string]$Scenario='walk')
 . (Join-Path $PSScriptRoot 'Unity.Common.ps1')
 $unity=Get-ShooterUnity
 $buildRoot=(Resolve-Path -LiteralPath $BuildRunDirectory).Path

@@ -125,7 +125,7 @@ public sealed class SoldierGeometryTests
         Assert.Equal(ErrorCode.InvalidInput,gameplay.Error);Assert.Empty(gameplay.Artifacts);
     }
     [Theory]
-    [InlineData("1800","1801")][InlineData("420","421")][InlineData("500000","620000")][InlineData("1.0.1","1.0.0")][InlineData("\"dependencies\": []","\"dependencies\": [\"0000000000000000000000000000000000000000000000000000000000000000\"]")]
+    [InlineData("1800","1801")][InlineData("420","421")][InlineData("500000","620000")][InlineData("1.0.2","1.0.1")][InlineData("\"dependencies\": []","\"dependencies\": [\"0000000000000000000000000000000000000000000000000000000000000000\"]")]
     public void UnsupportedAnatomyVersionAndDependenciesAreRejected(string before,string after)
     {Assert.Throws<FormatException>(()=>SoldierRecipe.Parse(Encoding.UTF8.GetBytes(Encoding.UTF8.GetString(Source()).Replace(before,after))));}
     [Fact]

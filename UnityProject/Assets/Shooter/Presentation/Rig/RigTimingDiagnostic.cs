@@ -17,6 +17,9 @@ namespace Shooter.Presentation
             public int rigs = 8, samples;
             public double cpuMillisecondsP95, cpuMillisecondsMax;
             public float gripErrorMaxMeters, plantSlideMaxMeters, plantTargetErrorMaxMeters;
+            public float armBodyClearanceMinMeters, eyeSightLineErrorMaxMeters, stockErrorMaxMeters;
+            public string handErrorMethod = "Wrist to current procedural task target; support hand intentionally leaves the grip during reload";
+            public bool bodyProxyClearanceNonnegative;
             public bool gripWithinTwoCentimeters, plantSlideWithinFiveCentimeters;
         }
         private readonly double[] samples = new double[262144];
@@ -53,6 +56,8 @@ namespace Shooter.Presentation
                 var proof = new Proof { contentPlanHash=gallery.ContentPlanHash, sourceCommit=source,toolchainHash=toolchain,cpu=SystemInfo.processorType,gpu=SystemInfo.graphicsDeviceName,
                     scenario=gallery.Scenario,rawCsv=csv,samples=count,cpuMillisecondsP95=sorted[(int)Math.Ceiling(.95*count)-1],cpuMillisecondsMax=sorted[count-1],
                     gripErrorMaxMeters=gallery.MaxGripError,plantSlideMaxMeters=gallery.MaxPlantSlide,plantTargetErrorMaxMeters=gallery.MaxPlantTargetError,
+                    armBodyClearanceMinMeters=gallery.MinArmBodyClearance,eyeSightLineErrorMaxMeters=gallery.MaxEyeSightLineError,stockErrorMaxMeters=gallery.MaxStockError,
+                    bodyProxyClearanceNonnegative=gallery.MinArmBodyClearance>=0,
                     gripWithinTwoCentimeters=gallery.MaxGripError<=.02f,plantSlideWithinFiveCentimeters=gallery.MaxPlantSlide<=.05f };
                 File.WriteAllText(output,JsonUtility.ToJson(proof,true)+"\n");
                 Debug.Log("SHOOTER_RIG_DIAGNOSTIC_COMPLETE samples="+count);enabled=false;Application.Quit(0);

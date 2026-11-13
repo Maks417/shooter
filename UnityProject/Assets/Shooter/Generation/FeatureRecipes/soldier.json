@@ -2,7 +2,7 @@
   "schemaId": "shooter.soldier.v1",
   "recipeId": "soldiers/baseline",
   "generatorId": "soldier.loft",
-  "generatorVersion": "1.0.1",
+  "generatorVersion": "1.0.2",
   "seed": "460072030",
   "parameters": {
     "heightMm": 1800,
