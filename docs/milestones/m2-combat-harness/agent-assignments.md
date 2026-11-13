@@ -1,6 +1,6 @@
 # M2 — Combat harness — agent assignments
 
-Packages: WP-05 with WP-04/WP-02 adapters. Follow [ownership rules](../../agent-coordination.md) and [package path table](../../backlog.md). This pack plans future work; it does not launch agents or authorize concurrent edits to shared files.
+Packages: WP-05 with WP-04/WP-02 adapters. Follow [ownership rules](../../agent-coordination.md) and [package path table](../../backlog.md). Owner Max launched the M2 multi-agent wave on 2026-11-13 from base `925d23f` after M1 closure (ADR-025). Live ownership, branches and forbidden paths are recorded in root `coordination.json` (`m2Start`); this page summarizes the assignment cards.
 
 ## Assignment cards
 

@@ -1,6 +1,6 @@
 # M2 — Combat harness — implementation pack
 
-Status: planned; no implementation or game test is claimed. Baseline 2026-11-11. Canonical backlog tasks: T011–T013. Assigned packages: WP-05 with WP-04/WP-02 adapters.
+Status: **IN PROGRESS** (wave launched 2026-11-13 from M1-closed base `925d23f`). Canonical backlog tasks: T011–T013 (+ T027 defaults via integrator). Assigned packages: WP-05 with WP-04/WP-02 adapters. See [handoff](handoff.md) and root `coordination.json`.
 
 ## Goal and entry gate
 

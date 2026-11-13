@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "updatedDate": "2026-11-13",
-  "integrator": "Codex (M1 integrator; closeout)",
+  "integrator": "Cursor M2 integrator (bc-2637951e)",
   "branch": "main",
-  "baseCommit": "8f64e54aca2640ad23e735772d652b03b7ee1cae",
+  "baseCommit": "925d23f74301fd08a6aeccdf977822438b061c4b",
   "contractVersion": "C0-v1",
   "readyForParallelIntegration": true,
   "packages": [
@@ -11,7 +11,7 @@
       "packageId": "WP-00",
       "owner": "Codex (single integrator)",
       "branch": "main",
-      "baseCommit": "40de8f9405f1fa8414a338ccfcca8a7f643466bb",
+      "baseCommit": "925d23f74301fd08a6aeccdf977822438b061c4b",
       "paths": [
         "UnityProject/Assets/Shooter/Contracts",
         "UnityProject/Assets/Shooter/Bootstrap",
@@ -35,7 +35,7 @@
       ],
       "dependencies": [],
       "contractVersion": "C0-v1",
-      "status": "M0+M1 closed with owner hardware waivers (ADR-017, ADR-025), 2/8 milestones closed. C0-v1 unchanged. M2 unassigned.",
+      "status": "M0+M1 closed (ADR-017, ADR-025). C0-v1 frozen. M2 combat wave assigned; integrator owns Contracts/Bootstrap/Settings/docs/coordination and final composition.",
       "leaseExpiry": null
     },
     {
@@ -492,6 +492,150 @@
       "contractVersion": "C0-v1",
       "status": "Assigned isolated source worktree; no worker Unity editor; integrator owns version/schema/Unity integration.",
       "leaseExpiry": null
+    },
+    {
+      "packageId": "WP-05/motor",
+      "owner": "/root/m2_motor",
+      "branch": "cursor/m2-motor-d311",
+      "baseCommit": "925d23f74301fd08a6aeccdf977822438b061c4b",
+      "paths": [
+        "UnityProject/Assets/Shooter/Simulation/Motor",
+        "Tools/Simulation.Tests/Motor"
+      ],
+      "dependencies": [
+        "C0-v1",
+        "specification-v1.1",
+        "docs/gameplay-baseline.md",
+        "docs/simulation-protocol.md"
+      ],
+      "contractVersion": "C0-v1",
+      "status": "Assigned: T011/C01 kinematic motor + input buffering; pure-source worktree; no Unity editor; no Contracts/Bootstrap/Settings edits",
+      "leaseExpiry": "2026-11-14T23:59:59Z",
+      "forbiddenPaths": [
+        "UnityProject/Assets/Shooter/Contracts",
+        "UnityProject/Assets/Shooter/Bootstrap",
+        "UnityProject/Assets/Shooter/Settings",
+        "UnityProject/ProjectSettings",
+        "UnityProject/Packages",
+        "coordination.json",
+        "contract-lock.json",
+        "docs"
+      ]
+    },
+    {
+      "packageId": "WP-05/combat",
+      "owner": "/root/m2_combat",
+      "branch": "cursor/m2-combat-d311",
+      "baseCommit": "925d23f74301fd08a6aeccdf977822438b061c4b",
+      "paths": [
+        "UnityProject/Assets/Shooter/Simulation/Combat",
+        "Tools/Simulation.Tests/Combat"
+      ],
+      "dependencies": [
+        "C0-v1",
+        "WP-05/motor (fakes allowed until merge)",
+        "docs/features/combat.md"
+      ],
+      "contractVersion": "C0-v1",
+      "status": "Assigned: T012/C02 weapon/damage/reload/muzzle obstruction; pure-source; fakes for motor/world OK",
+      "leaseExpiry": "2026-11-14T23:59:59Z",
+      "forbiddenPaths": [
+        "UnityProject/Assets/Shooter/Contracts",
+        "UnityProject/Assets/Shooter/Bootstrap",
+        "UnityProject/Assets/Shooter/Settings",
+        "UnityProject/ProjectSettings",
+        "UnityProject/Packages",
+        "UnityProject/Assets/Shooter/Simulation/Motor",
+        "coordination.json",
+        "contract-lock.json",
+        "docs"
+      ]
+    },
+    {
+      "packageId": "WP-05/pose",
+      "owner": "/root/m2_pose",
+      "branch": "cursor/m2-pose-d311",
+      "baseCommit": "925d23f74301fd08a6aeccdf977822438b061c4b",
+      "paths": [
+        "UnityProject/Assets/Shooter/Simulation/Pose",
+        "Tools/Simulation.Tests/Pose"
+      ],
+      "dependencies": [
+        "C0-v1",
+        "M1 skeleton/socket freeze (read-only)",
+        "docs/features/soldiers-animation.md",
+        "docs/soldier-baseline.md"
+      ],
+      "contractVersion": "C0-v1",
+      "status": "Assigned: T013 gameplay hit-pose evaluator + obstruction helpers; pure-source; independent of visual LOD",
+      "leaseExpiry": "2026-11-14T23:59:59Z",
+      "forbiddenPaths": [
+        "UnityProject/Assets/Shooter/Contracts",
+        "UnityProject/Assets/Shooter/Bootstrap",
+        "UnityProject/Assets/Shooter/Settings",
+        "UnityProject/ProjectSettings",
+        "UnityProject/Packages",
+        "UnityProject/Assets/Shooter/Simulation/Motor",
+        "UnityProject/Assets/Shooter/Simulation/Combat",
+        "coordination.json",
+        "contract-lock.json",
+        "docs"
+      ]
+    },
+    {
+      "packageId": "WP-04/view-arms",
+      "owner": "/root/m2_view",
+      "branch": "cursor/m2-view-d311",
+      "baseCommit": "925d23f74301fd08a6aeccdf977822438b061c4b",
+      "paths": [
+        "UnityProject/Assets/Shooter/Presentation/View",
+        "UnityProject/Assets/Shooter/Tests/EditMode/View"
+      ],
+      "dependencies": [
+        "C0-v1",
+        "WP-05 combat event fixtures (fakes OK)",
+        "WP-02 weapon sockets read-only"
+      ],
+      "contractVersion": "C0-v1",
+      "status": "Assigned: T013/C04 procedural view arms ADS/recoil/reload grip; pure-source preferred; no Unity editor unless required for EditMode; no duplicate damage/recoil",
+      "leaseExpiry": "2026-11-14T23:59:59Z",
+      "forbiddenPaths": [
+        "UnityProject/Assets/Shooter/Contracts",
+        "UnityProject/Assets/Shooter/Bootstrap",
+        "UnityProject/Assets/Shooter/Settings",
+        "UnityProject/ProjectSettings",
+        "UnityProject/Packages",
+        "UnityProject/Assets/Shooter/Simulation",
+        "coordination.json",
+        "contract-lock.json",
+        "docs"
+      ]
+    },
+    {
+      "packageId": "WP-05/integration",
+      "owner": "Cursor M2 integrator",
+      "branch": "main",
+      "baseCommit": "925d23f74301fd08a6aeccdf977822438b061c4b",
+      "paths": [
+        "UnityProject/Assets/Shooter/Simulation/Foundation",
+        "UnityProject/Assets/Shooter/Bootstrap",
+        "UnityProject/Assets/Shooter/Settings",
+        "Tools/Foundation",
+        "Tools/Simulation.Tests",
+        "Tools/Test-Contracts.ps1",
+        "docs/milestones/m2-combat-harness",
+        "coordination.json"
+      ],
+      "dependencies": [
+        "WP-05/motor",
+        "WP-05/combat",
+        "WP-05/pose",
+        "WP-04/view-arms",
+        "T027 gameplay defaults"
+      ],
+      "contractVersion": "C0-v1",
+      "status": "Active: serialize composition, T027 defaults/layer audit, shipping RequireReal, handoff/evidence",
+      "leaseExpiry": null
     }
   ],
   "validationWave": {
@@ -566,7 +710,7 @@
     "p03SilhouetteAds": "PASS_WITH_LIMITS",
     "p03LodTransition": "PASS (numeric; Unity transition captures Pending/unavailable)",
     "hostedCI": "User-deferred",
-    "nextMilestoneAssigned": false,
+    "nextMilestoneAssigned": true,
     "evidenceDirectory": "Artifacts/m1-procedural-feasibility/owner-closure-20261113",
     "unverifiedItems": [
       "B01-materials thermal/HWiNFO",
@@ -681,5 +825,22 @@
       "Preconditioning hitch causes"
     ],
     "supersedesHistoricalDisposition": true
+  },
+  "m2Start": {
+    "date": "2026-11-13",
+    "assignment": "Owner Max: M1 closed; implement everything for M2 with multiple agents",
+    "baseCommit": "925d23f74301fd08a6aeccdf977822438b061c4b",
+    "contractVersion": "C0-v1 unchanged",
+    "fixtureVersion": "specification-v1.1",
+    "seed": "460072030",
+    "scope": "M2 combat harness C01-C04 / T011-T013 (+ T027 defaults); no M3+ world/nav",
+    "status": "IN_PROGRESS: multi-agent wave launched after M1 CLOSED_WITH_USER_WAIVER",
+    "workers": [
+      "WP-05/motor",
+      "WP-05/combat",
+      "WP-05/pose",
+      "WP-04/view-arms"
+    ],
+    "evidence": "Artifacts/m2-combat-harness"
   }
 }
