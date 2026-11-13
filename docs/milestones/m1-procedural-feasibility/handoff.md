@@ -49,7 +49,7 @@ Offline restores use the existing pinned dependency cache; NuGet advisory lookup
 
 - P01/T005: production seed/encoding/identity foundations implemented; exact vectors and failure tests pass. Full topology reproduction criterion remains pending P03.
 - P02/T006: compiler/loader skeleton implemented. Numeric diagnostic cold/warm/force/dry-run, DAG/cache/error/concurrency/cancellation and lease tests pass. Production codec/manifest/recipe v1 freeze is recorded under ADR-018. Full-slice content and resource budgets remain pending.
-- P03/T007,T009: initial primitive/weapon/collision/socket generation implemented, with corrected actual captures and clean-source tests. Formal silhouette/ADS polish, production LOD switching/hysteresis and downstream gameplay/view pose integration remain open.
+- P03/T007,T009: initial primitive/weapon/collision/socket generation implemented, with corrected actual captures and clean-source tests. LOD hysteresis and silhouette packaging harness exist; formal human silhouette/ADS/transition acceptance remains PendingReview.
 - P04/T008,T031: seven CPU material families, cheap URP surface/shadow path and fixed sun/ambient diagnostic implemented. Compression comparison, exact B01-materials workload integration/measurement, actual variant/resource evidence and sky/probe polish remain open; gallery is not the benchmark.
 - P05/T010,T028: spike implemented through loft1.0.2/motion.spike.v3; iteration2 and ADR-023 third candidate FAIL visual/clearance; ADR-024 scope-stops further search (FAIL / not accepted). Numeric grip/contact/1000-pose/eight-rig remain spike evidence only.
 
@@ -192,3 +192,9 @@ The integrator stopped expansion under the original two-iteration bound and pres
 ### Third-iteration FAIL and scope stop
 
 The ADR-023 candidate soldier.loft1.0.2/motion.spike.v3 fails the unchanged conservative clearance acceptance probe (~2.18mm dense possible left forearm/strap overlap near down-aim reload phase0.45). Eye/sight alignment remains unresolved. Numeric grip/contact,1000-pose and eight-rig diagnostics remain spike evidence only. Under [ADR-024](../../decisions.md#adr-024--accepted-p05-soldier-visual-scope-stop-after-exhausted-clearance-iterations), further P05 clearance/parameter search stops after the owner's “do all” direction; loft1.0.2/motion.spike.v3 is retained as non-accepted diagnostic evidence; soldier visual/clearance acceptance remains FAIL / not accepted; no tolerance relaxation. Parallel polish (T031, LOD evidence, B01 three-run, etc.) may continue without pretending soldier PASS, without closing M1, without waiving hardware gates, without claiming realism, and without authorizing M2 combat on this skin.
+
+### Post-clearance polish evidence (2026-11-13)
+
+- P03 silhouette packaging harness integrated (`Tools/weapon_silhouette.py`, `Tools/Measure-WeaponSilhouette.ps1`). Existing Low gallery captures packaged at `Artifacts/m1-procedural-feasibility/72c1d78fe9a397b66adb2acba6ceab8b5323bfa4/weapon-silhouette-20261113T170200667Z/` with `disposition=PendingReview` and `visualRealismPass=false`. Human silhouette/ADS acceptance remains open.
+- LOD transition numeric harness previously integrated; formal visual transition sign-off still open.
+- B01-materials three-run attempt on current HEAD failed (precondition tick overload); summary `Artifacts/m1-continuation/b01-materials-series-summary.json`. Prior `8f64e54` PendingHardware captures remain the latest non-FAIL materials evidence.
