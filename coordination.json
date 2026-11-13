@@ -3,7 +3,7 @@
   "updatedDate": "2026-11-13",
   "integrator": "Cursor M5-M7 integrator (bc-05dea339)",
   "branch": "main",
-  "baseCommit": "c1cee49319d99302f5caa988d0a0aecad06acac8",
+  "baseCommit": "d0546a8b83a46f80551f452386e1ec31fd87805d",
   "contractVersion": "C0-v1",
   "readyForParallelIntegration": false,
   "packages": [
@@ -1423,7 +1423,8 @@
     "evidence": "Artifacts/m6-network-slice",
     "decision": "docs/decisions.md#adr-031--accepted-m6-owner-waiver-of-remaining-unity-tooling-and-hardwarereference-validation-and-milestone-close",
     "closureEvidence": "Artifacts/m6-network-slice/owner-closure-20261113",
-    "softwareGates": "S01-S05 pure PASS; simulation 60/60"
+    "softwareGates": "S01-S05 pure PASS; simulation 60/60",
+    "softwareHead": "d0546a8b83a46f80551f452386e1ec31fd87805d"
   },
   "m6MilestoneAcceptance": {
     "milestone": "M6",
@@ -1441,6 +1442,7 @@
     "softwareGates": "S01-S05 pure PASS; simulation 60/60",
     "nextMilestoneAssigned": true,
     "nextMilestone": "M7",
-    "evidenceDirectory": "Artifacts/m6-network-slice/owner-closure-20261113"
+    "evidenceDirectory": "Artifacts/m6-network-slice/owner-closure-20261113",
+    "softwareHead": "d0546a8b83a46f80551f452386e1ec31fd87805d"
   }
 }
