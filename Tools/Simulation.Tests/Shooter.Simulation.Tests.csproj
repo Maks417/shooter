@@ -22,5 +22,7 @@
     <Compile Include="../../UnityProject/Assets/Shooter/Presentation/View/**/*.cs" Link="View/%(Filename)%(Extension)" />
     <Compile Include="../../UnityProject/Assets/Shooter/World/Streaming/**/*.cs" Link="WorldStreaming/%(Filename)%(Extension)" />
     <Compile Include="../../UnityProject/Assets/Shooter/World/Navigation/**/*.cs" Link="WorldNavigation/%(Filename)%(Extension)" />
+    <Compile Include="../../UnityProject/Assets/Shooter/Presentation/Audio/**/*.cs" Link="Audio/%(Filename)%(Extension)" />
+    <Compile Include="../../UnityProject/Assets/Shooter/Presentation/Fx/**/*.cs" Link="Fx/%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>
