@@ -1,6 +1,6 @@
 # M8 — Runtime composition and Game-v1 foundation — implementation pack
 
-Status: **PLANNED / UNASSIGNED**, 2026-11-13. Tasks T035–T039. This pack defines future implementation; no workers, tests or closure are claimed by publishing it.
+Status: **IN PROGRESS**, 2026-11-13. Tasks T035–T039. T035 Game-v1 freeze (ADR-034) and RUN00 complete; T036 pure session/lifecycle landed; T037–T039 product vertical still open. See [handoff](handoff.md).
 
 ## Goal
 

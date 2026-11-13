@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "Game-v1",
+  "status": "FrozenByIntegrator",
+  "reviewer": "Cursor M8 integrator (bc-b005c261)",
+  "reviewDate": "2026-11-13",
+  "scope": "Initial Game-v1 freeze: session/map/settings ports and TDM workload fixtures. C0-v1/content-v1/N1-v1 unchanged. Runtime/player acceptance is separate.",
+  "ruleVersion": 1,
+  "settingsSchema": 1,
+  "simulationHz": 60,
+  "dependsOnContract": "C0-v1",
+  "toolchainHash": "9ac31fe82117043e2bba3bfb843dd1ca32834b15425188e96d6f3369e2c627a8",
+  "sources": {
+    "UnityProject/Assets/Shooter/Game/Contracts/GameData.cs": "838302f6039c33e049fc1cb2b2a769c2dc39285646b9ad6e5f08a9ae2f92c026",
+    "UnityProject/Assets/Shooter/Game/Contracts/GameData.cs.meta": "da2d99bee98c3ea0a1088ded28a27e5b7e7a7da3e5df1edff7afd0239ae0d61b",
+    "UnityProject/Assets/Shooter/Game/Contracts/GameIds.cs": "9aa70118865d2ba7e327249e7675e273ec3afaa24851381bd072b65352531063",
+    "UnityProject/Assets/Shooter/Game/Contracts/GameIds.cs.meta": "c2c91bdde4ddf87b4f89e13fdf43a704bab107522a63128711ae6d8c09dee498",
+    "UnityProject/Assets/Shooter/Game/Contracts/GamePorts.cs": "004eb6130f3c7efe28aab2f09039cdfa40bc951b92ac228aeb6da66811692c0e",
+    "UnityProject/Assets/Shooter/Game/Contracts/GamePorts.cs.meta": "ae392a4c3e1eefdb2079e82679c2d4cd7218bc703e4e5a526c83db7b07308273",
+    "UnityProject/Assets/Shooter/Game/Contracts/GameValidation.cs": "c51e14664a9dfd284ade14b5a28f9896e80bf20caa8d5716edf63d13f5fcbdf3",
+    "UnityProject/Assets/Shooter/Game/Contracts/GameValidation.cs.meta": "1361e7b3feaad1ea4f8057b9933d42d9fe3de9f3ce6d923ae963be6d43e1cb13",
+    "UnityProject/Assets/Shooter/Game/Contracts/GameValues.cs": "ecabadd27da2a99a5f010ac155cc120ab4fe4d3a040294272913f399831cda64",
+    "UnityProject/Assets/Shooter/Game/Contracts/GameValues.cs.meta": "4cc0dfdfd431d25d45bdfb2e78950221a3fd3c5dd5959568d6515b6640139f26",
+    "UnityProject/Assets/Shooter/Game/Contracts/Shooter.Game.Contracts.asmdef": "f678cee363eda1dbc34c8944c1478e19ba8a0ef859b112406a432d0b144f8746",
+    "UnityProject/Assets/Shooter/Game/Contracts/Shooter.Game.Contracts.asmdef.meta": "0b2a34ebc0dc134347f53f1b6a817262d5993e147f22cd865ac26cb4579b6d14"
+  },
+  "fixtures": {
+    "docs/game-fixtures/session-request.invalid-size.json": "f0f88b9ac0aa59b2cbac34b34c2a16e44596820e3956da9392dbce4ca6afd4b1",
+    "docs/game-fixtures/session-request.valid.json": "b2f878ec31c27d43d684aec61eb1b2bbbc016199a82261a50bf73d183433d488",
+    "docs/game-fixtures/tdm-workloads.json": "0797c27e5b37fddab2162785c98d8620b461d090e90297da8c7fb3b60f30d36b"
+  }
+}

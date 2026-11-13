@@ -1478,5 +1478,47 @@
     "t025Started": false,
     "evidenceDirectory": "Artifacts/m7-hardening-stretch/owner-closure-20261113",
     "softwareHead": "5d1455fec803d76e5eec2f7b8bf799188efffd04"
+  },
+  "m8Start": {
+    "date": "2026-11-13",
+    "assignment": "Owner Max: check and implement all next milestones (M8–M11 playable release)",
+    "baseCommit": "5fb3e30dbac31d4d587a81d4105717984eb88a83",
+    "integrator": "Cursor M8 integrator (bc-b005c261)",
+    "branch": "cursor/m8-runtime-composition-c807",
+    "contractVersion": "C0-v1 unchanged",
+    "gameContractVersion": "Game-v1",
+    "gameContractLock": "game-contract-lock.json",
+    "decision": "docs/decisions.md#adr-034--accepted-initial-game-v1-freeze-t035",
+    "status": "IN_PROGRESS",
+    "completed": [
+      "RUN00 provenance repair",
+      "T035 Game-v1 freeze",
+      "T036 OfflineGameSession + HarnessActorLifecycle",
+      "TeamDeathmatchMatch pure reducer",
+      "diagnostic Configure-Unity + client/server Build + Smoke PASS"
+    ],
+    "pending": [
+      "T037 real Unity collision/nav install",
+      "T038 client input/camera/HUD/audio product path",
+      "T039 product vertical (OfflineGameSession as launch)",
+      "M9–M11 remaining product gates",
+      "T025 deferred",
+      "P05 FAIL retained ADR-024"
+    ],
+    "evidence": "Artifacts/m8-runtime-composition",
+    "readyForParallelIntegration": false,
+    "t025Started": false
+  },
+  "leftoverNonMilestoneWork": {
+    "date": "2026-11-13",
+    "items": [
+      "Optional T025 projectiles/penetration/eight-player (deferred ledger; not started)",
+      "Deferred eight-player / public N4 networking",
+      "Hosted CI (user-deferred)",
+      "Waived PendingHardware items across M0–M7 (immutable; not flipped to PASS)",
+      "P05 soldier visual FAIL (ADR-024; no fourth clearance without new owner auth)",
+      "Product OfflineGameSession not yet default Bootstrap launch path",
+      "M8 RUN02–RUN05 product vertical / M9–M11 unfinished"
+    ]
   }
 }

@@ -1,12 +1,12 @@
-# Game session contracts — planned Game-v1 freeze
+# Game session contracts — Game-v1 freeze
 
-Status: normative design for T035; **not implemented or frozen**. Owner: sole M8 integrator. Existing C0-v1, SGAF/content v1 and N1-v1 remain unchanged by this documentation task. Read [contract details](contract-details.md), [simulation order](simulation-protocol.md) and [release plan](playable-release-plan.md). Future workers consume the compiling freeze on `main`, not signatures guessed from this prose.
+Status: **implemented and frozen** (ADR-034, T035). Owner: sole M8 integrator. Existing C0-v1, SGAF/content v1 and N1-v1 remain unchanged. Read [contract details](contract-details.md), [simulation order](simulation-protocol.md) and [release plan](playable-release-plan.md). Workers consume the compiling freeze on `main` (`UnityProject/Assets/Shooter/Game/Contracts/`, `game-contract-lock.json`, `docs/game-fixtures/`).
 
 ## Placement and compatibility
 
-Proposed `UnityProject/Assets/Shooter/Game/Contracts/` contains a new BCL-only `Shooter.Game.Contracts` assembly and pure build project, referencing C0. It owns immutable product/session DTOs and ports; no Unity objects, storage implementation, UI toolkit or network codec. Integrator creates asmdefs/project references and a separate Game-v1 source/fixture registry. Test-only fakes live outside shipping assemblies. Do not add fields or enum values to frozen C0 to express results/draws.
+`UnityProject/Assets/Shooter/Game/Contracts/` contains BCL-only `Shooter.Game.Contracts`, referencing C0. It owns immutable product/session DTOs and ports; no Unity objects, storage implementation, UI toolkit or network codec. Test-only fakes (`FakeMapRuntime`, `MemoryUserSettingsStore`) are rejected by shipping `OfflineGameSession` unless explicitly allowed for pure tests. Do not add fields or enum values to frozen C0 to express results/draws.
 
-At T035 accept the implementation ADR and executable Game-v1 fixtures, with schema IDs, exact canonical encodings, bounds, digest rules and migration/rejection tests. Proposed independent files: `game-contract-lock.json`, `docs/game-fixtures/`, `docs/game-schemas/`; these do not exist yet and must not be reported as delivered. Existing fixtures stay immutable. Any need to change C0, SGAF, generator identities, nav encoding or N1 requires a separate reviewed ADR, fixtures/migration and impacted-suite validation before dependent workers rebase. New settings file schema is independent of `HudSettings`' existing semicolon diagnostic string.
+Lock/fixtures: `game-contract-lock.json`, `docs/game-fixtures/`. Verify with `python Tools/verify_game_contract_lock.py` and `Tools/Test-Game.ps1 -Offline`. Existing C0 fixtures stay immutable. Any need to change C0, SGAF, generator identities, nav encoding or N1 requires a separate reviewed ADR, fixtures/migration and impacted-suite validation before dependent workers rebase. New settings file schema is independent of `HudSettings`' existing semicolon diagnostic string.
 
 ## Values and immutable records
 
@@ -29,9 +29,9 @@ Use leased, read-only publication for per-tick data with the existing eight-buff
 
 For product authority's C0 snapshot compatibility, map GameMatchPhase Loading/Ready/Playing to the same-named C0 values, and Finished/Stopped to C0 Stopped. Team victory/draw is carried only by Game-v1 outcome/results; it never reinterprets C0 Won/Lost. Compound Clear keeps its existing mapping. Validate SessionRequest seed against the selected packaged catalog entry; the release menu cannot request arbitrary seed generation or content paths.
 
-## Ports to compile at T035
+## Ports compiled at T035
 
-Names below are planned, not claims that these interfaces already exist. The freeze includes concrete method signatures, capacity/error returns and adapter-conformance tests.
+Concrete method signatures live in `UnityProject/Assets/Shooter/Game/Contracts/GamePorts.cs`. Capacity/error returns and adapter-conformance tests are covered by `Tools/Game.Contracts.Tests`.
 
 | Port / owner | Responsibility and lifetime |
 |---|---|

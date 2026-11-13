@@ -93,6 +93,13 @@
       "shooter.foundation": {
         "type": "Project",
         "dependencies": {
+          "Shooter.Contracts": "[1.0.0, )",
+          "Shooter.Game.Contracts": "[1.0.0, )"
+        }
+      },
+      "shooter.game.contracts": {
+        "type": "Project",
+        "dependencies": {
           "Shooter.Contracts": "[1.0.0, )"
         }
       },

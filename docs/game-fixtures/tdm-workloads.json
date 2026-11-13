@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "seed": "460072030",
+  "note": "New M8+ workloads; does not replace historical B01-B04 in docs/fixtures/benchmark-workloads.json",
+  "workloads": [
+    {
+      "id": "TDM-5v5-v1",
+      "stage": "M8",
+      "mapId": "training-compound",
+      "modeId": "team-deathmatch",
+      "teamSize": 5,
+      "humans": 1,
+      "bots": 9,
+      "actors": 10,
+      "scoreLimit": 150,
+      "timeLimitActiveTicks": 54000,
+      "globalVisionRaysPerTick": 16,
+      "globalNewPathsPerTick": 2,
+      "warmupTicks": 3600,
+      "captureTicks": 10800,
+      "counters": [
+        "team1Kills",
+        "team2Kills",
+        "activeTicks",
+        "respawns",
+        "aiRays",
+        "pathRequests",
+        "shots",
+        "damageEvents"
+      ]
+    },
+    {
+      "id": "TDM-6v6-v1",
+      "stage": "M9",
+      "mapId": "training-compound",
+      "modeId": "team-deathmatch",
+      "teamSize": 6,
+      "humans": 1,
+      "bots": 11,
+      "actors": 12,
+      "scoreLimit": 150,
+      "timeLimitActiveTicks": 54000,
+      "globalVisionRaysPerTick": 16,
+      "globalNewPathsPerTick": 2,
+      "warmupTicks": 3600,
+      "captureTicks": 10800,
+      "counters": [
+        "team1Kills",
+        "team2Kills",
+        "activeTicks",
+        "respawns",
+        "aiRays",
+        "pathRequests",
+        "shots",
+        "damageEvents"
+      ]
+    },
+    {
+      "id": "RUN-compound-vertical-v1",
+      "stage": "M8",
+      "mapId": "training-compound",
+      "bots": 8,
+      "actors": 9,
+      "purpose": "M8 vertical composition before TDM capacity expansion"
+    }
+  ]
+}

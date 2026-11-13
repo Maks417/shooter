@@ -2,11 +2,11 @@
 
 Unity 6 URP / C# / HLSL design for a realistic modern-world shooter generated from code and numeric recipes. No imported/manual meshes, painted textures, sprites or authored animation. Initial hardware target: Ryzen 5 4600H integrated Radeon, 16 GB DDR4-3200, NVMe; native 720p Low at 30 FPS, 60 FPS stretch.
 
-**Status, 2026-11-13:** all eight original milestones M0–M7 are closed with the explicit owner waivers recorded in ADR-017/025–028/030–032. Closure does not establish a ready game: later Unity/player/reference gates remain Pending, M4 records no player binary, and M1 P05 remains FAIL / not accepted under ADR-024. C0-v1, content v1 and N1-v1 remain frozen; hosted CI is deferred. Historical handoffs and failed/pending evidence are preserved. The new [playable release roadmap](playable-release-plan.md) defines M8–M11, **planned/unassigned**, for two maps, offline 5v5/6v6 bots, 150 kills / 15 minutes, menus, results and settings. This planning update implements no gameplay and grants no new waiver.
+**Status, 2026-11-13:** all eight original milestones M0–M7 are closed with the explicit owner waivers recorded in ADR-017/025–028/030–032. Closure does not establish a ready game: later Unity/player/reference gates remain Pending where waived, and M1 P05 remains FAIL / not accepted under ADR-024. C0-v1, content v1 and N1-v1 remain frozen; Game-v1 is frozen under ADR-034; hosted CI is deferred. Historical handoffs and failed/pending evidence are preserved. The [playable release roadmap](playable-release-plan.md) defines M8–M11; **M8 is in progress** (T035–T036 software done; product vertical open).
 
 ## Next development
 
-Read [the review and ordered plan](playable-release-plan.md), then [M8 runtime composition](milestones/m8-runtime-composition/index.md). Future multi-agent dispatch waits for the compiling [Game-v1 freeze](game-session-contracts.md) and named ownership. The four new packs include task order, exclusive paths, integration contracts, acceptance IDs and pending handoff records.
+Continue [M8 runtime composition](milestones/m8-runtime-composition/index.md) T037–T039, then M9–M11. Consume the compiling [Game-v1 freeze](game-session-contracts.md). See also the [relocated view EditMode note](notes/procedural-viewmodel-editmode.md) from RUN00 provenance repair.
 
 ## Reading order
 

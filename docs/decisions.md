@@ -335,3 +335,9 @@ Introduce a separate proposed pure Game-v1 boundary for product/session/particip
 
 Offline play needs no remote transport, LAN/public UI, extra human-player capacity, T025 weapons/penetration, package upgrade, new asset source or imported art. It retains authoritative 60Hz simulation, presentation-only quality options, procedural provenance and native720p Low30 reference requirements. Old waivers and the P05 FAIL stay intact; new milestone exits require actual player/visual/hardware evidence where specified and cannot automatically inherit waivers. This task prepares docs only; M8–M11 remain unassigned until future implementation assignment. See [ordered review](playable-release-plan.md) and [packs](milestones/index.md).
 
+## ADR-034 — Accepted: initial Game-v1 freeze (T035)
+
+Date 2026-11-13; accepted by the Cursor M8 integrator (bc-b005c261) under owner Max direction to implement next milestones. Freezes compiling `Shooter.Game.Contracts` (`Game-v1`) separately from C0-v1: session/map/settings ports, participant/life/results DTOs, TDM score/time constants (150 / 54000), and executable fixtures under `docs/game-fixtures/` locked by root `game-contract-lock.json`. C0-v1, SGAF/content-v1 and N1-v1 remain unchanged. New workloads `TDM-5v5-v1` / `TDM-6v6-v1` / `RUN-compound-vertical-v1` do not replace B01–B04.
+
+Also records RUN00 repair: missing Unity `.meta` for M3–M7 sources generated with unique GUIDs; unapproved Assets Markdown relocated to `docs/notes/procedural-viewmodel-editmode.md`. Source provenance audit PASS after repair. This ADR does **not** accept Unity/player/hardware gates, close M8–M11, reopen P05, or authorize package upgrades.
+
