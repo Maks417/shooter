@@ -18,10 +18,12 @@
     <ProjectReference Include="../Generation/Shooter.Generation.Core.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <!-- View is presentation-owned; compile BCL-safe sources for pure tests. Motor/Combat/Pose/AI come from Foundation. -->
+    <!-- View is presentation-owned; compile BCL-safe sources for pure tests. Motor/Combat/Pose/AI/Match come from Foundation. -->
     <Compile Include="../../UnityProject/Assets/Shooter/Presentation/View/**/*.cs" Link="View/%(Filename)%(Extension)" />
     <Compile Include="../../UnityProject/Assets/Shooter/World/Streaming/**/*.cs" Link="WorldStreaming/%(Filename)%(Extension)" />
     <Compile Include="../../UnityProject/Assets/Shooter/World/Navigation/**/*.cs" Link="WorldNavigation/%(Filename)%(Extension)" />
     <Compile Include="../../UnityProject/Assets/Shooter/Presentation/Hud/**/*.cs" Link="Hud/%(Filename)%(Extension)" />
+    <Compile Include="../../UnityProject/Assets/Shooter/Presentation/Audio/**/*.cs" Link="Audio/%(Filename)%(Extension)" />
+    <Compile Include="../../UnityProject/Assets/Shooter/Presentation/Fx/**/*.cs" Link="Fx/%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>
