@@ -320,3 +320,23 @@ Removed 65 generated IL2CPP/debug backup/PDB entries directly under historical `
 ## Planned final Windows installer (T073)
 
 Owner requirement, 2026-11-14: the final game is delivered by a Windows installer. Running a newer installer must update the existing installed game, preserve settings/controls and stable app identity/path/shortcuts, and maintain a matching executable/content pair. ZIPs remain preview/internal artifacts. [Installer contract and INS01–INS06](../../features/windows-installer.md) extend REL01/REL06 and FIX13/FIX14. T073 is planned documentation scope only here; a future bounded release-integrator assignment implements installer/version/upgrade/repair/uninstall/rollback tooling. No installer, online service or acceptance waiver is delivered by this update.
+
+## Integration session 2026-11-14
+
+Owner-authorized orchestration: an integrator (Opus) dispatched bounded Sonnet workers in git worktrees, reviewed and merged each branch into `main`, then removed every worktree and branch; worker evidence is preserved under ignored `Artifacts/worker-evidence/`. No acceptance gate is waived or claimed by this session.
+
+### Landed changes
+
+| Change | Where | Evidence / limits |
+|---|---|---|
+| T067 C03 truthful paths | `World/Navigation/RevisionedPathAdapter.cs` (`NavPathOutcome`), `World/Foundation/UnityNavMeshBakeInstaller.cs`, `CompoundMapRuntime.AllowPackagedPathFallback` (off in product) | PathPartial → `PathStatus.Partial`; packaged-graph fallback is diagnostics-only and counted. PlayMode covers disconnected/obstructed quads; two-map route/spawn player evidence Pending. |
+| T067 C01 native publication | `Bootstrap/Editor/ShooterNativeContentBuild.cs`, `nav-provenance.json` sidecar, `Compile-GameContent.ps1 -Native`, `Package-Release.ps1 -RequireNativeNav` | Both maps bake natively and deterministically (compound 4,710 / depot 3,386 polygons). The bake no longer dirties `ProjectSettings`. |
+| T073 installer | ADR-041, `Tools/Build-Installer.ps1`, `Tools/installer/` | See [installer status](../../features/windows-installer.md#implementation-status). |
+| Lock identities | ADR-040 | 13 CRLF-derived hashes refrozen to LF bytes with owner approval; fresh clones/CI now pass. |
+| Main-menu crash | ADR-042, `FoundationEntry.cs`, `Assets/Plugins/x86_64/ShooterAllocationMeter.cpp` | Root cause from crash dumps: managed IL2CPP allocation hook recursing on thread attach. Normal play installs no hook; benchmarks use a native counter. |
+| Baseline repairs | `Tests/Performance` orphan metadata removed; `test_package_release.ps1` catalog fixture; LF output in `docs/verify_docs.py` | Package-release regression 7/7 again. |
+
+### Defects found by verification
+
+1. **Crash ~4 s after Main** in every build since synthesized audio (including the 5eaced5 playtest ZIP): fixed, see ADR-042. Earlier "reaches Main" evidence stopped looking too early; release checks now keep the windowed player alive for 60 s.
+2. **Native packages could not start a match**: editor-published (Mono) content differed from .NET/IL2CPP in the lowest float bits of `skeleton-soldier.bin`, so the player's skeleton identity check rejected every native package (all 12 reference captures and both soaks aborted at match start on `075c548`). The `075c548` package/installer are therefore not playable deliverables. Fix in progress: the editor bakes only navigation from .NET-published collision; release checks now start a real match on both maps.

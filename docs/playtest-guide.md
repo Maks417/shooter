@@ -1,5 +1,7 @@
 # Launch and playtest the current candidate
 
+> **Known crash in the archive below (found 2026-11-14):** the `5eaced5` player crashes about 4 seconds after reaching Main (Windows APPCRASH 0x80000001; IL2CPP allocation-hook recursion when Unity attaches the audio thread). The fix and its root cause are in [ADR-042](decisions.md#adr-042--accepted-native-c-allocation-counter-for-benchmark-runs). Use the newer candidate recorded in the [M11 handoff](milestones/m11-playable-release/handoff.md#integration-session-2026-11-14) instead; the archive details below are kept as history.
+
 Current T072 playtest build, 2026-11-14: a Windows offline archive **with sliding** is available for testing. The final game will use an [upgrading Windows installer](features/windows-installer.md); this ZIP is a preview. Its build/package reports pass; manual gameplay and final release acceptance remain Pending. This guide helps reach the game and record what actually happens. See the [audit](product-state-audit.md) for technical findings and [M11 handoff](milestones/m11-playable-release/handoff.md) for retained build evidence.
 
 ## This version runs locally
