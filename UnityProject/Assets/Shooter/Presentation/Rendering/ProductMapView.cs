@@ -71,7 +71,9 @@ namespace Shooter.Presentation.Rendering
 
             HashSet<ulong> coverIds = ParseCoverIds(metadataBytes);
             float half = CompoundPlan.MapHalfExtent;
-            Place("Product ground", new Vector3(0f, -0.05f, 0f), new Vector3(half * 2f, 0.1f, half * 2f), ground!, unitBox!);
+            // Collision-faithful ground plane: packaged soil/asphalt (depot), not flat tint. Prefer packaged materials.
+            Material groundSurface = PreferDepotYardAsphalt(mapId) ? asphalt! : ground!;
+            Place("Product ground", new Vector3(0f, -0.05f, 0f), new Vector3(half * 2f, 0.1f, half * 2f), groundSurface, unitBox!);
 
             // Packaged combined solids mesh already encodes gameplay boxes; one renderer, identity transform.
             var solidsGo = new GameObject("Product map solids") { layer = 11 };
@@ -89,8 +91,13 @@ namespace Shooter.Presentation.Rendering
             if (metadataBytes != null && metadataBytes.Length > 0)
                 PlaceMetadataCovers(metadataBytes, coverIds);
 
-            sky = GeneratedSky.Apply(transform);
-            probe = GeneratedReflectionProbe.Apply(transform);
+            GeneratedSkyMath.ResolveProductPalette(mapId, out var zenith, out var horizon, out var groundRgb, out float fogStart, out float fogEnd, out float fogDensity);
+            sky = GeneratedSky.Apply(transform, zenith, horizon, groundRgb, true, fogStart, fogEnd, fogDensity);
+            probe = GeneratedReflectionProbe.Apply(
+                transform,
+                GeneratedReflectionProbe.ProductMapBoxSizeMeters,
+                GeneratedReflectionProbe.ProductMapIntensity,
+                GeneratedReflectionProbe.DefaultResolution);
             Debug.Log("SHOOTER_PRODUCT_MAP_VIEW map=" + mapId + " solids=" + solidCount + " covers=" + coverCount + " packaged=1");
         }
 
@@ -106,10 +113,12 @@ namespace Shooter.Presentation.Rendering
 
                 mapSolids = Own(UploadMesh(MapVisualClosure.DecodeMapMesh(visuals, MapVisualClosure.MapSolidsMeshPath), "Product map solids"));
                 unitBox = Own(UploadMesh(MapVisualClosure.DecodeMapMesh(visuals, MapVisualClosure.UnitBoxMeshPath), "Product unit box"));
-                concrete = Own(FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[0], "Numeric concrete", 0f, 0.18f));
-                cover = Own(FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[1], "Numeric cover", 0.05f, 0.28f));
-                ground = Own(FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[2], "Numeric soil ground", 0f, 0.08f));
-                asphalt = Own(FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[3], "Numeric asphalt", 0f, 0.12f));
+                // Tile repeats: solids/cover use modest face density (shared mat across box sizes);
+                // ground/asphalt target ~2 m tiles on the 256 m product ground plane (UV 0..1).
+                concrete = Own(FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[0], "Numeric concrete", 0f, 0.18f, 4f));
+                cover = Own(FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[1], "Numeric cover", 0.05f, 0.28f, 4f));
+                ground = Own(FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[2], "Numeric soil ground", 0f, 0.08f, CompoundPlan.MapHalfExtent));
+                asphalt = Own(FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[3], "Numeric asphalt", 0f, 0.12f, CompoundPlan.MapHalfExtent));
                 visualsBound = true;
             }
             catch (Exception error)
@@ -200,15 +209,117 @@ namespace Shooter.Presentation.Rendering
             solids.Add(item);
         }
 
-        private Material FromPackaged(PackagedVisualPayloads visuals, string path, string label, float metallic, float smoothness)
+        private Material FromPackaged(
+            PackagedVisualPayloads visuals,
+            string path,
+            string label,
+            float metallic,
+            float smoothness,
+            float tileRepeats)
         {
-            var data = MapVisualClosure.DecodeMapMaterial(visuals, path);
+            // Full plane upload (gallery/B01 pattern): albedo required; normal/mask optional companions.
+            var albedo = MapVisualClosure.DecodeMapMaterial(visuals, path);
             var material = new Material(litShader!) { name = label };
-            var mip0 = data.MipBytes[0];
-            material.SetColor("_BaseColor", new Color(mip0[0] / 255f, mip0[1] / 255f, mip0[2] / 255f, mip0[3] / 255f));
-            material.SetFloat("_Metallic", metallic);
-            material.SetFloat("_Smoothness", smoothness);
+            Texture2D albedoTex = UploadMaterialPlane(albedo, label + " albedo");
+            material.SetTexture("_BaseMap", albedoTex);
+            material.SetColor("_BaseColor", Color.white);
+            ApplyTileScale(material, "_BaseMap", albedo, tileRepeats);
+
+            if (TryDecodeCompanionPlane(visuals, path, "normal", out MaterialData normal))
+            {
+                Texture2D normalTex = UploadMaterialPlane(normal, label + " normal");
+                // URP Lit reads _BumpMap; keep _NormalMap for gallery-compatible tooling/inspection.
+                material.SetTexture("_BumpMap", normalTex);
+                material.SetTexture("_NormalMap", normalTex);
+                material.EnableKeyword("_NORMALMAP");
+                material.SetFloat("_BumpScale", 1f);
+                ApplyTileScale(material, "_BumpMap", normal, tileRepeats);
+                ApplyTileScale(material, "_NormalMap", normal, tileRepeats);
+            }
+
+            if (TryDecodeCompanionPlane(visuals, path, "mask", out MaterialData mask))
+            {
+                Texture2D maskTex = UploadMaterialPlane(mask, label + " mask");
+                material.SetTexture("_MaskMap", maskTex);
+                ApplyTileScale(material, "_MaskMap", mask, tileRepeats);
+                // Packed mask: R metallic, G occlusion, B roughness (A=255).
+                // URP Lit does not sample HDRP-style _MaskMap; drive metallic/smoothness scalars.
+                var mip0 = mask.MipBytes[0];
+                if (mip0 != null && mip0.Count >= 3)
+                {
+                    float maskMetallic = mip0[0] / 255f;
+                    float maskRoughness = mip0[2] / 255f;
+                    material.SetFloat("_Metallic", maskMetallic);
+                    material.SetFloat("_Smoothness", 1f - maskRoughness);
+                }
+                else
+                {
+                    material.SetFloat("_Metallic", metallic);
+                    material.SetFloat("_Smoothness", smoothness);
+                }
+            }
+            else
+            {
+                material.SetFloat("_Metallic", metallic);
+                material.SetFloat("_Smoothness", smoothness);
+            }
+
             return material;
+        }
+
+        private static bool PreferDepotYardAsphalt(string installedMapId) =>
+            string.Equals(installedMapId, "depot-yard", StringComparison.Ordinal);
+
+        private static bool TryDecodeCompanionPlane(PackagedVisualPayloads visuals, string albedoPath, string plane, out MaterialData data)
+        {
+            data = null!;
+            string companion = CompanionPlanePath(albedoPath, plane);
+            if (!visuals.Has(companion)) return false;
+            try
+            {
+                data = MapVisualClosure.DecodeMapMaterial(visuals, companion);
+                return data.Width > 0 && data.Height > 0 && data.MipBytes.Count > 0;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static string CompanionPlanePath(string albedoPath, string plane)
+        {
+            const string suffix = ".bin";
+            if (albedoPath.EndsWith(suffix, StringComparison.Ordinal))
+                return albedoPath.Substring(0, albedoPath.Length - suffix.Length) + "-" + plane + suffix;
+            return albedoPath + "-" + plane;
+        }
+
+        private Texture2D UploadMaterialPlane(MaterialData data, string label)
+        {
+            bool linear = data.ChannelFormat != "rgba8-srgb";
+            var texture = Own(new Texture2D(data.Width, data.Height, TextureFormat.RGBA32, true, linear)
+            {
+                name = label,
+                wrapMode = TextureWrapMode.Repeat,
+                filterMode = FilterMode.Trilinear,
+                anisoLevel = 2
+            });
+            for (int mip = 0; mip < data.MipBytes.Count; mip++)
+            {
+                var source = data.MipBytes[mip];
+                byte[] bytes = new byte[source.Count];
+                for (int i = 0; i < bytes.Length; i++) bytes[i] = source[i];
+                texture.SetPixelData(bytes, mip);
+            }
+            texture.Apply(false, true);
+            return texture;
+        }
+
+        private static void ApplyTileScale(Material material, string textureProperty, MaterialData data, float tileRepeats)
+        {
+            // 1×1 solid packages stay untiled; multi-texel planes use caller density for 0..1 face UVs.
+            float repeats = data.Width <= 1 ? 1f : Math.Max(1f, tileRepeats);
+            material.SetTextureScale(textureProperty, new Vector2(repeats, repeats));
         }
 
         private Mesh UploadMesh(MeshData data, string label)

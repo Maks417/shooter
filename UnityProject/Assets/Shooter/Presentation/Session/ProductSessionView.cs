@@ -5,6 +5,7 @@ using Shooter.Game.Contracts;
 using Shooter.Game.Session;
 using Shooter.Generation.Environment;
 using Shooter.Presentation.Audio;
+using Shooter.Presentation.Fx;
 using Shooter.Presentation.Hud;
 using Shooter.Presentation.Input;
 using Shooter.Presentation.Rendering;
@@ -28,9 +29,11 @@ namespace Shooter.Presentation.Session
         private readonly HudLayout hud = new HudLayout();
         private readonly SynthAudioMixer mixer = new SynthAudioMixer();
         private readonly ProductAudioEventRouter audio;
+        private readonly AnalyticFxPool analyticFxPool = new AnalyticFxPool();
         private readonly List<ActorLifecycleState> footstepScratch = new List<ActorLifecycleState>(GameContractVersion.MaxParticipants);
         private readonly HashSet<string> accessibilityCueKeys = new HashSet<string>(System.StringComparer.Ordinal);
         private UnitySynthAudioOutput? audioOutput;
+        private AnalyticFxPresenter? analyticFxPresenter;
         private Camera? camera;
         private ProductMapView? mapView;
         private ProductActorPresentation? actors;
@@ -125,6 +128,7 @@ namespace Shooter.Presentation.Session
 
             mapView = ProductMapView.Create(transform);
             actors = ProductActorPresentation.Create(transform, camera);
+            analyticFxPresenter = AnalyticFxPresenter.Create(transform, analyticFxPool);
             audioOutput = UnitySynthAudioOutput.Attach(gameObject, mixer);
             UserSettingsAudioBinding.ApplyGains(UserSettings.Defaults, mixer);
             TryEnableVisualReviewFromCommandLine();
@@ -198,7 +202,11 @@ namespace Shooter.Presentation.Session
                 subtitleText = "";
                 subtitleRemaining = 0f;
             }
-            if (reducedFlash) muzzleFlashRemaining = 0f;
+            if (reducedFlash)
+            {
+                muzzleFlashRemaining = 0f;
+                analyticFxPresenter?.Sync(suppressMuzzleFlash: true);
+            }
             if (camera != null && !IsAiming())
                 camera.fieldOfView = settings.HipFovDegrees;
         }
@@ -236,6 +244,8 @@ namespace Shooter.Presentation.Session
         public void ClearPresentation()
         {
             DetachAudioSession();
+            analyticFxPool.Clear();
+            analyticFxPresenter?.ClearVisuals();
             mapView?.ClearVisuals();
             actors?.ClearAll();
             boundMapId = "";
@@ -381,6 +391,8 @@ namespace Shooter.Presentation.Session
                     subtitleText = "";
                 }
             }
+            analyticFxPool.Tick(dt);
+            analyticFxPresenter?.Sync(suppressMuzzleFlash: reducedFlash);
         }
 
         private void NotifyAccessibilityCue(CombatEventKind kind)
@@ -399,6 +411,34 @@ namespace Shooter.Presentation.Session
                 ShowSubtitle("Reloading");
             else if (kind == CombatEventKind.ReloadCompleted && subtitlesEnabled)
                 ShowSubtitle("Reload complete");
+        }
+
+        /// <summary>
+        /// Spawn short-lived analytic mesh FX from authority combat events already leased for audio/HUD.
+        /// ReducedFlash suppresses muzzle mesh + overlay only; impact/smoke proxies remain.
+        /// </summary>
+        private void ObserveCombatFx(CombatEvent ev)
+        {
+            if (ev.Kind == CombatEventKind.ShotAccepted && ev.Payload is ShotPayload shot)
+            {
+                // Accessibility: reducedFlash suppresses world muzzle proxies and the IMGUI overlay.
+                if (reducedFlash) return;
+                Float3 dir = shot.UnitDirection;
+                var muzzle = new Float3(
+                    shot.Origin.X + dir.X * 0.12f,
+                    shot.Origin.Y + dir.Y * 0.12f,
+                    shot.Origin.Z + dir.Z * 0.12f);
+                analyticFxPool.TrySpawn(FxKind.MuzzleFlash, muzzle, dir);
+                return;
+            }
+
+            if (ev.Kind == CombatEventKind.Impact && ev.Payload is ImpactPayload impact)
+            {
+                analyticFxPool.TrySpawn(FxKind.ImpactSpark, impact.Position, impact.Normal);
+                // Occasional smoke so the smoke cap stays readable under heavy fire.
+                if ((ev.Id.Ordinal % 3) == 0)
+                    analyticFxPool.TrySpawn(FxKind.SmokeProxy, impact.Position, impact.Normal);
+            }
         }
 
         private void ShowSubtitle(string text)
@@ -439,6 +479,7 @@ namespace Shooter.Presentation.Session
                     string key = ev.Id.AuthoritySessionId + ":" + ev.Id.Tick + ":" + ev.Id.EntityId + ":" + ev.Id.Ordinal;
                     if (!accessibilityCueKeys.Add(key)) continue;
                     NotifyAccessibilityCue(ev.Kind);
+                    ObserveCombatFx(ev);
                 }
             }
 
@@ -755,6 +796,7 @@ namespace Shooter.Presentation.Session
         private void OnDestroy()
         {
             ClearPresentation();
+            analyticFxPresenter = null;
             audioOutput?.Detach();
             audioOutput = null;
         }

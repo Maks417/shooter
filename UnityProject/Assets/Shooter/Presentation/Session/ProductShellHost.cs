@@ -435,31 +435,31 @@ namespace Shooter.Presentation.Session
         {
             ui.Backdrop();
             Rect a = ui.Safe;
-            ui.Label(new Rect(a.x, a.y, 310, 42), "SHOOTER", 28);
-            ui.Label(new Rect(a.x + 204, a.y + 8, a.width - 204, 28), "PLAY / LOCAL OPERATIONS", 14, TacticalUi.Muted);
-            ui.Label(new Rect(a.x, a.y + 88, a.width * .48f, 112), "YOUR NEXT\nOPERATION", 40);
-            float navWidth = Mathf.Min(300, a.width * .29f);
-            float y = a.y + 224;
-            if (ui.Button(new Rect(a.x, y, navWidth, 42), "main.play", "PLAY", quiet: true)) navigation.OpenSetup();
-            if (ui.Button(new Rect(a.x, y + 50, navWidth, 42), "main.settings", "SETTINGS", quiet: true)) OpenSettingsScreen();
-            if (ui.Button(new Rect(a.x, y + 100, navWidth, 42), "main.quit", "QUIT", quiet: true))
+            float navWidth = Mathf.Min(248, a.width * .24f);
+            ui.BrandMark(new Rect(a.x, a.y, navWidth, 28), "SHOOTER");
+            ui.Section(new Rect(a.x, a.y + 36, navWidth, 18), "LOCAL / OFFLINE");
+            ui.Label(new Rect(a.x, a.y + 68, navWidth + 48, 68), "YOUR NEXT\nOPERATION", 30);
+            float y = a.y + 156;
+            if (ui.Button(new Rect(a.x, y, navWidth, 38), "main.play", "PLAY", quiet: true)) navigation.OpenSetup();
+            if (ui.Button(new Rect(a.x, y + 42, navWidth, 38), "main.settings", "SETTINGS", quiet: true)) OpenSettingsScreen();
+            if (ui.Button(new Rect(a.x, y + 84, navWidth, 38), "main.quit", "QUIT", quiet: true))
             {
                 quitRequested = true;
                 Application.Quit();
             }
-            float cardsX = a.x + a.width * .34f;
-            float cardsWidth = a.width * .66f;
-            float cardWidth = (cardsWidth - 12) * .5f;
-            float cardHeight = Mathf.Min(176, a.height * .34f);
-            float cardsY = a.yMax - cardHeight - 28;
-            ui.Label(new Rect(cardsX, cardsY - 28, cardsWidth, 24), "OFFLINE BATTLES / TEAM DEATHMATCH", 14, TacticalUi.Text);
+            float cardsX = a.x + navWidth + 32;
+            float cardsWidth = a.xMax - cardsX;
+            float cardWidth = (cardsWidth - 16) * .5f;
+            float cardHeight = Mathf.Min(198, a.height * .38f);
+            float cardsY = a.yMax - cardHeight - 24;
+            ui.Section(new Rect(cardsX, cardsY - 24, cardsWidth, 18), "OFFLINE BATTLES / TEAM DEATHMATCH");
             bool compound = setup!.SelectedMapId.Equals(WellKnownMaps.TrainingCompound);
             if (ui.MapCard(new Rect(cardsX, cardsY, cardWidth, cardHeight), "main.compound", menuScene?.MapCard("training-compound"), "TRAINING COMPOUND", "5v5 / 6v6  ·  LOCAL BOTS", compound))
             {
                 if (!compound) setup.CycleMap(1);
                 navigation.OpenSetup();
             }
-            if (ui.MapCard(new Rect(cardsX + cardWidth + 12, cardsY, cardWidth, cardHeight), "main.depot", menuScene?.MapCard("depot-yard"), "DEPOT YARD", "5v5 / 6v6  ·  LOCAL BOTS", !compound))
+            if (ui.MapCard(new Rect(cardsX + cardWidth + 16, cardsY, cardWidth, cardHeight), "main.depot", menuScene?.MapCard("depot-yard"), "DEPOT YARD", "5v5 / 6v6  ·  LOCAL BOTS", !compound))
             {
                 if (compound) setup.CycleMap(1);
                 navigation.OpenSetup();
@@ -473,25 +473,36 @@ namespace Shooter.Presentation.Session
             ui.Backdrop();
             ui.Header("OPERATIONS / BRIEFING", "Prepare to deploy");
             Rect a = ui.Safe;
-            float y = a.y + 98;
-            float left = a.width * .57f;
-            float rx = a.x + left + 28;
-            float rw = a.width - left - 28;
-            ui.Label(new Rect(a.x, y, left, 22), "SELECT OPERATION AREA", 14, TacticalUi.Muted);
+            float y = a.y + 78;
+            float left = a.width * .54f;
+            float rx = a.x + left + 20;
+            float rw = a.width - left - 20;
+            ui.Section(new Rect(a.x, y, left, 18), "SELECT OPERATION AREA");
             bool compound = setup!.SelectedMapId.Equals(WellKnownMaps.TrainingCompound);
-            if (ui.Button(new Rect(a.x, y + 30, left, 46), "setup.compound", "01   TRAINING COMPOUND", selected: compound) && !compound) setup.CycleMap(1);
-            if (ui.Button(new Rect(a.x, y + 84, left, 46), "setup.depot", "02   DEPOT YARD", selected: !compound) && compound) setup.CycleMap(1);
-            ui.Label(new Rect(a.x + 2, y + 144, left - 8, 78), setup.SelectedDescription, 18, TacticalUi.Muted);
-            ui.Label(new Rect(rx, y, rw, 22), "TEAM DEATHMATCH", 14, TacticalUi.Accent);
+            if (ui.Button(new Rect(a.x, y + 24, left, 40), "setup.compound", "01   TRAINING COMPOUND", selected: compound) && !compound) setup.CycleMap(1);
+            if (ui.Button(new Rect(a.x, y + 70, left, 40), "setup.depot", "02   DEPOT YARD", selected: !compound) && compound) setup.CycleMap(1);
+            float previewH = Mathf.Min(118, a.height * .22f);
+            Rect preview = new Rect(a.x, y + 120, left, previewH);
+            ui.Panel(preview, rail: true);
+            Texture? card = menuScene?.MapCard(setup.SelectedMapId.Value);
+            if (card != null && Event.current.type == EventType.Repaint)
+                GUI.DrawTexture(new Rect(preview.x + 4, preview.y + 4, preview.width * .42f, preview.height - 8), card, ScaleMode.ScaleAndCrop);
+            float textX = card != null ? preview.x + preview.width * .44f : preview.x + 14;
+            float textW = card != null ? preview.width * .54f : preview.width - 28;
+            ui.Label(new Rect(textX, preview.y + 12, textW, 22), setup.SelectedDisplayName.ToUpperInvariant(), 16, TacticalUi.Text);
+            ui.Label(new Rect(textX, preview.y + 36, textW, preview.height - 48), setup.SelectedDescription, 16, TacticalUi.Muted);
+            ui.Section(new Rect(rx, y, rw, 18), "TEAM DEATHMATCH");
             float half = (rw - 8) * .5f;
-            if (ui.Button(new Rect(rx, y + 30, half, 46), "setup.5", "5 v 5", selected: setup.SelectedTeamSize == 5) && setup.SelectedTeamSize != 5) setup.CycleTeamSize(1);
-            if (ui.Button(new Rect(rx + half + 8, y + 30, half, 46), "setup.6", "6 v 6", selected: setup.SelectedTeamSize == 6) && setup.SelectedTeamSize != 6) setup.CycleTeamSize(1);
-            ui.Label(new Rect(rx, y + 94, rw, 52), "150 kills to win\n15 minute time limit", 20);
-            ui.Label(new Rect(rx, y + 158, rw, 70), "YOU + " + (setup.SelectedTeamSize - 1) + " ALLIED BOTS\nVS " + setup.SelectedTeamSize + " ENEMY BOTS", 16, TacticalUi.Muted);
+            if (ui.Button(new Rect(rx, y + 24, half, 40), "setup.5", "5 v 5", selected: setup.SelectedTeamSize == 5) && setup.SelectedTeamSize != 5) setup.CycleTeamSize(1);
+            if (ui.Button(new Rect(rx + half + 8, y + 24, half, 40), "setup.6", "6 v 6", selected: setup.SelectedTeamSize == 6) && setup.SelectedTeamSize != 6) setup.CycleTeamSize(1);
+            ui.Panel(new Rect(rx, y + 78, rw, 128), accentTop: true);
+            ui.Label(new Rect(rx + 14, y + 90, rw - 28, 22), "RULES", 12, TacticalUi.Accent);
+            ui.Label(new Rect(rx + 14, y + 112, rw - 28, 40), "150 kills to win\n15 minute time limit", 18);
+            ui.Label(new Rect(rx + 14, y + 156, rw - 28, 40), "YOU + " + (setup.SelectedTeamSize - 1) + " ALLIED BOTS\nVS " + setup.SelectedTeamSize + " ENEMY BOTS", 16, TacticalUi.Muted);
             GUI.enabled = !coordinator.StartInFlight;
             if (ui.Button(new Rect(rx, a.yMax - 66, rw, 44), "setup.start", "START MATCH", primary: true)) StartSelectedMatch();
             GUI.enabled = true;
-            if (ui.Button(new Rect(a.x, a.yMax - 66, 160, 44), "setup.back", "BACK")) navigation.ResetToMain();
+            if (ui.Button(new Rect(a.x, a.yMax - 66, 150, 44), "setup.back", "BACK")) navigation.ResetToMain();
             DrawFooter(navigation.StatusMessage);
         }
 
@@ -500,8 +511,10 @@ namespace Shooter.Presentation.Session
             ui.Backdrop();
             ui.Header("OPERATIONS / INSERTION", setup!.SelectedDisplayName);
             Rect a = ui.Safe;
-            ui.Label(new Rect(a.x, a.y + 112, a.width, 48), "PREPARING THE BATTLEFIELD", 28);
-            ui.Label(new Rect(a.x, a.y + 172, a.width * .75f, 72), navigation.StatusMessage, 18, TacticalUi.Muted);
+            float panelW = Mathf.Min(660, a.width * .74f);
+            ui.Panel(new Rect(a.x, a.y + 86, panelW, 118), accentTop: true);
+            ui.Label(new Rect(a.x + 18, a.y + 102, panelW - 36, 32), "PREPARING THE BATTLEFIELD", 22);
+            ui.Label(new Rect(a.x + 18, a.y + 140, panelW - 36, 44), navigation.StatusMessage, 18, TacticalUi.Muted);
             // Indeterminate activity, not a fabricated percentage or readiness claim.
             TacticalUi.Fill(new Rect(a.x, a.yMax - 100, a.width, 3), TacticalUi.Raised);
             float offset = Mathf.PingPong(Time.realtimeSinceStartup * .35f, .8f);
@@ -513,36 +526,42 @@ namespace Shooter.Presentation.Session
         private void DrawPause(float s)
         {
             ui.Backdrop(overlay: true);
-            ui.Header("OPERATIONS / PAUSED", "Take a breath");
+            ui.Header("OPERATIONS / PAUSED", "Match on hold");
             Rect a = ui.Safe;
-            float w = Mathf.Min(360, a.width * .5f), y = a.y + 102;
-            if (ui.Button(new Rect(a.x, y, w, 46), "pause.resume", "RESUME", primary: true)) ResumeMatch();
-            if (ui.Button(new Rect(a.x, y + 56, w, 42), "pause.settings", "SETTINGS")) OpenSettingsScreen();
-            if (ui.Button(new Rect(a.x, y + 108, w, 42), "pause.restart", "RESTART MATCH")) navigation.AskRestart();
-            if (ui.Button(new Rect(a.x, y + 160, w, 42), "pause.leave", "MAIN MENU")) navigation.AskLeave();
-            ui.Label(new Rect(a.x + a.width * .58f, y, a.width * .42f, 100), "MATCH ON HOLD\nThe battlefield waits for you.", 22, TacticalUi.Muted);
+            float w = Mathf.Min(300, a.width * .40f), y = a.y + 82;
+            ui.Section(new Rect(a.x, y - 22, w, 18), "COMMANDS");
+            if (ui.Button(new Rect(a.x, y, w, 42), "pause.resume", "RESUME", primary: true)) ResumeMatch();
+            if (ui.Button(new Rect(a.x, y + 50, w, 38), "pause.settings", "SETTINGS")) OpenSettingsScreen();
+            if (ui.Button(new Rect(a.x, y + 96, w, 38), "pause.restart", "RESTART MATCH")) navigation.AskRestart();
+            if (ui.Button(new Rect(a.x, y + 142, w, 38), "pause.leave", "MAIN MENU")) navigation.AskLeave();
+            float px = a.x + w + 24;
+            float pw = a.xMax - px;
+            ui.Panel(new Rect(px, y, pw, 180), accentTop: true, rail: true);
+            ui.Label(new Rect(px + 16, y + 16, pw - 32, 22), "HOLDING PATTERN", 14, TacticalUi.Accent);
+            ui.Label(new Rect(px + 16, y + 46, pw - 32, 72), "The battlefield waits.\nResume to continue local TDM.", 18, TacticalUi.Muted);
+            ui.Label(new Rect(px + 16, y + 128, pw - 32, 36), "ESC resumes play. Settings keep schema-2 Apply / Cancel.", 14, TacticalUi.Muted);
             DrawFooter("ESC  Resume");
         }
 
         private void DrawConfirm(float s, string message, Action confirm, Action cancel)
         {
             ui.Backdrop(overlay: true);
-            Rect a = ui.Safe;
-            float w = Mathf.Min(580, a.width), x = (ui.Width - w) * .5f, y = ui.Height * .5f - 100;
-            TacticalUi.Fill(new Rect(x, y, w, 200), TacticalUi.Surface);
-            TacticalUi.Fill(new Rect(x, y, w, 3), TacticalUi.Accent);
-            ui.Label(new Rect(x + 24, y + 24, w - 48, 32), "CONFIRM ACTION", 24);
-            ui.Label(new Rect(x + 24, y + 68, w - 48, 52), message, 18, TacticalUi.Muted);
-            float bw = (w - 60) * .5f;
+            float w = Mathf.Min(540, ui.Safe.width), x = (ui.Width - w) * .5f, y = ui.Height * .5f - 92;
+            ui.Panel(new Rect(x, y, w, 184), accentTop: true);
+            ui.Label(new Rect(x + 22, y + 18, w - 44, 24), "CONFIRM ACTION", 20);
+            ui.Label(new Rect(x + 22, y + 54, w - 44, 48), message, 18, TacticalUi.Muted);
+            float bw = (w - 56) * .5f;
             // Safe choice receives initial keyboard focus.
-            if (ui.Button(new Rect(x + 24, y + 138, bw, 40), "confirm.cancel", "CANCEL")) cancel();
-            if (ui.Button(new Rect(x + 36 + bw, y + 138, bw, 40), "confirm.accept", "CONFIRM", primary: true)) confirm();
+            if (ui.Button(new Rect(x + 22, y + 124, bw, 40), "confirm.cancel", "CANCEL")) cancel();
+            if (ui.Button(new Rect(x + 34 + bw, y + 124, bw, 40), "confirm.accept", "CONFIRM", primary: true)) confirm();
         }
 
         private void DrawFooter(string text)
         {
             Rect a = ui.Safe;
-            ui.Label(new Rect(a.x, a.yMax - 20, a.width, 20), text, 14, TacticalUi.Muted);
+            TacticalUi.Fill(new Rect(a.x, a.yMax - 24, Mathf.Min(96, a.width * .16f), 1), TacticalUi.Raised);
+            TacticalUi.Fill(new Rect(a.x, a.yMax - 24, 16, 1), TacticalUi.Accent);
+            ui.Label(new Rect(a.x, a.yMax - 16, a.width, 16), text, 12, TacticalUi.Muted);
         }
 
         private void ConfirmLeave() => LeaveMatch(abort: true);
@@ -626,9 +645,11 @@ namespace Shooter.Presentation.Session
             ui.Header("OPERATIONS / PREFERENCES", "Settings");
             Rect a = ui.Safe;
             string[] tabs = SettingsTabs;
-            float tw = (a.width - 24) / 4;
+            float tw = (a.width - 18) / 4;
+            float tabY = a.y + 74;
+            ui.Panel(new Rect(a.x, tabY, a.width, 36));
             for (int i = 0; i < tabs.Length; i++)
-                if (ui.Button(new Rect(a.x + i * (tw + 8), a.y + 92, tw, 36), "settings.tab." + i, tabs[i], selected: settingsTab == i))
+                if (ui.Button(new Rect(a.x + i * (tw + 6), tabY + 1, tw, 34), "settings.tab." + i, tabs[i], selected: settingsTab == i, quiet: true))
                 {
                     settingsTab = i;
                     settingsScroll = Vector2.zero;
@@ -642,39 +663,45 @@ namespace Shooter.Presentation.Session
             bool vsync = draft.VSync, invertY = draft.InvertY, reducedMotion = draft.ReducedCameraMotion;
             bool reducedFlash = draft.ReducedFlash, subtitles = draft.Subtitles;
             float fov = draft.HipFovDegrees, sens = draft.MouseSensitivity, scale = draft.UiScale, contrast = draft.Contrast;
-            Rect viewport = new Rect(a.x, a.y + 144, a.width, a.height - 248);
+            Rect viewport = new Rect(a.x, a.y + 120, a.width, a.height - 214);
             float contentHeight = settingsTab == 2 ? 300 + bindingEditor.Working.Count * 40 : settingsTab == 3 ? 350 : settingsTab == 1 ? 310 : 285;
             float cw = viewport.width - 30;
             settingsScroll = GUI.BeginScrollView(viewport, settingsScroll, new Rect(0, 0, cw, contentHeight));
-            float y = 0;
+            float y = 4;
             if (settingsTab == 0)
             {
-                ui.Label(new Rect(0, y, cw, 28), "SOUND LEVELS", 14, TacticalUi.Accent);
-                y += 32;
+                ui.Section(new Rect(0, y, cw, 18), "SOUND LEVELS");
+                y += 28;
                 master = SettingsSlider(ref y, cw, "Master volume", master, 0, 1, (master * 100).ToString("0") + "%");
                 effects = SettingsSlider(ref y, cw, "Effects volume", effects, 0, 1, (effects * 100).ToString("0") + "%");
                 uiVol = SettingsSlider(ref y, cw, "Interface volume", uiVol, 0, 1, (uiVol * 100).ToString("0") + "%");
-                ui.Label(new Rect(0, y + 8, cw, 40), "Set a channel to 0% to mute it.", 18, TacticalUi.Muted);
+                ui.Label(new Rect(0, y + 8, cw, 36), "Set a channel to 0% to mute it.", 16, TacticalUi.Muted);
             }
             else if (settingsTab == 1)
             {
+                ui.Section(new Rect(0, y, cw, 18), "DISPLAY OUTPUT");
+                y += 28;
                 if (SettingButton(ref y, cw, "quality", "QUALITY", QualityLabel(quality))) quality = (byte)((quality + 1) % 3);
                 if (SettingButton(ref y, cw, "resolution", "RESOLUTION", width + " x " + height)) CycleResolution(ref width, ref height);
                 if (SettingButton(ref y, cw, "display", "DISPLAY MODE", mode.ToString())) mode = NextDisplayMode(mode);
                 vsync = ui.Toggle(new Rect(0, y, cw, 36), "settings.vsync", "V-SYNC", vsync); y += 46;
                 if (SettingButton(ref y, cw, "cap", "FRAME RATE LIMIT", fps == 0 ? "Uncapped" : fps + " FPS")) fps = NextFpsCap(fps);
-                ui.Label(new Rect(0, y + 10, cw, 60), "Display changes must be kept within 15 seconds. Otherwise your previous display is restored.", 18, TacticalUi.Muted);
+                ui.Label(new Rect(0, y + 10, cw, 56), "Display changes must be kept within 15 seconds. Otherwise your previous display is restored.", 16, TacticalUi.Muted);
             }
             else if (settingsTab == 2)
             {
+                ui.Section(new Rect(0, y, cw, 18), "LOOK AND AIM");
+                y += 28;
                 fov = SettingsSlider(ref y, cw, "Vertical field of view", fov, GameContractVersion.MinHipFovDegrees, GameContractVersion.MaxHipFovDegrees, fov.ToString("0") + " deg");
                 sens = SettingsSlider(ref y, cw, "Mouse sensitivity", sens, GameContractVersion.MinMouseSensitivity, GameContractVersion.MaxMouseSensitivity, sens.ToString("0.00") + " deg / unit");
                 invertY = ui.Toggle(new Rect(0, y, cw, 36), "settings.invert", "INVERT VERTICAL LOOK", invertY); y += 48;
-                ui.Label(new Rect(0, y, cw, 28), "BINDINGS / ESCAPE IS RESERVED FOR PAUSE", 14, TacticalUi.Accent); y += 34;
+                ui.Section(new Rect(0, y, cw, 18), "BINDINGS / ESCAPE IS RESERVED FOR PAUSE"); y += 28;
                 DrawBindingRows(1, ref y, cw);
             }
             else
             {
+                ui.Section(new Rect(0, y, cw, 18), "READABILITY");
+                y += 28;
                 scale = SettingsSlider(ref y, cw, "Interface scale", scale, GameContractVersion.MinUiScale, GameContractVersion.MaxUiScale, (scale * 100).ToString("0") + "%");
                 contrast = SettingsSlider(ref y, cw, "Scene contrast", contrast, GameContractVersion.MinContrast, GameContractVersion.MaxContrast, contrast.ToString("0.00"));
                 reducedMotion = ui.Toggle(new Rect(0, y, cw, 36), "settings.motion", "REDUCED CAMERA MOTION", reducedMotion); y += 46;
@@ -685,28 +712,28 @@ namespace Shooter.Presentation.Session
                 fov, sens, invertY, scale, reducedMotion, reducedFlash, contrast, subtitles, bindingEditor.ToArray()));
             GUI.EndScrollView();
 
-            float by = a.yMax - 76;
+            float by = a.yMax - 72;
             float bw = (a.width - 24) / 4;
             if (settingsApplier != null && settingsApplier.HasPendingDisplayChange)
             {
-                ui.Label(new Rect(a.x, by - 30, a.width, 28), "KEEP THIS DISPLAY?   " + displayClock.RemainingSeconds.ToString("0") + " seconds remaining", 18, TacticalUi.Accent);
-                if (ui.Button(new Rect(a.x, by, bw, 40), "settings.keep", "KEEP", primary: true)) ConfirmPendingDisplay();
-                if (ui.Button(new Rect(a.x + bw + 8, by, bw, 40), "settings.revert", "REVERT")) RevertPendingDisplay();
+                ui.Label(new Rect(a.x, by - 28, a.width, 24), "KEEP THIS DISPLAY?   " + displayClock.RemainingSeconds.ToString("0") + " seconds remaining", 16, TacticalUi.Accent);
+                if (ui.Button(new Rect(a.x, by, bw, 38), "settings.keep", "KEEP", primary: true)) ConfirmPendingDisplay();
+                if (ui.Button(new Rect(a.x + bw + 8, by, bw, 38), "settings.revert", "REVERT")) RevertPendingDisplay();
             }
             else
             {
                 GUI.enabled = !bindingEditor.IsListening;
-                if (ui.Button(new Rect(a.x, by, bw, 40), "settings.apply", "APPLY", primary: true)) ApplySettingsDraft();
+                if (ui.Button(new Rect(a.x, by, bw, 38), "settings.apply", "APPLY", primary: true)) ApplySettingsDraft();
                 GUI.enabled = true;
-                if (ui.Button(new Rect(a.x + bw + 8, by, bw, 40), "settings.cancel", "CANCEL")) CancelSettingsAndClose();
-                if (ui.Button(new Rect(a.x + (bw + 8) * 2, by, bw, 40), "settings.defaults", "DEFAULTS"))
+                if (ui.Button(new Rect(a.x + bw + 8, by, bw, 38), "settings.cancel", "CANCEL")) CancelSettingsAndClose();
+                if (ui.Button(new Rect(a.x + (bw + 8) * 2, by, bw, 38), "settings.defaults", "DEFAULTS"))
                 {
                     settingsEditor.RestoreDefaults(); bindingEditor.RestoreDefaults(); settingsStatus = "Defaults staged. Apply to save.";
                 }
-                if (ui.Button(new Rect(a.x + (bw + 8) * 3, by, bw, 40), "settings.back", "BACK")) CancelSettingsAndClose();
+                if (ui.Button(new Rect(a.x + (bw + 8) * 3, by, bw, 38), "settings.back", "BACK")) CancelSettingsAndClose();
             }
-            ui.Label(new Rect(a.x, a.yMax - 28, a.width, 42), string.IsNullOrEmpty(settingsStatus)
-                ? (settingsEditor.IsDirty ? "Unsaved changes. Apply to save." : "Preferences are saved on this PC.") : settingsStatus, 16, TacticalUi.Muted);
+            ui.Label(new Rect(a.x, a.yMax - 26, a.width, 24), string.IsNullOrEmpty(settingsStatus)
+                ? (settingsEditor.IsDirty ? "Unsaved changes. Apply to save." : "Preferences are saved on this PC.") : settingsStatus, 14, TacticalUi.Muted);
         }
 
         private float SettingsSlider(ref float y, float width, string label, float value, float min, float max, string formatted)
@@ -796,14 +823,17 @@ namespace Shooter.Presentation.Session
         {
             var snap = session?.TryAcquireSnapshot();
             if (snap == null) return;
-            float w = 250, x = (ui.Width - w) * .5f, y = ui.Safe.y + 26;
-            TacticalUi.Fill(new Rect(x, y, w, 40), new Color(.02f, .035f, .04f, .86f));
-            ui.Label(new Rect(x + 8, y + 5, 55, 28), snap.Team1Kills.ToString("000"), 20, TacticalUi.Ally, TextAnchor.MiddleLeft);
-            ui.Label(new Rect(x + 66, y + 7, w - 132, 26), TacticalUi.Clock(snap.RemainingActiveTicks), 18, TacticalUi.Text, TextAnchor.MiddleCenter);
-            ui.Label(new Rect(x + w - 63, y + 5, 55, 28), snap.Team2Kills.ToString("000"), 20, TacticalUi.Enemy, TextAnchor.MiddleRight);
-            TacticalUi.Fill(new Rect(x, y + 39, w * .5f * Mathf.Clamp01(snap.Team1Kills / 150f), 2), TacticalUi.Ally);
-            float enemy = w * .5f * Mathf.Clamp01(snap.Team2Kills / 150f);
-            TacticalUi.Fill(new Rect(x + w - enemy, y + 39, enemy, 2), TacticalUi.Enemy);
+            float w = 248, x = (ui.Width - w) * .5f, y = ui.Safe.y + 14;
+            TacticalUi.Fill(new Rect(x, y, w, 34), new Color(.02f, .03f, .035f, .92f));
+            TacticalUi.Fill(new Rect(x, y, w, 1), new Color(1, 1, 1, .08f));
+            TacticalUi.Fill(new Rect(x, y, 3, 34), TacticalUi.Ally);
+            TacticalUi.Fill(new Rect(x + w - 3, y, 3, 34), TacticalUi.Enemy);
+            ui.Label(new Rect(x + 12, y + 3, 54, 28), snap.Team1Kills.ToString("000"), 20, TacticalUi.Ally, TextAnchor.MiddleLeft);
+            ui.Label(new Rect(x + 66, y + 4, w - 132, 26), TacticalUi.Clock(snap.RemainingActiveTicks), 16, TacticalUi.Text, TextAnchor.MiddleCenter);
+            ui.Label(new Rect(x + w - 66, y + 3, 54, 28), snap.Team2Kills.ToString("000"), 20, TacticalUi.Enemy, TextAnchor.MiddleRight);
+            TacticalUi.Fill(new Rect(x + 3, y + 32, (w - 6) * .5f * Mathf.Clamp01(snap.Team1Kills / 150f), 2), TacticalUi.Ally);
+            float enemy = (w - 6) * .5f * Mathf.Clamp01(snap.Team2Kills / 150f);
+            TacticalUi.Fill(new Rect(x + w - 3 - enemy, y + 32, enemy, 2), TacticalUi.Enemy);
         }
 
         private void DrawResults(float s)
@@ -813,56 +843,58 @@ namespace Shooter.Presentation.Session
             if (results == null)
             {
                 ui.Header("OPERATIONS / DEBRIEF", "Match results");
-                ui.Label(new Rect(ui.Safe.x, ui.Safe.y + 100, ui.Safe.width, 48), "No retained results.");
+                ui.Label(new Rect(ui.Safe.x, ui.Safe.y + 90, ui.Safe.width, 48), "No retained results.");
                 if (ui.Button(new Rect(ui.Safe.x, ui.Safe.yMax - 58, 180, 40), "results.menu", "MAIN MENU")) LeaveMatch(abort: false);
                 return;
             }
             scoreboard.BindResults(results);
             ui.Header("OPERATIONS / DEBRIEF", scoreboard.LocalOutcomeLabel(1).ToUpperInvariant(), "TEAM DEATHMATCH");
-            DrawTeamTables(ui.Safe.y + 100, ui.Safe.height - 180);
+            DrawTeamTables(ui.Safe.y + 78, ui.Safe.height - 150);
             float y = ui.Safe.yMax - 52;
-            if (ui.Button(new Rect(ui.Safe.x, y, 190, 42), "results.replay", "PLAY AGAIN", primary: true)) RestartMatch();
-            if (ui.Button(new Rect(ui.Safe.x + 202, y, 190, 42), "results.menu", "MAIN MENU")) LeaveMatch(abort: false);
-            ui.Label(new Rect(ui.Safe.x + 414, y, ui.Safe.width - 414, 42), results.Reason == FinishReason.ScoreLimit ? "SCORE LIMIT REACHED" : "TIME LIMIT REACHED", 14, TacticalUi.Muted, TextAnchor.MiddleRight);
+            if (ui.Button(new Rect(ui.Safe.x, y, 180, 40), "results.replay", "PLAY AGAIN", primary: true)) RestartMatch();
+            if (ui.Button(new Rect(ui.Safe.x + 192, y, 180, 40), "results.menu", "MAIN MENU")) LeaveMatch(abort: false);
+            ui.Label(new Rect(ui.Safe.x + 392, y, ui.Safe.width - 392, 40), results.Reason == FinishReason.ScoreLimit ? "SCORE LIMIT REACHED" : "TIME LIMIT REACHED", 12, TacticalUi.Muted, TextAnchor.MiddleRight);
         }
 
         private void DrawScoreboard(float s)
         {
             ui.Backdrop(overlay: true);
             ui.Header("OPERATIONS / LIVE ROSTER", "Scoreboard", "TEAM DEATHMATCH");
-            DrawTeamTables(ui.Safe.y + 100, ui.Safe.height - 130);
+            DrawTeamTables(ui.Safe.y + 78, ui.Safe.height - 112);
             DrawFooter("TEAM 1 / ALLIES     TEAM 2 / ENEMIES     YOU / LOCAL OPERATOR");
         }
 
         private void DrawTeamTables(float y, float height)
         {
             Rect a = ui.Safe;
-            float w = (a.width - 24) * .5f;
+            float w = (a.width - 16) * .5f;
             for (byte team = 1; team <= 2; team++)
             {
-                float x = a.x + (team - 1) * (w + 24);
+                float x = a.x + (team - 1) * (w + 16);
                 Color color = team == 1 ? TacticalUi.Ally : TacticalUi.Enemy;
-                TacticalUi.Fill(new Rect(x, y, w, 3), color);
+                ui.Panel(new Rect(x, y, w, height - 8));
+                TacticalUi.Fill(new Rect(x, y, w, 2), color);
                 uint kills = team == 1 ? scoreboard.Team1Kills : scoreboard.Team2Kills;
-                ui.Label(new Rect(x + 12, y + 10, w - 92, 30), team == 1 ? "TEAM 1 / ALLIES" : "TEAM 2 / ENEMIES", 18, color);
-                ui.Label(new Rect(x + w - 78, y + 6, 66, 36), kills.ToString(), 28, TacticalUi.Text, TextAnchor.UpperRight);
-                float rowY = y + 52;
-                ui.Label(new Rect(x + 12, rowY, w - 112, 22), "OPERATOR", 12, TacticalUi.Muted);
-                ui.Label(new Rect(x + w - 90, rowY, 32, 22), "K", 14, TacticalUi.Muted, TextAnchor.UpperRight);
-                ui.Label(new Rect(x + w - 44, rowY, 32, 22), "D", 14, TacticalUi.Muted, TextAnchor.UpperRight);
+                ui.Label(new Rect(x + 12, y + 8, w - 92, 24), team == 1 ? "TEAM 1 / ALLIES" : "TEAM 2 / ENEMIES", 14, color);
+                ui.Label(new Rect(x + w - 74, y + 4, 62, 30), kills.ToString(), 24, TacticalUi.Text, TextAnchor.UpperRight);
+                float rowY = y + 40;
+                TacticalUi.Fill(new Rect(x + 10, rowY + 16, w - 20, 1), TacticalUi.Raised);
+                ui.Label(new Rect(x + 12, rowY, w - 112, 16), "OPERATOR", 12, TacticalUi.Muted);
+                ui.Label(new Rect(x + w - 90, rowY, 32, 16), "K", 12, TacticalUi.Muted, TextAnchor.UpperRight);
+                ui.Label(new Rect(x + w - 44, rowY, 32, 16), "D", 12, TacticalUi.Muted, TextAnchor.UpperRight);
                 int rowIndex = 0;
-                float rh = Mathf.Min(42, (height - 80) / 6);
+                float rh = Mathf.Min(36, (height - 72) / 6);
                 for (int i = 0; i < scoreboard.RowCount; i++)
                 {
                     var row = scoreboard.Rows[i];
                     if (row.Team != team) continue;
-                    float ry = rowY + 26 + rowIndex * rh;
-                    TacticalUi.Fill(new Rect(x, ry, w, rh - 3), row.IsLocal ? TacticalUi.Raised : TacticalUi.Surface);
-                    if (row.IsLocal) TacticalUi.Fill(new Rect(x, ry, 3, rh - 3), TacticalUi.Accent);
+                    float ry = rowY + 20 + rowIndex * rh;
+                    TacticalUi.Fill(new Rect(x + 2, ry, w - 4, rh - 3), row.IsLocal ? TacticalUi.Raised : new Color(.04f, .055f, .06f, .55f));
+                    if (row.IsLocal) TacticalUi.Fill(new Rect(x + 2, ry, 3, rh - 3), TacticalUi.Accent);
                     string name = (row.IsLocal ? "YOU / " : row.IsHuman ? "OP / " : "BOT / ") + row.DisplayName;
-                    ui.Label(new Rect(x + 12, ry, w - 120, rh - 3), name, 18, TacticalUi.Text, TextAnchor.MiddleLeft);
-                    ui.Label(new Rect(x + w - 90, ry, 32, rh - 3), row.Kills.ToString(), 18, TacticalUi.Text, TextAnchor.MiddleRight);
-                    ui.Label(new Rect(x + w - 44, ry, 32, rh - 3), row.Deaths.ToString(), 18, TacticalUi.Muted, TextAnchor.MiddleRight);
+                    ui.Label(new Rect(x + 14, ry, w - 124, rh - 3), name, 16, TacticalUi.Text, TextAnchor.MiddleLeft);
+                    ui.Label(new Rect(x + w - 90, ry, 32, rh - 3), row.Kills.ToString(), 16, TacticalUi.Text, TextAnchor.MiddleRight);
+                    ui.Label(new Rect(x + w - 44, ry, 32, rh - 3), row.Deaths.ToString(), 16, TacticalUi.Muted, TextAnchor.MiddleRight);
                     rowIndex++;
                 }
             }

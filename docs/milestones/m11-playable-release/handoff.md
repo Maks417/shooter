@@ -1,5 +1,17 @@
 # M11 — Playable build and acceptance — handoff and gate record
 
+## VD presentation polish — owner-authorized parallel slices
+
+Owner request 2026-11-14: implement what is possible toward Battlefield V / Bodycam / Warface quality using parallel agents. Draft [VD0 art brief](../../visual-art-brief.md) and expanded [defect inventory](../../visual-defect-inventory.md) land with three presentation slices merged into `main`; temporary `.local/worktrees/vd-*` trees and `agent/vd-*` branches were removed after content preservation on main.
+
+| Slice | Paths | Worker evidence |
+|---|---|---|
+| Map surfaces / atmosphere | `ProductMapView`, `GeneratedSky`, `GeneratedReflectionProbe`, `GeneratedSkyTests` | Generation **330 PASS** in `vd-world-surfaces` |
+| Combat FX | `AnalyticFxPool`, `AnalyticFxPresenter`, minimal `ProductSessionView` hooks, `FeedbackTests` | Simulation **131/131 PASS** in `vd-combat-fx` |
+| Menu / HUD craft | `ProductMenuScene`, `TacticalUi`, `ProductShellHost` | Shell/Hud filter **14/14 PASS** in `vd-menu-craft` |
+
+**Out of scope / still Pending:** P05 soldier clearance, contract/content-lock changes, VD0 owner frame approval, VD1–VD9 acceptance, Unity EditMode/player visual review, reference-hardware PASS. Packaged map materials remain largely 1×1 albedo-only until Generation packaging expands normals/masks. All VD exits remain Pending; this merge is software polish only.
+
 ## T074 — scene-led menu and tactical HUD preview
 
 Subsequent owner planning request establishes the [VD0–VD9 quality track](../../design-milestones.md), targeting Battlefield V / Bodycam / Warface-level finished design. The plan adds concrete visual exits inside M8–M11 and preserves this source/evidence record. No runtime or candidate change is made by the planning assignment; all new VD acceptance is Pending. VD9 requires comparative owner sign-off together with the existing REL/installer/reference gates.

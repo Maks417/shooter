@@ -14,13 +14,51 @@ namespace Shooter.Presentation
             public Rgb(float r, float g, float b) { R = r; G = g; B = b; }
         }
 
-        // Gallery/diagnostic daylight: cool zenith, brighter horizon haze, neutral ground bounce.
-        public static readonly Rgb DefaultZenith = new Rgb(.18f, .28f, .42f);
-        public static readonly Rgb DefaultHorizon = new Rgb(.55f, .62f, .70f);
-        public static readonly Rgb DefaultGround = new Rgb(.22f, .24f, .27f);
-        public const float DefaultFogStartMeters = 18f;
-        public const float DefaultFogEndMeters = 48f;
-        public const float DefaultFogDensity = .012f;
+        // Bodycam/BF grounded daylight: natural outdoor sky, soft haze, warm ground bounce; mid-range readable.
+        public static readonly Rgb DefaultZenith = new Rgb(.30f, .40f, .52f);
+        public static readonly Rgb DefaultHorizon = new Rgb(.58f, .62f, .64f);
+        public static readonly Rgb DefaultGround = new Rgb(.26f, .24f, .20f);
+        public const float DefaultFogStartMeters = 32f;
+        public const float DefaultFogEndMeters = 105f;
+        public const float DefaultFogDensity = .0075f;
+
+        /// <summary>
+        /// Mild map-id atmosphere variants (presentation only). Does not change collision, nav, or authority.
+        /// training-compound: cooler compound air; depot-yard: warmer dusty yard haze.
+        /// </summary>
+        public static void ResolveProductPalette(
+            string mapId,
+            out Rgb zenith,
+            out Rgb horizon,
+            out Rgb ground,
+            out float fogStartMeters,
+            out float fogEndMeters,
+            out float fogDensity)
+        {
+            fogStartMeters = DefaultFogStartMeters;
+            fogEndMeters = DefaultFogEndMeters;
+            fogDensity = DefaultFogDensity;
+            if (string.Equals(mapId, "training-compound", StringComparison.Ordinal))
+            {
+                zenith = new Rgb(.28f, .40f, .50f);
+                horizon = new Rgb(.56f, .62f, .63f);
+                ground = new Rgb(.24f, .26f, .20f);
+                return;
+            }
+            if (string.Equals(mapId, "depot-yard", StringComparison.Ordinal))
+            {
+                zenith = new Rgb(.34f, .40f, .48f);
+                horizon = new Rgb(.62f, .60f, .56f);
+                ground = new Rgb(.30f, .26f, .20f);
+                fogStartMeters = 28f;
+                fogEndMeters = 95f;
+                fogDensity = .0085f;
+                return;
+            }
+            zenith = DefaultZenith;
+            horizon = DefaultHorizon;
+            ground = DefaultGround;
+        }
 
         public static void Validate(Rgb zenith, Rgb horizon, Rgb ground, bool fogEnabled, float fogStartMeters, float fogEndMeters, float fogDensity)
         {

@@ -28,6 +28,8 @@
     <Compile Include="../../UnityProject/Assets/Shooter/Presentation/Audio/**/*.cs" Link="Audio/%(Filename)%(Extension)" />
     <Compile Remove="../../UnityProject/Assets/Shooter/Presentation/Audio/**/UnitySynthAudioOutput.cs" />
     <Compile Include="../../UnityProject/Assets/Shooter/Presentation/Fx/**/*.cs" Link="Fx/%(Filename)%(Extension)" />
+    <!-- AnalyticFxPresenter is Unity mesh/material only; pure FeedbackTests use AnalyticFxPool. -->
+    <Compile Remove="../../UnityProject/Assets/Shooter/Presentation/Fx/**/AnalyticFxPresenter.cs" />
     <!-- T059 pure shell/scoreboard (Unity MonoBehaviours under Session/ remain editor-only). -->
     <Compile Include="../../UnityProject/Assets/Shooter/Presentation/Menus/**/*.cs" Link="Menus/%(Filename)%(Extension)" />
     <Compile Include="../../UnityProject/Assets/Shooter/Presentation/Scoreboard/**/*.cs" Link="Scoreboard/%(Filename)%(Extension)" />

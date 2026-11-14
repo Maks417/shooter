@@ -73,11 +73,27 @@ public sealed class GeneratedSkyTests
     [Fact]
     public void ReflectionProbeDefaultsAreAcceptedAndRejectNan()
     {
-        GeneratedReflectionProbeMath.Validate(12f, 1f, 128);
+        GeneratedReflectionProbeMath.Validate(GeneratedReflectionProbeMath.DefaultBoxSizeMeters, GeneratedReflectionProbeMath.DefaultIntensity, GeneratedReflectionProbeMath.DefaultResolution);
+        GeneratedReflectionProbeMath.Validate(GeneratedReflectionProbeMath.ProductMapBoxSizeMeters, GeneratedReflectionProbeMath.ProductMapIntensity, GeneratedReflectionProbeMath.DefaultResolution);
         Assert.Throws<ArgumentOutOfRangeException>(() => GeneratedReflectionProbeMath.Validate(float.NaN, 1f, 128));
         Assert.Throws<ArgumentOutOfRangeException>(() => GeneratedReflectionProbeMath.Validate(.5f, 1f, 128));
         Assert.Throws<ArgumentOutOfRangeException>(() => GeneratedReflectionProbeMath.Validate(12f, -1f, 128));
         Assert.Throws<ArgumentOutOfRangeException>(() => GeneratedReflectionProbeMath.Validate(12f, 1f, 48));
+    }
+
+    [Fact]
+    public void ProductMapPaletteVariantsStayFiniteAndDistinct()
+    {
+        GeneratedSkyMath.ResolveProductPalette("training-compound", out var compoundZ, out var compoundH, out var compoundG, out float cStart, out float cEnd, out float cDensity);
+        GeneratedSkyMath.ResolveProductPalette("depot-yard", out var depotZ, out var depotH, out var depotG, out float dStart, out float dEnd, out float dDensity);
+        GeneratedSkyMath.ResolveProductPalette("unknown-map", out var fallbackZ, out _, out _, out _, out _, out _);
+        GeneratedSkyMath.Validate(compoundZ, compoundH, compoundG, true, cStart, cEnd, cDensity);
+        GeneratedSkyMath.Validate(depotZ, depotH, depotG, true, dStart, dEnd, dDensity);
+        Assert.Equal(GeneratedSkyMath.DefaultZenith.R, fallbackZ.R, 5);
+        Assert.True(cEnd > cStart);
+        Assert.True(dEnd > dStart);
+        Assert.NotEqual(compoundZ.B, depotZ.B);
+        Assert.True(depotH.R >= compoundH.R);
     }
 
     private static void AssertFiniteColor(GeneratedSkyMath.Rgb color)
@@ -105,12 +121,46 @@ internal static class GeneratedSkyMath
         public Rgb(float r, float g, float b) { R = r; G = g; B = b; }
     }
 
-    public static readonly Rgb DefaultZenith = new Rgb(.18f, .28f, .42f);
-    public static readonly Rgb DefaultHorizon = new Rgb(.55f, .62f, .70f);
-    public static readonly Rgb DefaultGround = new Rgb(.22f, .24f, .27f);
-    public const float DefaultFogStartMeters = 18f;
-    public const float DefaultFogEndMeters = 48f;
-    public const float DefaultFogDensity = .012f;
+    public static readonly Rgb DefaultZenith = new Rgb(.30f, .40f, .52f);
+    public static readonly Rgb DefaultHorizon = new Rgb(.58f, .62f, .64f);
+    public static readonly Rgb DefaultGround = new Rgb(.26f, .24f, .20f);
+    public const float DefaultFogStartMeters = 32f;
+    public const float DefaultFogEndMeters = 105f;
+    public const float DefaultFogDensity = .0075f;
+
+    public static void ResolveProductPalette(
+        string mapId,
+        out Rgb zenith,
+        out Rgb horizon,
+        out Rgb ground,
+        out float fogStartMeters,
+        out float fogEndMeters,
+        out float fogDensity)
+    {
+        fogStartMeters = DefaultFogStartMeters;
+        fogEndMeters = DefaultFogEndMeters;
+        fogDensity = DefaultFogDensity;
+        if (string.Equals(mapId, "training-compound", StringComparison.Ordinal))
+        {
+            zenith = new Rgb(.28f, .40f, .50f);
+            horizon = new Rgb(.56f, .62f, .63f);
+            ground = new Rgb(.24f, .26f, .20f);
+            return;
+        }
+        if (string.Equals(mapId, "depot-yard", StringComparison.Ordinal))
+        {
+            zenith = new Rgb(.34f, .40f, .48f);
+            horizon = new Rgb(.62f, .60f, .56f);
+            ground = new Rgb(.30f, .26f, .20f);
+            fogStartMeters = 28f;
+            fogEndMeters = 95f;
+            fogDensity = .0085f;
+            return;
+        }
+        zenith = DefaultZenith;
+        horizon = DefaultHorizon;
+        ground = DefaultGround;
+    }
 
     public static void Validate(Rgb zenith, Rgb horizon, Rgb ground, bool fogEnabled, float fogStartMeters, float fogEndMeters, float fogDensity)
     {
@@ -153,6 +203,12 @@ internal static class GeneratedSkyMath
 /// <summary>Mirror of Presentation GeneratedReflectionProbe.Validate for offline Generation.Tests. Keep in sync.</summary>
 internal static class GeneratedReflectionProbeMath
 {
+    public const float DefaultBoxSizeMeters = 12f;
+    public const float DefaultIntensity = 1f;
+    public const int DefaultResolution = 128;
+    public const float ProductMapBoxSizeMeters = 40f;
+    public const float ProductMapIntensity = 1.05f;
+
     public static void Validate(float boxSizeMeters, float intensity, int resolution)
     {
         if (!Finite(boxSizeMeters) || boxSizeMeters < 1f || boxSizeMeters > 64f)

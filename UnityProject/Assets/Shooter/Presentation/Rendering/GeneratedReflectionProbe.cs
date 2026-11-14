@@ -11,6 +11,9 @@ namespace Shooter.Presentation
         public const float DefaultBoxSizeMeters = 12f;
         public const float DefaultIntensity = 1f;
         public const int DefaultResolution = 128;
+        /// <summary>Product map outdoor probe: larger capture volume for 256 m compounds without per-frame refresh.</summary>
+        public const float ProductMapBoxSizeMeters = 40f;
+        public const float ProductMapIntensity = 1.05f;
 
         private GameObject? root;
         private ReflectionProbe? probe;
@@ -55,7 +58,7 @@ namespace Shooter.Presentation
             probe.size = new Vector3(boxSizeMeters, boxSizeMeters * .5f, boxSizeMeters);
             probe.center = Vector3.zero;
             probe.nearClipPlane = .1f;
-            probe.farClipPlane = Mathf.Max(boxSizeMeters, 20f);
+            probe.farClipPlane = Mathf.Max(boxSizeMeters * 1.25f, 20f);
             probe.clearFlags = ReflectionProbeClearFlags.Skybox;
             probe.cullingMask = ~0;
             probe.resolution = resolution;

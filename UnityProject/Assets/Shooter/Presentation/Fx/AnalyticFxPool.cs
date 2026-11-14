@@ -21,11 +21,49 @@ namespace Shooter.Presentation.Fx
     {
         public const int MaxInstances = 64;
         public const int MaxSmokeProxies = 16;
+        public const float MuzzleFlashLifetime = 0.09f;
+        public const float ImpactSparkLifetime = 0.16f;
+        public const float SmokeProxyLifetime = 1.25f;
+
         private readonly FxInstance[] items = new FxInstance[MaxInstances];
         public int ActiveCount { get; private set; }
         public int SmokeCount { get; private set; }
         public int Spawns { get; private set; }
         public int Rejected { get; private set; }
+
+        public static float LifetimeFor(FxKind kind) => kind switch
+        {
+            FxKind.MuzzleFlash => MuzzleFlashLifetime,
+            FxKind.ImpactSpark => ImpactSparkLifetime,
+            FxKind.SmokeProxy => SmokeProxyLifetime,
+            _ => ImpactSparkLifetime
+        };
+
+        /// <summary>Deterministic world scale for mesh proxies (shrink flash/spark, expand smoke).</summary>
+        public static float EvaluateScale(FxKind kind, float age, float lifetime)
+        {
+            float t = NormalizeAge(age, lifetime);
+            return kind switch
+            {
+                FxKind.MuzzleFlash => 0.10f + 0.14f * (1f - t),
+                FxKind.ImpactSpark => 0.04f + 0.12f * (1f - t),
+                FxKind.SmokeProxy => 0.28f + 0.62f * t,
+                _ => 0.1f
+            };
+        }
+
+        /// <summary>Opacity cue for presenters (smoke stays translucent).</summary>
+        public static float EvaluateOpacity(FxKind kind, float age, float lifetime)
+        {
+            float t = NormalizeAge(age, lifetime);
+            return kind switch
+            {
+                FxKind.MuzzleFlash => 1f - t,
+                FxKind.ImpactSpark => 1f - t,
+                FxKind.SmokeProxy => (1f - t) * 0.42f,
+                _ => 1f - t
+            };
+        }
 
         public bool TrySpawn(FxKind kind, Float3 position, Float3 normal)
         {
@@ -39,7 +77,7 @@ namespace Shooter.Presentation.Fx
                     Position = position,
                     Normal = normal.IsUnit ? normal : new Float3(0, 1, 0),
                     Age = 0,
-                    Lifetime = kind == FxKind.SmokeProxy ? 1.5f : 0.2f,
+                    Lifetime = LifetimeFor(kind),
                     Active = true
                 };
                 ActiveCount++;
@@ -67,6 +105,23 @@ namespace Shooter.Presentation.Fx
             SmokeCount = smoke;
         }
 
+        public void Clear()
+        {
+            for (int i = 0; i < MaxInstances; i++)
+                items[i].Active = false;
+            ActiveCount = 0;
+            SmokeCount = 0;
+        }
+
         public FxInstance Get(int index) => items[index];
+
+        private static float NormalizeAge(float age, float lifetime)
+        {
+            if (lifetime <= 0f) return 1f;
+            float t = age / lifetime;
+            if (t < 0f) return 0f;
+            if (t > 1f) return 1f;
+            return t;
+        }
     }
 }

@@ -8,9 +8,11 @@ namespace Shooter.Presentation.Session
     /// <summary>Code-only tactical shell. Coordinates are logical pixels after the applied UI scale.</summary>
     public sealed class TacticalUi
     {
-        public static readonly Color Background = new Color32(15, 20, 23, 255);
-        public static readonly Color Surface = new Color32(24, 31, 35, 255);
-        public static readonly Color Raised = new Color32(37, 46, 50, 255);
+        // Brandbook tokens: charcoal surface, ivory text, sand-amber focus, ally cyan, danger coral.
+        public static readonly Color Background = new Color32(22, 28, 32, 255);
+        public static readonly Color Surface = new Color32(28, 36, 41, 255);
+        public static readonly Color Raised = new Color32(42, 52, 57, 255);
+        public static readonly Color PanelEdge = new Color32(54, 66, 72, 255);
         public static readonly Color Text = new Color32(241, 243, 239, 255);
         public static readonly Color Muted = new Color32(173, 183, 183, 255);
         public static readonly Color Accent = new Color32(230, 197, 106, 255);
@@ -118,15 +120,49 @@ namespace Shooter.Presentation.Session
             GUI.Label(r, text, style);
         }
 
+        public void Panel(Rect r, bool accentTop = false, bool rail = false)
+        {
+            Fill(r, Surface);
+            Fill(new Rect(r.x, r.y, r.width, 1), PanelEdge);
+            Fill(new Rect(r.x, r.yMax - 1, r.width, 1), new Color(0, 0, 0, .35f));
+            Fill(new Rect(r.xMax - 1, r.y, 1, r.height), new Color(0, 0, 0, .22f));
+            if (accentTop) Fill(new Rect(r.x, r.y, r.width, 2), Accent);
+            if (rail) Fill(new Rect(r.x, r.y, 3, r.height), Accent);
+        }
+
+        public void Section(Rect r, string title)
+        {
+            Label(r, title, 12, Accent);
+            Fill(new Rect(r.x, r.yMax - 2, Mathf.Min(88, r.width), 1), Raised);
+            Fill(new Rect(r.x, r.yMax - 2, 18, 1), Accent);
+        }
+
+        /// <summary>Compact brand mark used on Main left rail — charcoal plate + amber chip.</summary>
+        public void BrandMark(Rect r, string title)
+        {
+            Fill(new Rect(r.x, r.y + 6, 4, r.height - 12), Accent);
+            Label(new Rect(r.x + 14, r.y, r.width - 14, r.height), title, 24);
+        }
+
         public bool Button(Rect r, string id, string text, bool primary = false, bool selected = false, bool quiet = false)
         {
             if (GUI.enabled && Event.current.type == EventType.MouseDown && r.Contains(Event.current.mousePosition)) focused = id;
             bool focus = focused == id;
             if (focus && focusMoved) GUI.ScrollTo(r);
             bool hover = r.Contains(Event.current.mousePosition);
-            Color fill = quiet ? new Color(1, 1, 1, hover || selected ? .10f : 0) : primary ? Accent : (hover || selected ? Raised : Surface);
+            Color fill = quiet
+                ? new Color(1, 1, 1, hover || selected || focus ? .12f : 0)
+                : primary ? Accent : (hover || selected ? Raised : Surface);
             Fill(r, GUI.enabled ? fill : Surface);
-            if (focus || selected) Fill(new Rect(r.x, r.y, 3, r.height), primary ? Background : Accent);
+            if (quiet && (focus || selected))
+            {
+                Fill(new Rect(r.x, r.y, 3, r.height), Accent);
+                Fill(new Rect(r.x + 3, r.y, r.width - 3, r.height), new Color(1, 1, 1, .06f));
+            }
+            else if (focus || selected)
+            {
+                Fill(new Rect(r.x, r.y, 3, r.height), primary ? Background : Accent);
+            }
             if (focus && !quiet)
             {
                 Color edge = primary ? Background : Accent;
@@ -139,7 +175,8 @@ namespace Shooter.Presentation.Session
                 foreach (var state in new[] { buttonStyle.normal, buttonStyle.hover, buttonStyle.active, buttonStyle.focused }) state.background = null;
             }
             Color ink = StyleInk(GUI.enabled ? (primary ? Background : Text) : Muted);
-            buttonStyle.fontSize = quiet ? 22 : 18;
+            buttonStyle.fontSize = quiet ? 20 : 18;
+            buttonStyle.padding = quiet ? new RectOffset(18, 12, 0, 0) : new RectOffset(16, 12, 0, 0);
             buttonStyle.normal.textColor = ink;
             buttonStyle.hover.textColor = ink;
             buttonStyle.active.textColor = ink;
@@ -153,12 +190,20 @@ namespace Shooter.Presentation.Session
         public bool MapCard(Rect r, string id, Texture? image, string title, string subtitle, bool selected = false)
         {
             Fill(r, Surface);
+            Fill(new Rect(r.x, r.y, r.width, 1), PanelEdge);
             if (image != null && Event.current.type == EventType.Repaint) GUI.DrawTexture(r, image, ScaleMode.ScaleAndCrop);
-            Fill(new Rect(r.x, r.yMax - 58, r.width, 58), new Color(.025f, .04f, .05f, .9f));
+            // Dense caption plate with amber selection rail.
+            Fill(new Rect(r.x, r.yMax - 62, r.width, 62), new Color(.02f, .03f, .035f, .92f));
+            Fill(new Rect(r.x, r.yMax - 62, r.width, 1), new Color(1, 1, 1, .08f));
             bool clicked = Button(r, id, "", selected: selected, quiet: true);
-            Label(new Rect(r.x + 14, r.yMax - 49, r.width - 28, 22), title, 18);
-            Label(new Rect(r.x + 14, r.yMax - 24, r.width - 28, 20), subtitle, 12, Muted);
-            if (selected) Fill(new Rect(r.x, r.yMax - 3, r.width, 3), Accent);
+            Label(new Rect(r.x + 14, r.yMax - 52, r.width - 28, 22), title, 18);
+            Label(new Rect(r.x + 14, r.yMax - 26, r.width - 28, 18), subtitle, 12, Muted);
+            if (selected)
+            {
+                Fill(new Rect(r.x, r.y, 3, r.height), Accent);
+                Fill(new Rect(r.x, r.yMax - 3, r.width, 3), Accent);
+                Fill(new Rect(r.x, r.y, r.width, 2), Accent);
+            }
             return clicked;
         }
 
@@ -199,42 +244,44 @@ namespace Shooter.Presentation.Session
             if (!overlay && SceneTexture != null)
             {
                 if (Event.current.type == EventType.Repaint) GUI.DrawTexture(new Rect(0, 0, Width, Height), SceneTexture, ScaleMode.ScaleAndCrop);
-                // A left-to-right scrim keeps navigation legible while the rendered scene dominates.
-                for (int i = 0; i < 32; i++)
+                // Compact left rail scrim + soft bottom fade so nav/cards stay readable over the live stage.
+                for (int i = 0; i < 28; i++)
                 {
-                    float u = i / 31f;
-                    Fill(new Rect(i * Width / 42, 0, Width / 42 + 1, Height), new Color(.015f, .025f, .03f, .88f * Mathf.Pow(1 - u, 2)));
-                    Fill(new Rect(0, Height - i * Height / 95, Width, Height / 95 + 1), new Color(.015f, .025f, .03f, .4f * (1 - u)));
+                    float u = i / 27f;
+                    Fill(new Rect(i * Width / 48, 0, Width / 48 + 1, Height), new Color(.02f, .03f, .035f, .9f * Mathf.Pow(1 - u, 1.85f)));
+                    Fill(new Rect(0, Height - i * Height / 110, Width, Height / 110 + 1), new Color(.015f, .025f, .03f, .48f * (1 - u)));
                 }
                 return;
             }
-            Fill(new Rect(0, 0, Width, Height), overlay ? new Color(.03f, .05f, .06f, .94f) : Background);
+            Fill(new Rect(0, 0, Width, Height), overlay ? new Color(.03f, .045f, .05f, .95f) : Background);
             if (overlay) return;
             // Analytic contour lines: decorative terrain, never a tactical map or an imported image.
-            Color contour = new Color(.20f, .27f, .28f, .32f);
-            float x0 = Width * .44f;
-            for (int band = 0; band < 13; band++)
+            Color contour = new Color(.20f, .27f, .28f, .28f);
+            float x0 = Width * .46f;
+            for (int band = 0; band < 12; band++)
             {
                 Vector2 previous = default;
                 for (int step = 0; step <= 24; step++)
                 {
                     float u = step / 24f;
-                    float x = x0 + u * Width * .56f;
-                    float y = Height * .2f + band * Height * .052f + Mathf.Sin(u * 7f + band * .21f) * Height * .09f + Mathf.Cos(u * 13f - band * .19f) * Height * .025f;
+                    float x = x0 + u * Width * .54f;
+                    float y = Height * .22f + band * Height * .05f + Mathf.Sin(u * 7f + band * .21f) * Height * .08f + Mathf.Cos(u * 13f - band * .19f) * Height * .022f;
                     var point = new Vector2(x, y);
                     if (step > 0) Line(previous, point, contour);
                     previous = point;
                 }
             }
-            Fill(new Rect(0, Height - 8, Width * .25f, 2), Accent);
+            Fill(new Rect(0, Height - 8, Width * .22f, 2), Accent);
         }
 
         public void Header(string eyebrow, string title, string right = "LOCAL / OFFLINE")
         {
-            Label(new Rect(Safe.x, Safe.y, Safe.width * .65f, 22), eyebrow, 14, Accent);
-            Label(new Rect(Safe.x, Safe.y + 23, Safe.width * .7f, 48), title, 32);
-            Label(new Rect(Safe.x + Safe.width * .72f, Safe.y, Safe.width * .28f, 24), right, 14, Muted, TextAnchor.UpperRight);
-            Fill(new Rect(Safe.x, Safe.y + 77, Safe.width, 1), Raised);
+            Label(new Rect(Safe.x, Safe.y, Safe.width * .65f, 16), eyebrow, 12, Accent);
+            Label(new Rect(Safe.x, Safe.y + 16, Safe.width * .7f, 36), title, 28);
+            Label(new Rect(Safe.x + Safe.width * .62f, Safe.y, Safe.width * .38f, 18), right, 12, Muted, TextAnchor.UpperRight);
+            Fill(new Rect(Safe.x, Safe.y + 58, Safe.width, 1), Raised);
+            Fill(new Rect(Safe.x, Safe.y + 58, 56, 2), Accent);
+            Fill(new Rect(Safe.x + 56, Safe.y + 58, 24, 1), PanelEdge);
         }
 
         public static string Clock(uint remainingTicks)

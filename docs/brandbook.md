@@ -12,7 +12,7 @@ The owner requested the complete visual design and selected implementation in Un
 
 The original direction combines military restraint, large clear headings, tactile equipment and natural light. Use charcoal/graphite surfaces, ivory text, sand amber selection and labeled cyan/coral team identity. Bodycam is a reference for grounded light and physical presence; aggressive distortion, obligatory shake and unreadable darkness are not requirements. Keep accessibility preferences and the 720p Low target.
 
-The milestone plan covers art direction/feasibility, soldiers, hands/weapons, procedural motion, both environments, lighting/materials/effects, final UI, measured scalability and comparative installer acceptance. Its per-stage deliverables and exits live once in [design-milestones.md](design-milestones.md). Earlier T074 software and retained captures remain valid evidence of implementation; P05 and final visual/device review remain open.
+The milestone plan covers art direction/feasibility, soldiers, hands/weapons, procedural motion, both environments, lighting/materials/effects, final UI, measured scalability and comparative installer acceptance. Its per-stage deliverables and exits live once in [design-milestones.md](design-milestones.md). The working [VD0 art brief](visual-art-brief.md) holds the comparison register, gap inventory and presentation ownership; it stays draft until the owner approves exact Bodycam/Warface frames. Earlier T074 software and retained captures remain valid evidence of implementation; P05 and final visual/device review remain open.
 
 No store, progression, matchmaking or online lobby is introduced. The lobby is local match setup with one human plus bots. The full visual overhaul is not complete when stage 1 ships.
 

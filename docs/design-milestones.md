@@ -157,4 +157,6 @@ For every milestone attach: base/implementation commit, approved owner/paths, re
 
 ## Next assignment
 
-Begin with **VD0**, including review of the current 0.3.1 preview and selection of exact Bodycam/Warface comparison footage alongside the supplied Battlefield images. Then assign one bounded VD1 art slice and its P05-dependent scope. The immediate plan is not to declare the existing menu/three staging soldiers final or expand the same provisional fidelity across two maps. All VD exits remain Pending until their actual evidence and owner decisions exist.
+Begin with **VD0**, including review of the current 0.3.1 preview and selection of exact Bodycam/Warface comparison footage alongside the supplied Battlefield images. The working draft brief and gap register live in [visual-art-brief.md](visual-art-brief.md); owner approval and exact BODYCAM/WARFACE frame IDs remain Pending.
+
+Owner-authorized parallel presentation polish (2026-11-14) may proceed on disjoint paths that do **not** change soldier-generator clearance, contracts or content locks: map-surface/atmosphere presentation, combat FX mesh wiring and menu/HUD craft. That work targets the brief as software only; it does not close VD0–VD9. Then assign one bounded VD1 art slice and its P05-dependent scope. The immediate plan is not to declare the existing menu/three staging soldiers final or expand the same provisional fidelity across two maps. All VD exits remain Pending until their actual evidence and owner decisions exist.
