@@ -10,7 +10,7 @@ The first version is a single offline process with one human and local allied/en
 
 ## Final installer/update delivery
 
-The owner now requires the final game to use a Windows installer: a newer installer updates the existing installed game and preserves preferences. Current ZIPs remain previews. [T073](task-supplement.md#t073--windows-installer-and-in-place-upgrade-planned) is a planned M11 implementation assignment with [INS01–INS06 acceptance](features/windows-installer.md); recording this requirement does not start installer coding. It supplements REL01/REL06 without waiving earlier exits.
+The owner now requires the final game to use a Windows installer: a newer installer updates the existing installed game and preserves preferences. Current ZIPs remain previews. [T073](task-supplement.md#t073--windows-installer-and-in-place-upgrade) is a planned M11 implementation assignment with [INS01–INS06 acceptance](features/windows-installer.md); recording this requirement does not start installer coding. It supplements REL01/REL06 without waiving earlier exits.
 
 ## T072 delivered preview
 

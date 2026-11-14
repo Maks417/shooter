@@ -51,6 +51,18 @@ Add provenance allowlist, schema/docs checks and client/server smoke jobs. After
 
 These wrappers and `ShooterBuild` entry points now exist. Full offline content compilation remains M1–M3 work: M0 draws the fixed box/floor directly from numeric code and reports this limitation explicitly. P02 now supplies a real diagnostic compiler/cache, while the full slice cache remains pending.
 
+## Native navigation content, release package and installer — 2026-11-14
+
+Release content uses Unity's own NavMesh bake (T067 C01), published by the locked editor rather than the pure software grid:
+
+```powershell
+./Tools/Compile-GameContent.ps1 -Native -Force          # all maps/profiles into Artifacts/map-packages-native
+./Tools/Package-Release.ps1 -ClientBuildRunDirectory <client build-run> -MapCacheRoot Artifacts/map-packages-native -RequireNativeNav
+./Tools/Build-Installer.ps1 -PackageDirectory <package run> -ReleaseVersion <n.n.n> [-PreviousInstallerReport <installer-report.json>]
+```
+
+`-Native` runs `ShooterBuild.CompileNativeGameContent`, writes `nav-provenance.json` (schema `shooter.nav-bake-provenance.v1`) beside `index.json`/`catalog.json`, and reports `nativeUnityNavBake=PASS` only after re-verifying every package's native provenance and nav hash. Without `-Native`, pure tooling keeps the labelled `software-walkable-grid` diagnostic bake. `-RequireNativeNav` makes packaging refuse any software navigation. Installer technology and identity are in [ADR-041](decisions.md#adr-041--accepted-inno-setup-per-user-installer-and-in-place-upgrade-t073); `Tools/test_build_installer.ps1` and `Tools/test_package_release.ps1` are the synthetic regressions. Do not run two SDK wrappers concurrently in one checkout: `Compile-GameContent` builds `Generation.Tests` too and collides with `Test-Maps`/`Test-Generation`.
+
 ## Fresh checkout and locked editor
 
 Select/install exactly the editor and Windows IL2CPP/Dedicated Server modules recorded in root `toolchain-lock.json`. An appropriate Unity license must be active on each build machine; the local development account activated Unity Personal through the official CLI/browser flow. CI uses a prelicensed Windows runner; no account credentials, serials or license files belong in this repository.

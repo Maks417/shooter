@@ -1,6 +1,22 @@
 # Feature: Windows installation and upgrades
 
-Owner requirement, 2026-11-14: **the final game must be delivered as a Windows installer. Running an installer for a newer game version must update the game already installed on that PC.** This is a first-release delivery requirement, within M11. Current ZIP files are playtest/internal validation artifacts; they do not complete this requirement. Installer implementation is planned as T073, not implemented by the documentation update.
+Owner requirement, 2026-11-14: **the final game must be delivered as a Windows installer. Running an installer for a newer game version must update the game already installed on that PC.** This is a first-release delivery requirement, within M11. Current ZIP files are playtest/internal validation artifacts; they do not complete this requirement. T073 implemented it on 2026-11-14 with Inno Setup 6.7.3 ([ADR-041](../decisions.md#adr-041--accepted-inno-setup-per-user-installer-and-in-place-upgrade-t073)); see [Implementation status](#implementation-status) for what is proven.
+
+## Implementation status
+
+| Item | State |
+|---|---|
+| Tooling | `Tools/Build-Installer.ps1`, `Tools/installer/shooter.iss`, `Tools/installer/installer-policy.json` (pinned ISCC hash, frozen AppId). Synthetic regression `Tools/test_build_installer.ps1`: 11 cases PASS. |
+| Build | `pwsh ./Tools/Build-Installer.ps1 -PackageDirectory <validated Package-Release dir> -ReleaseVersion <n.n.n> [-PreviousInstallerReport <installer-report.json>]`. Output: `Shooter-Setup-<version>.exe`, `.sha256` and `installer-report.json` beside the package run. |
+| INS01 clean install | Pending: needs a clean Windows machine. On the owner PC, a silent install launched to Main from a foreign working directory. |
+| INS02 upgrade | PASS (silent, owner PC): one uninstall entry, same path, settings hash unchanged, stale content removed, 7cd7e81→5eaced5 payload switch verified. |
+| INS03 repair | PASS: rerunning the same installer restored 3 deleted/corrupted content files. |
+| INS04 interrupted upgrade | Partial: running game and locked files abort before any change (exit 1 / 7); mid-copy crash or power loss not rehearsed and not detected by the game. |
+| INS05 uninstall | PASS: files, shortcuts and registration removed; LocalLow settings preserved. |
+| INS06 installed rollback | PASS: downgrade refused by default; prior installer with `/ALLOWDOWNGRADE=1` restored 7cd7e81 and launched to Main. |
+| Not exercised | Interactive wizard, Restart Manager prompt, code signing (installer is unsigned). |
+
+These are software exercises on the owner PC, not REL acceptance.
 
 ## Player flow
 
@@ -38,8 +54,8 @@ The installer technology/file format (EXE or MSI), version mapping and stable ap
 | INS05 — uninstall | Check application/shortcut/registration cleanup and explicit user-data retention behavior. |
 | INS06 — installed rollback | Restore a compatible prior installed binary/content pair and prove launch; package inventory/presence alone is insufficient. |
 
-Record installer version/hash, source/dirty/build/content/toolchain identities, install/upgrade paths, reviewer, logs and actual PASS/FAIL/Pending. Extend REL01/REL06 and FIX13/FIX14 evidence with these scenarios; do not replace existing match, visual/device, reference-performance, provenance or rollback gates. Until implemented and executed, installer/update delivery is **Planned / NotRun**, and REL acceptance remains NotClaimed.
+Record installer version/hash, source/dirty/build/content/toolchain identities, install/upgrade paths, reviewer, logs and actual PASS/FAIL/Pending. Extend REL01/REL06 and FIX13/FIX14 evidence with these scenarios; do not replace existing match, visual/device, reference-performance, provenance or rollback gates. Installer tooling is implemented (see [Implementation status](#implementation-status)); INS01 and the remainder of INS04 are Pending, and REL acceptance remains NotClaimed.
 
 ## Implementation ownership
 
-T073 is the planned M11 release-integrator card in [task supplement](../task-supplement.md#t073--windows-installer-and-in-place-upgrade-planned). It consumes the accepted source-matched client/content pair and existing release package safeguards; shared build/package/settings/identity changes remain integrator-owned. The user's instruction here authorizes recording the requirement, not implementing installer machinery or dispatching agents. See [release plan](../playable-release-plan.md), [remaining queue](../next-playable-build.md), [M11 acceptance](../milestones/m11-playable-release/validation-acceptance.md) and [playtest guide](../playtest-guide.md).
+T073 is the M11 release-integrator card in [task supplement](../task-supplement.md#t073--windows-installer-and-in-place-upgrade). It consumes the accepted source-matched client/content pair and existing release package safeguards; shared build/package/settings/identity changes remain integrator-owned. The owner authorized T073 implementation and agent dispatch on 2026-11-14 and chose Inno Setup; the technology, identity and upgrade model are frozen in ADR-041. See [release plan](../playable-release-plan.md), [remaining queue](../next-playable-build.md), [M11 acceptance](../milestones/m11-playable-release/validation-acceptance.md) and [playtest guide](../playtest-guide.md).

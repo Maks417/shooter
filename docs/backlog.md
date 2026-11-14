@@ -90,4 +90,4 @@ WP-02 starts on C0/base commit, edits only geometry/weapon generator folders and
 
 [T072](task-supplement.md#t072--local-sprint-slide-owner-assigned-2026-11-14) implements the owner-requested Left Shift + F slide under [ADR-039](decisions.md#adr-039--accepted-local-authoritative-sprint-slide-t072), within M8/M10. This new implementation assignment supersedes the previous docs-only scope for this bounded feature; it does not assign agents, change C0/N1 packets or waive open acceptance.
 
-[T073 installer/upgrade delivery](task-supplement.md#t073--windows-installer-and-in-place-upgrade-planned) records the owner's final Windows installer requirement within M11. The next installer must upgrade the existing game in place; no installer coding is authorized by the requirement-recording request alone.
+[T073 installer/upgrade delivery](task-supplement.md#t073--windows-installer-and-in-place-upgrade) records the owner's final Windows installer requirement within M11. The next installer must upgrade the existing game in place; no installer coding is authorized by the requirement-recording request alone.
