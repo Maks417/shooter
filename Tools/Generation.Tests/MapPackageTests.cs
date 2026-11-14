@@ -67,7 +67,7 @@ public sealed class MapPackageTests : IDisposable
         Assert.Equal(NavSettings.SliceDefault.Hash(), package.NavSettingsHash);
         var bake = UnityNavMeshBakeCodec.Decode(nav.Blob);
         Assert.True(bake.Polygons.Count > 0);
-        Assert.Equal("software-walkable-grid;unity-native-bake-pending", package.NavBakeProvenance);
+        Assert.Equal(NavBakePublication.SoftwarePendingProvenance, package.NavBakeProvenance);
     }
 
     [Fact]

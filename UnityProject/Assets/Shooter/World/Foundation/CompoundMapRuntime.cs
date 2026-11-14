@@ -29,6 +29,7 @@ namespace Shooter.World
         private List<CollisionBox>? packagedBoxes;
         private UnityWorldQueries? world;
         private RevisionedPathAdapter? navigation;
+        private UnityNavMeshBakeInstaller? navInstall;
         private PublishedMapPackage? loadedPackage;
         private bool disposed;
 
@@ -112,19 +113,22 @@ namespace Shooter.World
                 InstallCollision(boxes);
                 Physics.SyncTransforms();
 
-                float clearance = CompoundConnectivity.RequiredClearance;
-                // Software nav-grid interim (CompoundConnectivity) until native Unity NavMesh bake/install evidence closes FIX04.
-                // Packaged unity.navmesh.bake.v1 bytes are verified above; path queries here still use the grid adapter.
+                // Install packaged NVB1 triangulation into Unity NavMesh; path/clearance/corners come from the bake adapter.
+                // Does not re-bake against collision and does not route through CompoundConnectivity software grid.
+                var settings = NavSettings.SliceDefault;
+                navInstall = UnityNavMeshBakeInstaller.Install(bake, settings);
+                var install = navInstall;
                 navigation = new RevisionedPathAdapter(
                     definition.NavRevision,
                     LocateActor,
                     (a, b, corners) =>
                     {
                         if (corners == null) return false;
-                        return CompoundConnectivity.TryFindPath(boxes, a, b, corners, clearance);
+                        if (!install.TrySamplePosition(a, settings.RequiredClearance * 2f, out var snappedA)) return false;
+                        if (!install.TrySamplePosition(b, settings.RequiredClearance * 2f, out var snappedB)) return false;
+                        return install.TryCalculatePath(snappedA, snappedB, corners);
                     });
 
-                // Native Unity NavMesh install from NVB1 bake remains Pending for player evidence (FIX04 / FIX07).
                 return Task.FromResult(GameOperationResult.Ok);
             }
             catch (OperationCanceledException)
@@ -165,6 +169,12 @@ namespace Shooter.World
                 diagnostic = "blocked";
                 return false;
             }
+            if (navInstall != null &&
+                !navInstall.TrySamplePosition(slot.Position, CompoundConnectivity.RequiredClearance * 2f, out _))
+            {
+                diagnostic = "nav-unreachable";
+                return false;
+            }
             diagnostic = "ok";
             return true;
         }
@@ -190,6 +200,8 @@ namespace Shooter.World
             world?.Dispose();
             world = null;
             navigation = null;
+            navInstall?.Dispose();
+            navInstall = null;
             packagedBoxes = null;
             definition = null;
             loadedPackage = null;

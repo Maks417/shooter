@@ -109,7 +109,7 @@ internal static class Program
             var proof = new
             {
                 result = "Verified",
-                scope = "T055/FIX04 map package publication; software walkable-grid nav bake; Unity native NavMesh bake/player Pending",
+                scope = "T055/FIX04 map package publication; pure MapContent uses software NVB1 with pending provenance; Unity editor native bake bridge + runtime NVB1 install implemented; player/native bake evidence Pending",
                 sourceCommit = commit,
                 toolchainHash = toolchain.ToString(),
                 map = map,

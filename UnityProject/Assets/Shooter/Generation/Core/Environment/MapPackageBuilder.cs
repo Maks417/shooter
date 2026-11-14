@@ -96,16 +96,35 @@ namespace Shooter.Generation.Environment
             var collisionHash = ContentIdentity.Hash(collisionSgaf);
 
             // Locked shooter.nav-settings.v1 SliceDefault (must match World.Navigation.NavSettings).
-            const float agentRadius = 0.32f, clearanceMargin = 0.05f;
+            const float agentRadius = 0.32f, agentHeight = 1.8f, maxStep = 0.25f, maxSlope = 45f, clearanceMargin = 0.05f;
             float requiredClearance = agentRadius + clearanceMargin;
-            var settingsHash = HashNavSettings(agentRadius, 1.8f, 0.25f, 45f, clearanceMargin, 1);
-            var bake = UnityNavMeshBakeCodec.BuildWalkableGrid(plan.CollisionBoxes, CompoundPlan.MapHalfExtent, 8f, requiredClearance);
+            var settingsHash = HashNavSettings(agentRadius, agentHeight, maxStep, maxSlope, clearanceMargin, 1);
+            UnityNavMeshBakeCodec.Bake bake;
+            string navProvenance;
+            if (NavBakePublication.TryNative(
+                    plan.CollisionBoxes,
+                    CompoundPlan.MapHalfExtent,
+                    agentRadius,
+                    agentHeight,
+                    maxStep,
+                    maxSlope,
+                    clearanceMargin,
+                    out var nativeBake,
+                    out navProvenance))
+            {
+                bake = nativeBake;
+            }
+            else
+            {
+                // Pure tests / MapContent without Unity editor bridge: software grid only, honest pending provenance.
+                bake = UnityNavMeshBakeCodec.BuildWalkableGrid(plan.CollisionBoxes, CompoundPlan.MapHalfExtent, 8f, requiredClearance);
+                navProvenance = NavBakePublication.SoftwarePendingProvenance;
+            }
             byte[] bakeBlob = UnityNavMeshBakeCodec.Encode(bake);
             var navigation = new NavigationData(UnityNavMeshBakeCodec.AdapterFormat, UnityNavMeshBakeCodec.AdapterVersion, settingsHash, bakeBlob);
             byte[] navigationBody = GeometryCodec.EncodeNavigation(navigation);
             byte[] navigationSgaf = ArtifactCodec.Encode(ContentKind.Navigation, navigationBody, fingerprint, toolchainHash);
             var navigationHash = ContentIdentity.Hash(navigationSgaf);
-            const string navProvenance = "software-walkable-grid;unity-native-bake-pending";
 
             byte[] metadataBytes = EncodeMetadata(mapId, plan, collision, collisionHash);
             var metadataHash = ContentIdentity.Hash(metadataBytes);
@@ -118,7 +137,7 @@ namespace Shooter.Generation.Environment
             };
 
             if (visualProfile != "gameplay")
-                AddVisualClosure(dependencies, plan, fingerprint, toolchainHash, visualProfile);
+                AddVisualClosure(dependencies, mapId, plan, fingerprint, toolchainHash, visualProfile);
 
             byte[] packageRoot = EncodePackageRoot(mapId, visualProfile, seed, toolchainHash, collisionHash, navigationHash, settingsHash, metadataHash, dependencies);
             var packageHash = ContentIdentity.Hash(packageRoot);
@@ -138,40 +157,167 @@ namespace Shooter.Generation.Environment
             return new CollisionData(Array.Empty<TaggedCapsule>(), boxes, Array.Empty<TaggedHeightGrid>());
         }
 
-        private static void AddVisualClosure(List<MapPackageDependency> dependencies, CompoundPlan plan, ContentId fingerprint, ContentId toolchainHash, string profile)
+        private static void AddVisualClosure(
+            List<MapPackageDependency> dependencies,
+            string mapId,
+            CompoundPlan plan,
+            ContentId mapFingerprint,
+            ContentId toolchainHash,
+            string profile)
         {
-            // Combined axis-aligned solid mesh from gameplay boxes (procedural; no authored art).
-            var mesh = BuildSolidsMesh(plan);
-            byte[] meshBody = GeometryCodec.EncodeMesh(mesh);
-            byte[] meshSgaf = ArtifactCodec.Encode(ContentKind.Mesh, meshBody, fingerprint, toolchainHash);
-            dependencies.Add(new MapPackageDependency("mesh", ContentIdentity.Hash(meshSgaf), "mesh-" + profile + ".bin", meshSgaf));
+            AddSgaf(dependencies, "mesh", MapVisualClosure.MapSolidsMeshPath, ContentKind.Mesh,
+                GeometryCodec.EncodeMesh(BuildSolidsMesh(plan)), mapFingerprint, toolchainHash);
+            AddSgaf(dependencies, "mesh", MapVisualClosure.UnitBoxMeshPath, ContentKind.Mesh,
+                GeometryCodec.EncodeMesh(PrimitiveGeometry.Box(new Float3(1f, 1f, 1f), 0f, 1)), mapFingerprint, toolchainHash);
 
-            var material = new MaterialData(1, 1, "rgba8-srgb", new[] { new byte[] { 140, 140, 140, 255 } });
-            byte[] materialBody = GeometryCodec.EncodeMaterial(material);
-            byte[] materialSgaf = ArtifactCodec.Encode(ContentKind.Material, materialBody, fingerprint, toolchainHash);
-            dependencies.Add(new MapPackageDependency("material", ContentIdentity.Hash(materialSgaf), "material-" + profile + ".bin", materialSgaf));
+            ContentId soldierFp = MapVisualClosure.SoldierFingerprint;
+            AddSgaf(dependencies, "skeleton", MapVisualClosure.SoldierSkeletonPath, ContentKind.Skeleton,
+                GeometryCodec.EncodeSkeleton(SoldierSkeleton.Definition), soldierFp, toolchainHash);
+            var soldierRecipe = SoldierRecipe.Parse(Encoding.ASCII.GetBytes(
+                "{\"schemaId\":\"shooter.soldier.v1\",\"recipeId\":\"soldiers/baseline\",\"generatorId\":\"soldier.loft\",\"generatorVersion\":\"1.0.2\",\"seed\":\"460072030\",\"parameters\":{\"heightMm\":1800,\"shoulderWidthMm\":420,\"hipWidthMm\":280,\"uniformOffsetMm\":6,\"nearTorsoSegments\":16,\"nearLimbSegments\":12,\"walkCycleMm\":1400,\"runCycleMm\":2200,\"walkDutyPpm\":500000,\"runDutyPpm\":350000},\"dependencies\":[]}"));
+            var soldierBuild = SoldierGeometry.Build(soldierRecipe);
+            for (int lod = 0; lod < MapVisualClosure.SoldierLodPaths.Length; lod++)
+                AddSgaf(dependencies, "mesh", MapVisualClosure.SoldierLodPaths[lod], ContentKind.Mesh,
+                    GeometryCodec.EncodeMesh(soldierBuild.Lods[lod]), soldierFp, toolchainHash);
 
-            var skeleton = new SkeletonData(new[]
-            {
-                new JointDefinition(0, 65535, new Float3(0, 0, 0), Quat.Identity, new Float3(-1, -1, -1), new Float3(1, 1, 1))
-            });
-            byte[] skeletonBody = GeometryCodec.EncodeSkeleton(skeleton);
-            byte[] skeletonSgaf = ArtifactCodec.Encode(ContentKind.Skeleton, skeletonBody, fingerprint, toolchainHash);
-            dependencies.Add(new MapPackageDependency("skeleton", ContentIdentity.Hash(skeletonSgaf), "skeleton-" + profile + ".bin", skeletonSgaf));
+            ContentId weaponFp = MapVisualClosure.WeaponFingerprint;
+            var rifleRecipe = WeaponRecipe.Parse(Encoding.ASCII.GetBytes(
+                "{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/rifle\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.0.1\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"rifle\"},\"dependencies\":[]}"));
+            var pistolRecipe = WeaponRecipe.Parse(Encoding.ASCII.GetBytes(
+                "{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/pistol\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.0.1\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"pistol\"},\"dependencies\":[]}"));
+            var rifleBuild = WeaponGeometry.Build(rifleRecipe);
+            var pistolBuild = WeaponGeometry.Build(pistolRecipe);
+            for (int lod = 0; lod < MapVisualClosure.RifleLodPaths.Length; lod++)
+                AddSgaf(dependencies, "mesh", MapVisualClosure.RifleLodPaths[lod], ContentKind.Mesh,
+                    GeometryCodec.EncodeMesh(rifleBuild.Lods[lod]), weaponFp, toolchainHash);
+            for (int lod = 0; lod < MapVisualClosure.PistolLodPaths.Length; lod++)
+                AddSgaf(dependencies, "mesh", MapVisualClosure.PistolLodPaths[lod], ContentKind.Mesh,
+                    GeometryCodec.EncodeMesh(pistolBuild.Lods[lod]), weaponFp, toolchainHash);
+
+            AddSolidMaterial(dependencies, MapVisualClosure.MapMaterialPaths[0], 107, 112, 105, 255, mapFingerprint, toolchainHash);
+            AddSolidMaterial(dependencies, MapVisualClosure.MapMaterialPaths[1], 56, 61, 51, 255, mapFingerprint, toolchainHash);
+            AddSolidMaterial(dependencies, MapVisualClosure.MapMaterialPaths[2], 46, 36, 20, 255, mapFingerprint, toolchainHash);
+            AddSolidMaterial(dependencies, MapVisualClosure.MapMaterialPaths[3], 20, 23, 26, 255, mapFingerprint, toolchainHash);
+            AddSolidMaterial(dependencies, MapVisualClosure.WeaponMaterialPaths[0], 20, 23, 26, 255, mapFingerprint, toolchainHash);
+            AddSolidMaterial(dependencies, MapVisualClosure.WeaponMaterialPaths[1], 13, 14, 11, 255, mapFingerprint, toolchainHash);
+            AddSolidMaterial(dependencies, MapVisualClosure.SoldierMaterialPaths[0], 41, 71, 107, 255, mapFingerprint, toolchainHash);
+            AddSolidMaterial(dependencies, MapVisualClosure.SoldierMaterialPaths[1], 15, 20, 31, 255, mapFingerprint, toolchainHash);
+            AddSolidMaterial(dependencies, MapVisualClosure.SoldierMaterialPaths[2], 122, 82, 56, 255, mapFingerprint, toolchainHash);
+            AddSolidMaterial(dependencies, MapVisualClosure.SoldierMaterialPaths[3], 10, 20, 31, 255, mapFingerprint, toolchainHash);
+            AddSolidMaterial(dependencies, MapVisualClosure.SoldierMaterialPaths[4], 107, 56, 31, 255, mapFingerprint, toolchainHash);
+            AddSolidMaterial(dependencies, MapVisualClosure.SoldierMaterialPaths[5], 31, 18, 13, 255, mapFingerprint, toolchainHash);
+            AddSolidMaterial(dependencies, MapVisualClosure.SoldierMaterialPaths[6], 122, 82, 56, 255, mapFingerprint, toolchainHash);
+            AddSolidMaterial(dependencies, MapVisualClosure.SoldierMaterialPaths[7], 26, 10, 8, 255, mapFingerprint, toolchainHash);
 
             byte[] shader = MapDocumentJson.EncodeObject(new Dictionary<string, object?>
             {
                 ["shaderException"] = "procedural-urp-lit-v1",
-                ["profile"] = profile
+                ["unityShader"] = "Universal Render Pipeline/Lit",
+                ["retainedByPlayer"] = true,
+                ["profile"] = profile,
+                ["policy"] = "procedural-v1",
+                ["decision"] = "docs/decisions.md#adr-035--accepted-verified-release-map-packages-t055-boundary"
             });
-            dependencies.Add(new MapPackageDependency("shader", ContentIdentity.Hash(shader), "shader-" + profile + ".json", shader));
+            AddJson(dependencies, "shader", MapVisualClosure.ShaderPath(profile), shader);
 
             byte[] font = MapDocumentJson.EncodeObject(new Dictionary<string, object?>
             {
                 ["fontException"] = "engine-allowlist-v1",
-                ["policy"] = "procedural-v1"
+                ["policy"] = "procedural-v1",
+                ["retainedByPlayer"] = true,
+                ["decision"] = "docs/decisions.md#adr-002--accepted-zero-authored-visual-source-assets"
             });
-            dependencies.Add(new MapPackageDependency("font", ContentIdentity.Hash(font), "font-exception.json", font));
+            AddJson(dependencies, "font", MapVisualClosure.FontPath, font);
+
+            ValidateVisualClosure(dependencies, mapId, profile, toolchainHash, mapFingerprint, soldierFp, weaponFp);
+        }
+
+        private static void AddSgaf(
+            List<MapPackageDependency> dependencies,
+            string role,
+            string path,
+            ContentKind kind,
+            byte[] body,
+            ContentId generatorFingerprint,
+            ContentId toolchainHash)
+        {
+            byte[] sgaf = ArtifactCodec.Encode(kind, body, generatorFingerprint, toolchainHash);
+            dependencies.Add(new MapPackageDependency(role, ContentIdentity.Hash(sgaf), path, sgaf));
+        }
+
+        private static void AddJson(List<MapPackageDependency> dependencies, string role, string path, byte[] json)
+        {
+            dependencies.Add(new MapPackageDependency(role, ContentIdentity.Hash(json), path, json));
+        }
+
+        private static void AddSolidMaterial(
+            List<MapPackageDependency> dependencies,
+            string path,
+            byte r, byte g, byte b, byte a,
+            ContentId fingerprint,
+            ContentId toolchainHash)
+        {
+            var material = new MaterialData(1, 1, "rgba8-srgb", new[] { new byte[] { r, g, b, a } });
+            AddSgaf(dependencies, "material", path, ContentKind.Material, GeometryCodec.EncodeMaterial(material), fingerprint, toolchainHash);
+        }
+
+        private static void ValidateVisualClosure(
+            List<MapPackageDependency> dependencies,
+            string mapId,
+            string profile,
+            ContentId toolchainHash,
+            ContentId mapFingerprint,
+            ContentId soldierFingerprint,
+            ContentId weaponFingerprint)
+        {
+            if (!MapVisualClosure.TryExtract(dependencies, mapId, profile, toolchainHash, out var payloads, out string diagnostic))
+                throw new InvalidOperationException("Visual closure incomplete: " + diagnostic);
+
+            var skeleton = MapVisualClosure.DecodeSoldierSkeleton(payloads);
+            if (skeleton.Joints.Count != SoldierSkeleton.JointCount)
+                throw new InvalidOperationException("Soldier skeleton joint count mismatch.");
+            byte[] expectedSkeleton = GeometryCodec.EncodeSkeleton(SoldierSkeleton.Definition);
+            byte[] actualSkeleton = GeometryCodec.EncodeSkeleton(skeleton);
+            if (expectedSkeleton.Length != actualSkeleton.Length)
+                throw new InvalidOperationException("Soldier skeleton identity mismatch.");
+            for (int i = 0; i < expectedSkeleton.Length; i++)
+                if (expectedSkeleton[i] != actualSkeleton[i])
+                    throw new InvalidOperationException("Soldier skeleton identity mismatch.");
+
+            void RequireMesh(string path, ContentId fingerprint)
+            {
+                byte[] body = ArtifactCodec.Decode(payloads.Bytes(path), ContentKind.Mesh, fingerprint, toolchainHash);
+                var mesh = GeometryCodec.DecodeMesh(body);
+                if (mesh.Positions.Count == 0 || mesh.Indices.Count < 3)
+                    throw new InvalidOperationException("Visual mesh empty: " + path);
+            }
+            RequireMesh(MapVisualClosure.MapSolidsMeshPath, mapFingerprint);
+            RequireMesh(MapVisualClosure.UnitBoxMeshPath, mapFingerprint);
+            for (int i = 0; i < MapVisualClosure.SoldierLodPaths.Length; i++)
+                RequireMesh(MapVisualClosure.SoldierLodPaths[i], soldierFingerprint);
+            for (int i = 0; i < MapVisualClosure.RifleLodPaths.Length; i++)
+                RequireMesh(MapVisualClosure.RifleLodPaths[i], weaponFingerprint);
+            for (int i = 0; i < MapVisualClosure.PistolLodPaths.Length; i++)
+                RequireMesh(MapVisualClosure.PistolLodPaths[i], weaponFingerprint);
+
+            void RequireMaterial(string path)
+            {
+                var material = MapVisualClosure.DecodeMapMaterial(payloads, path);
+                if (material.Width == 0 || material.Height == 0 || material.MipBytes.Count == 0)
+                    throw new InvalidOperationException("Visual material empty: " + path);
+            }
+            for (int i = 0; i < MapVisualClosure.MapMaterialPaths.Length; i++) RequireMaterial(MapVisualClosure.MapMaterialPaths[i]);
+            for (int i = 0; i < MapVisualClosure.WeaponMaterialPaths.Length; i++) RequireMaterial(MapVisualClosure.WeaponMaterialPaths[i]);
+            for (int i = 0; i < MapVisualClosure.SoldierMaterialPaths.Length; i++) RequireMaterial(MapVisualClosure.SoldierMaterialPaths[i]);
+
+            var shader = MapJsonValue.Parse(payloads.Bytes(MapVisualClosure.ShaderPath(profile))).Object;
+            if (shader["shaderException"].String != "procedural-urp-lit-v1" ||
+                shader["unityShader"].String != "Universal Render Pipeline/Lit" ||
+                !shader["retainedByPlayer"].Boolean)
+                throw new InvalidOperationException("Shader provenance incomplete.");
+            var font = MapJsonValue.Parse(payloads.Bytes(MapVisualClosure.FontPath)).Object;
+            if (font["fontException"].String != "engine-allowlist-v1" || !font["retainedByPlayer"].Boolean)
+                throw new InvalidOperationException("Font provenance incomplete.");
         }
 
         private static MeshData BuildSolidsMesh(CompoundPlan plan)
