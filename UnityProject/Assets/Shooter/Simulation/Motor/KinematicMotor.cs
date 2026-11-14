@@ -214,6 +214,9 @@ namespace Shooter.Simulation.Motor
                 var capsule = MotorMath.BodyCapsule(feet, previous.CapsuleHeight, config.Radius);
                 var result = world.Overlap(capsule, motorFilter, overlapBuffer);
                 if (result.Status == QueryStatus.NoHit) return true;
+                // An unusable query (e.g. the backend found a near-contact collider but no penetration) is not proof of
+                // overlap; skip recovery rather than freezing a valid actor. Only measured, unresolved penetration stops it.
+                if (result.Status == QueryStatus.InvalidInput) return true;
                 if (result.Status != QueryStatus.Hit) return false;
                 bool found = false;
                 float bestDepth = OverlapEpsilon;
