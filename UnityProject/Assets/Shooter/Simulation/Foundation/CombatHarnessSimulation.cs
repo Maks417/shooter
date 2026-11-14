@@ -62,6 +62,16 @@ namespace Shooter.Simulation
         private EventId highWater;
         private SimulationSnapshot? lastSnapshot;
         private FrozenList<CombatEvent> lastEvents;
+        private Aabb? killBounds;
+
+        /// <summary>
+        /// Enables the out-of-world kill volume (see <see cref="WorldKillVolume"/>) using the map's authored bounds.
+        /// Unset (default) disables the check so harness-only tests and B01 behave identically.
+        /// </summary>
+        public void SetWorldKillBounds(Aabb authoredBounds) { killBounds = authoredBounds; }
+
+        /// <summary>Disables the out-of-world kill volume.</summary>
+        public void ClearWorldKillBounds() { killBounds = null; }
 
         public CombatHarnessSimulation(IWorldQueries world, ulong authoritySessionId = 1, ulong shotSeed = 460072030UL)
         {
@@ -338,6 +348,25 @@ namespace Shooter.Simulation
                     target.Motor = new MotorBodyState(target.Motor.Feet, default, target.Motor.AimYaw, target.Motor.AimPitch, Stance.Dead, target.Motor.CapsuleHeight,
                         target.Motor.Grounded, target.Motor.GroundSurfaceId, target.Motor.GroundNormal, target.Motor.LastGroundedTick, target.Motor.JumpConsumedSequence, target.Motor.LocomotionDistanceMeters, false);
                     tickEvents.Add(new CombatEvent(nextEvent, CombatEventKind.Death, shooter.Id, target.Id, new DeathPayload(shooter.Id)));
+                    nextEvent = nextEvent.NextOrdinal();
+                }
+            }
+
+            // Out-of-world kill volume: once per tick, after movement and after bullet resolution, so a bullet kill
+            // earlier in this tick wins (the actor is already !Alive and skipped: no double death). The death is an
+            // ordinary CombatEventKind.Death with an invalid (default) Instigator and DeathPayload(default) = no killer.
+            if (killBounds.HasValue)
+            {
+                var bounds = killBounds.Value;
+                for (int a = 0; a < actors.Count; a++)
+                {
+                    var victim = actors[a];
+                    if (!victim.Alive || !WorldKillVolume.IsOutOfWorld(victim.Motor.Feet, bounds)) continue;
+                    victim.Alive = false;
+                    victim.Health = 0;
+                    victim.Motor = new MotorBodyState(victim.Motor.Feet, default, victim.Motor.AimYaw, victim.Motor.AimPitch, Stance.Dead, victim.Motor.CapsuleHeight,
+                        victim.Motor.Grounded, victim.Motor.GroundSurfaceId, victim.Motor.GroundNormal, victim.Motor.LastGroundedTick, victim.Motor.JumpConsumedSequence, victim.Motor.LocomotionDistanceMeters, false);
+                    tickEvents.Add(new CombatEvent(nextEvent, CombatEventKind.Death, default, victim.Id, new DeathPayload(default)));
                     nextEvent = nextEvent.NextOrdinal();
                 }
             }
