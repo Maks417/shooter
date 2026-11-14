@@ -112,7 +112,7 @@ namespace Shooter.Presentation.Session
                 style = new GUIStyle(GUI.skin.label) { fontSize = size, wordWrap = true, padding = new RectOffset(0, 0, 0, 0), richText = false };
                 labels.Add(size, style);
             }
-            style.normal.textColor = color ?? Text;
+            style.normal.textColor = StyleInk(color ?? Text);
             style.alignment = align;
             GUI.Label(r, text, style);
         }
@@ -137,7 +137,7 @@ namespace Shooter.Presentation.Session
                 buttonStyle = new GUIStyle(GUI.skin.button) { fontSize = 18, alignment = TextAnchor.MiddleLeft, padding = new RectOffset(16, 12, 0, 0), wordWrap = true };
                 foreach (var state in new[] { buttonStyle.normal, buttonStyle.hover, buttonStyle.active, buttonStyle.focused }) state.background = null;
             }
-            Color ink = GUI.enabled ? (primary ? Background : Text) : Muted;
+            Color ink = StyleInk(GUI.enabled ? (primary ? Background : Text) : Muted);
             buttonStyle.normal.textColor = ink;
             buttonStyle.hover.textColor = ink;
             buttonStyle.active.textColor = ink;
@@ -216,6 +216,10 @@ namespace Shooter.Presentation.Session
             uint seconds = (uint)Math.Ceiling(remainingTicks / 60.0);
             return (seconds / 60).ToString("00") + ":" + (seconds % 60).ToString("00");
         }
+
+        // Unity's IMGUI font path linearizes style tints; compensate so the displayed sRGB
+        // text matches the palette used for contrast, just like the DrawTexture backing plates.
+        private static Color StyleInk(Color color) => QualitySettings.activeColorSpace == ColorSpace.Linear ? color.gamma : color;
 
         public static string ControlLabel(string control)
         {

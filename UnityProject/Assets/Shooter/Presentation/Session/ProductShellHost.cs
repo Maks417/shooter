@@ -41,6 +41,7 @@ namespace Shooter.Presentation.Session
         private readonly TacticalUi ui = new TacticalUi();
         private int settingsTab;
         private int bindingListenAfterFrame;
+        private int lastEscapeFrame = -1;
 
         public ShellNavigation Navigation => navigation;
         public ShellSessionCoordinator Coordinator => coordinator;
@@ -105,7 +106,7 @@ namespace Shooter.Presentation.Session
 
             // Reserved Escape always restores menu access (Pause is schema-locked to Escape).
             if (BoundControlMap.WasControlPressedThisFrame(UserSettings.ReservedEscapeControl))
-                HandleEscape();
+                HandleEscapeOnce();
 
             scoreboardHeld = navigation.ScoreboardAllowed
                 && view != null
@@ -195,6 +196,13 @@ namespace Shooter.Presentation.Session
                     break;
             }
             ApplyCursorForScreen();
+        }
+
+        private void HandleEscapeOnce()
+        {
+            if (lastEscapeFrame == Time.frameCount) return;
+            lastEscapeFrame = Time.frameCount;
+            HandleEscape();
         }
 
         private void ResumeMatch()
@@ -372,6 +380,11 @@ namespace Shooter.Presentation.Session
         private void OnGUI()
         {
             if (setup == null) return;
+            if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape)
+            {
+                HandleEscapeOnce();
+                Event.current.Use();
+            }
             float s = 1f;
             ui.Begin(uiScale, navigation.Screen.ToString(), bindingEditor == null || !bindingEditor.IsListening);
             try
@@ -772,9 +785,10 @@ namespace Shooter.Presentation.Session
             TacticalUi.Fill(new Rect(x, y + 72, Mathf.Clamp01(snap.Team1Kills / 150f) * w * .5f, 3), TacticalUi.Ally);
             float enemy = Mathf.Clamp01(snap.Team2Kills / 150f) * w * .5f;
             TacticalUi.Fill(new Rect(x + w - enemy, y + 72, enemy, 3), TacticalUi.Enemy);
-            ui.Label(new Rect(ui.Safe.x, y, 220, 48), "LOCAL / TEAM 1\n" + setup!.SelectedDisplayName, 14, TacticalUi.Muted);
+            TacticalUi.Fill(new Rect(ui.Safe.x, y, 216, 80), TacticalUi.Background);
+            ui.Label(new Rect(ui.Safe.x + 10, y + 6, 198, 44), "LOCAL / TEAM 1\n" + setup!.SelectedDisplayName, 14, TacticalUi.Muted);
             string control = view != null && view.Input.Bindings.TryGetControl("Scoreboard", out string bound) ? TacticalUi.ControlLabel(bound) : "Tab";
-            ui.Label(new Rect(ui.Safe.x, y + 52, 230, 24), control + "  Scoreboard   /   Esc  Pause", 12, TacticalUi.Muted);
+            ui.Label(new Rect(ui.Safe.x + 10, y + 52, 198, 24), control + "  Scoreboard / Esc  Pause", 12, TacticalUi.Muted);
         }
 
         private void DrawResults(float s)
