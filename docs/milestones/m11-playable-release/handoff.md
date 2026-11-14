@@ -1,5 +1,22 @@
 # M11 — Playable build and acceptance — handoff and gate record
 
+## Physics gap fixes — motor overlap recovery, stand-up sweep, muzzle cover, stuck-actor rescue
+
+Owner request 2026-11-15: audit the physics path against [gameplay baseline](../../gameplay-baseline.md#motor-camera-and-weapons) and fill missing pieces with agents. Merged to `main` at `956a27d` and `e6312bd`. Worker worktrees and branches were removed after the merges.
+
+| Gap found | Fix | Paths |
+|---|---|---|
+| Spec "overlap recovery max 4; unresolved overlap stops and reports invalid spawn" was unimplemented: `MaxOverlapRecovery` was unused and the motor never called `IWorldQueries.Overlap`. | At step start, up to 4 passes push the feet out along the deepest hit (depth > 1e-4; ties go to the lowest stable id) by depth + skin, and remove velocity into the normal. Measured penetration left after the last pass, or `BufferOverflow`, keeps the previous feet with zero velocity and sets the new optional `MotorBodyState.OverlapUnresolved`. `InvalidInput` (near contact without penetration) skips recovery so valid actors are not frozen. | `Simulation/Motor/KinematicMotor.cs` |
+| The stand-up ceiling check was a single ray from the head-sphere centre. A 0.32 m capsule could stand into an off-centre ledge. | Upward `SweepCapsule` of the current capsule by the growth delta. | `KinematicMotor.cs` |
+| The muzzle-inside-cover probe could never fire with Unity, because a ray starting inside a collider does not report it. The muzzle sits 0.45 m ahead of the eye but the body radius is 0.32 m, so shots against a wall passed through it. | Eye→muzzle segment against `WorldSolid` blocks the shot (`BlockedAtMuzzle`). The old probe is kept. | `Simulation/Combat/HitscanResolver.cs` |
+| Nothing consumed an unresolved overlap, so an embedded actor stayed frozen forever. | After the harness step and lifecycle sync, `OfflineGameSession` relocates each living actor with `OverlapUnresolved` to a `SpawnSafetyPolicy`-picked team slot through the new `CombatHarnessSimulation.RelocateActor` / `HarnessActorLifecycle.RelocateLife`. This is a position rescue only: no death, score, LifeId/EntityId, health or ammo change. Bots reset their command epoch and path state (`TryReplaceLife`). With no safe slot the actor stays put and is retried next tick. | `Game/Session/OfflineGameSession.cs`, `Simulation/Foundation/CombatHarnessSimulation.cs`, `Simulation/Session/HarnessActorLifecycle.cs` |
+
+No Contracts, Game-v1, lock, schema, fixture or telemetry field changed. Tests added: motor recovery/unresolved/resting/off-centre ledge (`Tools/Simulation.Tests/Motor`, real AABB penetration in `StaticPlaneWorld`); Unity-like eye/muzzle wall (`Combat/CoverHitscanTests.cs`); `RelocateActor` (`Harness/CombatHarnessTests.cs`); human/bot rescue and no-flag no-move (`Tools/Game.Contracts.Tests/EmbeddedActorRescueTests.cs`). `CrouchCeilingFailureKeepsStandingHeight` now starts crouched because its old spawn was inside the ceiling, which is now an invalid spawn.
+
+**Evidence at `e6312bd` (clean tree, offline restore):** `Test-Simulation.ps1` **176/176 PASS**, `Test-Game.ps1` **60/60 PASS**.
+
+**Pending / not claimed:** no Unity EditMode/PlayMode run and no player build. Real `UnityWorldQueries.Overlap`/`ComputePenetration` behaviour, rescue in a live match and per-tick query cost (one extra `Overlap` per living actor) are unverified. Initial-overlap `CapsuleCastNonAlloc` hits (distance 0, normal −direction) are still passed through unchanged by the adapter. There is no out-of-world kill volume. Fall damage, ragdoll, projectiles, penetration, grenades and actor–actor blocking remain deferred by the baseline, not gaps. No existing candidate archive contains these changes.
+
 ## VD presentation polish — owner-authorized parallel slices
 
 Owner request 2026-11-14: implement what is possible toward Battlefield V / Bodycam / Warface quality using parallel agents. Draft [VD0 art brief](../../visual-art-brief.md) and expanded [defect inventory](../../visual-defect-inventory.md) land with three presentation slices merged into `main`; temporary `.local/worktrees/vd-*` trees and `agent/vd-*` branches were removed after content preservation on main.
