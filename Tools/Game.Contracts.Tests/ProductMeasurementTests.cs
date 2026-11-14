@@ -262,6 +262,43 @@ namespace Shooter.Game.Contracts.Tests
             public bool TryGetActorState(EntityId entity, out ActorLifecycleState state) => states.TryGetValue(entity.Value, out state!);
         }
 
+        [Fact]
+        public async Task OfflineSession_bots_roam_packaged_patrol_destinations()
+        {
+            // T070 finding: the session never handed map destinations to the planner, so bots orbited spawn.
+            var catalog = StaticMapCatalog.CreateReleaseSeed();
+            Assert.True(catalog.TryGetGameplay(WellKnownMaps.TrainingCompound, out var gameplay));
+            Assert.True(gameplay.PatrolDestinations.Count > 0);
+            var nav = new RecordingNav();
+            using var session = new OfflineGameSession(catalog, (_, __) => new FakeMapRuntime(new NoWorld(), nav), allowFakeMapRuntime: true);
+            var request = new SessionRequest(WellKnownMaps.TrainingCompound, WellKnownModes.TeamDeathmatch, 5, 460072030UL);
+            Assert.True((await session.BeginLoadAsync(request, CancellationToken.None)).Succeeded);
+            Assert.True(session.Start().Succeeded);
+            for (int i = 0; i < 10; i++) Assert.True(session.Step(null).Succeeded);
+
+            Assert.NotEmpty(nav.Destinations);
+            foreach (var destination in nav.Destinations)
+            {
+                bool packaged = false;
+                for (int i = 0; i < gameplay.PatrolDestinations.Count; i++)
+                    packaged |= gameplay.PatrolDestinations[i].Equals(destination);
+                Assert.True(packaged, "bot path goal is not a packaged patrol destination: " + destination);
+            }
+        }
+
+        private sealed class RecordingNav : INavigation
+        {
+            public readonly System.Collections.Generic.List<Float3> Destinations = new System.Collections.Generic.List<Float3>();
+            private ulong next;
+            public PathTicket RequestPath(EntityId actor, Float3 destination, uint navRevision)
+            {
+                Destinations.Add(destination);
+                return new PathTicket(new NavTicketId(++next), actor, navRevision);
+            }
+            public PathResult Poll(PathTicket ticket, PathBuffer callerOwned) => new PathResult(PathStatus.Pending, 0, 0, ErrorCode.None);
+            public void Cancel(PathTicket ticket) { }
+        }
+
         private sealed class NoNav : INavigation
         {
             public PathTicket RequestPath(EntityId actor, Float3 destination, uint navRevision) =>

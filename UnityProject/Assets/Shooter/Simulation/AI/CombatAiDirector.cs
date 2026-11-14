@@ -107,6 +107,8 @@ namespace Shooter.Simulation.AI
             board.LastSeenTick = 0;
             board.SenseAgeTicks = 0;
             board.LastSenseOpportunityTick = 0;
+            board.DestinationCursor = 0;
+            board.RetryAfterTick = 0;
             board.StateEnteredTick = tick;
             return board;
         }
@@ -194,6 +196,7 @@ namespace Shooter.Simulation.AI
             board.LastReplanTick = 0;
             board.SenseAgeTicks = 0;
             board.LastSenseOpportunityTick = 0;
+            board.RetryAfterTick = 0;
             board.StateEnteredTick = tick;
         }
 
@@ -320,6 +323,11 @@ namespace Shooter.Simulation.AI
                         var site = FindCover(board.CoverReservation.Value);
                         if (site.HasValue) EnsurePath(board, site.Value.Anchor);
                     }
+                    else if (combatDestinations.Count > 0 || board.LastSeenEnemy.HasValue)
+                    {
+                        // No free cover site: keep fighting through the map instead of idling in place.
+                        Enter(board, AiState.Search);
+                    }
                     break;
                 case AiState.Reload:
                     // Authority owns reload timing and ammunition. Stay here and request reload
@@ -330,7 +338,7 @@ namespace Shooter.Simulation.AI
                 case AiState.Search:
                     if (board.LastSeenEnemy.HasValue) EnsurePath(board, board.LastSeenEnemy.Value);
                     else if (combatDestinations.Count > 0)
-                        EnsurePath(board, combatDestinations[(int)(board.Self.Value % (ulong)combatDestinations.Count)]);
+                        EnsurePath(board, combatDestinations[Rotate(board, combatDestinations.Count)]);
                     else Enter(board, AiState.Patrol);
                     break;
             }
@@ -340,6 +348,7 @@ namespace Shooter.Simulation.AI
         {
             if (board.PathTicket.HasValue || board.PathCornerIndex < board.PathCornerCount) return;
             if (pathsThisTick >= MaxNewPathsPerTick) return;
+            if (tick < board.RetryAfterTick) return;
             if (tick - board.LastReplanTick < ReplanCooldownTicks && board.PathGoal.HasValue) return;
             var ticket = navigation.RequestPath(board.Self, goal, navRevision);
             // Use navigation revision from ticket
@@ -362,6 +371,7 @@ namespace Shooter.Simulation.AI
                     navigation.Cancel(board.PathTicket.Value);
                     board.PathTicket = null;
                     board.PathGoal = null;
+                    FailPath(board);
                     continue;
                 }
                 var result = navigation.Poll(board.PathTicket.Value, pathBuffer);
@@ -370,8 +380,11 @@ namespace Shooter.Simulation.AI
                 {
                     board.PathTicket = null;
                     board.PathGoal = null;
+                    if (result.Status == PathStatus.Failed) FailPath(board);
                     continue;
                 }
+                if (result.Status == PathStatus.Partial) counters.PathsPartial++;
+                else counters.PathsCompleted++;
                 board.PathCornerCount = result.WrittenCount;
                 board.PathCornerIndex = 0;
                 for (int c = 0; c < result.WrittenCount; c++)
@@ -380,6 +393,17 @@ namespace Shooter.Simulation.AI
                 AdvancePathCorners(board);
             }
         }
+
+        /// <summary>Back off and rotate to the next destination so an unreachable goal is not retried every tick.</summary>
+        private void FailPath(AiBlackboard board)
+        {
+            counters.PathsFailed++;
+            board.RetryAfterTick = tick + ReplanCooldownTicks;
+            board.DestinationCursor++;
+        }
+
+        private static int Rotate(AiBlackboard board, int count) =>
+            (int)((board.Self.Value + (ulong)(uint)board.DestinationCursor) % (ulong)count);
 
         private static void AdvancePathCorners(AiBlackboard board)
         {
@@ -394,6 +418,14 @@ namespace Shooter.Simulation.AI
             }
             if (board.PathCornerIndex >= board.PathCornerCount && board.PathCornerCount > 0)
             {
+                // Arrived: rotate patrol/search destinations; an investigated last-seen point is spent.
+                board.DestinationCursor++;
+                if (board.LastSeenEnemy.HasValue && !board.HasVisibleTarget)
+                {
+                    float sx = board.LastSeenEnemy.Value.X - board.Feet.X;
+                    float sz = board.LastSeenEnemy.Value.Z - board.Feet.Z;
+                    if (sx * sx + sz * sz <= 2.25f) board.LastSeenEnemy = null;
+                }
                 board.PathCornerCount = 0;
                 board.PathCornerIndex = 0;
                 board.PathGoal = null;
@@ -496,16 +528,24 @@ namespace Shooter.Simulation.AI
         private Float3 PatrolPoint(AiBlackboard board)
         {
             if (patrolDestinations.Count > 0)
-                return patrolDestinations[(int)(board.Self.Value % (ulong)patrolDestinations.Count)];
+                return patrolDestinations[Rotate(board, patrolDestinations.Count)];
             // Deterministic local orbit based on entity id.
             double a = (board.Self.Value % 8) * (Math.PI / 4);
             return new Float3(board.Feet.X + (float)Math.Cos(a) * 4f, board.Feet.Y, board.Feet.Z + (float)Math.Sin(a) * 4f);
         }
 
+        /// <summary>Atan2 yaw inside the C0 half-open interval [-π, π); float π and -π both fall outside it.</summary>
+        internal static float ContractYaw(float dx, float dz)
+        {
+            float yaw = MathF.Atan2(dx, dz);
+            if ((double)yaw >= Math.PI || (double)yaw < -Math.PI) yaw = -3.1415925f;
+            return yaw;
+        }
+
         private static void AimAt(AiBlackboard board, Float3 target)
         {
             float dx = target.X - board.Feet.X, dy = target.Y - (board.Feet.Y + 1.65f), dz = target.Z - board.Feet.Z;
-            board.Yaw = MathF.Atan2(dx, dz);
+            board.Yaw = ContractYaw(dx, dz);
             float flat = MathF.Sqrt(dx * dx + dz * dz);
             board.Pitch = flat < 1e-5f ? 0 : -MathF.Atan2(dy, flat);
         }
@@ -524,6 +564,12 @@ namespace Shooter.Simulation.AI
                 float len = MathF.Sqrt(dx * dx + dz * dz);
                 if (len > 0.2f)
                 {
+                    // Without a visible target, look where we walk so the forward vision cone sweeps the route.
+                    if (!(board.State == AiState.Engage && board.HasVisibleTarget))
+                    {
+                        board.Yaw = ContractYaw(dx, dz);
+                        board.Pitch = 0;
+                    }
                     // Move relative to aim yaw: +Y forward, +X right in command space.
                     float fx = MathF.Sin(board.Yaw), fz = MathF.Cos(board.Yaw);
                     float rx = fz, rz = -fx;

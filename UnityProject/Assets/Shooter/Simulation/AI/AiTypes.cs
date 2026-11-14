@@ -51,6 +51,10 @@ namespace Shooter.Simulation.AI
         public uint ReactionReadyTick { get; set; }
         public uint StateEnteredTick { get; set; }
         public uint LastSenseOpportunityTick { get; set; }
+        /// <summary>Advances on every arrival or failed path so patrol/search rotate through map destinations.</summary>
+        public int DestinationCursor { get; set; }
+        /// <summary>No new path request before this tick after a failed/timed-out request (no per-tick retry storm).</summary>
+        public uint RetryAfterTick { get; set; }
     }
 
     public sealed class AiCounters
@@ -67,5 +71,8 @@ namespace Shooter.Simulation.AI
         public int MaxPathQueue;
         public int SenseOpportunitiesThisTick;
         public int AlliedCandidatesSkipped;
+        public int PathsCompleted;
+        public int PathsPartial;
+        public int PathsFailed;
     }
 }

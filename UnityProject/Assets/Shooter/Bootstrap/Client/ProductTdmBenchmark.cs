@@ -78,10 +78,14 @@ namespace Shooter.Bootstrap
             public int frames, ticks;
         }
 
-        private readonly FrameSample[] frames = new FrameSample[262144];
+        // Uncapped presentation runs ~700 fps on the reference iGPU; a fixed 262144 buffer overflowed after ~6 minutes of a
+        // 30-minute soak. Capacity scales with the capture window at a 1000 fps ceiling (overflow still fails explicitly).
+        private const int MinFrameCapacity = 262144;
+        private const int MaxCapturedFramesPerSecond = 1000;
+        private FrameSample[] frames = Array.Empty<FrameSample>();
         private TickSample[] ticks = Array.Empty<TickSample>();
         private readonly FrameTiming[] timings = new FrameTiming[32];
-        private readonly FrameTimingLedger ledger = new FrameTimingLedger(262144);
+        private FrameTimingLedger ledger = new FrameTimingLedger(1);
         private ProfilerRecorder mainRecorder, renderRecorder;
         private FoundationEntry? authority;
         private ProductTdmHost? host;
@@ -115,6 +119,9 @@ namespace Shooter.Bootstrap
             firstTick = (uint)((preconditionSeconds + warmupSeconds) * 60);
             endTick = firstTick + (uint)(captureSeconds * 60);
             ticks = new TickSample[captureSeconds * 60];
+            int frameCapacity = Math.Max(MinFrameCapacity, checked(captureSeconds * MaxCapturedFramesPerSecond));
+            frames = new FrameSample[frameCapacity];
+            ledger = new FrameTimingLedger(frameCapacity);
             output = Path.GetFullPath(FoundationEntry.CommandLine("-shooterBenchmarkOutput", ""));
             if (!Directory.Exists(output)) throw new ArgumentException("Benchmark output directory must already exist");
             mainRecorder = StartRecorder(ProfilerCategory.Internal, "CPU Main Thread Frame Time");
@@ -246,6 +253,17 @@ namespace Shooter.Bootstrap
                 }
             }
             catch (Exception error) { authority.Fail(error); }
+        }
+
+        /// <summary>
+        /// Product focus loss pauses the match (player-facing rule), which would silently stall the capture until the
+        /// wrapper's timeout. Abort with an explicit reason instead; the run is invalid either way.
+        /// </summary>
+        private void OnApplicationFocus(bool hasFocus)
+        {
+            if (hasFocus || complete || authority == null || !validated) return;
+            authority.Fail(new InvalidOperationException(
+                "Benchmark window lost focus during capture; the product match paused, so the timing window is invalid."));
         }
 
         private void PollTimings(long now)
@@ -397,6 +415,11 @@ namespace Shooter.Bootstrap
             File.WriteAllText(Path.Combine(output, "capture.json"), JsonUtility.ToJson(metadata, true) + "\n");
             complete = true;
             GC.KeepAlive(probe);
+            var ai = authority.ProductSession.BotCounters;
+            if (ai != null)
+                Debug.Log("SHOOTER_AI_SUMMARY pathsCompleted=" + ai.PathsCompleted + " pathsPartial=" + ai.PathsPartial +
+                          " pathsFailed=" + ai.PathsFailed + " stuckEvents=" + ai.StuckEvents + " shotsRequested=" + ai.ShotsRequested +
+                          " stateChanges=" + ai.StateChanges);
             Debug.Log("SHOOTER_BENCHMARK_COMPLETE diagnostic=" + diagnostic + " frames=" + frameCount + " ticks=" + tickCount + " workload=" + workload.Id);
             Application.Quit(0);
         }

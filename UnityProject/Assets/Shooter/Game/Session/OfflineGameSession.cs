@@ -145,6 +145,7 @@ namespace Shooter.Game.Session
             harness = new CombatHarnessSimulation(queries, sessionId, request.Seed);
             lifecycle = new HarnessActorLifecycle(harness);
             bots = new TeamBotPlanner(queries, mapRuntime.Navigation, 0, gameplay.NavRevision);
+            ApplyMapDestinations(bots, gameplay);
 
             var roster = BuildRoster(request, gameplay, lifecycle, bots);
             match.ConfigureIdentities("catalog.v1", gameplay.MapId.Value + ".gameplay", "local-dev");
@@ -424,6 +425,7 @@ namespace Shooter.Game.Session
                 runtime.Navigation,
                 0,
                 gameplayDefinition?.NavRevision ?? 1);
+            if (gameplayDefinition != null) ApplyMapDestinations(planner, gameplayDefinition);
             for (int i = 0; i < snapshot.Participants.Count; i++)
             {
                 var participant = snapshot.Participants[i];
@@ -435,6 +437,16 @@ namespace Shooter.Game.Session
             }
             return planner;
         }
+
+        /// <summary>
+        /// Bots roam the packaged patrol/combat destinations. Without them every bot orbits 4 m around
+        /// its spawn and opposing teams never meet (T070 capture finding, 2026-11-14).
+        /// </summary>
+        private static void ApplyMapDestinations(TeamBotPlanner planner, MapGameplayDefinition gameplay) =>
+            planner.SetNavigationDestinations(gameplay.PatrolDestinations, gameplay.CombatDestinations);
+
+        /// <summary>Read-only AI diagnostics for capture summaries; null when no match is loaded.</summary>
+        public AiCounters? BotCounters => bots?.Counters;
 
         private void ReleaseRuntime()
         {
