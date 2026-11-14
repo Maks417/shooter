@@ -111,13 +111,50 @@ namespace Shooter.Simulation.Combat
             return new HitscanResult(false, true, request.Muzzle, muzzleDir, false, default);
         }
 
-        private static bool RayCapsule(Float3 origin, Float3 dir, float max, Capsule capsule, out float t, out Float3 point, out Float3 normal)
+        /// <summary>Ray vs capsule (finite cylinder plus hemispherical caps). Nearest entry t in [0, max].</summary>
+        public static bool RayCapsule(Float3 origin, Float3 dir, float max, Capsule capsule, out float t, out Float3 point, out Float3 normal)
         {
-            // Segment-sphere approximation using both sphere ends and cylinder ignored for M2 harness tolerance tests.
             t = 0; point = default; normal = new Float3(0, 1, 0);
             bool hit = false; float best = float.MaxValue; Float3 bestPoint = default; Float3 bestNormal = new Float3(0, 1, 0);
-            TrySphere(origin, dir, max, capsule.BottomSphereCenter, capsule.Radius, ref hit, ref best, ref bestPoint, ref bestNormal);
-            TrySphere(origin, dir, max, capsule.TopSphereCenter, capsule.Radius, ref hit, ref best, ref bestPoint, ref bestNormal);
+            Float3 a = capsule.BottomSphereCenter, b = capsule.TopSphereCenter;
+            float r = capsule.Radius;
+            double ax = b.X - a.X, ay = b.Y - a.Y, az = b.Z - a.Z;
+            double length = Math.Sqrt(ax * ax + ay * ay + az * az);
+            if (length > 1e-6)
+            {
+                double ux = ax / length, uy = ay / length, uz = az / length;
+                double mx = origin.X - a.X, my = origin.Y - a.Y, mz = origin.Z - a.Z;
+                double mu = mx * ux + my * uy + mz * uz;
+                double du = dir.X * ux + dir.Y * uy + dir.Z * uz;
+                double ox = mx - mu * ux, oy = my - mu * uy, oz = mz - mu * uz;
+                double dx = dir.X - du * ux, dy = dir.Y - du * uy, dz = dir.Z - du * uz;
+                double qa = dx * dx + dy * dy + dz * dz;
+                if (qa > 1e-12)
+                {
+                    double qb = ox * dx + oy * dy + oz * dz;
+                    double qc = ox * ox + oy * oy + oz * oz - (double)r * r;
+                    double disc = qb * qb - qa * qc;
+                    if (disc >= 0)
+                    {
+                        double t0 = (-qb - Math.Sqrt(disc)) / qa;
+                        if (t0 >= 0 && t0 <= max && t0 < best)
+                        {
+                            double s = mu + t0 * du;
+                            if (s >= 0 && s <= length)
+                            {
+                                float tf = (float)t0;
+                                bestPoint = new Float3(origin.X + dir.X * tf, origin.Y + dir.Y * tf, origin.Z + dir.Z * tf);
+                                double nx = bestPoint.X - (a.X + ux * s), ny = bestPoint.Y - (a.Y + uy * s), nz = bestPoint.Z - (a.Z + uz * s);
+                                double nl = Math.Sqrt(nx * nx + ny * ny + nz * nz);
+                                bestNormal = nl < 1e-9 ? new Float3(0, 1, 0) : new Float3((float)(nx / nl), (float)(ny / nl), (float)(nz / nl));
+                                best = tf; hit = true;
+                            }
+                        }
+                    }
+                }
+            }
+            TrySphere(origin, dir, max, a, r, ref hit, ref best, ref bestPoint, ref bestNormal);
+            TrySphere(origin, dir, max, b, r, ref hit, ref best, ref bestPoint, ref bestNormal);
             if (!hit) return false;
             t = best; point = bestPoint; normal = bestNormal; return true;
         }

@@ -84,10 +84,10 @@ namespace Shooter.Simulation.Combat
             bool aiming = (buttons & InputButtons.AimHeld) != 0;
 
             bool rising = firePressed && !active.PreviousFireHeld;
-            bool wantsFire = activeDef.FireMode == FireMode.Automatic ? (fireHeld || rising) : rising;
+            bool wantsFire = activeDef.FireMode == FireMode.Automatic ? (fireHeld || rising) : firePressed;
             if (sprinting) wantsFire = false;
 
-            if (reloadPressed && active.Action == WeaponAction.Ready && active.AmmoInMagazine < activeDef.MagazineSize && active.Reserve > 0)
+            if (reloadPressed && (active.Action == WeaponAction.Ready || active.Action == WeaponAction.FiringRecovery) && active.AmmoInMagazine < activeDef.MagazineSize && active.Reserve > 0)
             {
                 active = new WeaponState(active.DefinitionId, WeaponAction.Reloading, active.AmmoInMagazine, active.Reserve,
                     active.NextAllowedFireTick, tick, unchecked(tick + activeDef.ReloadTicks), active.ShotIndex, fireHeld);
