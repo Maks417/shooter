@@ -6,6 +6,7 @@ using Shooter.Generation;
 using Shooter.Generation.Environment;
 using Xunit;
 
+[Collection("NativeNavProvider")]
 public sealed class MapVisualClosureTests : IDisposable
 {
     private readonly string root = Path.Combine(Path.GetTempPath(), "shooter-map-visual-" + Guid.NewGuid().ToString("N"));

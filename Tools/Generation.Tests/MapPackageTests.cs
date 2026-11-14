@@ -10,6 +10,7 @@ using Shooter.Generation.Environment;
 using Shooter.World.Navigation;
 using Xunit;
 
+[Collection("NativeNavProvider")]
 public sealed class MapPackageTests : IDisposable
 {
     private readonly string root = Path.Combine(Path.GetTempPath(), "shooter-map-pkg-" + Guid.NewGuid().ToString("N"));
