@@ -133,6 +133,9 @@ namespace Shooter.Build
             {
                 if (instance.valid) instance.Remove();
                 if (data != null) UnityEngine.Object.DestroyImmediate(data);
+                // CreateSettings registers a transient agent type that Unity would otherwise persist into
+                // ProjectSettings/NavMeshAreas.asset, dirtying the source tree on every native publication.
+                NavMesh.RemoveSettings(buildSettings.agentTypeID);
             }
         }
     }

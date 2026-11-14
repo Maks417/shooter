@@ -12,3 +12,6 @@
 /UnityProject/[Mm]emoryCaptures/
 /UnityProject/[Rr]ecordings/
 *.csproj.user
+
+# Claude Code local state and agent worktrees
+.claude/
