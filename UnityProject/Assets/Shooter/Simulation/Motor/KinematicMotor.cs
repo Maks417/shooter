@@ -22,17 +22,20 @@ namespace Shooter.Simulation.Motor
         public uint SlideTicksRemaining { get; }
         public uint SlideCooldownTicksRemaining { get; }
         public bool SlideActive => SlideTicksRemaining > 0;
+        /// <summary>True when overlap recovery could not resolve a penetration (invalid spawn); the motor held its previous feet with zero velocity.</summary>
+        public bool OverlapUnresolved { get; }
 
         public MotorBodyState(
             Float3 feet, Float3 velocity, float aimYaw, float aimPitch, Stance stance, float capsuleHeight,
             bool grounded, SurfaceId groundSurfaceId, Float3 groundNormal, uint lastGroundedTick,
             uint jumpConsumedSequence, float locomotionDistanceMeters, bool sprintActive,
-            uint slideTicksRemaining = 0, uint slideCooldownTicksRemaining = 0)
+            uint slideTicksRemaining = 0, uint slideCooldownTicksRemaining = 0, bool overlapUnresolved = false)
         {
             Feet = feet; Velocity = velocity; AimYaw = aimYaw; AimPitch = aimPitch; Stance = stance; CapsuleHeight = capsuleHeight;
             Grounded = grounded; GroundSurfaceId = groundSurfaceId; GroundNormal = groundNormal; LastGroundedTick = lastGroundedTick;
             JumpConsumedSequence = jumpConsumedSequence; LocomotionDistanceMeters = locomotionDistanceMeters; SprintActive = sprintActive;
             SlideTicksRemaining = slideTicksRemaining; SlideCooldownTicksRemaining = slideCooldownTicksRemaining;
+            OverlapUnresolved = overlapUnresolved;
         }
     }
 
@@ -41,6 +44,8 @@ namespace Shooter.Simulation.Motor
     {
         private readonly MotorConfig config;
         private readonly QueryFilter motorFilter = new QueryFilter(CollisionLayers.MotorMask, default, false);
+        private const float OverlapEpsilon = 1e-4f;
+        private readonly HitBuffer overlapBuffer = new HitBuffer(16);
 
         public KinematicMotor(MotorConfig? config = null) { this.config = config ?? MotorConfig.BaselineV1; }
         public MotorConfig Config => config;
@@ -50,6 +55,21 @@ namespace Shooter.Simulation.Motor
             if (world == null) throw new ArgumentNullException(nameof(world));
             if (previous.Stance == Stance.Dead)
                 return previous;
+
+            if (!RecoverOverlap(previous, world, out Float3 recoveredFeet, out Float3 recoveredVelocity))
+            {
+                // Unresolved overlap (invalid spawn): stop in place and report; aim still follows input.
+                return new MotorBodyState(
+                    previous.Feet, default, command.AimYaw, command.AimPitch, previous.Stance, previous.CapsuleHeight,
+                    previous.Grounded, previous.GroundSurfaceId, previous.GroundNormal, previous.LastGroundedTick,
+                    previous.JumpConsumedSequence, previous.LocomotionDistanceMeters, false, 0, previous.SlideCooldownTicksRemaining, true);
+            }
+            if (recoveredFeet.X != previous.Feet.X || recoveredFeet.Y != previous.Feet.Y || recoveredFeet.Z != previous.Feet.Z)
+                previous = new MotorBodyState(
+                    recoveredFeet, recoveredVelocity, previous.AimYaw, previous.AimPitch, previous.Stance, previous.CapsuleHeight,
+                    previous.Grounded, previous.GroundSurfaceId, previous.GroundNormal, previous.LastGroundedTick,
+                    previous.JumpConsumedSequence, previous.LocomotionDistanceMeters, previous.SprintActive,
+                    previous.SlideTicksRemaining, previous.SlideCooldownTicksRemaining);
 
             bool wantCrouch = (command.Buttons & InputButtons.CrouchHeld) != 0;
             bool wantAim = (command.Buttons & InputButtons.AimHeld) != 0;
@@ -180,6 +200,41 @@ namespace Shooter.Simulation.Motor
                 wantSprint && !sliding && stance == Stance.Standing && grounded, slideTicks, cooldown);
         }
 
+        /// <summary>
+        /// Depenetration: up to MaxOverlapRecovery passes. Each pass queries the capsule overlap and pushes the feet out along
+        /// the single deepest hit (ties keep the lowest collider stable id, since the buffer is sorted by it), by depth plus
+        /// skin, removing the velocity component into the push-out normal. Returns false when penetration remains after the
+        /// last pass or the query is unusable; in that case the caller must stop the actor.
+        /// </summary>
+        private bool RecoverOverlap(MotorBodyState previous, IWorldQueries world, out Float3 feet, out Float3 velocity)
+        {
+            feet = previous.Feet; velocity = previous.Velocity;
+            for (int pass = 0; pass <= config.MaxOverlapRecovery; pass++)
+            {
+                var capsule = MotorMath.BodyCapsule(feet, previous.CapsuleHeight, config.Radius);
+                var result = world.Overlap(capsule, motorFilter, overlapBuffer);
+                if (result.Status == QueryStatus.NoHit) return true;
+                // An unusable query (e.g. the backend found a near-contact collider but no penetration) is not proof of
+                // overlap; skip recovery rather than freezing a valid actor. Only measured, unresolved penetration stops it.
+                if (result.Status == QueryStatus.InvalidInput) return true;
+                if (result.Status != QueryStatus.Hit) return false;
+                bool found = false;
+                float bestDepth = OverlapEpsilon;
+                Float3 bestNormal = default;
+                for (int i = 0; i < result.WrittenCount; i++)
+                {
+                    var hit = overlapBuffer[i];
+                    if (hit.DistanceMeters > bestDepth) { bestDepth = hit.DistanceMeters; bestNormal = hit.Normal; found = true; }
+                }
+                if (!found) return true;
+                if (pass == config.MaxOverlapRecovery) return false;
+                feet = MotorMath.Add(feet, MotorMath.Scale(bestNormal, bestDepth + config.Skin));
+                float into = MotorMath.Dot(velocity, bestNormal);
+                if (into < 0f) velocity = MotorMath.Sub(velocity, MotorMath.Scale(bestNormal, into));
+            }
+            return false;
+        }
+
         private static float ClampAxis(float value)
         {
             if (value > 1f) return 1f;
@@ -206,12 +261,11 @@ namespace Shooter.Simulation.Motor
                 height = toHeight;
                 return true;
             }
-            // Standing up: ceiling probe from current head sphere upward by the growth delta.
+            // Standing up: sweep the current capsule upward by the growth delta so off-centre ledges within the radius block it.
             float grow = toHeight - fromHeight;
             var capsule = MotorMath.BodyCapsule(feet, fromHeight, config.Radius);
-            var head = capsule.TopSphereCenter;
-            var ceiling = world.Raycast(head, new Float3(0, 1, 0), grow + config.Radius, motorFilter);
-            if (ceiling.Status == QueryStatus.Hit && ceiling.Hit.DistanceMeters < grow + config.Radius - config.Skin)
+            var sweep = world.SweepCapsule(capsule, new Float3(0, grow, 0), motorFilter);
+            if (sweep.Status == QueryStatus.Hit && sweep.Hit.DistanceMeters < grow - config.Skin)
                 return false;
             height = toHeight;
             return true;

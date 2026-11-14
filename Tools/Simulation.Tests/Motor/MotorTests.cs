@@ -13,6 +13,76 @@ namespace Shooter.Simulation.Tests.Motor
             new Float3(0, 0, 0), default, 0, 0, Stance.Standing, 1.8f,
             true, new SurfaceId(100), new Float3(0, 1, 0), 0, 0, 0, false);
 
+        private static MotorBodyState CrouchedSpawn(float x = 0f) => new MotorBodyState(
+            new Float3(x, 0, 0), default, 0, 0, Stance.Crouching, 1.2f,
+            true, new SurfaceId(100), new Float3(0, 1, 0), 0, 0, 0, false);
+
+        [Fact]
+        public void OverlappingSpawnIsPushedOutWithinRecoveryLimit()
+        {
+            var world = new StaticPlaneWorld();
+            world.AddBox(new Float3(0.2f, 0, -1), new Float3(2, 3, 1), 60);
+            var motor = new KinematicMotor();
+            var state = motor.Step(Spawn(), Cmd(1), 1, world);
+            Assert.False(state.OverlapUnresolved);
+            Assert.True(state.Feet.X <= 0.2f - 0.32f + 1e-3f, $"x={state.Feet.X}");
+            var check = world.Overlap(MotorMath.BodyCapsule(state.Feet, state.CapsuleHeight, 0.32f), new QueryFilter(CollisionLayers.MotorMask, default, false), new HitBuffer(8));
+            Assert.Equal(QueryStatus.NoHit, check.Status);
+        }
+
+        [Fact]
+        public void UnresolvableOverlapStopsAndReports()
+        {
+            // Wedged between opposing geometry: every push-out is answered by a new penetration, so recovery cannot converge.
+            var world = new WedgedWorld();
+            var motor = new KinematicMotor();
+            var start = Spawn();
+            var state = motor.Step(start, Cmd(1, my: 1), 1, world);
+            Assert.True(state.OverlapUnresolved);
+            Assert.Equal(start.Feet.X, state.Feet.X); Assert.Equal(start.Feet.Y, state.Feet.Y); Assert.Equal(start.Feet.Z, state.Feet.Z);
+            Assert.Equal(0f, state.Velocity.LengthSquared);
+        }
+
+        [Fact]
+        public void RestingOnGroundIsNotPerturbedByRecovery()
+        {
+            var world = new StaticPlaneWorld();
+            var motor = new KinematicMotor();
+            var state = Spawn();
+            for (uint i = 1; i <= 30; i++) state = motor.Step(state, Cmd(i), i, world);
+            Assert.False(state.OverlapUnresolved);
+            Assert.True(state.Grounded);
+            Assert.InRange(state.Feet.Y, -1e-3f, 0.03f);
+            Assert.Equal(0f, state.Feet.X, 3);
+        }
+
+        [Fact]
+        public void StandUpUnderOffCentreLedgeIsRefusedButAllowedInOpen()
+        {
+            var world = new StaticPlaneWorld();
+            world.AddBox(new Float3(0.2f, 1.35f, -2), new Float3(3, 1.55f, 2), 62);
+            var motor = new KinematicMotor();
+            var blocked = motor.Step(CrouchedSpawn(), Cmd(1), 1, world);
+            Assert.Equal(Stance.Crouching, blocked.Stance);
+            Assert.Equal(1.2f, blocked.CapsuleHeight, 3);
+            var open = motor.Step(CrouchedSpawn(-2f), Cmd(1), 1, world);
+            Assert.Equal(Stance.Standing, open.Stance);
+            Assert.Equal(1.8f, open.CapsuleHeight, 3);
+        }
+
+        private sealed class WedgedWorld : IWorldQueries
+        {
+            public int OverlapCalls;
+            public SweepHit SweepCapsule(Capsule capsule, Float3 displacement, QueryFilter filter) => new SweepHit(QueryStatus.NoHit);
+            public RayHit Raycast(Float3 origin, Float3 unitDirection, float maxMeters, QueryFilter filter) => new RayHit(QueryStatus.NoHit);
+            public OverlapResult Overlap(Capsule capsule, QueryFilter filter, HitBuffer callerOwned)
+            {
+                OverlapCalls++;
+                callerOwned[0] = new QueryHit(0.5f, capsule.BottomSphereCenter, new Float3(0, 1, 0), default, new SurfaceId(100), 7, 1, 1);
+                return new OverlapResult(QueryStatus.Hit, 1, 1);
+            }
+        }
+
         private static InputCommand Cmd(uint seq, float mx = 0, float my = 0, InputButtons buttons = InputButtons.None, float yaw = 0) =>
             new InputCommand(new EntityId(1), seq, seq, mx, my, yaw, 0, buttons, 0);
 
@@ -49,7 +119,8 @@ namespace Shooter.Simulation.Tests.Motor
             // Low ceiling: crouch first under the slab, then standing up must fail.
             world.AddBox(new Float3(-2, 1.35f, -2), new Float3(2, 1.55f, 2), 50);
             var motor = new KinematicMotor();
-            var state = Spawn();
+            // Start already crouched under the slab: a standing capsule would overlap it (invalid spawn).
+            var state = CrouchedSpawn();
             state = motor.Step(state, Cmd(1, buttons: InputButtons.CrouchHeld), 1, world);
             Assert.Equal(Stance.Crouching, state.Stance);
             Assert.Equal(1.2f, state.CapsuleHeight, 3);
