@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Shooter.Presentation.Menus
+namespace Shooter.Presentation.Session
 {
     /// <summary>Code-only tactical shell. Coordinates are logical pixels after the applied UI scale.</summary>
     public sealed class TacticalUi

@@ -1,6 +1,6 @@
 # Visual direction and UI design system
 
-T074 stage 1 implements the shell/HUD direction below in `Presentation/Menus/TacticalUi.cs`, `Presentation/Session/ProductShellHost.cs` and `ProductSessionView.cs`. The environment, equipment and motion direction remains staged work. See [vision](vision.md), [shell](features/game-shell.md) and [rendering](features/materials-rendering.md). Implementation is separate from named visual acceptance.
+T074 stage 1 implements the shell/HUD direction below in `Presentation/Session/TacticalUi.cs`, `Presentation/Session/ProductShellHost.cs` and `ProductSessionView.cs`. The environment, equipment and motion direction remains staged work. See [vision](vision.md), [shell](features/game-shell.md) and [rendering](features/materials-rendering.md). Implementation is separate from named visual acceptance.
 
 ## Owner direction — 2026-11-14
 

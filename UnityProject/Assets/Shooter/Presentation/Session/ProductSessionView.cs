@@ -7,7 +7,6 @@ using Shooter.Generation.Environment;
 using Shooter.Presentation.Audio;
 using Shooter.Presentation.Hud;
 using Shooter.Presentation.Input;
-using Shooter.Presentation.Menus;
 using Shooter.Presentation.Rendering;
 using Shooter.Presentation.Rig;
 using Shooter.Presentation.View;

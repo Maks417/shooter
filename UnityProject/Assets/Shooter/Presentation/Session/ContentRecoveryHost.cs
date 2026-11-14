@@ -15,6 +15,7 @@ namespace Shooter.Presentation.Session
         private Action? onRetry;
         private Action? onQuit;
         private bool quitRequested;
+        private readonly TacticalUi ui = new TacticalUi();
 
         public static ContentRecoveryHost Create(string recoveryMessage, string detail, Action? onRetry = null, Action? onQuit = null)
         {
@@ -32,19 +33,23 @@ namespace Shooter.Presentation.Session
 
         private void OnGUI()
         {
-            const float s = 1f;
-            GUI.Box(new Rect(40 * s, 40 * s, 720 * s, 280 * s), "Content recovery");
-            GUI.Label(new Rect(60 * s, 90 * s, 680 * s, 60 * s), message);
-            if (!string.IsNullOrEmpty(detail))
-                GUI.Label(new Rect(60 * s, 150 * s, 680 * s, 60 * s), detail);
-            if (onRetry != null && GUI.Button(new Rect(60 * s, 230 * s, 160 * s, 36 * s), "Retry"))
-                onRetry.Invoke();
-            if (GUI.Button(new Rect(240 * s, 230 * s, 160 * s, 36 * s), "Quit"))
+            ui.Begin(1, "recovery");
+            try
             {
-                quitRequested = true;
-                onQuit?.Invoke();
-                Application.Quit();
+                ui.Backdrop();
+                ui.Header("OPERATIONS / RECOVERY", "Game content needs attention");
+                Rect a = ui.Safe;
+                ui.Label(new Rect(a.x, a.y + 108, a.width, 88), message, 22);
+                ui.Label(new Rect(a.x, a.y + 208, a.width, 120), detail, 18, TacticalUi.Muted);
+                if (onRetry != null && ui.Button(new Rect(a.x, a.yMax - 60, 180, 44), "recovery.retry", "RETRY", primary: true)) onRetry.Invoke();
+                if (ui.Button(new Rect(a.x + 192, a.yMax - 60, 210, 44), "recovery.quit", "QUIT TO DESKTOP"))
+                {
+                    quitRequested = true;
+                    onQuit?.Invoke();
+                    Application.Quit();
+                }
             }
+            finally { ui.End(); }
         }
 
         private void OnDestroy() => _ = quitRequested;

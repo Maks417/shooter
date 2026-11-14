@@ -2,7 +2,7 @@
 
 ## T074 — tactical shell and HUD, stage 1
 
-Owner assigned implementation on 2026-11-14, beginning with menus/HUD and using Battlefield/Call of Duty/Warface/Bodycam as references. [Brandbook](../../brandbook.md) records the original procedural direction and later visual stages. This stage changes only the client presentation and related docs: `Presentation/Menus/TacticalUi.cs`, `Presentation/Session/ProductShellHost.cs` and `ProductSessionView.cs`. No gameplay, map bytes, generator identities, settings schema, contract lock, toolchain or installer identity changes.
+Owner assigned implementation on 2026-11-14, beginning with menus/HUD and using Battlefield/Call of Duty/Warface/Bodycam as references. [Brandbook](../../brandbook.md) records the original procedural direction and later visual stages. This stage changes only the client presentation and related docs: `Presentation/Session/TacticalUi.cs`, `Presentation/Session/ProductShellHost.cs` and `ProductSessionView.cs`. No gameplay, map bytes, generator identities, settings schema, contract lock, toolchain or installer identity changes.
 
 Main/local setup/loading/pause/confirms/settings/live and final team tables use the shared charcoal/amber design, applied scale, 5% safe area, keyboard focus and grouped scrollable settings. The HUD adds backed health/ammo, formatted team score/time, authoritative reload progress, empty-ammo hint, respawn feedback and ADS-aware analytic reticle. Binding capture skips its initiating frame. Existing display Keep/Revert and persistent preferences remain in their services.
 
