@@ -144,12 +144,12 @@ namespace Shooter.World
             for (int p = 0; p < bake.Polygons.Count; p++)
             {
                 var poly = bake.Polygons[p];
-                // Fan triangulation for 3..6-gons.
+                // Fan triangulation for 3..6-gons. Winding must face +Y so Unity NavMesh keeps the surface.
                 for (int i = 1; i + 1 < poly.Indices.Length; i++)
                 {
                     indices.Add((int)poly.Indices[0]);
-                    indices.Add((int)poly.Indices[i]);
                     indices.Add((int)poly.Indices[i + 1]);
+                    indices.Add((int)poly.Indices[i]);
                 }
             }
             mesh.SetVertices(verts);
