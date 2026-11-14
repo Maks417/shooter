@@ -63,7 +63,7 @@ files = sorted(p for p in root.rglob('*') if p.is_file() and p.suffix in {'.md',
 hashes = {p.relative_to(root).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest() for p in files}
 manifest_path = root / 'documentation-manifest.json'
 if refresh:
-    manifest_path.write_text(json.dumps({'schemaVersion': 1, 'designDate': '2026-11-11', 'files': hashes}, indent=2) + '\n', encoding='utf-8')
+    manifest_path.write_text(json.dumps({'schemaVersion': 1, 'designDate': '2026-11-11', 'files': hashes}, indent=2) + '\n', encoding='utf-8', newline='\n')
 elif not manifest_path.exists():
     errors.append('Missing integrity manifest; intentional initial creation requires --refresh-manifest')
 else:
@@ -76,6 +76,6 @@ report = {'schemaVersion': 1, 'root': str(root), 'markdownFiles': len(pages),
           'relativeLinksChecked': links, 'integrityFiles': len(hashes), 'errors': errors,
           'result': 'PASS' if not errors else 'FAIL',
           'scope': 'Documentation existence, index coverage, local links/anchors, fences and hashes including fixtures/scripts. No game implementation or runtime tests.'}
-(root / 'verification-report.json').write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8')
+(root / 'verification-report.json').write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8', newline='\n')
 print(json.dumps(report, indent=2))
 sys.exit(bool(errors))
