@@ -331,4 +331,5 @@ public static class ShooterBuild
         }
     }
     public static void CompileContent() => Guard(ShooterContentBuild.Compile);
+    public static void CompileNativeGameContent() => Guard(ShooterNativeContentBuild.Compile);
 }

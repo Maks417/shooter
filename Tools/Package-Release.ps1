@@ -3,6 +3,8 @@ param(
     [Parameter(Mandatory = $true)][string]$ClientBuildRunDirectory,
     [string]$MapCacheRoot = '',
     [string]$PreviousPackageDirectory = '',
+    # T067/C01: refuse software-grid navigation; require the nav-provenance sidecar from Compile-GameContent -Native.
+    [switch]$RequireNativeNav,
     [ValidateRange(30, 3600)][int]$TimeoutSeconds = 180
 )
 $ErrorActionPreference = 'Stop'
@@ -99,8 +101,33 @@ function Assert-RequiredContent([string]$CacheRoot, [string]$ExpectedToolchainHa
             if (-not $found.ContainsKey($key)) { throw "Content closure missing required package: $key" }
         }
     }
+    $navSource = 'software-walkable-grid'
+    $navTool = ''
+    $sidecarPath = Join-Path $CacheRoot 'nav-provenance.json'
+    if (Test-Path -LiteralPath $sidecarPath -PathType Leaf) {
+        $sidecar = Get-Content -LiteralPath $sidecarPath -Raw | ConvertFrom-Json
+        if ($sidecar.provenanceSchema -cne 'shooter.nav-bake-provenance.v1') { throw 'Unexpected nav-provenance schema.' }
+        $byRoot = @{}
+        foreach ($entry in @($sidecar.packages)) { $byRoot[[string]$entry.packageRootSha256] = $entry }
+        $everyNative = $true
+        foreach ($pkg in @($index.packages)) {
+            $entry = $byRoot[[string]$pkg.packageRootSha256]
+            if ($null -eq $entry) { $everyNative = $false; continue }
+            $navFile = Join-Path $CacheRoot (($pkg.packageRootSha256.Substring(0, 2)) + '/' + $pkg.packageRootSha256 + '/navigation-gameplay.bin')
+            if ((Get-Sha256File $navFile) -cne $entry.navigationSha256) { throw "nav-provenance navigation hash mismatch for $($pkg.mapId)/$($pkg.visualProfile)" }
+            $isNative = ($entry.navBakeProvenance -ceq 'unity-ai-navigation-2.0.0;pinned-physx-collision-bake')
+            if ([bool]$entry.native -ne $isNative) { throw "nav-provenance native flag disagrees with provenance for $($pkg.mapId)/$($pkg.visualProfile)" }
+            if (-not $isNative) { $everyNative = $false }
+        }
+        if ($everyNative -and -not [string]::IsNullOrWhiteSpace([string]$sidecar.nativeToolIdentity)) { $navSource = 'unity-native-navmesh'; $navTool = [string]$sidecar.nativeToolIdentity }
+    }
+    if ($RequireNativeNav -and $navSource -cne 'unity-native-navmesh') {
+        throw 'RequireNativeNav: navigation content is not verified native (missing nav-provenance.json or software-walkable-grid packages). Run Tools/Compile-GameContent.ps1 -Native.'
+    }
     $sorted = @($lines | Sort-Object)
     [pscustomobject]@{
+        NavigationSource = $navSource
+        NativeToolIdentity = $navTool
         IndexPath = $indexPath
         IndexSha256 = (Get-Sha256File $indexPath)
         Packages = @($index.packages)
@@ -218,6 +245,9 @@ try {
     $content = Assert-RequiredContent -CacheRoot $MapCacheRoot -ExpectedToolchainHash $toolchainHash -Policy $policy
     $report.contentClosureHash = [string]$content.ContentClosureHash
     $report.contentIndexSha256 = [string]$content.IndexSha256
+    $report['navigationSource'] = [string]$content.NavigationSource
+    $report['nativeToolIdentity'] = [string]$content.NativeToolIdentity
+    $report['requireNativeNav'] = [bool]$RequireNativeNav
 
     $stage = Join-Path $outDir 'Shooter-Offline'
     $null = New-Item -ItemType Directory -Path $stage -Force
@@ -239,6 +269,8 @@ try {
     $catalogSrc = Join-Path $MapCacheRoot 'catalog.json'
     if (!(Test-Path -LiteralPath $catalogSrc -PathType Leaf)) { throw "Missing release catalog to ship: $catalogSrc" }
     Copy-Item -LiteralPath $catalogSrc -Destination (Join-Path $contentDest 'catalog.json') -Force
+    $navProvenanceSrc = Join-Path $MapCacheRoot 'nav-provenance.json'
+    if (Test-Path -LiteralPath $navProvenanceSrc -PathType Leaf) { Copy-Item -LiteralPath $navProvenanceSrc -Destination (Join-Path $contentDest 'nav-provenance.json') -Force }
     foreach ($pkg in @($content.Packages)) {
         $relPackage = Join-Path $pkg.packageRootSha256.Substring(0, 2) $pkg.packageRootSha256
         $srcDir = Join-Path $MapCacheRoot $relPackage
@@ -322,6 +354,8 @@ KNOWN ISSUES / LIMITATIONS (T071 owner playtest candidate / FIX13 packaging)
         buildContentManifestHash = [string]$build.contentManifestHash
         contentClosureHash = [string]$content.ContentClosureHash
         contentIndexSha256 = [string]$content.IndexSha256
+        navigationSource = [string]$content.NavigationSource
+        nativeToolIdentity = [string]$content.NativeToolIdentity
         protocolVersion = [string]$policy.protocolVersion
         contractVersion = [string]$policy.contractVersion
         editorVersion = [string]$build.editorVersion
