@@ -732,15 +732,16 @@ namespace Shooter.Presentation.Session
                 for (int j = 0; j < recentDeathIds.Length; j++) if (recentDeathIds[j].Equals(ev.Id)) { seen = true; break; }
                 if (seen) continue;
                 recentDeathIds[deathIdCursor++ % recentDeathIds.Length] = ev.Id;
-                string killer = "Operator", victim = "Operator";
+                string? killer = null;
+                string victim = "Operator";
                 for (int j = 0; j < snapshot.Participants.Count; j++)
                 {
                     var p = snapshot.Participants[j];
-                    if (p.EntityId.Equals(ev.Instigator)) killer = p.IsHuman ? "YOU" : p.DisplayName;
+                    if (ev.Instigator.IsValid && p.EntityId.Equals(ev.Instigator)) killer = p.IsHuman ? "YOU" : p.DisplayName;
                     if (p.EntityId.Equals(ev.Target)) victim = p.IsHuman ? "YOU" : p.DisplayName;
                 }
                 for (int j = killFeed.Length - 1; j > 0; j--) { killFeed[j] = killFeed[j - 1]; killFeedUntil[j] = killFeedUntil[j - 1]; }
-                killFeed[0] = killer + "  >  " + victim;
+                killFeed[0] = KillFeedText.Format(killer, victim);
                 killFeedUntil[0] = Time.unscaledTime + 6;
             }
         }
