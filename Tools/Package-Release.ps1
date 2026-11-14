@@ -297,12 +297,16 @@ Shooter local offline package — license / provenance summary
     [IO.File]::WriteAllText((Join-Path $stage 'LICENSES.txt'), $licenses)
 
     $known = @"
-KNOWN ISSUES / LIMITATIONS (FIX13 tooling package)
-- Player launch / named device evidence: Pending until T065 operator run on this candidate.
-- REL01/REL06 release acceptance: NotClaimed by Package-Release tooling alone.
-- P05 historical FAIL retained under ADR-024; visual clearance is T062/T065.
-- Native Unity NavMesh player install evidence may remain Pending under FIX04/FIX07 notes.
-- Workspace dirty sibling work (T052–T063) must not be mistaken for this binary's sourceDirty flag; identities above are from build-manifest.json + content closure.
+KNOWN ISSUES / LIMITATIONS (T071 owner playtest candidate / FIX13 packaging)
+- REL01–REL06: NotClaimed. This archive is an owner playtest candidate, not an accepted release.
+- P05: FAIL retained under ADR-024 (skin/forearm/strap/eye-sight residuals). No fourth clearance search.
+- Manual playtest still Pending: both maps x 5v5/6v6, full move/aim/fire/switch/reload, bots, death/respawn, pause/scoreboard/settings, complete matches, results/replay.
+- Named device/UI/audio reviews (FIX08–10 / SET01–02), FIX05 visibility captures, FIX03 focus loss, FIX06 mixed-team player, and 20-launch soak: Pending.
+- Reference performance / soaks (REL04 / FIX12 / T070): PendingHardware until collector + twelve native720p Low captures and two-map soaks on reference machine.
+- Offline NuGet advisory lookup: PendingNetwork.
+- Compile-GameContent still labels nativeUnityNavBake/releasePlayerLoad Pending in its report metadata; packaged NVB1 install exists in source but full native/player route review remains Pending.
+- Automated extract + launch-offline.cmd from a non-repo cwd can reach Main (matchActive=0); that is not manual playtest or REL PASS.
+- Tooling extract/corrupt rehearsals are software-only; player corrupt-content recovery and prior-pair rollback still need operator confirmation when a previous package exists.
 "@
     [IO.File]::WriteAllText((Join-Path $stage 'KNOWN_ISSUES.txt'), $known)
 
