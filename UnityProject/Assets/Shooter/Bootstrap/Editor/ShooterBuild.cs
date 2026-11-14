@@ -267,6 +267,10 @@ public static class ShooterBuild
     private static void Build(bool server)
     {
         var toolchain = CheckToolchain();
+        // Capture dirt before BuildPlayer/SaveAssets/sibling writers can mutate the tree mid-build.
+        // T064/T071 require the candidate identity to reflect the requested source, not editor side effects.
+        bool sourceDirtyAtRequest = Git("status --porcelain").Length != 0;
+        string sourceCommitAtRequest = Git("rev-parse HEAD");
         string output = Path.GetFullPath(Argument("-shooterOutput"));
         string artifacts = Path.Combine(RepositoryRoot, "Artifacts") + Path.DirectorySeparatorChar;
         if (!output.StartsWith(artifacts, StringComparison.OrdinalIgnoreCase)) throw new ArgumentException("Build output must stay inside repository Artifacts");
@@ -306,8 +310,8 @@ public static class ShooterBuild
             string[] artExtensions = { ".png", ".jpg", ".jpeg", ".tga", ".exr", ".hdr", ".psd", ".fbx", ".obj", ".blend", ".anim", ".spriteatlas", ".wav", ".mp3", ".ogg" };
             string[] importedArt = sourceAssets.Where(p => artExtensions.Contains(Path.GetExtension(p).ToLowerInvariant())).ToArray();
             string[] graphics = sourceAssets.Where(p => p.EndsWith(".shader", StringComparison.OrdinalIgnoreCase) || p.EndsWith(".mat", StringComparison.OrdinalIgnoreCase) || importedArt.Contains(p)).ToArray();
-            var manifest = new BuildManifest { result = report.summary.result.ToString(), target = server ? "Server" : "Client", sourceCommit = Git("rev-parse HEAD"),
-                sourceDirty = Git("status --porcelain").Length != 0, sourceHash = sourceHash, toolchainHash = HashFile(LockPath), contentManifestHash = HashFile(contentPath), editorVersion = toolchain.editorVersion, editorRevision = toolchain.editorRevision,
+            var manifest = new BuildManifest { result = report.summary.result.ToString(), target = server ? "Server" : "Client", sourceCommit = sourceCommitAtRequest,
+                sourceDirty = sourceDirtyAtRequest, sourceHash = sourceHash, toolchainHash = HashFile(LockPath), contentManifestHash = HashFile(contentPath), editorVersion = toolchain.editorVersion, editorRevision = toolchain.editorRevision,
                 backend = server ? toolchain.serverBackend : toolchain.clientBackend, development = false, totalBytes = report.summary.totalSize, graphicsSourceAssets = graphics, sourceAssetPaths = sourceAssets };
             WriteJson(Argument("-shooterReport"), manifest);
             if (report.summary.result != BuildResult.Succeeded) throw new InvalidOperationException("Build failed: " + report.summary.result);
