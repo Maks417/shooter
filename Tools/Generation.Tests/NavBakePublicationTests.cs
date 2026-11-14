@@ -5,6 +5,7 @@ using Shooter.Generation;
 using Shooter.Generation.Environment;
 using Xunit;
 
+[Collection("NativeNavProvider")]
 public sealed class NavBakePublicationTests
 {
     private readonly ContentId toolchain = ContentIdentity.Hash(System.Text.Encoding.ASCII.GetBytes("nav-bake-publication-test"));

@@ -21,6 +21,16 @@ namespace Shooter.Generation.Environment
         /// </summary>
         public static Func<IReadOnlyList<CollisionBox>, float, float, float, float, float, float, NativeBake?>? NativeProvider { get; set; }
 
+        /// <summary>
+        /// Optional editor identity ("unity=6000.3.28f1;revision=...") recorded in the nav provenance sidecar
+        /// when a native provider is active. Never part of package bytes (content format stays frozen).
+        /// </summary>
+        public static string? NativeToolIdentity { get; set; }
+
+        public static bool IsNativeProvenance(string? provenance) =>
+            !string.IsNullOrWhiteSpace(provenance) &&
+            string.Equals(provenance, NativeProvenance, StringComparison.Ordinal);
+
         public sealed class NativeBake
         {
             public UnityNavMeshBakeCodec.Bake Bake { get; }

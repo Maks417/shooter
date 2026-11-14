@@ -111,6 +111,8 @@ namespace Shooter.Generation.Environment
                 // ADR-038: persist release catalog/gameplay sidecars beside packages (compile-time only).
                 var catalogMaps = DistinctMapIds(built);
                 ReleaseCatalogDocument.WriteAtomic(root, toolchainHash, catalogMaps);
+                // T067: provenance sidecar (outside frozen package bytes) distinguishes software grid from native bake.
+                NavBakeProvenanceDocument.WriteAtomic(root, built, NavBakePublication.NativeToolIdentity);
                 return MapPackagePublishResult.Ok(built, allReused && built.Count > 0);
             }
             catch (OperationCanceledException)
