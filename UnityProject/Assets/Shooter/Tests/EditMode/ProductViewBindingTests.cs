@@ -9,6 +9,7 @@ using Shooter.Presentation.Rendering;
 using Shooter.Presentation.Rig;
 using Shooter.Presentation.View;
 using UnityEngine;
+using EntityId = Shooter.Contracts.EntityId;
 
 namespace Shooter.Tests
 {

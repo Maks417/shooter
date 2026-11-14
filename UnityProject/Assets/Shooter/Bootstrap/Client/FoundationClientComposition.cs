@@ -58,7 +58,7 @@ namespace Shooter.Bootstrap
                                 onRetry: () =>
                                 {
                                     if (!authority.TryRecoverProductContent(out _)) return;
-                                    Object.Destroy(GameObject.Find("Content recovery"));
+                                    UnityEngine.Object.Destroy(GameObject.Find("Content recovery"));
                                     string map = FoundationEntry.CommandLine("-shooterMap",
                                         PlayerPrefs.GetString("shooter.map", WellKnownMaps.TrainingCompound.Value));
                                     byte size = byte.Parse(

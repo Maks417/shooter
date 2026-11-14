@@ -371,9 +371,10 @@ namespace Shooter.Presentation.Rig
                 PoseAvatar(avatar, state, dtSeconds, completedTick);
             }
 
+            ActorLifecycleState human = default;
             bool showLocalWeapon = humanEntity.IsValid
                 && lifecycle != null
-                && lifecycle.TryGetActorState(humanEntity, out var human)
+                && lifecycle.TryGetActorState(humanEntity, out human)
                 && human.Alive;
             if (localWeapon != null) localWeapon.gameObject.SetActive(showLocalWeapon);
             if (showLocalWeapon)

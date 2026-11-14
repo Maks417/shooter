@@ -5,6 +5,7 @@ using Shooter.Game.Contracts;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using EntityId = Shooter.Contracts.EntityId;
+using InputBinding = Shooter.Game.Contracts.InputBinding;
 
 namespace Shooter.Presentation.Input
 {

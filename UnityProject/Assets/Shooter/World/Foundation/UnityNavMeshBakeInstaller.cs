@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using Shooter.Contracts;
 using Shooter.Generation.Environment;
 using Shooter.World.Navigation;
 using UnityEngine;

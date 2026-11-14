@@ -252,7 +252,7 @@ namespace Shooter.Bootstrap
                 diagnostic = "product-visual-store-missing";
                 return false;
             }
-            string mapId = productMap.LoadedPackage.MapId;
+            string mapId = productMap.LoadedPackage.Value.MapId;
             if (!productStaticCatalog.TryGet(new MapId(mapId), out var entry))
             {
                 diagnostic = "unknown-map";

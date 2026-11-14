@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Shooter.Game.Contracts;
 using UnityEngine.InputSystem;
+using InputBinding = Shooter.Game.Contracts.InputBinding;
 
 namespace Shooter.Presentation.Input
 {
