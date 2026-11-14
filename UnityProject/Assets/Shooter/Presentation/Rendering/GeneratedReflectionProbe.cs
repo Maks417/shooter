@@ -72,7 +72,11 @@ namespace Shooter.Presentation
             if (disposed) return;
             disposed = true;
             probe = null;
-            if (root != null) UnityEngine.Object.Destroy(root);
+            if (root != null)
+            {
+                if (Application.isPlaying) UnityEngine.Object.Destroy(root);
+                else UnityEngine.Object.DestroyImmediate(root);
+            }
             root = null;
             BakeRan = false;
             BakeId = -1;

@@ -162,9 +162,9 @@ namespace Shooter.Presentation
             disposed = true;
             if (RenderSettings.skybox == skybox) RenderSettings.skybox = null;
             RenderSettings.fog = false;
-            if (skybox != null) UnityEngine.Object.Destroy(skybox);
-            if (gradient != null) UnityEngine.Object.Destroy(gradient);
-            if (root != null) UnityEngine.Object.Destroy(root);
+            DestroyOwned(skybox);
+            DestroyOwned(gradient);
+            DestroyOwned(root);
             skybox = null;
             gradient = null;
             root = null;
@@ -189,6 +189,13 @@ namespace Shooter.Presentation
             }
             texture.Apply(false, true);
             return texture;
+        }
+
+        private static void DestroyOwned(UnityEngine.Object? value)
+        {
+            if (value == null) return;
+            if (Application.isPlaying) UnityEngine.Object.Destroy(value);
+            else UnityEngine.Object.DestroyImmediate(value);
         }
 
         private static Color ToColor(GeneratedSkyMath.Rgb rgb) => new Color(rgb.R, rgb.G, rgb.B, 1f);
