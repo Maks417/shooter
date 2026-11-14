@@ -16,6 +16,7 @@ namespace Shooter.Simulation.AI
         private readonly Dictionary<ulong, uint> sequences = new Dictionary<ulong, uint>();
         private readonly SenseTarget[] enemyScratch = new SenseTarget[GameContractVersion.MaxParticipants];
         private readonly InputCommand[] planScratch;
+        private readonly List<EntityId> slideScratch = new List<EntityId>(CombatAiDirector.MaxBots);
 
         public TeamBotPlanner(IWorldQueries world, INavigation navigation, uint visionMask = 0, uint navRevision = 1)
         {
@@ -26,6 +27,9 @@ namespace Shooter.Simulation.AI
 
         public CombatAiDirector Director => director;
         public AiCounters Counters => director.Counters;
+
+        /// <summary>Bots whose command planned by the last <see cref="Plan"/> requests a slide this tick.</summary>
+        public IReadOnlyList<EntityId> SlideActors => slideScratch;
 
         public void RegisterBot(EntityId id, Float3 feet, float yaw, byte team = 0)
         {
@@ -42,7 +46,9 @@ namespace Shooter.Simulation.AI
         public int Plan(uint nextTick, MatchViewSnapshot match, IActorLifecycle lifecycle, CommandBuffer destination)
         {
             if (match == null || lifecycle == null || destination == null) throw new ArgumentNullException(nameof(match));
-            SyncFromLifecycle(lifecycle);
+            var stanceSource = lifecycle as IActorStanceSource;
+            SyncFromLifecycle(lifecycle, stanceSource);
+            slideScratch.Clear();
 
             // Living participants only; opposite-team filtering happens per bot before perception.
             int enemyCount = 0;
@@ -51,9 +57,11 @@ namespace Shooter.Simulation.AI
                 var p = match.Participants[i];
                 if (!p.Alive) continue;
                 if (!lifecycle.TryGetActorState(p.EntityId, out var state) || !state.Alive) continue;
+                // Aim at the upper chest of the target's *current* pose (inside the torso hit volume).
+                bool crouched = stanceSource != null && stanceSource.TryGetStance(p.EntityId, out var st) && st == Stance.Crouching;
                 enemyScratch[enemyCount++] = new SenseTarget(
                     p.EntityId,
-                    new Float3(state.Feet.X, state.Feet.Y + 1.65f, state.Feet.Z),
+                    new Float3(state.Feet.X, state.Feet.Y + (crouched ? CombatAiDirector.CrouchedAimHeight : CombatAiDirector.StandingAimHeight), state.Feet.Z),
                     state.Team,
                     state.Alive);
             }
@@ -68,6 +76,7 @@ namespace Shooter.Simulation.AI
                 if (written >= destination.Capacity) break;
                 destination[written] = new InputCommand(
                     cmd.EntityId, nextTick, seq, cmd.MoveX, cmd.MoveY, cmd.AimYaw, cmd.AimPitch, cmd.Buttons, cmd.SelectedSlot);
+                if (director.WantsSlide(cmd.EntityId)) slideScratch.Add(cmd.EntityId);
                 written++;
             }
             return written;
@@ -96,7 +105,7 @@ namespace Shooter.Simulation.AI
 
         public void CancelAll() => director.CancelAll();
 
-        private void SyncFromLifecycle(IActorLifecycle lifecycle)
+        private void SyncFromLifecycle(IActorLifecycle lifecycle, IActorStanceSource? stanceSource)
         {
             for (int i = 0; i < director.BotCount; i++)
             {
@@ -113,6 +122,7 @@ namespace Shooter.Simulation.AI
                     board.Alive = true;
                     board.Team = state.Team;
                     board.Feet = state.Feet;
+                    board.Crouched = stanceSource != null && stanceSource.TryGetStance(board.Self, out var ownStance) && ownStance == Stance.Crouching;
                     board.Yaw = state.AimYaw;
                     board.Health = state.Health;
                     board.MagAmmo = state.Magazine;

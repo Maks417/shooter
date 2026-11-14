@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using Shooter.Contracts;
+using Shooter.Simulation.Motor;
 
 namespace Shooter.Simulation.AI
 {
@@ -28,6 +29,35 @@ namespace Shooter.Simulation.AI
         public const uint ReplanCooldownTicks = 30;
         public const uint PathTimeoutTicks = 300;
 
+        // Eye / aim heights matching MotorConfig eyes and GameplayPoseEvaluator hit volumes.
+        public const float StandingEyeHeight = 1.65f;
+        public const float CrouchedEyeHeight = 1.05f;
+        /// <summary>Upper chest inside the standing torso capsule (hip 0.9 .. shoulder 1.4).</summary>
+        public const float StandingAimHeight = 1.30f;
+        /// <summary>Upper chest inside the crouched/sliding torso capsule (hip 0.55 .. shoulder 0.8).</summary>
+        public const float CrouchedAimHeight = 0.70f;
+
+        /// <summary>Canonical gameplay muzzle offsets from GameplayPoseEvaluator.CanonicalMuzzle (right +0.18, up -0.15).</summary>
+        public const float MuzzleRightOffset = 0.18f;
+        public const float MuzzleDownOffset = 0.15f;
+
+        // Movement abilities (all deterministic from entity id / tick / authority feedback).
+        /// <summary>Crouch while engaging from rest when the target is at least this far away.</summary>
+        public const float LongRangeCrouchDistance = 30f;
+        /// <summary>Entity ids with (id % CrouchEngageModulo) == 0 always prefer crouching when engaging from rest.</summary>
+        public const ulong CrouchEngageModulo = 2;
+        /// <summary>Stuck ticks (of StuckTicksThreshold) before the first jump attempt: 0.75 s.</summary>
+        public const uint JumpStuckTicks = 45;
+        public const uint JumpCooldownTicks = 90;
+        /// <summary>Continuous sprint ticks before a slide may be requested (motor needs previous SprintActive and speed).</summary>
+        public const uint SlideMinSprintTicks = 30;
+        public const float SlideMinStraightMeters = 5f;
+        public const float SlideRequestSpeed = MotorConfig.SlideMinEntrySpeed + 0.3f;
+        public const uint SlideBotCooldownBaseTicks = 600;
+        public const uint SlideBotCooldownSpreadTicks = 60;
+        /// <summary>Minimum forward component of the move axes for sprint.</summary>
+        public const float SprintMinForward = 0.5f;
+
         private readonly AiBlackboard[] boards = new AiBlackboard[MaxBots];
         private readonly PerceptionSystem perception;
         private readonly CoverReservationBoard covers = new CoverReservationBoard();
@@ -43,6 +73,15 @@ namespace Shooter.Simulation.AI
         private uint navRevision = 1;
 
         public AiCounters Counters => counters;
+
+        /// <summary>True when the command built for the bot this tick requests a slide.</summary>
+        public bool WantsSlide(EntityId id)
+        {
+            for (int i = 0; i < botCount; i++)
+                if (boards[i].Self == id) return boards[i].SlideIntent;
+            return false;
+        }
+
         public int BotCount => botCount;
         public CoverReservationBoard CoverBoard => covers;
         public uint NavRevision { get => navRevision; set => navRevision = value == 0 ? throw new ArgumentOutOfRangeException(nameof(value)) : value; }
@@ -109,6 +148,7 @@ namespace Shooter.Simulation.AI
             board.LastSenseOpportunityTick = 0;
             board.DestinationCursor = 0;
             board.RetryAfterTick = 0;
+            ResetMovement(board);
             board.StateEnteredTick = tick;
             return board;
         }
@@ -197,7 +237,21 @@ namespace Shooter.Simulation.AI
             board.SenseAgeTicks = 0;
             board.LastSenseOpportunityTick = 0;
             board.RetryAfterTick = 0;
+            ResetMovement(board);
             board.StateEnteredTick = tick;
+        }
+
+        private static void ResetMovement(AiBlackboard board)
+        {
+            board.Crouched = false;
+            board.HasPrevFeet = false;
+            board.PrevFeet = board.Feet;
+            board.SpeedMps = 0;
+            board.SprintTicks = 0;
+            board.JumpPending = false;
+            board.NextJumpTick = 0;
+            board.NextSlideTick = 0;
+            board.SlideIntent = false;
         }
 
         /// <summary>Plan next-tick commands for all living bots. Caller feeds them through normal simulation command path.</summary>
@@ -236,6 +290,7 @@ namespace Shooter.Simulation.AI
                 var board = boards[i];
                 if (!board.Alive || board.State == AiState.Dead) continue;
                 AdvancePathCorners(board);
+                UpdateSpeed(board);
                 UpdateStuck(board);
                 EntityId? priorVisible = board.VisibleTargetId;
                 board.HasVisibleTarget = false;
@@ -245,7 +300,7 @@ namespace Shooter.Simulation.AI
                 counters.SenseOpportunitiesThisTick++;
                 if (enemies != null && enemyCount > 0)
                 {
-                    var eye = new Float3(board.Feet.X, board.Feet.Y + 1.65f, board.Feet.Z);
+                    var eye = new Float3(board.Feet.X, board.Feet.Y + EyeHeight(board), board.Feet.Z);
                     bool any = false;
                     int candidateStart = (int)((simulationTick + board.Self.Value) % (uint)enemyCount);
                     for (int offset = 0; offset < enemyCount; offset++)
@@ -434,6 +489,20 @@ namespace Shooter.Simulation.AI
             }
         }
 
+        private static float EyeHeight(AiBlackboard board) => board.Crouched ? CrouchedEyeHeight : StandingEyeHeight;
+
+        private static void UpdateSpeed(AiBlackboard board)
+        {
+            if (board.HasPrevFeet)
+            {
+                float dx = board.Feet.X - board.PrevFeet.X, dz = board.Feet.Z - board.PrevFeet.Z;
+                board.SpeedMps = MathF.Sqrt(dx * dx + dz * dz) * 60f;
+            }
+            else board.SpeedMps = 0;
+            board.PrevFeet = board.Feet;
+            board.HasPrevFeet = true;
+        }
+
         private void UpdateStuck(AiBlackboard board)
         {
             if (!board.PathTicket.HasValue && board.PathCornerIndex >= board.PathCornerCount)
@@ -451,6 +520,12 @@ namespace Shooter.Simulation.AI
                 return;
             }
             board.StuckTicks++;
+            // Hop obstacles before (or together with) the replan; cooldown prevents jump spam.
+            if (board.StuckTicks >= JumpStuckTicks && tick >= board.NextJumpTick)
+            {
+                board.JumpPending = true;
+                board.NextJumpTick = tick + JumpCooldownTicks;
+            }
             if (board.StuckTicks < StuckTicksThreshold) return;
             counters.StuckEvents++;
             board.StuckTicks = 0;
@@ -544,10 +619,28 @@ namespace Shooter.Simulation.AI
 
         private static void AimAt(AiBlackboard board, Float3 target)
         {
-            float dx = target.X - board.Feet.X, dy = target.Y - (board.Feet.Y + 1.65f), dz = target.Z - board.Feet.Z;
+            float dx = target.X - board.Feet.X, dy = target.Y - (board.Feet.Y + EyeHeight(board)), dz = target.Z - board.Feet.Z;
+            // Hitscan leaves the canonical muzzle (eye + 0.18 m right, 0.15 m down) parallel to the aim ray, so shift the
+            // eye ray the opposite way: the bullet, not the eye line, then passes through the chest point.
+            float bearing = MathF.Sqrt(dx * dx + dz * dz);
+            if (bearing > 1e-4f)
+            {
+                float rx = dz / bearing, rz = -dx / bearing;
+                dx -= rx * MuzzleRightOffset;
+                dz -= rz * MuzzleRightOffset;
+            }
+            dy += MuzzleDownOffset;
             board.Yaw = ContractYaw(dx, dz);
             float flat = MathF.Sqrt(dx * dx + dz * dz);
             board.Pitch = flat < 1e-5f ? 0 : -MathF.Atan2(dy, flat);
+        }
+
+        private static float StraightMetersToCorner(AiBlackboard board)
+        {
+            if (board.PathCornerIndex >= board.PathCornerCount) return 0f;
+            var c = board.PathCorners[board.PathCornerIndex];
+            float dx = c.X - board.Feet.X, dz = c.Z - board.Feet.Z;
+            return MathF.Sqrt(dx * dx + dz * dz);
         }
 
         private InputCommand BuildCommand(AiBlackboard board, uint simulationTick, uint sequence)
@@ -590,6 +683,49 @@ namespace Shooter.Simulation.AI
                 counters.ShotsRequested++;
             }
             if (board.State == AiState.Reload) buttons |= InputButtons.ReloadPressed;
+
+            bool engaging = board.State == AiState.Engage && board.HasVisibleTarget;
+            bool moving = movementTarget.HasValue && board.State != AiState.Reload && (mx != 0 || my != 0);
+            bool firingOrReloading = (buttons & (InputButtons.FireHeld | InputButtons.FirePressed | InputButtons.ReloadPressed)) != 0;
+            board.SlideIntent = false;
+
+            // 1. Sprint on a route with no visible target, mostly forward; never while firing/reloading/aiming.
+            bool travelState = board.State == AiState.Patrol || board.State == AiState.Investigate || board.State == AiState.Search
+                || board.State == AiState.Reposition || board.State == AiState.SeekCover;
+            bool sprint = travelState && !board.HasVisibleTarget && moving && my >= SprintMinForward && !firingOrReloading;
+            if (sprint)
+            {
+                buttons |= InputButtons.SprintHeld;
+                board.SprintTicks++;
+            }
+            else board.SprintTicks = 0;
+
+            // 2. Crouch while engaging from rest (id- or range-based so bots differ); moving stands up implicitly.
+            if (engaging && !moving && board.VisibleTarget.HasValue)
+            {
+                float tx = board.VisibleTarget.Value.X - board.Feet.X, tz = board.VisibleTarget.Value.Z - board.Feet.Z;
+                bool far = tx * tx + tz * tz >= LongRangeCrouchDistance * LongRangeCrouchDistance;
+                if (far || board.Self.Value % CrouchEngageModulo == 0) buttons |= InputButtons.CrouchHeld;
+            }
+
+            // 3. Jump (edge) when stuck: only on the tick UpdateStuck scheduled it.
+            if (board.JumpPending)
+            {
+                if (!engaging && !firingOrReloading) buttons |= InputButtons.JumpPressed;
+                board.JumpPending = false;
+            }
+
+            // 4. Occasional slide when sprinting toward cover / repositioning with a long straight leg left.
+            if (sprint && (buttons & InputButtons.JumpPressed) == 0
+                && (board.State == AiState.SeekCover || board.State == AiState.Reposition)
+                && board.SprintTicks >= SlideMinSprintTicks
+                && board.SpeedMps >= SlideRequestSpeed
+                && tick >= board.NextSlideTick
+                && StraightMetersToCorner(board) >= SlideMinStraightMeters)
+            {
+                board.SlideIntent = true;
+                board.NextSlideTick = tick + SlideBotCooldownBaseTicks + (uint)(board.Self.Value % 5) * SlideBotCooldownSpreadTicks;
+            }
             return new InputCommand(board.Self, simulationTick, sequence, mx, my, board.Yaw, board.Pitch, buttons, 0);
         }
     }

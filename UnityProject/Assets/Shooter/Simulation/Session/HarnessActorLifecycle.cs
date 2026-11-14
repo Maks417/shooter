@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Shooter.Contracts;
 using Shooter.Game.Contracts;
+using Shooter.Simulation.AI;
 
 namespace Shooter.Simulation.Session
 {
@@ -10,7 +11,7 @@ namespace Shooter.Simulation.Session
     /// T036 reusable lifecycle adapter over CombatHarnessSimulation. Preserves harness C0 behavior;
     /// shipping GameSession rejects fake map/nav adapters separately.
     /// </summary>
-    public sealed class HarnessActorLifecycle : IActorLifecycle
+    public sealed class HarnessActorLifecycle : IActorLifecycle, IActorStanceSource
     {
         private sealed class Corpse
         {
@@ -24,6 +25,7 @@ namespace Shooter.Simulation.Session
         private readonly CombatHarnessSimulation harness;
         private readonly Dictionary<ulong, ActorLifecycleState> states = new Dictionary<ulong, ActorLifecycleState>();
         private readonly Dictionary<ulong, (ParticipantId participant, LifeId life)> lives = new Dictionary<ulong, (ParticipantId, LifeId)>();
+        private readonly Dictionary<ulong, Stance> stances = new Dictionary<ulong, Stance>();
         private readonly List<Corpse> corpses = new List<Corpse>(MaxCosmeticCorpses);
         private uint currentActiveTick;
 
@@ -57,6 +59,7 @@ namespace Shooter.Simulation.Session
             currentActiveTick = activeTick;
             if (!states.TryGetValue(entity.Value, out var state)) return false;
             states.Remove(entity.Value);
+            stances.Remove(entity.Value);
             lives.Remove(entity.Value);
             harness.RetireActor(entity);
             corpses.Add(new Corpse { State = state, RetiredAtActiveTick = activeTick });
@@ -90,9 +93,18 @@ namespace Shooter.Simulation.Session
             if (!states.TryGetValue(entity.Value, out var prev)) throw new InvalidOperationException("unknown entity");
             if (!harness.ResetActor(entity, feet, yaw)) throw new InvalidOperationException("authority entity missing");
             states[entity.Value] = new ActorLifecycleState(entity, prev.Team, true, 100, feet, yaw, 0, 0, 30, 90);
+            stances[entity.Value] = Stance.Standing;
         }
 
         public bool TryGetActorState(EntityId entity, out ActorLifecycleState state) => states.TryGetValue(entity.Value, out state);
+
+        /// <summary>Last synchronized authoritative stance (Standing until the first snapshot sync).</summary>
+        public bool TryGetStance(EntityId entity, out Stance stance)
+        {
+            if (!states.ContainsKey(entity.Value)) { stance = Stance.Standing; return false; }
+            if (!stances.TryGetValue(entity.Value, out stance)) stance = Stance.Standing;
+            return true;
+        }
 
         public bool ResetCommandEpoch(EntityId entity) => harness.ResetCommandEpoch(entity);
 
@@ -114,6 +126,7 @@ namespace Shooter.Simulation.Session
             foreach (var entity in snapshot.Entities)
             {
                 if (!states.TryGetValue(entity.Id.Value, out var prev)) continue;
+                stances[entity.Id.Value] = entity.Stance;
                 states[entity.Id.Value] = new ActorLifecycleState(
                     entity.Id,
                     entity.Team,

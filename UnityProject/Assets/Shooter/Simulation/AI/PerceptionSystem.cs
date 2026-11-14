@@ -4,6 +4,15 @@ using Shooter.Contracts;
 
 namespace Shooter.Simulation.AI
 {
+    /// <summary>
+    /// Optional non-frozen extension of IActorLifecycle that exposes the authoritative stance, so bots
+    /// can aim inside a crouched/sliding target's real hit volumes and from their own real eye height.
+    /// </summary>
+    public interface IActorStanceSource
+    {
+        bool TryGetStance(EntityId entity, out Stance stance);
+    }
+
     public readonly struct SenseTarget
     {
         public EntityId Id { get; }
