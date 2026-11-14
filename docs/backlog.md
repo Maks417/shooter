@@ -86,3 +86,6 @@ WP-02 starts on C0/base commit, edits only geometry/weapon generator folders and
 ## Product remediation tasks
 
 [T052–T065](release-remediation-plan.md) retain original audit repair requirements; their software is substantially committed in 59316d3. [T066–T071](next-playable-build.md) record landed software versus remaining native content/player/device/measurement/delivery work within M8–M11, followed by T062/T065 acceptance. [FIX01–FIX14](release-remediation-validation.md) supplement original gates. This documentation task creates no runtime assignment or coordination lease.
+## Owner-assigned local movement extension
+
+[T072](task-supplement.md#t072--local-sprint-slide-owner-assigned-2026-11-14) implements the owner-requested Left Shift + F slide under [ADR-039](decisions.md#adr-039--accepted-local-authoritative-sprint-slide-t072), within M8/M10. This new implementation assignment supersedes the previous docs-only scope for this bounded feature; it does not assign agents, change C0/N1 packets or waive open acceptance.

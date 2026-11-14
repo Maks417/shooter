@@ -94,6 +94,15 @@ namespace Shooter.Simulation
             get { MainThread(); return actors.Count; }
         }
 
+        public bool TryGetMotorState(EntityId entity, out MotorBodyState state)
+        {
+            MainThread();
+            for (int i = 0; i < actors.Count; i++)
+                if (actors[i].Id.Equals(entity)) { state = actors[i].Motor; return true; }
+            state = default;
+            return false;
+        }
+
         /// <summary>
         /// Retires an authoritative life after its ordered death event has been consumed.
         /// Retired entities are absent from subsequent actor and hit snapshots and can never
@@ -176,7 +185,11 @@ namespace Shooter.Simulation
             return -1;
         }
 
-        public StepResult Step(uint requestedTick, ReadOnlyMemory<InputCommand> commands)
+        public StepResult Step(uint requestedTick, ReadOnlyMemory<InputCommand> commands) =>
+            Step(requestedTick, commands, default);
+
+        /// <summary>Local-only slide intent, consumed with a fresh accepted command (ADR-039).</summary>
+        public StepResult Step(uint requestedTick, ReadOnlyMemory<InputCommand> commands, EntityId localSlideActor)
         {
             MainThread();
             if (commands.Length > ContractVersion.MaxCommands) throw new ArgumentException("Command cap exceeded", nameof(commands));
@@ -214,7 +227,8 @@ namespace Shooter.Simulation
             {
                 var actor = actors[a];
                 if (!actor.Alive) continue;
-                if (!chosen.TryGetValue(actor.Id.Value, out var cmd))
+                bool freshCommand = chosen.TryGetValue(actor.Id.Value, out var cmd);
+                if (!freshCommand)
                 {
                     cmd = new InputCommand(actor.Id, requestedTick, actor.LastProcessedSequence, 0, 0, actor.Motor.AimYaw, actor.Motor.AimPitch,
                         actor.LastButtons & ~(InputButtons.FirePressed | InputButtons.ReloadPressed | InputButtons.JumpPressed), actor.ActiveSlot);
@@ -231,7 +245,7 @@ namespace Shooter.Simulation
                     ref actor.ActiveSlot, ref actor.DesiredSlot, acceptedShots, tickEvents, ref nextEvent, actor.Id);
                 for (int s = 0; s < acceptedShots.Count; s++) pendingShots.Add(new PendingShot(actor, acceptedShots[s]));
 
-                actor.Motor = motor.Step(actor.Motor, cmd, requestedTick, world);
+                actor.Motor = motor.Step(actor.Motor, cmd, requestedTick, world, freshCommand && actor.Id.Equals(localSlideActor));
                 AuthoritativeRecoil.Decay(ref actor.RecoilYaw, ref actor.RecoilPitch);
             }
 

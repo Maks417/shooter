@@ -1,5 +1,9 @@
 # Product state audit — 2026-11-14
 
+## T072 follow-up: local sprint slide
+
+The owner subsequently requested and authorized implementation of Left Shift + F slide. ADR-039/T072 extend local authority/input/settings and copied camera/rig movement views; existing C0/N1/content formats remain intact. The original review below is historical to that feature addition: 7cd7e81 has no slide. Follow [M8/M11 handoff evidence](milestones/m11-playable-release/handoff.md#t072--owner-requested-local-sprint-slide--implementation-record) and [playtest guide](playtest-guide.md) for actual new-build availability, test results and retained limitations. No acceptance gates are closed by adding this feature.
+
 ## Latest review: built playtest candidate, gameplay acceptance pending
 
 Review started at clean `main` `84befb9b48c98b71716d67a0a3e799b8b112c6df`. During review, `a54ed8302151a134e47cc1a421153edc8ef4e0c7` added `CLAUDE.md` only; it is preserved. The latest retained binary is **`7cd7e8191e118929af742bef382774edb22a57c2`**, not the review HEAD. Later changes before this review are documentation and deletion of unused `Assets/Resources.meta`; there is no newer runtime C# implementation. Do not relabel the existing binary as a build of a later commit.

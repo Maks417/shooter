@@ -19,15 +19,20 @@ namespace Shooter.Simulation.Motor
         public uint JumpConsumedSequence { get; }
         public float LocomotionDistanceMeters { get; }
         public bool SprintActive { get; }
+        public uint SlideTicksRemaining { get; }
+        public uint SlideCooldownTicksRemaining { get; }
+        public bool SlideActive => SlideTicksRemaining > 0;
 
         public MotorBodyState(
             Float3 feet, Float3 velocity, float aimYaw, float aimPitch, Stance stance, float capsuleHeight,
             bool grounded, SurfaceId groundSurfaceId, Float3 groundNormal, uint lastGroundedTick,
-            uint jumpConsumedSequence, float locomotionDistanceMeters, bool sprintActive)
+            uint jumpConsumedSequence, float locomotionDistanceMeters, bool sprintActive,
+            uint slideTicksRemaining = 0, uint slideCooldownTicksRemaining = 0)
         {
             Feet = feet; Velocity = velocity; AimYaw = aimYaw; AimPitch = aimPitch; Stance = stance; CapsuleHeight = capsuleHeight;
             Grounded = grounded; GroundSurfaceId = groundSurfaceId; GroundNormal = groundNormal; LastGroundedTick = lastGroundedTick;
             JumpConsumedSequence = jumpConsumedSequence; LocomotionDistanceMeters = locomotionDistanceMeters; SprintActive = sprintActive;
+            SlideTicksRemaining = slideTicksRemaining; SlideCooldownTicksRemaining = slideCooldownTicksRemaining;
         }
     }
 
@@ -40,7 +45,7 @@ namespace Shooter.Simulation.Motor
         public KinematicMotor(MotorConfig? config = null) { this.config = config ?? MotorConfig.BaselineV1; }
         public MotorConfig Config => config;
 
-        public MotorBodyState Step(MotorBodyState previous, InputCommand command, uint tick, IWorldQueries world)
+        public MotorBodyState Step(MotorBodyState previous, InputCommand command, uint tick, IWorldQueries world, bool slidePressed = false)
         {
             if (world == null) throw new ArgumentNullException(nameof(world));
             if (previous.Stance == Stance.Dead)
@@ -51,6 +56,22 @@ namespace Shooter.Simulation.Motor
             bool wantSprint = (command.Buttons & InputButtons.SprintHeld) != 0 && !wantCrouch && !wantAim;
             bool fireOrReload = (command.Buttons & (InputButtons.FireHeld | InputButtons.FirePressed | InputButtons.ReloadPressed)) != 0;
             if (fireOrReload) wantSprint = false;
+
+            bool wantsJump = (command.Buttons & InputButtons.JumpPressed) != 0;
+            uint slideTicks = previous.SlideTicksRemaining;
+            uint cooldown = previous.SlideCooldownTicksRemaining > 0 ? previous.SlideCooldownTicksRemaining - 1 : 0;
+            if (!previous.Grounded || wantsJump) slideTicks = 0;
+            bool startSlide = slidePressed && previous.SlideCooldownTicksRemaining == 0
+                && slideTicks == 0 && previous.Grounded && previous.SprintActive && wantSprint
+                && !wantsJump && command.MoveY > 0f
+                && MotorMath.Length(MotorMath.Horizontal(previous.Velocity)) >= MotorConfig.SlideMinEntrySpeed;
+            if (startSlide)
+            {
+                slideTicks = MotorConfig.SlideDurationTicks;
+                cooldown = MotorConfig.SlideCooldownTicks;
+            }
+            bool sliding = slideTicks > 0;
+            if (sliding) wantCrouch = true;
 
             float targetHeight = wantCrouch ? config.CrouchHeight : config.StandingHeight;
             Stance stance = wantCrouch ? Stance.Crouching : Stance.Standing;
@@ -86,8 +107,18 @@ namespace Shooter.Simulation.Motor
             Float3 wishVel = MotorMath.Scale(wish, speed);
 
             Float3 horizontal = MotorMath.Horizontal(velocity);
-            float accel = previous.Grounded ? (wishLen > 1e-4f ? config.GroundAccel : config.GroundDecel) : config.AirAccel;
-            horizontal = Accelerate(horizontal, wishVel, accel, MotorMath.TickSeconds);
+            if (sliding)
+            {
+                // Only authority supplies the entry boost; held input/turning cannot accelerate or steer a slide.
+                horizontal = startSlide
+                    ? MotorMath.Scale(MotorMath.NormalizeOrZero(horizontal), MotorConfig.SlideEntrySpeed)
+                    : Accelerate(horizontal, default, MotorConfig.SlideDeceleration, MotorMath.TickSeconds);
+            }
+            else
+            {
+                float accel = previous.Grounded ? (wishLen > 1e-4f ? config.GroundAccel : config.GroundDecel) : config.AirAccel;
+                horizontal = Accelerate(horizontal, wishVel, accel, MotorMath.TickSeconds);
+            }
             velocity = new Float3(horizontal.X, velocity.Y, horizontal.Z);
 
             if (!(jumpEdge || velocity.Y > 0f && !previous.Grounded))
@@ -114,10 +145,17 @@ namespace Shooter.Simulation.Motor
                 if (velocity.Y < 0f) velocity = new Float3(velocity.X, 0f, velocity.Z);
             }
 
+            if (sliding)
+            {
+                slideTicks--;
+                if (!grounded || MotorMath.Length(MotorMath.Horizontal(velocity)) < 0.1f) slideTicks = 0;
+            }
+
             float moved = MotorMath.Length(MotorMath.Horizontal(MotorMath.Sub(feet, previous.Feet)));
             return new MotorBodyState(
                 feet, velocity, yaw, pitch, stance, height, grounded, groundId, groundNormal,
-                lastGrounded, jumpConsumed, previous.LocomotionDistanceMeters + moved, wantSprint && grounded);
+                lastGrounded, jumpConsumed, previous.LocomotionDistanceMeters + moved,
+                wantSprint && !sliding && stance == Stance.Standing && grounded, slideTicks, cooldown);
         }
 
         private static float ClampAxis(float value)

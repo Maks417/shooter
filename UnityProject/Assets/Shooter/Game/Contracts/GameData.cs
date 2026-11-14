@@ -432,6 +432,7 @@ namespace Shooter.Game.Contracts
             new InputBinding("Fire", "Mouse.Left"),
             new InputBinding("Reload", "Key.R"),
             new InputBinding("Sprint", "Key.LeftShift"),
+            new InputBinding("Slide", "Key.F"),
             new InputBinding("Crouch", "Key.LeftCtrl"),
             new InputBinding("Jump", "Key.Space"),
             new InputBinding("Slot1", "Key.Digit1"),
@@ -443,7 +444,17 @@ namespace Shooter.Game.Contracts
         private static FrozenList<InputBinding> ValidateBindings(IReadOnlyList<InputBinding> bindings)
         {
             if (bindings == null) throw new ArgumentNullException(nameof(bindings));
-            var list = new FrozenList<InputBinding>(bindings, GameContractVersion.MaxSettingsBindings);
+            // ADR-039: preserve custom controls in existing schema-2 settings.
+            var normalized = new List<InputBinding>(bindings.Count + 1);
+            bool hasSlide = false, fUsed = false;
+            foreach (var binding in bindings)
+            {
+                normalized.Add(binding);
+                hasSlide |= binding.Action == "Slide";
+                fUsed |= string.Equals(binding.Control, "Key.F", StringComparison.OrdinalIgnoreCase);
+            }
+            if (!hasSlide) normalized.Add(new InputBinding("Slide", fUsed ? "Unbound" : "Key.F"));
+            var list = new FrozenList<InputBinding>(normalized, GameContractVersion.MaxSettingsBindings);
             GameRequire.That(list.Count >= 1, nameof(bindings));
             var actions = new HashSet<string>(StringComparer.Ordinal);
             var controls = new HashSet<string>(StringComparer.OrdinalIgnoreCase);

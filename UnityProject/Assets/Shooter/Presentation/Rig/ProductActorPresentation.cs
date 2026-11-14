@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using Shooter.Contracts;
 using Shooter.Game.Contracts;
+using Shooter.Game.Session;
 using Shooter.Generation;
 using Shooter.Generation.Environment;
 using Shooter.Presentation.View;
@@ -292,7 +293,8 @@ namespace Shooter.Presentation.Rig
             bool aimHeld,
             float dtSeconds,
             IReadOnlyList<CombatEvent>? combatEvents = null,
-            uint completedTick = 0)
+            uint completedTick = 0,
+            Func<EntityId, LocalMovementView?>? movementView = null)
         {
             if (!ready || !visualsBound) return;
             localHuman = humanEntity;
@@ -368,7 +370,7 @@ namespace Shooter.Presentation.Rig
                         if (corpseScratch[i].EntityId.Equals(avatar.EntityId)) { state = corpseScratch[i]; found = true; break; }
                 }
                 if (!found) continue;
-                PoseAvatar(avatar, state, dtSeconds, completedTick);
+                PoseAvatar(avatar, state, dtSeconds, completedTick, movementView?.Invoke(avatar.EntityId));
             }
 
             ActorLifecycleState human = default;
@@ -469,7 +471,7 @@ namespace Shooter.Presentation.Rig
             PoseAvatar(avatar, state, 0f, 0u);
         }
 
-        private void PoseAvatar(Avatar avatar, ActorLifecycleState state, float dtSeconds, uint completedTick)
+        private void PoseAvatar(Avatar avatar, ActorLifecycleState state, float dtSeconds, uint completedTick, LocalMovementView? movement = null)
         {
             float speed = 0f;
             if (avatar.HasPrevious && !avatar.Corpse && state.Alive)
@@ -510,12 +512,14 @@ namespace Shooter.Presentation.Rig
                 pitch = 0f;
             }
 
+            bool crouching = movement.HasValue && movement.Value.Stance == Stance.Crouching;
+            if (movement.HasValue && movement.Value.Sliding) speed = 0f; // Slide momentum is not a running gait.
             var input = new SoldierMotionInput(
                 state.Feet,
                 yaw,
                 avatar.Distance,
                 avatar.Corpse || !state.Alive ? 0f : speed,
-                avatar.Corpse || !state.Alive ? 1f : 0f,
+                avatar.Corpse || !state.Alive || crouching ? 1f : 0f,
                 aimYaw,
                 pitch,
                 avatar.ReloadPhase,

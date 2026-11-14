@@ -27,8 +27,38 @@ namespace Shooter.Game.Contracts.Tests
             Assert.Equal(80f, s.HipFovDegrees);
             Assert.Equal(0.10f, s.MouseSensitivity);
             Assert.Equal(1f, s.UiScale);
-            Assert.Equal(14, s.Bindings.Count);
+            Assert.Equal(15, s.Bindings.Count);
             Assert.Equal(GameContractVersion.SettingsSchema, 2u);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void LegacyBindingsGainSlideWithoutStealingCustomizedF(bool customizedF)
+        {
+            string path = Path.Combine(AppContext.BaseDirectory, "Fixtures", "user-settings.valid.json");
+            string legacy = File.ReadAllText(path);
+            if (customizedF) legacy = legacy.Replace("Key.R", "Key.F");
+            Assert.True(UserSettingsJson.TryDecodeText(legacy, out var settings, out string diagnostic), diagnostic);
+            Assert.Contains(settings!.Bindings, b => b.Action == "Slide" && b.Control == (customizedF ? "Unbound" : "Key.F"));
+            Assert.Contains(settings.Bindings, b => b.Action == "Reload" && b.Control == (customizedF ? "Key.F" : "Key.R"));
+            Assert.True(UserSettingsJson.TryDecode(UserSettingsJson.Encode(settings), out var again, out diagnostic), diagnostic);
+            Assert.Equal(settings.Bindings.Count, again!.Bindings.Count);
+            var editor = new InputBindingEditor(again.Bindings);
+            Assert.True(editor.TryBeginListen("Slide"));
+            Assert.True(editor.TryOfferControl("Key.Space"));
+            Assert.Equal("Jump", editor.ConflictAction);
+            Assert.True(editor.TrySwapConflict());
+            Assert.Contains(editor.Working, b => b.Action == "Slide" && b.Control == "Key.Space");
+        }
+
+        [Fact]
+        public void SlideSettingsFixtureRoundtripsWithSprintChordBindings()
+        {
+            string path = Path.Combine(AppContext.BaseDirectory, "Fixtures", "user-settings-slide.valid.json");
+            Assert.True(UserSettingsJson.TryDecode(File.ReadAllBytes(path), out var settings, out string diagnostic), diagnostic);
+            Assert.Contains(settings!.Bindings, b => b.Action == "Slide" && b.Control == "Key.F");
+            Assert.Contains(settings.Bindings, b => b.Action == "Sprint" && b.Control == "Key.LeftShift");
         }
 
         [Fact]
@@ -208,9 +238,9 @@ namespace Shooter.Game.Contracts.Tests
             Assert.True(editor.IsListening);
 
             // Offer a free control.
-            Assert.True(editor.TryOfferControl("Key.F"));
+            Assert.True(editor.TryOfferControl("Key.G"));
             Assert.False(editor.IsListening);
-            Assert.Contains(editor.Working, b => b.Action == "Reload" && b.Control == "Key.F");
+            Assert.Contains(editor.Working, b => b.Action == "Reload" && b.Control == "Key.G");
 
             // Conflict with Fire (Mouse.Left): require swap/cancel.
             Assert.True(editor.TryBeginListen("Jump"));
@@ -238,7 +268,7 @@ namespace Shooter.Game.Contracts.Tests
             settingsEditor.SetDraft(editor.WithBindings(UserSettings.Defaults));
             Assert.True(settingsEditor.Apply(store, applier).Succeeded);
             Assert.True(store.Load(out var loaded).Succeeded);
-            Assert.Contains(loaded.Bindings, b => b.Action == "Reload" && b.Control == "Key.F");
+            Assert.Contains(loaded.Bindings, b => b.Action == "Reload" && b.Control == "Key.G");
             Assert.Contains(loaded.Bindings, b => b.Action == "Jump" && b.Control == "Mouse.Left");
             Assert.Contains(loaded.Bindings, b => b.Action == "Pause" && b.Control == UserSettings.ReservedEscapeControl);
         }

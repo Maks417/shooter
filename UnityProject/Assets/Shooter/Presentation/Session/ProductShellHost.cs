@@ -693,7 +693,7 @@ namespace Shooter.Presentation.Session
             {
                 var binding = bindingEditor.Working[i];
                 bool isPause = string.Equals(binding.Action, "Pause", StringComparison.Ordinal);
-                string label = binding.Action + ": " + binding.Control;
+                string label = (binding.Action == "Slide" ? "Slide (hold Sprint)" : binding.Action) + ": " + binding.Control;
                 if (isPause)
                     GUI.Label(new Rect(10 * s, y, 500 * s, 26 * s), label + " (reserved)");
                 else if (GUI.Button(new Rect(10 * s, y, 500 * s, 26 * s),

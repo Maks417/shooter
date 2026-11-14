@@ -61,3 +61,9 @@ On pause do not step authority, advance active time, age AI or consume buffered 
 ## Compatibility and fixture checklist
 
 T035 includes valid 5/6 rosters; invalid 4/7 sizes/IDs/counts/NaN; score-limit trade; 53999/54000 deadline; zero-kill draw; duplicate death; participant life/EntityId mapping; safe-spawn deferral; stale-load completion; pause/resume clock; results retained after unload; settings corruption/newer version/display revert. Existing Compound Clear and N1 regression expectations stay unchanged. Game-v1 carries no remote wire compatibility promise; future networked TDM needs a separately frozen protocol extension.
+
+## ADR-039 — additive local slide intent and settings action
+
+Owner-assigned T072 adds `Game/Session/LocalPlayerCommand` (frozen C0 InputCommand plus a local SlidePressed edge) to the human sampler, and `LocalMovementView` copied from authority for camera/rig stance/eye/slide presentation. These local application records are outside the frozen C0/N1 layouts; no new wire bit, Stance enum or packet field is added. Local authority requires a fresh accepted command for the current human entity and applies the request at its simulation tick. Old remote prediction/transport cannot initiate sliding; no online delivery is in scope.
+
+Game-v1 has an additive optional Slide binding (default Key.F), combined with applied Sprint (default LeftShift). Settings schema stays 2: legacy 14-action bindings remain valid and normalize to include Slide, using Unbound if F was already assigned. The old valid fixture is retained for migration coverage, `user-settings-slide.valid.json` covers new defaults, and the reviewed Game-v1 lock inventories both. See [ADR-039](decisions.md#adr-039--accepted-local-authoritative-sprint-slide-t072), [combat](features/combat.md#local-sprint-slide--t072--adr-039) and actual [handoff](milestones/m8-runtime-composition/handoff.md). Runtime/player/hardware acceptance remains separate.

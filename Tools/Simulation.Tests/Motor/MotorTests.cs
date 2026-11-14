@@ -65,6 +65,97 @@ namespace Shooter.Simulation.Tests.Motor
             Assert.Throws<InvalidOperationException>(() => CompositionPolicy.RequireReal(fake));
         }
 
+        private static MotorBodyState Sprint(KinematicMotor motor, StaticPlaneWorld world)
+        {
+            var state = Spawn();
+            for (uint t = 1; t <= 20; t++) state = motor.Step(state, Cmd(t, my: 1, buttons: InputButtons.SprintHeld), t, world);
+            return state;
+        }
+
+        [Fact]
+        public void SlideRequiresSprintMomentumAndDecaysWithoutSteeringOrRepeatBoost()
+        {
+            var motor = new KinematicMotor();
+            var world = new StaticPlaneWorld();
+            var state = motor.Step(Spawn(), Cmd(1, my: 1, buttons: InputButtons.SprintHeld), 1, world, slidePressed: true);
+            Assert.False(state.SlideActive); // Cannot boost from rest.
+            state = Sprint(motor, world);
+            state = motor.Step(state, Cmd(21, my: 1, buttons: InputButtons.SprintHeld), 21, world, slidePressed: true);
+            Assert.True(state.SlideActive);
+            Assert.Equal(Stance.Crouching, state.Stance);
+            Assert.Equal(1.2f, state.CapsuleHeight, 3);
+            Assert.False(state.SprintActive);
+            Assert.Equal(6.5f, state.Velocity.Z, 3);
+            Assert.Equal(60u, state.SlideCooldownTicksRemaining);
+            float priorSpeed = state.Velocity.Z;
+            for (uint t = 22; t < 66; t++)
+            {
+                // Looking/pressing sideways and repeated intents must not steer or boost.
+                state = motor.Step(state, Cmd(t, mx: 1, buttons: InputButtons.SprintHeld, yaw: 1.5f), t, world, slidePressed: true);
+                Assert.True(state.Velocity.Z < priorSpeed);
+                Assert.Equal(0f, state.Velocity.X, 4);
+                Assert.Equal(Stance.Crouching, state.Stance);
+                priorSpeed = state.Velocity.Z;
+            }
+            Assert.False(state.SlideActive);
+            Assert.True(state.SlideCooldownTicksRemaining > 0);
+            state = motor.Step(state, Cmd(66, my: 1, buttons: InputButtons.SprintHeld), 66, world, slidePressed: true);
+            Assert.False(state.SlideActive);
+            Assert.Equal(Stance.Standing, state.Stance);
+            for (uint t = 67; t <= 81; t++) state = motor.Step(state, Cmd(t, my: 1, buttons: InputButtons.SprintHeld), t, world);
+            state = motor.Step(state, Cmd(82, my: 1, buttons: InputButtons.SprintHeld), 82, world, slidePressed: true);
+            Assert.True(state.SlideActive);
+        }
+
+        [Theory]
+        [InlineData(InputButtons.None)]
+        [InlineData(InputButtons.SprintHeld | InputButtons.AimHeld)]
+        [InlineData(InputButtons.SprintHeld | InputButtons.CrouchHeld)]
+        [InlineData(InputButtons.SprintHeld | InputButtons.FirePressed)]
+        [InlineData(InputButtons.SprintHeld | InputButtons.ReloadPressed)]
+        public void SlideRejectsMissingSprintAndConflictingActions(InputButtons buttons)
+        {
+            var motor = new KinematicMotor();
+            var world = new StaticPlaneWorld();
+            var state = motor.Step(Sprint(motor, world), Cmd(21, my: 1, buttons: buttons), 21, world, slidePressed: true);
+            Assert.False(state.SlideActive);
+        }
+
+        [Fact]
+        public void SlideJumpCancelsAndExpirationKeepsCrouchUnderCeiling()
+        {
+            var motor = new KinematicMotor();
+            var world = new StaticPlaneWorld();
+            var state = motor.Step(Sprint(motor, world), Cmd(21, my: 1, buttons: InputButtons.SprintHeld), 21, world, true);
+            var jumped = motor.Step(state, Cmd(22, buttons: InputButtons.JumpPressed), 22, world);
+            Assert.False(jumped.SlideActive);
+            Assert.True(jumped.Velocity.Y > 0f);
+            // A slide may end under cover; authority must not force the capsule through it.
+            world.AddBox(new Float3(-10, 1.35f, -10), new Float3(10, 1.55f, 20), 99);
+            for (uint t = 22; t < 68; t++) state = motor.Step(state, Cmd(t), t, world);
+            Assert.False(state.SlideActive);
+            Assert.Equal(Stance.Crouching, state.Stance);
+            Assert.Equal(1.2f, state.CapsuleHeight, 3);
+        }
+
+        [Fact]
+        public void SlideCannotBeginAirborneOrBackwardsAndStopsAtWall()
+        {
+            var motor = new KinematicMotor();
+            var world = new StaticPlaneWorld();
+            var sprint = Sprint(motor, world);
+            var backward = motor.Step(sprint, Cmd(21, my: -1, buttons: InputButtons.SprintHeld), 21, world, true);
+            Assert.False(backward.SlideActive);
+            var airborne = motor.Step(sprint, Cmd(21, buttons: InputButtons.JumpPressed), 21, world);
+            airborne = motor.Step(airborne, Cmd(22, my: 1, buttons: InputButtons.SprintHeld), 22, world, true);
+            Assert.False(airborne.SlideActive);
+            world.AddBox(new Float3(-3, 0, sprint.Feet.Z + 1f), new Float3(3, 4, sprint.Feet.Z + 2f), 98);
+            var state = motor.Step(sprint, Cmd(21, my: 1, buttons: InputButtons.SprintHeld), 21, world, true);
+            for (uint t = 22; t < 36; t++) state = motor.Step(state, Cmd(t), t, world);
+            Assert.True(state.Feet.Z < sprint.Feet.Z + 1f);
+            Assert.False(state.SlideActive);
+        }
+
         private static Float3 RunScript(KinematicMotor motor, int displayHz)
         {
             var world = new StaticPlaneWorld();

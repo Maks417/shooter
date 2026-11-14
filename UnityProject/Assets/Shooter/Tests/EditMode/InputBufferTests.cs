@@ -75,6 +75,68 @@ namespace Shooter.Tests
         }
 
         [Test]
+        public void SlideChordIsBufferedOnceAndSuppressedAcrossFocusAndNewLife()
+        {
+            var input = new LocalPlayerInput();
+            input.ResetForLife(0, 0, 0);
+            input.CaptureFrame(default, true);
+            // F on its own cannot slide; adding Shift while F is held is not a fresh F edge.
+            input.CaptureFrame(new FrameInputSample(0, 1, 0, 0, slide: true), true);
+            Assert.That(input.ConsumeLocalTick(Player, 0).SlidePressed, Is.False);
+            input.CaptureFrame(new FrameInputSample(0, 1, 0, 0, sprint: true, slide: true), true);
+            Assert.That(input.ConsumeLocalTick(Player, 1).SlidePressed, Is.False);
+            input.CaptureFrame(default, true);
+            input.CaptureFrame(new FrameInputSample(0, 1, 0, 0, sprint: true, slide: true), true);
+            input.CaptureFrame(new FrameInputSample(0, 1, 0, 0, sprint: true), true); // released between ticks
+            Assert.That(input.ConsumeLocalTick(Player, 2).SlidePressed, Is.True);
+            Assert.That(input.ConsumeLocalTick(Player, 3).SlidePressed, Is.False);
+            var held = new FrameInputSample(0, 1, 0, 0, sprint: true, slide: true);
+            input.CaptureFrame(held, true);
+            input.CaptureFrame(held, false);
+            input.CaptureFrame(held, true);
+            Assert.That(input.ConsumeLocalTick(Player, 4).SlidePressed, Is.False);
+            input.ResetForLife(0, 0, 0);
+            input.CaptureFrame(held, true);
+            Assert.That(input.ConsumeLocalTick(new EntityId(2), 5).SlidePressed, Is.False);
+        }
+
+        [Test]
+        public void KeyboardShiftFAndAppliedSlideRebindReachLocalCommand()
+        {
+            var keyboard = UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Keyboard>();
+            try
+            {
+                var input = new LocalPlayerInput();
+                input.CaptureFrame(true);
+                UnityEngine.InputSystem.InputSystem.QueueStateEvent(keyboard,
+                    new UnityEngine.InputSystem.LowLevel.KeyboardState(UnityEngine.InputSystem.Key.W,
+                        UnityEngine.InputSystem.Key.LeftShift, UnityEngine.InputSystem.Key.F));
+                UnityEngine.InputSystem.InputSystem.Update();
+                input.CaptureFrame(true);
+                var command = input.ConsumeLocalTick(Player, 0);
+                Assert.That(command.SlidePressed, Is.True);
+                Assert.That(command.Command.Buttons & InputButtons.SprintHeld, Is.Not.EqualTo(InputButtons.None));
+                input.CaptureFrame(true);
+                Assert.That(input.ConsumeLocalTick(Player, 1).SlidePressed, Is.False);
+
+                var bindings = new List<InputBinding>(UserSettings.DefaultBindings());
+                for (int i = 0; i < bindings.Count; i++)
+                    if (bindings[i].Action == "Slide") bindings[i] = new InputBinding("Slide", "Key.G");
+                input.ApplyBindings(bindings);
+                UnityEngine.InputSystem.InputSystem.QueueStateEvent(keyboard, new UnityEngine.InputSystem.LowLevel.KeyboardState());
+                UnityEngine.InputSystem.InputSystem.Update();
+                input.CaptureFrame(true);
+                UnityEngine.InputSystem.InputSystem.QueueStateEvent(keyboard,
+                    new UnityEngine.InputSystem.LowLevel.KeyboardState(UnityEngine.InputSystem.Key.W,
+                        UnityEngine.InputSystem.Key.LeftShift, UnityEngine.InputSystem.Key.G));
+                UnityEngine.InputSystem.InputSystem.Update();
+                input.CaptureFrame(true);
+                Assert.That(input.ConsumeLocalTick(Player, 2).SlidePressed, Is.True);
+            }
+            finally { UnityEngine.InputSystem.InputSystem.RemoveDevice(keyboard); }
+        }
+
+        [Test]
         public void SensitivityUsesDegreesAndAimClampsToContractLimits()
         {
             var input = new LocalPlayerInput { Sensitivity = 0.25f };

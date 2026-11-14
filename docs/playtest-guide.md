@@ -38,12 +38,19 @@ These come from `Game/Contracts/GameData.cs:DefaultBindings` and `Presentation/I
 | Reload | R |
 | Rifle / pistol | 1 / 2 |
 | Sprint / crouch / jump | Left Shift / Left Ctrl / Space |
+| Slide (T072 build only) | Hold Left Shift while sprinting forward, then press F |
 | Scoreboard | Hold Tab |
 | Pause / back / cancel | Esc (reserved recovery control) |
+
+**Slide availability:** T072 adds slide in newer source/builds; the historical `7cd7e81` archive documented above has **no sliding**. The T072 build/package and actual checks are recorded below when available. Default Slide is rebindable in Settings and combines with Sprint; custom legacy F bindings remain intact (Slide starts Unbound). See [slide behavior](features/combat.md#local-sprint-slide--t072--adr-039).
 
 ## What is still unproven
 
 The retained handoff records Main menu only. This review checked archive hashes and prior reports, and did not launch or play the game. Bots, navigation, movement, combat, repeated lives, match completion, sound/display/control behavior and visual readability still need actual player evidence. P05 visual FAIL remains under ADR-024. Reference 720p Low30 performance is unmeasured for this candidate. Native-navigation publication is still incomplete: the packaged data is software-grid output despite the native adapter now existing. Do not treat this as an accepted release.
+
+## Slide checks for a T072 build
+
+Build momentum with W + Left Shift, press F: check camera/body lowers and forward slide slows over ≤0.75 s. Release/repress F only after the cooldown; holding it must not chain boosts. Check F alone/rest/airborne do not start slides, Space cancels, walls stop movement, a low ceiling prevents standing, pause/focus does not queue a slide, and repeated deaths/new match clear it. Repeat on both maps, sizes and profiles. Actual interactive validation remains Pending until recorded; automated InputSystem/PhysX checks are separate evidence.
 
 ## First playtest record (T071)
 

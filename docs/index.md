@@ -6,6 +6,8 @@ Unity 6 URP / C# / HLSL design for a realistic modern-world shooter generated fr
 
 First-version owner priority: **play locally with bots; no online multiplayer or server purchase/hosting required**. Existing network/server architecture is retained, with online delivery deferred. See [scope](vision.md#first-version-scope-local-bots-only).
 
+**T072 follow-up:** the owner authorized local sprint slide implementation (default Left Shift + F) under [ADR-039](decisions.md#adr-039--accepted-local-authoritative-sprint-slide-t072). See [combat rules](features/combat.md#local-sprint-slide--t072--adr-039) and [guide](playtest-guide.md) for actual build availability; the older 7cd7e81 archive has no slide.
+
 ## Next development
 
 Use the [remaining T067/T071 work](next-playable-build.md): play the existing archive, finish native-navigation publication/query validation, repair observed blockers and complete independent recovery/rollback handoff. T068/T069 need player/device evidence; T070 hardware and T062/T065 visual/final acceptance remain open. Original [T052–T065 cards](release-remediation-plan.md) and [FIX01–FIX14](release-remediation-validation.md) remain applicable. This docs review creates no leases.

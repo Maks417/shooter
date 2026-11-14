@@ -56,6 +56,46 @@ namespace Shooter.Tests
         }
 
         [Test]
+        public void LocalSlideUsesRealSweepsAndCrouchRecoveryAcrossQualityTiers()
+        {
+            FloorRoom();
+            Solid("Slide ceiling", 301, new Vector3(0, 1.45f, 0), new Vector3(5, 0.2f, 8));
+            Solid("Slide wall", 302, new Vector3(0, 1.5f, -1.5f), new Vector3(5, 3, 0.3f));
+            Physics.SyncTransforms();
+            int original = QualitySettings.GetQualityLevel();
+            float? firstEndZ = null;
+            try
+            {
+                for (int tier = 0; tier < QualitySettings.names.Length; tier++)
+                {
+                    QualitySettings.SetQualityLevel(tier, false);
+                    var sim = new CombatHarnessSimulation(world!);
+                    var actor = sim.SpawnActor(new Float3(0, 0.02f, -6), 0, 1);
+                    for (uint tick = 0; tick < 20; tick++)
+                        sim.Step(tick, new[] { new InputCommand(actor, tick, tick + 1, 0, 1, 0, 0, InputButtons.SprintHeld, 0) });
+                    sim.Step(20, new[] { new InputCommand(actor, 20, 21, 0, 1, 0, 0, InputButtons.SprintHeld, 0) }, actor);
+                    using (var snap = sim.AcquireSnapshot())
+                    {
+                        Assert.That(snap.Snapshot.Entities[0].Stance, Is.EqualTo(Stance.Crouching));
+                        Assert.That(snap.Snapshot.Entities[0].Velocity.Z, Is.EqualTo(6.5f).Within(0.01f));
+                    }
+                    for (uint tick = 21; tick < 75; tick++)
+                        sim.Step(tick, new[] { new InputCommand(actor, tick, tick + 1, 0, 0, 0, 0, InputButtons.None, 0) });
+                    using (var snap = sim.AcquireSnapshot())
+                    {
+                        var entity = snap.Snapshot.Entities[0];
+                        Assert.That(entity.Position.Z, Is.LessThan(-1.95f), "Capsule must stop before the wall.");
+                        Assert.That(entity.Position.Z, Is.GreaterThan(-4f), "Slide must enter the low corridor.");
+                        Assert.That(entity.Stance, Is.EqualTo(Stance.Crouching), "Cannot stand through the ceiling.");
+                        if (firstEndZ.HasValue) Assert.That(entity.Position.Z, Is.EqualTo(firstEndZ.Value).Within(0.001f));
+                        firstEndZ = entity.Position.Z;
+                    }
+                }
+            }
+            finally { QualitySettings.SetQualityLevel(original, false); }
+        }
+
+        [Test]
         public void V06_CoverWallBlocksDamageAcrossQualityTiers()
         {
             FloorRoom();

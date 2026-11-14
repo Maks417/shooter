@@ -18,6 +18,6 @@ namespace Shooter.Presentation.Session
         void WireMapActors();
         bool TryGetVerifiedMap(out IReadOnlyList<CollisionBox> boxes, out byte[]? metadataBytes, out string mapId);
         bool TryGetVerifiedVisuals(out PackagedVisualPayloads visuals, out string diagnostic);
-        void InstallHumanSampler(Func<uint, InputCommand?> sampler);
+        void InstallHumanSampler(Func<uint, LocalPlayerCommand?> sampler);
     }
 }

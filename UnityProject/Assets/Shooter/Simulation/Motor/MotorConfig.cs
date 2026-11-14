@@ -4,6 +4,12 @@ namespace Shooter.Simulation.Motor
     /// <summary>Numeric motor defaults mirrored from docs/fixtures/gameplay-defaults.json (gameplay.v1).</summary>
     public readonly struct MotorConfig
     {
+        // ADR-039 local movement recipe; legacy gameplay.v1 defaults stay frozen.
+        public const uint SlideDurationTicks = 45;
+        public const uint SlideCooldownTicks = 60;
+        public const float SlideEntrySpeed = 6.5f;
+        public const float SlideMinEntrySpeed = 4.5f;
+        public const float SlideDeceleration = 4f;
         public float StandingHeight { get; }
         public float CrouchHeight { get; }
         public float Radius { get; }

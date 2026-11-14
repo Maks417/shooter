@@ -10,7 +10,8 @@
     "Shooter.Generation.Core",
     "Shooter.Content.Runtime",
     "Shooter.AssetCompiler.Editor",
-    "Shooter.Presentation"
+    "Shooter.Presentation",
+    "Unity.InputSystem"
   ],
   "includePlatforms": [
     "Editor"

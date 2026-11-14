@@ -277,7 +277,9 @@ Launch (from this folder, no Unity editor / no network / no external server requ
 Direct executable also works from any cwd: defaults resolve Content\map-packages and toolchain-lock.json beside Shooter.exe.
   .\Shooter.exe
 
-Controls: WASD move, mouse look, LMB fire, RMB aim, R reload, Esc pause
+Controls: WASD move, mouse look, LMB fire, RMB aim, R reload, 1/2 rifle/pistol, Esc pause, Tab scoreboard
+Movement: Left Shift sprint, Left Ctrl crouch, Space jump, Left Shift + F slide while sprinting (Sprint + Slide bindings).
+Slide: 0.75s maximum, momentum decays, jump cancels; 1s cooldown from entry. Rebind Slide in Settings.
 Maps: -shooterMap training-compound|depot-yard
 Team size: -shooterTeamSize 5|6
 Missing/corrupt packaged content shows a repair/reinstall recovery screen (no silent map substitution).
@@ -300,6 +302,7 @@ Shooter local offline package — license / provenance summary
 KNOWN ISSUES / LIMITATIONS (T071 owner playtest candidate / FIX13 packaging)
 - REL01–REL06: NotClaimed. This archive is an owner playtest candidate, not an accepted release.
 - P05: FAIL retained under ADR-024 (skin/forearm/strap/eye-sight residuals). No fourth clearance search.
+- T072 slide uses Sprint + Slide (default Left Shift + F); manual both-map slide/readability/device review remains Pending.
 - Manual playtest still Pending: both maps x 5v5/6v6, full move/aim/fire/switch/reload, bots, death/respawn, pause/scoreboard/settings, complete matches, results/replay.
 - Named device/UI/audio reviews (FIX08–10 / SET01–02), FIX05 visibility captures, FIX03 focus loss, FIX06 mixed-team player, and 20-launch soak: Pending.
 - Reference performance / soaks (REL04 / FIX12 / T070): PendingHardware until collector + twelve native720p Low captures and two-map soaks on reference machine.

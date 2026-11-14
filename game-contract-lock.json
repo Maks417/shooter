@@ -2,16 +2,16 @@
   "schemaVersion": 1,
   "contractVersion": "Game-v1",
   "status": "FrozenByIntegrator",
-  "reviewer": "Cursor T063 measurement integrator",
+  "reviewer": "Codex sole integrator, owner-assigned T072 / ADR-039",
   "reviewDate": "2026-11-14",
-  "scope": "Game-v1 plus ADR-036 settings schema 2 and ADR-037 product TDM measurement workloads. C0-v1/content-v1/N1-v1 unchanged. Runtime/player/hardware acceptance is separate.",
+  "scope": "Game-v1 with ADR-036 schema 2, ADR-037 workloads and ADR-039 additive optional Slide binding plus legacy normalization. C0-v1/content-v1/N1-v1 unchanged; local slide envelope is not an N1 command. Runtime/player/hardware acceptance is separate.",
   "ruleVersion": 1,
   "settingsSchema": 2,
   "simulationHz": 60,
   "dependsOnContract": "C0-v1",
   "toolchainHash": "9ac31fe82117043e2bba3bfb843dd1ca32834b15425188e96d6f3369e2c627a8",
   "sources": {
-    "UnityProject/Assets/Shooter/Game/Contracts/GameData.cs": "5211aa7fc68fc6cb98b55beee27c13211573d9f1e4eea82e984442c82cf13e87",
+    "UnityProject/Assets/Shooter/Game/Contracts/GameData.cs": "411c8e1d7a245e25b01571a541562fe1dd809c7714881a83159a2377143116b1",
     "UnityProject/Assets/Shooter/Game/Contracts/GameData.cs.meta": "da2d99bee98c3ea0a1088ded28a27e5b7e7a7da3e5df1edff7afd0239ae0d61b",
     "UnityProject/Assets/Shooter/Game/Contracts/GameIds.cs": "04e4a4f76caa560278808ee9e9207f3756c1eb8d7124ea738ea8b5ec990e3c07",
     "UnityProject/Assets/Shooter/Game/Contracts/GameIds.cs.meta": "c2c91bdde4ddf87b4f89e13fdf43a704bab107522a63128711ae6d8c09dee498",
@@ -28,6 +28,7 @@
     "docs/game-fixtures/session-request.invalid-size.json": "9429ca8c81ea95c7c88a01c7ac073b12688986a25381851436e909aaf4d01ae1",
     "docs/game-fixtures/session-request.valid.json": "02cbb1ccedcf45912c91ff669d815f3ee5fa12bb214e808604cbd6d8f6245669",
     "docs/game-fixtures/tdm-workloads.json": "eaf98274b800d01ed9469cacbc053d0f6888e5f95e4ee1072931222eefea8df3",
+    "docs/game-fixtures/user-settings-slide.valid.json": "4a3d69069a7c212e9679d0b194c13cd6a560c6c32772753479a07bc104611f6a",
     "docs/game-fixtures/user-settings.schema.json": "c3678df87892d3fe4398ed5ba52fcab1d12f4a77363f60f4aed51e01b3c16020",
     "docs/game-fixtures/user-settings.valid.json": "e51a87de10f5d90566cd7d9080bcf5bca733d7cec6c950dac3fcd38d1beacac0"
   }

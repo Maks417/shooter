@@ -65,6 +65,16 @@ namespace Shooter.Game.Session
         /// <summary>Adapter sample total for tests/diagnostics ( -1 when no counting map).</summary>
         public long DebugWorldQueryAdapterSamples => countingMap == null ? -1 : countingMap.CountingQueries.TotalSamples;
 
+        public bool TryGetMovementView(EntityId entity, out LocalMovementView view)
+        {
+            view = default;
+            if (harness == null || !harness.TryGetMotorState(entity, out var state)) return false;
+            float eye = state.Stance == Stance.Dead ? 0.4f
+                : state.Stance == Stance.Crouching ? 1.05f : 1.65f;
+            view = new LocalMovementView(state.Stance, eye, state.SlideActive);
+            return true;
+        }
+
         public bool TryGetCosmeticCorpse(int index, out ActorLifecycleState state)
         {
             if (lifecycle == null)
@@ -202,7 +212,7 @@ namespace Shooter.Game.Session
         }
 
         /// <summary>Advance one authority tick. Local human command optional; bots planned from match snapshot.</summary>
-        public GameOperationResult Step(InputCommand? humanCommand)
+        public GameOperationResult Step(InputCommand? humanCommand, bool slideRequested = false)
         {
             if (phase != GameMatchPhase.Playing || pause != SessionPauseState.Running)
                 return new GameOperationResult(GameErrorCode.Busy, "not-playing", "Session is not advancing.");
@@ -228,15 +238,17 @@ namespace Shooter.Game.Session
             measurement.PathRequests += bots.Counters.PathsRequestedThisTick;
 
             merged.Clear();
-            if (humanCommand.HasValue &&
-                humanCommand.Value.IsValid &&
-                humanCommand.Value.EntityId.Equals(humanEntity))
+            var sampledHuman = humanCommand.GetValueOrDefault();
+            bool validHuman = humanCommand.HasValue &&
+                sampledHuman.IsValid &&
+                sampledHuman.EntityId.Equals(humanEntity);
+            if (validHuman)
             {
-                merged.Add(humanCommand.Value);
+                merged.Add(sampledHuman);
             }
             for (int i = 0; i < botCount; i++) merged.Add(botCommands[i]);
 
-            var result = harness.Step(tick, merged.ToArray());
+            var result = harness.Step(tick, merged.ToArray(), validHuman && slideRequested ? humanEntity : default);
             measurement.Shots += result.Counters.Shots;
             measurement.DamageEvents += result.Counters.DamageEvents;
             // querySamples after Plan + harness.Step so motor/hitscan samples are included

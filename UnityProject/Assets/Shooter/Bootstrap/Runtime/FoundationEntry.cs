@@ -39,7 +39,7 @@ namespace Shooter.Bootstrap
         private IMapCatalog? productCatalog;
         private StaticMapCatalog? productStaticCatalog;
         private VerifiedMapPackageStore? productPackageStore;
-        private Func<uint, InputCommand?> productHumanSampler;
+        private Func<uint, LocalPlayerCommand?> productHumanSampler;
         private bool hasApplicationFocus = true;
         private bool pausedForFocusLoss;
         private string contentRecoveryDetail = "";
@@ -70,7 +70,7 @@ namespace Shooter.Bootstrap
             viewFactory = factory ?? throw new ArgumentNullException(nameof(factory));
         }
 
-        public void InstallProductHumanSampler(Func<uint, InputCommand?> sampler)
+        public void InstallProductHumanSampler(Func<uint, LocalPlayerCommand?> sampler)
         {
             productHumanSampler = sampler ?? throw new ArgumentNullException(nameof(sampler));
         }
@@ -305,8 +305,8 @@ namespace Shooter.Bootstrap
             }
             else
             {
-                InputCommand? human = productHumanSampler?.Invoke(tick);
-                var step = productSession.Step(human);
+                LocalPlayerCommand? human = productHumanSampler?.Invoke(tick);
+                var step = productSession.Step(human?.Command, human?.SlidePressed ?? false);
                 if (!step.Succeeded && productSession.Phase != GameMatchPhase.Finished)
                     throw new InvalidOperationException("Product step failed: " + step.Diagnostic);
             }

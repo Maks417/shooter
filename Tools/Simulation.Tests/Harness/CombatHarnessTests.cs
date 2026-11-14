@@ -67,6 +67,32 @@ namespace Shooter.Simulation.Tests.Harness
         }
 
         [Fact]
+        public void LocalSlideRequiresAcceptedFreshLifeCommandAndUsesCrouchHitPose()
+        {
+            var sim = new CombatHarnessSimulation(new StaticPlaneWorld());
+            var actor = sim.SpawnActor(default, 0, 1);
+            for (uint t = 0; t < 20; t++) sim.Step(t, new[] { new InputCommand(actor, t, t + 1, 0, 1, 0, 0, InputButtons.SprintHeld, 0) });
+            // Duplicate sequence cannot smuggle a separate slide intent into authority.
+            sim.Step(20, new[] { new InputCommand(actor, 20, 20, 0, 1, 0, 0, InputButtons.SprintHeld, 0) }, actor);
+            using (var snap = sim.AcquireSnapshot()) Assert.Equal(Stance.Standing, snap.Snapshot.Entities[0].Stance);
+            sim.Step(21, new[] { new InputCommand(actor, 21, 22, 0, 1, 0, 0, InputButtons.SprintHeld, 0) }, actor);
+            using (var snap = sim.AcquireSnapshot())
+            {
+                var state = Assert.Single(snap.Snapshot.Entities);
+                Assert.Equal(Stance.Crouching, state.Stance);
+                Assert.Equal(6.5f, state.Velocity.Z, 3);
+                Assert.Equal(6, snap.Snapshot.HitVolumes.Count);
+            }
+            Assert.True(sim.ResetActor(actor, default, 0));
+            sim.Step(22, new[] { new InputCommand(actor, 22, 1, 0, 0, 0, 0, InputButtons.None, 0) });
+            using (var snap = sim.AcquireSnapshot())
+            {
+                Assert.Equal(Stance.Standing, snap.Snapshot.Entities[0].Stance);
+                Assert.Equal(0f, snap.Snapshot.Entities[0].Velocity.Z);
+            }
+        }
+
+        [Fact]
         public void ResetActorRestoresAuthoritativeLifeState()
         {
             var sim = new CombatHarnessSimulation(new StaticPlaneWorld());

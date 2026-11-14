@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Shooter.Contracts;
 using Shooter.Game.Contracts;
+using Shooter.Game.Session;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using EntityId = Shooter.Contracts.EntityId;
@@ -24,6 +25,7 @@ namespace Shooter.Presentation.Input
         public readonly bool Crouch;
         public readonly bool SelectRifle;
         public readonly bool SelectPistol;
+        public readonly bool Slide;
 
         public FrameInputSample(
             float moveX,
@@ -37,7 +39,8 @@ namespace Shooter.Presentation.Input
             bool sprint = false,
             bool crouch = false,
             bool selectRifle = false,
-            bool selectPistol = false)
+            bool selectPistol = false,
+            bool slide = false)
         {
             MoveX = moveX;
             MoveY = moveY;
@@ -51,6 +54,7 @@ namespace Shooter.Presentation.Input
             Crouch = crouch;
             SelectRifle = selectRifle;
             SelectPistol = selectPistol;
+            Slide = slide;
         }
     }
 
@@ -69,6 +73,8 @@ namespace Shooter.Presentation.Input
         private bool fireWasDown;
         private bool reloadWasDown;
         private bool jumpWasDown;
+        private bool slideWasDown;
+        private bool pendingSlide;
         private bool pendingFire;
         private bool pendingReload;
         private bool pendingJump;
@@ -135,7 +141,7 @@ namespace Shooter.Presentation.Input
 
         public void ClearCapturedInput()
         {
-            pendingFire = pendingReload = pendingJump = false;
+            pendingFire = pendingReload = pendingJump = pendingSlide = false;
             moveX = moveY = 0f;
             fireHeld = aimHeld = sprintHeld = crouchHeld = false;
             gameplayEnabled = false;
@@ -164,7 +170,8 @@ namespace Shooter.Presentation.Input
                 bindings.IsPressed("Sprint"),
                 bindings.IsPressed("Crouch"),
                 bindings.IsPressed("Slot1"),
-                bindings.IsPressed("Slot2")),
+                bindings.IsPressed("Slot2"),
+                bindings.IsPressed("Slide")),
                 acceptsGameplayInput);
         }
 
@@ -174,12 +181,13 @@ namespace Shooter.Presentation.Input
             gameplayEnabled = acceptsGameplayInput;
             if (!acceptsGameplayInput)
             {
-                pendingFire = pendingReload = pendingJump = false;
+                pendingFire = pendingReload = pendingJump = pendingSlide = false;
                 moveX = moveY = 0f;
                 fireHeld = aimHeld = sprintHeld = crouchHeld = false;
                 fireWasDown = frame.Fire;
                 reloadWasDown = frame.Reload;
                 jumpWasDown = frame.Jump;
+                slideWasDown = frame.Slide;
                 blockFireUntilRelease = true;
                 return;
             }
@@ -208,6 +216,7 @@ namespace Shooter.Presentation.Input
             pendingFire |= wasEnabled && acceptedFire && !fireWasDown;
             pendingReload |= wasEnabled && frame.Reload && !reloadWasDown;
             pendingJump |= wasEnabled && frame.Jump && !jumpWasDown;
+            pendingSlide |= wasEnabled && frame.Sprint && frame.Slide && !slideWasDown;
             fireHeld = acceptedFire;
             aimHeld = frame.Aim;
             sprintHeld = frame.Sprint;
@@ -217,10 +226,14 @@ namespace Shooter.Presentation.Input
             fireWasDown = acceptedFire;
             reloadWasDown = frame.Reload;
             jumpWasDown = frame.Jump;
+            slideWasDown = frame.Slide;
         }
 
-        public InputCommand ConsumeTick(EntityId entity, uint tick)
+        public InputCommand ConsumeTick(EntityId entity, uint tick) => ConsumeLocalTick(entity, tick).Command;
+
+        public LocalPlayerCommand ConsumeLocalTick(EntityId entity, uint tick)
         {
+            bool slide = pendingSlide;
             var buttons = InputButtons.None;
             if (fireHeld) buttons |= InputButtons.FireHeld;
             if (pendingFire) buttons |= InputButtons.FirePressed;
@@ -229,9 +242,10 @@ namespace Shooter.Presentation.Input
             if (aimHeld) buttons |= InputButtons.AimHeld;
             if (sprintHeld) buttons |= InputButtons.SprintHeld;
             if (crouchHeld) buttons |= InputButtons.CrouchHeld;
-            pendingFire = pendingReload = pendingJump = false;
+            pendingFire = pendingReload = pendingJump = pendingSlide = false;
             sequence++;
-            return new InputCommand(entity, tick, sequence, moveX, moveY, yaw, pitch, buttons, selectedSlot);
+            return new LocalPlayerCommand(
+                new InputCommand(entity, tick, sequence, moveX, moveY, yaw, pitch, buttons, selectedSlot), slide);
         }
 
         private static float NormalizeYaw(float value)

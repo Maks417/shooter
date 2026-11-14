@@ -282,6 +282,30 @@ namespace Shooter.Game.Contracts.Tests
         }
 
         [Fact]
+        public async Task OfflineSessionMovementViewUsesAuthorityStanceAndClearsOnStop()
+        {
+            var catalog = StaticMapCatalog.CreateReleaseSeed();
+            using var session = new OfflineGameSession(catalog, (w, n) => new FakeMapRuntime(w, n), allowFakeMapRuntime: true);
+            var request = new SessionRequest(WellKnownMaps.TrainingCompound, WellKnownModes.TeamDeathmatch, 5, 460072030UL);
+            Assert.True((await session.BeginLoadAsync(request, CancellationToken.None)).Succeeded);
+            Assert.True(session.Start().Succeeded);
+            var human = session.HumanEntityId;
+            Assert.True(session.TryGetMovementView(human, out var standing));
+            Assert.Equal(1.65f, standing.EyeHeight);
+            Assert.True(session.Step(new InputCommand(human, 0, 1, 0, 0, 0, 0, InputButtons.CrouchHeld, 0)).Succeeded);
+            Assert.True(session.TryGetMovementView(human, out var crouching));
+            Assert.Equal(Stance.Crouching, crouching.Stance);
+            Assert.Equal(1.05f, crouching.EyeHeight);
+            Assert.False(crouching.Sliding);
+            Assert.True(session.Pause().Succeeded);
+            Assert.False(session.Step(new InputCommand(human, 1, 2, 0, 1, 0, 0, InputButtons.SprintHeld, 0), true).Succeeded);
+            Assert.True(session.TryGetMovementView(human, out var paused));
+            Assert.Equal(crouching.Stance, paused.Stance);
+            session.Stop();
+            Assert.False(session.TryGetMovementView(human, out _));
+        }
+
+        [Fact]
         public async Task OfflineSession_Load_Start_Pause_Abort()
         {
             var catalog = StaticMapCatalog.CreateReleaseSeed();

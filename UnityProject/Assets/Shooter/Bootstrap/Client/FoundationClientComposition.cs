@@ -123,7 +123,7 @@ namespace Shooter.Bootstrap
             public GameOperationResult Pause() => entry.PauseProduct();
             public GameOperationResult Resume() => entry.ResumeProduct();
             public void WireMapActors() => entry.WireProductMapActors();
-            public void InstallHumanSampler(Func<uint, InputCommand?> sampler) => entry.InstallProductHumanSampler(sampler);
+            public void InstallHumanSampler(Func<uint, LocalPlayerCommand?> sampler) => entry.InstallProductHumanSampler(sampler);
 
             public bool TryGetVerifiedMap(out IReadOnlyList<CollisionBox> boxes, out byte[]? metadataBytes, out string mapId)
             {

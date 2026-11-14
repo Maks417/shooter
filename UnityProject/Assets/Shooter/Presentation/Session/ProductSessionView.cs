@@ -23,6 +23,7 @@ namespace Shooter.Presentation.Session
         private OfflineGameSession? session;
         private LocalPlayerInput input = new LocalPlayerInput();
         private System.Func<GameOperationResult>? pauseSession;
+        private System.Func<EntityId, LocalMovementView?>? movementReader;
         private System.Func<GameOperationResult>? resumeSession;
         private readonly HudLayout hud = new HudLayout();
         private readonly SynthAudioMixer mixer = new SynthAudioMixer();
@@ -78,6 +79,7 @@ namespace Shooter.Presentation.Session
             bool shellOwned)
         {
             this.session = session ?? throw new System.ArgumentNullException(nameof(session));
+            movementReader = entity => session.TryGetMovementView(entity, out var movement) ? movement : (LocalMovementView?)null;
             this.pauseSession = pauseSession ?? throw new System.ArgumentNullException(nameof(pauseSession));
             this.resumeSession = resumeSession ?? throw new System.ArgumentNullException(nameof(resumeSession));
             this.shellOwned = shellOwned;
@@ -295,6 +297,7 @@ namespace Shooter.Presentation.Session
                 if (camera != null)
                 {
                     float eye = human.Alive ? 1.65f : 0.4f;
+                    if (session.TryGetMovementView(human.EntityId, out var movement)) eye = movement.EyeHeight;
                     camera.transform.position = new Vector3(human.Feet.X, human.Feet.Y + eye, human.Feet.Z);
                     float cameraYaw = acceptsGameplayInput ? input.Yaw : human.AimYaw;
                     float cameraPitch = acceptsGameplayInput ? input.Pitch : human.AimPitch;
@@ -332,7 +335,8 @@ namespace Shooter.Presentation.Session
                         aimHeld,
                         Time.unscaledDeltaTime,
                         combatEvents,
-                        session.CompletedTick);
+                        session.CompletedTick,
+                        movementReader);
                     visualReview?.SetContext(boundMapId, QualitySettings.names[QualitySettings.GetQualityLevel()], session.CompletedTick);
                 }
 
@@ -449,12 +453,12 @@ namespace Shooter.Presentation.Session
             audioOutput?.Detach();
         }
 
-        public InputCommand? SampleHuman(uint tick)
+        public LocalPlayerCommand? SampleHuman(uint tick)
         {
             if (session == null || !session.HumanEntityId.IsValid) return null;
             if (session.PauseState != SessionPauseState.Running || session.Phase != GameMatchPhase.Playing) return null;
             if (!cursorLocked || !Application.isFocused) return null;
-            return input.ConsumeTick(session.HumanEntityId, tick);
+            return input.ConsumeLocalTick(session.HumanEntityId, tick);
         }
 
         /// <summary>Compatibility entry for direct combat cues; product path prefers ordered event leases.</summary>
