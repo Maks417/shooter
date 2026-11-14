@@ -454,12 +454,12 @@ namespace Shooter.Presentation.Session
             float cardsY = a.yMax - cardHeight - 28;
             ui.Label(new Rect(cardsX, cardsY - 28, cardsWidth, 24), "OFFLINE BATTLES / TEAM DEATHMATCH", 14, TacticalUi.Text);
             bool compound = setup!.SelectedMapId.Equals(WellKnownMaps.TrainingCompound);
-            if (ui.MapCard(new Rect(cardsX, cardsY, cardWidth, cardHeight), "main.compound", menuScene?.MapCard("training-compound"), "TRAINING COMPOUND", "5v5 / 6v6  ·  LOCAL BOTS", compound))
+            if (ui.MapCard(new Rect(cardsX, cardsY, cardWidth, cardHeight), "main.compound", menuScene?.MapCard("training-compound"), "TRAINING COMPOUND", "5v5 / 6v6  Â·  LOCAL BOTS", compound))
             {
                 if (!compound) setup.CycleMap(1);
                 navigation.OpenSetup();
             }
-            if (ui.MapCard(new Rect(cardsX + cardWidth + 12, cardsY, cardWidth, cardHeight), "main.depot", menuScene?.MapCard("depot-yard"), "DEPOT YARD", "5v5 / 6v6  ·  LOCAL BOTS", !compound))
+            if (ui.MapCard(new Rect(cardsX + cardWidth + 12, cardsY, cardWidth, cardHeight), "main.depot", menuScene?.MapCard("depot-yard"), "DEPOT YARD", "5v5 / 6v6  Â·  LOCAL BOTS", !compound))
             {
                 if (compound) setup.CycleMap(1);
                 navigation.OpenSetup();
@@ -797,7 +797,7 @@ namespace Shooter.Presentation.Session
             var snap = session?.TryAcquireSnapshot();
             if (snap == null) return;
             float w = 250, x = (ui.Width - w) * .5f, y = ui.Safe.y + 26;
-            TacticalUi.Fill(new Rect(x, y, w, 40), new Color(.02f, .035f, .04f, .45f));
+            TacticalUi.Fill(new Rect(x, y, w, 40), new Color(.02f, .035f, .04f, .86f));
             ui.Label(new Rect(x + 8, y + 5, 55, 28), snap.Team1Kills.ToString("000"), 20, TacticalUi.Ally, TextAnchor.MiddleLeft);
             ui.Label(new Rect(x + 66, y + 7, w - 132, 26), TacticalUi.Clock(snap.RemainingActiveTicks), 18, TacticalUi.Text, TextAnchor.MiddleCenter);
             ui.Label(new Rect(x + w - 63, y + 5, 55, 28), snap.Team2Kills.ToString("000"), 20, TacticalUi.Enemy, TextAnchor.MiddleRight);

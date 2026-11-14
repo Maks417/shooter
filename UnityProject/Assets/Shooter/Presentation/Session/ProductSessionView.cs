@@ -566,7 +566,7 @@ namespace Shooter.Presentation.Session
                 if (!session.Lifecycle!.TryGetActorState(session.HumanEntityId, out var human)) return;
                 DrawTacticalMap(a, human, snap);
                 float x = a.xMax - 174, y = a.yMax - 76;
-                TacticalUi.Fill(new Rect(x, y, 174, 76), new Color(.025f, .04f, .05f, .62f));
+                TacticalUi.Fill(new Rect(x, y, 174, 76), new Color(.025f, .04f, .05f, .82f));
                 string weapon = human.ActiveWeaponSlot == 0 ? "RIFLE / 01" : "SIDEARM / 02";
                 combatUi.Label(new Rect(x + 12, y + 8, 150, 18), weapon, 12, TacticalUi.Muted, TextAnchor.UpperRight);
                 combatUi.Label(new Rect(x + 12, y + 26, 78, 42), human.Magazine.ToString("00"), 30, human.Magazine == 0 ? TacticalUi.Enemy : TacticalUi.Text, TextAnchor.MiddleRight);
@@ -644,6 +644,7 @@ namespace Shooter.Presentation.Session
             }
             finally { GUI.EndGroup(); }
             float x = map.xMax + 12, y = safe.yMax - 150;
+            TacticalUi.Fill(new Rect(x - 6, y - 4, 150, 154), new Color(.02f, .035f, .04f, .82f));
             combatUi.Label(new Rect(x, y, 136, 20), "YOUR SQUAD", 12, TacticalUi.Ally);
             int row = 0;
             if (snapshot != null)
@@ -651,7 +652,7 @@ namespace Shooter.Presentation.Session
                 {
                     var participant = snapshot.Participants[i];
                     if (participant.Team != human.Team || participant.IsHuman) continue;
-                    string name = participant.DisplayName.Length > 14 ? participant.DisplayName.Substring(0, 13) + "…" : participant.DisplayName;
+                    string name = participant.DisplayName.Length > 14 ? participant.DisplayName.Substring(0, 13) + "â€¦" : participant.DisplayName;
                     combatUi.Label(new Rect(x, y + 20 + row * 18, 140, 18), (participant.Alive ? "+  " : "-  ") + name, 12, participant.Alive ? TacticalUi.Text : TacticalUi.Muted);
                     row++;
                 }
@@ -666,6 +667,7 @@ namespace Shooter.Presentation.Session
         {
             float center = combatUi.Width * .5f;
             float degrees = Mathf.Repeat(yaw * Mathf.Rad2Deg, 360);
+            TacticalUi.Fill(new Rect(center - 135, safe.y, 270, 20), new Color(.02f, .035f, .04f, .72f));
             int nearest = Mathf.RoundToInt(degrees / 30) * 30;
             for (int i = -2; i <= 2; i++)
             {
@@ -673,7 +675,6 @@ namespace Shooter.Presentation.Session
                 float offset = Mathf.DeltaAngle(degrees, bearing) * 1.5f;
                 string label = bearing == 0 ? "N" : bearing == 90 ? "E" : bearing == 180 ? "S" : bearing == 270 ? "W" : bearing.ToString();
                 Rect r = new Rect(center + offset - 20, safe.y, 40, 20);
-                TacticalUi.Fill(new Rect(r.x, r.y, r.width, r.height), new Color(.02f, .03f, .04f, .3f));
                 combatUi.Label(r, label, 12, TacticalUi.Text, TextAnchor.UpperCenter);
             }
         }
@@ -709,7 +710,7 @@ namespace Shooter.Presentation.Session
             {
                 if (killFeedUntil[i] <= Time.unscaledTime) continue;
                 Rect r = new Rect(safe.xMax - 230, safe.y + i * 24, 230, 22);
-                TacticalUi.Fill(r, new Color(.02f, .035f, .04f, .55f));
+                TacticalUi.Fill(r, new Color(.02f, .035f, .04f, .74f));
                 combatUi.Label(new Rect(r.x + 6, r.y, r.width - 12, r.height), killFeed[i], 12, TacticalUi.Text, TextAnchor.MiddleRight);
             }
         }
