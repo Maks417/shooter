@@ -26,6 +26,10 @@ namespace Shooter.Presentation.Input
         public readonly bool SelectRifle;
         public readonly bool SelectPistol;
         public readonly bool Slide;
+        /// <summary>Press edges reported by the device layer (Input System WasPressedThisFrame); catches clicks shorter than a frame.</summary>
+        public readonly bool FireEdge;
+        public readonly bool ReloadEdge;
+        public readonly bool JumpEdge;
 
         public FrameInputSample(
             float moveX,
@@ -40,7 +44,10 @@ namespace Shooter.Presentation.Input
             bool crouch = false,
             bool selectRifle = false,
             bool selectPistol = false,
-            bool slide = false)
+            bool slide = false,
+            bool fireEdge = false,
+            bool reloadEdge = false,
+            bool jumpEdge = false)
         {
             MoveX = moveX;
             MoveY = moveY;
@@ -55,6 +62,9 @@ namespace Shooter.Presentation.Input
             SelectRifle = selectRifle;
             SelectPistol = selectPistol;
             Slide = slide;
+            FireEdge = fireEdge;
+            ReloadEdge = reloadEdge;
+            JumpEdge = jumpEdge;
         }
     }
 
@@ -78,6 +88,10 @@ namespace Shooter.Presentation.Input
         private bool pendingFire;
         private bool pendingReload;
         private bool pendingJump;
+        /// <summary>Remaining ticks for which a semi-auto press edge stays asserted (press buffer).</summary>
+        private int fireBufferTicks;
+        /// <summary>Longer than a pistol cooldown (10 ticks) would double-fire, so keep this below it.</summary>
+        public const int FirePressBufferTicks = 8;
         private bool gameplayEnabled;
         private bool blockFireUntilRelease = true;
         private float moveX;
@@ -142,6 +156,7 @@ namespace Shooter.Presentation.Input
         public void ClearCapturedInput()
         {
             pendingFire = pendingReload = pendingJump = pendingSlide = false;
+            fireBufferTicks = 0;
             moveX = moveY = 0f;
             fireHeld = aimHeld = sprintHeld = crouchHeld = false;
             gameplayEnabled = false;
@@ -171,7 +186,10 @@ namespace Shooter.Presentation.Input
                 bindings.IsPressed("Crouch"),
                 bindings.IsPressed("Slot1"),
                 bindings.IsPressed("Slot2"),
-                bindings.IsPressed("Slide")),
+                bindings.IsPressed("Slide"),
+                bindings.WasPressedThisFrame("Fire"),
+                bindings.WasPressedThisFrame("Reload"),
+                bindings.WasPressedThisFrame("Jump")),
                 acceptsGameplayInput);
         }
 
@@ -182,6 +200,7 @@ namespace Shooter.Presentation.Input
             if (!acceptsGameplayInput)
             {
                 pendingFire = pendingReload = pendingJump = pendingSlide = false;
+                fireBufferTicks = 0;
                 moveX = moveY = 0f;
                 fireHeld = aimHeld = sprintHeld = crouchHeld = false;
                 fireWasDown = frame.Fire;
@@ -213,9 +232,10 @@ namespace Shooter.Presentation.Input
 
             if (!frame.Fire) blockFireUntilRelease = false;
             bool acceptedFire = frame.Fire && !blockFireUntilRelease;
-            pendingFire |= wasEnabled && acceptedFire && !fireWasDown;
-            pendingReload |= wasEnabled && frame.Reload && !reloadWasDown;
-            pendingJump |= wasEnabled && frame.Jump && !jumpWasDown;
+            bool fireEdge = (acceptedFire && !fireWasDown) || (frame.FireEdge && !blockFireUntilRelease);
+            pendingFire |= wasEnabled && fireEdge;
+            pendingReload |= wasEnabled && ((frame.Reload && !reloadWasDown) || frame.ReloadEdge);
+            pendingJump |= wasEnabled && ((frame.Jump && !jumpWasDown) || frame.JumpEdge);
             pendingSlide |= wasEnabled && frame.Sprint && frame.Slide && !slideWasDown;
             fireHeld = acceptedFire;
             aimHeld = frame.Aim;
@@ -236,7 +256,8 @@ namespace Shooter.Presentation.Input
             bool slide = pendingSlide;
             var buttons = InputButtons.None;
             if (fireHeld) buttons |= InputButtons.FireHeld;
-            if (pendingFire) buttons |= InputButtons.FirePressed;
+            if (pendingFire) fireBufferTicks = FirePressBufferTicks;
+            if (fireBufferTicks > 0) { buttons |= InputButtons.FirePressed; fireBufferTicks--; }
             if (pendingReload) buttons |= InputButtons.ReloadPressed;
             if (pendingJump) buttons |= InputButtons.JumpPressed;
             if (aimHeld) buttons |= InputButtons.AimHeld;
