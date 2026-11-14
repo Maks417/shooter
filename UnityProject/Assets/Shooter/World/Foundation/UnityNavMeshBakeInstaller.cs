@@ -99,23 +99,29 @@ namespace Shooter.World
             return false;
         }
 
-        public bool TryCalculatePath(Float3 start, Float3 goal, List<Float3> corners)
+        /// <summary>
+        /// Truthful native path query. Native PathComplete -> Complete, PathPartial -> Partial (corners to the reachable end),
+        /// otherwise Failed. The packaged-graph fallback runs only when <paramref name="allowPackagedFallback"/> is true
+        /// (diagnostics) and is reported as FallbackComplete, never as native Complete.
+        /// </summary>
+        public NavPathOutcome CalculatePath(Float3 start, Float3 goal, List<Float3> corners, bool allowPackagedFallback = false)
         {
             if (corners == null) throw new ArgumentNullException(nameof(corners));
             corners.Clear();
-            if (!IsInstalled) return false;
+            if (!IsInstalled) return NavPathOutcome.Failed;
             var path = new NavMeshPath();
-            if (!NavMesh.CalculatePath(UnityWorldQueries.V(start), UnityWorldQueries.V(goal), NavMesh.AllAreas, path) ||
-                path.status == NavMeshPathStatus.PathInvalid ||
-                path.corners == null ||
-                path.corners.Length == 0)
+            bool ok = NavMesh.CalculatePath(UnityWorldQueries.V(start), UnityWorldQueries.V(goal), NavMesh.AllAreas, path);
+            var nativeCorners = ok ? path.corners : null;
+            if (ok && path.status != NavMeshPathStatus.PathInvalid && nativeCorners != null && nativeCorners.Length > 0)
             {
-                // Fall back to packaged triangulation graph if engine path fails after install.
-                return UnityNavMeshBakeCodec.TryFindPath(Bake, start, goal, corners);
+                for (int i = 0; i < nativeCorners.Length; i++)
+                    corners.Add(UnityWorldQueries.F(nativeCorners[i]));
+                return path.status == NavMeshPathStatus.PathComplete ? NavPathOutcome.Complete : NavPathOutcome.Partial;
             }
-            for (int i = 0; i < path.corners.Length; i++)
-                corners.Add(UnityWorldQueries.F(path.corners[i]));
-            return true;
+            if (allowPackagedFallback && UnityNavMeshBakeCodec.TryFindPath(Bake, start, goal, corners))
+                return NavPathOutcome.FallbackComplete;
+            corners.Clear();
+            return NavPathOutcome.Failed;
         }
 
         public void Dispose()
