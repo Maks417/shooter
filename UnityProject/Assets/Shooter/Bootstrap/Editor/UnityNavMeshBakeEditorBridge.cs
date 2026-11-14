@@ -34,7 +34,10 @@ namespace Shooter.Build
             if (halfExtent <= 0f || agentRadius <= 0f || agentHeight <= 0f) return null;
             _ = clearanceMargin;
 
-            var buildSettings = NavMesh.CreateSettings();
+            // Copy the built-in agent (ID 0) instead of NavMesh.CreateSettings(): creating an agent type bumps
+            // m_LastAgentTypeID, which makes Unity reserialize ProjectSettings/NavMeshAreas.asset and dirty the
+            // source tree on every native publication. The bake consumes the struct values below, not the ID.
+            var buildSettings = NavMesh.GetSettingsByID(0);
             buildSettings.agentRadius = agentRadius;
             buildSettings.agentHeight = agentHeight;
             buildSettings.agentClimb = maxStep;
@@ -132,11 +135,7 @@ namespace Shooter.Build
             finally
             {
                 if (instance.valid) instance.Remove();
-                if (data != null) UnityEngine.Object.DestroyImmediate(data);
-                // CreateSettings registers a transient agent type that Unity would otherwise persist into
-                // ProjectSettings/NavMeshAreas.asset, dirtying the source tree on every native publication.
-                NavMesh.RemoveSettings(buildSettings.agentTypeID);
-            }
+                if (data != null) UnityEngine.Object.DestroyImmediate(data);            }
         }
     }
 }
