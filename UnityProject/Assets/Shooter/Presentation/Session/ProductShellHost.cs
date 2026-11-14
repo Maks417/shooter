@@ -609,7 +609,7 @@ namespace Shooter.Presentation.Session
             bool reducedFlash = draft.ReducedFlash, subtitles = draft.Subtitles;
             float fov = draft.HipFovDegrees, sens = draft.MouseSensitivity, scale = draft.UiScale, contrast = draft.Contrast;
             Rect viewport = new Rect(a.x, a.y + 144, a.width, a.height - 248);
-            float contentHeight = settingsTab == 2 ? 220 + bindingEditor.Working.Count * 40 : settingsTab == 3 ? 350 : settingsTab == 1 ? 310 : 245;
+            float contentHeight = settingsTab == 2 ? 300 + bindingEditor.Working.Count * 40 : settingsTab == 3 ? 350 : settingsTab == 1 ? 310 : 285;
             float cw = viewport.width - 30;
             settingsScroll = GUI.BeginScrollView(viewport, settingsScroll, new Rect(0, 0, cw, contentHeight));
             float y = 0;
@@ -830,7 +830,7 @@ namespace Shooter.Presentation.Session
                     float ry = rowY + 26 + rowIndex * rh;
                     TacticalUi.Fill(new Rect(x, ry, w, rh - 3), row.IsLocal ? TacticalUi.Raised : TacticalUi.Surface);
                     if (row.IsLocal) TacticalUi.Fill(new Rect(x, ry, 3, rh - 3), TacticalUi.Accent);
-                    string name = row.IsLocal ? "YOU / " + row.DisplayName : row.DisplayName;
+                    string name = (row.IsLocal ? "YOU / " : row.IsHuman ? "OP / " : "BOT / ") + row.DisplayName;
                     ui.Label(new Rect(x + 12, ry, w - 120, rh - 3), name, 18, TacticalUi.Text, TextAnchor.MiddleLeft);
                     ui.Label(new Rect(x + w - 90, ry, 32, rh - 3), row.Kills.ToString(), 18, TacticalUi.Text, TextAnchor.MiddleRight);
                     ui.Label(new Rect(x + w - 44, ry, 32, rh - 3), row.Deaths.ToString(), 18, TacticalUi.Muted, TextAnchor.MiddleRight);
