@@ -144,6 +144,7 @@ namespace Shooter.Game.Session
             mapRuntime = countingMap;
             querySamplesAtMatchStart = queries.TotalSamples;
             harness = new CombatHarnessSimulation(queries, sessionId, request.Seed);
+            harness.SetWorldKillBounds(gameplay.Bounds);
             lifecycle = new HarnessActorLifecycle(harness);
             bots = new TeamBotPlanner(queries, mapRuntime.Navigation, 0, gameplay.NavRevision);
             ApplyMapDestinations(bots, gameplay);
@@ -269,6 +270,8 @@ namespace Shooter.Game.Session
                 measurement.LeaseAcquires++;
                 lifecycle.SyncFromSnapshot(lease.Snapshot);
             }
+            // Ordering: the out-of-world kill volume already ran inside harness.Step (after movement and bullets), so a
+            // fallen actor is Alive=false after the sync above and is skipped by the rescue below (never rescued).
             // Position rescue runs after the motor step and snapshot sync (so the sync cannot overwrite the new feet
             // with the pre-rescue snapshot) and before bot planning / spawn-safety checks of the next tick, which
             // therefore see the relocated feet. Actors killed this tick are Alive=false after the sync and skipped.
