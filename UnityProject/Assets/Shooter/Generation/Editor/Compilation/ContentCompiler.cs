@@ -217,7 +217,12 @@ namespace Shooter.Generation
                 cancel.ThrowIfCancellationRequested(); files.AssertSafePath(path);
                 try { return new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None); }
                 catch (IOException) when (elapsed.Elapsed < lockTimeout) { await Task.Delay(25, cancel).ConfigureAwait(false); }
-                catch (IOException) { throw new TimeoutException("Cache lock timeout: " + key); }
+                catch (IOException)
+                {
+                    // Prefer Cancelled over Busy when the wait already ended because of cancel.
+                    cancel.ThrowIfCancellationRequested();
+                    throw new TimeoutException("Cache lock timeout: " + key);
+                }
             }
             // OS exclusive handles are released on process exit. Persistent empty lock files are never treated as stale ownership or deleted.
         }

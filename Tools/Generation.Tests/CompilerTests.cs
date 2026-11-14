@@ -114,10 +114,14 @@ public sealed class CompilerTests : IDisposable
     {
         var node = Node(); string locks = Path.Combine(root, ".locks"); Files.CreateDirectories(locks);
         using var held = new FileStream(Path.Combine(locks, node.Id + ".lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
-        var compiler = new ContentCompiler(Files, TimeSpan.FromMilliseconds(50));
-        Assert.Equal(ErrorCode.Busy, (await compiler.CompileAsync(new[] { node }, false, CancellationToken.None)).Error);
-        using var cancelled = new CancellationTokenSource(25);
-        Assert.Equal(ErrorCode.Cancelled, (await compiler.CompileAsync(new[] { node }, false, cancelled.Token)).Error);
+        // Short timeout + uncancelled token must surface Busy, not Cancelled.
+        Assert.Equal(ErrorCode.Busy, (await new ContentCompiler(Files, TimeSpan.FromMilliseconds(50)).CompileAsync(new[] { node }, false, CancellationToken.None)).Error);
+        // Long lock wait with an explicit cancel must prefer Cancelled over Busy (no timer race).
+        using var cancelled = new CancellationTokenSource();
+        Task<CompilationResult> pending = new ContentCompiler(Files, TimeSpan.FromSeconds(30)).CompileAsync(new[] { node }, false, cancelled.Token);
+        await Task.Delay(40);
+        cancelled.Cancel();
+        Assert.Equal(ErrorCode.Cancelled, (await pending).Error);
         Assert.False(Directory.Exists(Files.ContentDirectory(node.Id)));
     }
     private sealed class CancelGenerator : IAssetGenerator
