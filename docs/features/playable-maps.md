@@ -1,6 +1,6 @@
 # Feature: two playable procedural maps
 
-Status reviewed 2026-11-14 (T055/T058 update): `Tools/Compile-GameContent.ps1` publishes ADR-035 `shooter.map-package.v1` closures; catalog/gameplay and metadata share `MapSpawnLayout` (≥12 unique slots/team). `MapTopologyValidation` checks staging exits, three routes including a covered route, standing clearance and initial spawn LOS. Depot seed remains **460072031**. `TeamDeathmatchMatch` ranks respawns by occupancy/LOS/pressure with a fixed first-failure +600 deadline. Path queries still use the software nav grid until native Unity NavMesh bake/install closes FIX04; named route/spawn player review and FIX07 hardware acceptance remain Pending.
+Status reviewed at 59316d3: Compile-GameContent publishes ADR-035 packages; ≥12 slots/team, topology validation and spawn ranking/deadline software exist. Depot seed is 460072031. Catalog startup still runs planners/package builders, visual closure uses placeholder skeleton/material content, and runtime views generate geometry. Navigation remains the software grid; native bake publisher is a stub. [T067](../next-playable-build.md) completes compiled content/native delivery and actual route/spawn/player validation; software publication alone does not accept MAP/FIX gates.
 
 ## Catalog and layouts
 
@@ -13,7 +13,7 @@ These names/layouts are chosen product defaults. Two seeds or lighting variants 
 
 Each map has ≥12 validated spawn slots per team, at least two separate exits per staging area, at least three distinct routes between sides including a covered route, and no initial direct spawn-to-enemy-spawn shot. All slots reach the combat routes through real navigation with standing clearance under [gameplay baseline](../gameplay-baseline.md). Spawn roles, route destinations and cover proxies have stable IDs and metadata; team/quality never changes physical collision, nav, visibility or hit rules. Mirrored blockout is acceptable initially; exploit/imbalance findings require numeric recipe fixes and regenerated identities.
 
-## Content path to implement
+## Content path — partial implementation and required exit
 
 T037/T044/T045 retain the original package requirements. Tools/Compile-GameContent.ps1 now enumerates map/profile/recipe deps and publishes verified `shooter.map-package.v1` sets (cold/warm/forced, cancel/corrupt recovery, server gameplay-only). Tools/Test-Maps.ps1 covers catalog/package pure checks; native Unity bake/player remain Pending. Existing diagnostic compilers remain restricted to their named content sets.
 

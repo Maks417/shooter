@@ -34,7 +34,7 @@ If every candidate is unsafe, defer 30 active ticks and retry. After 600 active 
 
 ## Team bot behavior and capacity
 
-Extend the current eight-bot, single-target `CombatAiDirector` behind the frozen planner seam. Each bot evaluates living enemies, never allied actors, through bounded range/FOV/occlusion and reaction delay. Team membership is knowledge; enemy position is available to gameplay for queries, but cannot become an AI target without its sensing rules. Clear visible-target state on dead/out-of-range/occluded targets; deferred sensing ages knowledge and forbids shooting stale visibility.
+T057 extended `CombatAiDirector` to 9/11 bots, enemy filtering and corner/reload handling behind the frozen planner seam; real-map acceptance remains pending. The required behavior is: Each bot evaluates living enemies, never allied actors, through bounded range/FOV/occlusion and reaction delay. Team membership is knowledge; enemy position is available to gameplay for queries, but cannot become an AI target without its sensing rules. Clear visible-target state on dead/out-of-range/occluded targets; deferred sensing ages knowledge and forbids shooting stale visibility.
 
 Use round-robin scheduling across up to 11 bots; keep a **global** maximum 16 vision rays and 2 new path requests per tick initially. Each bot receives a sensing opportunity within 12 active ticks under the full roster; record actual deferrals/starvation and reject starvation. Do not run a separate full query budget per team. Budget changes need workload/ADR review, not hidden scaling. Preserve reaction delays; avoid perfect aim tracking through walls.
 

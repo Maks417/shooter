@@ -2,7 +2,7 @@
 
 All paths are relative to `UnityProject/Assets/Shooter` unless noted. Contracts owned by integrator. Every work package must meet [agent done rules](agent-coordination.md). Estimate after spikes; no speculative hour counts.
 
-Current next work: assign [T052–T065 remediation](release-remediation-plan.md), starting T052 regression lock, T053 actor lifecycle and T054 pause/input. M8–M11 software closeout records do not establish product acceptance; [audit](product-state-audit.md) identifies incomplete M8–M10 integration and open M11. T001–T051 keep their original IDs/requirements; T035 Game-v1 is already frozen (ADR-034), T025 remains deferred, and historical waivers do not accept new gates.
+Current next work is [T066–T071](next-playable-build.md), starting with provenance/Generation baseline repair, then compiled content/native navigation, state-driven views and working preferences. T052–T064 software is committed in 59316d3; T062 visual disposition and T065 final acceptance remain open. The [audit](product-state-audit.md) identifies exact current gaps. Original task IDs/requirements, T035 freeze and deferred T025 remain unchanged; historical waivers do not accept new gates.
 
 ## Dependency graph
 
@@ -85,4 +85,4 @@ WP-02 starts on C0/base commit, edits only geometry/weapon generator folders and
 
 ## Product remediation tasks
 
-[T052–T065](release-remediation-plan.md) define dependencies, exact role boundaries and outputs for audit findings A01–A13. [FIX01–FIX14](release-remediation-validation.md) add regression specificity to the existing RUN/TDM/MAP/UI/SET/REL gates. Implementation is planned/unassigned; this documentation task neither edits coordination leases nor starts code or agents.
+[T052–T065](release-remediation-plan.md) retain original audit repair requirements; their software is substantially committed in 59316d3. [T066–T071](next-playable-build.md) specify the verified remaining baseline/content/view/settings/measurement/delivery work within M8–M11, followed by T062/T065 acceptance. [FIX01–FIX14](release-remediation-validation.md) supplement original gates. This documentation task creates no runtime assignment or coordination lease.

@@ -1,6 +1,6 @@
 # Feature: menu, match UI and persistent settings
 
-Status reviewed 2026-11-14 (T059+T061 settings bind): `ProductShellHost` owns Main/Setup/Loading/Playing/Paused/Results with cancellable load, pause/restart/leave, live Tab scoreboard and retained results. Settings screen uses `UserSettingsEditor` (Apply/Cancel/defaults) with `FileUserSettingsStore` (`shooter-user-settings.json`) and `ProductClientSettingsApplier` (audio gains, display Keep/Revert + 15s focus-loss clock). Bootstrap product launch no longer auto-starts a match. 20 alternating player launches, named 720p UI review and SET02 device acceptance remain Pending. [Audit](../product-state-audit.md) and [remediation](../release-remediation-plan.md) continue device work.
+Status reviewed at 59316d3: ProductShellHost implements Main/Setup/Loading/Playing/Paused/Results, live tables and schema-2 settings editor/store/applier with synthesized audio binding. No match auto-starts in normal launch. Controls are not yet fully implemented: settings only displays binding count, gameplay reads fixed keys, and ReducedFlash/Subtitles are not consumed by ApplyUserSettings. T069 in the [next-build queue](../next-playable-build.md) completes these and real 720p/keyboard/pointer/display/audio checks; 20-launch soak and SET02 device acceptance remain pending.
 
 ## Screens and navigation
 

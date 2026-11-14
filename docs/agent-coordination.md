@@ -45,7 +45,7 @@ When staffing is limited, preserve dependencies rather than running all tasks si
 
 ## New playable release waves — M8–M11
 
-The original waves above describe M0–M7. The M8–M11 waves below retain the original integration dependency model, not a command to restart T035. Game-v1 is frozen and product work exists; the [current remediation plan](release-remediation-plan.md) supersedes their dispatch order. Only an explicitly assigned integrator records active owners/leases/readiness in coordination.json. Historical closeout entries and false readiness are not current coding authorization.
+The original waves above describe M0–M7. The M8–M11 waves below retain the original integration dependency model, not a command to restart T035. Game-v1 is frozen and product work exists; the [current T066–T071 queue](next-playable-build.md) supersedes their dispatch order after committed T052–T064. Only an explicitly assigned integrator records active owners/leases/readiness in coordination.json. Historical closeout entries and false readiness are not current coding authorization.
 
 1. Integrator alone implements T035 Game-v1 and freezes compiling ports, executable fixtures, lifecycle/thread/lease rules, exact input semantics and new workload identities on main. Integrator handles T036 extraction from sealed/private combat harness into Simulation/Session. Changes to C0/content schemas require ADR/migration first.
 2. After freeze, T037 map/runtime and T038 client adapter work in disjoint paths against compiling fakes, integrating only real adapters. T039 proves actual player composition. New settings/map/menu models may be prepared from these seams if explicitly assigned, but no milestone closes before upstream real integration.

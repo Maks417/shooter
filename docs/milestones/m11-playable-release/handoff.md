@@ -1,13 +1,17 @@
 # M11 — Playable build and acceptance — handoff and gate record
 
-**Current disposition — 2026-11-14: M11 release acceptance open (T065).** Software remediation T052–T064 is present on a **dirty uncommitted `main` working tree** rooted at docs-audit commit `6329262446428f92617600d8526b13f9c90a358a`. FIX01–FIX13 software gates land tooling/wiring only; **REL01–REL06 are NotClaimed** — no PASS stamps, no invented hardware evidence, and no clean source-matched player candidate has completed the acceptance matrix. P05 remains **FAIL** under ADR-024. Repairs: T052–T065 in the [shared implementation plan](../../release-remediation-plan.md), with [FIX acceptance](../../release-remediation-validation.md). The [audit](../../product-state-audit.md) supersedes earlier readiness interpretations. No runtime assignment or worker lease is created here; commit/push was not requested for this handoff.
+**Current disposition — 2026-11-14, reviewed at 59316d3:** M11 release acceptance open: 59316d3 commits T052–T064 remediation, not an accepted player. Provenance/regression failures and content/view/settings gaps precede a clean owner-playable archive (T066–T071); T062/T065 still own final visual/REL acceptance. P05 remains FAIL. See the [current audit](../../product-state-audit.md), [next playable-build tasks](../../next-playable-build.md) and [FIX acceptance](../../release-remediation-validation.md). Original requirements and historical evidence below remain; no new coding lease is created.
+
+## Latest-commit review — 59316d3
+
+59316d3 contains committed remediation. The new [T066–T071 queue](../../next-playable-build.md) records current baseline/content/view/settings/collector gaps and defines T071 as the first actual owner-playable archive handoff. No such current-source archive was proved here. T070, T062 visual disposition and T065 full acceptance follow on a matching candidate; REL01–REL06 remain NotClaimed. See the audit for exact fresh result paths and retained failures.
 
 ## T065 / FIX14 acceptance readiness — 2026-11-14
 
 | Field | Disposition |
 |---|---|
 | Task | T065 (original T049–T051 / FIX14) |
-| Software prerequisites T052–T064 | Implemented in working tree (see master status); not yet a single clean committed candidate |
+| Software prerequisites T052–T064 | Committed in 59316d3; current gaps T066–T071 remain before a clean built candidate |
 | REL01–REL06 | **Open / NotClaimed** — require one clean source-matched client + Package-Release archive + operator evidence |
 | P05 | **FAIL** retained (ADR-024); failed artifacts must not be deleted or relabeled |
 | Operator runbook | Below — Compile-GameContent → clean Client build → Package-Release → extract/launch → named reviews → matrix/soaks |
@@ -15,22 +19,22 @@
 
 ### Master software vs remaining (T052–T065)
 
-Honest summary from working-tree handoffs and agent outcomes. “Software” means code/tooling/tests landed; it is **not** REL/player/hardware PASS.
+Implementation-time summary, now committed in 59316d3. Current audit B01–B10 and T066–T071 qualify these software labels. “Software” means code/tooling/tests landed; it is **not** REL/player/hardware PASS.
 
 | Task | Gate | Software disposition | Remaining for true playable release |
 |---|---|---|---|
-| T052 | FIX01 | **Met** — Contracts lock graph + offline wrappers | Offline NuGet advisory **PendingNetwork** (separate from suite PASS) |
+| T052 | FIX01 | Contracts lock graph repaired; 72 tests PASS at 59316d3 | T066 Generation/provenance failures; offline advisory **PendingNetwork** |
 | T053 | FIX02 | **Software met** — harness lifecycle/respawn | Actual-player lifecycle evidence **Pending** |
 | T054 | FIX03 | **Software met** — pause/focus/input buffer | Player pause/focus device review **Pending** |
-| T055 | FIX04 | **Partial** — packages/load (ADR-035) | Native Unity nav bake + release-player load proof **Pending** |
-| T056 | FIX05 | **Software wired** — map/actor/weapon views | Player captures both maps **Pending** |
+| T055 | FIX04 | **Partial** — packages/load (ADR-035) | T067 data-only catalog, actual visual closure and native bake/install; player proof **Pending** |
+| T056 | FIX05 | **Software wired** — map/actor/rifle views | T067 packaged visuals / T068 selected weapon/action state; player captures **Pending** |
 | T057 | FIX06 | **Pure AI met** — enemy-only sensing/corners | Mixed-team real-map player **Pending** |
 | T058 | FIX07 | **Software spawn safety** — rank/defer/deadline | Native/player route+spawn review **Pending** |
 | T059 | FIX08 | **Shell software** — menu/load/pause/results | 20-launch soak + 720p UI review **Pending** |
-| T060 | FIX09 | **ADR-036 + UI/audio bind** | SET02 real display Keep/Revert **Pending** |
+| T060 | FIX09 | **ADR-036 + UI/audio bind** | T069 binding editor/applied controls/accessibility; SET02 Keep/Revert **Pending** |
 | T061 | FIX10 | **Device callback software** | Named audible review **Pending** |
 | T062 | FIX11 | **ToolingReady** inventory/overlay | P05 **FAIL** retained; REL03 **Open** |
-| T063 | FIX12 | **ADR-037 tooling** collector/matrix/soak scripts | Twelve captures + soaks **PendingHardware** |
+| T063 | FIX12 | **ADR-037 tooling** collector/matrix/soak scripts | T070 multi-match/counter repair; twelve captures + soaks **PendingHardware** |
 | T064 | FIX13 | **Package-Release software** rejects dirty/mismatched | Clean source-matched client + player launch **Pending** |
 | T065 | FIX14 / REL01–REL06 | **Checklist + runbook ready** | Execute operator path; do not claim PASS until measured |
 
@@ -45,7 +49,7 @@ Record each item with source commit, `sourceDirty=false` build identity, content
 | REL03 | Visual/usability sign-off | Open | Named review + captures; P05 FAIL immutable; live soldiers/UI at 720p 100%/150% |
 | REL04 | Reference performance | Open / PendingHardware | Twelve TDM captures (both maps × both sizes × 3) + ≥30 min soak/map on reference machine |
 | REL05 | Regression and provenance | Partial software | Locked offline wrappers + provenance; advisory **PendingNetwork**; Unity client/server isolation on candidate |
-| REL06 | Delivery and rollback | Open | Archive path/hash, CONTROLS/KNOWN_ISSUES, rollback pair rehearsal; completed work committed on main when owner requests |
+| REL06 | Delivery and rollback | Open | Archive path/hash, CONTROLS/KNOWN_ISSUES, rollback pair rehearsal; completed assigned work committed on main under the standing repository rule |
 | FIX02 player | Lifecycle in player | Pending | First/repeated 6v6 lives in packaged player |
 | FIX03 player | Pause/focus device | Pending | 10s pause + OS focus loss in player |
 | FIX04 native/player | Nav bake + packaged load | Pending | Native Unity nav bake + release-player load both maps |
@@ -61,7 +65,7 @@ Record each item with source commit, `sourceDirty=false` build identity, content
 
 ## T065 operator runbook (do not stamp PASS)
 
-Execute from repository root on the **intended acceptance candidate** only. Prefer a clean committed tree (`sourceDirty=false`); the present dirty working tree is **not** an accepted REL candidate until identities match a clean build. Keep Smoke diagnostic separate from product launch. Failed P05 artifacts stay immutable.
+Execute from repository root on the **intended acceptance candidate** only. Require a clean committed tree (`sourceDirty=false`). Source 59316d3 is committed, but is not a built/accepted player candidate; complete the remaining next-build repairs before this acceptance runbook. Keep Smoke diagnostic separate from product launch. Failed P05 artifacts stay immutable.
 
 ### 1. Content closure
 
@@ -91,7 +95,7 @@ Expect archive under `Artifacts/m11-playable-release/<build-sourceCommit>/packag
 
 ### 4. Extract and launch (REL01 rehearsal)
 
-Extract to a clean directory (no Unity Library, no absolute repo Artifacts path, no network, no server process). Launch `Shooter.exe`; reach main menu with no active match. Confirm both maps load from packaged content. Corrupt one content file and confirm recoverable failure. Record paths/hashes — still **NotClaimed** until full REL checklist completes.
+Extract to a clean directory (no Unity Library, no absolute repo Artifacts path, no network, no server process). Launch the packaged `launch-offline.cmd` (currently supplies content/lock overrides; direct-exe discovery remains T067); reach main menu with no active match. Confirm both maps load from packaged content. Corrupt one content file and confirm recoverable failure. Record paths/hashes — still **NotClaimed** until full REL checklist completes.
 
 ### 5. Named product reviews (Pending until done)
 
@@ -114,8 +118,9 @@ After the same candidate content/build:
 
 ```powershell
 ./Tools/Compile-GameContent.ps1
-./Tools/Benchmark-Product-Matrix.ps1   # twelve captures: both maps × both sizes × three runs, 60s+180s, native1280×720 Low
-./Tools/Benchmark-Soak.ps1            # ≥30-minute normal-AI 6v6 soak per map
+./Tools/Benchmark-Product-Matrix.ps1 -BuildRunDirectory <same-clean-client-build-run> -SensorLog <live-sensor-csv> -HardwareEvidence <reference-proof-json>   # twelve captures: both maps × both sizes × three runs, 60s+180s, native1280×720 Low
+./Tools/Benchmark-Soak.ps1 -BuildRunDirectory <same-clean-client-build-run> -Workload TDM-soak-6v6-compound-v1 -HardwareEvidence <reference-proof-json>
+./Tools/Benchmark-Soak.ps1 -BuildRunDirectory <same-clean-client-build-run> -Workload TDM-soak-6v6-depot-v1 -HardwareEvidence <reference-proof-json>
 ```
 
 Or equivalent `Benchmark.ps1` / `Benchmark-Series.ps1` with `TDM-5v5-v1`, `TDM-6v6-v1`, `TDM-5v5-depot-v1`, `TDM-6v6-depot-v1`. Missing reference machine/counters → **PendingHardware**, never PASS.
@@ -136,7 +141,7 @@ Report offline advisory lookup as **PendingNetwork** separately. Confirm server 
 
 ### 9. Handoff closeout (REL06) — after measured evidence only
 
-Update this file with archive path/hash, evidence inventory, every FAIL/Pending/PendingHardware, rollback pair, and named reviewers. Commit completed acceptance work to `main` only when the owner requests; preserve ignored Artifacts. Do not upgrade packages/editor; do not delete failed P05 artifacts; do not edit gameplay solely to force greens.
+Update this file with archive path/hash, evidence inventory, every FAIL/Pending/PendingHardware, rollback pair, and named reviewers. Commit completed assigned acceptance work to `main` under the standing repository rule; preserve ignored Artifacts. Do not upgrade packages/editor; do not delete failed P05 artifacts; do not edit gameplay solely to force greens.
 
 ## T062 / FIX11 visual inventory tooling — 2026-11-14
 

@@ -1,6 +1,6 @@
 # Offline release remediation — implementation tasks T052–T065
 
-Baseline: the [2026-11-14 audit](product-state-audit.md) at `f3d995497d88376d171c86b4088ae37fa8f289f0`. **2026-11-14 software status:** T052–T064 remediation is implemented on a dirty uncommitted `main` working tree rooted at docs-audit commit `6329262446428f92617600d8526b13f9c90a358a`. T065 owns acceptance handoff only: [M11 handoff](milestones/m11-playable-release/handoff.md) checklist + operator runbook. **REL01–REL06 remain NotClaimed**; P05 FAIL under ADR-024; no invented hardware evidence. These tasks repair incomplete M8–M11 deliverables without creating M12, renumbering historical tasks, expanding the game or inheriting waivers. The [validation matrix](release-remediation-validation.md) defines concrete exits. Owners below are roles, not active leases.
+Original baseline: [audit](product-state-audit.md) at f3d9954. **Current source 59316d3, 2026-11-14:** T052–T064 remediation is committed on clean main. This plan retains original requirements and scope, not an assertion that every task is unstarted or fully accepted. The [next-build queue T066–T071](next-playable-build.md) specifies remaining code/build work from current findings, followed by T062 visual disposition and T065 acceptance. REL01–REL06 remain Open / NotClaimed; P05 FAIL remains. These complete M8–M11 without M12 or inherited waivers.
 
 ## Entry, ownership and compatibility
 
@@ -8,7 +8,7 @@ Read [implementation start](implementation-start.md), [vision](vision.md), [arch
 
 Game-v1 is already compiling/frozen under ADR-034. Do not repeat T035 or treat its freeze as proof that every required behavior is covered. Before implementation the integrator records current accepted main, owner, exact allowed files, fixture/lock hashes, commands, rollback pair and evidence path. No automatic delegation; parallel work needs explicit authorization, bounded ownership and separate worktrees/editor copies. Shared files integrate serially.
 
-Frozen semantic or format changes require ADR plus fixtures/migration before consumers: C0, Game-v1, SGAF, generator/recipe/nav identities and N1. The frozen UserSettings DTO does not expose all required shell fields; T060 must resolve that through a reviewed extension/version rather than quietly removing settings or storing an undocumented parallel contract. T063 similarly resolves depot workloads without editing frozen fixtures in place merely to make a test pass. Nonbreaking implementation repairs must preserve current identities.
+Frozen semantic or format changes require ADR plus fixtures/migration before consumers: C0, Game-v1, SGAF, generator/recipe/nav identities and N1. ADR-036 now extends UserSettings to schema 2; ADR-037 adds depot workloads. Preserve these reviewed extensions and their fixtures; do not repeat the prior compatibility work or invent an undocumented parallel contract. Missing implementation consumers remain T069/T070. Nonbreaking implementation repairs must preserve current identities.
 
 ## Order and milestone mapping
 
@@ -112,7 +112,7 @@ Allowed scope: Tools/Package-Release.ps1 and release/build manifests/tooling via
 
 ## T065 — Execute and hand off the accepted product
 
-Run [FIX14 and REL01–REL06](release-remediation-validation.md) on one final **clean** source/content/build candidate after T052–T064 software is present. Software readiness (working tree, 2026-11-14): FIX01 met (advisory PendingNetwork); FIX02–FIX03/FIX05–FIX10/FIX12–FIX13 software met or wired; FIX04 partial (native bake + release-player Pending); FIX08 shell software with soak/UI Pending; FIX11 ToolingReady with P05 FAIL retained. **None of that closes REL01–REL06.**
+Run [FIX14 and REL01–REL06](release-remediation-validation.md) on one final **clean** source/content/build candidate after remaining T066–T071 code/integration gaps and T062 visual disposition are resolved; do not treat T065 as only collecting missing hardware evidence. Implementation-time readiness summary (software committed in 59316d3; qualified by current audit B01–B10 and T066–T071): FIX01 met (advisory PendingNetwork); FIX02–FIX03/FIX05–FIX10/FIX12–FIX13 software met or wired; FIX04 partial (native bake + release-player Pending); FIX08 shell software with soak/UI Pending; FIX11 ToolingReady with P05 FAIL retained. **None of that closes REL01–REL06.**
 
 Operator path (detailed in [M11 handoff](milestones/m11-playable-release/handoff.md); do not stamp PASS here):
 
@@ -124,10 +124,10 @@ Operator path (detailed in [M11 handoff](milestones/m11-playable-release/handoff
 6. Full match matrix both maps × both sizes × score/timeout + draw; ≥1 named manual match/map.
 7. Reference `Benchmark-Product-Matrix.ps1` / `Benchmark-Soak.ps1` (twelve captures + soaks) → PendingHardware if machine unavailable.
 8. Regression/provenance wrappers; advisory PendingNetwork separate.
-9. Handoff archive path/hash, limitations, rollback pair; commit only when owner requests.
+9. Handoff archive path/hash, limitations and rollback pair; commit completed assigned work to main under the standing repository rule.
 
 A missing reviewer, counter or reference machine remains Pending/PendingHardware, not waived by history. Failed cases return to their owning task without reducing scope. No public distribution is authorized or required.
 
 ## Definition of task done
 
-Each handoff supplies exact changed files and source, accepted versions/hashes, meaningful nonzero tests, relevant real integration evidence, remaining limitations and rollback. Pure implementation may merge with explicitly pending device evidence, but does not close the affected milestone. The original RUN/TDM/MAP/UI/SET/REL requirements remain authoritative; FIX IDs add regression specificity. Software remediation on a dirty tree does not make REL gates planned→PASS; only measured operator/hardware evidence on a clean candidate may change release acceptance.
+Each handoff supplies exact changed files and source, accepted versions/hashes, meaningful nonzero tests, relevant real integration evidence, remaining limitations and rollback. Pure implementation may merge with explicitly pending device evidence, but does not close the affected milestone. The original RUN/TDM/MAP/UI/SET/REL requirements remain authoritative; FIX IDs add regression specificity. Committed remediation software does not make REL gates planned→PASS; only measured operator/hardware evidence on a clean candidate may change release acceptance.

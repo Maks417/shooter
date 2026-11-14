@@ -2,7 +2,7 @@
 
 ## Current product regression status — 2026-11-14
 
-The [audit](product-state-audit.md) records fresh component results and the Contracts locked-restore failure. Use [FIX01–FIX14](release-remediation-validation.md) with existing milestone acceptance: green pure suites, source provenance and documentation hashes do not establish real product behavior or reference performance. M8–M10 integration is incomplete; M11 acceptance is open.
+The [audit](product-state-audit.md) records fresh results at 59316d3: Contracts 72, Simulation 101 and Game 38 PASS with zero skipped; Generation FAIL (310/311) and source provenance FAIL (19 missing metadata entries). T052 resolved NU1004. Use [T066–T071](next-playable-build.md) and [FIX01–FIX14](release-remediation-validation.md) with original milestone gates. No current Unity/player/device/hardware acceptance is inferred; M8–M10 integration and M11 acceptance remain open.
 
 Test through public ports with small deterministic fixtures; add integration/hardware checks where unit tests cannot establish correctness. Numerical tolerances live in fixture schemas. Avoid tests that merely duplicate implementation formulas. All tests report build, toolchain, seed, content hash and profile.
 

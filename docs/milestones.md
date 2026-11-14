@@ -2,7 +2,7 @@
 
 Milestones are dependency gates, not calendar promises. [Backlog](backlog.md) gives ordered tasks. No milestone is complete until implementation exists and attached evidence passes [validation](validation.md).
 
-Current disposition, 2026-11-14: M0–M7 retain historical owner-waived administrative closures (ADR-017/025–028/030–032), with original FAIL/Pending evidence and P05 FAIL unchanged. M8–M11 have software closeout records, but the [current audit](product-state-audit.md) leaves M8–M10 integration incomplete and M11 acceptance open. [T052–T065](release-remediation-plan.md) repair these same gates; no M12 or inherited waiver is created. Closure counts must not be presented as technical acceptance counts.
+Current disposition, 2026-11-14 at 59316d3: M0–M7 retain historical owner-waived closures (ADR-017/025–028/030–032); original FAIL/Pending evidence and P05 FAIL remain. T052–T064 remediation is committed, but M8–M10 integration and M11 acceptance remain open for the [current source findings](product-state-audit.md). [T066–T071](next-playable-build.md) finish the same milestone scope, followed by T062/T065 final acceptance; no M12 or inherited waiver is needed.
 
 | Gate | Deliverable | Required exit evidence |
 |---|---|---|

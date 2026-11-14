@@ -35,4 +35,4 @@ Editor/URP versions are already locked, not an unresolved T001 choice. M5 select
 
 ## Observed product defects — 2026-11-14
 
-[Audit A01–A13](product-state-audit.md) converts the applicable risks into observed source gaps, including first-6v6-respawn capacity, fatal pause handling and the Contracts NU1004 restore failure. [T052–T065](release-remediation-plan.md) assign repair scope and [FIX01–FIX14](release-remediation-validation.md) define evidence. M8–M10 integration and M11 acceptance remain open; owner scope for any fourth P05 clearance search is still required under ADR-024.
+[Current audit B01–B10](product-state-audit.md) records remaining defects after committed T052–T064: provenance metadata, Generation cancellation, runtime catalog/visual generation, native navigation, view/settings and soak integration. [T066–T071](next-playable-build.md) assign remaining scope; [FIX01–FIX14](release-remediation-validation.md) retain evidence gates. Historical A01–A13 and their fixes remain recorded. M8–M10 integration/M11 acceptance are open; a fourth P05 clearance search still requires explicit owner scope under ADR-024.

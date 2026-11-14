@@ -1,6 +1,6 @@
 # Vision, scope and requirements
 
-Status reviewed 2026-11-14; product requirements remain those specified on 2026-11-13. M0–M7 retain historical owner-waived closures. M8–M11 software exists in part, but [audit findings](product-state-audit.md) leave M8–M10 integration incomplete and M11 acceptance open. The [remediation plan](release-remediation-plan.md) repairs those deliverables without expanding scope or inheriting historical waivers. Unity 6 URP remains fixed.
+Status reviewed 2026-11-14 at 59316d3: M0–M7 retain historical owner-waived closures. T052–T064 remediation is committed, with specific M8–M10 integration gaps and M11 acceptance open in the [current audit](product-state-audit.md). The [next playable-build queue](next-playable-build.md) completes those same deliverables without expanding scope or inheriting waivers. Product requirements and Unity 6 URP toolchain remain fixed.
 
 ## Product
 

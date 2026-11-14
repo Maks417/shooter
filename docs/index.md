@@ -2,11 +2,11 @@
 
 Unity 6 URP / C# / HLSL design for a realistic modern-world shooter generated from code and numeric recipes. No imported/manual meshes, painted textures, sprites or authored animation. Initial hardware target: Ryzen 5 4600H integrated Radeon, 16 GB DDR4-3200, NVMe; native 720p Low at 30 FPS, 60 FPS stretch.
 
-**Status, 2026-11-14:** M0–M7 retain their historical owner-waived closures and P05 remains FAIL under ADR-024. M8–M11 software/build/package records exist; T052–T064 remediation is on a dirty working tree and [T065](milestones/m11-playable-release/handoff.md) records acceptance checklist/runbook without claiming REL01–REL06. The [source audit](product-state-audit.md) still governs incomplete M8–M10 integration and open M11 acceptance. Game-v1 is frozen under ADR-034; C0/content/N1 remain unchanged. Historical closeout labels do not establish a finished product.
+**Status, 2026-11-14 at 59316d3:** T052–T064 remediation is committed on main. M8–M10 integration and M11 acceptance remain open: fresh Generation/provenance failures, runtime catalog/visual generation, interim navigation, weapon/action views, incomplete binding/settings application and multi-match soak need work. The [audit](product-state-audit.md) separates current gaps from historical repaired defects. M0–M7 waivers and P05 FAIL remain; Game-v1 includes ADR-036 settings schema 2 and ADR-037 workloads. No accepted current player archive is established.
 
 ## Next development
 
-Use [T052–T065 remediation tasks](release-remediation-plan.md) and the [repair validation matrix](release-remediation-validation.md). Begin with T052 regression-lock repair, then T053 actor lifecycle and T054 pause/input under an explicit implementation assignment. Preserve the original M8–M11 requirements and historical evidence; do not restart the already frozen T035 boundary.
+Use the [next playable-build tasks T066–T071](next-playable-build.md): baseline → content/navigation → views/preferences → clean local archive. T062/T065 retain visual/final acceptance after T070 collector/soak validation. [T052–T065](release-remediation-plan.md) are the original repair cards, with substantial committed software; [FIX01–FIX14](release-remediation-validation.md) remain mandatory. No leases are created by this docs task.
 
 ## Reading order
 
@@ -21,7 +21,8 @@ Use [T052–T065 remediation tasks](release-remediation-plan.md) and the [repair
 | Document | Purpose |
 |---|---|
 | [Vision, scope and requirements](vision.md) | Scope, requirements, art constraint and non-goals |
-| [Playable release review and order](playable-release-plan.md) | Current-code gaps, next four gates and deliverable boundary |
+| [Playable release review and order](playable-release-plan.md) | Committed software, remaining build queue and deliverable boundary |
+| [Next playable build](next-playable-build.md) | Remaining T066–T071 cards, owner-playtest handoff and final acceptance boundary |
 | [Current product state audit](product-state-audit.md) | Findings, actual source/evidence and current milestone disposition |
 | [Release remediation implementation](release-remediation-plan.md) | Bounded tasks T052–T065, ownership, dependencies and compatibility |
 | [Release remediation validation](release-remediation-validation.md) | FIX01–FIX14, real-player acceptance and evidence requirements |
@@ -68,7 +69,7 @@ Freeze contracts C0 at M0. Treat paths and signatures as specifications to imple
 
 ## Implementation readiness refinements — revision 1.1
 
-Begin with [implementation start](implementation-start.md), then the assigned milestone; T052–T054 are the recommended next bounded implementation assignments. M0 remains the historical bootstrap reference. Shared details remain in one place.
+Begin with [implementation start](implementation-start.md), then the assigned milestone; T066 is the next bounded implementation assignment, followed by T067–T071. M0 remains the historical bootstrap reference. Shared details remain in one place.
 
 - [Start implementation here](implementation-start.md)
 - [M0 bootstrap runbook](bootstrap-runbook.md)

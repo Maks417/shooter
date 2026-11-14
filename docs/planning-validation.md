@@ -2,7 +2,7 @@
 
 ## Historical record notice — 2026-11-14
 
-The dated results below are retained unchanged for ad4544f. They are not the current baseline: source provenance now passes, Game-v1 is frozen and M8–M11 code exists. The [current audit](product-state-audit.md) records f3d9954, fresh 298/61/15 passing pure suites, the Contracts NU1004 restore failure and open product integration. Follow [remediation](release-remediation-plan.md), not the historical next-action paragraph below.
+The dated results below are retained unchanged for ad4544f. Current source is 59316d3: Game-v1 is frozen with ADR-036/037 extensions and T052–T064 remediation is committed. The [current audit](product-state-audit.md) records Contracts 72, Simulation 101 and Game 38 PASS; Generation 310/311 FAIL and provenance FAIL on 19 missing metadata entries. The earlier NU1004 failure is repaired. Follow [T066–T071](next-playable-build.md) and T062/T065 acceptance, rather than the historical next-action paragraph below.
 
 Date: 2026-11-13. Reviewed code/source HEAD: `ad4544f941d3848e53252db00790a170bdfdc960`, with this documentation working tree dirty during checks. Changes are repository docs plus AGENTS.md only; no Unity source, generated payload, golden, package/toolchain lock, C0 contract, schema or historical acceptance report was changed. This record validates planning delivery and existing regressions, not M8–M11 implementation.
 

@@ -1,6 +1,10 @@
 # M9 — Team Deathmatch and bot teams — handoff and gate record
 
-**Current disposition — 2026-11-14: M9 integration incomplete.** T058 landed pure spawn-safety ranking + fixed first-failure deadline and ≥12 catalog slots/team; FIX07 still Pending native nav/player review. Real mixed-team player AI, TDM07/08 remain open. Repairs: T053, T057–T058, T063, T065 in the [shared implementation plan](../../release-remediation-plan.md), with [FIX acceptance](../../release-remediation-validation.md). The [audit](../../product-state-audit.md) supersedes earlier readiness interpretations; original requirements, dated ledgers and raw evidence below are retained.
+**Current disposition — 2026-11-14, reviewed at 59316d3:** M9 integration validation open: T053/T057/T058 lifecycle, enemy sensing/path/reload and spawn policy software landed in 59316d3; native-world mixed-team/full-match evidence and correct multi-match telemetry/soak remain (T067/T070/T065). See the [current audit](../../product-state-audit.md), [next playable-build tasks](../../next-playable-build.md) and [FIX acceptance](../../release-remediation-validation.md). Original requirements and historical evidence below remain; no new coding lease is created.
+
+## Latest-commit review — 59316d3
+
+T053/T057/T058/T063 software is committed in 59316d3; Game 38/38 and Simulation 101/101 pass in their scope. Real native-world mixed-team/spawn/full-match acceptance remains pending. T070 must implement finish/replay-aware multi-match soak and repair telemetry semantics; the current one-shot host cannot capture 30 active minutes across normal 15-minute matches. T066/T067 precede player evidence; no hardware PASS is inferred.
 
 ### T058 / FIX07 software note — 2026-11-14
 

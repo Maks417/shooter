@@ -1,6 +1,10 @@
 # M10 — Two maps, menus and settings — handoff and gate record
 
-**Current disposition — 2026-11-14: M10 integration incomplete; T059 shell software landed.** Numeric planners, verified map packages (T055), product view binding (T056) and functional shell lifecycle (T059) exist; complete applied settings (T060), named UI/device review and full-match acceptance (T057–T058) remain open. Repairs: T055–T056, T058–T061, T064–T065 in the [shared implementation plan](../../release-remediation-plan.md), with [FIX acceptance](../../release-remediation-validation.md). The [audit](../../product-state-audit.md) supersedes earlier readiness interpretations; original requirements, dated ledgers and raw evidence below are retained.
+**Current disposition — 2026-11-14, reviewed at 59316d3:** M10 integration open: two-map package publication and shell/schema-2/settings/audio software landed in 59316d3; release catalog/native content delivery, editable applied bindings/accessibility and named UI/device validation remain (T067/T069). See the [current audit](../../product-state-audit.md), [next playable-build tasks](../../next-playable-build.md) and [FIX acceptance](../../release-remediation-validation.md). Original requirements and historical evidence below remain; no new coding lease is created.
+
+## Latest-commit review — 59316d3
+
+Shell, settings schema 2/editor/device applier and audio callback are committed in 59316d3. T067 still owns data-only catalog/actual visual closure/native nav and packaged recovery; T069 owns editable applied bindings and missing accessibility consumers. LocalPlayerInput still reads fixed keys, so binding count/store tests do not meet control acceptance. Named UI/display/audio reviews and 20 load/replay cycles remain pending.
 
 ## T059 / FIX08 — shell software (2026-11-14)
 

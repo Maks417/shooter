@@ -1,8 +1,6 @@
 # M10 — Two maps, menus and settings — implementation pack
 
-**Current disposition — 2026-11-14: M10 integration incomplete.** Numeric planners/minimal shell/store exist; compiled content, functional session screens/tables and complete applied settings remain open. Repairs: T055–T056, T058–T061, T064–T065 in the [shared implementation plan](../../release-remediation-plan.md), with [FIX acceptance](../../release-remediation-validation.md). The [audit](../../product-state-audit.md) supersedes earlier readiness interpretations; original requirements, dated ledgers and raw evidence below are retained. No runtime assignment or worker lease is created here.
-
-Status corrected 2026-11-14: **M10 integration incomplete**. Historical software closeout is retained in [handoff](handoff.md); its labels do not establish acceptance. Follow [remediation tasks](../../release-remediation-plan.md) and [FIX validation](../../release-remediation-validation.md).
+**Current disposition — 2026-11-14, reviewed at 59316d3:** M10 integration open: two-map package publication and shell/schema-2/settings/audio software landed in 59316d3; release catalog/native content delivery, editable applied bindings/accessibility and named UI/device validation remain (T067/T069). See the [current audit](../../product-state-audit.md), [next playable-build tasks](../../next-playable-build.md) and [FIX acceptance](../../release-remediation-validation.md). Original requirements and historical evidence below remain; no new coding lease is created.
 
 ## Goal
 

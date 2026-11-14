@@ -1,6 +1,10 @@
 # M8 — Runtime composition and Game-v1 foundation — handoff and gate record
 
-**Current disposition — 2026-11-14: M8 integration incomplete.** RUN02–RUN05 remain unaccepted as complete product gates: verified full content, visible views/audio, pause and real lifecycle evidence are missing. Repairs: T052–T056, T061–T063 in the [shared implementation plan](../../release-remediation-plan.md), with [FIX acceptance](../../release-remediation-validation.md). The [audit](../../product-state-audit.md) supersedes earlier readiness interpretations; original requirements, dated ledgers and raw evidence below are retained. No runtime assignment or worker lease is created here.
+**Current disposition — 2026-11-14, reviewed at 59316d3:** M8 integration open: lifecycle/pause/input and visible/audio wiring landed in 59316d3; provenance, compiled visual closure, native navigation and authority-driven weapon/action views still need T066–T068, followed by real RUN/player evidence. See the [current audit](../../product-state-audit.md), [next playable-build tasks](../../next-playable-build.md) and [FIX acceptance](../../release-remediation-validation.md). Original requirements and historical evidence below remain; no new coding lease is created.
+
+## Latest-commit review — 59316d3
+
+T052–T056/T061 software is committed in 59316d3. Fresh baseline: Contracts 72 PASS, Generation 310/311 FAIL (cancellation/lock), Simulation 101 PASS, Game 38 PASS; provenance FAIL on 19 missing metadata entries. No fresh Unity/player run. T066 repairs baseline; T067 finishes actual packaged visual/native nav delivery and T068 weapon/action views. Historical software runs below retain their original sourceDirty flags.
 
 ## T052 / FIX01 regression repair — 2026-11-14
 
