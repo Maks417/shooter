@@ -36,6 +36,7 @@ namespace Shooter.Game.Session
         private uint tick;
         private EntityId humanEntity;
         private readonly CommandBuffer botCommands = new CommandBuffer();
+        private readonly List<EntityId> slideActors = new List<EntityId>();
         private readonly List<InputCommand> merged = new List<InputCommand>(64);
         private readonly List<EntityId> deathsThisTick = new List<EntityId>(GameContractVersion.MaxParticipants);
         private readonly ProductMeasurementTelemetry measurement = new ProductMeasurementTelemetry();
@@ -249,7 +250,11 @@ namespace Shooter.Game.Session
             }
             for (int i = 0; i < botCount; i++) merged.Add(botCommands[i]);
 
-            var result = harness.Step(tick, merged.ToArray(), validHuman && slideRequested ? humanEntity : default);
+            slideActors.Clear();
+            if (validHuman && slideRequested) slideActors.Add(humanEntity);
+            var botSlides = bots.SlideActors;
+            for (int i = 0; i < botSlides.Count; i++) slideActors.Add(botSlides[i]);
+            var result = harness.StepWithSlideActors(tick, merged.ToArray(), slideActors);
             measurement.Shots += result.Counters.Shots;
             measurement.DamageEvents += result.Counters.DamageEvents;
             // querySamples after Plan + harness.Step so motor/hitscan samples are included

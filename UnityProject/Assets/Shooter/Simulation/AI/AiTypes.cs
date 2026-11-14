@@ -55,6 +55,21 @@ namespace Shooter.Simulation.AI
         public int DestinationCursor { get; set; }
         /// <summary>No new path request before this tick after a failed/timed-out request (no per-tick retry storm).</summary>
         public uint RetryAfterTick { get; set; }
+
+        // Movement-ability state (sprint/crouch/jump/slide). Deterministic, derived only from authority feedback.
+        /// <summary>Actual crouched stance reported by authority (eye 1.05 m instead of 1.65 m).</summary>
+        public bool Crouched { get; set; }
+        public Float3 PrevFeet { get; set; }
+        public bool HasPrevFeet { get; set; }
+        /// <summary>Horizontal speed estimated from consecutive planned feet positions (m/s).</summary>
+        public float SpeedMps { get; set; }
+        /// <summary>Consecutive ticks SprintHeld was emitted (motor needs previous SprintActive to slide).</summary>
+        public uint SprintTicks { get; set; }
+        public bool JumpPending { get; set; }
+        public uint NextJumpTick { get; set; }
+        public uint NextSlideTick { get; set; }
+        /// <summary>Set by BuildCommand for the tick being planned; consumed by the session as the slide request.</summary>
+        public bool SlideIntent { get; set; }
     }
 
     public sealed class AiCounters

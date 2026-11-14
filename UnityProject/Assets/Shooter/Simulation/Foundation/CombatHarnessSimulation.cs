@@ -189,7 +189,25 @@ namespace Shooter.Simulation
             Step(requestedTick, commands, default);
 
         /// <summary>Local-only slide intent, consumed with a fresh accepted command (ADR-039).</summary>
-        public StepResult Step(uint requestedTick, ReadOnlyMemory<InputCommand> commands, EntityId localSlideActor)
+        public StepResult Step(uint requestedTick, ReadOnlyMemory<InputCommand> commands, EntityId localSlideActor) =>
+            StepCore(requestedTick, commands, localSlideActor, null);
+
+        /// <summary>
+        /// Slide intent for any set of actors (local human and bots). Same ADR-039 semantics: a slide
+        /// request only reaches the motor with a fresh accepted command for that actor this tick.
+        /// </summary>
+        public StepResult StepWithSlideActors(uint requestedTick, ReadOnlyMemory<InputCommand> commands, IReadOnlyList<EntityId>? slideActors) =>
+            StepCore(requestedTick, commands, default, slideActors);
+
+        private static bool SlideRequested(EntityId actor, EntityId single, IReadOnlyList<EntityId>? many)
+        {
+            if (single.IsValid && actor.Equals(single)) return true;
+            if (many == null) return false;
+            for (int i = 0; i < many.Count; i++) if (many[i].Equals(actor)) return true;
+            return false;
+        }
+
+        private StepResult StepCore(uint requestedTick, ReadOnlyMemory<InputCommand> commands, EntityId localSlideActor, IReadOnlyList<EntityId>? slideActors)
         {
             MainThread();
             if (commands.Length > ContractVersion.MaxCommands) throw new ArgumentException("Command cap exceeded", nameof(commands));
@@ -245,7 +263,7 @@ namespace Shooter.Simulation
                     ref actor.ActiveSlot, ref actor.DesiredSlot, acceptedShots, tickEvents, ref nextEvent, actor.Id);
                 for (int s = 0; s < acceptedShots.Count; s++) pendingShots.Add(new PendingShot(actor, acceptedShots[s]));
 
-                actor.Motor = motor.Step(actor.Motor, cmd, requestedTick, world, freshCommand && actor.Id.Equals(localSlideActor));
+                actor.Motor = motor.Step(actor.Motor, cmd, requestedTick, world, freshCommand && SlideRequested(actor.Id, localSlideActor, slideActors));
                 AuthoritativeRecoil.Decay(ref actor.RecoilYaw, ref actor.RecoilPitch);
             }
 
