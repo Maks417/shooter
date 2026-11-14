@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Shooter.Bootstrap.Release;
 using Shooter.Contracts;
 using Shooter.Game.Contracts;
 using Shooter.Game.Session;
@@ -38,6 +39,8 @@ namespace Shooter.Bootstrap
                     {
                         if (!authority.ProductMode)
                             throw new System.ArgumentException("Product TDM workloads require product composition, not the diagnostic floor/box path.");
+                        if (authority.ContentRecoveryRequired)
+                            throw new System.InvalidOperationException("Product TDM workload cannot start: " + authority.ContentRecoveryDetail);
                         var backend = new EntryShellBackend(authority);
                         var host = ProductTdmHost.Create(backend, tdmWorkload);
                         new GameObject("Product TDM benchmark recorder").AddComponent<ProductTdmBenchmark>()
@@ -47,6 +50,26 @@ namespace Shooter.Bootstrap
                     if (authority.ProductMode && soldier.Length == 0 && gallery.Length == 0
                         && benchmark.Length == 0)
                     {
+                        if (authority.ContentRecoveryRequired)
+                        {
+                            ContentRecoveryHost.Create(
+                                ReleasePackagePolicy.CorruptContentRecoveryMessage,
+                                authority.ContentRecoveryDetail,
+                                onRetry: () =>
+                                {
+                                    if (!authority.TryRecoverProductContent(out _)) return;
+                                    Object.Destroy(GameObject.Find("Content recovery"));
+                                    string map = FoundationEntry.CommandLine("-shooterMap",
+                                        PlayerPrefs.GetString("shooter.map", WellKnownMaps.TrainingCompound.Value));
+                                    byte size = byte.Parse(
+                                        FoundationEntry.CommandLine("-shooterTeamSize",
+                                            PlayerPrefs.GetInt("shooter.teamSize", 5).ToString()),
+                                        System.Globalization.CultureInfo.InvariantCulture);
+                                    if (size != 5 && size != 6) size = 5;
+                                    GameShellMenu.Create(new EntryShellBackend(authority), map, size);
+                                });
+                            return;
+                        }
                         string preferredMap = FoundationEntry.CommandLine("-shooterMap",
                             PlayerPrefs.GetString("shooter.map", WellKnownMaps.TrainingCompound.Value));
                         byte preferredSize = byte.Parse(
@@ -117,6 +140,9 @@ namespace Shooter.Bootstrap
                 mapId = map.LoadedPackage?.MapId ?? "unknown";
                 return true;
             }
+
+            public bool TryGetVerifiedVisuals(out PackagedVisualPayloads visuals, out string diagnostic) =>
+                entry.TryGetVerifiedVisuals(out visuals, out diagnostic);
         }
     }
 }

@@ -6,6 +6,7 @@ using System.Text;
 using Shooter.Contracts;
 using Shooter.Game.Contracts;
 using Shooter.Generation;
+using Shooter.Generation.Environment;
 using Shooter.Presentation.View;
 using UnityEngine;
 using EntityId = Shooter.Contracts.EntityId;
@@ -67,18 +68,20 @@ namespace Shooter.Presentation.Rig
         private readonly FlatGround ground = new FlatGround();
         private Mesh? bodyMesh;
         private Mesh? rifleMesh;
+        private Mesh? pistolMesh;
         private Material[]? team1Palette;
         private Material[]? team2Palette;
         private Material? rifleMetal;
         private Material? riflePolymer;
         private WeaponRecipe? rifleRecipe;
-        private SoldierRecipe? soldierRecipe;
+        private WeaponRecipe? pistolRecipe;
         private EntityId localHuman;
         private Camera? fpsCamera;
         private Transform? localWeapon;
         private readonly ProceduralViewModel localView = new ProceduralViewModel();
         private Float3 sightSocketLocal;
         private bool ready;
+        private bool visualsBound;
         private string reviewMapId = "";
         private string reviewProfile = "";
         private uint reviewTick;
@@ -115,6 +118,7 @@ namespace Shooter.Presentation.Rig
 
         public int HandleCount => avatars.Count;
         public ProductActorBinder Binder => binder;
+        public bool VisualsBound => visualsBound;
 
         public static ProductActorPresentation Create(Transform parent, Camera fpsCamera)
         {
@@ -131,53 +135,104 @@ namespace Shooter.Presentation.Rig
             if (shader == null || !shader.isSupported)
                 throw new InvalidOperationException("Required locked URP Lit shader missing; no art fallback.");
 
-            soldierRecipe = SoldierRecipe.Parse(Encoding.ASCII.GetBytes(
-                "{\"schemaId\":\"shooter.soldier.v1\",\"recipeId\":\"soldiers/baseline\",\"generatorId\":\"soldier.loft\",\"generatorVersion\":\"1.0.2\",\"seed\":\"460072030\",\"parameters\":{\"heightMm\":1800,\"shoulderWidthMm\":420,\"hipWidthMm\":280,\"uniformOffsetMm\":6,\"nearTorsoSegments\":16,\"nearLimbSegments\":12,\"walkCycleMm\":1400,\"runCycleMm\":2200,\"walkDutyPpm\":500000,\"runDutyPpm\":350000},\"dependencies\":[]}"));
+            // Recipes for motion/sockets only — no SoldierGeometry/WeaponGeometry mesh generation on the product path.
             rifleRecipe = WeaponRecipe.Parse(Encoding.ASCII.GetBytes(
                 "{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/rifle\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.0.1\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"rifle\"},\"dependencies\":[]}"));
-
-            var soldierBuild = SoldierGeometry.Build(soldierRecipe);
-            bodyMesh = Own(Upload(soldierBuild.Lods[QualitySettings.GetQualityLevel() >= 2 ? 0 : 1], true));
-            var weaponBuild = WeaponGeometry.Build(rifleRecipe);
-            rifleMesh = Own(Upload(weaponBuild.Lods[1], false));
-            sightSocketLocal = default;
-            for (int i = 0; i < weaponBuild.Sockets.Count; i++)
-            {
-                var socket = weaponBuild.Sockets[i];
-                if (socket.Id == "sight-eye")
-                {
-                    sightSocketLocal = socket.Position;
-                    break;
-                }
-            }
-
-            team1Palette = new[]
-            {
-                Solid(shader, "Team1 uniform", new Color(0.16f, 0.28f, 0.42f)),
-                Solid(shader, "Team1 gear", new Color(0.06f, 0.08f, 0.12f)),
-                Solid(shader, "Team1 skin", new Color(0.48f, 0.32f, 0.22f)),
-                Solid(shader, "Team1 goggles", new Color(0.04f, 0.08f, 0.12f), 0.3f, 0.55f)
-            };
-            team2Palette = new[]
-            {
-                Solid(shader, "Team2 uniform", new Color(0.42f, 0.22f, 0.12f)),
-                Solid(shader, "Team2 gear", new Color(0.12f, 0.07f, 0.05f)),
-                Solid(shader, "Team2 skin", new Color(0.48f, 0.32f, 0.22f)),
-                Solid(shader, "Team2 goggles", new Color(0.10f, 0.04f, 0.03f), 0.3f, 0.55f)
-            };
-            rifleMetal = Solid(shader, "Product rifle metal", new Color(0.08f, 0.09f, 0.10f), 0.15f, 0.35f);
-            riflePolymer = Solid(shader, "Product rifle polymer", new Color(0.05f, 0.055f, 0.045f));
+            pistolRecipe = WeaponRecipe.Parse(Encoding.ASCII.GetBytes(
+                "{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/pistol\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.0.1\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"pistol\"},\"dependencies\":[]}"));
 
             localWeapon = new GameObject("Local FP rifle").transform;
             localWeapon.SetParent(fpsCamera!.transform, false);
-            localWeapon.gameObject.AddComponent<MeshFilter>().sharedMesh = rifleMesh;
-            var lr = localWeapon.gameObject.AddComponent<MeshRenderer>();
-            lr.sharedMaterials = new[] { rifleMetal, riflePolymer };
+            localWeapon.gameObject.AddComponent<MeshFilter>();
+            localWeapon.gameObject.AddComponent<MeshRenderer>();
             localWeapon.localPosition = new Vector3(0.08f, -0.10f, 0.40f);
             localWeapon.localRotation = Quaternion.identity;
             localWeapon.gameObject.SetActive(false);
             ready = true;
-            Debug.Log("SHOOTER_PRODUCT_ACTOR_VIEW ready lodTriangles≈product");
+            visualsBound = false;
+            Debug.Log("SHOOTER_PRODUCT_ACTOR_VIEW awaiting packaged visuals");
+        }
+
+        /// <summary>
+        /// Upload verified packaged soldier/rifle/pistol meshes and materials. Missing deps fail recoverably; no generation fallback.
+        /// </summary>
+        public void BindPackagedVisuals(PackagedVisualPayloads visuals)
+        {
+            if (visuals == null) throw new ArgumentNullException(nameof(visuals));
+            var shader = Shader.Find("Universal Render Pipeline/Lit");
+            if (shader == null || !shader.isSupported)
+                throw new InvalidOperationException("Required locked URP Lit shader missing; no art fallback.");
+
+            try
+            {
+                var shaderRoot = MapJsonValue.Parse(visuals.Bytes(MapVisualClosure.ShaderPath(visuals.Profile))).Object;
+                if (shaderRoot["unityShader"].String != "Universal Render Pipeline/Lit" ||
+                    shaderRoot["shaderException"].String != "procedural-urp-lit-v1")
+                    throw new InvalidOperationException("Packaged shader provenance rejected.");
+
+                var skeleton = MapVisualClosure.DecodeSoldierSkeleton(visuals);
+                if (skeleton.Joints.Count != SoldierSkeleton.JointCount)
+                    throw new InvalidOperationException("Packaged soldier skeleton joint count mismatch.");
+                byte[] expected = GeometryCodec.EncodeSkeleton(SoldierSkeleton.Definition);
+                byte[] actual = GeometryCodec.EncodeSkeleton(skeleton);
+                if (expected.Length != actual.Length)
+                    throw new InvalidOperationException("Packaged soldier skeleton identity mismatch.");
+                for (int i = 0; i < expected.Length; i++)
+                    if (expected[i] != actual[i])
+                        throw new InvalidOperationException("Packaged soldier skeleton identity mismatch.");
+
+                int soldierLod = MapVisualClosure.SoldierLodIndex(visuals.Profile);
+                int weaponLod = MapVisualClosure.WeaponLodIndex(visuals.Profile);
+                bodyMesh = Own(Upload(MapVisualClosure.DecodeSoldierLod(visuals, soldierLod), true));
+                rifleMesh = Own(Upload(MapVisualClosure.DecodeRifleLod(visuals, weaponLod), false));
+                pistolMesh = Own(Upload(MapVisualClosure.DecodePistolLod(visuals, weaponLod), false));
+
+                sightSocketLocal = default;
+                var sockets = WeaponGeometry.Sockets(rifleRecipe!);
+                for (int i = 0; i < sockets.Count; i++)
+                {
+                    if (sockets[i].Id == "sight-eye")
+                    {
+                        sightSocketLocal = sockets[i].Position;
+                        break;
+                    }
+                }
+
+                team1Palette = new[]
+                {
+                    FromPackaged(shader, visuals, MapVisualClosure.SoldierMaterialPaths[0], "Team1 uniform"),
+                    FromPackaged(shader, visuals, MapVisualClosure.SoldierMaterialPaths[1], "Team1 gear"),
+                    FromPackaged(shader, visuals, MapVisualClosure.SoldierMaterialPaths[2], "Team1 skin"),
+                    FromPackaged(shader, visuals, MapVisualClosure.SoldierMaterialPaths[3], "Team1 goggles", 0.3f, 0.55f)
+                };
+                team2Palette = new[]
+                {
+                    FromPackaged(shader, visuals, MapVisualClosure.SoldierMaterialPaths[4], "Team2 uniform"),
+                    FromPackaged(shader, visuals, MapVisualClosure.SoldierMaterialPaths[5], "Team2 gear"),
+                    FromPackaged(shader, visuals, MapVisualClosure.SoldierMaterialPaths[6], "Team2 skin"),
+                    FromPackaged(shader, visuals, MapVisualClosure.SoldierMaterialPaths[7], "Team2 goggles", 0.3f, 0.55f)
+                };
+                rifleMetal = FromPackaged(shader, visuals, MapVisualClosure.WeaponMaterialPaths[0], "Product rifle metal", 0.15f, 0.35f);
+                riflePolymer = FromPackaged(shader, visuals, MapVisualClosure.WeaponMaterialPaths[1], "Product rifle polymer");
+
+                if (localWeapon != null)
+                {
+                    localWeapon.GetComponent<MeshFilter>().sharedMesh = rifleMesh;
+                    localWeapon.GetComponent<MeshRenderer>().sharedMaterials = new[] { rifleMetal, riflePolymer };
+                }
+
+                visualsBound = true;
+                Debug.Log("SHOOTER_PRODUCT_ACTOR_VIEW packaged visuals ready profile=" + visuals.Profile +
+                          " soldierLod=" + soldierLod + " weaponLod=" + weaponLod);
+            }
+            catch (Exception error)
+            {
+                visualsBound = false;
+                bodyMesh = null;
+                rifleMesh = null;
+                pistolMesh = null;
+                throw new InvalidOperationException("Required packaged actor visuals missing/corrupt; refusing generation fallback: " + error.Message, error);
+            }
         }
 
         public void ClearAll()
@@ -241,7 +296,7 @@ namespace Shooter.Presentation.Rig
             bool aimHeld,
             float dtSeconds)
         {
-            if (!ready) return;
+            if (!ready || !visualsBound) return;
             localHuman = humanEntity;
             livingScratch.Clear();
             corpseScratch.Clear();
@@ -345,7 +400,7 @@ namespace Shooter.Presentation.Rig
         private void CreateAvatar(ActorLifecycleState state, bool corpse)
         {
             if (avatars.ContainsKey(state.EntityId.Value)) return;
-            if (rifleRecipe == null || bodyMesh == null || rifleMesh == null) return;
+            if (!visualsBound || rifleRecipe == null || bodyMesh == null || rifleMesh == null) return;
 
             var avatar = new Avatar
             {
@@ -535,10 +590,18 @@ namespace Shooter.Presentation.Rig
             return mesh;
         }
 
-        private Material Solid(Shader shader, string label, Color color, float metallic = 0f, float smoothness = 0.2f)
+        private Material FromPackaged(
+            Shader shader,
+            PackagedVisualPayloads visuals,
+            string path,
+            string label,
+            float metallic = 0f,
+            float smoothness = 0.2f)
         {
+            var data = MapVisualClosure.DecodeMapMaterial(visuals, path);
             var material = Own(new Material(shader) { name = label });
-            material.SetColor("_BaseColor", color);
+            var mip0 = data.MipBytes[0];
+            material.SetColor("_BaseColor", new Color(mip0[0] / 255f, mip0[1] / 255f, mip0[2] / 255f, mip0[3] / 255f));
             material.SetFloat("_Metallic", metallic);
             material.SetFloat("_Smoothness", smoothness);
             return material;

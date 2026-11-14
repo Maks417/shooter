@@ -259,10 +259,17 @@ namespace Shooter.Presentation.Session
                 navigation.FailLoad("Verified map package solids missing.");
                 return;
             }
+            if (!backend.TryGetVerifiedVisuals(out var visuals, out string visualDiagnostic))
+            {
+                session.RequestAbort();
+                coordinator.CompleteStartFailure();
+                navigation.FailLoad("Verified visual package missing: " + visualDiagnostic + ". Repair required; no generation fallback.");
+                return;
+            }
 
             try
             {
-                view.BindVerifiedMap(boxes, metadata, mapId);
+                view.BindVerifiedMap(boxes, metadata, mapId, visuals);
             }
             catch (Exception ex)
             {

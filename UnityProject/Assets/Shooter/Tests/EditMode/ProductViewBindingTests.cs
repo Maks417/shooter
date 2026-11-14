@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using NUnit.Framework;
 using Shooter.Contracts;
 using Shooter.Game.Contracts;
+using Shooter.Generation;
 using Shooter.Generation.Environment;
 using Shooter.Presentation.Rendering;
 using Shooter.Presentation.View;
@@ -10,12 +11,15 @@ using UnityEngine;
 
 namespace Shooter.Tests
 {
-    /// <summary>T056/FIX05 EditMode: map visuals install/clear and actor binder stale-handle policy.</summary>
+    /// <summary>T056/T067 EditMode: packaged map/actor visuals install/clear and actor binder stale-handle policy.</summary>
     public sealed class ProductViewBindingTests
     {
         [Test]
-        public void ProductMapView_InstallsSolidsAndClearsWithoutLeavingRenderers()
+        public void ProductMapView_InstallsPackagedSolidsAndClearsWithoutLeavingRenderers()
         {
+            var toolchain = ContentIdentity.Hash(System.Text.Encoding.ASCII.GetBytes("product-view-binding-test"));
+            var package = MapPackageBuilder.Build("training-compound", "low", toolchain);
+            var visuals = PackagedVisualPayloads.FromBuild(package);
             var boxes = new List<CollisionBox>
             {
                 new CollisionBox(1001, 2001, 1, new Float3(0, 1, 0), new Float3(2, 2, 2), true),
@@ -25,8 +29,9 @@ namespace Shooter.Tests
             try
             {
                 var view = ProductMapView.Create(root.transform);
-                view.Install(boxes, null, "training-compound");
+                view.Install(boxes, null, "training-compound", visuals);
                 Assert.That(view.IsInstalled, Is.True);
+                Assert.That(view.VisualsBound, Is.True);
                 Assert.That(view.SolidCount, Is.EqualTo(2));
                 Assert.That(view.GetComponentsInChildren<MeshRenderer>().Length, Is.GreaterThan(0));
                 view.ClearVisuals();
@@ -43,12 +48,14 @@ namespace Shooter.Tests
         [Test]
         public void ProductMapView_RejectsEmptyPackageSolids()
         {
+            var toolchain = ContentIdentity.Hash(System.Text.Encoding.ASCII.GetBytes("product-view-binding-empty"));
+            var visuals = PackagedVisualPayloads.FromBuild(MapPackageBuilder.Build("training-compound", "low", toolchain));
             var root = new GameObject("ProductViewBindingEmpty");
             try
             {
                 var view = ProductMapView.Create(root.transform);
                 Assert.Throws<System.InvalidOperationException>(() =>
-                    view.Install(new List<CollisionBox>(), null, "training-compound"));
+                    view.Install(new List<CollisionBox>(), null, "training-compound", visuals));
             }
             finally
             {

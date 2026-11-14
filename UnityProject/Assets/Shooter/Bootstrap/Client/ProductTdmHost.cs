@@ -75,7 +75,9 @@ namespace Shooter.Bootstrap
             backend.WireMapActors();
             if (!backend.TryGetVerifiedMap(out var boxes, out var metadata, out var mapId))
                 throw new InvalidOperationException("Verified map package solids missing for product TDM capture.");
-            view!.BindVerifiedMap(boxes, metadata, mapId);
+            if (!backend.TryGetVerifiedVisuals(out var visuals, out string visualDiagnostic))
+                throw new InvalidOperationException("Verified visual package missing for product TDM capture: " + visualDiagnostic);
+            view!.BindVerifiedMap(boxes, metadata, mapId, visuals);
 
             var ready = session.SignalReady();
             if (!ready.Succeeded) throw new InvalidOperationException(ready.Diagnostic);

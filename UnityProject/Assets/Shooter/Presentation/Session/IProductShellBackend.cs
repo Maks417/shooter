@@ -17,6 +17,7 @@ namespace Shooter.Presentation.Session
         GameOperationResult Resume();
         void WireMapActors();
         bool TryGetVerifiedMap(out IReadOnlyList<CollisionBox> boxes, out byte[]? metadataBytes, out string mapId);
+        bool TryGetVerifiedVisuals(out PackagedVisualPayloads visuals, out string diagnostic);
         void InstallHumanSampler(Func<uint, InputCommand?> sampler);
     }
 }

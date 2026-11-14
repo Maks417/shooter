@@ -1,0 +1,11 @@
+{
+  "name": "Shooter.Bootstrap.Release",
+  "rootNamespace": "Shooter.Bootstrap.Release",
+  "references": [],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "autoReferenced": false,
+  "allowUnsafeCode": false,
+  "noEngineReferences": true,
+  "defineConstraints": []
+}

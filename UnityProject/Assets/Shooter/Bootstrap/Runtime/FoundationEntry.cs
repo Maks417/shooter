@@ -2,11 +2,13 @@ using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using Shooter.Bootstrap.Release;
 using Shooter.Content.Maps;
 using Shooter.Contracts;
 using Shooter.Game.Contracts;
 using Shooter.Game.Session;
 using Shooter.Generation;
+using Shooter.Generation.Environment;
 using Shooter.Simulation;
 using Shooter.World;
 using UnityEngine;
@@ -35,18 +37,24 @@ namespace Shooter.Bootstrap
         private OfflineGameSession productSession;
         private CompoundMapRuntime productMap;
         private IMapCatalog? productCatalog;
+        private StaticMapCatalog? productStaticCatalog;
+        private VerifiedMapPackageStore? productPackageStore;
         private Func<uint, InputCommand?> productHumanSampler;
         private bool hasApplicationFocus = true;
         private bool pausedForFocusLoss;
+        private string contentRecoveryDetail = "";
         public bool Ready { get; private set; }
         public bool Failed { get; private set; }
         public bool ProductMode => !diagnosticMode;
+        /// <summary>True when packaged content/toolchain failed before shell; recovery UI owns return path.</summary>
+        public bool ContentRecoveryRequired { get; private set; }
+        public string ContentRecoveryDetail => contentRecoveryDetail;
         public OfflineGameSession ProductSession => productSession;
         /// <summary>Read-only package-load seam for product presentation (T055/T056). Presentation must not mutate collision.</summary>
         public CompoundMapRuntime? ProductMap => productMap;
         /// <summary>Release catalog for shell setup (T059). Shell owns match Start; Bootstrap only prepares services.</summary>
         public IMapCatalog ProductCatalog =>
-            productCatalog ?? throw new InvalidOperationException("Product catalog is only available in product mode.");
+            productCatalog ?? throw new InvalidOperationException("Product catalog is only available after verified content load.");
         public double LastElapsedSeconds { get; private set; }
         public double TickDebtSeconds => clock == null ? 0 : clock.DebtSeconds;
         public int LastAdvanceTicks => clock == null ? 0 : clock.LastAdvanceTicks;
@@ -83,6 +91,33 @@ namespace Shooter.Bootstrap
             var result = productSession.Resume();
             if (result.Succeeded) SuspendProductClock(false);
             return result;
+        }
+
+        /// <summary>Re-probe packaged content after operator repair without quitting (recovery screen Retry).</summary>
+        public bool TryRecoverProductContent(out string diagnostic)
+        {
+            diagnostic = contentRecoveryDetail;
+            if (diagnosticMode) { diagnostic = "diagnostic-mode"; return false; }
+            try
+            {
+                if (!TryBindProductContent(out diagnostic))
+                {
+                    ContentRecoveryRequired = true;
+                    contentRecoveryDetail = diagnostic;
+                    return false;
+                }
+                ContentRecoveryRequired = false;
+                contentRecoveryDetail = "";
+                diagnostic = "ok";
+                return true;
+            }
+            catch (Exception error)
+            {
+                ContentRecoveryRequired = true;
+                contentRecoveryDetail = error.Message;
+                diagnostic = error.Message;
+                return false;
+            }
         }
 
         private void Start()
@@ -132,17 +167,71 @@ namespace Shooter.Bootstrap
 
         private void StartProduct()
         {
-            string repositoryRoot = Path.GetFullPath(Path.Combine(Application.dataPath, "..", ".."));
-            string lockPath = CommandLine("-shooterToolchainLock", Path.Combine(repositoryRoot, "toolchain-lock.json"));
-            if (!File.Exists(lockPath)) throw new FileNotFoundException("toolchain-lock.json required for verified map packages.", lockPath);
+            if (!TryBindProductContent(out string diagnostic))
+            {
+                ContentRecoveryRequired = true;
+                contentRecoveryDetail = diagnostic;
+                Debug.LogWarning("SHOOTER_COMPOSITION mode=product contentRecovery=1 detail=" + diagnostic);
+                return;
+            }
+            ContentRecoveryRequired = false;
+            contentRecoveryDetail = "";
+            // T059: launch to main menu with no active match. Shell owns BeginLoad/Start/replay.
+            Debug.Log("SHOOTER_COMPOSITION mode=product shellOwned=1 phase=Stopped");
+        }
+
+        private bool TryBindProductContent(out string diagnostic)
+        {
+            diagnostic = "ok";
+#if UNITY_EDITOR
+            bool editor = true;
+#else
+            bool editor = false;
+#endif
+            string installRoot = PackagedContentLayout.InstallRootFromDataPath(Application.dataPath, editor);
+            string lockDefault = PackagedContentLayout.DefaultToolchainLock(installRoot);
+            string lockPath = CommandLine("-shooterToolchainLock", lockDefault);
+            lockPath = Path.GetFullPath(lockPath);
+            if (!File.Exists(lockPath))
+            {
+                diagnostic = ReleasePackagePolicy.CorruptContentRecoveryMessage + " Missing toolchain lock: " + lockPath;
+                return false;
+            }
+
             var toolchain = ContentIdentity.Hash(File.ReadAllBytes(lockPath));
-            var catalog = StaticMapCatalog.CreateReleaseSeed(toolchain);
-            productCatalog = catalog;
-            string mapCache = CommandLine("-shooterMapCache", Path.Combine(repositoryRoot, "Artifacts", "map-packages"));
+            string mapDefault = PackagedContentLayout.ResolveMapCache(installRoot, allowEditorArtifactsFallback: editor);
+            string mapCache = CommandLine("-shooterMapCache", mapDefault);
             mapCache = Path.GetFullPath(mapCache);
             if (!Directory.Exists(mapCache))
-                throw new DirectoryNotFoundException("Verified map package cache missing. Run Tools/Compile-GameContent.ps1 first: " + mapCache);
-            var packageStore = new VerifiedMapPackageStore(mapCache, toolchain, catalog.GameplayRootHashes);
+            {
+                diagnostic = ReleasePackagePolicy.CorruptContentRecoveryMessage + " Missing map package cache: " + mapCache;
+                return false;
+            }
+
+            if (!StaticMapCatalog.TryLoadPublished(mapCache, toolchain, out var catalog, out string catalogDiagnostic))
+            {
+                diagnostic = ReleasePackagePolicy.CorruptContentRecoveryMessage + " Catalog: " + catalogDiagnostic;
+                return false;
+            }
+
+            // Dispose prior bind when Retry succeeds after a failed first attempt.
+            productSession?.Dispose();
+            productMap?.Dispose();
+            productSession = null!;
+            productMap = null!;
+            productPackageStore = null;
+            productStaticCatalog = null;
+            productCatalog = catalog;
+            productStaticCatalog = catalog;
+
+            var packageStore = new VerifiedMapPackageStore(
+                mapCache,
+                toolchain,
+                catalog.GameplayRootHashes,
+                catalog.LowVisualRootHashes,
+                catalog.BalancedVisualRootHashes,
+                catalog.HighVisualRootHashes);
+            productPackageStore = packageStore;
             productMap = new CompoundMapRuntime(transform, packageStore, id =>
             {
                 if (!catalog.TryGet(id, out var catalogEntry)) throw new InvalidOperationException("Unknown map " + id.Value);
@@ -150,9 +239,34 @@ namespace Shooter.Bootstrap
             });
             productSession = new OfflineGameSession(catalog, (_, __) => productMap, allowFakeMapRuntime: false);
             CompositionPolicy.RequireReal(productMap);
-            // T059: launch to main menu with no active match. Shell owns BeginLoad/Start/replay.
-            Debug.Log("SHOOTER_COMPOSITION mode=product shellOwned=1 phase=Stopped");
+            return true;
         }
+
+        /// <summary>Load verified visual closure for the active map and quality tier. Never regenerates.</summary>
+        public bool TryGetVerifiedVisuals(out PackagedVisualPayloads visuals, out string diagnostic)
+        {
+            visuals = default!;
+            diagnostic = "missing";
+            if (productPackageStore == null || productStaticCatalog == null || productMap?.LoadedPackage == null)
+            {
+                diagnostic = "product-visual-store-missing";
+                return false;
+            }
+            string mapId = productMap.LoadedPackage.MapId;
+            if (!productStaticCatalog.TryGet(new MapId(mapId), out var entry))
+            {
+                diagnostic = "unknown-map";
+                return false;
+            }
+            string profile = QualityTierToVisualProfile(QualitySettings.GetQualityLevel());
+            ContentId root = profile == "high" ? entry.HighVisualRootHash
+                : profile == "balanced" ? entry.BalancedVisualRootHash
+                : entry.LowVisualRootHash;
+            return productPackageStore.TryLoadVisual(new MapId(mapId), profile, root, out visuals, out diagnostic);
+        }
+
+        public static string QualityTierToVisualProfile(int qualityTier) =>
+            qualityTier >= 2 ? "high" : qualityTier == 1 ? "balanced" : "low";
 
         /// <summary>Bind actor feet lookup after a shell-owned map load (T056/T059).</summary>
         public void WireProductMapActors()
@@ -244,6 +358,7 @@ namespace Shooter.Bootstrap
         {
             return diagnosticMode
                 || productSession != null
+                && !ContentRecoveryRequired
                 && productSession.Phase == GameMatchPhase.Playing
                 && productSession.PauseState == SessionPauseState.Running
                 && (IsServer || hasApplicationFocus);

@@ -175,21 +175,30 @@ namespace Shooter.Presentation.Session
         private bool IsAiming() => input.AimHeld && cursorLocked;
 
         /// <summary>
-        /// Bind verified packaged solids/cover metadata into MeshRenderers. Safe to call again after unload
-        /// (clears prior visuals first). Missing packages fail recoverably rather than drawing diagnostic shapes.
+        /// Bind verified packaged solids/cover metadata and actor visual payloads into MeshRenderers.
+        /// Safe to call again after unload (clears prior visuals first). Missing packages fail recoverably
+        /// rather than drawing diagnostic shapes or regenerating geometry.
         /// </summary>
-        public void BindVerifiedMap(IReadOnlyList<CollisionBox> boxes, byte[]? metadataBytes, string mapId)
+        public void BindVerifiedMap(
+            IReadOnlyList<CollisionBox> boxes,
+            byte[]? metadataBytes,
+            string mapId,
+            PackagedVisualPayloads visuals)
         {
             if (mapView == null) throw new System.InvalidOperationException("Product map view missing.");
+            if (actors == null) throw new System.InvalidOperationException("Product actor presentation missing.");
             if (boxes == null || boxes.Count == 0)
                 throw new System.InvalidOperationException("Verified map package solids missing; refusing silent empty/diagnostic visuals.");
-            mapView.Install(boxes, metadataBytes, mapId ?? "");
+            if (visuals == null)
+                throw new System.InvalidOperationException("Verified visual package missing; refusing generation fallback.");
+            mapView.Install(boxes, metadataBytes, mapId ?? "", visuals);
+            actors.ClearAll();
+            actors.BindPackagedVisuals(visuals);
             boundMapId = mapId ?? "";
-            actors?.ClearAll();
             if (camera != null && mapView.IsInstalled)
                 camera.clearFlags = CameraClearFlags.Skybox;
             visualReview?.SetContext(boundMapId, QualitySettings.names[QualitySettings.GetQualityLevel()], 0);
-            Debug.Log("SHOOTER_PRODUCT_MAP_BOUND map=" + boundMapId + " solids=" + mapView.SolidCount);
+            Debug.Log("SHOOTER_PRODUCT_MAP_BOUND map=" + boundMapId + " solids=" + mapView.SolidCount + " packagedVisuals=1");
         }
 
         public void ClearPresentation()

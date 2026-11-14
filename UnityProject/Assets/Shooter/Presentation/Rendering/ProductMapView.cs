@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using Shooter.Contracts;
 using Shooter.Generation;
 using Shooter.Generation.Environment;
@@ -11,14 +12,16 @@ using UnityEngine.Rendering;
 namespace Shooter.Presentation.Rendering
 {
     /// <summary>
-    /// Read-only product map surfaces from verified packaged collision/cover metadata.
-    /// Adds MeshRenderers only; never installs colliders or mutates authority.
+    /// Read-only product map surfaces from verified packaged visual payloads + cover metadata.
+    /// Adds MeshRenderers only; never installs colliders, mutates authority, or regenerates geometry.
     /// </summary>
     public sealed class ProductMapView : MonoBehaviour
     {
         private readonly List<UnityEngine.Object> owned = new List<UnityEngine.Object>();
         private readonly List<GameObject> solids = new List<GameObject>();
+        private Shader? litShader;
         private Mesh? unitBox;
+        private Mesh? mapSolids;
         private Material? concrete;
         private Material? cover;
         private Material? ground;
@@ -28,11 +31,13 @@ namespace Shooter.Presentation.Rendering
         private string mapId = "";
         private int solidCount;
         private int coverCount;
+        private bool visualsBound;
 
         public string MapId => mapId;
         public int SolidCount => solidCount;
         public int CoverCount => coverCount;
         public bool IsInstalled => solidCount > 0;
+        public bool VisualsBound => visualsBound;
 
         public static ProductMapView Create(Transform parent)
         {
@@ -44,49 +49,74 @@ namespace Shooter.Presentation.Rendering
 
         private void InitializeShared()
         {
-            var shader = Shader.Find("Universal Render Pipeline/Lit");
-            if (shader == null || !shader.isSupported)
+            litShader = Shader.Find("Universal Render Pipeline/Lit");
+            if (litShader == null || !litShader.isSupported)
                 throw new InvalidOperationException("Required locked URP Lit shader missing; no art fallback.");
-            unitBox = Own(FoundationView.CreateUnitBox());
-            concrete = Own(Solid(shader, "Numeric concrete", new Color(0.42f, 0.44f, 0.41f), 0f, 0.18f));
-            cover = Own(Solid(shader, "Numeric cover", new Color(0.22f, 0.24f, 0.20f), 0.05f, 0.28f));
-            ground = Own(Solid(shader, "Numeric soil ground", new Color(0.18f, 0.14f, 0.08f), 0f, 0.08f));
-            asphalt = Own(Solid(shader, "Numeric asphalt", new Color(0.08f, 0.09f, 0.10f), 0f, 0.12f));
         }
 
-        public void Install(IReadOnlyList<CollisionBox> boxes, byte[]? metadataBytes, string installedMapId)
+        public void Install(IReadOnlyList<CollisionBox> boxes, byte[]? metadataBytes, string installedMapId, PackagedVisualPayloads visuals)
         {
             if (boxes == null) throw new ArgumentNullException(nameof(boxes));
+            if (visuals == null) throw new ArgumentNullException(nameof(visuals));
             if (boxes.Count == 0)
                 throw new InvalidOperationException("Verified map visuals require packaged solids; refusing empty/diagnostic fallback.");
+            if (string.IsNullOrEmpty(visuals.MapId) || visuals.MapId == "unknown")
+                throw new InvalidOperationException("Packaged visual map identity missing.");
+            if (!string.IsNullOrEmpty(installedMapId) && visuals.MapId != installedMapId)
+                throw new InvalidOperationException("Visual package mapId mismatch.");
+
+            BindVisuals(visuals);
             ClearVisuals();
-            mapId = installedMapId ?? "";
+            mapId = installedMapId ?? visuals.MapId;
 
             HashSet<ulong> coverIds = ParseCoverIds(metadataBytes);
             float half = CompoundPlan.MapHalfExtent;
-            Place("Product ground", new Vector3(0f, -0.05f, 0f), new Vector3(half * 2f, 0.1f, half * 2f), ground!);
+            Place("Product ground", new Vector3(0f, -0.05f, 0f), new Vector3(half * 2f, 0.1f, half * 2f), ground!, unitBox!);
 
+            // Packaged combined solids mesh already encodes gameplay boxes; one renderer, identity transform.
+            var solidsGo = new GameObject("Product map solids") { layer = 11 };
+            solidsGo.transform.SetParent(transform, false);
+            solidsGo.AddComponent<MeshFilter>().sharedMesh = mapSolids;
+            solidsGo.AddComponent<MeshRenderer>().sharedMaterial = concrete;
+            solids.Add(solidsGo);
+            solidCount = boxes.Count;
             for (int i = 0; i < boxes.Count; i++)
             {
-                var box = boxes[i];
-                bool isCover = coverIds.Contains(box.StableId) || LooksLikeCover(box);
-                Material mat = isCover ? cover! : MaterialForTag(box.SurfaceTag);
-                Place(
-                    (isCover ? "Product cover " : "Product solid ") + box.StableId.ToString(CultureInfo.InvariantCulture),
-                    new Vector3(box.Center.X, box.Center.Y, box.Center.Z),
-                    new Vector3(box.Size.X, box.Size.Y, box.Size.Z),
-                    mat);
-                solidCount++;
-                if (isCover) coverCount++;
+                if (coverIds.Contains(boxes[i].StableId) || LooksLikeCover(boxes[i]))
+                    coverCount++;
             }
 
-            // Explicit cover proxies from metadata (may duplicate collision tinting; still readable).
             if (metadataBytes != null && metadataBytes.Length > 0)
                 PlaceMetadataCovers(metadataBytes, coverIds);
 
             sky = GeneratedSky.Apply(transform);
             probe = GeneratedReflectionProbe.Apply(transform);
-            Debug.Log("SHOOTER_PRODUCT_MAP_VIEW map=" + mapId + " solids=" + solidCount + " covers=" + coverCount);
+            Debug.Log("SHOOTER_PRODUCT_MAP_VIEW map=" + mapId + " solids=" + solidCount + " covers=" + coverCount + " packaged=1");
+        }
+
+        private void BindVisuals(PackagedVisualPayloads visuals)
+        {
+            ReleaseBoundVisuals();
+            try
+            {
+                var shaderRoot = MapJsonValue.Parse(visuals.Bytes(MapVisualClosure.ShaderPath(visuals.Profile))).Object;
+                if (shaderRoot["unityShader"].String != "Universal Render Pipeline/Lit" ||
+                    shaderRoot["shaderException"].String != "procedural-urp-lit-v1")
+                    throw new InvalidOperationException("Packaged shader provenance rejected.");
+
+                mapSolids = Own(UploadMesh(MapVisualClosure.DecodeMapMesh(visuals, MapVisualClosure.MapSolidsMeshPath), "Product map solids"));
+                unitBox = Own(UploadMesh(MapVisualClosure.DecodeMapMesh(visuals, MapVisualClosure.UnitBoxMeshPath), "Product unit box"));
+                concrete = Own(FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[0], "Numeric concrete", 0f, 0.18f));
+                cover = Own(FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[1], "Numeric cover", 0.05f, 0.28f));
+                ground = Own(FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[2], "Numeric soil ground", 0f, 0.08f));
+                asphalt = Own(FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[3], "Numeric asphalt", 0f, 0.12f));
+                visualsBound = true;
+            }
+            catch (Exception error)
+            {
+                ReleaseBoundVisuals();
+                throw new InvalidOperationException("Required packaged map visuals missing/corrupt; refusing generation fallback: " + error.Message, error);
+            }
         }
 
         public void ClearVisuals()
@@ -121,7 +151,8 @@ namespace Shooter.Presentation.Rendering
                         "Product cover-meta " + id.ToString(CultureInfo.InvariantCulture),
                         new Vector3((float)center[0].Number, (float)center[1].Number, (float)center[2].Number),
                         new Vector3((float)size[0].Number, (float)size[1].Number, (float)size[2].Number),
-                        cover!);
+                        cover!,
+                        unitBox!);
                     solidCount++;
                     coverCount++;
                 }
@@ -153,37 +184,67 @@ namespace Shooter.Presentation.Rendering
 
         private static bool LooksLikeCover(CollisionBox box)
         {
-            // Cover proxies are typically waist-high blocks distinct from thin wall slabs.
             return box.Size.Y <= 1.6f && box.Size.Y >= 0.8f
                 && box.Size.X <= 4f && box.Size.Z <= 4f
                 && box.Size.X >= 0.6f && box.Size.Z >= 0.6f;
         }
 
-        private Material MaterialForTag(ushort tag)
-        {
-            // Planner tags: 1 = structure/prop, 2 = low obstacles (depot). Numeric only.
-            if (tag == 2) return asphalt!;
-            return concrete!;
-        }
-
-        private void Place(string label, Vector3 center, Vector3 size, Material material)
+        private void Place(string label, Vector3 center, Vector3 size, Material material, Mesh mesh)
         {
             var item = new GameObject(label) { layer = 11 };
             item.transform.SetParent(transform, false);
             item.transform.position = center;
             item.transform.localScale = size;
-            item.AddComponent<MeshFilter>().sharedMesh = unitBox;
+            item.AddComponent<MeshFilter>().sharedMesh = mesh;
             item.AddComponent<MeshRenderer>().sharedMaterial = material;
             solids.Add(item);
         }
 
-        private static Material Solid(Shader shader, string label, Color color, float metallic, float smoothness)
+        private Material FromPackaged(PackagedVisualPayloads visuals, string path, string label, float metallic, float smoothness)
         {
-            var material = new Material(shader) { name = label };
-            material.SetColor("_BaseColor", color);
+            var data = MapVisualClosure.DecodeMapMaterial(visuals, path);
+            var material = new Material(litShader!) { name = label };
+            var mip0 = data.MipBytes[0];
+            material.SetColor("_BaseColor", new Color(mip0[0] / 255f, mip0[1] / 255f, mip0[2] / 255f, mip0[3] / 255f));
             material.SetFloat("_Metallic", metallic);
             material.SetFloat("_Smoothness", smoothness);
             return material;
+        }
+
+        private Mesh UploadMesh(MeshData data, string label)
+        {
+            var mesh = new Mesh
+            {
+                name = label,
+                indexFormat = data.Positions.Count > 65535 ? IndexFormat.UInt32 : IndexFormat.UInt16
+            };
+            mesh.vertices = data.Positions.Select(p => new Vector3(p.X, p.Y, p.Z)).ToArray();
+            mesh.normals = data.Normals.Select(p => new Vector3(p.X, p.Y, p.Z)).ToArray();
+            mesh.tangents = data.Tangents.Select(t => new Vector4(t.X, t.Y, t.Z, t.W)).ToArray();
+            mesh.uv = data.Uv.Select(t => new Vector2(t.X, t.Y)).ToArray();
+            mesh.subMeshCount = data.Submeshes.Count;
+            for (int i = 0; i < data.Submeshes.Count; i++)
+            {
+                var sub = data.Submeshes[i];
+                mesh.SetIndices(
+                    data.Indices.Skip((int)sub.FirstIndex).Take((int)sub.IndexCount).Select(v => (int)v).ToArray(),
+                    MeshTopology.Triangles,
+                    i);
+            }
+            mesh.RecalculateBounds();
+            mesh.UploadMeshData(true);
+            return mesh;
+        }
+
+        private void ReleaseBoundVisuals()
+        {
+            visualsBound = false;
+            mapSolids = null;
+            unitBox = null;
+            concrete = null;
+            cover = null;
+            ground = null;
+            asphalt = null;
         }
 
         private T Own<T>(T value) where T : UnityEngine.Object

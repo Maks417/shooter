@@ -108,6 +108,9 @@ namespace Shooter.Generation.Environment
                     }
                 }
                 WriteIndex(root, built);
+                // ADR-038: persist release catalog/gameplay sidecars beside packages (compile-time only).
+                var catalogMaps = DistinctMapIds(built);
+                ReleaseCatalogDocument.WriteAtomic(root, toolchainHash, catalogMaps);
                 return MapPackagePublishResult.Ok(built, allReused && built.Count > 0);
             }
             catch (OperationCanceledException)
@@ -283,6 +286,22 @@ namespace Shooter.Generation.Environment
             WriteAll(stage, bytes);
             if (File.Exists(path)) File.Replace(stage, path, null);
             else File.Move(stage, path);
+        }
+
+        private static List<string> DistinctMapIds(List<MapPackageBuild> packages)
+        {
+            var maps = new List<string>();
+            for (int i = 0; i < packages.Count; i++)
+            {
+                string mapId = packages[i].MapId;
+                bool seen = false;
+                for (int j = 0; j < maps.Count; j++)
+                {
+                    if (maps[j] == mapId) { seen = true; break; }
+                }
+                if (!seen) maps.Add(mapId);
+            }
+            return maps;
         }
 
         private static void WriteAll(string path, byte[] bytes)
