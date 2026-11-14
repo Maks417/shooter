@@ -2,7 +2,7 @@
 
 Milestones are dependency gates, not calendar promises. [Backlog](backlog.md) gives ordered tasks. No milestone is complete until implementation exists and attached evidence passes [validation](validation.md).
 
-Current disposition, 2026-11-14 at 59316d3: M0–M7 retain historical owner-waived closures (ADR-017/025–028/030–032); original FAIL/Pending evidence and P05 FAIL remain. T052–T064 remediation is committed, but M8–M10 integration and M11 acceptance remain open for the [current source findings](product-state-audit.md). [T066–T071](next-playable-build.md) finish the same milestone scope, followed by T062/T065 final acceptance; no M12 or inherited waiver is needed.
+Current disposition, 2026-11-14 from 84befb9 / a54ed83: M0–M7 retain owner-waived closures and historical FAIL/Pending evidence; P05 FAIL remains. A verified `7cd7e81` test archive exists, with T066/T068/T069/T070 software landed. M8–M10 integration validation and M11 acceptance stay open for remaining T067 native publication/query work and actual player/device/hardware/delivery evidence. See [audit](product-state-audit.md), [remaining tasks](next-playable-build.md) and [playtest guide](playtest-guide.md). No M12 or inherited waiver is needed.
 
 | Gate | Deliverable | Required exit evidence |
 |---|---|---|

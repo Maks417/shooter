@@ -1,6 +1,6 @@
 # Feature: two playable procedural maps
 
-Status reviewed at 59316d3: Compile-GameContent publishes ADR-035 packages; ≥12 slots/team, topology validation and spawn ranking/deadline software exist. Depot seed is 460072031. Catalog startup still runs planners/package builders, visual closure uses placeholder skeleton/material content, and runtime views generate geometry. Navigation remains the software grid; native bake publisher is a stub. [T067](../next-playable-build.md) completes compiled content/native delivery and actual route/spawn/player validation; software publication alone does not accept MAP/FIX gates.
+Status reviewed 2026-11-14 from 84befb9 / a54ed83: ADR-035/038 packages now include persisted catalog/gameplay metadata and actual map/soldier/weapon visual closure; runtime consumes verified bytes. Both maps have ≥12 slots/team, topology/spawn policy software, and Depot seed 460072031. Native editor bridge/runtime installer exist, but normal Compile-GameContent still publishes software-grid NVB1. [T067](../next-playable-build.md) must complete native publication, partial/fallback path semantics and real native route/spawn/player validation. The `7cd7e81` archive is available for [playtest](../playtest-guide.md); publication/Unity open-quad tests alone do not accept MAP/FIX gates.
 
 ## Catalog and layouts
 

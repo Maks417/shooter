@@ -1,8 +1,12 @@
 # M9 — Team Deathmatch and bot teams — handoff and gate record
 
-**Current disposition — 2026-11-14, reviewed at 59316d3:** M9 integration validation open: T053/T057/T058 lifecycle, enemy sensing/path/reload and spawn policy software landed in 59316d3; native-world mixed-team/full-match evidence and correct multi-match telemetry/soak remain (T067/T070/T065). See the [current audit](../../product-state-audit.md), [next playable-build tasks](../../next-playable-build.md) and [FIX acceptance](../../release-remediation-validation.md). Original requirements and historical evidence below remain; no new coding lease is created.
+**Current disposition — 2026-11-14 review from 84befb9 / a54ed83:** M9 integration validation remains open. Lifecycle, mixed-team AI/spawn policy and T070 finish/results/replay/counter software are in the retained `7cd7e81` candidate. Real-map combat/respawn/full-match evidence and reference captures/soaks remain Pending/PendingHardware; no online server is needed for this local-bot release. See the [audit](../../product-state-audit.md), [remaining queue](../../next-playable-build.md), [playtest guide](../../playtest-guide.md) and [FIX acceptance](../../release-remediation-validation.md). Original requirements and historical evidence remain; this review creates no coding lease or waiver.
 
-## Latest-commit review — 59316d3
+## Current source/evidence handoff
+
+`59bbcbb` T070 software is in `7cd7e81`: finish/results/replay-aware cumulative soak ticks, life-replacement respawns, counted world-query samples and verified content bindings. The old one-shot-host finding below is superseded. Fresh Game 51/51 and Simulation 110/110 pass within pure scope. Actual both-map/sizes mixed-team combat, repeated respawn and normal complete matches remain Pending; twelve reference captures and two map soaks remain PendingHardware. The first version is one human plus local bots; online matches/hosting are outside its scope.
+
+## Historical review — 59316d3 (superseded)
 
 T053/T057/T058/T063 software is committed in 59316d3; Game 38/38 and Simulation 101/101 pass in their scope. Real native-world mixed-team/spawn/full-match acceptance remains pending. T070 must implement finish/replay-aware multi-match soak and repair telemetry semantics; the current one-shot host cannot capture 30 active minutes across normal 15-minute matches. T066/T067 precede player evidence; no hardware PASS is inferred.
 

@@ -8,7 +8,7 @@ Status: **implemented and frozen** (ADR-034, T035). Owner: sole M8 integrator. E
 
 ## Placement and compatibility
 
-`UnityProject/Assets/Shooter/Game/Contracts/` contains BCL-only Shooter.Game.Contracts referencing C0. It defines immutable product/session DTOs and ports, without Unity/storage/UI/transport implementation. Shipping OfflineGameSession explicitly rejects FakeMapRuntime unless allowed for tests; this is not a complete fake-adapter or device-composition audit. The [2026-11-14 audit](product-state-audit.md) records lifecycle/publication/settings gaps and limited test coverage. Keep frozen C0 results separate.
+`UnityProject/Assets/Shooter/Game/Contracts/` contains BCL-only Shooter.Game.Contracts referencing C0. It defines immutable product/session DTOs and ports, without Unity/storage/UI/transport implementation. Shipping OfflineGameSession explicitly rejects FakeMapRuntime unless allowed for tests; this is not a complete fake-adapter or device-composition audit. The [2026-11-14 audit](product-state-audit.md) records current native-publication/query gaps and pending player/device validation of the landed lifecycle/settings software. Keep frozen C0 results separate.
 
 Lock/fixtures: `game-contract-lock.json`, `docs/game-fixtures/`. Verify with `python Tools/verify_game_contract_lock.py` and `Tools/Test-Game.ps1 -Offline`. Existing C0 fixtures stay immutable. Any need to change C0, SGAF, generator identities, nav encoding or N1 requires a separate reviewed ADR, fixtures/migration and impacted-suite validation before dependent workers rebase. New settings file schema is independent of `HudSettings`' existing semicolon diagnostic string.
 

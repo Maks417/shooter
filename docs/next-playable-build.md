@@ -1,101 +1,65 @@
-# Next playable build — remaining work after 59316d3
+# Next playable build — finish playtest and native navigation
 
-Reviewed 2026-11-14 at clean `main`, `59316d387e5345716392e332ca225a581a671c33`. This is the implementation queue after T052–T064, within existing **M8–M11**. No M12 is needed: the missing work completes the already agreed offline product. Original T035–T065 requirements, FIX01–FIX14 and RUN/TDM/MAP/UI/SET/REL gates remain mandatory. See the [current audit](product-state-audit.md), [original repair cards](release-remediation-plan.md) and [acceptance matrix](release-remediation-validation.md).
+Reviewed 2026-11-14 from `84befb9`; `a54ed83` adds CLAUDE guidance only. The previous queue assumed the code was still at `59316d3`. Later commits repaired T066, added packaged catalog/visual loading and navigation adapters, completed T068/T069/T070 software, and built the **`7cd7e81` test candidate**. Its ZIP is present and verified. Do not restart these tasks from old findings. See [current audit](product-state-audit.md), [launch/playtest guide](playtest-guide.md) and [M11 handoff](milestones/m11-playable-release/handoff.md).
 
-This assignment updates documentation only. The cards below are proposed bounded implementation assignments, with no active coding lease, agent dispatch or authorization for a fourth P05 clearance search. One integrator owns Bootstrap, Contracts, schemas/locks, project settings, workload definitions and coordination.json. Keep Unity 6000.3.28f1 / URP 17.3.0, C0-v1, Game-v1 with ADR-036 settings schema 2, ADR-035 packages and ADR-037 workloads; any required format/identity change needs its reviewed ADR/migration/fixtures first.
+This is documentation/planning only: no coding lease, runtime edit, dispatch, P05 clearance search or waiver. Work stays in M8–M11 with original T035–T065 requirements and RUN/TDM/MAP/UI/SET/REL plus FIX01–FIX14 exits. One integrator owns shared Bootstrap, Contracts, schemas/locks, project settings, workload definitions and coordination.json. Keep Unity 6000.3.28f1 / URP 17.3.0, C0-v1, Game-v1 (ADR-036 settings schema 2), ADR-035/038 content and ADR-037 workloads. Boundary changes require reviewed ADR/migration/fixtures before consumers.
 
-## What the owner will receive
+## Owner priority: local play, no hosted multiplayer
 
-The deliverable is an extractable Windows x64 archive with a local launcher, controls and known issues. It opens offline to Main menu, offers Training Compound / Depot Yard and 5v5 / 6v6 Team Deathmatch, and supports movement, aiming, rifle/pistol, reload, allied/enemy bots, death/respawn, pause, scoreboard, results and replay. Required final rules stay 150 kills / 15 active minutes. No Unity installation, repository, developer cache, internet or server process is needed.
+The first version is a single offline process with one human and local allied/enemy bots. No server rental, hosting/account setup, external server process, online/LAN multiplayer implementation or deployment is needed. Keep existing authority boundaries and build-isolation guards; do not expand the current queue into networking work. The owner's 2026-11-14 clarification is recorded in [vision](vision.md#first-version-scope-local-bots-only).
 
-Two checkpoints make delivery concrete without changing release acceptance:
+## Current task disposition
 
-| Checkpoint | Exit | What it means |
+| Task | Delivered | Remaining |
 |---|---|---|
-| Owner playtest candidate (T071) | T066–T069 integrated; clean Unity tests/builds; archive extracted and manually played on both maps/sizes with the checks below | A usable local preview, explicitly listing P05 FAIL and pending final visual/reference acceptance. No milestone closure or REL PASS is inferred. |
-| Accepted offline release (T065) | T070, T062 visual scope/review and all original/FIX/REL exits on one final candidate | Complete matches, usability/device review, reference Low30 matrix, soaks, provenance, independent delivery and rollback accepted with actual evidence. |
+| T066 — baseline | Metadata/cancellation fixes; fresh Contracts 72/72, Generation 319/319, Game 51/51 and provenance PASS; retained Unity/client/server reports. | Maintain regression baseline; preserve old failed attempts. Not the next implementation assignment. |
+| T067 — content/navigation | Persisted ADR-038 catalog, actual packaged visuals/rig/rifle/pistol, executable-relative defaults/recovery, native editor bridge and runtime installer. | **Partial:** normal wrapper still publishes software-grid NVB1; native publication integration, truthful path statuses/fallback policy, load cost and real two-map native route/spawn/player evidence. |
+| T068 — authority presentation | Rifle/pistol selection and Reload/Shot action events drive actual views. | FIX05 player captures, live action/life/pose validation; no evidence of named visual acceptance. |
+| T069 — preferences | Editable applied bindings/accessibility, staged display persistence and device-mode enumeration. | Named UI/control/display/audio review, real Keep/Revert, 20 load/replay cycles. |
+| T070 — measurement | Finish/results/replay, cumulative active soak capture and honest counters, included in candidate. | Twelve reference captures + two map soaks PendingHardware; validate on final matching binary/content. |
+| T071 — owner candidate | Clean `7cd7e81` Client/Server, archive/hash/inventory, recorded menu launch. | **Partial:** named manual play matrix, complete matches/results/replay, actual corruption/recovery and prior-pair rollback. |
+| T062 / T065 — final acceptance | Visual inventory/tooling and operator checklist. | P05 FAIL retained; named review, full match/device/reference/soak/delivery exits. REL01–REL06 NotClaimed. |
 
-The preview checkpoint is a handoff sequence, not a reduced game scope or an inherited hardware waiver. Unknown preview performance is labeled unmeasured. Any functional blocker prevents handing it over as playable. Source fixes after preview require a new build/package identity and affected acceptance reruns.
+## Immediate owner path: T071 playtest
 
-## Bounded task queue
+The existing archive is the fastest way to expose real blockers. Use [the guide](playtest-guide.md); do not claim an owner-playable handoff merely because the launcher reached Main. The requirements are unchanged:
 
-| Task | Existing milestone / repair | Dependencies | Concrete output |
-|---|---|---|---|
-| T066 — Restore current integration baseline | M8/M11; FIX01, REL05 | 59316d3 review | Tracked metadata, resolved cancellation regression, trustworthy Unity compile/test and provenance baseline |
-| T067 — Finish packaged content and native navigation | M8/M10; T055, FIX04/07 | T066 | Data-only release catalog; actual visual/weapon/rig closure; native bake/install/path evidence; local packaged discovery/recovery |
-| T068 — Finish authority-driven presentation | M8; T056, FIX05 | T066; package integration T067 | Correct rifle/pistol and action views, packaged visuals, coherent life/pose/event binding |
-| T069 — Finish controls and applied preferences | M10; T059–T061, FIX08–10 | T066; integrate T068 | Editable working bindings, complete applied settings, keyboard/pointer UI, device confirmation |
-| T070 — Validate real measurement and multi-match soak | M9/M11; T063, FIX12 | T067–T069 | Product collector validated in player; honest counters; finish/replay-aware capture and two-map soaks |
-| T071 — Build and hand over a playable candidate | M11; T064, FIX13, preliminary T065 | T066–T069 | Clean matching client/server builds, independent local archive, playtest evidence and owner launch instructions |
-| T062 + T065 — Visual disposition and final acceptance | M8/M11; FIX11/14 | Stable T070/T071 candidate | Named visual/device reviews, complete match/performance/soak matrices, final archive/hash and rollback |
+- Independently extract, run the local launcher from another working directory and reach Main without Unity/developer cache/network/server dependency.
+- Exercise both maps × 5v5/6v6: movement/aim/fire/rifle-pistol/reload, allied/enemy bots, human/bot death and 180-tick respawn, camera rebind, pause/focus, scoreboard/settings and restart/leave.
+- Complete at least one normal 150-kill/15-minute match per map, see immutable results and replay. Record which sizes/finish reasons were actually completed; do not mark the full T065 matrix passed.
+- On a disposable extraction test startup and map-load missing/corrupt content, repair and retry. Rehearse a real compatible prior binary/content rollback. Packaging software-only tests and SkippedNoPrevious do not prove these.
+- Retain exact source/build/content/toolchain/seed/profile/session identities, named reviewer, raw log/capture and every functional blocker/unknown. Store evidence under ignored Artifacts before removing temporary folders.
 
-T070 can be developed before T071, but reference measurement uses the same final binary/content pair. Start with T066, then T067; do not repeat the already landed Contracts lock repair or contract freeze. Uncovered defects return to the owning card. No estimates or dates are promised before the first source-matched Unity compile/player run.
+Owner: release integrator/operator. Scope: build/package execution, controls/known issues/evidence and M11 handoff. Route code defects to their bounded owning cards; do not use this docs task as a runtime assignment. Never copy historical binaries or stamp current HEAD onto the retained archive.
 
-## T066 — Restore the integration baseline
+## T067 — remaining technical implementation
 
-Owner: integrator. Allowed paths: metadata for files introduced by 59316d3, `Tools/Generation.Tests/CompilerTests.cs`, compiler lock/cancel implementation under `Generation/Editor/`, and relevant integration tests; Bootstrap/asmdefs only for actual compile/isolation failures, with exact diff recorded. Do not regenerate settings, replace goldens or relax provenance rules to conceal failures.
+Owner: content/world integrator. Allowed paths remain `Content/Maps/`, compiler/codecs/publisher, `Generation/Editor/Compilation/`, `World/Foundation/CompoundMapRuntime.cs`, `UnityNavMeshBakeInstaller.cs`, associated tests; shared Bootstrap/editor/build/package/index/schema changes through the integrator. Retain existing visual/catalog work rather than recreate it.
 
-Fresh evidence at 59316d3:
+### Native publication must run in the actual tool path
 
-- `Test-SourceProvenance.ps1` fails on **19 missing metadata entries**, including ProductTdmBenchmark/Host, VerifiedMapPackageStore, map-package sources/recipes, SpawnSafetyPolicy, the Tests/Performance folder and ProductTdmWorkloadIdentityTests. The [audit](product-state-audit.md) records the complete failure evidence. Preserve existing GUIDs and add stable tracked metadata for the actual new sources.
-- Generation executes 311 cases: 310 pass, `CompilerTests.BusyKeyLockCanTimeOutOrCancelWithoutPublication` fails at line 120 (expected Cancelled, got Busy); a second full run repeats the same failure. Its 25 ms cancellation / 50 ms timeout is timing-sensitive; cause is unproven. Distinguish compiler ordering from test scheduling, then fix meaningfully. A later green run does not erase these failures.
-- Contracts 72/72, Simulation 101/101 and Game 38/38 pass, all zero skipped. Offline advisory lookup remains PendingNetwork. No current Unity compilation/player proof was produced by this review.
+`Tools/Compile-GameContent.ps1` invokes a separate pure `dotnet run` MapContent process. `UnityNavMeshBakeEditorBridge` registers its native provider only inside Unity Editor. Current `7cd7e81` compile proofs explicitly say both map bakes are `software-walkable-grid;unity-native-bake-pending`. Source registration in another process cannot complete that boundary.
 
-Exit: source provenance and locked suites pass with counts; cancellation/timeout outcomes and no partial publication have deterministic coverage; configure the pinned editor, then run EditMode/PlayMode and Client/Server builds. Record exact compile/test failures and assign repairs before claiming readiness. Keep source/build/fixture hashes and raw failing attempts. A pure .NET build does not compile all new Unity classes.
+Connect a locked-editor native compile/publication entry, prove it uses installed authoritative collision and frozen settings/seed/toolchain, publish matching native map/metadata/catalog/package identities, and make verification distinguish software diagnostics from release-native content. No current command is documented as already completing this. Pure tests may retain their explicit software fallback, but cannot satisfy native release acceptance. ADR-035 and relevant format/source guards remain mandatory.
 
-## T067 — Finish content delivery
+### Runtime paths and installation need meaningful coverage
 
-Owner: content/world integrator. Allowed paths: `Content/Maps/`, map package compiler/codecs/publisher, `Generation/Editor/Compilation/`, `World/Foundation/CompoundMapRuntime.cs`, runtime loaders and associated tests; shared Bootstrap/build/package/index/schema changes through the integrator.
+`UnityNavMeshBakeInstaller.Install` constructs NavMeshData using `NavMeshBuilder.BuildNavMeshData` from packaged surfaces with a near-zero radius. Measure cold/warm cost and validate areas, agent clearance, disconnected regions, corners and spawn/route reachability for both maps. The existing PlayMode test installs a small open quad only. Document how this construction meets the intended loading/offline-generation boundary; any necessary format/behavior revision needs an ADR and fixtures first.
 
-Confirmed source gaps:
+`TryCalculatePath` accepts PathPartial and falls back to a packaged graph on an invalid native query. The bool adapter cannot currently distinguish those outcomes. Preserve truthful Complete/Partial/Failed semantics and explicitly review whether fallback is permitted in shipping composition. Do not claim native validation based on a successful graph query. These source findings require targeted tests and real player reproduction; this review does not assert a reproduced bot failure.
 
-1. `StaticMapCatalog.CreateReleaseSeed` calls `CompoundCatalogFactory.BuildGameplay` and `MapPackageBuilder.Build` eight times. The factory runs numeric planners. Loading verified collision later does not remove this release-startup compilation. Persist catalog/gameplay metadata at compile time and load verified bytes in the player; no planner/builder invocation or placeholder toolchain fallback on the shipping path.
-2. `MapPackageBuilder.AddVisualClosure` supplies a combined box mesh, 1×1 material and **single-joint skeleton**, plus shader/font descriptor JSON. This is not the actual soldier/weapon dependency closure. Publish the real approved soldier rig/meshes, rifle and pistol, materials/LODs and explicit built-in shader/font provenance; validate transitive identities and sizes. Built-in exceptions must match assets actually retained by the player.
-3. `ProductMapView` constructs a unit box and numeric materials from collision; `ProductActorPresentation.InitializeShared` invokes SoldierGeometry/WeaponGeometry at runtime. Wire both to verified visual payloads and retain only allowed upload/pose work at runtime. Removing a required visual dependency must fail recoverably, not succeed through generation.
-4. `UnityNavMeshBakePublisher` exposes constants and a pending-reason string only. Map packages contain `BuildWalkableGrid` output; `CompoundMapRuntime` decodes it but routes queries through `CompoundConnectivity.TryFindPath`. Implement pinned native bake publication and the matching runtime navigation adapter, with real installed collision/clearance/reachability/corners on both maps. Do not label the software grid as a completed native bake.
-5. Bootstrap defaults resolve two directories above `Application.dataPath` to repository paths. Package tooling emits `launch-offline.cmd` with relative explicit overrides. Make the intended launcher work from any current directory and test direct executable behavior against the promised delivery contract; prefer executable-relative packaged defaults. Missing/corrupt content before shell creation currently reaches Bootstrap failure; provide the required repair/reinstall screen and return path.
+Exit remains FIX04/FIX07: native publication/install/query evidence on both maps; cold/warm/forced and cancel/corrupt recovery; packaged bytes independent of repository/cache; cross-quality gameplay equivalence; gameplay-only server closure and actual spawn/routes. Preserve failures. Native content/source changes require a new clean Client/Server/package identity and affected T071/T070/T065 reruns.
 
-Exit: FIX04/FIX07 actual cold/warm/forced, cancel/corrupt and native-world cases; both maps/profiles loaded from packaged bytes; gameplay equivalent across quality; server gameplay-only closure. Empty compiler/developer caches and unavailable repository cannot change load success. Any necessary schema/generator/nav identity migration is reviewed before consumers.
+## T068/T069 — player validation of landed software
 
-## T068 — Finish presentation from real authority
+T068 owner: presentation integrator (`Presentation/Rendering`, `Rig`, `View`, session views and real integration tests); shared projection/contract changes through integrator. Capture rifle and pistol, real shots/reload timing, aim/death/respawn and repeated human/bot replacement on both maps. Preserve corpse/life bounds, snapshot coherence and quality-independent hit poses. FIX05 and P05 remain separate.
 
-Owner: presentation integrator. Allowed paths: `Presentation/Rendering/`, `Rig/`, `View/`, `Session/ProductSessionView.cs` and real integration tests; any Game-v1 projection change through the integrator with ADR/fixtures if required.
+T069 owner: client integrator (settings/editor/device application, input, session/menu/scoreboard/audio and relevant tests). Record named 720p 100%/150% keyboard/pointer readability, binding apply/persist/conflict/cancel, 15-second display Keep/Revert including focus loss, audible output/gain/mute and 20 alternating load/replay cycles. Preserve schema 2 and gameplay hashes. Test results alone do not prove device behavior.
 
-`ProductActorPresentation` always creates a held rifle and does not consume `ActorLifecycleState.ActiveWeaponSlot`. `PoseAvatar` starts a guessed reload phase when magazine decreases and uses a fixed 2.4-second duration. A shot can therefore trigger reload presentation, while pistol/action timing is not faithfully displayed. Consume the read-only selected weapon and actual action start/end state/events. Show the correct rifle/pistol, aim/fire/reload/death/respawn poses and local view feedback; never infer a reload from an ammo drop or alter authority to match visuals.
+## T070, T062 and T065 — final acceptance
 
-Use T067 packaged meshes/rig/materials. Preserve bounded corpse/life binding, snapshot coherence and quality-independent hit poses. Exit: player captures and meaningful adapter checks for both weapons, actions and repeated human/bot replacement, followed by FIX05 profile/lifecycle/load/traversal coverage. Existing binder tests remain useful but do not prove that the actual Unity renderer consumes the correct state. This task does not authorize P05 generator parameter changes.
+T070 owner: measurement integrator. The software at `59bbcbb` is included in `7cd7e81`. Do not rebuild again merely to include T070. If T067/player fixes change source/content, measure the new matching pair. Required reference evidence remains twelve native720p Low captures (both maps × sizes × three, 60s warmup/180s measurement) and cumulative ≥30-minute normal-AI 6v6 soak/map spanning normal matches/replay. Missing CPU/GPU/thermal/reference proof stays PendingHardware; keep B01–B04 and 60 FPS stretch separate.
 
-## T069 — Finish preferences and usability
+T062 remains ToolingReady: P05 skin/forearm/strap/eye-sight residuals remain FAIL under ADR-024. Capture actual player defects and obtain the explicit owner scope decision before another clearance/generator search. Retain failed artifacts and review new identities for any later authorized fix; no new waiver is implied.
 
-Owner: client integrator. Allowed paths: settings UI/editor/device application, `Presentation/Input/`, `Session/`, menus/scoreboard/audio and relevant tests. Preserve ADR-036 schema 2 unless a reviewed migration is necessary.
-
-**Software landed (T069):** editable bindings with conflict swap/cancel; `LocalPlayerInput`/scoreboard read applied bindings; Escape reserved; `ApplyUserSettings` consumes bindings, ReducedFlash (cosmetic muzzle overlay), ReducedCameraMotion (ADS FOV zoom off) and Subtitles (shot/impact/hit/reload/UI captions); device resolution enumeration (baseline pair only when empty); pending display persisted only after Keep. ADR-036 schema 2 unchanged; no gameplay hash changes.
-
-**Still required for FIX08–FIX10/SET01–02 exit:** named 720p 100%/150% UI keyboard/pointer review, 15s Keep/Revert on real display, audible output/gain/mute review, and 20 alternating load/replay cycles — record Pending until player/device evidence exists.
-
-## T070 — Make measurements executable
-
-Owner: measurement integrator. Allowed paths: ProductTdmHost/Benchmark, product telemetry, `Tools/Benchmark*`, analyzer/negatives and performance tests; frozen workload changes need ADR/fixtures first.
-
-**Software landed (T070):** `ProductTdmCaptureCoordinator` + `ProductTdmHost` finish→results→replay accumulates soak capture ticks across normal matches without extending 150-kill / 54000-tick rules. Counter semantics: respawns=life replacement; querySamples=`CountingWorldQueries` (Raycast/Sweep/Overlap) distinct from aiRays/pathRequests; contentBindings=verified package roots only; WorkloadId survives `ResetForNewMatch` and is re-applied after each load. Analyzer negatives reject missing counters / absent bindings / soak-without-replay. Pure tests in `ProductMeasurementTests` + `test_tdm_benchmark_analysis.py`.
-
-**Still required for FIX12/REL04 exit:** twelve native720p Low captures (60s warmup / 180s measurement / three runs per map and size) and cumulative ≥30-minute normal-AI 6v6 two-match/replay soak per map on the reference machine with real CPU/GPU/thermal evidence — **PendingHardware** only. Keep B01–B04 and 60 FPS stretch separate. The pre-T070 T071 archive at `114815c` remains historical/superseded (do not retcon its hashes). Source-matched rebuild after T070 is recorded at `7cd7e81` in the [M11 handoff](milestones/m11-playable-release/handoff.md); FIX12 hardware still uses that current binary/content pair.
-
-## T071 — Produce the owner playtest candidate
-
-Owner: release integrator. Allowed scope: clean build/package execution, product failure fixes assigned back to T066–T069, controls/known-issues/evidence and M11 handoff. Use existing T064 safeguards; do not copy historical binaries or invent manifest identities.
-
-1. Commit completed implementation to `main`; configure fresh checkout with the pinned editor. Require clean source, passing provenance/regressions, Unity EditMode/PlayMode and non-development Client build; build Server and prove presentation/graphics isolation.
-2. Compile and package verified both-map content against matching source/toolchain/build identities. Use `Package-Release.ps1 -ClientBuildRunDirectory <actual-run>` and retain inventory/SHA256, licenses/font policy, controls, known issues and previous binary/content pair. Review the current script's software-only extraction/corruption/rollback checks; perform real player checks too.
-3. Extract outside the repo with Unity/developer caches/network/server unavailable. Launch the documented local launcher from another working directory. Exercise both maps × both sizes with actual manual move/aim/fire/rifle-pistol switch/reload, allied/enemy combat, human/bot death/180-tick respawn, pause/focus, live scoreboard, settings and restart/leave. Play at least one complete normal match on each map, see immutable results and replay. Capture build/map/seed/profile/session identities and blocking errors.
-4. Test missing/corrupt content in the actual executable, restore the original pair and repeat launch. Prove the previous binary/content rollback pair launches. Hand over the archive's real absolute path/hash, launcher and controls, plus every unresolved defect and unmeasured device/performance gate.
-
-This is the earliest owner-playable handoff; a successful synthetic packaging suite or READY line cannot substitute. No working archive is claimed to exist at the reviewed source. P05 FAIL is disclosed and its evidence retained. The full eight-match score/timeout matrix, draw fixture, named visual acceptance and hardware runs still belong to T065 before accepted release.
-
-## Final acceptance and maintenance
-
-T062 remains ToolingReady; P05 skin/forearm/strap/eye-sight residuals remain FAIL under ADR-024. Capture the actual player first, inventory defects, and obtain the explicit owner scope decision before any further clearance/generator search. Any authorized fix uses reviewed identities/new caches and retains failed artifacts. A preview handoff does not waive REL03.
-
-T065 executes [REL01–REL06](milestones/m11-playable-release/validation-acceptance.md) and [FIX01–FIX14](release-remediation-validation.md) on one final clean binary/content candidate after repairs. Record eight full matches (both maps × both sizes × score/timeout), draw fixture and named manual matches, visual/UI/audio/display sign-offs, twelve reference captures and two soaks. Missing reviewers/hardware/counters remain Pending, not PASS. Preserve exact limitations in M8–M11 handoffs and keep coordination history intact; no leases are created by this plan.
-
-Update shared docs and affected handoffs with actual source, versions, commands/counts, artifacts and rollback. Commit all completed assigned work to `main` under the repository's standing rule, verify preservation, and remove temporary task worktrees/branches only after retaining required ignored evidence. No public upload or distribution is part of this queue.
+T065 executes [REL01–REL06](milestones/m11-playable-release/validation-acceptance.md) and [FIX01–FIX14](release-remediation-validation.md) on one stable final pair: eight score/timeout full matches, draw fixture, named visual/UI/audio/display reviews, shell cycles, twelve reference captures, two soaks, provenance/regressions/server isolation and independent delivery/rollback. Use the [M11 runbook](milestones/m11-playable-release/handoff.md). Unknowns remain explicit; commit completed assigned work to main and preserve ignored evidence before cleanup.

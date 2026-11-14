@@ -1,6 +1,8 @@
 # Offline release remediation — implementation tasks T052–T065
 
-Original baseline: [audit](product-state-audit.md) at f3d9954. **Current source 59316d3, 2026-11-14:** T052–T064 remediation is committed on clean main. This plan retains original requirements and scope, not an assertion that every task is unstarted or fully accepted. The [next-build queue T066–T071](next-playable-build.md) specifies remaining code/build work from current findings, followed by T062 visual disposition and T065 acceptance. REL01–REL06 remain Open / NotClaimed; P05 FAIL remains. These complete M8–M11 without M12 or inherited waivers.
+Original baseline: [audit](product-state-audit.md) at f3d9954; T052–T064 remediation landed at 59316d3. This plan retains original requirements/scope rather than asserting every card is unstarted or accepted. Current dispositions live in the [remaining queue](next-playable-build.md) and audit. REL01–REL06 remain Open / NotClaimed; P05 FAIL remains. Work completes M8–M11 without M12 or inherited waivers.
+
+Current 84befb9 / a54ed83 review: the verified `7cd7e81` archive exists. T066 baseline and T068/T069/T070 software are landed; remaining T067 native publication/query work, T071 manual handoff and T062/T065 acceptance are in the [current queue](next-playable-build.md). Original cards below are retained scope, not instructions to reimplement repaired features.
 
 ## Entry, ownership and compatibility
 
@@ -8,7 +10,7 @@ Read [implementation start](implementation-start.md), [vision](vision.md), [arch
 
 Game-v1 is already compiling/frozen under ADR-034. Do not repeat T035 or treat its freeze as proof that every required behavior is covered. Before implementation the integrator records current accepted main, owner, exact allowed files, fixture/lock hashes, commands, rollback pair and evidence path. No automatic delegation; parallel work needs explicit authorization, bounded ownership and separate worktrees/editor copies. Shared files integrate serially.
 
-Frozen semantic or format changes require ADR plus fixtures/migration before consumers: C0, Game-v1, SGAF, generator/recipe/nav identities and N1. ADR-036 now extends UserSettings to schema 2; ADR-037 adds depot workloads. Preserve these reviewed extensions and their fixtures; do not repeat the prior compatibility work or invent an undocumented parallel contract. Missing implementation consumers remain T069/T070. Nonbreaking implementation repairs must preserve current identities.
+Frozen semantic or format changes require ADR plus fixtures/migration before consumers: C0, Game-v1, SGAF, generator/recipe/nav identities and N1. ADR-036 now extends UserSettings to schema 2; ADR-037 adds depot workloads. Preserve these reviewed extensions and their fixtures; do not repeat the prior compatibility work or invent an undocumented parallel contract. T069/T070 implementation consumers are landed; named device/player and reference measurement evidence remains pending. Nonbreaking implementation repairs must preserve current identities.
 
 ## Order and milestone mapping
 

@@ -1,8 +1,12 @@
 # M8 — Runtime composition and Game-v1 foundation — handoff and gate record
 
-**Current disposition — 2026-11-14, reviewed at 59316d3:** M8 integration open: lifecycle/pause/input and visible/audio wiring landed in 59316d3; provenance, compiled visual closure, native navigation and authority-driven weapon/action views still need T066–T068, followed by real RUN/player evidence. See the [current audit](../../product-state-audit.md), [next playable-build tasks](../../next-playable-build.md) and [FIX acceptance](../../release-remediation-validation.md). Original requirements and historical evidence below remain; no new coding lease is created.
+**Current disposition — 2026-11-14 review from 84befb9 / a54ed83:** M8 integration validation remains open. T066 provenance/cancellation and T067 packaged catalog/visual loading are repaired; T068 authority-driven weapon/action views are landed in the retained `7cd7e81` candidate. Native-navigation publication/query semantics and actual RUN/player/repeated-life evidence remain open. See the [audit](../../product-state-audit.md), [remaining queue](../../next-playable-build.md), [playtest guide](../../playtest-guide.md) and [FIX acceptance](../../release-remediation-validation.md). Original requirements and historical evidence remain; this review creates no coding lease or waiver.
 
-## Latest-commit review — 59316d3
+## Current source/evidence handoff
+
+T066 baseline is repaired: fresh Contracts 72, Generation 319, Simulation 110 and Game 51 pass; provenance passes (660 entries / 330 GUIDs). Retained clean `7cd7e81` EditMode 24/24, PlayMode 12/12, Client/Server and ZIP reports were inspected, not rerun here. ADR-038 catalog, actual packaged visual payloads, executable-relative defaults/recovery and T068 slot/action views exist. T067 remains partial: normal publisher still produces software-grid NVB1; native bridge publication and partial/fallback semantics/load/clearance need completion. Native installer/open-quad tests do not establish real two-map routes or repeated-life player acceptance. See [audit C01–C05](../../product-state-audit.md); old failures below stay historical.
+
+## Historical review — 59316d3 (superseded)
 
 T052–T056/T061 software is committed in 59316d3. Fresh baseline: Contracts 72 PASS, Generation 310/311 FAIL (cancellation/lock), Simulation 101 PASS, Game 38 PASS; provenance FAIL on 19 missing metadata entries. No fresh Unity/player run. T066 repairs baseline; T067 finishes actual packaged visual/native nav delivery and T068 weapon/action views. Historical software runs below retain their original sourceDirty flags.
 

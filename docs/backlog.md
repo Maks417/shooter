@@ -2,7 +2,7 @@
 
 All paths are relative to `UnityProject/Assets/Shooter` unless noted. Contracts owned by integrator. Every work package must meet [agent done rules](agent-coordination.md). Estimate after spikes; no speculative hour counts.
 
-Current next work is [T066–T071](next-playable-build.md), starting with provenance/Generation baseline repair, then compiled content/native navigation, state-driven views and working preferences. T052–T064 software is committed in 59316d3; T062 visual disposition and T065 final acceptance remain open. The [audit](product-state-audit.md) identifies exact current gaps. Original task IDs/requirements, T035 freeze and deferred T025 remain unchanged; historical waivers do not accept new gates.
+Current next work is [T071 playtest and remaining T067 native navigation](next-playable-build.md). A verified `7cd7e81` archive exists; T066 repairs and T068/T069/T070 software are landed. Player/device evidence, native publication/query validation and T062/T065 acceptance remain open. See the [audit](product-state-audit.md) and [launch guide](playtest-guide.md). Original task IDs/requirements, T035 freeze and deferred T025 remain unchanged; historical waivers do not accept new gates.
 
 ## Dependency graph
 
@@ -85,4 +85,4 @@ WP-02 starts on C0/base commit, edits only geometry/weapon generator folders and
 
 ## Product remediation tasks
 
-[T052–T065](release-remediation-plan.md) retain original audit repair requirements; their software is substantially committed in 59316d3. [T066–T071](next-playable-build.md) specify the verified remaining baseline/content/view/settings/measurement/delivery work within M8–M11, followed by T062/T065 acceptance. [FIX01–FIX14](release-remediation-validation.md) supplement original gates. This documentation task creates no runtime assignment or coordination lease.
+[T052–T065](release-remediation-plan.md) retain original audit repair requirements; their software is substantially committed in 59316d3. [T066–T071](next-playable-build.md) record landed software versus remaining native content/player/device/measurement/delivery work within M8–M11, followed by T062/T065 acceptance. [FIX01–FIX14](release-remediation-validation.md) supplement original gates. This documentation task creates no runtime assignment or coordination lease.

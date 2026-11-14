@@ -1,8 +1,66 @@
 # Product state audit — 2026-11-14
 
+## Latest review: built playtest candidate, gameplay acceptance pending
+
+Review started at clean `main` `84befb9b48c98b71716d67a0a3e799b8b112c6df`. During review, `a54ed8302151a134e47cc1a421153edc8ef4e0c7` added `CLAUDE.md` only; it is preserved. The latest retained binary is **`7cd7e8191e118929af742bef382774edb22a57c2`**, not the review HEAD. Later changes before this review are documentation and deletion of unused `Assets/Resources.meta`; there is no newer runtime C# implementation. Do not relabel the existing binary as a build of a later commit.
+
+**Assessment:** the project has progressed from incomplete integration to a packaged offline playtest candidate. Source implements the two-map 5v5/6v6 loop, weapons, bots, respawn, menus and applied settings. Client/server builds and Unity tests have retained passing reports. The archive exists and passes a fresh inventory/hash check. The handoff records reaching Main menu, but complete manual gameplay has not been demonstrated. A percentage-complete or calendar estimate would imply evidence we do not have.
+
+Owner clarification during this review: the first version is **local bots only**, with no online multiplayer, separate server or hosting purchase. Existing server-compatible architecture/isolation evidence is retained without adding an online-delivery prerequisite. See [scope](vision.md#first-version-scope-local-bots-only).
+
+The practical next step is to play the existing candidate and capture failures, while finishing the remaining native-navigation publication work. Use the new [launch and playtest guide](playtest-guide.md) and the revised [remaining-work queue](next-playable-build.md). This review changes documentation only; it creates no runtime assignment, coding lease, agent dispatch or acceptance waiver.
+
+### What changed since 59316d3
+
+| Area | Current source / retained evidence | Still open |
+|---|---|---|
+| T066 baseline | `02037ce` restores metadata; `edf6269` prefers cancellation over Busy; `84befb9` removes an orphan meta. Fresh provenance PASS: 660 entries / 330 GUIDs. Contracts 72, Generation 319, Simulation 110 and Game 51 pass in fresh wrappers. | Preserve earlier failures; baseline repair is no longer the next feature task. |
+| T067 catalog/content | ADR-038 `catalog.json`, `StaticMapCatalog.TryLoadPublished`, executable-relative `PackagedContentLayout` and retry recovery exist. `MapVisualClosure`, `PackagedVisualPayloads`, `ProductMapView` and `Presentation/Rig/ProductActorPresentation.cs` consume packaged meshes/materials/rig/rifle/pistol. | Native publication gap below; actual two-map cold/warm/cancel/corrupt/route/spawn/player evidence. |
+| T067 navigation | `Bootstrap/Editor/UnityNavMeshBakeEditorBridge.cs` and `World/Foundation/UnityNavMeshBakeInstaller.cs` exist. Runtime uses Unity NavMesh sampling/path queries. | The shipped packages still come from the pure software-grid publisher; native bridge publication is not integrated into the wrapper. Runtime installation rebuilds NavMeshData and permits graph fallback. |
+| T068 presentation | `585dbcd`: selected rifle/pistol and reload/shot events drive action views; no ammo-drop reload inference. | Both-weapon/live-life/render captures, FIX05 and named visual review. P05 FAIL retained. |
+| T069 preferences | `42390eb`: editable applied bindings, conflict handling, accessibility consumers and staged display persistence exist. | Named keyboard/pointer/720p scale/display/audio review and 20 alternating load/replay cycles. |
+| T070 measurement | `59bbcbb`: finish/results/replay coordinator, cumulative active soak ticks and corrected counters are in the retained binary. | Twelve reference captures and two ≥30-minute normal-AI map soaks: PendingHardware. Collector source/tests do not prove full-roster performance. |
+| T071 delivery | Clean non-development IL2CPP Client + isolated Server reports at `7cd7e81`; package/inventory/launcher/controls exist. Fresh archive SHA256 and all 245 inventoried file hashes match. | Manual four-configuration playtest, complete matches/results/replay, player corruption/recovery and prior-package rollback. T071 is partially delivered, not fully accepted. |
+
+### Remaining technical findings
+
+| ID / priority | Evidence | Required follow-up |
+|---|---|---|
+| C01 / high — native publication | `Tools/Compile-GameContent.ps1` launches `Tools/MapContent/Program.cs` through `dotnet run`. That process cannot run the Unity Editor's `[InitializeOnLoad]` registration. Retained `compile-proof.json` for both maps reports `navBakeProvenance=software-walkable-grid;unity-native-bake-pending`, `nativeUnityNavBake=Pending`. | T067: connect a pinned-Unity publication path, record native provenance against installed authoritative collision, publish both maps and rerun affected content/player checks. The presence of the bridge is not native package proof. |
+| C02 / high — runtime nav construction | `UnityNavMeshBakeInstaller.Install` calls `NavMeshBuilder.BuildNavMeshData` on the packaged triangulation with radius 0.05 / voxel 0.02. This is runtime construction from packaged surfaces, not loading prebuilt engine NavMeshData and not rebaking authoritative collision. | T067: measure cold/warm load cost and validate clearance/areas/reachability against ADR-035 and architecture. Resolve any boundary/format change through ADR and fixtures; no implicit relaxation of offline-generation requirements. |
+| C03 / high — path result semantics | `TryCalculatePath` accepts any status except PathInvalid, including PathPartial; on invalid engine paths it calls `UnityNavMeshBakeCodec.TryFindPath`. `CompoundMapRuntime` passes only a bool to `RevisionedPathAdapter`. The PlayMode test covers one open quad, not both obstructed maps or disconnected destinations. | T067: cover disconnected/partial/invalid native queries and ensure Complete/Partial/Failed stay truthful. Review fallback policy explicitly. This is source-based risk, not a reproduced bot failure. |
+| C04 / delivery blocker — no proven gameplay handoff | M11 handoff says manual play matrix Pending. Package `validation.json` still says `playerLaunchEvidence=Pending`, `releaseAcceptance=NotClaimed`, `rollbackRehearsal=SkippedNoPrevious`. The earlier `C:/Temp/shooter-t071-playtest-59bbcbb` extraction no longer exists at review time; archive and packaged directory do. | T071: fresh independent extraction, named gameplay and recovery/rollback evidence; retain raw logs/captures durably under Artifacts. Menu-only recorded launch does not establish playability. |
+| C05 / release blockers — visual/device/performance | P05 FAIL under ADR-024; named visual/UI/audio/display reviews, full eight-match matrix, reference captures and soaks remain missing. | T062/T065 and T070 hardware work, with actual evidence. No new clearance search or waiver is authorized here. |
+
+### Fresh verification at review HEAD
+
+Commands started before documentation edits. SDK remains 10.0.301; offline advisory lookup is separately PendingNetwork. Evidence paths below are repository-relative and ignored. Initial sandboxed wrappers failed at restore before tests; retained reruns used the access needed for the installed SDK/cache. A concurrent Simulation build collided on shared `Tools/Contracts/obj` (CS2012), so it was rerun serially; do not run these SDK wrappers concurrently in one checkout.
+
+| Check | Result | Evidence |
+|---|---|---|
+| Source provenance | PASS, 660 entries / 330 GUIDs | Snapshot retained in `Artifacts/project-state-audit/84befb9b48c98b71716d67a0a3e799b8b112c6df/source-provenance.json` |
+| Contracts | PASS 72/72, zero skipped, sourceDirty=false | `Artifacts/m0-foundation/84befb9b48c98b71716d67a0a3e799b8b112c6df/20261114T155616967Z-2555165c/` |
+| Generation | PASS 319/319, zero skipped, sourceDirty=false | `Artifacts/m1-procedural-feasibility/84befb9b48c98b71716d67a0a3e799b8b112c6df/20261114T155617823Z-bc16ae48/` |
+| Game | PASS 51/51, zero skipped, sourceDirty=false | `Artifacts/m8-runtime-composition/84befb9b48c98b71716d67a0a3e799b8b112c6df/20261114T155617907Z-e9c6230c/` |
+| Simulation | PASS 110/110, zero skipped, sourceDirty=false at docs-only a54ed83 | `Artifacts/m2-combat-harness/a54ed8302151a134e47cc1a421153edc8ef4e0c7/20261114T155825407Z-ef36285c/` |
+| Archive / inventory | PASS: 40,645,312 bytes; SHA256 `fd54c97e2ad8d7dbf6505d1ccbdd7e6b2c67d64e4bffa13fcc55b8b0c6aebb50`; 245 hashes match; ZIP CRC passes | `Artifacts/project-state-audit/84befb9b48c98b71716d67a0a3e799b8b112c6df/archive-review.json` |
+| Fresh Unity / player / hardware | NotRun here | This is a source/evidence/docs review, not a new runtime acceptance session. |
+
+Retained clean `7cd7e81` evidence was inspected separately: EditMode 24/24 at `tests-editmode-20261114T152432007Z-ea907ae6`, PlayMode 12/12 at `tests-playmode-20261114T152818932Z-b6f6af89`, and successful Client/Server manifests at the exact paths in the [M11 handoff](milestones/m11-playable-release/handoff.md). These are prior runs, not fresh tests of review HEAD. Failed/dirty attempts also remain retained. Server manifest has no graphics source assets; this is build isolation evidence, not a full server runtime acceptance test.
+
+Specification fixtures passed 35 assertions / 17 JSON files. The intentional documentation-manifest refresh and normal verifier pass cover 123 Markdown pages, links/anchors/index/fences and hashes; `git diff --check` passes. Final link/inventory counts live in `verification-report.json`. These are documentation checks only. No generated payload, golden, lock/schema, package version, runtime source or coordination lease was changed; the only new shared page is `playtest-guide.md`. All completed review changes are committed to main under the standing repository rule.
+
+### Documentation corrections and unchanged acceptance
+
+Entry docs, architecture, map feature, task queue and M8–M11 packs incorrectly kept the 59316d3 findings as current: 19 missing metas, failing cancellation, runtime catalog/visual generation, absent native adapter and unimplemented settings/measurement. Those statements are superseded by this review. M11 also mixed a delivered archive/menu launch with older tables saying no clean candidate existed. Current dispositions now distinguish built software, packaged candidate, manual gameplay and final acceptance. The new guide supplies actual archive location, defaults and a record template.
+
+M0–M7 remain historically owner-waived; M8–M10 integration validation and M11 acceptance remain open. REL01–REL06 are NotClaimed. Historical audits and failures below are retained as dated records and do not prescribe the next assignment. Documentation integrity checks are not game tests.
+
+## Historical review at 59316d3 (superseded)
+
 Reviewed 2026-11-14 at clean `main`, `59316d387e5345716392e332ca225a581a671c33` (184 files changed; T052–T064 remediation committed). The prior audit at f3d9954 is retained below as history. This review inspects current source and reruns pure checks; it performs no fresh Unity build, interactive player/device review or reference-hardware capture. The [next playable-build queue](next-playable-build.md) assigns the remaining work within M8–M11; [original repair cards](release-remediation-plan.md) and [FIX acceptance](release-remediation-validation.md) remain applicable.
 
-## Current disposition at 59316d3
+## Historical disposition at 59316d3
 
 M0–M7 retain historical closures/waivers; P05 FAIL under ADR-024 remains. M8–M10 have substantial committed remediation, with specific implementation gaps and player validation still open. M11 has hardened package/measurement tooling, but no accepted clean current-source playable archive. Historical coordination records are unchanged; they are not current technical acceptance. This documentation assignment changes no runtime, generated content, contracts, locks, workloads or coding leases.
 
@@ -18,7 +76,7 @@ M0–M7 retain historical closures/waivers; P05 FAIL under ADR-024 remains. M8�
 
 REL01–REL06 remain Open / NotClaimed. A local owner playtest candidate and a fully accepted release are separate checkpoints, defined in the [next-build plan](next-playable-build.md); neither is claimed by this audit.
 
-## Current source findings
+## Historical source findings at 59316d3
 
 Paths start at `UnityProject/Assets/Shooter/` unless prefixed Tools. These are source observations; no interactive reproduction is claimed.
 
@@ -111,7 +169,7 @@ The required wrappers were rerun with docs dirty on the same f3d9954 runtime bas
 
 ## Remediation landed in 59316d3 — 2026-11-14
 
-After docs-audit commit `6329262446428f92617600d8526b13f9c90a358a`, T052–T064 remediation was committed to clean `main` as `59316d3`. The implementation-time software summaries below are retained; current B01–B10 above qualify them. Committed source is not a built/accepted player candidate.
+After docs-audit commit `6329262446428f92617600d8526b13f9c90a358a`, T052–T064 remediation was committed to clean `main` as `59316d3`. The implementation-time software summaries below are retained; historical B01–B10 above qualify them. Committed source is not a built/accepted player candidate.
 
 | Task | Software | Remaining |
 |---|---|---|

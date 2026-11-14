@@ -1,6 +1,14 @@
 # M11 — Playable build and acceptance — handoff and gate record
 
-**Current disposition — 2026-11-14:** T071 owner playtest candidate rebuilt source-matched after T070 at build tip `7cd7e81` (T070 land `59bbcbb` + settings provenance source-hash refresh). Prior archive at `114815c` is **historical / superseded for measurement** — hashes below retained, not retconned. REL01–REL06 remain **NotClaimed**. Manual play matrix, named device/visual reviews, and twelve captures/soaks remain **Pending** / **PendingHardware**. P05 remains **FAIL** (ADR-024). T062/T065 own final visual/REL acceptance. See the [current audit](../../product-state-audit.md), [next playable-build tasks](../../next-playable-build.md) and [FIX acceptance](../../release-remediation-validation.md).
+**Current disposition — 2026-11-14 review from 84befb9 / a54ed83:** M11 acceptance remains open. Clean `7cd7e81` Client/Server reports and verified local ZIP exist; T071 manual gameplay/recovery/rollback handoff remains partial. T067 native-navigation publication/query work, T062 visual disposition and T065 match/device/reference/soak/delivery exits remain open. REL01–REL06 are NotClaimed; P05 FAIL is retained. The `114815c` archive remains historical/superseded for measurement. Use the [playtest guide](../../playtest-guide.md), [audit](../../product-state-audit.md), [remaining tasks](../../next-playable-build.md) and [FIX acceptance](../../release-remediation-validation.md). No online multiplayer or hosted server is required for the first local-bot version.
+
+## Documentation review / candidate recheck — 2026-11-14
+
+The archive below still exists: 40,645,312 bytes, matching SHA256 `fd54c97e2ad8d7dbf6505d1ccbdd7e6b2c67d64e4bffa13fcc55b8b0c6aebb50`. All 245 inventory hashes and ZIP CRC pass in a fresh read-only check; source remains `7cd7e81`, not later review HEAD. Retained clean EditMode 24/24, PlayMode 12/12 and Client/Server manifests were inspected. Fresh pure/provenance results and attempts are in the [audit](../../product-state-audit.md). This review performed no new Unity build or player run.
+
+T067 is still technical work, not just missing sign-off: the normal pure MapContent wrapper publishes software-grid NVB1 (`nativeUnityNavBake=Pending`); native editor registration exists in another process. Runtime installer reconstructs NavMeshData and permits partial/fallback paths; actual native two-map publication/query/spawn/load evidence is outstanding. T068/T069/T070 software is already built. T071 has delivered the ZIP/menu-launch record, but manual gameplay and player corruption/recovery/rollback remain Pending. Prior tables below are implementation-time history where explicitly labeled.
+
+The old `C:/Temp/shooter-t071-playtest-59bbcbb` extraction is absent at review time. Preserve the archive; use a fresh independent extraction and retain new raw player logs under Artifacts. Recorded menu launch in this handoff was not independently repeated. Package `playerLaunchEvidence=Pending` remains unchanged; no REL stamp is inferred.
 
 ## T071 — Owner playtest candidate (post-T070 rebuild) — 2026-11-14
 
@@ -75,7 +83,7 @@ Superseded for source-matched measurement after T070 (`59bbcbb`). **Do not retco
 
 59316d3 contains committed T052–T064 remediation. The [T066–T071 queue](../../next-playable-build.md) defined the path to the first owner-playable archive; the post-T070 T071 rebuild at `7cd7e81` is the current source-matched candidate. FIX12 hardware remains **PendingHardware**; T062 visual disposition and T065 full acceptance remain open; REL01–REL06 remain NotClaimed.
 
-## T065 / FIX14 acceptance readiness — 2026-11-14
+## Historical T065 / FIX14 readiness at 59316d3 — 2026-11-14
 
 | Field | Disposition |
 |---|---|
@@ -86,9 +94,9 @@ Superseded for source-matched measurement after T070 (`59bbcbb`). **Do not retco
 | Operator runbook | Below — Compile-GameContent → clean Client build → Package-Release → extract/launch → named reviews → matrix/soaks |
 | This document | Acceptance checklist + runbook only; does not mark gates PASS |
 
-### Master software vs remaining (T052–T065)
+### Historical software vs remaining at 59316d3 (T052–T065)
 
-Implementation-time summary, now committed in 59316d3. Current audit B01–B10 and T066–T071 qualify these software labels. “Software” means code/tooling/tests landed; it is **not** REL/player/hardware PASS.
+Implementation-time summary at 59316d3, retained as history. The current review and T071 record above supersede its baseline/content/build availability claims; current audit C01–C05 and remaining queue govern next work. “Software” means code/tooling/tests landed; it is **not** REL/player/hardware PASS.
 
 | Task | Gate | Software disposition | Remaining for true playable release |
 |---|---|---|---|
@@ -134,7 +142,7 @@ Record each item with source commit, `sourceDirty=false` build identity, content
 
 ## T065 operator runbook (do not stamp PASS)
 
-Execute from repository root on the **intended acceptance candidate** only. Require a clean committed tree (`sourceDirty=false`). Source 59316d3 is committed, but is not a built/accepted player candidate; complete the remaining next-build repairs before this acceptance runbook. Keep Smoke diagnostic separate from product launch. Failed P05 artifacts stay immutable.
+Execute from repository root on the **intended acceptance candidate** only. Require a clean committed tree (`sourceDirty=false`). The retained 7cd7e81 candidate has build/package reports; use it for immediate T071 playtest. Remaining T067/player fixes require a new matching candidate and affected acceptance reruns. This is the final acceptance runbook, not an instruction to rebuild for documentation changes. Keep Smoke diagnostic separate from product launch. Failed P05 artifacts stay immutable.
 
 ### 1. Content closure
 
@@ -164,7 +172,7 @@ Expect archive under `Artifacts/m11-playable-release/<build-sourceCommit>/packag
 
 ### 4. Extract and launch (REL01 rehearsal)
 
-Extract to a clean directory (no Unity Library, no absolute repo Artifacts path, no network, no server process). Launch the packaged `launch-offline.cmd` (currently supplies content/lock overrides; direct-exe discovery remains T067); reach main menu with no active match. Confirm both maps load from packaged content. Corrupt one content file and confirm recoverable failure. Record paths/hashes — still **NotClaimed** until full REL checklist completes.
+Extract to a clean directory (no Unity Library, no absolute repo Artifacts path, no network, no server process). Launch the packaged `launch-offline.cmd` (supplies content/lock overrides; executable-relative defaults are implemented, with independent direct-exe confirmation still Pending); reach main menu with no active match. Confirm both maps load from packaged content. Corrupt one content file and confirm recoverable failure. Record paths/hashes — still **NotClaimed** until full REL checklist completes.
 
 ### 5. Named product reviews (Pending until done)
 

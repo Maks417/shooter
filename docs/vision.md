@@ -1,6 +1,6 @@
 # Vision, scope and requirements
 
-Status reviewed 2026-11-14 at 59316d3: M0–M7 retain historical owner-waived closures. T052–T064 remediation is committed, with specific M8–M10 integration gaps and M11 acceptance open in the [current audit](product-state-audit.md). The [next playable-build queue](next-playable-build.md) completes those same deliverables without expanding scope or inheriting waivers. Product requirements and Unity 6 URP toolchain remain fixed.
+Status reviewed 2026-11-14 from 84befb9 / a54ed83: M0–M7 retain historical owner-waived closures. A clean `7cd7e81` test archive exists; later T066/T068/T069/T070 software is integrated. Manual gameplay, remaining native-navigation publication and M8–M11 acceptance stay open in the [current audit](product-state-audit.md). The [launch guide](playtest-guide.md) gives the immediate owner path and [remaining queue](next-playable-build.md) keeps original scope. Product requirements and Unity 6 URP toolchain remain fixed.
 
 ## Product
 
@@ -9,6 +9,10 @@ A grounded, modern-world military FPS whose geometry, surface detail and motion 
 The first playable slice is an offline 256 × 256 m training compound, one local player, eight hostile soldiers, one rifle and one pistol, a single objective, solid cover, repeatable lighting and a replayable benchmark. Networking follows the offline slice, but simulation boundaries and command IDs exist from the first milestone. Initial multiplayer validation is four players plus eight bots; eight players is a later capacity gate, not a promise of large battles.
 
 That paragraph defines the historical M0–M7 slice. **The next owner-requested deliverable** is a Windows offline game with two distinct procedural maps; one human and allied bots versus enemy bots; 5v5 default and selectable 6v6; Team Deathmatch ends at 150 enemy kills or 15 active minutes, followed by team/player results. A main menu selects map, supported mode (only Team Deathmatch), team size and sound/video/control settings. [Exact rules](features/team-deathmatch.md), [maps](features/playable-maps.md) and [shell](features/game-shell.md) define defaults. This is new M8–M11 work, not a retroactive claim about M4 or a network-capacity expansion. No remote transport is needed to play this release.
+
+## First-version scope: local bots only
+
+Owner clarification, 2026-11-14: the first version is **one human playing locally with allied/enemy bots**, entirely on the player's PC. No online multiplayer, LAN/remote player support, external server process, rented server, hosting purchase/account or online service is required to launch or complete it. Online multiplayer and hosting are deferred beyond this release. Existing dedicated-server-compatible authority boundaries and historical network code may stay; they do not create a new online delivery gate. Retained Server build/isolation checks are architectural regression evidence, not a request to provision a server. Existing local gameplay, visual/provenance and reference-performance requirements remain unchanged.
 
 ## Confirmed constraints
 

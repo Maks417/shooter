@@ -24,7 +24,7 @@ T026/T034 first; T027 and T028 share pose schema and merge through integrator; T
 
 ## Playable release task cards — T035–T051
 
-Status reviewed at 59316d3: T035–T051 retain original requirements; T052–T064 remediation is now committed, with remaining T066–T071 tasks in the [next-build queue](next-playable-build.md). Read the [audit](product-state-audit.md) and [FIX matrix](release-remediation-validation.md) before assignment. Game-v1 is frozen with ADR-036/037 extensions. No coding lease is created here; T062 visual disposition and T065 final acceptance remain open.
+Status reviewed 2026-11-14 from 84befb9 / a54ed83: original T035–T051 requirements remain. Later T066/T068/T069/T070 software is built into the retained `7cd7e81` candidate; T067 native-navigation publication/query validation and T071 manual handoff remain partial. Read the [audit](product-state-audit.md), [remaining queue](next-playable-build.md), [playtest guide](playtest-guide.md) and [FIX matrix](release-remediation-validation.md). Game-v1 stays frozen with ADR-036/037 extensions and ADR-038 catalog sidecar. No coding lease is created; T062/T065 acceptance remains open.
 
 | Task / milestone | Dependency | Owner / output | Required acceptance |
 |---|---|---|---|
@@ -46,4 +46,4 @@ Status reviewed at 59316d3: T035–T051 retain original requirements; T052–T06
 | T050 / M11 | T048,T049 stable candidate | Validation/perf: complete match matrix, real hardware and soak | REL02,REL04–REL05; all four map/size workloads, normal-AI capacity |
 | T051 / M11 | T048–T050 accepted | Integrator: playable local archive/hash, controls, evidence/rollback handoff and main cleanup | REL06; all required checks actual PASS or explicitly unresolved, no inherited waiver |
 
-Future task dispatch uses current accepted main, actual owner/base SHA/branch/allowed files, fixture hashes and exact commands. Compile-GameContent, Test-Maps, Test-Game and Package-Release now exist but have the limited scopes recorded in the audit; their names do not prove content/player acceptance. T052–T065 retain the original repair cards; T066–T071 supply the current remaining integration queue. Workers return versioned evidence/rollback references; integrator updates shared docs and affected handoffs, commits completed work to main and verifies preservation before cleanup.
+Future task dispatch uses current accepted main, actual owner/base SHA/branch/allowed files, fixture hashes and exact commands. Compile-GameContent, Test-Maps, Test-Game and Package-Release now exist but have the limited scopes recorded in the audit; their names do not prove content/player acceptance. T052–T065 retain the original repair cards; T066–T071 now separate landed software from remaining native-navigation and player/device/delivery validation. Workers return versioned evidence/rollback references; integrator updates shared docs and affected handoffs, commits completed work to main and verifies preservation before cleanup.

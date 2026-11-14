@@ -1,5 +1,7 @@
 # Feature: staged authoritative networking
 
+**First-version scope, owner clarification 2026-11-14:** online/LAN multiplayer and hosted deployment are deferred. The immediate release is one human with local bots in one offline process; no rented server, external server process or online service is required. The staged networking design and historical evidence below remain for future work and architectural regression checks; they are not a first-version online delivery requirement. See [local release scope](../vision.md#first-version-scope-local-bots-only).
+
 Owner WP-08. [Contracts](../contracts.md) define messages/IDs; [combat](combat.md) stays transport independent. Select transport/framework at M5 through the spike below, without rewriting simulation as network component scripts.
 
 ## Phases

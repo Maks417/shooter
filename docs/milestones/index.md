@@ -2,7 +2,7 @@
 
 Each folder contains only its milestone entry, detailed sequence, contracts/integration, agent assignment cards, validation/acceptance and handoff record. Requirements and feature specifications live once in the docs root, reached through relative links from each milestone. Code and accepted artifacts from prerequisite milestones are still required to execute.
 
-Current disposition, 2026-11-14 at 59316d3: M0–M7 retain historical closures/waivers and P05 FAIL remains. T052–T064 remediation is committed; M8–M10 integration and M11 acceptance still require the [next playable-build queue T066–T071](../next-playable-build.md), T062 visual disposition and T065 final acceptance. Read the [current audit](../product-state-audit.md) and [FIX matrix](../release-remediation-validation.md); historical reports remain intact and no coding leases are created.
+Current disposition, 2026-11-14 from 84befb9 / a54ed83: M0–M7 retain historical closures/waivers and P05 FAIL. The retained `7cd7e81` archive is built and verified, with manual gameplay Pending. M8–M10 integration validation and M11 acceptance remain open for [remaining T067/T071 work](../next-playable-build.md), player/device/reference validation and T062/T065. Use the [playtest guide](../playtest-guide.md), [audit](../product-state-audit.md) and [FIX matrix](../release-remediation-validation.md). Historical evidence remains intact; no coding leases are created.
 
 | Milestone | Implementation pack |
 |---|---|

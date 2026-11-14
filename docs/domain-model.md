@@ -1,6 +1,6 @@
 # Domain model
 
-M8–M11 adds implemented Game-v1 product entities in [session contracts](game-session-contracts.md). T053 committed lifecycle retirement/rebinding in 59316d3; fresh pure coverage is not actual-player acceptance. The [audit](product-state-audit.md) records remaining content/presentation/settings/measurement integration. ParticipantId stays stable across lives; LifeId maps each incarnation to a fresh EntityId; team results stay separate from frozen C0 MatchState.
+M8–M11 adds implemented Game-v1 product entities in [session contracts](game-session-contracts.md). T053 committed lifecycle retirement/rebinding in 59316d3; fresh pure coverage is not actual-player acceptance. The [audit](product-state-audit.md) records remaining native-navigation publication and actual player/device/measurement acceptance. ParticipantId stays stable across lives; LifeId maps each incarnation to a fresh EntityId; team results stay separate from frozen C0 MatchState.
 
 ## Planned game entities
 

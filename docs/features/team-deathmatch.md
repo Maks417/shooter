@@ -1,6 +1,10 @@
 # Feature: offline Team Deathmatch
 
-Status reviewed 2026-11-14 (T058 partial): Game-v1 reducer now ranks safe respawns (occupancy, enemy LOS≤40 m, nearest-enemy distance, LRU, slot ID) and keeps an independent first-failure +600 deadline with 30-tick retries. Catalog maps emit ≥12 unique slots/team. Real-map mixed-team player evidence, native nav and named review remain Pending per [audit](../product-state-audit.md). [T053/T057/T058/T065](../release-remediation-plan.md) still own full match acceptance; historical M9 software closure does not accept it.
+Status reviewed 2026-11-14 from 84befb9 / a54ed83: authoritative lifecycle/respawn, enemy filtering/path following, safe spawn ranking/deadlines and T070 finish/results/replay capture software are built into `7cd7e81`. Catalogs supply ≥12 slots/team. Real-map mixed-team/repeated-life/full-match evidence, remaining native-navigation publication and reference capacity are Pending per [audit](../product-state-audit.md). Use the [playtest guide](../playtest-guide.md); T065 retains full match acceptance and historical software closure does not accept it.
+
+## Local release boundary
+
+The owner confirmed on 2026-11-14 that this first version is local play with bots only. The human and 9/11 bots run in one offline client process. No online/LAN multiplayer, hosted service, separate server or server purchase is required. Existing network/server-compatible architecture does not add an online acceptance gate for this release.
 
 ## Player flow and roster
 

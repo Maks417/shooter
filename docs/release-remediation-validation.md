@@ -1,6 +1,6 @@
 # Offline release remediation — validation and evidence
 
-Applies to [original T052–T065](release-remediation-plan.md) and [remaining T066–T071](next-playable-build.md). At 59316d3 remediation software is committed; current audit B01–B10 identifies remaining implementation gaps and fresh Generation/provenance FAILs. The software annotations in rows below retain implementation-time scope, not complete FIX acceptance. FIX14 / REL01–REL06 remain Open / NotClaimed until measured on one clean candidate. Existing M8–M11 gates remain mandatory; historical component PASS does not accept current integration.
+Applies to [original T052–T065](release-remediation-plan.md) and [T066–T071 dispositions](next-playable-build.md). Latest [audit](product-state-audit.md) supersedes 59316d3 baseline failures: repairs pass and a clean `7cd7e81` candidate ZIP is verified. Remaining native-navigation publication/query work and manual player/device/reference evidence still block complete acceptance. Software annotations below retain their implementation-time scope. FIX14 / REL01–REL06 remain Open / NotClaimed until measured on one stable candidate; historical component PASS does not accept current integration.
 
 ## Evidence contract
 
