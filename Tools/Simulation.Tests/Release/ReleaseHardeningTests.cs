@@ -1,4 +1,5 @@
 #nullable enable
+using System.IO;
 using Shooter.Bootstrap.Release;
 using Xunit;
 
@@ -6,6 +7,21 @@ namespace Shooter.Simulation.Tests.Release
 {
     public sealed class ReleaseHardeningTests
     {
+        [Fact]
+        public void Packaged_content_defaults_are_executable_relative()
+        {
+            string playerData = Path.GetFullPath(Path.Combine("C:\\", "Games", "ShooterOffline", "Shooter_Data"));
+            string install = PackagedContentLayout.InstallRootFromDataPath(playerData, editorPlayer: false);
+            Assert.Equal(Path.GetFullPath(Path.Combine("C:\\", "Games", "ShooterOffline")), install);
+            Assert.Equal(Path.GetFullPath(Path.Combine(install, "Content", "map-packages")), PackagedContentLayout.DefaultMapCache(install));
+            Assert.Equal(Path.GetFullPath(Path.Combine(install, "toolchain-lock.json")), PackagedContentLayout.DefaultToolchainLock(install));
+
+            string editorData = Path.GetFullPath(Path.Combine("C:\\", "Job", "shooter", "UnityProject", "Assets"));
+            string repo = PackagedContentLayout.InstallRootFromDataPath(editorData, editorPlayer: true);
+            Assert.Equal(Path.GetFullPath(Path.Combine("C:\\", "Job", "shooter")), repo);
+            Assert.Equal(Path.GetFullPath(Path.Combine(repo, "Artifacts", "map-packages")), PackagedContentLayout.EditorArtifactsMapCache(repo));
+        }
+
         [Fact]
         public void Rollback_pair_matches_only_identical_binary_content_protocol()
         {

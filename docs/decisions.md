@@ -398,3 +398,17 @@ Decision — capture path: product composition (not diagnostic floor/box) autost
 
 Validation: refreeze `tdm-workloads.json` in `game-contract-lock.json`; `python Tools/test_tdm_benchmark_analysis.py`; `Tools/Test-Game.ps1 -Offline` product workload cases; `Tools/Benchmark.ps1` / `Benchmark-Series.ps1` / `Benchmark-Product-Matrix.ps1` / `Benchmark-Soak.ps1` documented commands. Rollback restores schema-1 compound-only fixture + B01-only wrappers; do not ship players that treat depot as a silent alias of compound workloads.
 
+## ADR-038 — Accepted: persisted release catalog (T067 / B03)
+
+Date 2026-11-14; owner content/world integrator under owner Max direction for T067 gaps B03+B09 items 1 and 5. Extends ADR-035 publication with a data-only release catalog sidecar. Does **not** close FIX04 native bake/visual closure, authorize C0/Game-v1 DTO changes, or claim Unity player extract proof (T071).
+
+Context: `StaticMapCatalog.CreateReleaseSeed` rebuilt gameplay via planners and eight `MapPackageBuilder.Build` calls at release startup. Package `index.json` listed package roots but omitted catalog display metadata and `MapGameplayDefinition` sidecars, so the shipping player still compiled. Bootstrap defaults also resolved repository paths two levels above `Application.dataPath`, and missing content hard-failed before shell.
+
+Decision — catalog document: introduce `shooter.release-catalog.v1` written atomically as `catalog.json` beside `index.json` under the map-package cache root at publish time. The document binds toolchain hash, per-map display/mode/size/recipe identity, gameplay/visual package-root SHA256 values, and the gameplay sidecar (collision/nav revisions+hashes, bounds, spawn slots, patrol/combat destinations). Schemas/fixtures live under `docs/content-schemas/release-catalog.*`. C0 and Game-v1 DTO bytes stay unchanged; this is an additive content-format sidecar.
+
+Decision — shipping load: release Bootstrap hashes the packaged toolchain lock, loads `catalog.json` via verified bytes only, and rejects schema/toolchain/map identity mismatch. Shipping composition must not call planners, `MapPackageBuilder`, or a placeholder toolchain fallback. Compile/test helpers may still build catalog bytes through the publisher path (`ReleaseCatalogDocument.BuildBytes` / `CompileSeed`).
+
+Decision — packaged discovery/recovery: player defaults resolve `Content/map-packages` and `toolchain-lock.json` relative to the executable install root (`Application.dataPath` parent). `launch-offline.cmd` keeps explicit `%~dp0` overrides. Editor may fall back to repository `Artifacts/map-packages` when the packaged folder is absent. Missing/corrupt content before shell enters a recovery screen using `ReleasePackagePolicy.CorruptContentRecoveryMessage` with Retry/Quit return paths; no silent map substitution.
+
+Validation: Generation pure tests publish+load catalog without planner on the load path; Package-Release asserts/ships `catalog.json`; path-default unit tests cover install-root layout. Unity player launch/extract evidence remains Pending under T071. Rollback restores the prior index-only cache + planner `CreateReleaseSeed` pair.
+

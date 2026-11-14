@@ -33,7 +33,7 @@
     }
   ],
   "sources": {
-    "docs/content-format.md": "e68d82ac3407b59aad37e30a80cf2adeb34b5e081cf48dd685fe46d74bffe80a",
+    "docs/content-format.md": "02d2250a5993df1646b8262318cb535fe8d1f7f075bb65aef0fb4f899ec87561",
     "docs/content-schemas/box-collision.schema.json": "17277a6adf06647ded09757975b580646a4eab572c754c148c0142e8f803d5d6",
     "docs/content-schemas/manifest.schema.json": "75a05692bc925f130dd4ff27874cff51cce5018b2421c71b21dbe8e293ec931c",
     "docs/content-schemas/map-metadata.schema.json": "320a3692ecc845e1a25a0f73c1eb83332eda01cc8e72200c2266d3fe46e4569d",
@@ -44,6 +44,9 @@
     "docs/content-schemas/map-recipe.compound.json": "bf61a15e675e79f1ffe8be959663bcc249c65d9dce6bbb16033b1241a64b714c",
     "docs/content-schemas/map-recipe.depot.json": "ed5b34c318fc15534f46e96a62c38ff5556547360d9211b28952e7d341298995",
     "docs/content-schemas/map-recipe.schema.json": "b1aa0caa30f61595061dd0e29dd94db001a36e2f1680d4863fa3873b9def4409",
+    "docs/content-schemas/release-catalog.invalid.json": "4a5921271af810f7268eabc9e0bf88431786dc2ef8dbb1fcf781376072708b2e",
+    "docs/content-schemas/release-catalog.schema.json": "05a8e0e8c23eaa4a06dbb6a9de06a7611f983e7db99eb742bdaf6665cb371b82",
+    "docs/content-schemas/release-catalog.valid.json": "57fffd5421f531928469458fa5973e3165ddbaab75adcafdfa9c61338f2d3f3e",
     "Tools/Generation.Tests/CodecFixtures/generate_vectors.py": "5ef90986cc65590226deec5e35dcfd0d6b0fafa26cb181d49ba6d67870b96489",
     "Tools/Generation.Tests/CodecTests.cs": "ab606b851ca802673d6c8891185beb78d3eebde8901d68ca9fec82ddb4c20d48",
     "UnityProject/Assets/Shooter/Generation/Core/Canonical/CanonicalJson.cs": "64bc7ea7f4bcf1ecde9dfaec40a71b4cd575e3c0ae59b957614fc4e1498aecc9",
@@ -92,5 +95,11 @@
       "18446744073709551615"
     ],
     "status": "BoundaryRegisteredPendingPublication"
+  },
+  "releaseCatalog": {
+    "catalogSchema": "shooter.release-catalog.v1",
+    "fileName": "catalog.json",
+    "decision": "docs/decisions.md#adr-038--accepted-persisted-release-catalog-t067--b03",
+    "status": "RegisteredWithPublication"
   }
 }

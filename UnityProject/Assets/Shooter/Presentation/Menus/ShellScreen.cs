@@ -12,6 +12,7 @@ namespace Shooter.Presentation.Menus
         Results = 5,
         Settings = 6,
         ConfirmLeave = 7,
-        ConfirmRestart = 8
+        ConfirmRestart = 8,
+        ContentRecovery = 9
     }
 }

@@ -1,0 +1,43 @@
+{
+  "catalogSchema": "shooter.release-catalog.v1",
+  "toolchainHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "maps": [
+    {
+      "mapId": "training-compound",
+      "displayName": "Training Compound",
+      "description": "Bounded compound for offline TDM.",
+      "supportedModes": ["team-deathmatch"],
+      "supportedTeamSizes": [5, 6],
+      "recipeSeed": "460072030",
+      "recipeVersion": "map.compound.1.0.0",
+      "gameplayRootSha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "lowVisualRootSha256": "2222222222222222222222222222222222222222222222222222222222222222",
+      "balancedVisualRootSha256": "3333333333333333333333333333333333333333333333333333333333333333",
+      "highVisualRootSha256": "4444444444444444444444444444444444444444444444444444444444444444",
+      "gameplay": {
+        "collisionRevision": 1,
+        "collisionHash": "5555555555555555555555555555555555555555555555555555555555555555",
+        "navRevision": 1,
+        "navHash": "6666666666666666666666666666666666666666666666666666666666666666",
+        "boundsMinMeters": [-128.0, -2.0, -128.0],
+        "boundsMaxMeters": [128.0, 40.0, 128.0],
+        "spawnSlots": [
+          {
+            "slotId": 101,
+            "team": 1,
+            "positionMeters": [0.0, 0.0, 1.0],
+            "yawRadians": 0.0
+          },
+          {
+            "slotId": 201,
+            "team": 2,
+            "positionMeters": [10.0, 0.0, 1.0],
+            "yawRadians": 3.14159274
+          }
+        ],
+        "patrolDestinationsMeters": [[0.0, 0.0, 0.0]],
+        "combatDestinationsMeters": [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0]]
+      }
+    }
+  ]
+}

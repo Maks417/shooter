@@ -73,6 +73,11 @@ function Assert-RequiredContent([string]$CacheRoot, [string]$ExpectedToolchainHa
     if (!(Test-Path -LiteralPath $indexPath -PathType Leaf)) { throw "Missing map package index: $indexPath" }
     $index = Get-Content -LiteralPath $indexPath -Raw | ConvertFrom-Json
     if ($index.indexSchema -cne 'shooter.map-package-index.v1') { throw "Unexpected map package index schema: $($index.indexSchema)" }
+    $catalogPath = Join-Path $CacheRoot 'catalog.json'
+    if (!(Test-Path -LiteralPath $catalogPath -PathType Leaf)) { throw "Missing persisted release catalog: $catalogPath" }
+    $catalog = Get-Content -LiteralPath $catalogPath -Raw | ConvertFrom-Json
+    if ($catalog.catalogSchema -cne 'shooter.release-catalog.v1') { throw "Unexpected release catalog schema: $($catalog.catalogSchema)" }
+    if ($catalog.toolchainHash -cne $ExpectedToolchainHash) { throw "Release catalog toolchain mismatch" }
     $lines = [Collections.Generic.List[string]]::new()
     $found = @{}
     foreach ($pkg in @($index.packages)) {
@@ -231,6 +236,9 @@ try {
     $contentDest = Join-Path $stage 'Content/map-packages'
     $null = New-Item -ItemType Directory -Path $contentDest -Force
     Copy-Item -LiteralPath (Join-Path $MapCacheRoot 'index.json') -Destination (Join-Path $contentDest 'index.json') -Force
+    $catalogSrc = Join-Path $MapCacheRoot 'catalog.json'
+    if (!(Test-Path -LiteralPath $catalogSrc -PathType Leaf)) { throw "Missing release catalog to ship: $catalogSrc" }
+    Copy-Item -LiteralPath $catalogSrc -Destination (Join-Path $contentDest 'catalog.json') -Force
     foreach ($pkg in @($content.Packages)) {
         $relPackage = Join-Path $pkg.packageRootSha256.Substring(0, 2) $pkg.packageRootSha256
         $srcDir = Join-Path $MapCacheRoot $relPackage
@@ -266,9 +274,13 @@ Contract: $($policy.contractVersion)
 Launch (from this folder, no Unity editor / no network / no external server required):
   .\launch-offline.cmd
 
+Direct executable also works from any cwd: defaults resolve Content\map-packages and toolchain-lock.json beside Shooter.exe.
+  .\Shooter.exe
+
 Controls: WASD move, mouse look, LMB fire, RMB aim, R reload, Esc pause
 Maps: -shooterMap training-compound|depot-yard
 Team size: -shooterTeamSize 5|6
+Missing/corrupt packaged content shows a repair/reinstall recovery screen (no silent map substitution).
 Diagnostic smoke remains a separate tool path and is not this package's acceptance gate.
 "@
     [IO.File]::WriteAllText((Join-Path $stage 'CONTROLS.txt'), $controls)
@@ -341,7 +353,7 @@ REM Independent offline launch: relative content + toolchain lock only.
         if (Test-ExcludedRelativePath $rel $policy) { throw "Excluded path leaked into staged package: $rel" }
         [pscustomobject]@{ path = $rel; sha256 = (Get-Sha256File $_.FullName) }
     }
-    $requiredDocs = @('CONTROLS.txt', 'LICENSES.txt', 'KNOWN_ISSUES.txt', 'identities.json', 'rollback-pair.json', 'toolchain-lock.json', 'Content/map-packages/index.json', 'launch-offline.cmd', 'Shooter.exe')
+    $requiredDocs = @('CONTROLS.txt', 'LICENSES.txt', 'KNOWN_ISSUES.txt', 'identities.json', 'rollback-pair.json', 'toolchain-lock.json', 'Content/map-packages/index.json', 'Content/map-packages/catalog.json', 'launch-offline.cmd', 'Shooter.exe')
     $inventoryPaths = @($hashes | ForEach-Object { $_.path })
     foreach ($required in $requiredDocs) {
         if ($inventoryPaths -notcontains $required) { throw "Inventory missing required path: $required" }
@@ -372,9 +384,11 @@ REM Independent offline launch: relative content + toolchain lock only.
     Expand-Archive -LiteralPath $archivePath -DestinationPath $extractRoot -Force
     $extractExe = Join-Path $extractRoot 'Shooter.exe'
     $extractContent = Join-Path $extractRoot 'Content/map-packages/index.json'
+    $extractCatalog = Join-Path $extractRoot 'Content/map-packages/catalog.json'
     $extractLock = Join-Path $extractRoot 'toolchain-lock.json'
     if (!(Test-Path -LiteralPath $extractExe -PathType Leaf)) { throw 'Extract rehearsal missing Shooter.exe' }
     if (!(Test-Path -LiteralPath $extractContent -PathType Leaf)) { throw 'Extract rehearsal missing content index' }
+    if (!(Test-Path -LiteralPath $extractCatalog -PathType Leaf)) { throw 'Extract rehearsal missing release catalog' }
     if (!(Test-Path -LiteralPath $extractLock -PathType Leaf)) { throw 'Extract rehearsal missing toolchain-lock.json' }
     if ((Get-Sha256File $extractLock) -cne $toolchainHash) { throw 'Extracted toolchain-lock hash mismatch' }
     $extractLeak = Get-ChildItem -LiteralPath $extractRoot -Recurse -Force -File | Where-Object {

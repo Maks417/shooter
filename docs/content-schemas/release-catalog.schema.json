@@ -1,0 +1,136 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "catalogSchema": {
+      "const": "shooter.release-catalog.v1"
+    },
+    "toolchainHash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "maps": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "mapId": {
+            "type": "string",
+            "enum": ["training-compound", "depot-yard"]
+          },
+          "displayName": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "description": { "type": "string", "minLength": 1, "maxLength": 512 },
+          "supportedModes": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "const": "team-deathmatch" }
+          },
+          "supportedTeamSizes": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "integer", "enum": [5, 6] }
+          },
+          "recipeSeed": {
+            "type": "string",
+            "pattern": "^(0|[1-9][0-9]{0,19})$"
+          },
+          "recipeVersion": { "type": "string", "minLength": 1, "maxLength": 64 },
+          "gameplayRootSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "lowVisualRootSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "balancedVisualRootSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "highVisualRootSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "gameplay": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "collisionRevision": { "type": "integer", "minimum": 1 },
+              "collisionHash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+              "navRevision": { "type": "integer", "minimum": 1 },
+              "navHash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+              "boundsMinMeters": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "items": { "type": "number" }
+              },
+              "boundsMaxMeters": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "items": { "type": "number" }
+              },
+              "spawnSlots": {
+                "type": "array",
+                "minItems": 2,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "slotId": { "type": "integer", "minimum": 1 },
+                    "team": { "type": "integer", "enum": [1, 2] },
+                    "positionMeters": {
+                      "type": "array",
+                      "minItems": 3,
+                      "maxItems": 3,
+                      "items": { "type": "number" }
+                    },
+                    "yawRadians": { "type": "number" }
+                  },
+                  "required": ["slotId", "team", "positionMeters", "yawRadians"]
+                }
+              },
+              "patrolDestinationsMeters": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "minItems": 3,
+                  "maxItems": 3,
+                  "items": { "type": "number" }
+                }
+              },
+              "combatDestinationsMeters": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "minItems": 3,
+                  "maxItems": 3,
+                  "items": { "type": "number" }
+                }
+              }
+            },
+            "required": [
+              "collisionRevision",
+              "collisionHash",
+              "navRevision",
+              "navHash",
+              "boundsMinMeters",
+              "boundsMaxMeters",
+              "spawnSlots",
+              "patrolDestinationsMeters",
+              "combatDestinationsMeters"
+            ]
+          }
+        },
+        "required": [
+          "mapId",
+          "displayName",
+          "description",
+          "supportedModes",
+          "supportedTeamSizes",
+          "recipeSeed",
+          "recipeVersion",
+          "gameplayRootSha256",
+          "lowVisualRootSha256",
+          "balancedVisualRootSha256",
+          "highVisualRootSha256",
+          "gameplay"
+        ]
+      }
+    }
+  },
+  "required": ["catalogSchema", "toolchainHash", "maps"]
+}

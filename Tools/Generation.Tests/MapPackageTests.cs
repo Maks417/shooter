@@ -2,7 +2,9 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using Shooter.Content.Maps;
 using Shooter.Contracts;
+using Shooter.Game.Contracts;
 using Shooter.Generation;
 using Shooter.Generation.Environment;
 using Shooter.World.Navigation;
@@ -132,5 +134,45 @@ public sealed class MapPackageTests : IDisposable
             Assert.NotEqual("0", row.Object["colliderStableId"].String);
             Assert.NotEqual("0", row.Object["surfaceId"].String);
         }
+    }
+
+    [Fact]
+    public void PublishWritesReleaseCatalogAndLoadIsDataOnly()
+    {
+        Assert.Equal(ErrorCode.None, MapPackagePublisher.Publish(root, toolchain, new[] { "training-compound", "depot-yard" }, new[] { "gameplay", "low", "balanced", "high" }, false, CancellationToken.None).Error);
+        string catalogPath = ReleaseCatalogDocument.CatalogPath(root);
+        Assert.True(File.Exists(catalogPath));
+        byte[] bytes = File.ReadAllBytes(catalogPath);
+        Assert.True(ReleaseCatalogDocument.TryValidate(bytes, toolchain, out string validateDiagnostic));
+        Assert.Equal("ok", validateDiagnostic);
+
+        Assert.True(StaticMapCatalog.TryLoadPublished(root, toolchain, out var loaded, out string loadDiagnostic));
+        Assert.Equal("ok", loadDiagnostic);
+        Assert.Equal(2, loaded.Count);
+        Assert.True(loaded.TryGet(WellKnownMaps.TrainingCompound, out var compound));
+        Assert.True(loaded.TryGetGameplay(WellKnownMaps.TrainingCompound, out var gameplay));
+        Assert.Equal(compound.GameplayRootHash, loaded.GameplayRootHashes[WellKnownMaps.TrainingCompound.Value]);
+        Assert.True(gameplay.SpawnSlots.Count >= 24);
+
+        // Truncate catalog JSON; retain corrupt bytes for repair (no silent substitute).
+        byte[] corrupt = new byte[] { (byte)'{', (byte)'"' };
+        File.WriteAllBytes(catalogPath, corrupt);
+        Assert.False(StaticMapCatalog.TryLoadPublished(root, toolchain, out _, out string corruptDiagnostic));
+        Assert.False(string.IsNullOrEmpty(corruptDiagnostic));
+        Assert.Equal(corrupt, File.ReadAllBytes(catalogPath));
+    }
+
+    [Fact]
+    public void CompileSeedRoundTripsThroughPersistedCatalogBytes()
+    {
+        var compiled = StaticMapCatalog.CompileSeed(toolchain);
+        byte[] bytes = ReleaseCatalogDocument.BuildBytes(toolchain);
+        Assert.True(StaticMapCatalog.TryParse(bytes, toolchain, out var parsed, out string diagnostic));
+        Assert.Equal("ok", diagnostic);
+        Assert.Equal(compiled.Count, parsed.Count);
+        Assert.True(compiled.TryGet(WellKnownMaps.DepotYard, out var a));
+        Assert.True(parsed.TryGet(WellKnownMaps.DepotYard, out var b));
+        Assert.Equal(a.GameplayRootHash, b.GameplayRootHash);
+        Assert.Equal(a.HighVisualRootHash, b.HighVisualRootHash);
     }
 }
