@@ -47,6 +47,9 @@ function New-CaseRoot([string]$Name) {
     }
     $index = [ordered]@{ indexSchema = 'shooter.map-package-index.v1'; packages = @($packages) }
     Write-TestFile (Join-Path $caseRoot 'Artifacts/map-packages/index.json') ($index | ConvertTo-Json -Depth 8)
+    # ADR-038: Package-Release requires the persisted release catalog beside the index.
+    $catalog = [ordered]@{ catalogSchema = 'shooter.release-catalog.v1'; toolchainHash = $toolchainHash; syntheticTestOnly = $true }
+    Write-TestFile (Join-Path $caseRoot 'Artifacts/map-packages/catalog.json') ($catalog | ConvertTo-Json -Depth 4)
     return [pscustomobject]@{ Root = $caseRoot; ToolchainHash = $toolchainHash }
 }
 
