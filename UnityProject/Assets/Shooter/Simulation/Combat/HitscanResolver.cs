@@ -57,6 +57,20 @@ namespace Shooter.Simulation.Combat
             ulong v = SpreadSampling.MixShot(request.Seed, request.ShotIndex, 2);
             Float3 dir = SpreadSampling.SampleDirection(request.UnitAim, spread, u, v);
 
+            // Eye→muzzle segment through static cover => block. The gameplay muzzle can sit inside or behind
+            // a wall when the player is pressed against it; a ray that starts inside a collider is not reported
+            // by the physics backend, so the segment from the (outside) eye is tested instead.
+            Float3 eyeToMuzzle = new Float3(request.Muzzle.X - request.Eye.X, request.Muzzle.Y - request.Eye.Y, request.Muzzle.Z - request.Eye.Z);
+            double eyeMuzzleLen2 = eyeToMuzzle.LengthSquared;
+            if (eyeMuzzleLen2 > 1e-10)
+            {
+                float eyeMuzzleLen = (float)Math.Sqrt(eyeMuzzleLen2);
+                Float3 eyeMuzzleDir = new Float3(eyeToMuzzle.X / eyeMuzzleLen, eyeToMuzzle.Y / eyeMuzzleLen, eyeToMuzzle.Z / eyeMuzzleLen);
+                var eyeMuzzleProbe = world.Raycast(request.Eye, eyeMuzzleDir, eyeMuzzleLen, coverFilter);
+                if (eyeMuzzleProbe.Status == QueryStatus.Hit && eyeMuzzleProbe.Hit.DistanceMeters < eyeMuzzleLen - 1e-4f)
+                    return new HitscanResult(true, false, request.Muzzle, dir, false, default);
+            }
+
             // Muzzle inside static cover => block (overlap at muzzle point approximated by short ray).
             var muzzleProbe = world.Raycast(request.Muzzle, dir, 0.02f, coverFilter);
             if (muzzleProbe.Status == QueryStatus.Hit && muzzleProbe.Hit.DistanceMeters <= 0.001f)
