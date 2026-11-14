@@ -1,11 +1,12 @@
 using System;
 using System.Diagnostics;
 using System.Globalization;
-using System.Threading;
+using System.IO;
 using Shooter.Content.Maps;
 using Shooter.Contracts;
 using Shooter.Game.Contracts;
 using Shooter.Game.Session;
+using Shooter.Generation;
 using Shooter.Simulation;
 using Shooter.World;
 using UnityEngine;
@@ -33,11 +34,19 @@ namespace Shooter.Bootstrap
         private bool diagnosticMode;
         private OfflineGameSession productSession;
         private CompoundMapRuntime productMap;
+        private IMapCatalog? productCatalog;
         private Func<uint, InputCommand?> productHumanSampler;
+        private bool hasApplicationFocus = true;
+        private bool pausedForFocusLoss;
         public bool Ready { get; private set; }
         public bool Failed { get; private set; }
         public bool ProductMode => !diagnosticMode;
         public OfflineGameSession ProductSession => productSession;
+        /// <summary>Read-only package-load seam for product presentation (T055/T056). Presentation must not mutate collision.</summary>
+        public CompoundMapRuntime? ProductMap => productMap;
+        /// <summary>Release catalog for shell setup (T059). Shell owns match Start; Bootstrap only prepares services.</summary>
+        public IMapCatalog ProductCatalog =>
+            productCatalog ?? throw new InvalidOperationException("Product catalog is only available in product mode.");
         public double LastElapsedSeconds { get; private set; }
         public double TickDebtSeconds => clock == null ? 0 : clock.DebtSeconds;
         public int LastAdvanceTicks => clock == null ? 0 : clock.LastAdvanceTicks;
@@ -58,23 +67,45 @@ namespace Shooter.Bootstrap
             productHumanSampler = sampler ?? throw new ArgumentNullException(nameof(sampler));
         }
 
+        public GameOperationResult PauseProduct()
+        {
+            if (diagnosticMode || productSession == null)
+                return new GameOperationResult(GameErrorCode.Busy, "no-product-session", "No product session is active.");
+            var result = productSession.Pause();
+            if (result.Succeeded) SuspendProductClock(true);
+            return result;
+        }
+
+        public GameOperationResult ResumeProduct()
+        {
+            if (diagnosticMode || productSession == null)
+                return new GameOperationResult(GameErrorCode.Busy, "no-product-session", "No product session is active.");
+            var result = productSession.Resume();
+            if (result.Succeeded) SuspendProductClock(false);
+            return result;
+        }
+
         private void Start()
         {
             try
             {
                 Physics.simulationMode = SimulationMode.Script;
+                hasApplicationFocus = IsServer || Application.isFocused;
                 if (IsServer) Application.targetFrameRate = 60;
                 smokeSeconds = double.Parse(CommandLine("-shooterSmokeSeconds", "0"), CultureInfo.InvariantCulture);
                 if (smokeSeconds < 0 || smokeSeconds > 30 || double.IsNaN(smokeSeconds)) throw new ArgumentException("Invalid smoke duration");
+                string benchmarkWorkload = CommandLine("-shooterBenchmark", "");
+                bool productTdmBenchmark = ProductTdmWorkloads.IsProductWorkload(benchmarkWorkload);
                 diagnosticMode = smokeSeconds > 0 || CommandLine("-shooterDiagnostic", "0") == "1"
                     || CommandLine("-shooterContentGallery", "").Length != 0
                     || CommandLine("-shooterSoldierGallery", "").Length != 0
-                    || CommandLine("-shooterBenchmark", "").Length != 0;
+                    || (benchmarkWorkload.Length != 0 && !productTdmBenchmark);
 
                 if (diagnosticMode) StartDiagnostic();
                 else StartProduct();
 
                 clock = new FixedTickClock(IsServer);
+                clock.SetSuspended(!CanAdvanceProduct());
                 AllocationMeter.Initialize();
                 tickAction = Step;
                 if (!IsServer)
@@ -101,39 +132,38 @@ namespace Shooter.Bootstrap
 
         private void StartProduct()
         {
-            var catalog = StaticMapCatalog.CreateReleaseSeed();
-            productMap = new CompoundMapRuntime(transform);
+            string repositoryRoot = Path.GetFullPath(Path.Combine(Application.dataPath, "..", ".."));
+            string lockPath = CommandLine("-shooterToolchainLock", Path.Combine(repositoryRoot, "toolchain-lock.json"));
+            if (!File.Exists(lockPath)) throw new FileNotFoundException("toolchain-lock.json required for verified map packages.", lockPath);
+            var toolchain = ContentIdentity.Hash(File.ReadAllBytes(lockPath));
+            var catalog = StaticMapCatalog.CreateReleaseSeed(toolchain);
+            productCatalog = catalog;
+            string mapCache = CommandLine("-shooterMapCache", Path.Combine(repositoryRoot, "Artifacts", "map-packages"));
+            mapCache = Path.GetFullPath(mapCache);
+            if (!Directory.Exists(mapCache))
+                throw new DirectoryNotFoundException("Verified map package cache missing. Run Tools/Compile-GameContent.ps1 first: " + mapCache);
+            var packageStore = new VerifiedMapPackageStore(mapCache, toolchain, catalog.GameplayRootHashes);
+            productMap = new CompoundMapRuntime(transform, packageStore, id =>
+            {
+                if (!catalog.TryGet(id, out var catalogEntry)) throw new InvalidOperationException("Unknown map " + id.Value);
+                return catalogEntry.GameplayRootHash;
+            });
             productSession = new OfflineGameSession(catalog, (_, __) => productMap, allowFakeMapRuntime: false);
             CompositionPolicy.RequireReal(productMap);
-            byte teamSize = byte.Parse(CommandLine("-shooterTeamSize", "5"), CultureInfo.InvariantCulture);
-            if (teamSize != 5 && teamSize != 6) throw new ArgumentException("team size must be 5 or 6");
-            string mapArg = CommandLine("-shooterMap", "training-compound");
-            // Client shell may override via PlayerPrefs when CLI keeps defaults.
-            if (mapArg == "training-compound" && teamSize == 5 &&
-                PlayerPrefs.HasKey("shooter.map") && PlayerPrefs.HasKey("shooter.teamSize"))
+            // T059: launch to main menu with no active match. Shell owns BeginLoad/Start/replay.
+            Debug.Log("SHOOTER_COMPOSITION mode=product shellOwned=1 phase=Stopped");
+        }
+
+        /// <summary>Bind actor feet lookup after a shell-owned map load (T056/T059).</summary>
+        public void WireProductMapActors()
+        {
+            if (productMap == null || productSession == null) return;
+            productMap.ActorLocator = id =>
             {
-                mapArg = PlayerPrefs.GetString("shooter.map", mapArg);
-                int prefSize = PlayerPrefs.GetInt("shooter.teamSize", teamSize);
-                if (prefSize == 5 || prefSize == 6) teamSize = (byte)prefSize;
-            }
-            var mapId = new MapId(mapArg);
-            if (!catalog.TryGet(mapId, out var entry)) throw new InvalidOperationException("Unknown map " + mapArg);
-            var request = new SessionRequest(mapId, WellKnownModes.TeamDeathmatch, teamSize, entry.RecipeSeed);
-            byte teamSizeLog = teamSize;
-            var load = productSession.BeginLoadAsync(request, CancellationToken.None).GetAwaiter().GetResult();
-            if (!load.Succeeded) throw new InvalidOperationException("Product load failed: " + load.Diagnostic + " " + load.UserFacing);
-            if (productMap is CompoundMapRuntime compound && productSession.Lifecycle != null)
-            {
-                compound.ActorLocator = id =>
-                {
-                    if (productSession.Lifecycle != null && productSession.Lifecycle.TryGetActorState(id, out var state))
-                        return state.Feet;
-                    return null;
-                };
-            }
-            productSession.SignalReady();
-            productSession.Start();
-            Debug.Log("SHOOTER_COMPOSITION mode=product map=" + request.MapId.Value + " teamSize=" + teamSizeLog);
+                if (productSession.Lifecycle != null && productSession.Lifecycle.TryGetActorState(id, out var state))
+                    return state.Feet;
+                return null;
+            };
         }
 
         public static string CommandLine(string name, string fallback)
@@ -185,6 +215,14 @@ namespace Shooter.Bootstrap
                 }
                 long now = monotonic.ElapsedTicks;
                 LastElapsedSeconds = (now - previousTimestamp) / (double)Stopwatch.Frequency;
+                bool canAdvance = diagnosticMode || CanAdvanceProduct();
+                clock.SetSuspended(!canAdvance);
+                if (!canAdvance)
+                {
+                    LastElapsedSeconds = 0;
+                    previousTimestamp = now;
+                    return;
+                }
                 clock.Advance(LastElapsedSeconds, tickAction);
                 previousTimestamp = now;
                 if (IsServer && clock.Overloaded && !reportedOverload)
@@ -200,6 +238,41 @@ namespace Shooter.Bootstrap
                 }
             }
             catch (Exception error) { Fail(error); }
+        }
+
+        private bool CanAdvanceProduct()
+        {
+            return diagnosticMode
+                || productSession != null
+                && productSession.Phase == GameMatchPhase.Playing
+                && productSession.PauseState == SessionPauseState.Running
+                && (IsServer || hasApplicationFocus);
+        }
+
+        private void SuspendProductClock(bool suspended)
+        {
+            if (clock != null) clock.SetSuspended(suspended);
+            if (monotonic.IsRunning) previousTimestamp = monotonic.ElapsedTicks;
+            LastElapsedSeconds = 0;
+        }
+
+        private void OnApplicationFocus(bool hasFocus)
+        {
+            hasApplicationFocus = hasFocus;
+            if (diagnosticMode || IsServer || productSession == null) return;
+            if (!hasFocus)
+            {
+                pausedForFocusLoss = productSession.Phase == GameMatchPhase.Playing
+                    && productSession.PauseState == SessionPauseState.Running
+                    && PauseProduct().Succeeded;
+                SuspendProductClock(true);
+            }
+            else
+            {
+                if (pausedForFocusLoss) ResumeProduct();
+                pausedForFocusLoss = false;
+                SuspendProductClock(!CanAdvanceProduct());
+            }
         }
 
         public void Fail(Exception error)

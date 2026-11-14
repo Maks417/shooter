@@ -1,6 +1,6 @@
 # Offline release remediation — implementation tasks T052–T065
 
-Baseline: the [2026-11-14 audit](product-state-audit.md) at `f3d995497d88376d171c86b4088ae37fa8f289f0`. Status: planned, unassigned implementation; the current assignment updates repository documentation only. These tasks repair incomplete M8–M11 deliverables without creating M12, renumbering historical tasks, expanding the game or inheriting waivers. The [validation matrix](release-remediation-validation.md) defines concrete exits. Owners below are roles, not active leases.
+Baseline: the [2026-11-14 audit](product-state-audit.md) at `f3d995497d88376d171c86b4088ae37fa8f289f0`. **2026-11-14 software status:** T052–T064 remediation is implemented on a dirty uncommitted `main` working tree rooted at docs-audit commit `6329262446428f92617600d8526b13f9c90a358a`. T065 owns acceptance handoff only: [M11 handoff](milestones/m11-playable-release/handoff.md) checklist + operator runbook. **REL01–REL06 remain NotClaimed**; P05 FAIL under ADR-024; no invented hardware evidence. These tasks repair incomplete M8–M11 deliverables without creating M12, renumbering historical tasks, expanding the game or inheriting waivers. The [validation matrix](release-remediation-validation.md) defines concrete exits. Owners below are roles, not active leases.
 
 ## Entry, ownership and compatibility
 
@@ -70,7 +70,7 @@ Allowed scope: Bootstrap/Core tick orchestration, Bootstrap/Runtime/FoundationEn
 
 ## T055 — Implement genuine compiled map/content delivery
 
-Allowed scope: Tools/Compile-GameContent.ps1, Tools/Test-Maps.ps1, compiler/editor map code, Generation/Core/Environment where required, Content/Maps/, Content/Runtime/, World/Foundation/CompoundMapRuntime.cs and World/Runtime/; locks/encoding changes integrator-owned. Replace the test-only compiler wrapper with exact map/profile/recipe dependency enumeration and atomic verified publication. Map selection must determine output; reject unknown selection and incomplete dependencies. Include geometry/materials, collision/nav, soldiers/rigs, weapons/shaders and font exception. Catalog roots reference actual manifest/payload bytes, not label hashes. Release loads verified content with no map compilation, developer path or random regeneration. Define and review any missing SGAF/map/nav encoding before implementation. Existing pure pathfinding can be retained only after demonstrating required native-world reachability and documenting an accepted decision for any departure from the specified Unity-native nav bake; a source comment cannot waive that requirement. Cold/warm/forced reproduction, cancellation/corruption and server gameplay-only closure are part of FIX04.
+Allowed scope: Tools/Compile-GameContent.ps1, Tools/Test-Maps.ps1, compiler/editor map code, Generation/Core/Environment where required, Content/Maps/, Content/Runtime/, World/Foundation/CompoundMapRuntime.cs and World/Runtime/; locks/encoding changes integrator-owned. Replace the test-only compiler wrapper with exact map/profile/recipe dependency enumeration and atomic verified publication. Map selection must determine output; reject unknown selection and incomplete dependencies. Include geometry/materials, collision/nav, soldiers/rigs, weapons/shaders and font exception. Catalog roots reference actual manifest/payload bytes, not label hashes. Release loads verified content with no map compilation, developer path or random regeneration. Encoding boundary accepted under [ADR-035](decisions.md#adr-035--accepted-verified-release-map-packages-t055-boundary) (`shooter.map-package.v1`, map metadata for stable IDs, `unity.navmesh.bake.v1`); implement publication/load against that boundary rather than inventing a parallel format. Existing pure pathfinding can be retained only after demonstrating required native-world reachability; a source comment cannot waive that requirement. Cold/warm/forced reproduction, cancellation/corruption and server gameplay-only closure are part of FIX04.
 
 ## T056 — Compose visible map, actors and weapons
 
@@ -100,6 +100,8 @@ Allowed scope: Presentation/Audio/ runtime adapter, product event consumer and o
 
 Allowed initial scope: live capture/overlay tools, defect inventory and review records; character-source changes require the exact bounded assignment. Reproduce original P05 skin/forearm/strap/eye-sight defects in live product poses and compare all required LODs, grip/foot/clearance tolerances, team readability and 720p UI. Preserve ADR-024 and failed artifacts. This documentation task does not authorize a fourth clearance/parameter search. Integrator obtains/records the owner scope decision before such a change; until then visual acceptance remains blocked, while independent wiring/capture work can proceed. Any authorized generator/recipe revision needs reviewed identity migration, new caches and tests. New named review attaches actual captures and defects resolved/unresolved; it cannot imitate a hardware result or relabel old FAIL as PASS.
 
+**2026-11-14 implementation (tooling/inventory only):** presentation overlay/sample helpers on the T056 path, `Tools/Inventory-ProductVisualDefects.ps1`, and [visual-defect-inventory.md](visual-defect-inventory.md). FIX11 = ToolingReady; P05 FAIL retained; no fourth clearance search; REL03 remains Open.
+
 ## T063 — Build real TDM measurement and soak instrumentation
 
 Allowed scope: Tools/Benchmark*.ps1, collector/analysis code, product telemetry and Tests/Performance/ via integrator. Extend capture to the actual rendered product, both maps and 5v5/6v6. Existing frozen Game-v1 workload JSON specifies training-compound only; review depot-specific identities, route/action/counter fixture changes and migration under ADR rather than silently substituting a map. Include real authority/AI/respawn/lease/query/content/render counters and source/build/map/seed/profile/roster proofs. Reject wrong topology, shortened window, missing counters or unsupported hardware as acceptance PASS. Add negative collector tests and early short diagnostics; final measurement uses release-player 60s warmup/180s capture/three runs per map and size plus normal-AI soak. Keep B01–B04 separate and 60 FPS stretch separate from native720p Low30.
@@ -110,8 +112,22 @@ Allowed scope: Tools/Package-Release.ps1 and release/build manifests/tooling via
 
 ## T065 — Execute and hand off the accepted product
 
-Run [FIX14 and REL01–REL06](release-remediation-validation.md) on one final clean source/content/build candidate after all dependencies. Complete both maps × both sizes × score/timeout finishes with required named manual reviews; verify draw, replay/menu/settings, death/respawn, audio and lifecycle. Collect all four reference workload combinations and per-map soak, plus provenance/regression/Unity client/server isolation. A missing reviewer, counter or reference machine remains Pending, not waived by history. Failed cases return to their owning task without reducing scope. Handoff records archive path/hash, evidence inventory, all failures/limitations and rollback pair; commit completed changes to main, verify preservation before removing temporary worktrees/branches and retain ignored evidence. No public distribution is authorized or required.
+Run [FIX14 and REL01–REL06](release-remediation-validation.md) on one final **clean** source/content/build candidate after T052–T064 software is present. Software readiness (working tree, 2026-11-14): FIX01 met (advisory PendingNetwork); FIX02–FIX03/FIX05–FIX10/FIX12–FIX13 software met or wired; FIX04 partial (native bake + release-player Pending); FIX08 shell software with soak/UI Pending; FIX11 ToolingReady with P05 FAIL retained. **None of that closes REL01–REL06.**
+
+Operator path (detailed in [M11 handoff](milestones/m11-playable-release/handoff.md); do not stamp PASS here):
+
+1. `Compile-GameContent.ps1` — verified both-map package closure.
+2. Clean `Build.ps1 -Target Client` (`sourceDirty=false`) and Server isolation build.
+3. `Package-Release.ps1 -ClientBuildRunDirectory <clean-client-build-run>` — reject dirty/mismatched; `releaseAcceptance=NotClaimed` until operator evidence.
+4. Extract/launch from a clean directory (no Unity/dev cache/network/server); corrupt-content recovery.
+5. Named reviews: pause/focus, lifecycle, captures both maps, AI/spawns, shell 20-launch + 720p UI, SET02 display, audible path; keep P05 FAIL.
+6. Full match matrix both maps × both sizes × score/timeout + draw; ≥1 named manual match/map.
+7. Reference `Benchmark-Product-Matrix.ps1` / `Benchmark-Soak.ps1` (twelve captures + soaks) → PendingHardware if machine unavailable.
+8. Regression/provenance wrappers; advisory PendingNetwork separate.
+9. Handoff archive path/hash, limitations, rollback pair; commit only when owner requests.
+
+A missing reviewer, counter or reference machine remains Pending/PendingHardware, not waived by history. Failed cases return to their owning task without reducing scope. No public distribution is authorized or required.
 
 ## Definition of task done
 
-Each handoff supplies exact changed files and source, accepted versions/hashes, meaningful nonzero tests, relevant real integration evidence, remaining limitations and rollback. Pure implementation may merge with explicitly pending device evidence, but does not close the affected milestone. The original RUN/TDM/MAP/UI/SET/REL requirements remain authoritative; FIX IDs add regression specificity. All statuses stay planned until an implementation assignment and measured results change them.
+Each handoff supplies exact changed files and source, accepted versions/hashes, meaningful nonzero tests, relevant real integration evidence, remaining limitations and rollback. Pure implementation may merge with explicitly pending device evidence, but does not close the affected milestone. The original RUN/TDM/MAP/UI/SET/REL requirements remain authoritative; FIX IDs add regression specificity. Software remediation on a dirty tree does not make REL gates planned→PASS; only measured operator/hardware evidence on a clean candidate may change release acceptance.

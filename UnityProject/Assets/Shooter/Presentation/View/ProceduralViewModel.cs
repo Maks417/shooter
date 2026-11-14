@@ -37,6 +37,21 @@ namespace Shooter.Presentation.View
 
         public ViewPose Pose => new ViewPose(leftGrip, rightGrip, ads, recoilPitch, recoilYaw);
 
+        /// <summary>Cosmetic ADS/spring only when combat event leases are unavailable on the product path.</summary>
+        public void TickAim(bool aimHeld, float dtSeconds)
+        {
+            if (!float.IsFinite(dtSeconds) || dtSeconds < 0) throw new ArgumentOutOfRangeException(nameof(dtSeconds));
+            float targetAds = aimHeld ? 1f : 0f;
+            ads = MoveTowards(ads, targetAds, dtSeconds / 0.15f);
+            recoilPitchVel += -recoilPitch * 40f - recoilPitchVel * 12f;
+            recoilYawVel += -recoilYaw * 40f - recoilYawVel * 12f;
+            recoilPitch += recoilPitchVel * dtSeconds;
+            recoilYaw += recoilYawVel * dtSeconds;
+            float adsPull = ads * 0.08f;
+            rightGrip = new Float3(0.08f - adsPull, -0.10f + ads * 0.02f, 0.40f + adsPull);
+            leftGrip = new Float3(-0.12f - adsPull * 0.5f, -0.08f, 0.35f + adsPull * 0.5f);
+        }
+
         public void Consume(SnapshotLease snapshot, EventLease events, bool aimHeld, float dtSeconds)
         {
             if (snapshot == null) throw new ArgumentNullException(nameof(snapshot));

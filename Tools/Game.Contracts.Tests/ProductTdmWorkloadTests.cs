@@ -1,0 +1,43 @@
+using Shooter.Game.Contracts;
+using Shooter.Game.Session;
+using Xunit;
+
+namespace Shooter.Game.Contracts.Tests
+{
+    public sealed class ProductTdmWorkloadTests
+    {
+        [Theory]
+        [InlineData(ProductTdmWorkloads.Compound5v5, "training-compound", 5, 10UL, 460072030UL)]
+        [InlineData(ProductTdmWorkloads.Compound6v6, "training-compound", 6, 12UL, 460072030UL)]
+        [InlineData(ProductTdmWorkloads.Depot5v5, "depot-yard", 5, 10UL, 460072031UL)]
+        [InlineData(ProductTdmWorkloads.Depot6v6, "depot-yard", 6, 12UL, 460072031UL)]
+        public void Measurement_identities_keep_distinct_map_seeds(string id, string map, byte teamSize, ulong actors, ulong seed)
+        {
+            Assert.True(ProductTdmWorkloads.TryGet(id, out var workload));
+            Assert.Equal(map, workload.MapId.Value);
+            Assert.Equal(teamSize, workload.TeamSize);
+            Assert.Equal((int)actors, workload.Actors);
+            Assert.Equal(seed, workload.Seed);
+            Assert.Contains("leaseAcquires", workload.RequiredCounters);
+            Assert.Contains("renderFrames", workload.RequiredCounters);
+        }
+
+        [Fact]
+        public void Depot_is_not_implied_by_compound_workload_ids()
+        {
+            var compound = ProductTdmWorkloads.Require(ProductTdmWorkloads.Compound5v5);
+            var depot = ProductTdmWorkloads.Require(ProductTdmWorkloads.Depot5v5);
+            Assert.Equal(WellKnownMaps.TrainingCompound, compound.MapId);
+            Assert.Equal(WellKnownMaps.DepotYard, depot.MapId);
+            Assert.NotEqual(compound.Seed, depot.Seed);
+        }
+
+        [Fact]
+        public void B01_and_unknown_ids_are_not_product_tdm_workloads()
+        {
+            Assert.False(ProductTdmWorkloads.IsProductWorkload("B01-minimal-v1"));
+            Assert.False(ProductTdmWorkloads.IsProductWorkload("TDM-5v5-v1-depot-silent"));
+            Assert.False(ProductTdmWorkloads.IsProductWorkload(""));
+        }
+    }
+}

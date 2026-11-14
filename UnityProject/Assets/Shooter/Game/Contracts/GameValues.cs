@@ -47,4 +47,12 @@ namespace Shooter.Game.Contracts
         StorageError = 10,
         InternalError = 11
     }
+
+    /// <summary>Presentation display mode. Device adapters filter unsupported modes.</summary>
+    public enum DisplayMode : byte
+    {
+        Windowed = 0,
+        Borderless = 1,
+        Fullscreen = 2
+    }
 }

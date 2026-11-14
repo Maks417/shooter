@@ -1,6 +1,6 @@
 # Feature: menu, match UI and persistent settings
 
-Status reviewed 2026-11-14: minimal Presentation/Session/GameShellMenu.cs and ProductSessionView.cs plus Game/Settings/FileUserSettingsStore.cs exist. Start currently saves preferences only, gameplay auto-starts, and required screens/settings/device behavior remain incomplete. [Audit](../product-state-audit.md) and [T054/T059–T061](../release-remediation-plan.md) define repairs. The following flows/schema/device requirements remain normative; proposed Menus/Scoreboard/device adapters are not claimed implemented.
+Status reviewed 2026-11-14 (T059+T061 settings bind): `ProductShellHost` owns Main/Setup/Loading/Playing/Paused/Results with cancellable load, pause/restart/leave, live Tab scoreboard and retained results. Settings screen uses `UserSettingsEditor` (Apply/Cancel/defaults) with `FileUserSettingsStore` (`shooter-user-settings.json`) and `ProductClientSettingsApplier` (audio gains, display Keep/Revert + 15s focus-loss clock). Bootstrap product launch no longer auto-starts a match. 20 alternating player launches, named 720p UI review and SET02 device acceptance remain Pending. [Audit](../product-state-audit.md) and [remediation](../release-remediation-plan.md) continue device work.
 
 ## Screens and navigation
 

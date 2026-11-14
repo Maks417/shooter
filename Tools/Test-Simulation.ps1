@@ -5,6 +5,7 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'TestResults.ps1')
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $sourceCommit = (& git -C $repoRoot rev-parse HEAD).Trim()
 if ($LASTEXITCODE -ne 0) { throw 'Cannot determine source commit.' }
@@ -21,9 +22,14 @@ $report = [ordered]@{
     sourceCommit = $sourceCommit
     sourceDirty = [bool](& git -C $repoRoot status --porcelain)
     offlineRestore = [bool]$Offline
+    nugetAdvisoryCheck = $(if ($Offline) { 'PendingNetwork: offline restore disables advisory lookup' } else { 'RequestedDuringRestore' })
+    dotnetSdk = $null
     result = 'FAIL'
     scope = 'Pure M2 motor/combat/pose/view/harness tests. No Unity player or hardware acceptance.'
     testCount = 0
+    executedTestCount = 0
+    failedTestCount = 0
+    skippedTestCount = 0
     failure = $null
 }
 function Invoke-CheckedProcess([string]$Name, [string[]]$ProcessArguments) {
@@ -60,21 +66,25 @@ try {
     Write-Host "M2 simulation report: $reportDirectory"
     & python (Join-Path $PSScriptRoot 'verify_contract_lock.py') | Out-Host
     if ($LASTEXITCODE -ne 0) { throw 'Frozen C0 identity check failed.' }
+    $report.dotnetSdk = (Invoke-CheckedProcess 'sdk' @('--version')).Trim()
+    $expectedSdk = (Get-Content -LiteralPath (Join-Path $repoRoot 'global.json') -Raw | ConvertFrom-Json).sdk.version
+    if ($report.dotnetSdk -ne $expectedSdk) { throw "Expected SDK $expectedSdk; got $($report.dotnetSdk)" }
     $restoreArguments = @('restore', $projectPath, '--locked-mode')
     if ($Offline) {
         $packageCache = if ($env:NUGET_PACKAGES) { $env:NUGET_PACKAGES } else { Join-Path $env:USERPROFILE '.nuget/packages' }
+        if (!(Test-Path -LiteralPath $packageCache -PathType Container)) { throw "Missing package cache: $packageCache" }
         $restoreArguments += @('--source', $packageCache, '-p:NuGetAudit=false')
     }
+    else { $restoreArguments += @('-p:NuGetAudit=true', '-p:NuGetAuditMode=all') }
     $null = Invoke-CheckedProcess 'restore' $restoreArguments
+    if (!$Offline) { $report.nugetAdvisoryCheck = 'CompletedDuringRestore: all dependency levels' }
     $null = Invoke-CheckedProcess 'tests' @('test', $projectPath, '--no-restore', '--configuration', 'Release', '--logger', 'trx;LogFileName=simulation.trx', '--results-directory', $reportDirectory)
     $trxPath = Join-Path $reportDirectory 'simulation.trx'
-    if (!(Test-Path -LiteralPath $trxPath -PathType Leaf)) { throw 'Fresh test XML was not produced.' }
-    [xml]$trx = Get-Content -LiteralPath $trxPath -Raw
-    $counters = $trx.TestRun.ResultSummary.Counters
-    if ([int]$counters.total -le 0 -or [int]$counters.failed -ne 0 -or [int]$counters.passed -ne [int]$counters.total) {
-        throw 'Simulation tests failed, skipped, or did not run.'
-    }
-    $report.testCount = [int]$counters.total
+    $summary = Get-StrictTrxSummary -Path $trxPath -SuiteName 'Simulation'
+    $report.testCount = $summary.Total
+    $report.executedTestCount = $summary.Executed
+    $report.failedTestCount = $summary.Failed
+    $report.skippedTestCount = $summary.Skipped
     $report.result = 'PASS'
 }
 catch { $report.failure = $_.Exception.Message; Write-Warning $report.failure }

@@ -2,7 +2,7 @@
 
 ## Current product/tool boundary — 2026-11-14
 
-This runbook retains historical M0/M1 commands and evidence. Default launch now starts OfflineGameSession; Smoke/gallery/Benchmark arguments select diagnostics. Current Compile-GameContent/Test-Maps/Test-Game/Package-Release scopes and the Contracts NU1004 blocker are recorded in the [audit](product-state-audit.md) and [repair validation](release-remediation-validation.md). Do not use the B01-only collector, test-only map compiler or copy/inventory package PASS as a full-game gate.
+This runbook retains historical M0/M1 commands and evidence. Default launch now starts OfflineGameSession; Smoke/gallery/B01 Benchmark arguments select diagnostics. Product TDM measurement (ADR-037 / T063) uses Benchmark with `TDM-*` workloads against verified map packages from Compile-GameContent. Current Compile-GameContent/Test-Maps/Test-Game/Package-Release scopes are recorded in the [audit](product-state-audit.md) and [repair validation](release-remediation-validation.md). T065 acceptance operator path (Compile-GameContent → clean Client → Package-Release → extract/launch → reviews/matrix/soaks) is in the [M11 handoff](milestones/m11-playable-release/handoff.md); do not treat B01 collector PASS, Package-Release tooling PASS or docs hashes as REL01–REL06.
 
 Owner: integrator/WP-00. Follow [M0](milestones/m0-foundation/implementation.md). Repository root is `C:\Job\shooter`; project is `C:\Job\shooter\UnityProject`. The locked editor, project, contracts, generated-box composition, quality presets, test/build/smoke/capture wrappers now exist. Acceptance and limitations are in [handoff](milestones/m0-foundation/handoff.md). Preserve source, settings, metadata and package locks; do not recreate the project over them.
 
@@ -45,7 +45,9 @@ Add provenance allowlist, schema/docs checks and client/server smoke jobs. After
 | Compile P02 collision diagnostic | `Tools/Compile-Content.ps1 -RecipeSet box-collision-v1 -Profile Low` | Verified immutable collision cache and byte lease; full slice-v1 remains unsupported |
 | Build (implemented) | `Tools/Build.ps1 -Target Client` / `-Target Server` | Release player, source/content/toolchain manifest and packed-source audit |
 | Smoke (implemented) | `Tools/Smoke.ps1 -BuildRunDirectory <build-run>` | Ready marker, ≥60 ticks, clean exit; server client-assembly/graphics exclusion |
-| Benchmark (implemented) | `Tools/Benchmark.ps1 -BuildRunDirectory <client-build-run> -Workload B01-minimal-v1 -Profile Low -RunIndex 1` | Raw frame/tick CSV, external memory samples, machine and versioned result JSON; no stale/synthetic pass |
+| Benchmark B01 (implemented) | `Tools/Benchmark.ps1 -BuildRunDirectory <client-build-run> -Workload B01-minimal-v1 -Profile Low -RunIndex 1` | Raw frame/tick CSV, external memory samples, machine and versioned result JSON; no stale/synthetic pass |
+| Benchmark product TDM (T063 software) | `Tools/Compile-GameContent.ps1` then `Tools/Benchmark.ps1 -BuildRunDirectory <client-build-run> -Workload TDM-5v5-v1|TDM-6v6-v1|TDM-5v5-depot-v1|TDM-6v6-depot-v1 -Profile Low -RunIndex 1` | Rendered product match capture; `analyze_tdm_benchmark.py`; PendingHardware until reference twelve-run/soak proofs |
+| Product TDM matrix / soak | `Tools/Benchmark-Product-Matrix.ps1` / `Tools/Benchmark-Soak.ps1` (`-PlanOnly` records PendingHardware plan) | Four workloads × three runs = twelve captures; ≥30 min 6v6 soak/map |
 
 These wrappers and `ShooterBuild` entry points now exist. Full offline content compilation remains M1–M3 work: M0 draws the fixed box/floor directly from numeric code and reports this limitation explicitly. P02 now supplies a real diagnostic compiler/cache, while the full slice cache remains pending.
 

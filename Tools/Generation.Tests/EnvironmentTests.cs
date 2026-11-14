@@ -66,5 +66,16 @@ namespace Shooter.Generation.Tests
             Assert.Equal(a.Buildings[0].Center.X, b.Buildings[0].Center.X);
             Assert.NotEqual(a.HeightSamples[10, 10], b.HeightSamples[10, 10]);
         }
+
+        [Fact]
+        public void Depot_catalog_seed_differs_from_compound_and_from_robustness_forty_two()
+        {
+            var depot = DepotPlanner.Generate(460072031UL);
+            var compound = CompoundPlanner.Generate(460072030UL);
+            Assert.NotEqual(depot.CollisionHash, compound.CollisionHash);
+            Assert.True(depot.CollisionBoxes.Count > 0);
+            Assert.NotEqual(42UL, MapRecipe.ApprovedSeed("depot-yard"));
+            Assert.Equal(460072031UL, MapRecipe.ApprovedSeed("depot-yard"));
+        }
     }
 }

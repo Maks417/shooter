@@ -27,6 +27,7 @@ namespace Shooter.Game.Session
         private HarnessActorLifecycle? lifecycle;
         private TeamBotPlanner? bots;
         private readonly TeamDeathmatchMatch match = new TeamDeathmatchMatch();
+        private MapGameplayDefinition? gameplayDefinition;
         private SessionRequest? request;
         private GameMatchPhase phase = GameMatchPhase.Stopped;
         private SessionPauseState pause = SessionPauseState.Running;
@@ -36,6 +37,8 @@ namespace Shooter.Game.Session
         private EntityId humanEntity;
         private readonly CommandBuffer botCommands = new CommandBuffer();
         private readonly List<InputCommand> merged = new List<InputCommand>(64);
+        private readonly List<EntityId> deathsThisTick = new List<EntityId>(GameContractVersion.MaxParticipants);
+        private readonly ProductMeasurementTelemetry measurement = new ProductMeasurementTelemetry();
         private bool disposed;
 
         public OfflineGameSession(IMapCatalog catalog, Func<IWorldQueries, INavigation, IMapRuntime> mapFactory, bool allowFakeMapRuntime = false)
@@ -52,6 +55,19 @@ namespace Shooter.Game.Session
         public EntityId HumanEntityId => humanEntity;
         public IActorLifecycle? Lifecycle => lifecycle;
         public IMapRuntime? MapRuntime => mapRuntime;
+        public int CosmeticCorpseCount => lifecycle?.CosmeticCorpseCount ?? 0;
+        /// <summary>Read-only measurement counters for product TDM capture (T063). Mutated only by this session.</summary>
+        public ProductMeasurementTelemetry Measurement => measurement;
+
+        public bool TryGetCosmeticCorpse(int index, out ActorLifecycleState state)
+        {
+            if (lifecycle == null)
+            {
+                state = default;
+                return false;
+            }
+            return lifecycle.TryGetCosmeticCorpse(index, out state);
+        }
 
         public GameOperationResult Validate(SessionRequest request)
         {
@@ -73,9 +89,11 @@ namespace Shooter.Game.Session
             if (entry.RecipeSeed != request.Seed)
                 return new GameOperationResult(GameErrorCode.InvalidRequest, "seed-mismatch", "Seed does not match packaged map.");
 
+            ReleaseRuntime();
             epoch++;
             sessionId = unchecked(epoch + 1000UL);
             this.request = request;
+            gameplayDefinition = gameplay;
             phase = GameMatchPhase.Loading;
             pause = SessionPauseState.Running;
             tick = 0;
@@ -83,15 +101,24 @@ namespace Shooter.Game.Session
 
             var emptyWorld = new EmptyWorldQueries();
             var emptyNav = new EmptyNavigation();
-            mapRuntime = mapFactory(emptyWorld, emptyNav);
-            if (!allowFakeMapRuntime && mapRuntime is FakeMapRuntime)
+            var loadingRuntime = mapFactory(emptyWorld, emptyNav);
+            if (!allowFakeMapRuntime && loadingRuntime is FakeMapRuntime)
+            {
+                loadingRuntime.Unload();
+                phase = GameMatchPhase.Stopped;
                 return new GameOperationResult(GameErrorCode.InternalError, "fake-map-rejected", "Shipping session rejects fake map runtime.");
+            }
 
             var loadEpoch = epoch;
-            var load = await mapRuntime.LoadAsync(gameplay, cancel).ConfigureAwait(true);
-            if (loadEpoch != epoch) return new GameOperationResult(GameErrorCode.StaleSession, "stale-load", "Stale load ignored.");
+            var load = await loadingRuntime.LoadAsync(gameplay, cancel).ConfigureAwait(true);
+            if (loadEpoch != epoch)
+            {
+                loadingRuntime.Unload();
+                return new GameOperationResult(GameErrorCode.StaleSession, "stale-load", "Stale load ignored.");
+            }
             if (!load.Succeeded) { phase = GameMatchPhase.Stopped; return load; }
 
+            mapRuntime = loadingRuntime;
             harness = new CombatHarnessSimulation(mapRuntime.WorldQueries, sessionId, request.Seed);
             lifecycle = new HarnessActorLifecycle(harness);
             bots = new TeamBotPlanner(mapRuntime.WorldQueries, mapRuntime.Navigation, 0, gameplay.NavRevision);
@@ -99,6 +126,17 @@ namespace Shooter.Game.Session
             var roster = BuildRoster(request, gameplay, lifecycle, bots);
             match.ConfigureIdentities("catalog.v1", gameplay.MapId.Value + ".gameplay", "local-dev");
             match.Begin(request, roster, gameplay);
+            measurement.Reset();
+            measurement.MapId = request.MapId.Value;
+            measurement.Seed = request.Seed.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            measurement.TeamSize = request.TeamSize;
+            measurement.Actors = roster.Count;
+            if (catalog.TryGet(request.MapId, out var catalogEntry))
+            {
+                measurement.PackageRootHash = catalogEntry.GameplayRootHash.ToString();
+                measurement.ContentManifestHash = catalogEntry.GameplayRootHash.ToString();
+                measurement.ContentBindings = 1;
+            }
             phase = GameMatchPhase.Ready;
             return GameOperationResult.Ok;
         }
@@ -141,20 +179,44 @@ namespace Shooter.Game.Session
 
             // Install due respawns before movement (Game-v1 tick order).
             var pre = match.AcquireSnapshot(sessionId, tick);
+            measurement.LeaseAcquires++;
+            int aliveBefore = CountAlive(pre);
             match.ScheduleDueRespawns(pre.ActiveTicksElapsed, lifecycle, mapRuntime);
 
             var snap = match.AcquireSnapshot(sessionId, tick);
+            measurement.LeaseAcquires++;
+            int aliveAfter = CountAlive(snap);
+            if (aliveAfter > aliveBefore) measurement.Respawns += aliveAfter - aliveBefore;
+            if (RebindReplacements(pre, snap))
+            {
+                bots = RebuildBotPlanner(snap, lifecycle, mapRuntime);
+            }
             int botCount = bots.Plan(tick, snap, lifecycle, botCommands);
+            measurement.AiRays += bots.Counters.VisionRaysThisTick;
+            measurement.PathRequests += bots.Counters.PathsRequestedThisTick;
+            measurement.QuerySamples += bots.Counters.VisionRaysThisTick + bots.Counters.PathsRequestedThisTick;
 
             merged.Clear();
-            if (humanCommand.HasValue && humanCommand.Value.IsValid) merged.Add(humanCommand.Value);
+            if (humanCommand.HasValue &&
+                humanCommand.Value.IsValid &&
+                humanCommand.Value.EntityId.Equals(humanEntity))
+            {
+                merged.Add(humanCommand.Value);
+            }
             for (int i = 0; i < botCount; i++) merged.Add(botCommands[i]);
 
             var result = harness.Step(tick, merged.ToArray());
+            measurement.Shots += result.Counters.Shots;
+            measurement.DamageEvents += result.Counters.DamageEvents;
             using (var lease = harness.AcquireSnapshot())
+            {
+                measurement.LeaseAcquires++;
                 lifecycle.SyncFromSnapshot(lease.Snapshot);
+            }
+            deathsThisTick.Clear();
             using (var events = harness.AcquireEvents())
             {
+                measurement.LeaseAcquires++;
                 for (int i = 0; i < events.Events.Count; i++)
                 {
                     var ev = events.Events[i];
@@ -163,13 +225,24 @@ namespace Shooter.Game.Session
                     EntityId? killer = ev.Instigator.IsValid ? ev.Instigator : (EntityId?)null;
                     match.ProcessDeath(new DeathResolution(sessionId, ev.Id, ev.Target, life, killer, tick));
                     bots.ResetLife(ev.Target);
+                    if (!ContainsEntity(deathsThisTick, ev.Target)) deathsThisTick.Add(ev.Target);
                 }
             }
+            // Preserve ordered scoring for every same-tick death before retiring any old life.
+            uint activeTick = snap.ActiveTicksElapsed;
+            for (int i = 0; i < deathsThisTick.Count; i++)
+                lifecycle.RetireLife(deathsThisTick[i], activeTick);
 
             match.EvaluateEndOfTick(tick, advanceActiveClock: true);
+            var endSnap = match.AcquireSnapshot(sessionId, tick);
+            measurement.LeaseAcquires++;
+            measurement.Team1Kills = endSnap.Team1Kills;
+            measurement.Team2Kills = endSnap.Team2Kills;
+            measurement.ActiveTicks = endSnap.ActiveTicksElapsed;
+            measurement.Actors = endSnap.Participants.Count;
+            lifecycle.AdvanceActiveTick(endSnap.ActiveTicksElapsed);
             if (match.TryAcquireResults() != null) phase = GameMatchPhase.Finished;
             tick = unchecked(tick + 1);
-            _ = result;
             return GameOperationResult.Ok;
         }
 
@@ -187,17 +260,25 @@ namespace Shooter.Game.Session
             return match.AcquireSnapshot(sessionId, tick == 0 ? 0 : unchecked(tick - 1));
         }
 
+        /// <summary>
+        /// Read-only lease of the last completed combat event list for presentation (audio/FX).
+        /// Null when no completed tick or harness is absent. Caller must dispose the lease.
+        /// </summary>
+        public EventLease? TryLeaseCombatEvents()
+        {
+            if (harness == null || tick == 0) return null;
+            if (phase == GameMatchPhase.Stopped || phase == GameMatchPhase.Loading) return null;
+            return harness.AcquireEvents();
+        }
+
         public MatchResults? TryAcquireResults() => match.TryAcquireResults();
 
         public GameOperationResult Stop()
         {
-            bots?.CancelAll();
-            mapRuntime?.Unload();
-            mapRuntime = null;
-            harness = null;
-            lifecycle = null;
-            bots = null;
+            epoch++;
+            ReleaseRuntime();
             request = null;
+            gameplayDefinition = null;
             if (phase != GameMatchPhase.Finished) phase = GameMatchPhase.Stopped;
             return GameOperationResult.Ok;
         }
@@ -259,13 +340,84 @@ namespace Shooter.Game.Session
                 if (human) humanEntity = entity;
                 else if (botsRegistered < botCap)
                 {
-                    planner.RegisterBot(entity, slot.Position, slot.Yaw);
+                    planner.RegisterBot(entity, slot.Position, slot.Yaw, team);
                     botsRegistered++;
                 }
                 roster.Add(new ParticipantState(new ParticipantId(participant), name, team, human, entity, life, true, 0, 0, 0));
                 participant++;
             }
             return roster;
+        }
+
+        private bool RebindReplacements(MatchViewSnapshot before, MatchViewSnapshot after)
+        {
+            bool changed = false;
+            for (int i = 0; i < after.Participants.Count; i++)
+            {
+                var current = after.Participants[i];
+                var prior = before.Participants[i];
+                if (current.EntityId.Equals(prior.EntityId)) continue;
+                changed = true;
+                if (current.IsHuman) humanEntity = current.EntityId;
+            }
+            return changed;
+        }
+
+        private TeamBotPlanner RebuildBotPlanner(
+            MatchViewSnapshot snapshot,
+            HarnessActorLifecycle actorLifecycle,
+            IMapRuntime runtime)
+        {
+            CancelBotPlanner();
+            var planner = new TeamBotPlanner(
+                runtime.WorldQueries,
+                runtime.Navigation,
+                0,
+                gameplayDefinition?.NavRevision ?? 1);
+            for (int i = 0; i < snapshot.Participants.Count; i++)
+            {
+                var participant = snapshot.Participants[i];
+                if (participant.IsHuman || !participant.Alive) continue;
+                if (!actorLifecycle.TryGetActorState(participant.EntityId, out var state)) continue;
+                if (!actorLifecycle.ResetCommandEpoch(participant.EntityId))
+                    throw new InvalidOperationException("bot authority entity missing");
+                planner.RegisterBot(participant.EntityId, state.Feet, state.AimYaw, state.Team);
+            }
+            return planner;
+        }
+
+        private void ReleaseRuntime()
+        {
+            CancelBotPlanner();
+            mapRuntime?.Unload();
+            mapRuntime = null;
+            harness = null;
+            lifecycle = null;
+            bots = null;
+            deathsThisTick.Clear();
+        }
+
+        private void CancelBotPlanner()
+        {
+            if (bots == null) return;
+            for (int i = 0; i < bots.Director.BotCount; i++)
+                bots.ResetLife(bots.Director.GetBoard(i).Self);
+            bots.CancelAll();
+        }
+
+        private static bool ContainsEntity(List<EntityId> entities, EntityId candidate)
+        {
+            for (int i = 0; i < entities.Count; i++)
+                if (entities[i].Equals(candidate)) return true;
+            return false;
+        }
+
+        private static int CountAlive(MatchViewSnapshot snapshot)
+        {
+            int alive = 0;
+            for (int i = 0; i < snapshot.Participants.Count; i++)
+                if (snapshot.Participants[i].Alive) alive++;
+            return alive;
         }
 
         private sealed class EmptyWorldQueries : IWorldQueries

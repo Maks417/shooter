@@ -2,6 +2,79 @@
 
 **Current disposition — 2026-11-14: M8 integration incomplete.** RUN02–RUN05 remain unaccepted as complete product gates: verified full content, visible views/audio, pause and real lifecycle evidence are missing. Repairs: T052–T056, T061–T063 in the [shared implementation plan](../../release-remediation-plan.md), with [FIX acceptance](../../release-remediation-validation.md). The [audit](../../product-state-audit.md) supersedes earlier readiness interpretations; original requirements, dated ledgers and raw evidence below are retained. No runtime assignment or worker lease is created here.
 
+## T052 / FIX01 regression repair — 2026-11-14
+
+T052 repaired the stale `Tools/Contracts.Tests/packages.lock.json` project graph using locked SDK 10.0.301 and the existing local package cache. The only dependency-graph change is the already-present `Shooter.Foundation` reference to `Shooter.Generation.Core` plus that project's transitive `Shooter.Contracts` edge; package names, resolved package versions, SDK, C0, Game-v1, fixtures and runtime semantics are unchanged. The original audit failure remains preserved at `Artifacts/m0-foundation/f3d995497d88376d171c86b4088ae37fa8f289f0/20261114T094640978Z-4e9545e2/`; the assignment-time reproduction is `Artifacts/m0-foundation/6329262446428f92617600d8526b13f9c90a358a/20261114T095616966Z-97bf26a5/` and fails before tests with NU1004.
+
+Strict shared TRX validation now rejects missing or zero-test results, any unexecuted/skipped/aborted result, result-row/count disagreement and test failures. `Tools/test_test_results.ps1` passes its positive case and rejects zero, skipped, failed and missing-result cases. Required offline wrappers ran from source commit `6329262446428f92617600d8526b13f9c90a358a` with the T052 working tree dirty:
+
+| Command | Result | Evidence |
+|---|---|---|
+| `Tools/Test-Contracts.ps1 -Offline` | PASS — 71 total/executed/passed, 0 failed, 0 skipped; no NU1004 | `Artifacts/m0-foundation/6329262446428f92617600d8526b13f9c90a358a/20261114T095801909Z-19547e7e/` |
+| `Tools/Test-Generation.ps1 -Offline` | PASS — 298 total/executed/passed, 0 failed, 0 skipped | `Artifacts/m1-procedural-feasibility/6329262446428f92617600d8526b13f9c90a358a/20261114T095826167Z-1fc6d040/` |
+| `Tools/Test-Simulation.ps1 -Offline` | PASS — 61 total/executed/passed, 0 failed, 0 skipped | `Artifacts/m2-combat-harness/6329262446428f92617600d8526b13f9c90a358a/20261114T095855553Z-a5ddc132/` |
+| `Tools/Test-Game.ps1 -Offline` | PASS — 15 total/executed/passed, 0 failed, 0 skipped | `Artifacts/m8-runtime-composition/6329262446428f92617600d8526b13f9c90a358a/20261114T095913280Z-960cf9d0/` |
+| `Tools/Test-Maps.ps1 -Offline` | PASS — 6 filtered tests total/executed/passed, 0 failed, 0 skipped | `Artifacts/m8-runtime-composition/6329262446428f92617600d8526b13f9c90a358a/test-maps-20261114T095933307Z-ed9bd714/` |
+
+FIX01 is PASS for repaired pure regression execution. Offline advisory lookup is separately `PendingNetwork` by design and is not represented as a test PASS. This clears the FIX01 prerequisite for T053 and T054; it does not accept their lifecycle, pause or input behavior and does not change the remaining M8 disposition.
+
+## T061 / FIX10 audible product audio — 2026-11-14
+
+T061 binds ordered product combat/footstep/UI cues to a real Unity audio device path. `ProductAudioEventRouter` consumes combat `EventId`s once, emits stride footsteps, and plays UI beeps. `SynthAudioMixer` synthesizes device-rate PCM with ≤24 voices, peak limiter, distance attenuation and master/effects/UI gains applied at mix time (including existing voices). `UnitySynthAudioOutput` installs `AudioSource` + `OnAudioFilterRead` (no recorded samples). `OfflineGameSession.TryLeaseCombatEvents` and `ProductSessionView` pump events each frame; stop/clear detaches and silences stale sessions. Callback never mutates authority.
+
+| Check | Result | Evidence / limitation |
+|---|---|---|
+| Pure Fx suite (`FullyQualifiedName~Fx`) | PASS — 9/9, zero skipped | `dotnet test Tools/Simulation.Tests/... -c Release --filter "FullyQualifiedName~Fx"` (voice cap/limiter/attenuation/gains/mute, event dedupe, footstep/UI, stale detach, device-rate Fill) |
+| View+Fx regression | PASS — 16/16 | same project filter `View\|Fx` |
+| Named physical device / reviewer audible sign-off | **Pending** | Waveforms alone do not claim FIX10 device PASS |
+| T060 settings applier binding | **Bound (software)** | `UserSettingsAudioBinding` / `ProductClientSettingsApplier.Apply` → `SetChannelGains(Master, Effects, UI)`; SET02 named device review still Pending |
+
+FIX10 software path is implemented. Full FIX10 remains **Pending** until named device review hears shot/impact/footstep/UI on a real output and T060 binds frozen preferences through the applier.
+
+## T062 / FIX11 visual review tooling — 2026-11-14
+
+T062 lands initial product capture/overlay tooling and an honest defect inventory on the existing T056 presentation path. Live pose metrics (arm/body clearance, eye/sight residual, grip/plant/stock) are retained by `ProductActorPresentation`; `ProductVisualReviewOverlay` draws eye→sight / clearance cues and can write JSON sample batches under Artifacts when enabled with `-shooterVisualReview 1` / `-shooterVisualReviewOutput`. Catalog/inventory builders and `Tools/Inventory-ProductVisualDefects.ps1` record named P05 and product readability defects without claiming PASS.
+
+| Check | Result | Evidence / limitation |
+|---|---|---|
+| Defect catalog + inventory builder (pure View) | PASS — `ProductVisualDefectCatalogTests` | `dotnet test Tools/Simulation.Tests/... -c Release --filter "FullyQualifiedName~ProductVisualDefect"` |
+| Python inventory package guard | PASS | `python Tools/test_product_visual_defect_inventory.py` |
+| Inventory package writer | ToolingReady | `./Tools/Inventory-ProductVisualDefects.ps1` → `Artifacts/m8-runtime-composition/<commit>/visual-defect-inventory-<utc>/` |
+| P05 visual acceptance | **FAIL retained** | ADR-024; no fourth clearance/parameter search; generator/recipe sources unchanged |
+| Named product-player capture review / REL03 | **Pending / Open** | Overlays + inventory only; unresolved P05-D01/D02 keep FIX11/REL03 open |
+
+Durable inventory pointer: [visual-defect-inventory.md](../../visual-defect-inventory.md). FIX11 software disposition is **ToolingReady**. Full FIX11 remains blocked on owner-authorized character work (not granted here) plus named captures showing defects resolved/unresolved. Historical failed P05 artifacts are immutable.
+
+## T056 / FIX05 visible product presentation — 2026-11-14
+
+T056 binds read-only product presentation to verified map-package solids and authority lifecycle snapshots. `ProductMapView` installs MeshRenderers for packaged collision/cover (no diagnostic gallery launch, no imported art). `ProductActorPresentation` reuses `SoldierGeometry`/`WeaponGeometry`/`SoldierMotion` with team-distinct materials, held rifles, FP local weapon spring, and cosmetic corpse caps. `ProductActorBinder` reconciles spawn/despawn/life-replacement handles. Bootstrap client composition reads `FoundationEntry.ProductMap` (T055 package-load seam) only; World collision install is unchanged. Presentation does not mutate authority.
+
+| Check | Result | Evidence / limitation |
+|---|---|---|
+| Pure View suite (`FullyQualifiedName~View`) | PASS — 7/7, zero skipped | `dotnet test Tools/Simulation.Tests/... -c Release --filter "FullyQualifiedName~View"` (includes `ProductActorBinderTests` + prior `ViewModelTests`) |
+| Unity EditMode product view binding | NotRun this handoff | `ProductViewBindingTests` added under `Tests/EditMode/`; requires locked editor run |
+| Source-matched product-player captures (both maps) | **Pending** | FIX05 player visual review / captures not executed in this assignment |
+| Stale-handle policy (20 loads / 100 cycles in player) | **Pending** | Pure binder + EditMode cover reconcile/clear; alternating product loads owned with T059 shell |
+
+FIX05 software wiring is implemented. Full FIX05 remains **Pending** until source-matched product-player captures on each map show terrain/cover, team-readable actors, weapons and authority-bound motion, and until player stale-view cycles are evidenced. T059 owns functional shell/menu start-stop; T061 owns audible device path; T062 owns P05 visual defect acceptance.
+
+## T054 / FIX03 pause and buffered-input repair — 2026-11-14
+
+T054 makes the Bootstrap fixed-tick clock explicitly suspendable. Product pause, non-playing phases and client focus loss stop calls into `OfflineGameSession.Step`; suspended wall time is discarded while the fractional pre-pause debt and next tick identity are retained. Focus loss pauses only a running product session, focus return resumes only that focus-owned pause, and both transitions reset the wall-clock baseline. Diagnostic composition and its overload behavior remain separate and unchanged.
+
+Local input now captures keyboard/mouse state once per render frame and consumes it at fixed ticks. Press edges survive zero-tick render frames and clear after one tick; held state can feed multiple ticks; mouse delta changes the absolute aim once; movement is normalized; sensitivity is degrees per mouse-delta unit; yaw/pitch stay inside the C0 receive interval; and selected weapon state persists in subsequent commands and across pause/focus. Pause, focus/menu ownership and replacement-life boundaries discard captured action edges. Focus/menu recapture suppresses held fire and the first look delta until release/new input, preventing UI clicks or cursor warp from becoming gameplay actions.
+
+| Check | Result | Evidence / limitation |
+|---|---|---|
+| Focused `FoundationTests` | PASS — 9/9, zero skipped | `dotnet test Tools/Contracts.Tests/Contracts.Tests.csproj -c Release --no-restore --filter "FullyQualifiedName~FoundationTests"`; includes ten-second suspension/no-catch-up ordering |
+| Unity EditMode | PASS — 18/18, zero skipped; five T054 input cases including 30/60/144 FPS | `Artifacts/m0-foundation/6329262446428f92617600d8526b13f9c90a358a/tests-editmode-20261114T100835735Z-5af4d31a/` |
+| Pure Game-v1/session suite | PASS — 20/20, zero skipped | Direct locked `dotnet test ... -c Release --no-restore`; this includes concurrent T053-owned lifecycle work and is not claimed as FIX02 acceptance |
+| Source provenance | PASS — 540 asset entries / 270 GUIDs | `Tools/Test-SourceProvenance.ps1`; source/provenance only |
+
+The first Unity attempt failed compilation on an ambiguous `EntityId`; the next two ran the new tests and exposed boundary-value test failures. All failed evidence is retained beside the final run. `Tools/Test-Game.ps1 -Offline` could not access its sandbox-local NuGet cache and recorded zero tests at `Artifacts/m8-runtime-composition/6329262446428f92617600d8526b13f9c90a358a/20261114T100920509Z-0fd06237/`; the direct no-restore run above is reported separately rather than relabeling that wrapper failure.
+
+FIX03 software behavior is implemented and the automated timing/input cases pass. Full FIX03 remains **Pending**: no source-matched product-player run held pause and OS focus loss for ten real seconds, and no physical keyboard/mouse UI-click review was performed. T053 owns authority retirement/respawn internals; T054 only prevents their advancement while Bootstrap is suspended and does not claim T053 lifecycle acceptance.
+
 ## Historical closeout record — 2026-11-13
 
 Historical 2026-11-13 software closeout (retained; superseded for current product acceptance): **CLOSED (software)**, 2026-11-13. Product OfflineGameSession is the default Bootstrap composition. Diagnostic floor/box retained for `-shooterSmokeSeconds` / gallery / benchmark. Historical M0–M7 waivers and P05 FAIL (ADR-024) unchanged. No inherited hardware waiver; named visual/P05 acceptance remains open until T049.
@@ -46,7 +119,7 @@ Historical 2026-11-13 software closeout (retained; superseded for current produc
 | RUN02 | PASS | CompoundMapRuntime PhysX install + RevisionedPathAdapter corners; fake rejected |
 | RUN03 | Partial | Product READY + composition log; named keyboard/mouse review Pending |
 | RUN04 | PASS | Diagnostic client/server Smoke PASS; pause/resume API covered in pure tests |
-| RUN05 | Pending | P05 live triage / hardware counters PendingHardware |
+| RUN05 | Pending | T062 overlay/inventory ToolingReady; P05 FAIL retained (ADR-024); named live triage / hardware counters Pending |
 
 ### Player evidence
 

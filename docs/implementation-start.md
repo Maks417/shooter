@@ -6,7 +6,7 @@ Status correction 2026-11-14: M0–M7 retain their recorded historical closures/
 
 **Current next step:** assign an integrator to [T052 regression-lock repair](release-remediation-plan.md#t052--restore-trustworthy-regression-execution), then T053 lifecycle and T054 pause/input. Continue the dependency-ordered T055–T065 repairs and [FIX acceptance](release-remediation-validation.md). This documentation assignment creates no coding lease or authorization to dispatch agents. Read the affected milestone index, original T035–T051 requirements and Game-v1 before implementation.
 
-M0–M7 are the eight historical closures (ADR-017/025–028/030–032). M8–M11 are implemented in part but not technically accepted. C0-v1 remains frozen in root contract-lock.json, SGAF/P02 v1 in content-format-lock.json (ADR-018), N1-v1 under ADR-029 and Game-v1 under ADR-034. P05 FAIL and the ADR-024 stop on further clearance search remain unchanged. T025 remains deferred. No worker independently edits shared Contracts, Bootstrap, schemas, locks or project settings.
+M0–M7 are the eight historical closures (ADR-017/025–028/030–032). M8–M11 are implemented in part but not technically accepted. C0-v1 remains frozen in root contract-lock.json, SGAF/P02 v1 in content-format-lock.json (ADR-018), N1-v1 under ADR-029 and Game-v1 under ADR-034. ADR-035 accepts the verified release map-package encoding boundary for T055 without claiming FIX04 publication. P05 FAIL and the ADR-024 stop on further clearance search remain unchanged. T025 remains deferred. No worker independently edits shared Contracts, Bootstrap, schemas, locks or project settings.
 
 ## Newly resolved design details
 

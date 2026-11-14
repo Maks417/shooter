@@ -19,13 +19,16 @@ namespace Shooter.Simulation.AI
     public sealed class AiBlackboard
     {
         public EntityId Self { get; set; }
+        public byte Team { get; set; }
         public AiState State { get; set; } = AiState.Patrol;
         public Float3 Feet { get; set; }
         public float Yaw { get; set; }
         public float Pitch { get; set; }
         public ushort Health { get; set; } = 100;
         public int MagAmmo { get; set; } = 30;
+        public int ReserveAmmo { get; set; } = 90;
         public bool Alive { get; set; } = true;
+        public EntityId? VisibleTargetId { get; set; }
         public Float3? LastSeenEnemy { get; set; }
         public uint LastSeenTick { get; set; }
         public float Confidence { get; set; }
@@ -35,6 +38,9 @@ namespace Shooter.Simulation.AI
         public PathTicket? PathTicket { get; set; }
         public uint PathRequestedTick { get; set; }
         public Float3? PathGoal { get; set; }
+        public Float3[] PathCorners { get; } = new Float3[ContractVersion.MaxPathCorners];
+        public int PathCornerCount { get; set; }
+        public int PathCornerIndex { get; set; }
         public uint StuckTicks { get; set; }
         public Float3 StuckAnchor { get; set; }
         public int StuckFailures { get; set; }
@@ -44,6 +50,7 @@ namespace Shooter.Simulation.AI
         public Float3? VisibleTarget { get; set; }
         public uint ReactionReadyTick { get; set; }
         public uint StateEnteredTick { get; set; }
+        public uint LastSenseOpportunityTick { get; set; }
     }
 
     public sealed class AiCounters
@@ -58,5 +65,7 @@ namespace Shooter.Simulation.AI
         public int StuckEvents;
         public int DeferredSenses;
         public int MaxPathQueue;
+        public int SenseOpportunitiesThisTick;
+        public int AlliedCandidatesSkipped;
     }
 }

@@ -62,6 +62,8 @@ Recipe schema major changes require explicit migration tool and before/after fix
 
 P02 artifact layout is frozen in [compiler artifact format v1](content-format.md), [production schemas](content-schemas/manifest.schema.json) and root `content-format-lock.json`. `Tools/verify_content_format.py` rejects source/format/toolchain drift. `Generation/Editor/Compilation/ContentCompiler.cs` executes a bounded dependency graph and publishes immutable caches; `Content/Runtime/CacheFiles.cs` verifies disk data, and `FileContentStore.cs` coalesces consumer-cancellable byte leases under residency/queue bounds. Test-only generators cover general DAG scenarios; the real production composition has only the CPU collision diagnostic. Full slice compile time/working set, cache eviction and Unity object installation remain pending. Evidence and limits are in the [M1 handoff](milestones/m1-procedural-feasibility/handoff.md).
 
+[ADR-035](decisions.md#adr-035--accepted-verified-release-map-packages-t055-boundary) registers the verified release map-package boundary (`shooter.map-package.v1`, `shooter.map-metadata.v1`, compound/depot recipes, `unity.navmesh.bake.v1`) without implementing Compile-GameContent publication yet. Map scaffolding schemas/examples live under `docs/content-schemas/`; placeholder fixture digests are not shipping goldens.
+
 P03/P04 initial numeric construction and socket assignment is recorded in [weapon baseline](weapon-recipe-baseline.md); new feature generators use the frozen P02 codecs and preserve collision/profile separation.
 
 ## P03/P04 feature source registration

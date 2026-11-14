@@ -1,6 +1,12 @@
+using System;
+using System.Collections.Generic;
+using Shooter.Contracts;
+using Shooter.Game.Contracts;
+using Shooter.Game.Session;
+using Shooter.Generation.Environment;
 using Shooter.Presentation;
 using Shooter.Presentation.Session;
-using GameShellMenu = Shooter.Presentation.Session.GameShellMenu;
+using Shooter.World;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -27,12 +33,29 @@ namespace Shooter.Bootstrap
                     QualitySettings.SetQualityLevel(tier, true);
                     string gallery = FoundationEntry.CommandLine("-shooterContentGallery", "");
                     string soldier = FoundationEntry.CommandLine("-shooterSoldierGallery", "");
-                    if (authority.ProductMode && soldier.Length == 0 && gallery.Length == 0
-                        && FoundationEntry.CommandLine("-shooterBenchmark", "").Length == 0)
+                    string benchmark = FoundationEntry.CommandLine("-shooterBenchmark", "");
+                    if (ProductTdmWorkloads.TryGet(benchmark, out var tdmWorkload))
                     {
-                        GameShellMenu.Create();
-                        var view = ProductSessionView.Create(authority.ProductSession);
-                        authority.InstallProductHumanSampler(tick => view.SampleHuman(tick));
+                        if (!authority.ProductMode)
+                            throw new System.ArgumentException("Product TDM workloads require product composition, not the diagnostic floor/box path.");
+                        var backend = new EntryShellBackend(authority);
+                        var host = ProductTdmHost.Create(backend, tdmWorkload);
+                        new GameObject("Product TDM benchmark recorder").AddComponent<ProductTdmBenchmark>()
+                            .Initialize(authority, host, tdmWorkload);
+                        return;
+                    }
+                    if (authority.ProductMode && soldier.Length == 0 && gallery.Length == 0
+                        && benchmark.Length == 0)
+                    {
+                        string preferredMap = FoundationEntry.CommandLine("-shooterMap",
+                            PlayerPrefs.GetString("shooter.map", WellKnownMaps.TrainingCompound.Value));
+                        byte preferredSize = byte.Parse(
+                            FoundationEntry.CommandLine("-shooterTeamSize",
+                                PlayerPrefs.GetInt("shooter.teamSize", 5).ToString()),
+                            System.Globalization.CultureInfo.InvariantCulture);
+                        if (preferredSize != 5 && preferredSize != 6) preferredSize = 5;
+                        // T059: shell owns start/stop; CLI/PlayerPrefs are setup defaults only.
+                        GameShellMenu.Create(new EntryShellBackend(authority), preferredMap, preferredSize);
                         return;
                     }
                     if (soldier.Length != 0)
@@ -63,6 +86,36 @@ namespace Shooter.Bootstrap
                     if (FoundationEntry.CommandLine("-shooterBenchmark", "").Length > 0)
                         new GameObject("Benchmark recorder").AddComponent<FoundationBenchmark>().Initialize(authority);
                 });
+            }
+        }
+
+        private sealed class EntryShellBackend : IProductShellBackend
+        {
+            private readonly FoundationEntry entry;
+
+            public EntryShellBackend(FoundationEntry entry) => this.entry = entry ?? throw new ArgumentNullException(nameof(entry));
+
+            public OfflineGameSession Session => entry.ProductSession;
+            public IMapCatalog Catalog => entry.ProductCatalog;
+            public GameOperationResult Pause() => entry.PauseProduct();
+            public GameOperationResult Resume() => entry.ResumeProduct();
+            public void WireMapActors() => entry.WireProductMapActors();
+            public void InstallHumanSampler(Func<uint, InputCommand?> sampler) => entry.InstallProductHumanSampler(sampler);
+
+            public bool TryGetVerifiedMap(out IReadOnlyList<CollisionBox> boxes, out byte[]? metadataBytes, out string mapId)
+            {
+                CompoundMapRuntime? map = entry.ProductMap;
+                if (map?.PackagedBoxes == null || map.PackagedBoxes.Count == 0)
+                {
+                    boxes = Array.Empty<CollisionBox>();
+                    metadataBytes = null;
+                    mapId = "";
+                    return false;
+                }
+                boxes = map.PackagedBoxes;
+                metadataBytes = map.LoadedPackage?.MetadataBytes;
+                mapId = map.LoadedPackage?.MapId ?? "unknown";
+                return true;
             }
         }
     }

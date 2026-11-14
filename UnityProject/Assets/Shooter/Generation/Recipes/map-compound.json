@@ -1,0 +1,15 @@
+{
+  "schemaId": "shooter.recipe.map-compound.v1",
+  "recipeId": "training-compound",
+  "generatorId": "map.compound",
+  "generatorVersion": "1.0.0",
+  "seed": "460072030",
+  "parameters": {
+    "mapId": "training-compound",
+    "halfExtentMeters": 128,
+    "chunkSizeMeters": 32,
+    "navAdapterFormat": "unity.navmesh.bake.v1",
+    "navAdapterVersion": 1
+  },
+  "dependencies": []
+}

@@ -23,14 +23,19 @@ namespace Shooter.Simulation.AI
         public const int MaxBots = 11;
         public const int MaxNewPathsPerTick = 2;
         public const float StuckDistance = 0.2f;
+        public const float CornerArrivalDistance = 0.35f;
         public const uint StuckTicksThreshold = 120; // 2 s at 60 Hz
         public const uint ReplanCooldownTicks = 30;
+        public const uint PathTimeoutTicks = 300;
 
         private readonly AiBlackboard[] boards = new AiBlackboard[MaxBots];
         private readonly PerceptionSystem perception;
         private readonly CoverReservationBoard covers = new CoverReservationBoard();
         private readonly INavigation navigation;
         private readonly List<CoverSite> coverSites = new List<CoverSite>();
+        private readonly List<Float3> patrolDestinations = new List<Float3>();
+        private readonly List<Float3> combatDestinations = new List<Float3>();
+        private readonly PathBuffer pathBuffer = new PathBuffer(ContractVersion.MaxPathCorners);
         private readonly AiCounters counters = new AiCounters();
         private int botCount;
         private uint tick;
@@ -57,17 +62,51 @@ namespace Shooter.Simulation.AI
             for (int i = 0; i < sites.Count; i++) coverSites.Add(sites[i]);
         }
 
-        public AiBlackboard RegisterBot(EntityId id, Float3 feet, float yaw)
+        public void SetNavigationDestinations(
+            IReadOnlyList<Float3>? patrol,
+            IReadOnlyList<Float3>? combat)
+        {
+            patrolDestinations.Clear();
+            combatDestinations.Clear();
+            if (patrol != null)
+                for (int i = 0; i < patrol.Count; i++) patrolDestinations.Add(patrol[i]);
+            if (combat != null)
+                for (int i = 0; i < combat.Count; i++) combatDestinations.Add(combat[i]);
+        }
+
+        public AiBlackboard RegisterBot(EntityId id, Float3 feet, float yaw, byte team = 0)
         {
             if (botCount >= MaxBots) throw new InvalidOperationException("Team AI capacity exhausted");
             var board = boards[botCount++];
             board.Self = id;
+            board.Team = team;
             board.Feet = feet;
             board.Yaw = yaw;
+            board.Pitch = 0;
             board.Alive = true;
             board.State = AiState.Patrol;
             board.Health = 100;
             board.MagAmmo = 30;
+            board.ReserveAmmo = 90;
+            board.VisibleTargetId = null;
+            board.HasVisibleTarget = false;
+            board.VisibleTarget = null;
+            board.LastSeenEnemy = null;
+            board.Confidence = 0;
+            board.ReactionReadyTick = 0;
+            board.PathTicket = null;
+            board.PathGoal = null;
+            board.PathCornerCount = 0;
+            board.PathCornerIndex = 0;
+            board.StuckAnchor = feet;
+            board.StuckTicks = 0;
+            board.StuckFailures = 0;
+            board.CoverReservation = null;
+            board.LastHeard = null;
+            board.LastHeardTick = 0;
+            board.LastSeenTick = 0;
+            board.SenseAgeTicks = 0;
+            board.LastSenseOpportunityTick = 0;
             board.StateEnteredTick = tick;
             return board;
         }
@@ -76,6 +115,23 @@ namespace Shooter.Simulation.AI
         {
             if (index < 0 || index >= botCount) throw new ArgumentOutOfRangeException(nameof(index));
             return boards[index];
+        }
+
+        /// <summary>
+        /// Rebind a dead/retired bot slot onto a fresh life. Cancels path/cover, clears
+        /// Dead/reaction/target knowledge and starts a clean Patrol blackboard.
+        /// </summary>
+        public bool TryReplaceLife(EntityId previous, EntityId next, Float3 feet, float yaw, byte team)
+        {
+            if (!next.IsValid) throw new ArgumentOutOfRangeException(nameof(next));
+            for (int i = 0; i < botCount; i++)
+            {
+                if (boards[i].Self != previous) continue;
+                ReleaseBotResources(boards[i]);
+                ResetBoardForLife(boards[i], next, feet, yaw, team);
+                return true;
+            }
+            return false;
         }
 
         public void NotifyDamage(EntityId victim, Float3 source)
@@ -97,9 +153,48 @@ namespace Shooter.Simulation.AI
                 if (boards[i].Self != id) continue;
                 ReleaseBotResources(boards[i]);
                 boards[i].Alive = false;
+                boards[i].HasVisibleTarget = false;
+                boards[i].VisibleTargetId = null;
+                boards[i].VisibleTarget = null;
+                boards[i].ReactionReadyTick = 0;
                 Enter(boards[i], AiState.Dead);
                 return;
             }
+        }
+
+        private void ResetBoardForLife(AiBlackboard board, EntityId id, Float3 feet, float yaw, byte team)
+        {
+            board.Self = id;
+            board.Team = team;
+            board.Feet = feet;
+            board.Yaw = yaw;
+            board.Pitch = 0;
+            board.Alive = true;
+            board.State = AiState.Patrol;
+            board.Health = 100;
+            board.MagAmmo = 30;
+            board.ReserveAmmo = 90;
+            board.VisibleTargetId = null;
+            board.HasVisibleTarget = false;
+            board.VisibleTarget = null;
+            board.LastSeenEnemy = null;
+            board.LastSeenTick = 0;
+            board.Confidence = 0;
+            board.ReactionReadyTick = 0;
+            board.LastHeard = null;
+            board.LastHeardTick = 0;
+            board.PathTicket = null;
+            board.PathGoal = null;
+            board.PathCornerCount = 0;
+            board.PathCornerIndex = 0;
+            board.StuckAnchor = feet;
+            board.StuckTicks = 0;
+            board.StuckFailures = 0;
+            board.CoverReservation = null;
+            board.LastReplanTick = 0;
+            board.SenseAgeTicks = 0;
+            board.LastSenseOpportunityTick = 0;
+            board.StateEnteredTick = tick;
         }
 
         /// <summary>Plan next-tick commands for all living bots. Caller feeds them through normal simulation command path.</summary>
@@ -125,24 +220,44 @@ namespace Shooter.Simulation.AI
             pathsThisTick = 0;
             counters.VisionRaysThisTick = 0;
             counters.PathsRequestedThisTick = 0;
+            counters.SenseOpportunitiesThisTick = 0;
+            counters.AlliedCandidatesSkipped = 0;
             perception.BeginTick();
             PollPaths();
 
             int written = 0;
-            for (int i = 0; i < botCount; i++)
+            int firstBot = botCount == 0 ? 0 : (int)(simulationTick % (uint)botCount);
+            for (int turn = 0; turn < botCount; turn++)
             {
+                int i = (firstBot + turn) % botCount;
                 var board = boards[i];
                 if (!board.Alive || board.State == AiState.Dead) continue;
+                AdvancePathCorners(board);
                 UpdateStuck(board);
+                EntityId? priorVisible = board.VisibleTargetId;
+                board.HasVisibleTarget = false;
+                board.VisibleTargetId = null;
+                board.VisibleTarget = null;
+                board.LastSenseOpportunityTick = tick;
+                counters.SenseOpportunitiesThisTick++;
                 if (enemies != null && enemyCount > 0)
                 {
                     var eye = new Float3(board.Feet.X, board.Feet.Y + 1.65f, board.Feet.Z);
                     bool any = false;
-                    for (int e = 0; e < enemyCount; e++)
+                    int candidateStart = (int)((simulationTick + board.Self.Value) % (uint)enemyCount);
+                    for (int offset = 0; offset < enemyCount; offset++)
                     {
-                        int idx = (i + e) % enemyCount;
+                        int idx = (candidateStart + offset) % enemyCount;
                         var candidate = enemies[idx];
-                        if (candidate.Id.Value == board.Self.Value) continue;
+                        // Filter team/life before perception so allies never consume LOS budget.
+                        if (!PerceptionSystem.IsOpponent(board, candidate))
+                        {
+                            if (candidate.Alive && candidate.Id != board.Self &&
+                                PerceptionSystem.IsAlliedTeam(board.Team, candidate.Team))
+                                counters.AlliedCandidatesSkipped++;
+                            continue;
+                        }
+                        int raysBefore = perception.RaysUsedThisTick;
                         if (perception.TrySense(board, eye, board.Yaw, candidate, counters, out bool acquired) && acquired)
                         {
                             board.LastSeenTick = tick;
@@ -150,22 +265,27 @@ namespace Shooter.Simulation.AI
                             board.HasVisibleTarget = true;
                             board.VisibleTarget = candidate.Point;
                             board.Confidence = 1f;
-                            if (board.ReactionReadyTick == 0)
+                            if (!priorVisible.HasValue || priorVisible.Value != candidate.Id)
                                 board.ReactionReadyTick = tick + 15 + (uint)(board.Self.Value % 16);
                             if (tick >= board.ReactionReadyTick && board.State != AiState.Engage && board.State != AiState.Reload)
                                 Enter(board, AiState.Engage);
                             any = true;
                             break;
                         }
+                        // One actual LOS opportunity per bot per pass keeps the shared budget fair.
+                        if (perception.RaysUsedThisTick != raysBefore) break;
                     }
-                    if (!any && board.HasVisibleTarget == false && board.Confidence > 0)
+                    if (!any && board.Confidence > 0)
                     {
                         board.Confidence = Math.Max(0, board.Confidence - 0.02f);
                         if (board.Confidence <= 0 && board.State == AiState.Engage) Enter(board, AiState.Search);
                     }
                 }
 
-                if (board.MagAmmo <= 0 && board.State != AiState.Reload) Enter(board, AiState.Reload);
+                if (board.MagAmmo <= 0 && board.ReserveAmmo > 0 && board.State != AiState.Reload)
+                    Enter(board, AiState.Reload);
+                else if (board.State == AiState.Reload && board.MagAmmo > 0)
+                    Enter(board, board.HasVisibleTarget ? AiState.Engage : AiState.SeekCover);
                 Decide(board);
                 if (destinationOffset + written >= destination.Length) break;
                 destination[destinationOffset + written] = BuildCommand(board, simulationTick, (uint)(written + 1));
@@ -202,12 +322,15 @@ namespace Shooter.Simulation.AI
                     }
                     break;
                 case AiState.Reload:
-                    board.MagAmmo = 30;
-                    Enter(board, board.HasVisibleTarget ? AiState.Engage : AiState.SeekCover);
+                    // Authority owns reload timing and ammunition. Stay here and request reload
+                    // until lifecycle synchronization observes replenished magazine state.
+                    if (board.ReserveAmmo <= 0) Enter(board, AiState.SeekCover);
                     break;
                 case AiState.Reposition:
                 case AiState.Search:
                     if (board.LastSeenEnemy.HasValue) EnsurePath(board, board.LastSeenEnemy.Value);
+                    else if (combatDestinations.Count > 0)
+                        EnsurePath(board, combatDestinations[(int)(board.Self.Value % (ulong)combatDestinations.Count)]);
                     else Enter(board, AiState.Patrol);
                     break;
             }
@@ -215,7 +338,7 @@ namespace Shooter.Simulation.AI
 
         private void EnsurePath(AiBlackboard board, Float3 goal)
         {
-            if (board.PathTicket.HasValue) return;
+            if (board.PathTicket.HasValue || board.PathCornerIndex < board.PathCornerCount) return;
             if (pathsThisTick >= MaxNewPathsPerTick) return;
             if (tick - board.LastReplanTick < ReplanCooldownTicks && board.PathGoal.HasValue) return;
             var ticket = navigation.RequestPath(board.Self, goal, navRevision);
@@ -230,25 +353,63 @@ namespace Shooter.Simulation.AI
 
         private void PollPaths()
         {
-            var buffer = new PathBuffer(32);
             for (int i = 0; i < botCount; i++)
             {
                 var board = boards[i];
                 if (!board.PathTicket.HasValue) continue;
-                var result = navigation.Poll(board.PathTicket.Value, buffer);
+                if (unchecked(tick - board.PathRequestedTick) >= PathTimeoutTicks)
+                {
+                    navigation.Cancel(board.PathTicket.Value);
+                    board.PathTicket = null;
+                    board.PathGoal = null;
+                    continue;
+                }
+                var result = navigation.Poll(board.PathTicket.Value, pathBuffer);
                 if (result.Status == PathStatus.Pending) continue;
                 if (result.Status == PathStatus.Stale || result.Status == PathStatus.Cancelled || result.Status == PathStatus.Failed)
                 {
                     board.PathTicket = null;
+                    board.PathGoal = null;
                     continue;
                 }
-                // Path complete — consume ticket; movement uses goal for command generation.
+                board.PathCornerCount = result.WrittenCount;
+                board.PathCornerIndex = 0;
+                for (int c = 0; c < result.WrittenCount; c++)
+                    board.PathCorners[c] = pathBuffer[c];
                 board.PathTicket = null;
+                AdvancePathCorners(board);
+            }
+        }
+
+        private static void AdvancePathCorners(AiBlackboard board)
+        {
+            float arrivalSq = CornerArrivalDistance * CornerArrivalDistance;
+            while (board.PathCornerIndex < board.PathCornerCount)
+            {
+                var corner = board.PathCorners[board.PathCornerIndex];
+                float dx = corner.X - board.Feet.X;
+                float dz = corner.Z - board.Feet.Z;
+                if (dx * dx + dz * dz > arrivalSq) break;
+                board.PathCornerIndex++;
+            }
+            if (board.PathCornerIndex >= board.PathCornerCount && board.PathCornerCount > 0)
+            {
+                board.PathCornerCount = 0;
+                board.PathCornerIndex = 0;
+                board.PathGoal = null;
+                board.StuckTicks = 0;
+                board.StuckFailures = 0;
             }
         }
 
         private void UpdateStuck(AiBlackboard board)
         {
+            if (!board.PathTicket.HasValue && board.PathCornerIndex >= board.PathCornerCount)
+            {
+                board.StuckAnchor = board.Feet;
+                board.StuckTicks = 0;
+                return;
+            }
             float dx = board.Feet.X - board.StuckAnchor.X;
             float dz = board.Feet.Z - board.StuckAnchor.Z;
             if (dx * dx + dz * dz >= StuckDistance * StuckDistance)
@@ -262,7 +423,12 @@ namespace Shooter.Simulation.AI
             counters.StuckEvents++;
             board.StuckTicks = 0;
             board.StuckFailures++;
+            if (board.PathTicket.HasValue)
+                navigation.Cancel(board.PathTicket.Value);
             board.PathTicket = null;
+            board.PathCornerCount = 0;
+            board.PathCornerIndex = 0;
+            board.PathGoal = null;
             if (board.StuckFailures >= 3) Enter(board, AiState.Search);
             else if (board.CoverReservation.HasValue) Enter(board, AiState.Reposition);
             else Enter(board, AiState.SeekCover);
@@ -295,6 +461,9 @@ namespace Shooter.Simulation.AI
                 navigation.Cancel(board.PathTicket.Value);
                 board.PathTicket = null;
             }
+            board.PathCornerCount = 0;
+            board.PathCornerIndex = 0;
+            board.PathGoal = null;
             if (board.CoverReservation.HasValue)
             {
                 if (covers.Release(board.CoverReservation.Value, board.Self)) counters.CoverReleases++;
@@ -309,6 +478,12 @@ namespace Shooter.Simulation.AI
             }
         }
 
+        public void CancelAll()
+        {
+            for (int i = 0; i < botCount; i++)
+                ReleaseBotResources(boards[i]);
+        }
+
         private void Enter(AiBlackboard board, AiState state)
         {
             if (board.State == state) return;
@@ -318,8 +493,10 @@ namespace Shooter.Simulation.AI
             if (state == AiState.SeekCover) ClaimBestCover(board);
         }
 
-        private static Float3 PatrolPoint(AiBlackboard board)
+        private Float3 PatrolPoint(AiBlackboard board)
         {
+            if (patrolDestinations.Count > 0)
+                return patrolDestinations[(int)(board.Self.Value % (ulong)patrolDestinations.Count)];
             // Deterministic local orbit based on entity id.
             double a = (board.Self.Value % 8) * (Math.PI / 4);
             return new Float3(board.Feet.X + (float)Math.Cos(a) * 4f, board.Feet.Y, board.Feet.Z + (float)Math.Sin(a) * 4f);
@@ -337,10 +514,13 @@ namespace Shooter.Simulation.AI
         {
             float mx = 0, my = 0;
             var buttons = InputButtons.None;
-            if (board.PathGoal.HasValue && board.State != AiState.Reload)
+            Float3? movementTarget = board.PathCornerIndex < board.PathCornerCount
+                ? board.PathCorners[board.PathCornerIndex]
+                : (Float3?)null;
+            if (movementTarget.HasValue && board.State != AiState.Reload)
             {
-                float dx = board.PathGoal.Value.X - board.Feet.X;
-                float dz = board.PathGoal.Value.Z - board.Feet.Z;
+                float dx = movementTarget.Value.X - board.Feet.X;
+                float dz = movementTarget.Value.Z - board.Feet.Z;
                 float len = MathF.Sqrt(dx * dx + dz * dz);
                 if (len > 0.2f)
                 {

@@ -2,7 +2,7 @@
 
 Unity 6 URP / C# / HLSL design for a realistic modern-world shooter generated from code and numeric recipes. No imported/manual meshes, painted textures, sprites or authored animation. Initial hardware target: Ryzen 5 4600H integrated Radeon, 16 GB DDR4-3200, NVMe; native 720p Low at 30 FPS, 60 FPS stretch.
 
-**Status, 2026-11-14:** M0–M7 retain their historical owner-waived closures and P05 remains FAIL under ADR-024. M8–M11 software/build/package records exist, but the [source audit](product-state-audit.md) identifies incomplete M8–M10 integration and open M11 acceptance. Game-v1 is frozen under ADR-034; C0/content/N1 remain unchanged. Historical closeout labels do not establish a finished product. No new runtime work is assigned by this documentation update.
+**Status, 2026-11-14:** M0–M7 retain their historical owner-waived closures and P05 remains FAIL under ADR-024. M8–M11 software/build/package records exist; T052–T064 remediation is on a dirty working tree and [T065](milestones/m11-playable-release/handoff.md) records acceptance checklist/runbook without claiming REL01–REL06. The [source audit](product-state-audit.md) still governs incomplete M8–M10 integration and open M11 acceptance. Game-v1 is frozen under ADR-034; C0/content/N1 remain unchanged. Historical closeout labels do not establish a finished product.
 
 ## Next development
 
@@ -25,6 +25,7 @@ Use [T052–T065 remediation tasks](release-remediation-plan.md) and the [repair
 | [Current product state audit](product-state-audit.md) | Findings, actual source/evidence and current milestone disposition |
 | [Release remediation implementation](release-remediation-plan.md) | Bounded tasks T052–T065, ownership, dependencies and compatibility |
 | [Release remediation validation](release-remediation-validation.md) | FIX01–FIX14, real-player acceptance and evidence requirements |
+| [Product visual defect inventory](visual-defect-inventory.md) | T062/FIX11 capture-overlay tooling pointer; P05 FAIL retained (ADR-024) |
 | [Relocated view EditMode note](notes/procedural-viewmodel-editmode.md) | Historical RUN00 source-layout note |
 | [Planning validation record](planning-validation.md) | Actual documentation/fixture/tool/source audit outcomes and remaining baseline blockers |
 | [Game session contract plan](game-session-contracts.md) | Frozen Game-v1 ports, intended semantics and documented integration gaps |

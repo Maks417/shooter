@@ -8,6 +8,8 @@ using Shooter.Contracts;
 using Shooter.Game.Contracts;
 using Shooter.Game.Session;
 using Shooter.Game.Settings;
+using Shooter.Simulation;
+using Shooter.Simulation.Session;
 using Shooter.Simulation.TeamDeathmatch;
 using Shooter.World.Runtime;
 using Xunit;
@@ -64,7 +66,7 @@ namespace Shooter.Game.Contracts.Tests
             store.NewerSchemaOnLoad = null;
             Assert.True(store.Save(UserSettings.Defaults).Succeeded);
             Assert.True(store.Load(out var loaded).Succeeded);
-            Assert.Equal(1u, loaded.Schema);
+            Assert.Equal(2u, loaded.Schema);
         }
 
         [Fact]
@@ -91,6 +93,7 @@ namespace Shooter.Game.Contracts.Tests
             Assert.Equal(FinishReason.ScoreLimit, results.Reason);
             Assert.Equal(150u, results.Team1Kills);
             Assert.Equal(150u, results.Team2Kills);
+            foreach (var row in results.FinalRows) Assert.Equal(0u, row.RespawnDueActiveTick);
         }
 
         [Fact]
@@ -135,6 +138,150 @@ namespace Shooter.Game.Contracts.Tests
         }
 
         [Fact]
+        public void TeamDeathmatch_Abort_Cancels_Pending_Respawns()
+        {
+            var match = CreateMatch(5, out var roster, out _, out _, out _);
+            match.MarkPlaying(12, 0);
+            var victim = FindTeam(roster, 2);
+            var killer = FindTeam(roster, 1);
+            match.ProcessDeath(Death(12, killer.EntityId, victim.EntityId, victim.LifeId, 0, 1));
+            Assert.Equal(1u, match.AcquireSnapshot(12, 0).PendingRespawns);
+            match.Abort(12);
+            var stopped = match.AcquireSnapshot(12, 0);
+            Assert.Equal(GameMatchPhase.Stopped, stopped.Phase);
+            Assert.Equal(0u, stopped.PendingRespawns);
+        }
+
+        [Fact]
+        public async Task RealHarness_Replaces_OneHundred_Lives_With_Bounded_Authority()
+        {
+            const ulong sessionId = 77;
+            var catalog = StaticMapCatalog.CreateReleaseSeed();
+            Assert.True(catalog.TryGetGameplay(WellKnownMaps.TrainingCompound, out var map));
+            var request = new SessionRequest(WellKnownMaps.TrainingCompound, WellKnownModes.TeamDeathmatch, 6, 460072030UL);
+            var runtime = new FakeMapRuntime(new NoWorld(), new NoNav());
+            Assert.True((await runtime.LoadAsync(map, CancellationToken.None)).Succeeded);
+            var harness = new CombatHarnessSimulation(runtime.WorldQueries, sessionId, request.Seed);
+            var lifecycle = new HarnessActorLifecycle(harness);
+            var roster = new List<ParticipantState>(request.ParticipantCount);
+            var allEntityIds = new HashSet<ulong>();
+            for (int i = 0; i < request.ParticipantCount; i++)
+            {
+                byte team = i < request.TeamSize ? (byte)1 : (byte)2;
+                var participant = new ParticipantId((uint)(i + 1));
+                var entity = lifecycle.SpawnLife(participant, new LifeId(1), new Float3(i * 4, 0, -20), 0, team);
+                allEntityIds.Add(entity.Value);
+                roster.Add(new ParticipantState(participant, "P" + (i + 1), team, i == 0, entity, new LifeId(1), true, 0, 0, 0));
+            }
+
+            var match = new TeamDeathmatchMatch();
+            match.ConfigureIdentities("cat", "game", "build");
+            match.Begin(request, roster, map);
+            match.MarkPlaying(sessionId, 0);
+            uint simulationTick = 0;
+            ulong previousMaximumId = (ulong)request.ParticipantCount;
+
+            for (int replacement = 0; replacement < 100; replacement++)
+            {
+                var before = match.AcquireSnapshot(sessionId, simulationTick);
+                var victim = before.Participants[replacement % before.Participants.Count];
+                ParticipantState killer = FindAliveOnOtherTeam(before, victim.Team);
+                lifecycle.ResetLife(killer.EntityId, new Float3(0, 0, 0), 0);
+                lifecycle.ResetLife(victim.EntityId, new Float3(0, 0, 5), 0);
+
+                bool killed = false;
+                for (uint fireTick = 0; fireTick < 120 && !killed; fireTick++)
+                {
+                    var command = new InputCommand(
+                        killer.EntityId,
+                        simulationTick,
+                        fireTick + 1,
+                        0,
+                        0,
+                        0,
+                        0,
+                        InputButtons.FireHeld | (fireTick == 0 ? InputButtons.FirePressed : InputButtons.None),
+                        0);
+                    harness.Step(simulationTick, new[] { command });
+                    using (var authority = harness.AcquireSnapshot())
+                        lifecycle.SyncFromSnapshot(authority.Snapshot);
+                    using (var events = harness.AcquireEvents())
+                    {
+                        for (int i = 0; i < events.Events.Count; i++)
+                        {
+                            var combatEvent = events.Events[i];
+                            if (combatEvent.Kind != CombatEventKind.Death || !combatEvent.Target.Equals(victim.EntityId)) continue;
+                            match.ProcessDeath(new DeathResolution(
+                                sessionId,
+                                combatEvent.Id,
+                                victim.EntityId,
+                                victim.LifeId,
+                                combatEvent.Instigator,
+                                simulationTick));
+                            killed = true;
+                        }
+                    }
+                    if (killed) lifecycle.RetireLife(victim.EntityId, before.ActiveTicksElapsed);
+                    match.EvaluateEndOfTick(simulationTick, true);
+                    simulationTick++;
+                }
+                Assert.True(killed);
+
+                var dead = FindById(match.AcquireSnapshot(sessionId, simulationTick - 1), victim.ParticipantId);
+                uint deathActiveTick = unchecked(dead.RespawnDueActiveTick - (uint)GameContractVersion.RespawnDelayActiveTicks);
+                while (match.AcquireSnapshot(sessionId, simulationTick).ActiveTicksElapsed < dead.RespawnDueActiveTick)
+                {
+                    harness.Step(simulationTick, ReadOnlyMemory<InputCommand>.Empty);
+                    using (var authority = harness.AcquireSnapshot())
+                        lifecycle.SyncFromSnapshot(authority.Snapshot);
+                    match.EvaluateEndOfTick(simulationTick, true);
+                    lifecycle.AdvanceActiveTick(match.AcquireSnapshot(sessionId, simulationTick).ActiveTicksElapsed);
+                    simulationTick++;
+                }
+
+                var due = match.AcquireSnapshot(sessionId, simulationTick);
+                Assert.Equal((uint)GameContractVersion.RespawnDelayActiveTicks, due.ActiveTicksElapsed - deathActiveTick);
+                match.ScheduleDueRespawns(due.ActiveTicksElapsed, lifecycle, runtime);
+                var after = match.AcquireSnapshot(sessionId, simulationTick);
+                var replacementLife = FindById(after, victim.ParticipantId);
+                Assert.True(replacementLife.Alive);
+                Assert.Equal(unchecked(victim.LifeId.Value + 1), replacementLife.LifeId.Value);
+                Assert.True(replacementLife.EntityId.Value > previousMaximumId);
+                previousMaximumId = replacementLife.EntityId.Value;
+                Assert.True(allEntityIds.Add(replacementLife.EntityId.Value));
+                Assert.Equal(request.ParticipantCount, lifecycle.ActiveActorCount);
+                Assert.Equal(request.ParticipantCount, harness.ActiveActorCount);
+                Assert.InRange(lifecycle.CosmeticCorpseCount, 0, HarnessActorLifecycle.MaxCosmeticCorpses);
+            }
+
+            harness.Step(simulationTick, ReadOnlyMemory<InputCommand>.Empty);
+            using var finalAuthority = harness.AcquireSnapshot();
+            Assert.Equal(request.ParticipantCount, finalAuthority.Snapshot.Entities.Count);
+            Assert.Equal(request.ParticipantCount * 6, finalAuthority.Snapshot.HitVolumes.Count);
+            var finalMatch = match.AcquireSnapshot(sessionId, simulationTick);
+            Assert.Equal(100u, finalMatch.Team1Kills + finalMatch.Team2Kills);
+            uint retainedDeaths = 0;
+            foreach (var participant in finalMatch.Participants) retainedDeaths += participant.Deaths;
+            Assert.Equal(100u, retainedDeaths);
+            Assert.True(FindById(finalMatch, new ParticipantId(1)).LifeId.Value > 1);
+            Assert.True(FindById(finalMatch, new ParticipantId(7)).LifeId.Value > 1);
+        }
+
+        [Fact]
+        public void HarnessLifecycle_CapsAndExpiresCosmeticCorpses()
+        {
+            var lifecycle = new HarnessActorLifecycle(new CombatHarnessSimulation(new NoWorld()));
+            for (uint i = 0; i < 5; i++)
+            {
+                var entity = lifecycle.SpawnLife(new ParticipantId(i + 1), new LifeId(1), default, 0, i < 3 ? (byte)1 : (byte)2);
+                Assert.True(lifecycle.RetireLife(entity, 10));
+            }
+            Assert.Equal(HarnessActorLifecycle.MaxCosmeticCorpses, lifecycle.CosmeticCorpseCount);
+            lifecycle.AdvanceActiveTick(10 + HarnessActorLifecycle.CosmeticCorpseLifetimeActiveTicks);
+            Assert.Equal(0, lifecycle.CosmeticCorpseCount);
+        }
+
+        [Fact]
         public async Task OfflineSession_Load_Start_Pause_Abort()
         {
             var catalog = StaticMapCatalog.CreateReleaseSeed();
@@ -152,6 +299,68 @@ namespace Shooter.Game.Contracts.Tests
         }
 
         [Fact]
+        public async Task OfflineSession_Rebinds_Bot_And_Human_Replacement_Lives()
+        {
+            var catalog = StaticMapCatalog.CreateReleaseSeed();
+            using var session = new OfflineGameSession(catalog, (w, n) => new FakeMapRuntime(new NoWorld(), new NoNav()), allowFakeMapRuntime: true);
+            var request = new SessionRequest(WellKnownMaps.TrainingCompound, WellKnownModes.TeamDeathmatch, 6, 460072030UL);
+            Assert.True((await session.BeginLoadAsync(request, CancellationToken.None)).Succeeded);
+            Assert.True(session.Start().Succeeded);
+            var lifecycle = Assert.IsType<HarnessActorLifecycle>(session.Lifecycle);
+            var initial = session.TryAcquireSnapshot();
+            Assert.NotNull(initial);
+            var human = FindById(initial!, new ParticipantId(1));
+            var botVictim = FindTeamSnapshot(initial!, 2);
+            ArrangeDuel(lifecycle, initial!, human.EntityId, botVictim.EntityId);
+
+            for (uint sequence = 1; sequence <= 120; sequence++)
+            {
+                var command = new InputCommand(
+                    human.EntityId,
+                    session.CompletedTick,
+                    sequence,
+                    0,
+                    0,
+                    0,
+                    0,
+                    InputButtons.FireHeld | (sequence == 1 ? InputButtons.FirePressed : InputButtons.None),
+                    0);
+                Assert.True(session.Step(command).Succeeded);
+                var current = session.TryAcquireSnapshot()!;
+                if (!FindById(current, botVictim.ParticipantId).Alive) break;
+            }
+            var botDead = FindById(session.TryAcquireSnapshot()!, botVictim.ParticipantId);
+            Assert.False(botDead.Alive);
+            uint botLife = botDead.LifeId.Value;
+            while (FindById(session.TryAcquireSnapshot()!, botVictim.ParticipantId).LifeId.Value == botLife)
+                Assert.True(session.Step(null).Succeeded);
+            var botReplacement = FindById(session.TryAcquireSnapshot()!, botVictim.ParticipantId);
+            Assert.True(botReplacement.Alive);
+            Assert.NotEqual(botVictim.EntityId, botReplacement.EntityId);
+            Assert.Equal(request.ParticipantCount, lifecycle.ActiveActorCount);
+
+            var beforeHumanDeath = session.TryAcquireSnapshot()!;
+            human = FindById(beforeHumanDeath, human.ParticipantId);
+            var enemyShooter = FindById(beforeHumanDeath, botVictim.ParticipantId);
+            ArrangeDuel(lifecycle, beforeHumanDeath, enemyShooter.EntityId, human.EntityId);
+            for (int i = 0; i < 240 && FindById(session.TryAcquireSnapshot()!, human.ParticipantId).Alive; i++)
+                Assert.True(session.Step(null).Succeeded);
+
+            var humanDead = FindById(session.TryAcquireSnapshot()!, human.ParticipantId);
+            Assert.False(humanDead.Alive);
+            uint humanLife = humanDead.LifeId.Value;
+            EntityId oldHumanEntity = humanDead.EntityId;
+            while (FindById(session.TryAcquireSnapshot()!, human.ParticipantId).LifeId.Value == humanLife)
+                Assert.True(session.Step(null).Succeeded);
+            var humanReplacement = FindById(session.TryAcquireSnapshot()!, human.ParticipantId);
+            Assert.True(humanReplacement.Alive);
+            Assert.NotEqual(oldHumanEntity, humanReplacement.EntityId);
+            Assert.Equal(humanReplacement.EntityId, session.HumanEntityId);
+            Assert.Equal(CountAlive(session.TryAcquireSnapshot()!), lifecycle.ActiveActorCount);
+            Assert.InRange(lifecycle.ActiveActorCount, 1, request.ParticipantCount);
+        }
+
+        [Fact]
         public async Task OfflineSession_Rejects_Fake_When_Not_Allowed()
         {
             var catalog = StaticMapCatalog.CreateReleaseSeed();
@@ -159,6 +368,24 @@ namespace Shooter.Game.Contracts.Tests
             var request = new SessionRequest(WellKnownMaps.TrainingCompound, WellKnownModes.TeamDeathmatch, 5, 460072030UL);
             var result = await session.BeginLoadAsync(request, CancellationToken.None);
             Assert.Equal(GameErrorCode.InternalError, result.Error);
+        }
+
+        [Fact]
+        public async Task OfflineSession_Stop_Fences_Stale_Load_Completion()
+        {
+            var catalog = StaticMapCatalog.CreateReleaseSeed();
+            var delayed = new DelayedMapRuntime();
+            using var session = new OfflineGameSession(catalog, (w, n) => delayed, allowFakeMapRuntime: true);
+            var request = new SessionRequest(WellKnownMaps.TrainingCompound, WellKnownModes.TeamDeathmatch, 5, 460072030UL);
+            var loading = session.BeginLoadAsync(request, CancellationToken.None);
+            Assert.Equal(GameMatchPhase.Loading, session.Phase);
+            Assert.True(session.Stop().Succeeded);
+            delayed.Complete();
+            var result = await loading;
+            Assert.Equal(GameErrorCode.StaleSession, result.Error);
+            Assert.True(delayed.Unloaded);
+            Assert.Equal(GameMatchPhase.Stopped, session.Phase);
+            Assert.Null(session.Lifecycle);
         }
 
         [Fact]
@@ -258,6 +485,47 @@ namespace Shooter.Game.Contracts.Tests
             throw new InvalidOperationException("missing");
         }
 
+        private static ParticipantState FindAliveOnOtherTeam(MatchViewSnapshot snapshot, byte team)
+        {
+            foreach (var participant in snapshot.Participants)
+                if (participant.Alive && participant.Team != team) return participant;
+            throw new InvalidOperationException("opposing participant");
+        }
+
+        private static ParticipantState FindTeamSnapshot(MatchViewSnapshot snapshot, byte team)
+        {
+            foreach (var participant in snapshot.Participants)
+                if (participant.Team == team) return participant;
+            throw new InvalidOperationException("team participant");
+        }
+
+        private static int CountAlive(MatchViewSnapshot snapshot)
+        {
+            int count = 0;
+            foreach (var participant in snapshot.Participants)
+                if (participant.Alive) count++;
+            return count;
+        }
+
+        private static void ArrangeDuel(
+            HarnessActorLifecycle lifecycle,
+            MatchViewSnapshot snapshot,
+            EntityId shooter,
+            EntityId victim)
+        {
+            for (int i = 0; i < snapshot.Participants.Count; i++)
+            {
+                var participant = snapshot.Participants[i];
+                if (!participant.Alive) continue;
+                if (participant.EntityId.Equals(shooter))
+                    lifecycle.ResetLife(participant.EntityId, new Float3(0, 0, 0), 0);
+                else if (participant.EntityId.Equals(victim))
+                    lifecycle.ResetLife(participant.EntityId, new Float3(0, 0, 5), 0);
+                else
+                    lifecycle.ResetLife(participant.EntityId, new Float3(80 + i * 3, 0, -80), 3f);
+            }
+        }
+
         private sealed class RecordingLifecycle : IActorLifecycle
         {
             private readonly Dictionary<ulong, ActorLifecycleState> states = new Dictionary<ulong, ActorLifecycleState>();
@@ -290,6 +558,29 @@ namespace Shooter.Game.Contracts.Tests
             public PathTicket RequestPath(EntityId actor, Float3 destination, uint navRevision) => new PathTicket(new NavTicketId(1), actor, navRevision);
             public PathResult Poll(PathTicket ticket, PathBuffer callerOwned) => new PathResult(PathStatus.Failed, 0, 0, ErrorCode.MissingContent);
             public void Cancel(PathTicket ticket) { }
+        }
+
+        private sealed class DelayedMapRuntime : IMapRuntime
+        {
+            private readonly TaskCompletionSource<GameOperationResult> completion =
+                new TaskCompletionSource<GameOperationResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            public IWorldQueries WorldQueries { get; } = new NoWorld();
+            public INavigation Navigation { get; } = new NoNav();
+            public bool Unloaded { get; private set; }
+
+            public Task<GameOperationResult> LoadAsync(MapGameplayDefinition definition, CancellationToken cancel) => completion.Task;
+            public bool TryValidateSpawn(SpawnSlot slot, out string diagnostic)
+            {
+                diagnostic = "ok";
+                return true;
+            }
+            public GameOperationResult Unload()
+            {
+                Unloaded = true;
+                return GameOperationResult.Ok;
+            }
+            public void Complete() => completion.SetResult(GameOperationResult.Ok);
         }
 
     }

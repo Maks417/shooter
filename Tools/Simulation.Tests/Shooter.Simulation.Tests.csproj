@@ -16,6 +16,7 @@
     <ProjectReference Include="../Contracts/Shooter.Contracts.csproj" />
     <ProjectReference Include="../Foundation/Shooter.Foundation.csproj" />
     <ProjectReference Include="../Generation/Shooter.Generation.Core.csproj" />
+    <ProjectReference Include="../Game.Contracts/Shooter.Game.Contracts.csproj" />
   </ItemGroup>
   <ItemGroup>
     <!-- View is presentation-owned; compile BCL-safe sources for pure tests. Motor/Combat/Pose/AI/Match come from Foundation. -->
@@ -23,7 +24,13 @@
     <Compile Include="../../UnityProject/Assets/Shooter/World/Streaming/**/*.cs" Link="WorldStreaming/%(Filename)%(Extension)" />
     <Compile Include="../../UnityProject/Assets/Shooter/World/Navigation/**/*.cs" Link="WorldNavigation/%(Filename)%(Extension)" />
     <Compile Include="../../UnityProject/Assets/Shooter/Presentation/Hud/**/*.cs" Link="Hud/%(Filename)%(Extension)" />
+    <!-- UnitySynthAudioOutput is Unity-device only; pure waveform/router tests use the BCL mixer/router. -->
     <Compile Include="../../UnityProject/Assets/Shooter/Presentation/Audio/**/*.cs" Link="Audio/%(Filename)%(Extension)" />
+    <Compile Remove="../../UnityProject/Assets/Shooter/Presentation/Audio/**/UnitySynthAudioOutput.cs" />
     <Compile Include="../../UnityProject/Assets/Shooter/Presentation/Fx/**/*.cs" Link="Fx/%(Filename)%(Extension)" />
+    <!-- T059 pure shell/scoreboard (Unity MonoBehaviours under Session/ remain editor-only). -->
+    <Compile Include="../../UnityProject/Assets/Shooter/Presentation/Menus/**/*.cs" Link="Menus/%(Filename)%(Extension)" />
+    <Compile Include="../../UnityProject/Assets/Shooter/Presentation/Scoreboard/**/*.cs" Link="Scoreboard/%(Filename)%(Extension)" />
+    <Compile Include="../../UnityProject/Assets/Shooter/Presentation/Session/ShellSessionCoordinator.cs" Link="Session/ShellSessionCoordinator.cs" />
   </ItemGroup>
 </Project>

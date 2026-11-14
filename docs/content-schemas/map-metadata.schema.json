@@ -1,0 +1,219 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "metadataSchema": {
+      "const": "shooter.map-metadata.v1"
+    },
+    "mapId": {
+      "type": "string",
+      "enum": [
+        "training-compound",
+        "depot-yard"
+      ]
+    },
+    "collisionArtifactSha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "collisionRevision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 4294967295
+    },
+    "navRevision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 4294967295
+    },
+    "colliders": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 65536,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "enum": [
+              "capsule",
+              "box",
+              "height-grid"
+            ]
+          },
+          "primitiveIndex": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 65535
+          },
+          "colliderStableId": {
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,19}$"
+          },
+          "surfaceId": {
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,19}$"
+          },
+          "surfaceTag": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 65535
+          }
+        },
+        "required": [
+          "kind",
+          "primitiveIndex",
+          "colliderStableId",
+          "surfaceId",
+          "surfaceTag"
+        ]
+      }
+    },
+    "spawnSlots": {
+      "type": "array",
+      "minItems": 24,
+      "maxItems": 64,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "slotId": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4294967295
+          },
+          "team": {
+            "type": "integer",
+            "enum": [
+              1,
+              2
+            ]
+          },
+          "positionMeters": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "yawDegrees": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "slotId",
+          "team",
+          "positionMeters",
+          "yawDegrees"
+        ]
+      }
+    },
+    "covers": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 256,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "stableId": {
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,19}$"
+          },
+          "centerMeters": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "sizeMeters": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "peekStandingMeters": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "peekCrouchMeters": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "hardCover": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "stableId",
+          "centerMeters",
+          "sizeMeters",
+          "peekStandingMeters",
+          "peekCrouchMeters",
+          "hardCover"
+        ]
+      }
+    },
+    "routes": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "patrolDestinationsMeters": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3
+          }
+        },
+        "combatDestinationsMeters": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3
+          }
+        }
+      },
+      "required": [
+        "patrolDestinationsMeters",
+        "combatDestinationsMeters"
+      ]
+    }
+  },
+  "required": [
+    "metadataSchema",
+    "mapId",
+    "collisionArtifactSha256",
+    "collisionRevision",
+    "navRevision",
+    "colliders",
+    "spawnSlots",
+    "covers",
+    "routes"
+  ]
+}

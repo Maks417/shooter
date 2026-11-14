@@ -1,6 +1,6 @@
 # Feature: offline Team Deathmatch
 
-Status reviewed 2026-11-14: Game-v1 reducer/session/11-bot code exists, but real lifecycle, safe spawns and team AI remain incomplete per [audit](../product-state-audit.md). Requirements below remain normative, not claims of passing coverage. [T053/T057/T058/T065](../release-remediation-plan.md) repair and prove the match; historical M9 software closure does not accept it.
+Status reviewed 2026-11-14 (T058 partial): Game-v1 reducer now ranks safe respawns (occupancy, enemy LOS≤40 m, nearest-enemy distance, LRU, slot ID) and keeps an independent first-failure +600 deadline with 30-tick retries. Catalog maps emit ≥12 unique slots/team. Real-map mixed-team player evidence, native nav and named review remain Pending per [audit](../product-state-audit.md). [T053/T057/T058/T065](../release-remediation-plan.md) still own full match acceptance; historical M9 software closure does not accept it.
 
 ## Player flow and roster
 

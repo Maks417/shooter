@@ -1,0 +1,324 @@
+#nullable enable
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Threading;
+using Shooter.Contracts;
+
+namespace Shooter.Generation.Environment
+{
+    public sealed class MapPackagePublishResult
+    {
+        public ErrorCode Error { get; }
+        public string Diagnostic { get; }
+        public IReadOnlyList<MapPackageBuild> Packages { get; }
+        public bool Reused { get; }
+        public MapPackagePublishResult(ErrorCode error, string diagnostic, IReadOnlyList<MapPackageBuild> packages, bool reused)
+        {
+            Error = error;
+            Diagnostic = diagnostic.Length <= 512 ? diagnostic : diagnostic.Substring(0, 512);
+            Packages = packages ?? Array.Empty<MapPackageBuild>();
+            Reused = reused;
+        }
+        public static MapPackagePublishResult Ok(IReadOnlyList<MapPackageBuild> packages, bool reused) =>
+            new MapPackagePublishResult(ErrorCode.None, "", packages, reused);
+        public static MapPackagePublishResult Fail(ErrorCode error, string diagnostic) =>
+            new MapPackagePublishResult(error, diagnostic, Array.Empty<MapPackageBuild>(), false);
+    }
+
+    /// <summary>Atomic ADR-018 staging publish for map package sets under a cache root.</summary>
+    public static class MapPackagePublisher
+    {
+        public static MapPackagePublishResult Publish(
+            string cacheRoot,
+            ContentId toolchainHash,
+            IReadOnlyList<string> mapIds,
+            IReadOnlyList<string> profiles,
+            bool force,
+            CancellationToken cancel)
+        {
+            if (string.IsNullOrWhiteSpace(cacheRoot)) return MapPackagePublishResult.Fail(ErrorCode.InvalidInput, "cache root required");
+            if (mapIds == null || mapIds.Count == 0) return MapPackagePublishResult.Fail(ErrorCode.InvalidInput, "map selection required");
+            if (profiles == null || profiles.Count == 0) return MapPackagePublishResult.Fail(ErrorCode.InvalidInput, "profile selection required");
+            string root = Path.GetFullPath(cacheRoot).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            try
+            {
+                cancel.ThrowIfCancellationRequested();
+                var built = new List<MapPackageBuild>();
+                bool allReused = true;
+                foreach (string mapId in mapIds)
+                {
+                    if (mapId != "training-compound" && mapId != "depot-yard")
+                        return MapPackagePublishResult.Fail(ErrorCode.InvalidInput, "unknown-map:" + mapId);
+                    foreach (string profile in profiles)
+                    {
+                        cancel.ThrowIfCancellationRequested();
+                        var package = MapPackageBuilder.Build(mapId, profile, toolchainHash);
+                        string packageDir = PackageDirectory(root, package.PackageRootHash);
+                        bool reused = TryVerifyExisting(packageDir, package, out string verifyDiagnostic);
+                        if (reused && !force)
+                        {
+                            built.Add(package);
+                            continue;
+                        }
+                        allReused = false;
+                        if (reused && force)
+                        {
+                            // Force still requires identical bytes; never overwrite divergent content.
+                            built.Add(package);
+                            continue;
+                        }
+                        if (Directory.Exists(packageDir))
+                        {
+                            if (!string.IsNullOrEmpty(verifyDiagnostic))
+                                return MapPackagePublishResult.Fail(ErrorCode.CorruptContent, "corrupt-retained:" + verifyDiagnostic);
+                            // Same key already present and verified.
+                            built.Add(package);
+                            continue;
+                        }
+                        string stage = Path.Combine(root, package.PackageRootHash.ToString().Substring(0, 2),
+                            "." + package.PackageRootHash + "." + Guid.NewGuid().ToString("N") + ".tmp");
+                        try
+                        {
+                            Directory.CreateDirectory(stage);
+                            WriteAll(Path.Combine(stage, "package.json"), package.PackageRootBytes);
+                            for (int i = 0; i < package.Dependencies.Count; i++)
+                            {
+                                var dep = package.Dependencies[i];
+                                WriteAll(Path.Combine(stage, dep.Path), dep.Bytes);
+                            }
+                            Recheck(stage, package);
+                            cancel.ThrowIfCancellationRequested();
+                            string parent = Path.GetDirectoryName(packageDir)!;
+                            Directory.CreateDirectory(parent);
+                            Directory.Move(stage, packageDir);
+                            built.Add(package);
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            TryDeleteDirectory(stage);
+                            return MapPackagePublishResult.Fail(ErrorCode.Cancelled, "publish-cancelled");
+                        }
+                        catch (Exception error)
+                        {
+                            // Retain corrupt/partial staging for repair; do not delete published peers.
+                            return MapPackagePublishResult.Fail(ErrorCode.InternalError, "publish-failed:" + Safe(error.Message));
+                        }
+                    }
+                }
+                WriteIndex(root, built);
+                return MapPackagePublishResult.Ok(built, allReused && built.Count > 0);
+            }
+            catch (OperationCanceledException)
+            {
+                return MapPackagePublishResult.Fail(ErrorCode.Cancelled, "publish-cancelled");
+            }
+            catch (Exception error)
+            {
+                return MapPackagePublishResult.Fail(ErrorCode.InternalError, Safe(error.Message));
+            }
+        }
+
+        public static string PackageDirectory(string cacheRoot, ContentId packageRootHash)
+        {
+            string hex = packageRootHash.ToString();
+            return Path.Combine(cacheRoot, hex.Substring(0, 2), hex);
+        }
+
+        public static bool TryLoad(string cacheRoot, ContentId packageRootHash, out MapPackageBuild? package, out string diagnostic)
+        {
+            package = null;
+            diagnostic = "missing";
+            string dir = PackageDirectory(cacheRoot, packageRootHash);
+            if (!Directory.Exists(dir)) return false;
+            try
+            {
+                byte[] rootBytes = File.ReadAllBytes(Path.Combine(dir, "package.json"));
+                if (ContentIdentity.Hash(rootBytes) != packageRootHash)
+                {
+                    diagnostic = "package-root-hash-mismatch";
+                    return false;
+                }
+                var root = JsonValue.Parse(rootBytes).Object;
+                string mapId = root["mapId"].String;
+                string profile = root["visualProfile"].String;
+                var toolchain = new ContentId(root["toolchainHash"].String);
+                package = MapPackageBuilder.Build(mapId, profile, toolchain);
+                if (package.PackageRootHash != packageRootHash || !BytesEqual(package.PackageRootBytes, rootBytes))
+                {
+                    diagnostic = "rebuilt-package-mismatch";
+                    package = null;
+                    return false;
+                }
+                if (!TryVerifyExisting(dir, package, out diagnostic))
+                {
+                    package = null;
+                    return false;
+                }
+                diagnostic = "ok";
+                return true;
+            }
+            catch (Exception error)
+            {
+                diagnostic = Safe(error.Message);
+                package = null;
+                return false;
+            }
+        }
+
+        /// <summary>Load published bytes without regenerating; verifies hashes only.</summary>
+        public static bool TryOpenPublished(string packageDirectory, ContentId expectedRootHash, out PublishedMapPackage published, out string diagnostic)
+        {
+            published = default!;
+            diagnostic = "missing";
+            if (!Directory.Exists(packageDirectory)) return false;
+            try
+            {
+                byte[] rootBytes = File.ReadAllBytes(Path.Combine(packageDirectory, "package.json"));
+                if (ContentIdentity.Hash(rootBytes) != expectedRootHash)
+                {
+                    diagnostic = "package-root-hash-mismatch";
+                    return false;
+                }
+                var root = JsonValue.Parse(rootBytes).Object;
+                string mapId = root["mapId"].String;
+                string profile = root["visualProfile"].String;
+                var collisionHash = new ContentId(root["collisionArtifactSha256"].String);
+                var navigationHash = new ContentId(root["navigationArtifactSha256"].String);
+                var metadataHash = new ContentId(root["metadataSha256"].String);
+                byte[] collision = File.ReadAllBytes(Path.Combine(packageDirectory, "collision-gameplay.bin"));
+                byte[] navigation = File.ReadAllBytes(Path.Combine(packageDirectory, "navigation-gameplay.bin"));
+                byte[] metadata = File.ReadAllBytes(Path.Combine(packageDirectory, "map-metadata.json"));
+                if (ContentIdentity.Hash(collision) != collisionHash ||
+                    ContentIdentity.Hash(navigation) != navigationHash ||
+                    ContentIdentity.Hash(metadata) != metadataHash)
+                {
+                    diagnostic = "dependency-hash-mismatch";
+                    return false;
+                }
+                published = new PublishedMapPackage(mapId, profile, expectedRootHash, rootBytes, collision, navigation, metadata);
+                diagnostic = "ok";
+                return true;
+            }
+            catch (Exception error)
+            {
+                diagnostic = Safe(error.Message);
+                return false;
+            }
+        }
+
+        private static bool TryVerifyExisting(string packageDir, MapPackageBuild package, out string diagnostic)
+        {
+            diagnostic = "missing";
+            if (!Directory.Exists(packageDir)) return false;
+            try
+            {
+                byte[] root = File.ReadAllBytes(Path.Combine(packageDir, "package.json"));
+                if (!BytesEqual(root, package.PackageRootBytes))
+                {
+                    diagnostic = "package-root-bytes-differ";
+                    return false;
+                }
+                for (int i = 0; i < package.Dependencies.Count; i++)
+                {
+                    var dep = package.Dependencies[i];
+                    string path = Path.Combine(packageDir, dep.Path);
+                    if (!File.Exists(path))
+                    {
+                        diagnostic = "missing-dep:" + dep.Path;
+                        return false;
+                    }
+                    byte[] bytes = File.ReadAllBytes(path);
+                    if (!BytesEqual(bytes, dep.Bytes))
+                    {
+                        diagnostic = "dep-bytes-differ:" + dep.Path;
+                        return false;
+                    }
+                }
+                diagnostic = "ok";
+                return true;
+            }
+            catch (Exception error)
+            {
+                diagnostic = Safe(error.Message);
+                return false;
+            }
+        }
+
+        private static void Recheck(string stage, MapPackageBuild package)
+        {
+            byte[] root = File.ReadAllBytes(Path.Combine(stage, "package.json"));
+            if (!BytesEqual(root, package.PackageRootBytes)) throw new IOException("staged package root mismatch");
+            for (int i = 0; i < package.Dependencies.Count; i++)
+            {
+                var dep = package.Dependencies[i];
+                byte[] bytes = File.ReadAllBytes(Path.Combine(stage, dep.Path));
+                if (!BytesEqual(bytes, dep.Bytes)) throw new IOException("staged dependency mismatch: " + dep.Path);
+            }
+        }
+
+        private static void WriteIndex(string root, List<MapPackageBuild> packages)
+        {
+            var entries = new List<object?>();
+            for (int i = 0; i < packages.Count; i++)
+            {
+                var p = packages[i];
+                entries.Add(new Dictionary<string, object?>
+                {
+                    ["mapId"] = p.MapId,
+                    ["visualProfile"] = p.VisualProfile,
+                    ["packageRootSha256"] = p.PackageRootHash.ToString(),
+                    ["seed"] = p.Seed.ToString(CultureInfo.InvariantCulture),
+                    ["serverGameplayOnly"] = p.VisualProfile == "gameplay"
+                });
+            }
+            byte[] bytes = MapDocumentJson.EncodeObject(new Dictionary<string, object?>
+            {
+                ["indexSchema"] = "shooter.map-package-index.v1",
+                ["packages"] = entries
+            });
+            string path = Path.Combine(root, "index.json");
+            string stage = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
+            WriteAll(stage, bytes);
+            if (File.Exists(path)) File.Replace(stage, path, null);
+            else File.Move(stage, path);
+        }
+
+        private static void WriteAll(string path, byte[] bytes)
+        {
+            using var stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+            stream.Write(bytes, 0, bytes.Length);
+        }
+
+        private static void TryDeleteDirectory(string path)
+        {
+            try { if (Directory.Exists(path)) Directory.Delete(path, true); } catch { /* retain for repair */ }
+        }
+
+        private static bool BytesEqual(byte[] a, byte[] b)
+        {
+            if (a.Length != b.Length) return false;
+            for (int i = 0; i < a.Length; i++) if (a[i] != b[i]) return false;
+            return true;
+        }
+
+        private static string Safe(string message) => message.Length <= 200 ? message : message.Substring(0, 200);
+    }
+
+    public readonly struct PublishedMapPackage
+    {
+        public string MapId { get; }
+        public string VisualProfile { get; }
+        public ContentId PackageRootHash { get; }
+        public byte[] PackageRootBytes { get; }
+        public byte[] CollisionSgaf { get; }
+        public byte[] NavigationSgaf { get; }
+        public byte[] MetadataBytes { get; }
+        public PublishedMapPackage(string mapId, string visualProfile, ContentId packageRootHash, byte[] packageRootBytes, byte[] collisionSgaf, byte[] navigationSgaf, byte[] metadataBytes)
+        {
+            MapId = mapId; VisualProfile = visualProfile; PackageRootHash = packageRootHash;
+            PackageRootBytes = packageRootBytes; CollisionSgaf = collisionSgaf; NavigationSgaf = navigationSgaf; MetadataBytes = metadataBytes;
+        }
+    }
+}

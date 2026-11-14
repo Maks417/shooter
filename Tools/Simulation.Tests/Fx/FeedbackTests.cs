@@ -12,7 +12,7 @@ namespace Shooter.Simulation.Tests.Fx
         public void Synth_mixer_caps_voices_and_peak_limits()
         {
             var mix = new SynthAudioMixer();
-            mix.SetMasterVolume(1f);
+            mix.SetChannelGains(1f, 1f, 0.7f);
             int accepted = 0;
             for (int i = 0; i < 40; i++)
                 if (mix.TryPlay(SynthVoiceKind.Shot, i * 0.5f, (ulong)i)) accepted++;

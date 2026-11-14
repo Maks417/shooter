@@ -1,12 +1,17 @@
 [CmdletBinding()]
 param([Parameter(Mandatory)][string]$BuildRunDirectory,
     [Parameter(Mandatory)][string]$SensorLog,
-    [ValidateSet('B01-minimal-v1','B01-materials-v1')][string]$Workload='B01-minimal-v1', [string]$MaterialCacheRoot='',
+    [ValidateSet(
+        'B01-minimal-v1','B01-materials-v1',
+        'TDM-5v5-v1','TDM-6v6-v1','TDM-5v5-depot-v1','TDM-6v6-depot-v1')][string]$Workload='B01-minimal-v1',
+    [string]$MaterialCacheRoot='', [string]$MapCacheRoot='',
     [string]$HardwareEvidence='',
     [ValidateRange(0,1800)][int]$PreconditionSeconds=1200)
 . (Join-Path $PSScriptRoot 'Unity.Common.ps1')
+$productTdm = $Workload -like 'TDM-*'
 if ($Workload -eq 'B01-materials-v1' -and !$MaterialCacheRoot) { throw 'B01-materials-v1 requires -MaterialCacheRoot.' }
 if ($Workload -eq 'B01-minimal-v1' -and $MaterialCacheRoot) { throw 'Material cache is valid only for B01-materials-v1.' }
+if ($productTdm -and $MaterialCacheRoot) { throw 'Material cache is valid only for B01-materials-v1.' }
 $unity=Get-ShooterUnity
 $run=New-ShooterRun 'benchmark-series' $unity
 $build=(Resolve-Path -LiteralPath $BuildRunDirectory).Path
@@ -28,9 +33,14 @@ function Copy-LiveSensorSnapshot([string]$Destination) {
     finally { if ($outputStream) {$outputStream.Dispose()};$inputStream.Dispose() }
 }
 try {
-    $run.Report['scope']='Three prescribed release captures, no retries; additional same-player conditioning precedes run1 warmup. Hardware review remains explicit.'
+    $run.Report['scope']= if ($productTdm) {
+        'Three prescribed rendered product TDM captures, no retries; hardware/soak review remains explicit PendingHardware.'
+    } else {
+        'Three prescribed release captures, no retries; additional same-player conditioning precedes run1 warmup. Hardware review remains explicit.'
+    }
     $run.Report['buildDirectory']=$build
     $run.Report['workloadId']=$Workload
+    $run.Report['productTdm']=$productTdm
     $run.Report['sensorLog']=$sensor
     $run.Report['utcOffsetMinutes']=[int][TimeZoneInfo]::Local.GetUtcOffset([DateTime]::UtcNow).TotalMinutes
     $run.Report['timeZone']=[TimeZoneInfo]::Local.Id
@@ -44,6 +54,7 @@ try {
         $before=@(Get-ChildItem -LiteralPath $base -Directory -Filter "benchmark-$index-*" | ForEach-Object Name)
         $argsForWrapper=@('-NoProfile','-File',(Join-Path $PSScriptRoot 'Benchmark.ps1'),'-BuildRunDirectory',$build,'-RunIndex',$index,'-PresentMon','-Workload',$Workload)
         if ($MaterialCacheRoot) { $argsForWrapper+=@('-MaterialCacheRoot',(Resolve-Path -LiteralPath $MaterialCacheRoot).Path) }
+        if ($MapCacheRoot) { $argsForWrapper+=@('-MapCacheRoot',(Resolve-Path -LiteralPath $MapCacheRoot).Path) }
         if ($index -eq 1) { $argsForWrapper+=@('-PreconditionSeconds',$PreconditionSeconds) }
         if ($HardwareEvidence) { $argsForWrapper+=@('-HardwareEvidence',(Resolve-Path -LiteralPath $HardwareEvidence).Path) }
         $run.Report.commands+= [ordered]@{executable=(Join-Path $PSHOME 'pwsh.exe');arguments=$argsForWrapper}

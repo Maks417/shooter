@@ -111,10 +111,18 @@ namespace Shooter.Game.Contracts
         GameOperationResult Save(UserSettings settings);
     }
 
+    /// <summary>
+    /// Device adapter for applied preferences. Presentation/audio owners bind real devices;
+    /// pure tests use MemoryClientSettingsApplier. Cannot mutate match/world gameplay rules.
+    /// </summary>
     public interface IClientSettingsApplier
     {
         GameOperationResult Apply(UserSettings settings);
-        GameOperationResult StageDisplayChange(byte qualityTier);
+        GameOperationResult StageDisplayChange(UserSettings candidate);
+        GameOperationResult ConfirmDisplayChange();
         GameOperationResult RevertDisplayChange();
+        bool HasPendingDisplayChange { get; }
+        UserSettings? PendingDisplaySettings { get; }
+        UserSettings? AppliedSettings { get; }
     }
 }

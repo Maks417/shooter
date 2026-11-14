@@ -303,48 +303,194 @@ namespace Shooter.Game.Contracts
         }
     }
 
+    /// <summary>Immutable local presentation/input preferences. Schema 2 per ADR-036; no gameplay mutation.</summary>
     public sealed class UserSettings
     {
+        public const string SchemaId = "shooter.user-settings.v2";
+        public const string ReservedEscapeControl = "Key.Escape";
+
         public uint Schema { get; }
         public float MasterVolume { get; }
-        public float SfxVolume { get; }
-        public float MusicVolume { get; }
+        public float EffectsVolume { get; }
+        public float UiVolume { get; }
         public byte QualityTier { get; }
+        public int ResolutionWidth { get; }
+        public int ResolutionHeight { get; }
+        public DisplayMode DisplayMode { get; }
+        public bool VSync { get; }
+        public int FpsCap { get; }
+        public float HipFovDegrees { get; }
         public float MouseSensitivity { get; }
         public bool InvertY { get; }
-        public bool Subtitles { get; }
         public float UiScale { get; }
+        public bool ReducedCameraMotion { get; }
+        public bool ReducedFlash { get; }
+        public float Contrast { get; }
+        public bool Subtitles { get; }
+        public FrozenList<InputBinding> Bindings { get; }
 
         public UserSettings(
             uint schema,
             float masterVolume,
-            float sfxVolume,
-            float musicVolume,
+            float effectsVolume,
+            float uiVolume,
             byte qualityTier,
+            int resolutionWidth,
+            int resolutionHeight,
+            DisplayMode displayMode,
+            bool vSync,
+            int fpsCap,
+            float hipFovDegrees,
             float mouseSensitivity,
             bool invertY,
+            float uiScale,
+            bool reducedCameraMotion,
+            bool reducedFlash,
+            float contrast,
             bool subtitles,
-            float uiScale)
+            IReadOnlyList<InputBinding> bindings)
         {
             GameRequire.That(schema == GameContractVersion.SettingsSchema, nameof(schema));
+            GameRequire.Finite(masterVolume, nameof(masterVolume));
+            GameRequire.Finite(effectsVolume, nameof(effectsVolume));
+            GameRequire.Finite(uiVolume, nameof(uiVolume));
             GameRequire.That(masterVolume >= 0f && masterVolume <= 1f, nameof(masterVolume));
-            GameRequire.That(sfxVolume >= 0f && sfxVolume <= 1f, nameof(sfxVolume));
-            GameRequire.That(musicVolume >= 0f && musicVolume <= 1f, nameof(musicVolume));
+            GameRequire.That(effectsVolume >= 0f && effectsVolume <= 1f, nameof(effectsVolume));
+            GameRequire.That(uiVolume >= 0f && uiVolume <= 1f, nameof(uiVolume));
             GameRequire.That(qualityTier <= 2, nameof(qualityTier));
-            GameRequire.That(mouseSensitivity >= 0.1f && mouseSensitivity <= 10f, nameof(mouseSensitivity));
-            GameRequire.That(uiScale >= 0.75f && uiScale <= 1.5f, nameof(uiScale));
+            GameRequire.That(resolutionWidth >= GameContractVersion.MinResolutionWidth, nameof(resolutionWidth));
+            GameRequire.That(resolutionHeight >= GameContractVersion.MinResolutionHeight, nameof(resolutionHeight));
+            GameRequire.EnumDefined(displayMode, nameof(displayMode));
+            GameRequire.That(fpsCap == 0 || fpsCap == 30 || fpsCap == 60 || fpsCap == 120, nameof(fpsCap));
+            GameRequire.Finite(hipFovDegrees, nameof(hipFovDegrees));
+            GameRequire.That(hipFovDegrees >= GameContractVersion.MinHipFovDegrees && hipFovDegrees <= GameContractVersion.MaxHipFovDegrees, nameof(hipFovDegrees));
+            GameRequire.Finite(mouseSensitivity, nameof(mouseSensitivity));
+            GameRequire.That(mouseSensitivity >= GameContractVersion.MinMouseSensitivity && mouseSensitivity <= GameContractVersion.MaxMouseSensitivity, nameof(mouseSensitivity));
+            GameRequire.Finite(uiScale, nameof(uiScale));
+            GameRequire.That(uiScale >= GameContractVersion.MinUiScale && uiScale <= GameContractVersion.MaxUiScale, nameof(uiScale));
+            GameRequire.Finite(contrast, nameof(contrast));
+            GameRequire.That(contrast >= GameContractVersion.MinContrast && contrast <= GameContractVersion.MaxContrast, nameof(contrast));
+            Bindings = ValidateBindings(bindings);
             Schema = schema;
             MasterVolume = masterVolume;
-            SfxVolume = sfxVolume;
-            MusicVolume = musicVolume;
+            EffectsVolume = effectsVolume;
+            UiVolume = uiVolume;
             QualityTier = qualityTier;
+            ResolutionWidth = resolutionWidth;
+            ResolutionHeight = resolutionHeight;
+            DisplayMode = displayMode;
+            VSync = vSync;
+            FpsCap = fpsCap;
+            HipFovDegrees = hipFovDegrees;
             MouseSensitivity = mouseSensitivity;
             InvertY = invertY;
-            Subtitles = subtitles;
             UiScale = uiScale;
+            ReducedCameraMotion = reducedCameraMotion;
+            ReducedFlash = reducedFlash;
+            Contrast = contrast;
+            Subtitles = subtitles;
         }
 
-        public static UserSettings Defaults => new UserSettings(1, 1f, 1f, 0.5f, 0, 1f, false, false, 1f);
+        public static UserSettings Defaults => new UserSettings(
+            GameContractVersion.SettingsSchema,
+            1f,
+            1f,
+            0.7f,
+            0,
+            1280,
+            720,
+            DisplayMode.Windowed,
+            false,
+            60,
+            80f,
+            0.10f,
+            false,
+            1f,
+            false,
+            false,
+            1f,
+            false,
+            DefaultBindings());
+
+        public bool SameDisplaySurface(UserSettings other)
+        {
+            if (other == null) throw new ArgumentNullException(nameof(other));
+            return ResolutionWidth == other.ResolutionWidth
+                && ResolutionHeight == other.ResolutionHeight
+                && DisplayMode == other.DisplayMode
+                && VSync == other.VSync
+                && FpsCap == other.FpsCap;
+        }
+
+        public static IReadOnlyList<InputBinding> DefaultBindings() => new[]
+        {
+            new InputBinding("MoveForward", "Key.W"),
+            new InputBinding("MoveBack", "Key.S"),
+            new InputBinding("MoveLeft", "Key.A"),
+            new InputBinding("MoveRight", "Key.D"),
+            new InputBinding("Aim", "Mouse.Right"),
+            new InputBinding("Fire", "Mouse.Left"),
+            new InputBinding("Reload", "Key.R"),
+            new InputBinding("Sprint", "Key.LeftShift"),
+            new InputBinding("Crouch", "Key.LeftCtrl"),
+            new InputBinding("Jump", "Key.Space"),
+            new InputBinding("Slot1", "Key.Digit1"),
+            new InputBinding("Slot2", "Key.Digit2"),
+            new InputBinding("Scoreboard", "Key.Tab"),
+            new InputBinding("Pause", ReservedEscapeControl)
+        };
+
+        private static FrozenList<InputBinding> ValidateBindings(IReadOnlyList<InputBinding> bindings)
+        {
+            if (bindings == null) throw new ArgumentNullException(nameof(bindings));
+            var list = new FrozenList<InputBinding>(bindings, GameContractVersion.MaxSettingsBindings);
+            GameRequire.That(list.Count >= 1, nameof(bindings));
+            var actions = new HashSet<string>(StringComparer.Ordinal);
+            var controls = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            bool pauseEscape = false;
+            foreach (var binding in list)
+            {
+                GameRequire.That(actions.Add(binding.Action), nameof(bindings));
+                GameRequire.That(controls.Add(binding.Control), nameof(bindings));
+                if (string.Equals(binding.Action, "Pause", StringComparison.Ordinal)
+                    && string.Equals(binding.Control, ReservedEscapeControl, StringComparison.OrdinalIgnoreCase))
+                    pauseEscape = true;
+                if (!string.Equals(binding.Action, "Pause", StringComparison.Ordinal)
+                    && string.Equals(binding.Control, ReservedEscapeControl, StringComparison.OrdinalIgnoreCase))
+                    throw new ArgumentException("Escape is reserved for Pause/menu restore.", nameof(bindings));
+            }
+            GameRequire.That(actions.Contains("Pause") && pauseEscape, nameof(bindings));
+            foreach (var required in new[]
+                     {
+                         "MoveForward", "MoveBack", "MoveLeft", "MoveRight", "Aim", "Fire", "Reload",
+                         "Sprint", "Crouch", "Jump", "Slot1", "Slot2", "Scoreboard", "Pause"
+                     })
+            {
+                GameRequire.That(actions.Contains(required), nameof(bindings));
+            }
+            return list;
+        }
+    }
+
+    public readonly struct InputBinding : IEquatable<InputBinding>
+    {
+        public string Action { get; }
+        public string Control { get; }
+
+        public InputBinding(string action, string control)
+        {
+            Action = GameRequire.Display(action, nameof(action), GameContractVersion.MaxBindingToken);
+            Control = GameRequire.Display(control, nameof(control), GameContractVersion.MaxBindingToken);
+            foreach (char c in Action)
+                GameRequire.That((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9'), nameof(action));
+        }
+
+        public bool Equals(InputBinding other) =>
+            string.Equals(Action, other.Action, StringComparison.Ordinal)
+            && string.Equals(Control, other.Control, StringComparison.Ordinal);
+        public override bool Equals(object? obj) => obj is InputBinding other && Equals(other);
+        public override int GetHashCode() => HashCode.Combine(Action, Control);
+        public override string ToString() => Action + "=" + Control;
     }
 
     public sealed class GameOperationResult

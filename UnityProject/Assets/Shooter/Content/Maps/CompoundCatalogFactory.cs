@@ -7,7 +7,7 @@ using Shooter.Generation.Environment;
 
 namespace Shooter.Content.Maps
 {
-    /// <summary>Builds Game-v1 catalog/gameplay entries from the frozen compound planner seeds.</summary>
+    /// <summary>Builds Game-v1 catalog/gameplay entries from the frozen compound/depot planner seeds.</summary>
     public static class CompoundCatalogFactory
     {
         public static MapGameplayDefinition BuildGameplay(MapId mapId, ulong seed)
@@ -19,53 +19,34 @@ namespace Shooter.Content.Maps
                 if (!report.Passed) throw new InvalidOperationException(report.Diagnostic);
             }
 
+            var topology = MapTopologyValidation.Validate(mapId.Value, plan);
+            if (!topology.Passed)
+                throw new InvalidOperationException("Map topology failed FIX07 checks: " + topology.Diagnostic);
+
             var bounds = new Aabb(
                 new Float3(-CompoundPlan.MapHalfExtent, -2f, -CompoundPlan.MapHalfExtent),
                 new Float3(CompoundPlan.MapHalfExtent, 40f, CompoundPlan.MapHalfExtent));
 
-            var spawns = new List<SpawnSlot>(16);
-            // Team 1 clustered near player spawn; team 2 near objective.
-            spawns.Add(new SpawnSlot(1, 1, Feet(plan.PlayerSpawn), YawToward(plan.PlayerSpawn, plan.ObjectiveCenter)));
-            for (int i = 0; i < plan.BotSpawns.Count && CountTeam(spawns, 1) < 6; i++)
+            var candidates = MapSpawnLayout.BuildBothTeams(plan);
+            var spawns = new List<SpawnSlot>(candidates.Count);
+            for (int i = 0; i < candidates.Count; i++)
             {
-                var p = plan.BotSpawns[i];
-                float dPlayer = Dist2(p, plan.PlayerSpawn);
-                float dObj = Dist2(p, plan.ObjectiveCenter);
-                if (dPlayer <= dObj)
-                    spawns.Add(new SpawnSlot((uint)(spawns.Count + 1), 1, Feet(p), YawToward(p, plan.ObjectiveCenter)));
-            }
-            while (CountTeam(spawns, 1) < 6)
-            {
-                int n = CountTeam(spawns, 1);
-                var offset = new Float3(plan.PlayerSpawn.X + 2f * n, plan.PlayerSpawn.Y, plan.PlayerSpawn.Z + 1.5f * n);
-                if (!CompoundConnectivity.IsBlocked(plan.CollisionBoxes, offset.X, offset.Z, CompoundConnectivity.RequiredClearance))
-                    spawns.Add(new SpawnSlot((uint)(100 + n), 1, Feet(offset), YawToward(offset, plan.ObjectiveCenter)));
-                else
-                    spawns.Add(new SpawnSlot((uint)(100 + n), 1, Feet(plan.PlayerSpawn), YawToward(plan.PlayerSpawn, plan.ObjectiveCenter)));
-            }
-
-            spawns.Add(new SpawnSlot(201, 2, Feet(plan.ObjectiveCenter), YawToward(plan.ObjectiveCenter, plan.PlayerSpawn)));
-            for (int i = 0; i < plan.BotSpawns.Count && CountTeam(spawns, 2) < 6; i++)
-            {
-                var p = plan.BotSpawns[i];
-                float dPlayer = Dist2(p, plan.PlayerSpawn);
-                float dObj = Dist2(p, plan.ObjectiveCenter);
-                if (dObj < dPlayer)
-                    spawns.Add(new SpawnSlot((uint)(210 + CountTeam(spawns, 2)), 2, Feet(p), YawToward(p, plan.PlayerSpawn)));
-            }
-            while (CountTeam(spawns, 2) < 6)
-            {
-                int n = CountTeam(spawns, 2);
-                var offset = new Float3(plan.ObjectiveCenter.X - 2f * n, plan.ObjectiveCenter.Y, plan.ObjectiveCenter.Z - 1.5f * n);
-                if (!CompoundConnectivity.IsBlocked(plan.CollisionBoxes, offset.X, offset.Z, CompoundConnectivity.RequiredClearance))
-                    spawns.Add(new SpawnSlot((uint)(220 + n), 2, Feet(offset), YawToward(offset, plan.PlayerSpawn)));
-                else
-                    spawns.Add(new SpawnSlot((uint)(220 + n), 2, Feet(plan.ObjectiveCenter), YawToward(plan.ObjectiveCenter, plan.PlayerSpawn)));
+                var c = candidates[i];
+                spawns.Add(new SpawnSlot(c.SlotId, c.Team, c.Position, c.Yaw));
             }
 
             var patrol = Subsample(plan.RouteCorners, 64);
             if (patrol.Count == 0) patrol.Add(Feet(plan.PlayerSpawn));
-            var combat = new List<Float3> { Feet(plan.ObjectiveCenter), Feet(plan.PlayerSpawn) };
+            // Combat destinations include flank/covered-route anchors for T057 consumers.
+            var combat = new List<Float3>
+            {
+                Feet(plan.ObjectiveCenter),
+                Feet(plan.PlayerSpawn),
+                Feet(new Float3(0f, 0f, 0f)),
+                Feet(new Float3(-96f, 0f, 0f)),
+                Feet(new Float3(96f, 0f, 0f)),
+                Feet(new Float3(112f, 0f, 0f))
+            };
 
             return new MapGameplayDefinition(
                 mapId,
@@ -77,29 +58,6 @@ namespace Shooter.Content.Maps
                 spawns,
                 patrol,
                 combat);
-        }
-
-        private static int CountTeam(List<SpawnSlot> spawns, byte team)
-        {
-            int n = 0;
-            for (int i = 0; i < spawns.Count; i++) if (spawns[i].Team == team) n++;
-            return n;
-        }
-
-        private static float Dist2(Float3 a, Float3 b)
-        {
-            float dx = a.X - b.X, dz = a.Z - b.Z;
-            return dx * dx + dz * dz;
-        }
-
-        private static float YawToward(Float3 from, Float3 to)
-        {
-            float dx = to.X - from.X, dz = to.Z - from.Z;
-            float yaw = MathF.Atan2(dx, dz);
-            // Contract aim interval is [-pi, pi).
-            if (yaw >= (float)Math.PI) yaw = (float)(Math.PI - 1e-5);
-            if (yaw < -(float)Math.PI) yaw = -(float)Math.PI;
-            return yaw;
         }
 
         private static Float3 Feet(Float3 p) => new Float3(p.X, MathF.Max(0f, p.Y), p.Z);

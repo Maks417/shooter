@@ -56,6 +56,7 @@ namespace Shooter.Simulation
         private readonly ulong authoritySessionId;
         private readonly ulong shotSeed;
         private int publishedSnapshot = -1, publishedEvents = -1;
+        private ulong nextEntityId = 1;
         private uint tick;
         private MatchState matchState = MatchState.Ready;
         private EventId highWater;
@@ -74,7 +75,9 @@ namespace Shooter.Simulation
         public EntityId SpawnActor(Float3 feet, float yaw, byte team)
         {
             MainThread();
-            var id = new EntityId((ulong)(actors.Count + 1));
+            if (actors.Count >= ContractVersion.MaxActors)
+                throw new InvalidOperationException("Actor capacity exhausted");
+            var id = new EntityId(nextEntityId++);
             actors.Add(new Actor
             {
                 Id = id,
@@ -84,6 +87,81 @@ namespace Shooter.Simulation
             });
             matchState = MatchState.Playing;
             return id;
+        }
+
+        public int ActiveActorCount
+        {
+            get { MainThread(); return actors.Count; }
+        }
+
+        /// <summary>
+        /// Retires an authoritative life after its ordered death event has been consumed.
+        /// Retired entities are absent from subsequent actor and hit snapshots and can never
+        /// accept another command. Entity ids remain monotonic for the authority session.
+        /// </summary>
+        public bool RetireActor(EntityId entity)
+        {
+            MainThread();
+            for (int i = 0; i < actors.Count; i++)
+            {
+                if (!actors[i].Id.Equals(entity)) continue;
+                actors.RemoveAt(i);
+                return true;
+            }
+            return false;
+        }
+
+        public bool ResetActor(EntityId entity, Float3 feet, float yaw)
+        {
+            MainThread();
+            for (int i = 0; i < actors.Count; i++)
+            {
+                var actor = actors[i];
+                if (!actor.Id.Equals(entity)) continue;
+                actor.Motor = new MotorBodyState(
+                    feet,
+                    default,
+                    yaw,
+                    0,
+                    Stance.Standing,
+                    1.8f,
+                    true,
+                    new SurfaceId(100),
+                    new Float3(0, 1, 0),
+                    tick,
+                    0,
+                    0,
+                    false);
+                actor.Weapons = new[]
+                {
+                    WeaponSimulator.CreateLoaded(WeaponDefinition.Rifle),
+                    WeaponSimulator.CreateLoaded(WeaponDefinition.Pistol)
+                };
+                actor.ActiveSlot = 0;
+                actor.DesiredSlot = 0;
+                actor.RecoilYaw = 0;
+                actor.RecoilPitch = 0;
+                actor.Health = DamageMath.MaxHealth;
+                actor.Alive = true;
+                actor.LastProcessedSequence = 0;
+                actor.LastButtons = InputButtons.None;
+                return true;
+            }
+            return false;
+        }
+
+        public bool ResetCommandEpoch(EntityId entity)
+        {
+            MainThread();
+            for (int i = 0; i < actors.Count; i++)
+            {
+                var actor = actors[i];
+                if (!actor.Id.Equals(entity)) continue;
+                actor.LastProcessedSequence = 0;
+                actor.LastButtons = InputButtons.None;
+                return true;
+            }
+            return false;
         }
 
         private void MainThread()
@@ -112,12 +190,20 @@ namespace Shooter.Simulation
             pendingShots.Clear();
             int accepted = 0, rejected = 0, shots = 0, damageEvents = 0;
 
+            var activeById = new Dictionary<ulong, Actor>(actors.Count);
+            for (int i = 0; i < actors.Count; i++) activeById.Add(actors[i].Id.Value, actors[i]);
             var chosen = new Dictionary<ulong, InputCommand>();
             var span = commands.Span;
             for (int i = 0; i < span.Length; i++)
             {
                 var cmd = span[i];
-                if (!cmd.IsValid) { rejected++; continue; }
+                if (!cmd.IsValid ||
+                    !activeById.TryGetValue(cmd.EntityId.Value, out var commandedActor) ||
+                    cmd.Sequence <= commandedActor.LastProcessedSequence)
+                {
+                    rejected++;
+                    continue;
+                }
                 if (!chosen.TryGetValue(cmd.EntityId.Value, out var prev) || cmd.Sequence > prev.Sequence)
                     chosen[cmd.EntityId.Value] = cmd;
                 else rejected++;

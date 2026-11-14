@@ -1,0 +1,40 @@
+{
+  "packageSchema": "shooter.map-package.v0",
+  "mapId": "training-compound",
+  "displayName": "Training Compound",
+  "recipeId": "training-compound",
+  "generatorId": "map.compound",
+  "generatorVersion": "1.0.0",
+  "seed": "not-a-seed",
+  "toolchainHash": "4444444444444444444444444444444444444444444444444444444444444444",
+  "visualProfile": "gameplay",
+  "collisionArtifactSha256": "1111111111111111111111111111111111111111111111111111111111111111",
+  "navigationArtifactSha256": "2222222222222222222222222222222222222222222222222222222222222222",
+  "navigationAdapterFormat": "unity.navmesh.bake.v1",
+  "navigationAdapterVersion": 1,
+  "navSettingsHash": "3333333333333333333333333333333333333333333333333333333333333333",
+  "metadataSha256": "93295d06530aea63d053551e3ce3fd147e91b140b29009620916302fd8d86377",
+  "dependencies": [
+    {
+      "role": "collision",
+      "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "path": "collision-gameplay.bin"
+    },
+    {
+      "role": "navigation",
+      "sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+      "path": "navigation-gameplay.bin"
+    },
+    {
+      "role": "metadata",
+      "sha256": "93295d06530aea63d053551e3ce3fd147e91b140b29009620916302fd8d86377",
+      "path": "map-metadata.json"
+    }
+  ],
+  "provenance": {
+    "sourceKind": "numeric-recipes",
+    "policy": "procedural-v1",
+    "decision": "docs/decisions.md#adr-035--accepted-verified-release-map-packages-t055-boundary"
+  },
+  "validationSummary": "validated-v1"
+}

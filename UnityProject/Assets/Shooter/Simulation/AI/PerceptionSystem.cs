@@ -8,7 +8,16 @@ namespace Shooter.Simulation.AI
     {
         public EntityId Id { get; }
         public Float3 Point { get; }
-        public SenseTarget(EntityId id, Float3 point) { Id = id; Point = point; }
+        public byte Team { get; }
+        public bool Alive { get; }
+
+        public SenseTarget(EntityId id, Float3 point, byte team = 0, bool alive = true)
+        {
+            Id = id;
+            Point = point;
+            Team = team;
+            Alive = alive;
+        }
     }
 
     /// <summary>Bounded vision: global ≤16 rays/tick; deferred sensing ages rather than inventing visibility.</summary>
@@ -42,6 +51,12 @@ namespace Shooter.Simulation.AI
         {
             acquired = false;
             if (!board.Alive || board.State == AiState.Dead) return false;
+            if (!IsOpponent(board, candidate))
+            {
+                if (candidate.Alive && candidate.Id != board.Self && IsAlliedTeam(board.Team, candidate.Team))
+                    counters.AlliedCandidatesSkipped++;
+                return true;
+            }
             if (raysUsed >= MaxVisionRaysPerTick)
             {
                 counters.DeferredSenses++;
@@ -76,12 +91,29 @@ namespace Shooter.Simulation.AI
             }
             acquired = true;
             board.HasVisibleTarget = true;
+            board.VisibleTargetId = candidate.Id;
             board.VisibleTarget = candidate.Point;
             board.LastSeenEnemy = candidate.Point;
             board.LastSeenTick = board.StateEnteredTick; // caller overwrites with absolute tick
             board.Confidence = 1f;
             board.SenseAgeTicks = 0;
             return true;
+        }
+
+        /// <summary>
+        /// Team 0 remains a diagnostic "unspecified" hostility for single-target plans.
+        /// Assigned teams (1/2) only acquire living opposite-team actors.
+        /// </summary>
+        public static bool IsOpponent(AiBlackboard board, SenseTarget candidate)
+        {
+            if (!candidate.Alive || candidate.Id == board.Self) return false;
+            return !IsAlliedTeam(board.Team, candidate.Team);
+        }
+
+        public static bool IsAlliedTeam(byte selfTeam, byte candidateTeam)
+        {
+            if (selfTeam == 0 || candidateTeam == 0) return false;
+            return selfTeam == candidateTeam;
         }
     }
 }

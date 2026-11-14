@@ -5,6 +5,7 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'TestResults.ps1')
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $sourceCommit = (& git -C $repoRoot rev-parse HEAD).Trim()
 if ($LASTEXITCODE -ne 0) { throw 'Cannot determine source commit.' }
@@ -97,12 +98,8 @@ try {
     $null = Invoke-CheckedProcess 'tests' @('test', $projectPath, '--no-restore', '--configuration', 'Release', '--logger', 'trx;LogFileName=contracts.trx', '--results-directory', $reportDirectory)
     $trxPath = Join-Path $reportDirectory 'contracts.trx'
     if (!(Test-Path -LiteralPath $trxPath -PathType Leaf)) { throw 'Fresh test XML was not produced.' }
-    [xml]$trx = Get-Content -LiteralPath $trxPath -Raw
-    $counters = $trx.TestRun.ResultSummary.Counters
-    $results = @($trx.TestRun.Results.UnitTestResult)
-    if ([int]$counters.total -le 0 -or [int]$counters.failed -ne 0 -or [int]$counters.executed -ne [int]$counters.total -or [int]$counters.passed -ne [int]$counters.total -or $results.Count -ne [int]$counters.total) {
-        throw 'Tests failed, skipped, aborted, or did not run.'
-    }
+    $summary = Get-StrictTrxSummary -Path $trxPath -SuiteName 'Contracts'
+    $results = $summary.Results
     # Normalize fresh TRX to portable JUnit XML, preserving every individual result.
     $xmlSettings = [Xml.XmlWriterSettings]::new()
     $xmlSettings.Indent = $true
@@ -110,7 +107,7 @@ try {
     try {
         $writer.WriteStartElement('testsuite')
         $writer.WriteAttributeString('name', 'Shooter.Contracts')
-        $writer.WriteAttributeString('tests', [string]$counters.total)
+        $writer.WriteAttributeString('tests', [string]$summary.Total)
         $writer.WriteAttributeString('failures', '0')
         foreach ($result in $results) {
             $writer.WriteStartElement('testcase')
@@ -121,7 +118,7 @@ try {
         $writer.WriteEndElement()
     }
     finally { $writer.Dispose() }
-    $report.testCount = [int]$counters.total
+    $report.testCount = $summary.Total
     $report.result = 'PASS'
 }
 catch { $report.failure = $_.Exception.Message; Write-Warning $report.failure }

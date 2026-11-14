@@ -1,10 +1,13 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
+using Shooter.Content.Maps;
 using Shooter.Contracts;
 using Shooter.Game.Contracts;
+using Shooter.Generation;
 using Shooter.Generation.Environment;
 using Shooter.World.Navigation;
 using UnityEngine;
@@ -13,29 +16,35 @@ using EntityId = Shooter.Contracts.EntityId;
 namespace Shooter.World
 {
     /// <summary>
-    /// M8 T037 real map runtime: installs compound collision into PhysX and exposes gameplay pathfinding
-    /// with real corners (CompoundConnectivity). Shipping composition uses this; FakeMapRuntime is rejected.
+    /// Shipping map runtime: installs verified map-package collision/nav/metadata.
+    /// Never regenerates recipes from seeds on the release path (ADR-035 / T055).
     /// </summary>
     public sealed class CompoundMapRuntime : IMapRuntime, IDisposable
     {
         private readonly List<GameObject> solids = new List<GameObject>();
         private readonly Transform? parent;
+        private readonly VerifiedMapPackageStore? packageStore;
+        private readonly Func<MapId, ContentId>? gameplayRootResolver;
         private MapGameplayDefinition? definition;
-        private CompoundPlan? plan;
+        private List<CollisionBox>? packagedBoxes;
         private UnityWorldQueries? world;
         private RevisionedPathAdapter? navigation;
+        private PublishedMapPackage? loadedPackage;
         private bool disposed;
 
-        public CompoundMapRuntime(Transform? parent = null)
+        public CompoundMapRuntime(Transform? parent = null, VerifiedMapPackageStore? packageStore = null, Func<MapId, ContentId>? gameplayRootResolver = null)
         {
             this.parent = parent;
+            this.packageStore = packageStore;
+            this.gameplayRootResolver = gameplayRootResolver;
         }
 
         public IWorldQueries WorldQueries => world ?? throw new InvalidOperationException("Map not loaded.");
         public INavigation Navigation => navigation ?? throw new InvalidOperationException("Map not loaded.");
-        public CompoundPlan? Plan => plan;
-        public uint CollisionRevision => plan?.CollisionRevision ?? 0;
-        public uint NavRevision => plan?.NavRevision ?? 0;
+        public IReadOnlyList<CollisionBox>? PackagedBoxes => packagedBoxes;
+        public PublishedMapPackage? LoadedPackage => loadedPackage;
+        public uint CollisionRevision => definition?.CollisionRevision ?? 0;
+        public uint NavRevision => definition?.NavRevision ?? 0;
 
         public Task<GameOperationResult> LoadAsync(MapGameplayDefinition definition, CancellationToken cancel)
         {
@@ -44,44 +53,96 @@ namespace Shooter.World
             UnloadInternal();
 
             this.definition = definition;
-            ulong seed = definition.MapId.Value switch
+            if (packageStore == null || gameplayRootResolver == null)
+                return Task.FromResult(new GameOperationResult(GameErrorCode.MissingContent, "map-package-store-missing", "Verified map package store is required; seed regeneration is forbidden."));
+
+            ContentId expectedRoot;
+            try { expectedRoot = gameplayRootResolver(definition.MapId); }
+            catch (Exception error)
             {
-                "training-compound" => 460072030UL,
-                "depot-yard" => 460072031UL,
-                _ => 0UL
-            };
-            if (seed == 0)
-                return Task.FromResult(new GameOperationResult(GameErrorCode.MissingContent, "unknown-map-seed", "No packaged compound seed for map."));
+                return Task.FromResult(new GameOperationResult(GameErrorCode.MissingContent, "map-root-unresolved", error.Message));
+            }
 
-            plan = definition.MapId.Value == "depot-yard"
-                ? DepotPlanner.Generate(seed)
-                : CompoundPlanner.Generate(seed);
-            var report = CompoundValidation.Validate(plan);
-            if (!report.Passed)
-                return Task.FromResult(new GameOperationResult(GameErrorCode.CorruptContent, "compound-invalid", report.Diagnostic));
+            if (!packageStore.TryLoadGameplay(definition.MapId, expectedRoot, out var published, out string diagnostic))
+            {
+                return Task.FromResult(new GameOperationResult(GameErrorCode.MissingContent, "map-package-missing",
+                    "Verified package load failed: " + diagnostic + ". Repair required; no silent map substitution."));
+            }
 
-            world = new UnityWorldQueries(plan.CollisionRevision);
-            InstallCollision(plan);
-            Physics.SyncTransforms();
+            cancel.ThrowIfCancellationRequested();
+            try
+            {
+                var fingerprint = GeneratorFingerprint.Compute(MapRecipe.GeneratorIdFor(definition.MapId.Value), MapRecipe.GeneratorVersion);
+                var toolchain = new ContentId(JsonValue.Parse(published.PackageRootBytes).Object["toolchainHash"].String);
+                byte[] collisionBody = ArtifactCodec.Decode(published.CollisionSgaf, ContentKind.Collision, fingerprint, toolchain);
+                var collision = GeometryCodec.DecodeCollision(collisionBody);
+                byte[] navigationBody = ArtifactCodec.Decode(published.NavigationSgaf, ContentKind.Navigation, fingerprint, toolchain);
+                var navigationData = GeometryCodec.DecodeNavigation(navigationBody);
+                if (navigationData.Format != UnityNavMeshBakeCodec.AdapterFormat || navigationData.Version != UnityNavMeshBakeCodec.AdapterVersion)
+                    return Task.FromResult(new GameOperationResult(GameErrorCode.CorruptContent, "nav-adapter-unsupported", "Expected unity.navmesh.bake.v1."));
+                var bake = UnityNavMeshBakeCodec.Decode(navigationData.Blob);
+                if (bake.Polygons.Count == 0)
+                    return Task.FromResult(new GameOperationResult(GameErrorCode.CorruptContent, "nav-empty", "Navigation bake has no polygons."));
 
-            var boxes = plan.CollisionBoxes;
-            float clearance = CompoundConnectivity.RequiredClearance;
-            navigation = new RevisionedPathAdapter(
-                plan.NavRevision,
-                LocateActor,
-                (a, b, corners) =>
+                var meta = MapJsonValue.Parse(published.MetadataBytes).Object;
+                if (meta["mapId"].String != definition.MapId.Value)
+                    return Task.FromResult(new GameOperationResult(GameErrorCode.CorruptContent, "metadata-map-mismatch", "Metadata mapId mismatch."));
+                var colliderRows = meta["colliders"].Array;
+                if (colliderRows.Count != collision.Boxes.Count)
+                    return Task.FromResult(new GameOperationResult(GameErrorCode.CorruptContent, "metadata-count-mismatch", "Collider metadata disagrees with Collision body."));
+
+                var boxes = new List<CollisionBox>(collision.Boxes.Count);
+                for (int i = 0; i < collision.Boxes.Count; i++)
                 {
-                    if (corners == null) return false;
-                    return CompoundConnectivity.TryFindPath(boxes, a, b, corners, clearance);
-                });
+                    var row = colliderRows[i].Object;
+                    if (row["kind"].String != "box" || row["primitiveIndex"].Int32 != i)
+                        throw new InvalidOperationException("Collider metadata order invalid.");
+                    if ((int)row["surfaceTag"].Number != collision.Boxes[i].SurfaceTag)
+                        throw new InvalidOperationException("Collider surfaceTag mismatch.");
+                    ulong stableId = ulong.Parse(row["colliderStableId"].String, CultureInfo.InvariantCulture);
+                    ulong surfaceId = ulong.Parse(row["surfaceId"].String, CultureInfo.InvariantCulture);
+                    if (stableId == 0 || surfaceId == 0) throw new InvalidOperationException("Stable IDs must be nonzero.");
+                    var shape = collision.Boxes[i].Shape;
+                    boxes.Add(new CollisionBox(stableId, surfaceId, collision.Boxes[i].SurfaceTag, shape.Center, shape.Size, true));
+                }
 
-            // Gameplay navigation is RevisionedPathAdapter (real compound path corners). Unity NavMesh bake is not required for M8 AI.
-            return Task.FromResult(GameOperationResult.Ok);
+                loadedPackage = published;
+                packagedBoxes = boxes;
+                world = new UnityWorldQueries(definition.CollisionRevision);
+                InstallCollision(boxes);
+                Physics.SyncTransforms();
+
+                float clearance = CompoundConnectivity.RequiredClearance;
+                // Software nav-grid interim (CompoundConnectivity) until native Unity NavMesh bake/install evidence closes FIX04.
+                // Packaged unity.navmesh.bake.v1 bytes are verified above; path queries here still use the grid adapter.
+                navigation = new RevisionedPathAdapter(
+                    definition.NavRevision,
+                    LocateActor,
+                    (a, b, corners) =>
+                    {
+                        if (corners == null) return false;
+                        return CompoundConnectivity.TryFindPath(boxes, a, b, corners, clearance);
+                    });
+
+                // Native Unity NavMesh install from NVB1 bake remains Pending for player evidence (FIX04 / FIX07).
+                return Task.FromResult(GameOperationResult.Ok);
+            }
+            catch (OperationCanceledException)
+            {
+                UnloadInternal();
+                return Task.FromResult(new GameOperationResult(GameErrorCode.Cancelled, "map-load-cancelled", "Map load cancelled; partial install released."));
+            }
+            catch (Exception error)
+            {
+                UnloadInternal();
+                return Task.FromResult(new GameOperationResult(GameErrorCode.CorruptContent, "map-package-corrupt",
+                    "Corrupt package retained for repair: " + Trim(error.Message)));
+            }
         }
 
         public bool TryValidateSpawn(SpawnSlot slot, out string diagnostic)
         {
-            if (definition == null || plan == null)
+            if (definition == null || packagedBoxes == null)
             {
                 diagnostic = "not-loaded";
                 return false;
@@ -98,7 +159,8 @@ namespace Shooter.World
                 diagnostic = "out-of-bounds";
                 return false;
             }
-            if (CompoundConnectivity.IsBlocked(plan.CollisionBoxes, slot.Position.X, slot.Position.Z, CompoundConnectivity.RequiredClearance))
+            // Standing clearance: capsule radius + margin against packaged collision (same as gameplay nav).
+            if (CompoundConnectivity.IsBlocked(packagedBoxes, slot.Position.X, slot.Position.Z, CompoundConnectivity.RequiredClearance))
             {
                 diagnostic = "blocked";
                 return false;
@@ -128,36 +190,33 @@ namespace Shooter.World
             world?.Dispose();
             world = null;
             navigation = null;
-            plan = null;
+            packagedBoxes = null;
             definition = null;
+            loadedPackage = null;
         }
 
         private Float3? LocateActor(EntityId actor)
         {
-            // Navigation locate is supplied by authority through RevisionedPathAdapter callers that pass actor feet
-            // via the solve path when tickets are polled; ticket origin uses this callback. Product session updates
-            // actor positions before poll by setting ActorLocator.
             return ActorLocator != null ? ActorLocator(actor) : null;
         }
 
         public Func<EntityId, Float3?>? ActorLocator { get; set; }
 
-        private void InstallCollision(CompoundPlan compound)
+        private void InstallCollision(IReadOnlyList<CollisionBox> boxes)
         {
-            // Ground plane covering map extent.
             CreateSolid(
-                "Compound floor",
+                "Packaged floor",
                 new Vector3(0f, -0.05f, 0f),
                 new Vector3(CompoundPlan.MapHalfExtent * 2f, 0.1f, CompoundPlan.MapHalfExtent * 2f),
                 1,
                 100,
                 1);
 
-            for (int i = 0; i < compound.CollisionBoxes.Count; i++)
+            for (int i = 0; i < boxes.Count; i++)
             {
-                var box = compound.CollisionBoxes[i];
+                var box = boxes[i];
                 CreateSolid(
-                    "Compound solid " + box.StableId,
+                    "Packaged solid " + box.StableId,
                     new Vector3(box.Center.X, box.Center.Y, box.Center.Z),
                     new Vector3(box.Size.X, box.Size.Y, box.Size.Z),
                     box.StableId,
@@ -176,5 +235,6 @@ namespace Shooter.World
             solids.Add(item);
         }
 
+        private static string Trim(string message) => message.Length <= 180 ? message : message.Substring(0, 180);
     }
 }

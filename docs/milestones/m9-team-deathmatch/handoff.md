@@ -1,6 +1,19 @@
 # M9 — Team Deathmatch and bot teams — handoff and gate record
 
-**Current disposition — 2026-11-14: M9 integration incomplete.** Reducer tests and initial roster capacity pass in their scope; real repeated respawn/team AI/spawn safety and TDM07/08 are not accepted. Repairs: T053, T057–T058, T063, T065 in the [shared implementation plan](../../release-remediation-plan.md), with [FIX acceptance](../../release-remediation-validation.md). The [audit](../../product-state-audit.md) supersedes earlier readiness interpretations; original requirements, dated ledgers and raw evidence below are retained. No runtime assignment or worker lease is created here.
+**Current disposition — 2026-11-14: M9 integration incomplete.** T058 landed pure spawn-safety ranking + fixed first-failure deadline and ≥12 catalog slots/team; FIX07 still Pending native nav/player review. Real mixed-team player AI, TDM07/08 remain open. Repairs: T053, T057–T058, T063, T065 in the [shared implementation plan](../../release-remediation-plan.md), with [FIX acceptance](../../release-remediation-validation.md). The [audit](../../product-state-audit.md) supersedes earlier readiness interpretations; original requirements, dated ledgers and raw evidence below are retained.
+
+### T058 / FIX07 software note — 2026-11-14
+
+- `SpawnSafetyPolicy` + `TeamDeathmatchMatch.ScheduleDueRespawns`: reject blocked/occupied; rank by no enemy LOS within 40 m, nearest-enemy distance, LRU, slot ID; defer 30 ticks; abort at first-failure +600 without moving the deadline.
+- Evidence: `Tools/Test-Maps.ps1 -Offline` PASS (22); `Game.Contracts.Tests` spawn suite PASS (23 total Game-v1). Unity editor absent → native bake/player **Pending**.
+- Notes for T056: consume existing catalog spawn/combat destinations; do not restyle Presentation for spawn policy. T059: spawn-failure Stopped/Aborted must surface as recoverable shell error. T063: depot workload must use seed `460072031`; re-run Compile-GameContent after depot topology/spawn metadata changes before packaging workloads.
+
+### T063 / FIX12 software note — 2026-11-14
+
+- ADR-037: schemaVersion 2 `tdm-workloads.json` adds `TDM-5v5-depot-v1` / `TDM-6v6-depot-v1` (seed `460072031`) and soak IDs; compound rows unchanged.
+- Product collector (`ProductTdmHost`/`ProductTdmBenchmark`, collector v4) + `analyze_tdm_benchmark.py` negatives; wrappers `Benchmark.ps1` / `Benchmark-Series.ps1` / `Benchmark-Product-Matrix.ps1` / `Benchmark-Soak.ps1`.
+- Evidence: `python Tools/test_tdm_benchmark_analysis.py`; Game-v1 product workload tests. **TDM08 / twelve captures / soaks = PendingHardware.**
+- Handoff to T064: use the same final candidate build/content identities; do not stamp HEAD onto arbitrary binaries; Package-Release must reject dirty/mismatched candidates.
 
 ## Historical closeout record — 2026-11-13
 
@@ -13,7 +26,7 @@ Historical 2026-11-13 software closeout (retained; superseded for current produc
 | AI | `CombatAiDirector.MaxBots=11` + `TeamBotPlanner` multi-enemy sensing; global ray/path budgets retained |
 | Session | `OfflineGameSession.Step` installs respawns, plans bots, steps harness, processes deaths, evaluates finish |
 | TDM07 | Pending — named unshortened player matches not run this assignment |
-| TDM08 | PendingHardware |
+| TDM08 | PendingHardware (FIX12 tooling ready; reference captures/soaks not run) |
 
 ## Ledger
 

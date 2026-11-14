@@ -8,7 +8,8 @@ namespace Shooter.Game.Contracts
     {
         public const string Current = "Game-v1";
         public const uint RuleVersion = 1;
-        public const uint SettingsSchema = 1;
+        public const uint SettingsSchema = 2;
+        public const uint SettingsSchemaMinSupported = 1;
         public const int SimulationHz = 60;
         public const int ScoreLimit = 150;
         public const int TimeLimitActiveTicks = 54000;
@@ -26,6 +27,20 @@ namespace Shooter.Game.Contracts
         public const int SpawnFailureTimeoutTicks = 600;
         public const int TeamSizesMin = 5;
         public const int TeamSizesMax = 6;
+        public const int MaxSettingsFileBytes = 65536;
+        public const int MaxSettingsBindings = 32;
+        public const int MaxBindingToken = 64;
+        public const int DisplayConfirmRealtimeSeconds = 15;
+        public const int MinResolutionWidth = 1280;
+        public const int MinResolutionHeight = 720;
+        public const float MinMouseSensitivity = 0.01f;
+        public const float MaxMouseSensitivity = 1f;
+        public const float MinHipFovDegrees = 70f;
+        public const float MaxHipFovDegrees = 100f;
+        public const float MinUiScale = 1f;
+        public const float MaxUiScale = 1.5f;
+        public const float MinContrast = 0.8f;
+        public const float MaxContrast = 1.5f;
     }
 
     internal static class GameRequire

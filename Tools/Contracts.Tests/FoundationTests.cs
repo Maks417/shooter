@@ -52,6 +52,26 @@ namespace Shooter.Contracts.Tests
             Assert.Equal(0u, clock.NextTick); Assert.Equal(1.0 / 60, clock.DebtSeconds);
         }
         [Fact]
+        public void SuspensionDiscardsWallTimeWithoutCatchUpOrTickReordering()
+        {
+            var clock = new FixedTickClock(false); var ticks = new List<uint>();
+            clock.Advance(1.5 / 60, ticks.Add);
+            Assert.Equal(new uint[] { 0 }, ticks);
+            double fractionalDebt = clock.DebtSeconds;
+
+            clock.SetSuspended(true);
+            clock.Advance(10, ticks.Add);
+            Assert.Equal(new uint[] { 0 }, ticks);
+            Assert.Equal(fractionalDebt, clock.DebtSeconds, 12);
+            Assert.False(clock.Overloaded);
+
+            clock.SetSuspended(false);
+            clock.Advance(.5 / 60, ticks.Add);
+            Assert.Equal(new uint[] { 0, 1 }, ticks);
+            Assert.Equal(2u, clock.NextTick);
+            Assert.False(clock.Overloaded);
+        }
+        [Fact]
         public void EmptyAuthorityBoundsPublicationAndAllowsRetryWithoutOverwritingHeldLeases()
         {
             var simulation = new FoundationSimulation(); var snapshots = new List<SnapshotLease>(); var events = new List<EventLease>();

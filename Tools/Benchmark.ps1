@@ -1,10 +1,17 @@
 [CmdletBinding()]
 param([Parameter(Mandatory)][string]$BuildRunDirectory,
-    [ValidateSet('B01-minimal-v1','B01-materials-v1')][string]$Workload = 'B01-minimal-v1',
+    [ValidateSet(
+        'B01-minimal-v1','B01-materials-v1',
+        'TDM-5v5-v1','TDM-6v6-v1','TDM-5v5-depot-v1','TDM-6v6-depot-v1',
+        'TDM-soak-6v6-compound-v1','TDM-soak-6v6-depot-v1')][string]$Workload = 'B01-minimal-v1',
     [ValidateSet('Low')][string]$Profile = 'Low', [ValidateRange(1,3)][int]$RunIndex = 1, [switch]$Diagnostic,
-    [string]$MaterialCacheRoot = '', [string]$HardwareEvidence = '', [switch]$DiagnosticAllocate, [switch]$PresentMon, [ValidateRange(0,1800)][int]$PreconditionSeconds = 0)
+    [string]$MaterialCacheRoot = '', [string]$MapCacheRoot = '', [string]$HardwareEvidence = '',
+    [switch]$DiagnosticAllocate, [switch]$PresentMon, [ValidateRange(0,1800)][int]$PreconditionSeconds = 0)
+$productTdm = $Workload -like 'TDM-*'
 if ($Diagnostic -and $PreconditionSeconds) { throw 'Extra preconditioning is for full reference captures only.' }
 if ($DiagnosticAllocate -and !$Diagnostic) { throw 'Allocation injection is diagnostic only.' }
+if ($productTdm -and $MaterialCacheRoot) { throw 'Material cache is valid only for B01-materials-v1.' }
+if ($Workload -like 'TDM-soak-*' -and $Diagnostic) { throw 'Soak workloads reject short diagnostic windows.' }
 . (Join-Path $PSScriptRoot 'Unity.Common.ps1')
 $unity = Get-ShooterUnity
 $buildRoot = (Resolve-Path -LiteralPath $BuildRunDirectory).Path
@@ -17,6 +24,14 @@ if ($Workload -eq 'B01-materials-v1') {
     $MaterialCacheRoot = (Resolve-Path -LiteralPath $MaterialCacheRoot).Path
     if (!(Test-Path -LiteralPath (Join-Path $MaterialCacheRoot 'gallery.json') -PathType Leaf)) { throw 'Missing material source plan.' }
 } elseif ($MaterialCacheRoot) { throw 'Material cache is valid only for B01-materials-v1.' }
+if ($productTdm) {
+    if (!$MapCacheRoot) { $MapCacheRoot = Join-Path (Get-ShooterRoot) 'Artifacts/map-packages' }
+    $MapCacheRoot = (Resolve-Path -LiteralPath $MapCacheRoot).Path
+    if (!(Test-Path -LiteralPath $MapCacheRoot -PathType Container)) { throw 'Verified map package cache missing; run Tools/Compile-GameContent.ps1 first.' }
+}
+$captureSeconds = if ($Workload -like 'TDM-soak-*') { 1800 } elseif ($Diagnostic) { 5 } else { 180 }
+$warmupSeconds = if ($Workload -like 'TDM-soak-*') { 0 } elseif ($Diagnostic) { 2 } else { 60 }
+$timeoutSeconds = if ($Diagnostic) { 60 } else { $warmupSeconds + $captureSeconds + $PreconditionSeconds + 90 }
 $run = New-ShooterRun $(if ($Diagnostic) { 'benchmark-diagnostic' } else { "benchmark-$RunIndex" }) $unity
 $trace = $null; $launch = [ordered]@{}
 try {
@@ -39,7 +54,12 @@ try {
         $arguments += @('-shooterMaterialCache',$MaterialCacheRoot,'-shooterContentToolchainHash',$unity.LockHash)
         $run.Report['materialSourcePlanSha256'] = Get-ShooterHash (Join-Path $MaterialCacheRoot 'gallery.json')
     }
+    if ($productTdm) {
+        $arguments += @('-shooterMapCache',$MapCacheRoot,'-shooterToolchainLock',(Join-Path (Get-ShooterRoot) 'toolchain-lock.json'))
+        $run.Report['mapCacheRoot'] = $MapCacheRoot
+    }
     $run.Report['workloadId'] = $Workload
+    $run.Report['productTdm'] = $productTdm
     if ($DiagnosticAllocate) { $arguments += @('-shooterDiagnosticAllocate', 'true') }
     $run.Report.commands += [ordered]@{ executable=$player; arguments=$arguments }
     if ($PresentMon) {
@@ -49,7 +69,7 @@ try {
         $traceInfo = [Diagnostics.ProcessStartInfo]::new(); $traceInfo.FileName=$traceExe
         $traceInfo.UseShellExecute=$false; $traceInfo.CreateNoWindow=$true; $traceInfo.RedirectStandardOutput=$true; $traceInfo.RedirectStandardError=$true
         $traceSession = 'Shooter-' + [Guid]::NewGuid().ToString('N')
-        $traceArgs = @('--process_name','Shooter.exe','--output_file',(Join-Path $run.Path 'presentmon.csv'),'--qpc_time','--no_console_stats','--no_track_input','--set_circular_buffer_size','65536','--session_name',$traceSession,'--timed',$(if ($Diagnostic) { '15' } else { (330 + $PreconditionSeconds).ToString() }),'--terminate_after_timed')
+        $traceArgs = @('--process_name','Shooter.exe','--output_file',(Join-Path $run.Path 'presentmon.csv'),'--qpc_time','--no_console_stats','--no_track_input','--set_circular_buffer_size','65536','--session_name',$traceSession,'--timed',$(if ($Diagnostic) { '15' } else { ($timeoutSeconds).ToString() }),'--terminate_after_timed')
         foreach ($a in $traceArgs) { $traceInfo.ArgumentList.Add($a) }
         $run.Report.commands += [ordered]@{ executable=$traceExe; arguments=$traceArgs }
         $trace=[Diagnostics.Process]::new(); $trace.StartInfo=$traceInfo; $null=$trace.Start()
@@ -57,7 +77,7 @@ try {
         Start-Sleep -Milliseconds 700
         if ($trace.HasExited) { throw 'External GPU trace exited during startup.' }
     }
-    Invoke-ShooterProcess -Executable $player -ProcessArguments $arguments -WorkingDirectory (Split-Path -Parent $player) -LogPath (Join-Path $run.Path 'process.log') -MemorySamplePath (Join-Path $run.Path 'memory.csv') -TimeoutSeconds $(if ($Diagnostic) { 60 } else { 330 + $PreconditionSeconds }) -ProcessRecord $launch
+    Invoke-ShooterProcess -Executable $player -ProcessArguments $arguments -WorkingDirectory (Split-Path -Parent $player) -LogPath (Join-Path $run.Path 'process.log') -MemorySamplePath (Join-Path $run.Path 'memory.csv') -TimeoutSeconds $timeoutSeconds -ProcessRecord $launch
     $launch | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $run.Path 'player-launch.json') -Encoding utf8NoBOM
     if ($PresentMon) {
         $stopArgs=@('--session_name',$traceSession,'--terminate_existing_session')
@@ -73,7 +93,8 @@ try {
     }
     if (!(Test-Path -LiteralPath $log) -or !(Select-String -LiteralPath $log -SimpleMatch 'SHOOTER_BENCHMARK_COMPLETE' -Quiet) -or (Select-String -LiteralPath $log -SimpleMatch 'SHOOTER_FAILURE' -Quiet)) { throw 'Player capture failed or did not finish.' }
     $output = Join-Path $run.Path $(if ($Diagnostic) { 'diagnostic-result.json' } else { 'benchmark-result.json' })
-    $analysisArgs = @((Join-Path $PSScriptRoot 'analyze_benchmark.py'), '--capture', $run.Path, '--build-manifest', $buildManifest, '--hardware', $hardwarePath, '--run-index', $RunIndex, '--output', $output, '--render-application', (Join-Path $run.Path 'render-budget-proof.json'))
+    $analyzer = if ($productTdm) { 'analyze_tdm_benchmark.py' } else { 'analyze_benchmark.py' }
+    $analysisArgs = @((Join-Path $PSScriptRoot $analyzer), '--capture', $run.Path, '--build-manifest', $buildManifest, '--hardware', $hardwarePath, '--run-index', $RunIndex, '--output', $output, '--render-application', (Join-Path $run.Path 'render-budget-proof.json'))
     if ($HardwareEvidence) { $analysisArgs += @('--hardware-evidence', (Resolve-Path -LiteralPath $HardwareEvidence).Path, '--evidence-application', (Join-Path $run.Path 'evidence-application.json')) }
     if ($PresentMon) { $analysisArgs += @('--external-gpu-manifest', (Join-Path $run.Path 'external-gpu.json'), '--gpu-application', (Join-Path $run.Path 'gpu-application.json')) }
     $run.Report.commands += [ordered]@{ executable='python'; arguments=$analysisArgs }
@@ -81,7 +102,7 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Capture analysis failed.' }
     $result = Get-Content -LiteralPath $output -Raw | ConvertFrom-Json
     $run.Report['gateStatus'] = $result.gateStatus
-    $run.Report['scope'] = $(if ($Diagnostic) { 'Short diagnostic only; not benchmark acceptance' } else { 'Real B01 capture; hardware/reviewer gate remains explicit in result' })
+    $run.Report['scope'] = $(if ($Diagnostic) { 'Short diagnostic only; not benchmark acceptance' } elseif ($productTdm) { 'Real rendered product TDM capture; twelve-run/soak hardware gates remain PendingHardware until reference proof' } else { 'Real B01 capture; hardware/reviewer gate remains explicit in result' })
     $run.Report.result = 'PASS'
     if (!$Diagnostic -and $result.gateStatus -ne 'ComputedPass') { $run.Report.result = $result.gateStatus }
 }
@@ -89,7 +110,6 @@ catch { $run.Report.error = $_.Exception.Message; Write-Warning $run.Report.erro
 finally {
     if ($null -ne $trace) {
         if (!$trace.HasExited) {
-            # Stop only this wrapper's uniquely named session; never another monitor's ETW session.
             & $traceExe --session_name $traceSession --terminate_existing_session 2>&1 | Out-Null
             if (!$trace.WaitForExit(5000)) { $trace.Kill($true); $trace.WaitForExit() }
         }

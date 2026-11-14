@@ -3,8 +3,8 @@
   "formatVersion": 1,
   "status": "FrozenByIntegrator",
   "contractVersion": "C0-v1",
-  "date": "2026-11-12",
-  "decision": "docs/decisions.md#adr-018--accepted-initial-p02-compiler-format-and-byte-cache-boundary",
+  "date": "2026-11-14",
+  "decision": "docs/decisions.md#adr-035--accepted-verified-release-map-packages-t055-boundary",
   "toolchainHash": "9ac31fe82117043e2bba3bfb843dd1ca32834b15425188e96d6f3369e2c627a8",
   "generatorRegistry": [
     {
@@ -12,12 +12,38 @@
       "version": "1.0.0",
       "schema": "shooter.recipe.box-collision.v1",
       "scope": "Numeric CPU collision diagnostic only; not shipping gameplay composition"
+    },
+    {
+      "id": "map.compound",
+      "version": "1.0.0",
+      "schema": "shooter.recipe.map-compound.v1",
+      "scope": "Registered ADR-035 T055 boundary for training-compound release packages; publication not yet implemented"
+    },
+    {
+      "id": "map.depot",
+      "version": "1.0.0",
+      "schema": "shooter.recipe.map-depot.v1",
+      "scope": "Registered ADR-035 T055 boundary for depot-yard release packages; approved catalog seed 460072031; publication not yet implemented"
+    },
+    {
+      "id": "map.package",
+      "version": "1.0.0",
+      "schema": "shooter.map-package.v1",
+      "scope": "Registered ADR-035 package-root publisher/validator boundary; Compile-GameContent publication not yet implemented"
     }
   ],
   "sources": {
-    "docs/content-format.md": "bf62d3e7dadbbb66840a69c8fc60e80bf64c7130837a9308bc10d2db3549d157",
+    "docs/content-format.md": "e68d82ac3407b59aad37e30a80cf2adeb34b5e081cf48dd685fe46d74bffe80a",
     "docs/content-schemas/box-collision.schema.json": "17277a6adf06647ded09757975b580646a4eab572c754c148c0142e8f803d5d6",
     "docs/content-schemas/manifest.schema.json": "75a05692bc925f130dd4ff27874cff51cce5018b2421c71b21dbe8e293ec931c",
+    "docs/content-schemas/map-metadata.schema.json": "320a3692ecc845e1a25a0f73c1eb83332eda01cc8e72200c2266d3fe46e4569d",
+    "docs/content-schemas/map-metadata.valid.json": "93295d06530aea63d053551e3ce3fd147e91b140b29009620916302fd8d86377",
+    "docs/content-schemas/map-package.invalid.json": "63a0afed672350732d5568bf5eddd09e789e3834a3cc42357a3c7e4ee2723352",
+    "docs/content-schemas/map-package.schema.json": "2d9cdac98b2d51a3e1df3ff8f44157758ed205e0bf30eed3b0b6610a121cef43",
+    "docs/content-schemas/map-package.valid.json": "f91436e693469765bdacfa0d01f54b11b37f8dd285f74b10baf06bf1dcb0c6bf",
+    "docs/content-schemas/map-recipe.compound.json": "bf61a15e675e79f1ffe8be959663bcc249c65d9dce6bbb16033b1241a64b714c",
+    "docs/content-schemas/map-recipe.depot.json": "ed5b34c318fc15534f46e96a62c38ff5556547360d9211b28952e7d341298995",
+    "docs/content-schemas/map-recipe.schema.json": "b1aa0caa30f61595061dd0e29dd94db001a36e2f1680d4863fa3873b9def4409",
     "Tools/Generation.Tests/CodecFixtures/generate_vectors.py": "5ef90986cc65590226deec5e35dcfd0d6b0fafa26cb181d49ba6d67870b96489",
     "Tools/Generation.Tests/CodecTests.cs": "ab606b851ca802673d6c8891185beb78d3eebde8901d68ca9fec82ddb4c20d48",
     "UnityProject/Assets/Shooter/Generation/Core/Canonical/CanonicalJson.cs": "64bc7ea7f4bcf1ecde9dfaec40a71b4cd575e3c0ae59b957614fc4e1498aecc9",
@@ -48,5 +74,23 @@
     "UnityProject/Assets/Shooter/Generation/Core/Recipes/GeneratorFingerprint.cs.meta": "9289e5dc28635fbb110e1336fd071dca1b55431c52026684591a8bf57275eeb3",
     "UnityProject/Assets/Shooter/Generation/Recipes/box-collision.json": "1f14eebbcf45d018b9cf32e5419d96815636b0e84d822b65bb18bd259cbcd564"
   },
-  "sourceBytePolicy": "Repository LF text bytes as enforced by .gitattributes; newline-only initial lock correction under ADR-019"
+  "sourceBytePolicy": "Repository LF text bytes as enforced by .gitattributes; newline-only initial lock correction under ADR-019",
+  "priorDecision": "docs/decisions.md#adr-018--accepted-initial-p02-compiler-format-and-byte-cache-boundary",
+  "mapPackage": {
+    "packageSchema": "shooter.map-package.v1",
+    "metadataSchema": "shooter.map-metadata.v1",
+    "navigationAdapterFormat": "unity.navmesh.bake.v1",
+    "navigationAdapterVersion": 1,
+    "approvedCatalogSeeds": {
+      "training-compound": "460072030",
+      "depot-yard": "460072031"
+    },
+    "robustnessCorpusSeeds": [
+      "1",
+      "42",
+      "460072030",
+      "18446744073709551615"
+    ],
+    "status": "BoundaryRegisteredPendingPublication"
+  }
 }

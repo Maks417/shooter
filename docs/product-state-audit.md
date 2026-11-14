@@ -11,7 +11,7 @@ M0–M7 retain their historical administrative closures and owner waivers. M8–
 | M8 | Game-v1 freeze (ADR-034), OfflineGameSession, collider/path adapter, input/camera/text view, real client/server builds | Incomplete: visible map/actors, audible output, pause and lifecycle integration; RUN02–RUN05 not accepted from READY/smoke markers |
 | M9 | TDM reducer, full-size initial roster, 11-bot capacity, session tick binding | Incomplete: repeated respawn, life rebinding, team targeting, real corner following and safe-spawn behavior; TDM07/08 still pending |
 | M10 | Compound/depot numeric planners, catalog, minimal shell, file settings store | Incomplete: verified content packages, functional menu transitions/tables, settings editor and live device application |
-| M11 | Local copy/inventory packaging wrapper and an older local package | Open: clean source-matched independent artifact, full match matrix, visual acceptance, full-roster performance, soak and rollback |
+| M11 | T064 Package-Release software + older historical dirty package; T065 checklist/runbook | Open / NotClaimed: REL01–REL06 need one clean source-matched candidate, P05 FAIL retained, full matches, visual/device reviews, reference performance/soak and rollback |
 
 ## Findings and source evidence
 
@@ -24,14 +24,14 @@ Paths below start at `UnityProject/Assets/Shooter/` unless prefixed `Tools/`. Li
 | A03 / critical | Paused `OfflineGameSession.Step` returns Busy; `Bootstrap/Runtime/FoundationEntry.cs:165` throws for unsuccessful steps unless Finished, while Update keeps advancing its clock. Escape pause can therefore reach fatal session handling. | T054 |
 | A04 / high | `Simulation/AI/TeamBotPlanner.cs:34` supplies all living participants as candidates; `CombatAiDirector.PlanEnemies` only excludes self. Allies can consume target/fire intent despite friendly damage rejection. `PollPaths` discards completed corners; BuildCommand moves toward PathGoal. Reload state changes before command construction also need authority-backed coverage. | T057 |
 | A05 / high | `TeamDeathmatchMatch.TryPickSpawn` chooses the lowest-ID statically valid slot without actor occupancy/enemy-pressure ranking. `CompoundCatalogFactory` supplies six initial slots per team rather than the specified minimum twelve and can repeat fallback positions. Retry updates the due tick used for timeout; preserve an independent first-failure deadline. | T058 |
-| A06 / high | `FoundationEntry.StartProduct` loads/starts before the shell exists. `GameShellMenu.cs:42` writes PlayerPrefs only; it does not start the selected match. The shell stays over gameplay with locked cursor. ProductSessionView displays score/result text, not full scoreboard/results/replay/menu flows. | T059 |
-| A07 / high | `GameShellMenu` loads/saves a fixed settings object and applies only quality. No settings editor or complete device applier is composed. `FileUserSettingsStore` writes a semicolon file, deletes the destination before move, and lacks required bounded JSON/last-good/quarantine behavior. Input reads mouse delta per simulation sample; selected weapon falls back to the unchanged view field unless a slot key remains held. | T054, T060 |
-| A08 / high | `ProductSessionView.NotifyCombat` has no caller; mixer output from Update is discarded. No AudioSource/audio callback/output adapter is installed on this path. Pure synthesis tests do not prove audible playback. | T061 |
+| A06 / high | ~~`FoundationEntry.StartProduct` loads/starts before the shell exists…~~ **T059 software (2026-11-14):** product launch prepares session/catalog only; `ProductShellHost` owns Main→Setup→Loading→Playing→Paused→Results, cancellable load, Tab scoreboard and retained results. Remaining: player 20-launch soak, 720p UI review, full-match acceptance after T057–T058. | T059 |
+| A07 / high | ~~Historical schema-1 semicolon store / quality-only apply.~~ **T060+T059/T061 software (2026-11-14):** ADR-036 schema 2, `UserSettingsEditor`, `FileUserSettingsStore` JSON safety, `ProductClientSettingsApplier` audio/display/FOV/input bind. Remaining: SET02 named device/15s Keep/Revert on real display; full rebind UI polish. Input buffer repair is T054. | T054, T060, T059, T061 |
+| A08 / high | Historical: `NotifyCombat` had no caller; mixer output discarded; no AudioSource path. **T061 software repair (2026-11-14):** ordered event lease → router → `UnitySynthAudioOutput`/`OnAudioFilterRead`; pure Fx PASS. Named device/reviewer audible acceptance and T060 settings binding remain open — waveforms alone are not FIX10 device PASS. | T061 |
 | A09 / high | `Tools/Compile-GameContent.ps1` runs Compound-filtered tests and reports seeds; it does not compile/publish a dependency package and does not use Map to select actual outputs. Catalog visual hashes are hashes of labels. CompoundMapRuntime generates map plans in the release player instead of loading verified compiled content. | T055 |
-| A10 / high | `Tools/Benchmark.ps1` and FoundationBenchmark accept B01-minimal/materials only. Frozen TDM fixtures describe training-compound; depot workload identity/route/counter coverage is not established by the same IDs. | T063 |
-| A11 / high | `Tools/Package-Release.ps1` copies a supplied player directory, hashes it and reports PASS without proving build provenance, content closure, independent launch or rollback. Existing package/build manifests identify `03fa6dd...` and `sourceDirty: true`; no clean-current-source release is proved. Backup/debug build folders are copied too. | T064 |
+| A10 / high | **T063 software 2026-11-14:** ADR-037 adds depot measurement IDs + product collector/analysis/wrappers; negatives cover wrong map/roster/profile/build. Twelve captures + soaks remain PendingHardware. Historical audit note: B01-only path and compound-only fixtures were the baseline gap. | T063 |
+| A11 / high | ~~Copy/hash-only Package-Release that stamped HEAD and shipped backup/debug folders.~~ **T064/FIX13 software (2026-11-14):** `Tools/Package-Release.ps1` + `Tools/release-package-policy.json` reject dirty/mismatched/absent build identities (no HEAD stamp onto arbitrary binaries), require verified map-package closure, exclude backup/debug/pdb/user files, emit archive/SHA256/inventory/licenses/provenance/rollback pair, and rehearse clean extract + corrupt recovery + prior-pair rollback. Synthetic wrapper suite PASS (`Tools/test_package_release.ps1`, 7 cases); dirty `03fa6dd` client build FAIL as required. **Pending:** player launch / REL01–REL06 on one clean source-matched candidate (T065). | T064 |
 | A12 / high | Fresh required `Tools/Test-Contracts.ps1 -Offline` fails restore with NU1004: Foundation now references Generation.Core but `Tools/Contracts.Tests/packages.lock.json` has an older project graph. No Contracts tests execute in that attempt. | T052 |
-| A13 / release blocker | P05 remains FAIL under ADR-024. Named player/UI/soldier review, full matches and reference performance/soak are missing. Historical waivers do not accept new gates; no fourth soldier clearance search is authorized by this audit. | T062, T065 |
+| A13 / release blocker | P05 remains FAIL under ADR-024. **T062 tooling 2026-11-14:** capture/overlay helpers + defect inventory (ToolingReady); no fourth clearance search; FAIL not relabeled. Named player/UI/soldier review, full matches and reference performance/soak are still missing. Historical waivers do not accept new gates. | T062, T065 |
 
 ## Fresh verification at audited source
 
@@ -62,3 +62,26 @@ The owner subsequently requested corrected repository docs and implementation/fi
 Fixture verification (35 assertions), documentation links/inventory/hash checks, source provenance (538 entries/269 GUIDs), C0/content/feature/Game-v1 identity guards and whitespace checks pass. Final documentation counts are recorded in verification-report.json; documentation hashes remain delivery integrity only. The first verifier attempt found an unreachable historical view note after navigation edits; its index link was restored before final verification.
 
 The required wrappers were rerun with docs dirty on the same f3d9954 runtime baseline: Generation PASS, 298/298, zero skipped, at `Artifacts/m1-procedural-feasibility/f3d995497d88376d171c86b4088ae37fa8f289f0/20261114T094648602Z-05769344/`; Contracts FAIL before tests with unchanged NU1004 at `Artifacts/m0-foundation/f3d995497d88376d171c86b4088ae37fa8f289f0/20261114T094640978Z-4e9545e2/`. T052 owns the implementation fix; no lock was relaxed here. No new Unity build/player/visual/audio/hardware acceptance was attempted or claimed by this documentation follow-up.
+
+## Remediation software on dirty main — 2026-11-14 (post-audit)
+
+After the docs-audit commit `6329262446428f92617600d8526b13f9c90a358a`, T052–T064 software remediation was implemented on an **uncommitted dirty `main` working tree**. That work is not a clean acceptance candidate. Honest dispositions for T065:
+
+| Task | Software | Remaining |
+|---|---|---|
+| T052 FIX01 | Met | Offline NuGet advisory PendingNetwork |
+| T053 FIX02 | Software met | Actual-player lifecycle Pending |
+| T054 FIX03 | Software met | Player pause/focus device Pending |
+| T055 FIX04 | Partial packages/load | Native Unity nav bake + release-player Pending |
+| T056 FIX05 | Software wired | Player captures both maps Pending |
+| T057 FIX06 | Pure AI met | Mixed-team real-map player Pending |
+| T058 FIX07 | Software spawn safety | Native/player review Pending |
+| T059 FIX08 | Shell software | 20-launch soak + 720p UI review Pending |
+| T060 FIX09 | ADR-036 + UI/audio bind | SET02 real display Pending |
+| T061 FIX10 | Device callback software | Named audible review Pending |
+| T062 FIX11 | ToolingReady inventory | P05 FAIL retained; REL03 open |
+| T063 FIX12 | ADR-037 tooling | 12 captures + soaks PendingHardware |
+| T064 FIX13 | Package-Release software | Clean source-matched client + player launch Pending |
+| T065 FIX14 | Checklist + operator runbook | REL01–REL06 NotClaimed until measured |
+
+T065 acceptance steps and commands live in [M11 handoff](milestones/m11-playable-release/handoff.md). No REL gate is PASS; failed P05 artifacts remain; packages/editor were not upgraded by the T065 docs handoff. Commit of the large working tree was not requested.

@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "shooter.user-settings.v2",
+  "title": "Shooter user settings schema 2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "schemaId",
+    "masterVolume",
+    "effectsVolume",
+    "uiVolume",
+    "qualityTier",
+    "resolutionWidth",
+    "resolutionHeight",
+    "displayMode",
+    "vSync",
+    "fpsCap",
+    "hipFovDegrees",
+    "mouseSensitivity",
+    "invertY",
+    "uiScale",
+    "reducedCameraMotion",
+    "reducedFlash",
+    "contrast",
+    "subtitles",
+    "bindings"
+  ],
+  "properties": {
+    "schema": {
+      "const": 2
+    },
+    "schemaId": {
+      "const": "shooter.user-settings.v2"
+    },
+    "masterVolume": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "effectsVolume": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "uiVolume": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "qualityTier": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2
+    },
+    "resolutionWidth": {
+      "type": "integer",
+      "minimum": 1280
+    },
+    "resolutionHeight": {
+      "type": "integer",
+      "minimum": 720
+    },
+    "displayMode": {
+      "type": "integer",
+      "enum": [
+        0,
+        1,
+        2
+      ]
+    },
+    "vSync": {
+      "type": "boolean"
+    },
+    "fpsCap": {
+      "type": "integer",
+      "enum": [
+        0,
+        30,
+        60,
+        120
+      ]
+    },
+    "hipFovDegrees": {
+      "type": "number",
+      "minimum": 70,
+      "maximum": 100
+    },
+    "mouseSensitivity": {
+      "type": "number",
+      "minimum": 0.01,
+      "maximum": 1
+    },
+    "invertY": {
+      "type": "boolean"
+    },
+    "uiScale": {
+      "type": "number",
+      "minimum": 1,
+      "maximum": 1.5
+    },
+    "reducedCameraMotion": {
+      "type": "boolean"
+    },
+    "reducedFlash": {
+      "type": "boolean"
+    },
+    "contrast": {
+      "type": "number",
+      "minimum": 0.8,
+      "maximum": 1.5
+    },
+    "subtitles": {
+      "type": "boolean"
+    },
+    "bindings": {
+      "type": "object",
+      "minProperties": 14,
+      "maxProperties": 32,
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 64
+      },
+      "required": [
+        "MoveForward",
+        "MoveBack",
+        "MoveLeft",
+        "MoveRight",
+        "Aim",
+        "Fire",
+        "Reload",
+        "Sprint",
+        "Crouch",
+        "Jump",
+        "Slot1",
+        "Slot2",
+        "Scoreboard",
+        "Pause"
+      ],
+      "properties": {
+        "Pause": {
+          "const": "Key.Escape"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,300 @@
+{
+  "metadataSchema": "shooter.map-metadata.v1",
+  "mapId": "training-compound",
+  "collisionArtifactSha256": "1111111111111111111111111111111111111111111111111111111111111111",
+  "collisionRevision": 1,
+  "navRevision": 1,
+  "colliders": [
+    {
+      "kind": "box",
+      "primitiveIndex": 0,
+      "colliderStableId": "1001",
+      "surfaceId": "2001",
+      "surfaceTag": 1
+    }
+  ],
+  "spawnSlots": [
+    {
+      "slotId": 101,
+      "team": 1,
+      "positionMeters": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "yawDegrees": 0.0
+    },
+    {
+      "slotId": 102,
+      "team": 1,
+      "positionMeters": [
+        1.0,
+        0.0,
+        1.0
+      ],
+      "yawDegrees": 0.0
+    },
+    {
+      "slotId": 103,
+      "team": 1,
+      "positionMeters": [
+        2.0,
+        0.0,
+        1.0
+      ],
+      "yawDegrees": 0.0
+    },
+    {
+      "slotId": 104,
+      "team": 1,
+      "positionMeters": [
+        3.0,
+        0.0,
+        1.0
+      ],
+      "yawDegrees": 0.0
+    },
+    {
+      "slotId": 105,
+      "team": 1,
+      "positionMeters": [
+        4.0,
+        0.0,
+        1.0
+      ],
+      "yawDegrees": 0.0
+    },
+    {
+      "slotId": 106,
+      "team": 1,
+      "positionMeters": [
+        5.0,
+        0.0,
+        1.0
+      ],
+      "yawDegrees": 0.0
+    },
+    {
+      "slotId": 107,
+      "team": 1,
+      "positionMeters": [
+        6.0,
+        0.0,
+        1.0
+      ],
+      "yawDegrees": 0.0
+    },
+    {
+      "slotId": 108,
+      "team": 1,
+      "positionMeters": [
+        7.0,
+        0.0,
+        1.0
+      ],
+      "yawDegrees": 0.0
+    },
+    {
+      "slotId": 109,
+      "team": 1,
+      "positionMeters": [
+        8.0,
+        0.0,
+        1.0
+      ],
+      "yawDegrees": 0.0
+    },
+    {
+      "slotId": 110,
+      "team": 1,
+      "positionMeters": [
+        9.0,
+        0.0,
+        1.0
+      ],
+      "yawDegrees": 0.0
+    },
+    {
+      "slotId": 111,
+      "team": 1,
+      "positionMeters": [
+        10.0,
+        0.0,
+        1.0
+      ],
+      "yawDegrees": 0.0
+    },
+    {
+      "slotId": 112,
+      "team": 1,
+      "positionMeters": [
+        11.0,
+        0.0,
+        1.0
+      ],
+      "yawDegrees": 0.0
+    },
+    {
+      "slotId": 201,
+      "team": 2,
+      "positionMeters": [
+        0.0,
+        0.0,
+        2.0
+      ],
+      "yawDegrees": 180.0
+    },
+    {
+      "slotId": 202,
+      "team": 2,
+      "positionMeters": [
+        1.0,
+        0.0,
+        2.0
+      ],
+      "yawDegrees": 180.0
+    },
+    {
+      "slotId": 203,
+      "team": 2,
+      "positionMeters": [
+        2.0,
+        0.0,
+        2.0
+      ],
+      "yawDegrees": 180.0
+    },
+    {
+      "slotId": 204,
+      "team": 2,
+      "positionMeters": [
+        3.0,
+        0.0,
+        2.0
+      ],
+      "yawDegrees": 180.0
+    },
+    {
+      "slotId": 205,
+      "team": 2,
+      "positionMeters": [
+        4.0,
+        0.0,
+        2.0
+      ],
+      "yawDegrees": 180.0
+    },
+    {
+      "slotId": 206,
+      "team": 2,
+      "positionMeters": [
+        5.0,
+        0.0,
+        2.0
+      ],
+      "yawDegrees": 180.0
+    },
+    {
+      "slotId": 207,
+      "team": 2,
+      "positionMeters": [
+        6.0,
+        0.0,
+        2.0
+      ],
+      "yawDegrees": 180.0
+    },
+    {
+      "slotId": 208,
+      "team": 2,
+      "positionMeters": [
+        7.0,
+        0.0,
+        2.0
+      ],
+      "yawDegrees": 180.0
+    },
+    {
+      "slotId": 209,
+      "team": 2,
+      "positionMeters": [
+        8.0,
+        0.0,
+        2.0
+      ],
+      "yawDegrees": 180.0
+    },
+    {
+      "slotId": 210,
+      "team": 2,
+      "positionMeters": [
+        9.0,
+        0.0,
+        2.0
+      ],
+      "yawDegrees": 180.0
+    },
+    {
+      "slotId": 211,
+      "team": 2,
+      "positionMeters": [
+        10.0,
+        0.0,
+        2.0
+      ],
+      "yawDegrees": 180.0
+    },
+    {
+      "slotId": 212,
+      "team": 2,
+      "positionMeters": [
+        11.0,
+        0.0,
+        2.0
+      ],
+      "yawDegrees": 180.0
+    }
+  ],
+  "covers": [
+    {
+      "stableId": "3001",
+      "centerMeters": [
+        1.0,
+        0.5,
+        1.0
+      ],
+      "sizeMeters": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "peekStandingMeters": [
+        1.5,
+        1.6,
+        1.0
+      ],
+      "peekCrouchMeters": [
+        1.5,
+        0.9,
+        1.0
+      ],
+      "hardCover": true
+    }
+  ],
+  "routes": {
+    "patrolDestinationsMeters": [
+      [
+        0.0,
+        0.0,
+        0.0
+      ]
+    ],
+    "combatDestinationsMeters": [
+      [
+        8.0,
+        0.0,
+        8.0
+      ]
+    ]
+  }
+}

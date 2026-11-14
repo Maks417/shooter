@@ -27,19 +27,24 @@ namespace Shooter.Simulation.AI
         public CombatAiDirector Director => director;
         public AiCounters Counters => director.Counters;
 
-        public void RegisterBot(EntityId id, Float3 feet, float yaw)
+        public void RegisterBot(EntityId id, Float3 feet, float yaw, byte team = 0)
         {
-            director.RegisterBot(id, feet, yaw);
+            director.RegisterBot(id, feet, yaw, team);
             sequences[id.Value] = 0;
         }
 
         public void SetCoverSites(IReadOnlyList<CoverSite> sites) => director.SetCoverSites(sites);
+        public void SetNavigationDestinations(
+            IReadOnlyList<Float3>? patrol,
+            IReadOnlyList<Float3>? combat) =>
+            director.SetNavigationDestinations(patrol, combat);
 
         public int Plan(uint nextTick, MatchViewSnapshot match, IActorLifecycle lifecycle, CommandBuffer destination)
         {
             if (match == null || lifecycle == null || destination == null) throw new ArgumentNullException(nameof(match));
             SyncFromLifecycle(lifecycle);
 
+            // Living participants only; opposite-team filtering happens per bot before perception.
             int enemyCount = 0;
             for (int i = 0; i < match.Participants.Count; i++)
             {
@@ -48,7 +53,9 @@ namespace Shooter.Simulation.AI
                 if (!lifecycle.TryGetActorState(p.EntityId, out var state) || !state.Alive) continue;
                 enemyScratch[enemyCount++] = new SenseTarget(
                     p.EntityId,
-                    new Float3(state.Feet.X, state.Feet.Y + 1.65f, state.Feet.Z));
+                    new Float3(state.Feet.X, state.Feet.Y + 1.65f, state.Feet.Z),
+                    state.Team,
+                    state.Alive);
             }
 
             int raw = director.PlanEnemies(nextTick, enemyScratch, enemyCount, planScratch, 0);
@@ -69,21 +76,25 @@ namespace Shooter.Simulation.AI
         public void ResetLife(EntityId entity)
         {
             director.NotifyDeath(entity);
-            sequences[entity.Value] = 0;
+            sequences.Remove(entity.Value);
         }
 
-        public void CancelAll()
+        /// <summary>
+        /// T053 life rebinding: cancel old resources, clear Dead/reaction/target, and start a
+        /// fresh command sequence for the replacement EntityId.
+        /// </summary>
+        public bool TryReplaceLife(EntityId previous, EntityId next, Float3 feet, float yaw, byte team)
         {
-            for (int i = 0; i < director.BotCount; i++)
-            {
-                var board = director.GetBoard(i);
-                if (board.PathTicket.HasValue)
-                {
-                    board.PathTicket = null;
-                }
-                board.CoverReservation = null;
-            }
+            if (!director.TryReplaceLife(previous, next, feet, yaw, team)) return false;
+            sequences.Remove(previous.Value);
+            sequences[next.Value] = 0;
+            return true;
         }
+
+        public uint GetSequence(EntityId entity) =>
+            sequences.TryGetValue(entity.Value, out var seq) ? seq : 0u;
+
+        public void CancelAll() => director.CancelAll();
 
         private void SyncFromLifecycle(IActorLifecycle lifecycle)
         {
@@ -98,11 +109,24 @@ namespace Shooter.Simulation.AI
                 if (!state.Alive && board.Alive) director.NotifyDeath(board.Self);
                 else if (state.Alive)
                 {
+                    // Authority owns ammo/health; never fabricate reload completion here.
                     board.Alive = true;
+                    board.Team = state.Team;
                     board.Feet = state.Feet;
                     board.Yaw = state.AimYaw;
                     board.Health = state.Health;
                     board.MagAmmo = state.Magazine;
+                    board.ReserveAmmo = state.Reserve;
+                    if (board.State == AiState.Dead)
+                    {
+                        board.State = AiState.Patrol;
+                        board.VisibleTargetId = null;
+                        board.HasVisibleTarget = false;
+                        board.VisibleTarget = null;
+                        board.LastSeenEnemy = null;
+                        board.Confidence = 0;
+                        board.ReactionReadyTick = 0;
+                    }
                 }
             }
         }

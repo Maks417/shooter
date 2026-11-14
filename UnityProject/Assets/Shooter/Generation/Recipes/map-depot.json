@@ -1,0 +1,15 @@
+{
+  "schemaId": "shooter.recipe.map-depot.v1",
+  "recipeId": "depot-yard",
+  "generatorId": "map.depot",
+  "generatorVersion": "1.0.0",
+  "seed": "460072031",
+  "parameters": {
+    "mapId": "depot-yard",
+    "halfExtentMeters": 128,
+    "chunkSizeMeters": 32,
+    "navAdapterFormat": "unity.navmesh.bake.v1",
+    "navAdapterVersion": 1
+  },
+  "dependencies": []
+}

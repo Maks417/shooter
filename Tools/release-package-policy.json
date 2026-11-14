@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "policyId": "shooter.release-package.v1",
+  "protocolVersion": "N1-v1",
+  "contractVersion": "Game-v1",
+  "corruptContentRecoveryMessage": "Selected map content is missing or corrupt. Repair or reinstall the verified package; no silent map substitution.",
+  "requiredMaps": [
+    "training-compound",
+    "depot-yard"
+  ],
+  "requiredVisualProfiles": [
+    "gameplay",
+    "low",
+    "balanced",
+    "high"
+  ],
+  "excludeDirectoryNames": [
+    "Shooter_BackUpThisFolder_ButDontShipItWithYourGame",
+    "Shooter_BurstDebugInformation_DoNotShip",
+    "Library",
+    "Temp",
+    "Obj",
+    ".vs",
+    "Logs",
+    "UserSettings"
+  ],
+  "excludeDirectoryNameContains": [
+    "DoNotShip",
+    "BackUpThisFolder",
+    "BurstDebugInformation",
+    "_BackUp"
+  ],
+  "excludeFileExtensions": [
+    ".pdb",
+    ".mdb",
+    ".log",
+    ".tmp",
+    ".bak"
+  ],
+  "excludeFileNames": [
+    "Player.log",
+    "user-settings.json",
+    "user-settings.json.bak",
+    "boot.config.user"
+  ],
+  "notes": [
+    "Directory copy success is a tooling result, not REL01/REL06 acceptance.",
+    "Package identities come from the build manifest and verified content closure, never from stamping an unrelated workspace HEAD onto arbitrary binaries.",
+    "Player launch / hardware evidence may remain Pending while FIX13 software gates PASS."
+  ]
+}

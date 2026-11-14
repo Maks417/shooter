@@ -1,0 +1,157 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "packageSchema": {
+      "const": "shooter.map-package.v1"
+    },
+    "mapId": {
+      "type": "string",
+      "enum": [
+        "training-compound",
+        "depot-yard"
+      ]
+    },
+    "displayName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "recipeId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "generatorId": {
+      "type": "string",
+      "enum": [
+        "map.compound",
+        "map.depot"
+      ]
+    },
+    "generatorVersion": {
+      "const": "1.0.0"
+    },
+    "seed": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]{0,19})$"
+    },
+    "toolchainHash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "visualProfile": {
+      "type": "string",
+      "enum": [
+        "gameplay",
+        "low",
+        "balanced",
+        "high"
+      ]
+    },
+    "collisionArtifactSha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "navigationArtifactSha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "navigationAdapterFormat": {
+      "const": "unity.navmesh.bake.v1"
+    },
+    "navigationAdapterVersion": {
+      "const": 1
+    },
+    "navSettingsHash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "metadataSha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "dependencies": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 256,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "role": {
+            "enum": [
+              "collision",
+              "navigation",
+              "metadata",
+              "mesh",
+              "material",
+              "skeleton",
+              "shader",
+              "font"
+            ]
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          }
+        },
+        "required": [
+          "role",
+          "sha256",
+          "path"
+        ]
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "sourceKind": {
+          "const": "numeric-recipes"
+        },
+        "policy": {
+          "const": "procedural-v1"
+        },
+        "decision": {
+          "const": "docs/decisions.md#adr-035--accepted-verified-release-map-packages-t055-boundary"
+        }
+      },
+      "required": [
+        "sourceKind",
+        "policy",
+        "decision"
+      ]
+    },
+    "validationSummary": {
+      "const": "validated-v1"
+    }
+  },
+  "required": [
+    "packageSchema",
+    "mapId",
+    "displayName",
+    "recipeId",
+    "generatorId",
+    "generatorVersion",
+    "seed",
+    "toolchainHash",
+    "visualProfile",
+    "collisionArtifactSha256",
+    "navigationArtifactSha256",
+    "navigationAdapterFormat",
+    "navigationAdapterVersion",
+    "navSettingsHash",
+    "metadataSha256",
+    "dependencies",
+    "provenance",
+    "validationSummary"
+  ]
+}

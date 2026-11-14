@@ -341,3 +341,60 @@ Date 2026-11-13; accepted by the Cursor M8 integrator (bc-b005c261) under owner 
 
 Also records RUN00 repair: missing Unity `.meta` for M3–M7 sources generated with unique GUIDs; unapproved Assets Markdown relocated to `docs/notes/procedural-viewmodel-editmode.md`. Source provenance audit PASS after repair. This ADR does **not** accept Unity/player/hardware gates, close M8–M11, reopen P05, or authorize package upgrades.
 
+## ADR-035 — Accepted: verified release map packages (T055 boundary)
+
+Date 2026-11-14; owner sole Contracts/content-format integrator under owner Max direction to unblock T055. This accepts the encoding and publication boundary for verified release map packages. It does **not** implement Compile-GameContent publication, close FIX04, accept player/hardware gates, change C0 DTO bytes, bump SGAF envelope version, upgrade packages/editor, or authorize runtime regeneration as a shipping path.
+
+Context: T055 is blocked because `content-format-lock.json` authorizes only the one-box collision diagnostic; SGAF Collision v1 bodies carry geometry and `surfaceTag` but not `colliderStableId`/`SurfaceId`; Navigation v1 remains an opaque adapter blob without an approved shipping format; no package-root schema exists; and `CompoundMapRuntime` regenerates plans from seeds in the release player. Catalog visual hashes are currently hashes of labels, not packaged bytes.
+
+Decision — stable IDs: keep frozen SGAF Collision v1 and C0 `CollisionData` unchanged. Reject a Collision v2 body change for this repair wave. Carry ordered collider/surface identity in versioned canonical JSON `shooter.map-metadata.v1`, which binds each decoded Collision primitive (capsules, then boxes, then height-grids, in SGAF body order) to nonzero `colliderStableId`, `surfaceId` and matching `surfaceTag`. Query hits continue to use C0 `QueryHit` fields populated from that metadata at install time. Metadata that disagrees with Collision counts/tags, duplicates stable IDs or omits required spawns/covers rejects the package.
+
+Decision — package root: introduce `shooter.map-package.v1` as the catalog root document. `MapCatalogEntry` gameplay/visual root hashes must become SHA256 of the canonical package-root JSON bytes (and profile-partition roots), never label strings. The package enumerates exact dependency content identities by SHA256 of complete SGAF files and of the canonical metadata document. Unknown `mapId`, incomplete dependencies or mismatched toolchain reject. Server packages include gameplay collision/nav/metadata only; client packages add the selected visual profile closure (meshes/materials/skeletons/shaders/font exception).
+
+Decision — navigation: shipping Navigation SGAF uses adapter format `unity.navmesh.bake.v1`, adapter version 1, `settingsHash` = `NavSettings` hash (`shooter.nav-settings.v1`), and an explicit little-endian triangulation blob defined in [content-format](content-format.md) (vertices, polygons, areas, bounds). No arbitrary Unity asset/object deserialization and no opaque engine dump. The editor/compiler bakes with the pinned AI Navigation 2.0.0 package against installed authoritative collision, then encodes that bake into the blob with provenance (collision artifact hash, settings hash, toolchain hash, generator fingerprint). Pure `NavCompiler` / path-delegate checks remain compile-time reachability diagnostics and pure-test helpers; they are not a waiver of Unity-native load/query evidence required by FIX04. Release players load the packaged blob; they do not re-bake or regenerate nav from seeds.
+
+Decision — recipes and lock migration: register `map.compound` 1.0.0 / `shooter.recipe.map-compound.v1`, `map.depot` 1.0.0 / `shooter.recipe.map-depot.v1` and publisher scope `map.package` 1.0.0 / `shooter.map-package.v1` in root `content-format-lock.json` alongside the existing diagnostic `collision.box`. Schemas and scaffolding fixtures live under `docs/content-schemas/`. No pre-existing shipping map package is migrated; unsupported package/metadata/nav-adapter versions fail closed. The one-box diagnostic remains restricted to its named set. Generator algorithm or seed-identity changes require a new generator version, new package roots and reviewed fixtures before consumers rebase.
+
+Decision — depot seed: approved catalog seed for `depot-yard` is **460072031**, matching current `DepotPlanner` / `StaticMapCatalog` source. Historical proposed seed `42` stays only in the robustness corpus (`1`, `42`, `460072030`, `uint64` max) and must not become the catalog identity. T058 accepts spawn/route safety against the approved seed; it does not silently rewrite it to 42.
+
+Decision — publication, reproduction and recovery: apply ADR-018 atomic staging/recheck/rename/index-switch rules to map package sets. Cold, warm and forced reproduction must recreate identical package-root and dependency bytes. Cancellation or corruption releases partial installs, retains corrupt bytes for repair, never silently substitutes another map or the floor/box diagnostic, and returns a stable repair message to the shell. Release composition validates package roots before Ready and installs collision/nav/metadata before actor spawn; developer absolute paths, on-device recipe compilation and random regeneration are forbidden on the shipping path.
+
+Validation and rollback: structural schemas/examples and lock inventory must pass `Tools/verify_content_format.py` and documentation/fixture verifiers after this boundary lands. T055 then implements enumeration, publication and runtime load against this ADR. Rollback is the prior content-format lock/source pair; do not retain players whose catalog roots still hash labels or regenerate maps from seeds. [Playable maps](features/playable-maps.md), [content-format](content-format.md), FIX04 and T055 remain the acceptance authorities for measured publication evidence.
+
+## ADR-036 — Accepted: UserSettings schema 2 shell coverage (T060 / FIX09)
+
+Date 2026-11-14; owner sole Contracts/settings integrator under owner Max direction for T060 preparation. Extends the frozen Game-v1 `UserSettings` DTO and file schema so every normative [shell](features/game-shell.md) preference is versioned, migratable and fixture-locked. This does **not** close FIX09 device acceptance, named audible review, package upgrades, C0/SGAF/N1 changes, or authorize silent golden edits.
+
+Context: ADR-034 froze settings schema=1 with master/SFX/music, quality, mouse, invert Y, subtitles and UI scale only. Required display mode/resolution/VSync/FPS cap, hip FOV, effects/UI channel naming, accessibility motion/flash/contrast and rebindable controls were absent. `IClientSettingsApplier` staged a quality byte alone. The M10 `FileUserSettingsStore` used an unbounded semicolon text, deleted-before-move replace, and lacked last-good/quarantine/newer-file preservation.
+
+Decision — schema identity: bump `GameContractVersion.SettingsSchema` to **2**. File documents use schema id `shooter.user-settings.v2` under `docs/game-fixtures/`. Schema 1 semicolon files remain readable once; writers emit bounded UTF-8 JSON (≤64 KiB) only. C0-v1 and Game-v1 ruleVersion stay 1; settings file version is independent of `HudSettings` diagnostic serialization.
+
+Decision — field inventory (defaults match shell):
+- Audio: `masterVolume` 1.0, `effectsVolume` 1.0 (migrated from schema-1 `sfx`), `uiVolume` 0.7 (migrated from schema-1 `music` with clamp); each finite in [0,1]; 0 mutes the channel.
+- Video: `qualityTier` 0=Low/1=Balanced/2=High; `resolutionWidth`/`resolutionHeight` default 1280×720 and ≥1280×720; `displayMode` Windowed=0/Borderless=1/Fullscreen=2; `vSync` false; `fpsCap` 60 with allowed {0=uncapped,30,60,120}; `hipFovDegrees` 80 in [70,100].
+- Controls: `mouseSensitivity` 0.10 in [0.01,1.00] (schema-1 values clamped into range); `invertY` false; complete ASCII action→control binding map including move/look/aim/fire/reload/sprint/crouch/jump/slots/scoreboard/pause; Escape reserved for menu restore; duplicate controls reject.
+- Accessibility: `uiScale` 1.0 in [1.0,1.5]; `reducedCameraMotion`/`reducedFlash` false; `contrast` 1.0 in [0.8,1.5]; `subtitles` retained from schema 1 (default false).
+
+Decision — migration and storage safety: missing file → defaults; corrupt → quarantine sidecar + defaults + nonblocking diagnostic; schema newer than 2 → safe in-memory defaults **without overwriting** the newer file; schema 1 → migrate into schema 2 then persist only on explicit Apply/Save; interrupted atomic replace preserves `.last-good`; read-only IO leaves usable memory settings and “could not save”; gameplay/content hashes are never written into the settings document.
+
+Decision — application seam: `IClientSettingsApplier` applies the full DTO (audio/display/quality/FOV/input/accessibility), stages display changes with Keep/Revert, and exposes pending-display state for a 15-second real-time confirmation including focus-loss/restart rollback. Pure `UserSettingsEditor` owns Apply/Cancel/defaults staging so T059 menus and T061 audio can bind without inventing a parallel settings contract. Device/player evidence remains FIX09/SET02 Pending until named review.
+
+Validation: `docs/game-fixtures` + `game-contract-lock.json` refreeze for Contracts sources; `Tools/Test-Game.ps1 -Offline` settings cases; `docs/verify_docs.py --refresh-manifest` after doc edits. Rollback restores schema-1 DTO/store/lock pair; do not ship players that silently drop shell fields or overwrite newer settings files.
+
+## ADR-037 — Accepted: product TDM measurement workloads (T063 / FIX12)
+
+Date 2026-11-14; owner measurement integrator under owner Max direction for T063. Extends frozen Game-v1 `docs/game-fixtures/tdm-workloads.json` with reviewed depot measurement identities and product telemetry counters. Does **not** close REL04/TDM08 hardware acceptance, change B01–B04, alter map package format, or authorize silent fixture edits to force PASS.
+
+Context: ADR-034 froze `TDM-5v5-v1` / `TDM-6v6-v1` against `training-compound` only. Audit A10 recorded that Benchmark.ps1 accepted B01 only and depot workload identity/route/counter coverage was not established by compound IDs. FIX12 requires both maps × both sizes with authority/AI/respawn/lease/query/content/render counters and negative collector rejection of wrong map/roster/profile/build/short windows.
+
+Decision — fixture migration (schemaVersion **2**, additive):
+- Preserve historical `TDM-5v5-v1` / `TDM-6v6-v1` as **training-compound** / seed **460072030** (explicit seed fields).
+- Add reviewed depot rows `TDM-5v5-depot-v1` / `TDM-6v6-depot-v1` for **depot-yard** / seed **460072031** (ADR-035). Depot is never implied by substituting mapId on compound IDs.
+- Add soak identities `TDM-soak-6v6-compound-v1` / `TDM-soak-6v6-depot-v1` (1800 s / 108000 ticks, no warmup) for ≥30-minute normal-AI evidence; remain PendingHardware until reference execution.
+- Expand required counters on measurement rows: team kills, activeTicks, respawns, aiRays, pathRequests, shots, damageEvents, leaseAcquires, querySamples, contentBindings, renderFrames. `RUN-compound-vertical-v1` stays a composition note, not a performance gate.
+- Runtime mirror: `ProductTdmWorkloads` in Game/Session; collector version **4** product path; analysis `Tools/analyze_tdm_benchmark.py`.
+
+Decision — capture path: product composition (not diagnostic floor/box) autostarts the reviewed SessionRequest, binds verified map presentation, and records frame/tick/counter telemetry without changing match rules to improve scores. B01 wrappers remain separate. Twelve final captures and soaks stay PendingHardware without reference-machine proof.
+
+Validation: refreeze `tdm-workloads.json` in `game-contract-lock.json`; `python Tools/test_tdm_benchmark_analysis.py`; `Tools/Test-Game.ps1 -Offline` product workload cases; `Tools/Benchmark.ps1` / `Benchmark-Series.ps1` / `Benchmark-Product-Matrix.ps1` / `Benchmark-Soak.ps1` documented commands. Rollback restores schema-1 compound-only fixture + B01-only wrappers; do not ship players that treat depot as a silent alias of compound workloads.
+

@@ -7,37 +7,65 @@ using Shooter.Game.Contracts;
 
 namespace Shooter.Game.Settings
 {
-    /// <summary>M10 atomic settings file store. Schema=1; corrupt/newer fail without blocking defaults recovery.</summary>
+    /// <summary>
+    /// Atomic schema-2 JSON settings store (ADR-036): ≤64 KiB, last-good, quarantine,
+    /// newer-schema preservation, nonblocking read-only errors.
+    /// </summary>
     public sealed class FileUserSettingsStore : IUserSettingsStore
     {
+        private static readonly Encoding Utf8NoBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
         private readonly string path;
+        private readonly string lastGoodPath;
+        private readonly string tempPath;
+
         public FileUserSettingsStore(string path)
         {
             if (string.IsNullOrWhiteSpace(path)) throw new ArgumentNullException(nameof(path));
             this.path = path;
+            lastGoodPath = path + ".last-good";
+            tempPath = path + ".tmp";
         }
+
+        public string Path => path;
 
         public GameOperationResult Load(out UserSettings settings)
         {
             settings = UserSettings.Defaults;
-            if (!File.Exists(path)) return GameOperationResult.Ok;
             try
             {
-                string text = File.ReadAllText(path, Encoding.ASCII);
-                if (string.IsNullOrWhiteSpace(text))
-                    return new GameOperationResult(GameErrorCode.StorageError, "corrupt-settings", "Settings were reset.");
-                var parsed = Parse(text, out string? error);
-                if (parsed == null)
+                if (!File.Exists(path))
                 {
-                    if (error != null && error.StartsWith("newer-", StringComparison.Ordinal))
-                        return new GameOperationResult(GameErrorCode.UnsupportedVersion, error, "Settings version unsupported.");
+                    if (File.Exists(lastGoodPath))
+                        return LoadBytes(File.ReadAllBytes(lastGoodPath), preserveNewerFile: false, out settings);
+                    return GameOperationResult.Ok;
+                }
+
+                byte[] bytes = File.ReadAllBytes(path);
+                var result = LoadBytes(bytes, preserveNewerFile: true, out settings);
+                if (result.Error == GameErrorCode.UnsupportedVersion)
+                    return result;
+                if (!result.Succeeded)
+                {
+                    Quarantine(bytes, result.Diagnostic);
+                    if (File.Exists(lastGoodPath))
+                    {
+                        var recovered = LoadBytes(File.ReadAllBytes(lastGoodPath), preserveNewerFile: false, out settings);
+                        if (recovered.Succeeded)
+                            return new GameOperationResult(GameErrorCode.StorageError, "corrupt-recovered-last-good", "Settings were reset from last good.");
+                    }
+                    settings = UserSettings.Defaults;
                     return new GameOperationResult(GameErrorCode.StorageError, "corrupt-settings", "Settings were reset.");
                 }
-                settings = parsed;
                 return GameOperationResult.Ok;
             }
             catch (IOException)
             {
+                settings = UserSettings.Defaults;
+                return new GameOperationResult(GameErrorCode.StorageError, "settings-io", "Settings were reset.");
+            }
+            catch (UnauthorizedAccessException)
+            {
+                settings = UserSettings.Defaults;
                 return new GameOperationResult(GameErrorCode.StorageError, "settings-io", "Settings were reset.");
             }
         }
@@ -47,61 +75,90 @@ namespace Shooter.Game.Settings
             if (settings == null) throw new ArgumentNullException(nameof(settings));
             try
             {
-                string? dir = Path.GetDirectoryName(path);
+                byte[] bytes = UserSettingsJson.Encode(settings);
+                string? dir = System.IO.Path.GetDirectoryName(path);
                 if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
-                string tmp = path + ".tmp";
-                File.WriteAllText(tmp, Format(settings), Encoding.ASCII);
-                if (File.Exists(path)) File.Delete(path);
-                File.Move(tmp, path);
+
+                File.WriteAllBytes(tempPath, bytes);
+                using (var stream = new FileStream(tempPath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                    stream.Flush(true);
+
+                if (File.Exists(path))
+                {
+                    // Preserve previous good before replace; then mirror the committed file to last-good.
+                    File.Copy(path, lastGoodPath, overwrite: true);
+                    File.Replace(tempPath, path, null, ignoreMetadataErrors: true);
+                }
+                else
+                {
+                    File.Move(tempPath, path);
+                }
+                File.Copy(path, lastGoodPath, overwrite: true);
                 return GameOperationResult.Ok;
             }
             catch (IOException)
             {
+                TryDeleteTemp();
                 return new GameOperationResult(GameErrorCode.StorageError, "readonly-store", "Could not save settings.");
             }
+            catch (UnauthorizedAccessException)
+            {
+                TryDeleteTemp();
+                return new GameOperationResult(GameErrorCode.StorageError, "readonly-store", "Could not save settings.");
+            }
+            catch (ArgumentException ex)
+            {
+                TryDeleteTemp();
+                return new GameOperationResult(GameErrorCode.InvalidRequest, ex.Message, "Settings were not saved.");
+            }
         }
 
-        private static string Format(UserSettings s) =>
-            string.Format(CultureInfo.InvariantCulture,
-                "schema={0};master={1};sfx={2};music={3};quality={4};mouse={5};invertY={6};subtitles={7};uiScale={8}",
-                s.Schema, s.MasterVolume, s.SfxVolume, s.MusicVolume, s.QualityTier, s.MouseSensitivity, s.InvertY ? 1 : 0, s.Subtitles ? 1 : 0, s.UiScale);
-
-        private static UserSettings? Parse(string text, out string? error)
+        private GameOperationResult LoadBytes(byte[] bytes, bool preserveNewerFile, out UserSettings settings)
         {
-            error = null;
-            var map = new System.Collections.Generic.Dictionary<string, string>(StringComparer.Ordinal);
-            foreach (var part in text.Split(';'))
+            settings = UserSettings.Defaults;
+            if (!UserSettingsJson.TryDecode(bytes, out var parsed, out string diagnostic))
             {
-                if (string.IsNullOrWhiteSpace(part)) continue;
-                int eq = part.IndexOf('=');
-                if (eq <= 0) { error = "corrupt"; return null; }
-                map[part.Substring(0, eq).Trim()] = part.Substring(eq + 1).Trim();
+                if (diagnostic.StartsWith("newer-", StringComparison.Ordinal))
+                {
+                    // Never overwrite a newer on-disk document.
+                    _ = preserveNewerFile;
+                    return new GameOperationResult(GameErrorCode.UnsupportedVersion, diagnostic, "Settings version unsupported.");
+                }
+                return new GameOperationResult(GameErrorCode.StorageError, diagnostic, "Settings were reset.");
             }
-            if (!map.TryGetValue("schema", out var schemaText) || !uint.TryParse(schemaText, NumberStyles.Integer, CultureInfo.InvariantCulture, out uint schema))
-            { error = "corrupt"; return null; }
-            if (schema > 1) { error = "newer-" + schema; return null; }
-            if (schema != 1) { error = "corrupt"; return null; }
+            settings = parsed ?? UserSettings.Defaults;
+            return GameOperationResult.Ok;
+        }
+
+        private void Quarantine(byte[] bytes, string diagnostic)
+        {
             try
             {
-                return new UserSettings(
-                    schema,
-                    F(map, "master"),
-                    F(map, "sfx"),
-                    F(map, "music"),
-                    byte.Parse(map["quality"], CultureInfo.InvariantCulture),
-                    F(map, "mouse"),
-                    map["invertY"] == "1",
-                    map["subtitles"] == "1",
-                    F(map, "uiScale"));
+                string stamp = DateTime.UtcNow.ToString("yyyyMMddTHHmmssfffZ", CultureInfo.InvariantCulture);
+                string quarantine = path + ".corrupt-" + stamp;
+                File.WriteAllBytes(quarantine, bytes);
+                string note = path + ".corrupt-" + stamp + ".txt";
+                File.WriteAllText(note, diagnostic ?? "corrupt", Utf8NoBom);
+                if (File.Exists(path))
+                    File.Delete(path);
             }
-            catch
+            catch (IOException)
             {
-                error = "corrupt";
-                return null;
+                // Quarantine is best-effort; load still returns defaults.
+            }
+            catch (UnauthorizedAccessException)
+            {
             }
         }
 
-        private static float F(System.Collections.Generic.Dictionary<string, string> map, string key) =>
-            float.Parse(map[key], CultureInfo.InvariantCulture);
+        private void TryDeleteTemp()
+        {
+            try
+            {
+                if (File.Exists(tempPath)) File.Delete(tempPath);
+            }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+        }
     }
 }
