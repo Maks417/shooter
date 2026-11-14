@@ -173,8 +173,8 @@ namespace Shooter.Simulation
                 if (!actor.Id.Equals(entity)) continue;
                 if (!actor.Alive) return false;
                 actor.Motor = new MotorBodyState(
-                    feet, default, yaw, actor.Motor.AimPitch, Stance.Standing, 1.8f, false,
-                    new SurfaceId(100), new Float3(0, 1, 0), actor.Motor.LastGroundedTick,
+                    feet, default, yaw, actor.Motor.AimPitch, Stance.Standing, motor.Config.StandingHeight, false,
+                    default, new Float3(0, 1, 0), actor.Motor.LastGroundedTick,
                     actor.Motor.JumpConsumedSequence, actor.Motor.LocomotionDistanceMeters, false, 0, 0, false);
                 return true;
             }
