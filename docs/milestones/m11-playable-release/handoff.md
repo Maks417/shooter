@@ -2,6 +2,8 @@
 
 ## T074 — scene-led menu and tactical HUD preview
 
+Subsequent owner planning request establishes the [VD0–VD9 quality track](../../design-milestones.md), targeting Battlefield V / Bodycam / Warface-level finished design. The plan adds concrete visual exits inside M8–M11 and preserves this source/evidence record. No runtime or candidate change is made by the planning assignment; all new VD acceptance is Pending. VD9 requires comparative owner sign-off together with the existing REL/installer/reference gates.
+
 Current visual preview: **Windows installer 0.3.1**, binary source **`b531da9cceb0607b9c5046bb1700077fd9cb8d4a`**. The owner's six Battlefield screenshots superseded the contour-only Main: the new menu has a live procedural staging scene, compact left navigation and rendered cards for both maps. The compact HUD adds compass/score, a friendly-only minimap, squad, ammo/reload and four recent elimination rows. [Brandbook](../../brandbook.md) and [scope](../../task-supplement.md#t074--visual-redesign-stage-1-shell-and-combat-hud) define the code and later visual stages. All completed source is committed to main; no task worktrees were created.
 
 ```text

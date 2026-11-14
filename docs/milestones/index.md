@@ -1,5 +1,7 @@
 # Milestone implementation packs
 
+[Visual quality milestones VD0–VD9](../design-milestones.md) define the owner's Battlefield V / Bodycam / Warface goal within M8–M11. Start with art direction and a representative art slice, then execute component and final-review gates. The visual track is planned, with T074 as partial software baseline and all visual exits Pending. Existing product packs and historical acceptance remain intact; no new coding lease or parallel dispatch is created by the plan.
+
 Each folder contains only its milestone entry, detailed sequence, contracts/integration, agent assignment cards, validation/acceptance and handoff record. Requirements and feature specifications live once in the docs root, reached through relative links from each milestone. Code and accepted artifacts from prerequisite milestones are still required to execute.
 
 Current disposition, 2026-11-14 from 84befb9 / a54ed83: M0–M7 retain historical closures/waivers and P05 FAIL. The retained `7cd7e81` archive is built and verified, with manual gameplay Pending. M8–M10 integration validation and M11 acceptance remain open for [remaining T067/T071 work](../next-playable-build.md), player/device/reference validation and T062/T065. Use the [playtest guide](../playtest-guide.md), [audit](../product-state-audit.md) and [FIX matrix](../release-remediation-validation.md). Historical evidence remains intact; no coding leases are created.

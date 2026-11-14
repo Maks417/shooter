@@ -2,6 +2,12 @@
 
 Milestones are dependency gates, not calendar promises. [Backlog](backlog.md) gives ordered tasks. No milestone is complete until implementation exists and attached evidence passes [validation](validation.md).
 
+## Visual quality track — VD0–VD9
+
+The owner sets Battlefield V / Bodycam / Warface-level design as the goal. [The visual milestone plan](design-milestones.md) defines art direction, a representative art slice, soldiers, hands/weapons, procedural motion, both environments, light/materials/effects, final menus/HUD, scalability and comparative delivery. These gates extend visual acceptance inside M8–M11; they do not renumber historical milestones or waive P05/REL. All visual exits are Pending. T074 supplies a partial UI baseline, and VD1 is the early feasibility checkpoint. Performance checks continue throughout production. This planning request creates no runtime assignment or dispatch.
+
+## Product milestone gates
+
 Current disposition, 2026-11-14 from 84befb9 / a54ed83: M0–M7 retain owner-waived closures and historical FAIL/Pending evidence; P05 FAIL remains. A verified `7cd7e81` test archive exists, with T066/T068/T069/T070 software landed. M8–M10 integration validation and M11 acceptance stay open for remaining T067 native publication/query work and actual player/device/hardware/delivery evidence. See [audit](product-state-audit.md), [remaining tasks](next-playable-build.md) and [playtest guide](playtest-guide.md). No M12 or inherited waiver is needed.
 
 | Gate | Deliverable | Required exit evidence |

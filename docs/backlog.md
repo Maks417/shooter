@@ -93,3 +93,7 @@ WP-02 starts on C0/base commit, edits only geometry/weapon generator folders and
 [T073 installer/upgrade delivery](task-supplement.md#t073--windows-installer-and-in-place-upgrade) records the owner's final Windows installer requirement within M11. The next installer must upgrade the existing game in place; no installer coding is authorized by the requirement-recording request alone.
 
 [T074 visual redesign stage 1](task-supplement.md#t074--visual-redesign-stage-1-shell-and-combat-hud) implements the owner's 2026-11-14 menu/HUD assignment. The [brandbook](brandbook.md) records the complete visual direction and staged environment/operator/weapon/motion work; stage 1 does not accept P05 or close M10/M11.
+
+## Visual quality planning track
+
+The owner-requested [VD0–VD9 milestones](design-milestones.md) replace the informal five-stage visual order. They target Battlefield V / Bodycam / Warface-level design, starting with an approved comparison set and one representative art slice. Every component needs both visual evidence and its existing technical exits; all VD acceptance remains Pending. Future implementation cards must name owner/base/allowed paths/versions/tests/rollback before work, including explicit scope for P05-dependent changes. This documentation assignment changes no runtime, workload, content identity, current coding lease or release status.

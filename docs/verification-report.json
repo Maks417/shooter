@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "root": "C:\\Job\\shooter\\docs",
-  "markdownFiles": 124,
-  "wordCount": 116514,
-  "relativeLinksChecked": 1150,
-  "integrityFiles": 173,
+  "markdownFiles": 125,
+  "wordCount": 119882,
+  "relativeLinksChecked": 1181,
+  "integrityFiles": 174,
   "errors": [],
   "result": "PASS",
   "scope": "Documentation existence, index coverage, local links/anchors, fences and hashes including fixtures/scripts. No game implementation or runtime tests."

@@ -4,19 +4,15 @@ T074 stage 1 implements the shell/HUD direction below in `Presentation/Session/T
 
 ## Owner direction — 2026-11-14
 
+**Latest quality goal:** the finished design should be **as good as Battlefield V, Bodycam and Warface**. [Visual milestones VD0–VD9](design-milestones.md) are the canonical execution and review plan, superseding the earlier five-stage grouping. The current UI/staging implementation is a partial VD7 foundation; no reference-quality milestone is accepted. VD1 must prove a representative art slice within the existing procedural and reference-performance constraints before broad production.
+
 The owner subsequently supplied six Battlefield screenshots and clarified that the menu and combat interface must feel like a finished military FPS. The flat contour-only menu is superseded by a scene-led layout: a large original procedural staging scene, compact left navigation and two rendered operation cards. Combat uses a compact compass/score strip, a north-up friendly-only map, squad status, small ammo/reload readouts and a bounded elimination feed. The supplied screenshots are composition references, not imported backgrounds or shipping art.
 
 The owner requested the complete visual design and selected implementation in Unity, in stages beginning with menus and HUD. Reference games: Battlefield, Call of Duty, Warface and Bodycam. These are mood and hierarchy references, never source assets or a promise of matching their rendering cost or fidelity. Consulted publisher/developer pages: [Battlefield media](https://www.ea.com/games/battlefield/battlefield-6/features/bf6-media-hub), [Call of Duty](https://www.callofduty.com/en/blackops7/multiplayer), [Warface](https://steamcommunity.com/app/291480/announcements/) and [Bodycam](https://store.steampowered.com/app/2406770/Bodycam/).
 
 The original direction combines military restraint, large clear headings, tactile equipment and natural light. Use charcoal/graphite surfaces, ivory text, sand amber selection and labeled cyan/coral team identity. Bodycam is a reference for grounded light and physical presence; aggressive distortion, obligatory shake and unreadable darkness are not requirements. Keep accessibility preferences and the 720p Low target.
 
-| Stage | Scope | Disposition |
-|---|---|---|
-| 1 — shell and HUD / T074 | Main, local setup, loading, pause, confirms, grouped settings, live/final team tables; score/clock, health/ammunition, reload, death/respawn and analytic reticle | Implemented software; actual test/build/player evidence in the M10/M11 handoffs |
-| 2 — environments | Distinct compound concrete/plaster and depot steel/loading-yard palettes; believable dimensions, procedural surface breakup, directional light/sky, landmarks and readable cover | Pending implementation; regenerate verified packages and preserve gameplay equivalence |
-| 3 — operators | Distinct fictional team uniform/gear silhouettes, anatomy, skin response, equipment attachment and LOD review | Pending; ADR-024/P05 FAIL retained. Obtain explicit bounded soldier-generator/clearance scope before further search |
-| 4 — weapons and hands | Original rifle/pistol detailing, visible first-person arms/gloves/magazine, firing, empty/tactical reload, holster/equip, ADS/analytic optic and recoil | Pending; visual stages consume existing authority events/timing. New mechanical behavior needs its own contract/assignment |
-| 5 — procedural motion and effects | Gait/stance/slide, hand IK, magazine exchange, firing recovery, death collapse, analytic muzzle/impact effects and camera response | Pending; solve from equations/dynamics rather than authored clips, then review live/player/performance evidence |
+The milestone plan covers art direction/feasibility, soldiers, hands/weapons, procedural motion, both environments, lighting/materials/effects, final UI, measured scalability and comparative installer acceptance. Its per-stage deliverables and exits live once in [design-milestones.md](design-milestones.md). Earlier T074 software and retained captures remain valid evidence of implementation; P05 and final visual/device review remain open.
 
 No store, progression, matchmaking or online lobby is introduced. The lobby is local match setup with one human plus bots. The full visual overhaul is not complete when stage 1 ships.
 

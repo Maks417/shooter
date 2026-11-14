@@ -4,6 +4,8 @@ Status reviewed 2026-11-14 from 84befb9 / a54ed83: M0–M7 retain historical own
 
 ## Product
 
+Owner quality goal, 2026-11-14: **the finished visual design should be as good as Battlefield V, Bodycam and Warface**. [VD0–VD9](design-milestones.md) turn this into art-direction, representative-slice, component and final comparative review gates. Current 0.3.1 is a software baseline; this quality is unproven. The procedural-art boundary, fixed gameplay/quality separation, reference Low30 budget and existing open acceptance remain binding. A demonstrated conflict requires an explicit owner decision instead of an automatic quality or performance reduction.
+
 A grounded, modern-world military FPS whose geometry, surface detail and motion come from algorithms and numeric definitions. Build a small, convincing combined indoor/outdoor combat space before expanding content. Realism means believable scale, silhouettes, material response, motion, lighting and feedback; visual parity with commercial AAA shooters is an aspiration, not an acceptance claim.
 
 The first playable slice is an offline 256 × 256 m training compound, one local player, eight hostile soldiers, one rifle and one pistol, a single objective, solid cover, repeatable lighting and a replayable benchmark. Networking follows the offline slice, but simulation boundaries and command IDs exist from the first milestone. Initial multiplayer validation is four players plus eight bots; eight players is a later capacity gate, not a promise of large battles.
@@ -36,6 +38,7 @@ Owner clarification, 2026-11-14: final delivery is a **Windows installer**, and 
 | R12 | Two distinct packaged procedural maps, both supporting the team mode and sizes | M10 MAP01–MAP03; clean release REL01 |
 | R13 | Actual main/setup/pause/settings/scoreboard/results UI; persistent applied sound/video/control/accessibility preferences | M10 UI01–UI02, SET01–SET02; M11 player review |
 | R14 | Source-matched Windows installer, clean offline installation and in-place N→N+1 upgrade preserving user preferences; ZIP remains preview/internal only | M11 REL01–REL06, including new full-roster performance |
+| R15 | Reference-comparable visual design against the approved Battlefield V / Bodycam / Warface comparison set | VD0–VD9, named owner review of all applicable categories plus unchanged technical/release gates; no parity claim from software tests alone |
 
 Two occupied memory slots do not prove dual-channel operation. The temporary memory-usage screenshot is explicitly excluded from requirements, budgets and diagnosis.
 

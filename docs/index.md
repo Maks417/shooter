@@ -1,5 +1,7 @@
 # Procedural military FPS — implementation documentation
 
+**Visual design goal:** quality comparable to Battlefield V, Bodycam and Warface. [VD0–VD9 design milestones](design-milestones.md) define concrete deliverables, dependencies, comparison evidence and owner/technical exit gates. Begin with art direction and one representative art slice; current software does not establish visual parity.
+
 **Current visual preview — 2026-11-14:** [T074 Windows installer 0.3.1 and handoff](milestones/m11-playable-release/handoff.md#t074--scene-led-menu-and-tactical-hud-preview), binary source b531da9, includes the scene-led menu/map cards and compact tactical HUD. Clean Unity 29/16 and Client/Server/package/installer checks pass. Final interactive review was stopped by the owner; gameplay/device/reference/P05 acceptance stays open. This entry supersedes the older candidate references below.
 
 Unity 6 URP / C# / HLSL design for a realistic modern-world shooter generated from code and numeric recipes. No imported/manual meshes, painted textures, sprites or authored animation. Initial hardware target: Ryzen 5 4600H integrated Radeon, 16 GB DDR4-3200, NVMe; native 720p Low at 30 FPS, 60 FPS stretch.
@@ -29,6 +31,7 @@ Use the [remaining T067/T071 work](next-playable-build.md): play the existing ar
 | Document | Purpose |
 |---|---|
 | [Vision, scope and requirements](vision.md) | Scope, requirements, art constraint and non-goals |
+| [Visual design milestones](design-milestones.md) | Battlefield V / Bodycam / Warface quality target; VD0–VD9 deliverables, dependencies, review rubric and evidence |
 | [Playable release review and order](playable-release-plan.md) | Committed software, remaining build queue and deliverable boundary |
 | [Next playable build](next-playable-build.md) | Remaining T066–T071 cards, owner-playtest handoff and final acceptance boundary |
 | [Launch and playtest guide](playtest-guide.md) | Verified archive location/hash, menu steps, controls, limits and manual test record |
