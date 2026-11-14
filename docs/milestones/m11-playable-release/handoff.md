@@ -1,38 +1,39 @@
 # M11 — Playable build and acceptance — handoff and gate record
 
-**Current disposition — 2026-11-14:** T071 owner playtest archive remains recorded at source `114815c` (hashes below unchanged). **T070 measurement software** (finish/results/replay host + counter semantics) lands on a later `main` tip and **invalidates that archive for source-matched measurement/rebuild** — do not retcon `114815c` package/build hashes; rebuild Client/content/package from the T070 tip before FIX12 hardware runs. REL01–REL06 remain **NotClaimed**. Manual play matrix, named device/visual reviews, and twelve captures/soaks remain **Pending** / **PendingHardware**. P05 remains **FAIL** (ADR-024). T062/T065 own final visual/REL acceptance. See the [current audit](../../product-state-audit.md), [next playable-build tasks](../../next-playable-build.md) and [FIX acceptance](../../release-remediation-validation.md).
+**Current disposition — 2026-11-14:** T071 owner playtest candidate rebuilt source-matched after T070 at build tip `7cd7e81` (T070 land `59bbcbb` + settings provenance source-hash refresh). Prior archive at `114815c` is **historical / superseded for measurement** — hashes below retained, not retconned. REL01–REL06 remain **NotClaimed**. Manual play matrix, named device/visual reviews, and twelve captures/soaks remain **Pending** / **PendingHardware**. P05 remains **FAIL** (ADR-024). T062/T065 own final visual/REL acceptance. See the [current audit](../../product-state-audit.md), [next playable-build tasks](../../next-playable-build.md) and [FIX acceptance](../../release-remediation-validation.md).
 
-## T071 — Owner playtest candidate — 2026-11-14
+## T071 — Owner playtest candidate (post-T070 rebuild) — 2026-11-14
 
 | Field | Disposition |
 |---|---|
-| Task | T071 (owner playtest candidate; preliminary T065 / FIX13 player path) |
-| Source | `114815c66dd5b951f1c1124e228f9a8acb2472a1` (`sourceDirty=false` at Client request) |
+| Task | T071 (owner playtest candidate; preliminary T065 / FIX13 player path; source-matched after T070) |
+| Source | `7cd7e8191e118929af742bef382774edb22a57c2` (`sourceDirty=false` at Client request); includes T070 tip `59bbcbb5629571be4a2f9ffbd56f200d6db3f6a4` plus committed settings provenance refresh for `ShooterBuild.cs` |
 | Toolchain | Unity `6000.3.28f1` / `8f082d2fe476`; toolchainHash `9ac31fe82117043e2bba3bfb843dd1ca32834b15425188e96d6f3369e2c627a8` |
 | Content | `Compile-GameContent -Force` PASS — 8 packages (both maps × gameplay/low/balanced/high); contentClosureHash `715e762129848f4942f908e896ead3f2fa42a8d2b19cb2ab5612339647e41f07` |
-| Client | `Artifacts/m0-foundation/114815c…/build-client-20261114T145025293Z-1d4df0da` — Succeeded, non-development, `sourceDirty=false` |
-| Server | `Artifacts/m0-foundation/114815c…/build-server-20261114T145215699Z-4f4663eb` — Succeeded, `sourceDirty=false`, `graphicsSourceAssets` empty |
-| Package | `Artifacts/m11-playable-release/114815c66dd5b951f1c1124e228f9a8acb2472a1/package-20261114T145536425Z-de3b650c/` |
-| Archive | `…/archive/Shooter-Offline.zip` SHA256 `ccadafb06ae0a4541fac974ff459d4936814c57e8d48bb4362836a66c1e9afa4` |
-| Extract probe | `C:\Temp\shooter-t071-playtest` via archive; launcher from cwd `C:\Temp` |
+| Client | `Artifacts/m0-foundation/7cd7e8191e118929af742bef382774edb22a57c2/build-client-20261114T153050748Z-b2a23740` — Succeeded, non-development, `sourceDirty=false` |
+| Server | `Artifacts/m0-foundation/7cd7e8191e118929af742bef382774edb22a57c2/build-server-20261114T153304840Z-bd3cbeda` — Succeeded, `sourceDirty=false`, `graphicsSourceAssets` empty |
+| Package | `Artifacts/m11-playable-release/7cd7e8191e118929af742bef382774edb22a57c2/package-20261114T153524429Z-8edfd0c3/` |
+| Archive | `…/archive/Shooter-Offline.zip` SHA256 `fd54c97e2ad8d7dbf6505d1ccbdd7e6b2c67d64e4bffa13fcc55b8b0c6aebb50` |
+| Extract probe | `C:\Temp\shooter-t071-playtest-59bbcbb` via archive; launcher from cwd `C:\Temp` |
 | Automated launch | PASS to Main menu — Player.log `SHOOTER_SHELL screen=Main matchActive=0` (IL2CPP 6000.3.28f1, D3D11 AMD Radeon Graphics) |
 | Manual playtest | **Pending** — both maps × both sizes, combat/UI/settings/complete matches/results/replay |
 | REL01–REL06 | **NotClaimed** |
 | P05 | **FAIL** retained |
 
-### Commands run (T071)
+### Commands run (T071 post-T070 rebuild)
 
 ```powershell
-./Tools/Configure-Unity.ps1 -EditorPath '<pinned>/Editor/Unity.exe'
-./Tools/Test-SourceProvenance.ps1          # PASS (656 entries)
+./Tools/Configure-Unity.ps1 -EditorPath 'C:\Job\shooter\.local\Unity\6000.3.28f1\6000.3.28f1\Editor\Unity.exe'
+# WriteSettingsProvenance refresh committed as 7cd7e81 (ShooterBuild source hash only)
+./Tools/Test-SourceProvenance.ps1          # PASS (662 entries)
 ./Tools/Test-Contracts.ps1 -Offline        # 72/72
 ./Tools/Test-Generation.ps1 -Offline       # 319/319
 ./Tools/Test-Simulation.ps1 -Offline       # 110/110
-./Tools/Test-Game.ps1 -Offline             # 40/40
-./Tools/Test-Unity.ps1 -Mode EditMode      # PASS at 0d6c929
-./Tools/Test-Unity.ps1 -Mode PlayMode      # PASS at bbc0b13 (isolated worktree)
+./Tools/Test-Game.ps1 -Offline             # 51/51
+./Tools/Test-Unity.ps1 -Mode EditMode      # PASS at 7cd7e81
+./Tools/Test-Unity.ps1 -Mode PlayMode      # PASS at 7cd7e81
 ./Tools/Compile-GameContent.ps1 -Force     # PASS, 8 packages, sourceDirty=false
-./Tools/Build.ps1 -Target Client           # PASS, sourceDirty=false at 114815c
+./Tools/Build.ps1 -Target Client           # PASS, sourceDirty=false at 7cd7e81
 ./Tools/Build.ps1 -Target Server           # PASS, graphics isolated
 ./Tools/Package-Release.ps1 -ClientBuildRunDirectory <client-build-run>
 ```
@@ -54,9 +55,25 @@
 - NVB1 install: voxelSize below agentRadius; +Y triangle winding so SamplePosition works
 - `ShooterBuild` records `sourceDirty`/`sourceCommit` at request time (before BuildPlayer side effects)
 
+## T071 — Historical superseded candidate at 114815c — 2026-11-14
+
+Superseded for source-matched measurement after T070 (`59bbcbb`). **Do not retcon** these package/build hashes; use only as historical record.
+
+| Field | Disposition |
+|---|---|
+| Task | T071 (pre-T070 owner playtest archive) |
+| Source | `114815c66dd5b951f1c1124e228f9a8acb2472a1` (`sourceDirty=false` at Client request) |
+| Toolchain | Unity `6000.3.28f1` / `8f082d2fe476`; toolchainHash `9ac31fe82117043e2bba3bfb843dd1ca32834b15425188e96d6f3369e2c627a8` |
+| Content | contentClosureHash `715e762129848f4942f908e896ead3f2fa42a8d2b19cb2ab5612339647e41f07` |
+| Client | `Artifacts/m0-foundation/114815c…/build-client-20261114T145025293Z-1d4df0da` |
+| Server | `Artifacts/m0-foundation/114815c…/build-server-20261114T145215699Z-4f4663eb` |
+| Package | `Artifacts/m11-playable-release/114815c66dd5b951f1c1124e228f9a8acb2472a1/package-20261114T145536425Z-de3b650c/` |
+| Archive | `…/archive/Shooter-Offline.zip` SHA256 `ccadafb06ae0a4541fac974ff459d4936814c57e8d48bb4362836a66c1e9afa4` |
+| Status | **Superseded** — missing T070 finish/results/replay measurement software |
+
 ## Latest-commit review — 59316d3 (historical)
 
-59316d3 contains committed T052–T064 remediation. The [T066–T071 queue](../../next-playable-build.md) defined the path to the first owner-playable archive; T071 evidence above supersedes the “no archive” claim for `114815c`. T070 software (host/counters/tests) lands after that archive and leaves FIX12 hardware **PendingHardware**; T062 visual disposition and T065 full acceptance remain open; REL01–REL06 remain NotClaimed.
+59316d3 contains committed T052–T064 remediation. The [T066–T071 queue](../../next-playable-build.md) defined the path to the first owner-playable archive; the post-T070 T071 rebuild at `7cd7e81` is the current source-matched candidate. FIX12 hardware remains **PendingHardware**; T062 visual disposition and T065 full acceptance remain open; REL01–REL06 remain NotClaimed.
 
 ## T065 / FIX14 acceptance readiness — 2026-11-14
 

@@ -14,7 +14,7 @@ M0–M7 retain historical closures/waivers; P05 FAIL under ADR-024 remains. M8�
 | Views | Map renderers, packaged soldier/rifle/pistol, binder/corpse cap, authority slot/action view, visual inventory tooling | T068 software drives slot/events; FIX05 player captures Pending; P05 review open |
 | AI/TDM | Enemy filtering, path-corner following, reload commands, 9/11-bot scheduling and spawn ranking/deadline | Native-world mixed-team combat, repeated respawn and full match matrix on both maps/sizes |
 | Shell/settings/audio | Shell-owned Main→load→play→pause→results, score tables, JSON schema 2/store/editor, device applier, synthesized callback | Binding editor/input application absent; some accessibility preferences not consumed; named UI/display/audio reviews and shell cycles (T069) |
-| Measurement/delivery | ADR-037 collector; T070 finish/results/replay host + honest counters (software) | Twelve captures + soaks **PendingHardware**; T071 archive at `114815c` is source-stale after T070; final T062/T065 acceptance |
+| Measurement/delivery | ADR-037 collector; T070 finish/results/replay host + honest counters (software); source-matched T071 rebuild at `7cd7e81` | Twelve captures + soaks **PendingHardware**; `114815c` archive retained historical/superseded; final T062/T065 acceptance |
 
 REL01–REL06 remain Open / NotClaimed. A local owner playtest candidate and a fully accepted release are separate checkpoints, defined in the [next-build plan](next-playable-build.md); neither is claimed by this audit.
 
