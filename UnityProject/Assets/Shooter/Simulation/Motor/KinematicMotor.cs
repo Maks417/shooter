@@ -121,15 +121,27 @@ namespace Shooter.Simulation.Motor
             }
             velocity = new Float3(horizontal.X, velocity.Y, horizontal.Z);
 
-            if (!(jumpEdge || velocity.Y > 0f && !previous.Grounded))
-                velocity = new Float3(velocity.X, velocity.Y + config.Gravity * MotorMath.TickSeconds, velocity.Z);
-            else if (!jumpEdge)
-                velocity = new Float3(velocity.X, velocity.Y + config.Gravity * MotorMath.TickSeconds, velocity.Z);
+            if (!jumpEdge)
+            {
+                if (previous.Grounded && previous.GroundNormal.Y >= Math.Cos(config.MaxSlopeRadians) - 1e-4f)
+                {
+                    // Grounded: gravity is cancelled by the ground, and the horizontal wish velocity is redirected along the
+                    // ground plane so ramps neither slow the actor (gravity projected onto the slope) nor launch it.
+                    Float3 gn = previous.GroundNormal;
+                    velocity = new Float3(velocity.X, -(gn.X * velocity.X + gn.Z * velocity.Z) / gn.Y, velocity.Z);
+                }
+                else
+                    velocity = new Float3(velocity.X, velocity.Y + config.Gravity * MotorMath.TickSeconds, velocity.Z);
+            }
             if (velocity.Y < config.TerminalFall) velocity = new Float3(velocity.X, config.TerminalFall, velocity.Z);
 
             Float3 feet = previous.Feet;
             Float3 displacement = MotorMath.Scale(velocity, MotorMath.TickSeconds);
-            feet = SlideMove(feet, height, ref velocity, displacement, world);
+            // A grounded actor that is not jumping follows the ground: contact projection (ramps) must not leave it
+            // with upward velocity, which would suppress the ground probe and launch it off the ramp.
+            bool followGround = previous.Grounded && !jumpEdge;
+            feet = SlideMove(feet, height, ref velocity, displacement, world, followGround, out bool stepped, out SurfaceId stepSurface);
+            if (followGround && velocity.Y > 0f) velocity = new Float3(velocity.X, 0f, velocity.Z);
 
             bool ascendingJump = velocity.Y > 0f && jumpConsumed == command.Sequence && (command.Buttons & InputButtons.JumpPressed) != 0;
             bool grounded = false;
@@ -137,7 +149,17 @@ namespace Shooter.Simulation.Motor
             Float3 groundNormal = new Float3(0, 1, 0);
             uint lastGrounded = previous.LastGroundedTick;
             if (!ascendingJump || previous.Grounded && jumpEdge == false)
-                ProbeGround(feet, height, velocity.Y, world, out grounded, out groundId, out groundNormal, out feet);
+            {
+                // Downhill snap: the ground can fall away by up to movedHorizontal * tan(MaxSlope) in one tick.
+                float movedHorizontal = MotorMath.Length(MotorMath.Horizontal(MotorMath.Sub(feet, previous.Feet)));
+                float extraProbe = followGround ? movedHorizontal * (float)Math.Tan(config.MaxSlopeRadians) : 0f;
+                ProbeGround(feet, height, velocity.Y, extraProbe, world, out grounded, out groundId, out groundNormal, out feet);
+                if (!grounded && stepped)
+                {
+                    // Resting on a step edge: supported by geometry the step-up already validated.
+                    grounded = true; groundId = stepSurface; groundNormal = new Float3(0, 1, 0);
+                }
+            }
 
             if (grounded)
             {
@@ -195,8 +217,10 @@ namespace Shooter.Simulation.Motor
             return true;
         }
 
-        private Float3 SlideMove(Float3 feet, float height, ref Float3 velocity, Float3 displacement, IWorldQueries world)
+        private Float3 SlideMove(Float3 feet, float height, ref Float3 velocity, Float3 displacement, IWorldQueries world,
+            bool allowStep, out bool stepped, out SurfaceId stepSurface)
         {
+            stepped = false; stepSurface = default;
             for (int i = 0; i < config.MaxSlideIterations; i++)
             {
                 if (displacement.LengthSquared <= 1e-12) break;
@@ -211,13 +235,17 @@ namespace Shooter.Simulation.Motor
                 float travel = Math.Max(0f, hit.DistanceMeters - config.Skin);
                 Float3 unit = MotorMath.NormalizeOrZero(displacement);
                 feet = MotorMath.Add(feet, MotorMath.Scale(unit, travel));
-                // Step-up: if blocked mostly horizontally and there is room, try lifting by step height.
-                if (hit.Normal.Y < 0.1f && TryStep(feet, height, displacement, world, out Float3 stepped))
+                Float3 remaining = MotorMath.Sub(displacement, MotorMath.Scale(unit, travel));
+                // Step-up: a grounded actor blocked by a non-walkable contact lifts by step height, spends only the
+                // remaining horizontal travel and snaps down. The whole remaining displacement is consumed.
+                if (allowStep && hit.Normal.Y < Math.Cos(config.MaxSlopeRadians)
+                    && TryStep(feet, height, MotorMath.Horizontal(remaining), world, out Float3 stepFeet, out SurfaceId surface))
                 {
-                    feet = stepped;
-                    continue;
+                    feet = stepFeet;
+                    stepped = true; stepSurface = surface;
+                    break;
                 }
-                displacement = MotorMath.ProjectOnPlane(MotorMath.Sub(displacement, MotorMath.Scale(unit, travel)), hit.Normal);
+                displacement = MotorMath.ProjectOnPlane(remaining, hit.Normal);
                 velocity = MotorMath.ProjectOnPlane(velocity, hit.Normal);
                 if (hit.Normal.Y >= Math.Cos(config.MaxSlopeRadians))
                 {
@@ -231,32 +259,52 @@ namespace Shooter.Simulation.Motor
             return feet;
         }
 
-        private bool TryStep(Float3 feet, float height, Float3 displacement, IWorldQueries world, out Float3 result)
+        private bool TryStep(Float3 feet, float height, Float3 horizontal, IWorldQueries world, out Float3 result, out SurfaceId surface)
         {
-            result = feet;
-            Float3 up = new Float3(0, config.StepHeight, 0);
+            result = feet; surface = default;
+            // Lift by StepHeight plus skin so a step exactly StepHeight tall is not rejected by contact tolerance.
+            float lift = config.StepHeight + config.Skin;
+            Float3 up = new Float3(0, lift, 0);
             var upCapsule = MotorMath.BodyCapsule(feet, height, config.Radius);
             var upSweep = world.SweepCapsule(upCapsule, up, motorFilter);
             if (upSweep.Status == QueryStatus.Hit) return false;
             Float3 raised = MotorMath.Add(feet, up);
-            Float3 horizontal = MotorMath.Horizontal(displacement);
-            if (horizontal.LengthSquared <= 1e-12) return false;
+            float hLen = MotorMath.Length(horizontal);
+            if (hLen <= 1e-6f) return false;
+            // Measure the real obstacle height with a ray just past the capsule rim: edge contacts of a rounded
+            // capsule must not let it climb obstacles taller than a step one rolled edge at a time.
+            Float3 ahead = MotorMath.Scale(horizontal, 1f / hLen);
+            const float rayLift = 0.3f;
+            var rayOrigin = new Float3(
+                feet.X + ahead.X * (config.Radius + 0.02f), feet.Y + lift + rayLift, feet.Z + ahead.Z * (config.Radius + 0.02f));
+            var topRay = world.Raycast(rayOrigin, new Float3(0, -1, 0), rayLift + lift + config.Snap + config.Skin, motorFilter);
+            if (topRay.Status != QueryStatus.Hit || topRay.Hit.Normal.Y < Math.Cos(config.MaxSlopeRadians)) return false;
+            float topY = rayOrigin.Y - topRay.Hit.DistanceMeters;
+            if (topY - feet.Y > lift + 1e-4f) return false;
             var forwardCapsule = MotorMath.BodyCapsule(raised, height, config.Radius);
             var forward = world.SweepCapsule(forwardCapsule, horizontal, motorFilter);
-            if (forward.Status == QueryStatus.Hit && forward.Hit.DistanceMeters < MotorMath.Length(horizontal) - config.Skin)
+            if (forward.Status == QueryStatus.Hit && forward.Hit.DistanceMeters < hLen - config.Skin)
                 return false;
-            result = MotorMath.Add(raised, horizontal);
-            // Snap down onto step top.
-            ProbeGround(result, height, -1f, world, out bool grounded, out _, out _, out result);
-            return grounded;
+            Float3 over = MotorMath.Add(raised, horizontal);
+            // Snap down onto the step top (or its edge): at most the lift plus the usual snap distance.
+            var downCapsule = MotorMath.BodyCapsule(over, height, config.Radius);
+            var down = world.SweepCapsule(downCapsule, new Float3(0, -(lift + config.Snap + config.Skin), 0), motorFilter);
+            if (down.Status != QueryStatus.Hit) return false;
+            if (down.Hit.Normal.Y < 0.1f) return false;
+            float drop = Math.Max(0f, down.Hit.DistanceMeters - config.Skin);
+            result = new Float3(over.X, over.Y - drop, over.Z);
+            // Must actually be a rise (otherwise ordinary sliding handles it) and no higher than a step.
+            if (result.Y - feet.Y > lift + 1e-4f) return false;
+            surface = down.Hit.StaticSurfaceId;
+            return true;
         }
 
-        private void ProbeGround(Float3 feet, float height, float verticalVelocity, IWorldQueries world,
+        private void ProbeGround(Float3 feet, float height, float verticalVelocity, float extraProbe, IWorldQueries world,
             out bool grounded, out SurfaceId groundId, out Float3 groundNormal, out Float3 snappedFeet)
         {
             grounded = false; groundId = default; groundNormal = new Float3(0, 1, 0); snappedFeet = feet;
             if (verticalVelocity > 0.01f) return;
-            float probe = config.Snap + config.Skin;
+            float probe = config.Snap + config.Skin + extraProbe;
             var capsule = MotorMath.BodyCapsule(feet, height, config.Radius);
             var sweep = world.SweepCapsule(capsule, new Float3(0, -probe, 0), motorFilter);
             if (sweep.Status != QueryStatus.Hit) return;
