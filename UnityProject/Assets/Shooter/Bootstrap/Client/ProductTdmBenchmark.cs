@@ -51,7 +51,7 @@ namespace Shooter.Bootstrap
             public int width, height, frames, ticks, warmupSeconds, captureSeconds, teamSize, actors;
             public string captureStartUtc = "", captureEndUtc = "";
             public bool frameTimingEnabled, mainRecorderAvailable, renderRecorderAvailable, allocationRecorderAvailable;
-            public int collectorVersion = 4;
+            public int collectorVersion = 5;
             public int mappedTimings, ambiguousTimings, drainFrames, preconditionSeconds;
             public uint captureStartTick;
             public string renderBudgetMethod = "nativeCpuFrameStartToPresentUpperBound-v1";
@@ -62,6 +62,10 @@ namespace Shooter.Bootstrap
             public string allocationMethod = "", allocationDiagnostic = "";
             public long team1Kills, team2Kills, activeTicks, respawns, aiRays, pathRequests, shots, damageEvents;
             public long leaseAcquires, querySamples, contentBindings, renderFrames;
+            public int matchesCompleted, matchIndex;
+            public long cumulativeActiveTicks, cumulativeRespawns, cumulativeQuerySamples, cumulativeContentBindings;
+            public string sessionEpoch = "";
+            public string counterSemantics = "respawns=life-replacement;querySamples=IWorldQueries;contentBindings=verified-package-roots";
         }
 
         [Serializable]
@@ -161,14 +165,32 @@ namespace Shooter.Bootstrap
                 throw new InvalidOperationException("Product TDM requires application VSync off and uncapped presentation");
             var session = authority.ProductSession;
             var telemetry = session.Measurement;
+            if (!string.Equals(telemetry.WorkloadId, workload.Id, StringComparison.Ordinal))
+                throw new InvalidOperationException("Captured WorkloadId missing or reset across BeginLoad; expected " + workload.Id);
             if (!string.Equals(telemetry.MapId, workload.MapId.Value, StringComparison.Ordinal))
                 throw new InvalidOperationException("Captured map does not match reviewed workload identity.");
             if (!string.Equals(telemetry.Seed, workload.Seed.ToString(CultureInfo.InvariantCulture), StringComparison.Ordinal))
                 throw new InvalidOperationException("Captured seed does not match reviewed workload identity.");
             if (telemetry.TeamSize != workload.TeamSize || telemetry.Actors != workload.Actors)
                 throw new InvalidOperationException("Captured roster does not match reviewed workload identity.");
+            if (string.IsNullOrEmpty(telemetry.ContentManifestHash) || string.IsNullOrEmpty(telemetry.PackageRootHash))
+                throw new InvalidOperationException("Content/package identity proofs absent; refusing to stamp placeholders.");
+            if (telemetry.ContentBindings <= 0)
+                throw new InvalidOperationException("contentBindings absent; verified package roots were not recorded.");
+            if (firstTick != (uint)((preconditionSeconds + warmupSeconds) * 60) ||
+                endTick != firstTick + (uint)(captureSeconds * 60))
+                throw new InvalidOperationException("Sampling window identity drifted from workload durations.");
             telemetry.Profile = QualitySettings.names[QualitySettings.GetQualityLevel()];
             validated = true;
+            Debug.Log("SHOOTER_TDM_BENCHMARK_VALIDATED workload=" + workload.Id +
+                      " map=" + telemetry.MapId +
+                      " teamSize=" + telemetry.TeamSize +
+                      " actors=" + telemetry.Actors +
+                      " profile=" + telemetry.Profile +
+                      " warmupSeconds=" + warmupSeconds +
+                      " captureSeconds=" + captureSeconds +
+                      " captureStartTick=" + firstTick +
+                      " contentBindings=" + telemetry.ContentBindings);
         }
 
         private void Update()
@@ -176,6 +198,7 @@ namespace Shooter.Bootstrap
             if (authority == null || complete || authority.Failed) return;
             try
             {
+                if (host != null) host.ReportAuthorityClockTicks(authority.CompletedTicks);
                 long now = Stopwatch.GetTimestamp(), allocated = AllocationMeter.TotalBytes;
                 DateTime utc = DateTime.UtcNow;
                 if (previousValid && previousTick >= firstTick && previousTick < endTick)
@@ -297,6 +320,15 @@ namespace Shooter.Bootstrap
             }
 
             var telemetry = authority.ProductSession.Measurement;
+            if (!string.Equals(telemetry.WorkloadId, workload.Id, StringComparison.Ordinal))
+                throw new InvalidOperationException("WorkloadId lost before capture finish.");
+            if (telemetry.ContentBindings <= 0 ||
+                string.IsNullOrEmpty(telemetry.ContentManifestHash) ||
+                string.IsNullOrEmpty(telemetry.PackageRootHash))
+                throw new InvalidOperationException("Refusing to emit capture with absent content counters/identities.");
+            // Soak must have entered a replayed match (MatchIndex >= 2). Capture may end mid-match-2.
+            if (workload.Soak && host != null && host.Coordinator.MatchIndex < 2 && !diagnostic)
+                throw new InvalidOperationException("Soak capture requires finish/replay into at least a second match.");
             var metadata = new Metadata
             {
                 workloadId = workload.Id,
@@ -353,7 +385,14 @@ namespace Shooter.Bootstrap
                 leaseAcquires = telemetry.LeaseAcquires,
                 querySamples = telemetry.QuerySamples,
                 contentBindings = telemetry.ContentBindings,
-                renderFrames = telemetry.RenderFrames
+                renderFrames = telemetry.RenderFrames,
+                matchesCompleted = host != null ? host.Coordinator.MatchesCompleted : telemetry.MatchesCompleted,
+                matchIndex = telemetry.MatchIndex,
+                cumulativeActiveTicks = telemetry.PublishedCumulativeActiveTicks,
+                cumulativeRespawns = telemetry.PublishedCumulativeRespawns,
+                cumulativeQuerySamples = telemetry.PublishedCumulativeQuerySamples,
+                cumulativeContentBindings = telemetry.PublishedCumulativeContentBindings,
+                sessionEpoch = telemetry.SessionEpoch.ToString(CultureInfo.InvariantCulture)
             };
             File.WriteAllText(Path.Combine(output, "capture.json"), JsonUtility.ToJson(metadata, true) + "\n");
             complete = true;

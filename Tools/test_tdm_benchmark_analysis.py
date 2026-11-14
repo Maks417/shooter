@@ -24,7 +24,9 @@ class TdmCaptureAnalysisTests(unittest.TestCase):
         self.addCleanup(self.directory.cleanup)
         self.root = Path(self.directory.name)
         self.meta = {
-            "workloadId": "TDM-5v5-v1", "productTdm": True, "collectorVersion": 4,
+            "workloadId": "TDM-5v5-v1", "productTdm": True, "collectorVersion": 5,
+            "matchesCompleted": 0, "matchIndex": 1, "cumulativeActiveTicks": 4000, "sessionEpoch": "1001",
+            "counterSemantics": "respawns=life-replacement;querySamples=IWorldQueries;contentBindings=verified-package-roots",
             "seed": "460072030", "mapId": "training-compound", "profile": "Low",
             "teamSize": 5, "actors": 10, "width": 1280, "height": 720, "graphicsApi": "Direct3D11",
             "contentManifestHash": "a" * 64, "packageRootHash": "b" * 64,
@@ -105,6 +107,33 @@ class TdmCaptureAnalysisTests(unittest.TestCase):
     def test_missing_counter_is_rejected(self):
         del self.meta["leaseAcquires"]
         with self.assertRaisesRegex(ValueError, "Incomplete counters"):
+            self.report()
+
+    def test_absent_content_bindings_are_rejected(self):
+        self.meta["contentBindings"] = 0
+        with self.assertRaisesRegex(ValueError, "contentBindings"):
+            self.report()
+
+    def test_soak_without_replay_match_is_rejected(self):
+        self.meta.update(
+            workloadId="TDM-soak-6v6-compound-v1",
+            mapId="training-compound",
+            seed="460072030",
+            teamSize=6,
+            actors=12,
+            warmupSeconds=0,
+            captureSeconds=1800,
+            ticks=108000,
+            captureStartTick=0,
+            matchIndex=1,
+            matchesCompleted=0,
+        )
+        self.ticks = [{
+            "tick": tick, "simulationMs": .1, "managedTickBytes": 0,
+            "team1Kills": 1, "team2Kills": 2, "respawns": 3, "aiRays": 100, "pathRequests": 20,
+            "shots": 50, "damageEvents": 40, "leaseAcquires": 8000, "querySamples": 120,
+        } for tick in range(0, 108000)]
+        with self.assertRaisesRegex(ValueError, "second match|replay"):
             self.report()
 
     def test_shortened_window_is_rejected(self):

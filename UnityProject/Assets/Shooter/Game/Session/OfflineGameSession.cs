@@ -39,6 +39,8 @@ namespace Shooter.Game.Session
         private readonly List<InputCommand> merged = new List<InputCommand>(64);
         private readonly List<EntityId> deathsThisTick = new List<EntityId>(GameContractVersion.MaxParticipants);
         private readonly ProductMeasurementTelemetry measurement = new ProductMeasurementTelemetry();
+        private QueryCountingMapRuntime? countingMap;
+        private long querySamplesAtMatchStart;
         private bool disposed;
 
         public OfflineGameSession(IMapCatalog catalog, Func<IWorldQueries, INavigation, IMapRuntime> mapFactory, bool allowFakeMapRuntime = false)
@@ -56,8 +58,12 @@ namespace Shooter.Game.Session
         public IActorLifecycle? Lifecycle => lifecycle;
         public IMapRuntime? MapRuntime => mapRuntime;
         public int CosmeticCorpseCount => lifecycle?.CosmeticCorpseCount ?? 0;
-        /// <summary>Read-only measurement counters for product TDM capture (T063). Mutated only by this session.</summary>
+        /// <summary>Read-only measurement counters for product TDM capture (T063/T070). Mutated only by this session and host binding hooks.</summary>
         public ProductMeasurementTelemetry Measurement => measurement;
+        /// <summary>Load fence epoch; increments on every BeginLoadAsync / Stop.</summary>
+        public ulong SessionEpoch => epoch;
+        /// <summary>Adapter sample total for tests/diagnostics ( -1 when no counting map).</summary>
+        public long DebugWorldQueryAdapterSamples => countingMap == null ? -1 : countingMap.CountingQueries.TotalSamples;
 
         public bool TryGetCosmeticCorpse(int index, out ActorLifecycleState state)
         {
@@ -118,27 +124,53 @@ namespace Shooter.Game.Session
             }
             if (!load.Succeeded) { phase = GameMatchPhase.Stopped; return load; }
 
-            mapRuntime = loadingRuntime;
-            harness = new CombatHarnessSimulation(mapRuntime.WorldQueries, sessionId, request.Seed);
+            // One shared counter for map spawn queries, harness motor/hitscan, and AI perception.
+            // Reuse an existing CountingWorldQueries if the map factory already wrapped (tests),
+            // so FakeMapRuntime.WorldQueries and session adapters share one counter instance.
+            var baseQueries = loadingRuntime.WorldQueries;
+            var queries = baseQueries as CountingWorldQueries ?? new CountingWorldQueries(baseQueries);
+            countingMap = new QueryCountingMapRuntime(loadingRuntime, queries);
+            mapRuntime = countingMap;
+            querySamplesAtMatchStart = queries.TotalSamples;
+            harness = new CombatHarnessSimulation(queries, sessionId, request.Seed);
             lifecycle = new HarnessActorLifecycle(harness);
-            bots = new TeamBotPlanner(mapRuntime.WorldQueries, mapRuntime.Navigation, 0, gameplay.NavRevision);
+            bots = new TeamBotPlanner(queries, mapRuntime.Navigation, 0, gameplay.NavRevision);
 
             var roster = BuildRoster(request, gameplay, lifecycle, bots);
             match.ConfigureIdentities("catalog.v1", gameplay.MapId.Value + ".gameplay", "local-dev");
             match.Begin(request, roster, gameplay);
-            measurement.Reset();
+            // Preserve WorkloadId / cumulatives across replay loads; host re-applies WorkloadId after this returns.
+            measurement.ResetForNewMatch();
+            measurement.SessionEpoch = epoch;
             measurement.MapId = request.MapId.Value;
             measurement.Seed = request.Seed.ToString(System.Globalization.CultureInfo.InvariantCulture);
             measurement.TeamSize = request.TeamSize;
             measurement.Actors = roster.Count;
-            if (catalog.TryGet(request.MapId, out var catalogEntry))
+            if (catalog.TryGet(request.MapId, out var catalogEntry) &&
+                !catalogEntry.GameplayRootHash.Equals(default))
             {
+                // Real binding only when the catalog supplies a non-default package root.
                 measurement.PackageRootHash = catalogEntry.GameplayRootHash.ToString();
                 measurement.ContentManifestHash = catalogEntry.GameplayRootHash.ToString();
-                measurement.ContentBindings = 1;
+                measurement.RecordContentBinding();
             }
             phase = GameMatchPhase.Ready;
             return GameOperationResult.Ok;
+        }
+
+        /// <summary>
+        /// Host records a verified visual/content package bind. Does not invent bindings when packages are absent.
+        /// </summary>
+        public void RecordVerifiedContentBinding()
+        {
+            measurement.RecordContentBinding();
+        }
+
+        /// <summary>Fold finished-match counters into cumulative soak totals before the next load resets per-match fields.</summary>
+        public void NotifyMatchFinishedForMeasurement()
+        {
+            if (phase != GameMatchPhase.Finished) return;
+            measurement.FoldMatchIntoCumulative();
         }
 
         public GameOperationResult SignalReady()
@@ -180,13 +212,13 @@ namespace Shooter.Game.Session
             // Install due respawns before movement (Game-v1 tick order).
             var pre = match.AcquireSnapshot(sessionId, tick);
             measurement.LeaseAcquires++;
-            int aliveBefore = CountAlive(pre);
             match.ScheduleDueRespawns(pre.ActiveTicksElapsed, lifecycle, mapRuntime);
 
             var snap = match.AcquireSnapshot(sessionId, tick);
             measurement.LeaseAcquires++;
-            int aliveAfter = CountAlive(snap);
-            if (aliveAfter > aliveBefore) measurement.Respawns += aliveAfter - aliveBefore;
+            // Real respawn semantics: count life/entity replacements, not net alive growth
+            // (same-tick death elsewhere must not cancel a successful respawn event).
+            measurement.Respawns += CountRespawnEvents(pre, snap);
             if (RebindReplacements(pre, snap))
             {
                 bots = RebuildBotPlanner(snap, lifecycle, mapRuntime);
@@ -194,7 +226,6 @@ namespace Shooter.Game.Session
             int botCount = bots.Plan(tick, snap, lifecycle, botCommands);
             measurement.AiRays += bots.Counters.VisionRaysThisTick;
             measurement.PathRequests += bots.Counters.PathsRequestedThisTick;
-            measurement.QuerySamples += bots.Counters.VisionRaysThisTick + bots.Counters.PathsRequestedThisTick;
 
             merged.Clear();
             if (humanCommand.HasValue &&
@@ -208,6 +239,13 @@ namespace Shooter.Game.Session
             var result = harness.Step(tick, merged.ToArray());
             measurement.Shots += result.Counters.Shots;
             measurement.DamageEvents += result.Counters.DamageEvents;
+            // querySamples after Plan + harness.Step so motor/hitscan samples are included
+            // (adapter total, not aiRays+pathRequests sum).
+            if (countingMap != null)
+            {
+                long total = countingMap.CountingQueries.TotalSamples;
+                measurement.QuerySamples = total - querySamplesAtMatchStart;
+            }
             using (var lease = harness.AcquireSnapshot())
             {
                 measurement.LeaseAcquires++;
@@ -389,12 +427,30 @@ namespace Shooter.Game.Session
         private void ReleaseRuntime()
         {
             CancelBotPlanner();
+            // Unload the inner runtime; counting decorator forwards Unload.
             mapRuntime?.Unload();
             mapRuntime = null;
+            countingMap = null;
             harness = null;
             lifecycle = null;
             bots = null;
             deathsThisTick.Clear();
+            querySamplesAtMatchStart = 0;
+        }
+
+        private static int CountRespawnEvents(MatchViewSnapshot before, MatchViewSnapshot after)
+        {
+            int respawns = 0;
+            int count = Math.Min(before.Participants.Count, after.Participants.Count);
+            for (int i = 0; i < count; i++)
+            {
+                var prior = before.Participants[i];
+                var current = after.Participants[i];
+                if (prior.ParticipantId.Value != current.ParticipantId.Value) continue;
+                if (!prior.EntityId.Equals(current.EntityId) && current.Alive)
+                    respawns++;
+            }
+            return respawns;
         }
 
         private void CancelBotPlanner()
@@ -410,14 +466,6 @@ namespace Shooter.Game.Session
             for (int i = 0; i < entities.Count; i++)
                 if (entities[i].Equals(candidate)) return true;
             return false;
-        }
-
-        private static int CountAlive(MatchViewSnapshot snapshot)
-        {
-            int alive = 0;
-            for (int i = 0; i < snapshot.Participants.Count; i++)
-                if (snapshot.Participants[i].Alive) alive++;
-            return alive;
         }
 
         private sealed class EmptyWorldQueries : IWorldQueries

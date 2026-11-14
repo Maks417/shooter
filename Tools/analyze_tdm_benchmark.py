@@ -60,8 +60,16 @@ def analyze(capture_path, build_path, hardware_path, run_index, evidence_path=No
     workload = tdm_workloads.require_measurement(meta.get("workloadId", ""))
     if not meta.get("productTdm"):
         raise ValueError("Product TDM collector marker missing")
-    if meta.get("collectorVersion") != 4:
-        raise ValueError("Product TDM collectorVersion must be 4")
+    if meta.get("collectorVersion") not in (4, 5):
+        raise ValueError("Product TDM collectorVersion must be 4 or 5")
+    if meta.get("collectorVersion") == 5:
+        for key in ("matchesCompleted", "matchIndex", "cumulativeActiveTicks", "sessionEpoch"):
+            if key not in meta:
+                raise ValueError("Collector v5 missing multi-match field: " + key)
+        if type(meta.get("contentBindings")) is not int or meta["contentBindings"] <= 0:
+            raise ValueError("contentBindings absent or non-positive; refusing stamped placeholders")
+        if bool(workload.get("soak")) and not meta.get("diagnostic") and int(meta.get("matchIndex") or 0) < 2:
+            raise ValueError("Soak capture requires finish/replay into at least a second match")
     if build["result"] != "Succeeded" or build["target"] != "Client" or build["backend"] != "IL2CPP" or build["development"]:
         raise ValueError("Acceptance requires a release IL2CPP client")
     expected_seed = str(workload.get("seed") or ("460072031" if workload["mapId"] == "depot-yard" else "460072030"))

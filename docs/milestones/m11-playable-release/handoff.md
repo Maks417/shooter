@@ -1,6 +1,6 @@
 # M11 — Playable build and acceptance — handoff and gate record
 
-**Current disposition — 2026-11-14, T071 candidate at `114815c`:** Owner playtest archive exists with clean `sourceDirty=false` Client/Server builds and Package-Release PASS. Automated extract + `launch-offline.cmd` from another cwd reached Main (`matchActive=0`). REL01–REL06 remain **NotClaimed**. Manual play matrix, named device/visual reviews, and hardware soaks remain **Pending** / **PendingHardware**. P05 remains **FAIL** (ADR-024). T070 measurement/soak host work may still land separately; T062/T065 own final visual/REL acceptance. See the [current audit](../../product-state-audit.md), [next playable-build tasks](../../next-playable-build.md) and [FIX acceptance](../../release-remediation-validation.md).
+**Current disposition — 2026-11-14:** T071 owner playtest archive remains recorded at source `114815c` (hashes below unchanged). **T070 measurement software** (finish/results/replay host + counter semantics) lands on a later `main` tip and **invalidates that archive for source-matched measurement/rebuild** — do not retcon `114815c` package/build hashes; rebuild Client/content/package from the T070 tip before FIX12 hardware runs. REL01–REL06 remain **NotClaimed**. Manual play matrix, named device/visual reviews, and twelve captures/soaks remain **Pending** / **PendingHardware**. P05 remains **FAIL** (ADR-024). T062/T065 own final visual/REL acceptance. See the [current audit](../../product-state-audit.md), [next playable-build tasks](../../next-playable-build.md) and [FIX acceptance](../../release-remediation-validation.md).
 
 ## T071 — Owner playtest candidate — 2026-11-14
 
@@ -56,7 +56,7 @@
 
 ## Latest-commit review — 59316d3 (historical)
 
-59316d3 contains committed T052–T064 remediation. The [T066–T071 queue](../../next-playable-build.md) defined the path to the first owner-playable archive; T071 evidence above supersedes the “no archive” claim for `114815c`. T070, T062 visual disposition and T065 full acceptance remain open; REL01–REL06 remain NotClaimed.
+59316d3 contains committed T052–T064 remediation. The [T066–T071 queue](../../next-playable-build.md) defined the path to the first owner-playable archive; T071 evidence above supersedes the “no archive” claim for `114815c`. T070 software (host/counters/tests) lands after that archive and leaves FIX12 hardware **PendingHardware**; T062 visual disposition and T065 full acceptance remain open; REL01–REL06 remain NotClaimed.
 
 ## T065 / FIX14 acceptance readiness — 2026-11-14
 
@@ -86,7 +86,7 @@ Implementation-time summary, now committed in 59316d3. Current audit B01–B10 a
 | T060 | FIX09 | **ADR-036 + T069 software** — bindings/accessibility applied | SET02 named Keep/Revert/device **Pending** |
 | T061 | FIX10 | **Device callback software** | Named audible review **Pending** |
 | T062 | FIX11 | **ToolingReady** inventory/overlay | P05 **FAIL** retained; REL03 **Open** |
-| T063 | FIX12 | **ADR-037 tooling** collector/matrix/soak scripts | T070 multi-match/counter repair; twelve captures + soaks **PendingHardware** |
+| T063 | FIX12 | **ADR-037 tooling** + T070 finish/replay/counters (software) | Twelve captures + soaks **PendingHardware**; rebuild after T070 tip |
 | T064 | FIX13 | **Package-Release software** rejects dirty/mismatched | Clean source-matched client + player launch **Pending** |
 | T065 | FIX14 / REL01–REL06 | **Checklist + runbook ready** | Execute operator path; do not claim PASS until measured |
 

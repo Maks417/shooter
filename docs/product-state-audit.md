@@ -14,7 +14,7 @@ M0–M7 retain historical closures/waivers; P05 FAIL under ADR-024 remains. M8�
 | Views | Map renderers, packaged soldier/rifle/pistol, binder/corpse cap, authority slot/action view, visual inventory tooling | T068 software drives slot/events; FIX05 player captures Pending; P05 review open |
 | AI/TDM | Enemy filtering, path-corner following, reload commands, 9/11-bot scheduling and spawn ranking/deadline | Native-world mixed-team combat, repeated respawn and full match matrix on both maps/sizes |
 | Shell/settings/audio | Shell-owned Main→load→play→pause→results, score tables, JSON schema 2/store/editor, device applier, synthesized callback | Binding editor/input application absent; some accessibility preferences not consumed; named UI/display/audio reviews and shell cycles (T069) |
-| Measurement/delivery | ADR-037 product collector/wrappers/analysis; clean-build package guards/archive/inventory/launcher | Multi-match soak host missing; counter semantics need repair (T070); clean independent player/rollback handoff (T071); final T062/T065 acceptance |
+| Measurement/delivery | ADR-037 collector; T070 finish/results/replay host + honest counters (software) | Twelve captures + soaks **PendingHardware**; T071 archive at `114815c` is source-stale after T070; final T062/T065 acceptance |
 
 REL01–REL06 remain Open / NotClaimed. A local owner playtest candidate and a fully accepted release are separate checkpoints, defined in the [next-build plan](next-playable-build.md); neither is claimed by this audit.
 
@@ -31,7 +31,7 @@ Paths start at `UnityProject/Assets/Shooter/` unless prefixed Tools. These are s
 | B05 / high | `Generation/Editor/Compilation/UnityNavMeshBakePublisher` is a constants/pending-string stub. Builder uses BuildWalkableGrid; CompoundMapRuntime verifies nav bytes but path queries use CompoundConnectivity. | T067: real native bake/install/path and spawn/route checks |
 | B06 / high | ~~Product actor renderer always creates Held rifle, ignores ActiveWeaponSlot, and starts 2.4s reload from magazine decrease.~~ **T068 software:** `ProductAuthorityActionView` + presentation consume `ActiveWeaponSlot` and Reload/Shot events with ActionPayload timing; packaged rifle/pistol meshes. Player FIX05 captures remain Pending. | T068 player Pending |
 | B07 / high | ~~Settings binding count / fixed keys / missing accessibility consumers.~~ **T069 software:** editable bindings with conflict swap/cancel, applied CaptureFrame/scoreboard, ReducedFlash/Subtitles/ReducedCameraMotion consumers, device resolution enumeration and Keep-before-persist display. Named FIX08–10/SET01–02 UI/device/20-cycle evidence remains Pending. | T069 device/UI Pending; T071 playtest |
-| B08 / high | ProductTdmHost starts once with no replay; 30-minute/108000-tick soak exceeds 15-minute/54000-tick match, after which Bootstrap stops ticks. Respawns counts net alive growth; querySamples is AI ray/path sum; contentBindings assigned one; BeginLoad resets WorkloadId set by host. | T070: multi-match capture, defined real counters/identities; do not extend match rules |
+| B08 / high | ~~ProductTdmHost single-match / broken counters.~~ **T070 software:** `ProductTdmCaptureCoordinator` finish→results→replay accumulates soak across normal 150-kill/54000-tick matches (rules unchanged); respawns=life replacement; querySamples=`CountingWorldQueries` adapter; contentBindings=verified roots; WorkloadId preserved across `ResetForNewMatch` and re-applied by host. Twelve captures + soaks remain **PendingHardware**. | T070 hardware matrix/soak; rebuild measurement candidate after source tip |
 | B09 / high | Bootstrap's default content/lock paths are repo-relative; package launcher supplies relative overrides. Missing startup content reaches Bootstrap failure before shell. Package corruption/rollback rehearsal is software-only, not a player launch. | T067/T071: packaged discovery, recovery UI and real extract/launch/rollback |
 | B10 / release blocker | P05 FAIL retained; no fresh clean player, full match matrix, named visual/UI/audio/display acceptance or reference captures/soaks from this review. | T062 scope/review, T065; no inherited waivers |
 
@@ -126,7 +126,7 @@ After docs-audit commit `6329262446428f92617600d8526b13f9c90a358a`, T052–T064 
 | T060 FIX09 | ADR-036 + UI/audio bind | T069 binding/accessibility consumers; SET02 real display Pending |
 | T061 FIX10 | Device callback software | Named audible review Pending |
 | T062 FIX11 | ToolingReady inventory | P05 FAIL retained; REL03 open |
-| T063 FIX12 | ADR-037 tooling | T070 multi-match/counter repairs; 12 captures + soaks PendingHardware |
+| T063 FIX12 | ADR-037 tooling | T070 software multi-match/counters landed; 12 captures + soaks PendingHardware |
 | T064 FIX13 | Package-Release software | Clean source-matched client + player launch Pending |
 | T065 FIX14 | Checklist + operator runbook | REL01–REL06 NotClaimed until measured |
 

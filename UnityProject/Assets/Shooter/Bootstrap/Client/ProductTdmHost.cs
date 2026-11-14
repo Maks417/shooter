@@ -10,8 +10,9 @@ using UnityEngine;
 namespace Shooter.Bootstrap
 {
     /// <summary>
-    /// Autostarts a rendered product TDM match for measurement without shell/menu ownership (T063).
-    /// Presentation/Menus remain untouched; this host binds ProductSessionView only.
+    /// Autostarts rendered product TDM matches for measurement without shell/menu ownership (T063/T070).
+    /// Implements finish → results → replay so soak can accumulate capture ticks across normal
+    /// 150-kill / 54000-tick matches without extending production rules.
     /// </summary>
     public sealed class ProductTdmHost : MonoBehaviour
     {
@@ -19,14 +20,20 @@ namespace Shooter.Bootstrap
         private ProductTdmWorkloads.Definition workload;
         private ProductSessionView? view;
         private CancellationTokenSource? loadCancel;
-        private bool startRequested;
+        private readonly ProductTdmCaptureCoordinator coordinator = new ProductTdmCaptureCoordinator();
+        private bool bootstrapped;
         private bool startFailed;
+        private bool transitionInFlight;
         private string failure = "";
+        private int resultsFrames;
+        private long authorityClockTicks;
 
-        public bool MatchPlaying { get; private set; }
+        public bool MatchPlaying => coordinator.Current == ProductTdmCaptureCoordinator.Phase.Playing;
         public bool StartFailed => startFailed;
         public string Failure => failure;
         public ProductTdmWorkloads.Definition Workload => workload;
+        public ProductTdmCaptureCoordinator Coordinator => coordinator;
+        public ProductTdmCaptureCoordinator.Phase CapturePhase => coordinator.Current;
 
         public static ProductTdmHost Create(IProductShellBackend backend, ProductTdmWorkloads.Definition workload)
         {
@@ -40,13 +47,49 @@ namespace Shooter.Bootstrap
             return host;
         }
 
+        /// <summary>Updated by ProductTdmBenchmark from FoundationEntry.CompletedTicks each frame.</summary>
+        public void ReportAuthorityClockTicks(long ticks) => authorityClockTicks = ticks;
+
         private async void Update()
         {
-            if (backend == null || startRequested || startFailed) return;
-            startRequested = true;
+            if (backend == null || startFailed || transitionInFlight) return;
             try
             {
-                await StartWorkloadAsync().ConfigureAwait(true);
+                if (!bootstrapped)
+                {
+                    bootstrapped = true;
+                    await BeginMatchAsync(replay: false).ConfigureAwait(true);
+                    return;
+                }
+
+                var session = backend.Session;
+                if (session == null) return;
+
+                if (coordinator.Current == ProductTdmCaptureCoordinator.Phase.Playing &&
+                    session.Phase == GameMatchPhase.Finished)
+                {
+                    var results = session.TryAcquireResults();
+                    long active = session.Measurement.ActiveTicks;
+                    session.NotifyMatchFinishedForMeasurement();
+                    coordinator.MarkFinished(results, active);
+                    coordinator.EnterResults();
+                    resultsFrames = 0;
+                    view?.SetGameplayFocus(false);
+                    Debug.Log("SHOOTER_TDM_BENCHMARK_FINISHED match=" + coordinator.MatchesCompleted +
+                              " reason=" + (results?.Reason.ToString() ?? "none") +
+                              " cumulativeActiveTicks=" + coordinator.CumulativeActiveTicks);
+                    return;
+                }
+
+                if (coordinator.Current == ProductTdmCaptureCoordinator.Phase.Results)
+                {
+                    resultsFrames++;
+                    // One results frame keeps the transition observable without stretching match rules.
+                    if (resultsFrames < 1) return;
+                    if (!coordinator.NeedsReplay(workload.CaptureTicks, authorityClockTicks, workload.Soak))
+                        return;
+                    await BeginMatchAsync(replay: true).ConfigureAwait(true);
+                }
             }
             catch (Exception ex)
             {
@@ -56,37 +99,80 @@ namespace Shooter.Bootstrap
             }
         }
 
-        private async System.Threading.Tasks.Task StartWorkloadAsync()
+        private async System.Threading.Tasks.Task BeginMatchAsync(bool replay)
         {
-            var session = backend!.Session ?? throw new InvalidOperationException("Product session missing.");
-            var catalog = backend.Catalog ?? throw new InvalidOperationException("Product catalog missing.");
-            if (!catalog.TryGet(workload.MapId, out var entry))
-                throw new InvalidOperationException("Unknown map for product TDM workload: " + workload.MapId.Value);
-            if (entry.RecipeSeed != workload.Seed)
-                throw new InvalidOperationException("Workload seed does not match catalog map seed.");
+            transitionInFlight = true;
+            try
+            {
+                var session = backend!.Session ?? throw new InvalidOperationException("Product session missing.");
+                var catalog = backend.Catalog ?? throw new InvalidOperationException("Product catalog missing.");
+                var request = new SessionRequest(workload.MapId, WellKnownModes.TeamDeathmatch, workload.TeamSize, workload.Seed);
 
-            var request = new SessionRequest(workload.MapId, WellKnownModes.TeamDeathmatch, workload.TeamSize, workload.Seed);
-            session.Measurement.WorkloadId = workload.Id;
-            loadCancel = new CancellationTokenSource();
-            var load = await session.BeginLoadAsync(request, loadCancel.Token).ConfigureAwait(true);
-            if (!load.Succeeded)
-                throw new InvalidOperationException(string.IsNullOrEmpty(load.Diagnostic) ? load.UserFacing : load.Diagnostic);
+                if (replay)
+                {
+                    if (!coordinator.TryPrepareReplay(out var replayRequest, out string replayError))
+                        throw new InvalidOperationException(replayError);
+                    request = replayRequest ?? request;
+                    session.Stop();
+                    view?.ClearPresentation();
+                }
+                else if (!coordinator.TryBeginLoad(request, out string beginError))
+                {
+                    throw new InvalidOperationException(beginError);
+                }
 
-            backend.WireMapActors();
-            if (!backend.TryGetVerifiedMap(out var boxes, out var metadata, out var mapId))
-                throw new InvalidOperationException("Verified map package solids missing for product TDM capture.");
-            if (!backend.TryGetVerifiedVisuals(out var visuals, out string visualDiagnostic))
-                throw new InvalidOperationException("Verified visual package missing for product TDM capture: " + visualDiagnostic);
-            view!.BindVerifiedMap(boxes, metadata, mapId, visuals);
+                if (!catalog.TryGet(workload.MapId, out var entry))
+                    throw new InvalidOperationException("Unknown map for product TDM workload: " + workload.MapId.Value);
+                if (entry.RecipeSeed != workload.Seed)
+                    throw new InvalidOperationException("Workload seed does not match catalog map seed.");
 
-            var ready = session.SignalReady();
-            if (!ready.Succeeded) throw new InvalidOperationException(ready.Diagnostic);
-            var started = session.Start();
-            if (!started.Succeeded) throw new InvalidOperationException(started.Diagnostic);
+                loadCancel?.Cancel();
+                loadCancel?.Dispose();
+                loadCancel = new CancellationTokenSource();
+                var load = await session.BeginLoadAsync(request, loadCancel.Token).ConfigureAwait(true);
+                if (!load.Succeeded)
+                    throw new InvalidOperationException(string.IsNullOrEmpty(load.Diagnostic) ? load.UserFacing : load.Diagnostic);
 
-            MatchPlaying = true;
-            Debug.Log("SHOOTER_TDM_BENCHMARK_PLAYING workload=" + workload.Id + " map=" + workload.MapId.Value +
-                      " teamSize=" + workload.TeamSize + " seed=" + workload.Seed);
+                // WorkloadId must be applied AFTER BeginLoadAsync (ResetForNewMatch clears per-match fields).
+                session.Measurement.WorkloadId = workload.Id;
+                session.Measurement.MatchIndex = coordinator.MatchIndex;
+                session.Measurement.MatchesCompleted = coordinator.MatchesCompleted;
+                session.Measurement.CumulativeActiveTicks = coordinator.CumulativeActiveTicks;
+                session.Measurement.SessionEpoch = session.SessionEpoch;
+
+                backend.WireMapActors();
+                if (!backend.TryGetVerifiedMap(out var boxes, out var metadata, out var mapId))
+                    throw new InvalidOperationException("Verified map package solids missing for product TDM capture.");
+                if (!backend.TryGetVerifiedVisuals(out var visuals, out string visualDiagnostic))
+                    throw new InvalidOperationException("Verified visual package missing for product TDM capture: " + visualDiagnostic);
+                view!.BindVerifiedMap(boxes, metadata, mapId, visuals);
+                // Visual package is a second verified content binding (gameplay already recorded by session load).
+                session.RecordVerifiedContentBinding();
+                view.SetGameplayFocus(true);
+
+                var ready = session.SignalReady();
+                if (!ready.Succeeded) throw new InvalidOperationException(ready.Diagnostic);
+                var started = session.Start();
+                if (!started.Succeeded) throw new InvalidOperationException(started.Diagnostic);
+
+                coordinator.CompleteLoadSuccess();
+                Debug.Log("SHOOTER_TDM_BENCHMARK_PLAYING workload=" + workload.Id +
+                          " match=" + coordinator.MatchIndex +
+                          " epoch=" + session.SessionEpoch +
+                          " map=" + workload.MapId.Value +
+                          " teamSize=" + workload.TeamSize +
+                          " seed=" + workload.Seed +
+                          " replay=" + replay);
+            }
+            catch
+            {
+                coordinator.CompleteLoadFailure();
+                throw;
+            }
+            finally
+            {
+                transitionInFlight = false;
+            }
         }
 
         private void OnDestroy()

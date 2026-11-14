@@ -1,4 +1,4 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param(
     [Parameter(Mandatory)][string]$BuildRunDirectory,
     [ValidateSet('TDM-soak-6v6-compound-v1','TDM-soak-6v6-depot-v1')][string]$Workload = 'TDM-soak-6v6-compound-v1',
@@ -16,12 +16,14 @@ param(
 $unity = Get-ShooterUnity
 $run = New-ShooterRun 'benchmark-soak' $unity
 $build = (Resolve-Path -LiteralPath $BuildRunDirectory).Path
-$run.Report['scope'] = 'FIX12 ≥30-minute normal-AI 6v6 soak; two matches/replay required for acceptance; PendingHardware until reference run.'
+$run.Report['scope'] = 'FIX12/T070 ≥30-minute normal-AI 6v6 soak; ProductTdmHost finish/results/replay across normal match rules; PendingHardware until reference run.'
 $run.Report['workloadId'] = $Workload
 $run.Report['buildDirectory'] = $build
 $run.Report['captureSeconds'] = 1800
 $run.Report['matchesRequired'] = 2
 $run.Report['replayRequired'] = $true
+$run.Report['collectorVersion'] = 5
+$run.Report['gateStatus'] = 'PendingHardware'
 try {
     if (!$MapCacheRoot) { $MapCacheRoot = Join-Path (Get-ShooterRoot) 'Artifacts/map-packages' }
     if (!(Test-Path -LiteralPath $MapCacheRoot -PathType Container)) { throw 'Verified map package cache missing; run Tools/Compile-GameContent.ps1.' }

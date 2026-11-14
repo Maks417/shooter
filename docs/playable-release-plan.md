@@ -18,7 +18,7 @@ The new [next playable-build plan](next-playable-build.md) provides bounded T066
 | 2 / T067 | Remove runtime catalog/package generation; publish actual soldier/weapon/visual closure; implement native nav bake/install; packaged discovery/recovery | Both maps load all required verified bytes independently of repository/cache |
 | 3 / T068–T069 | Correct rifle/pistol/action presentation; editable applied bindings/accessibility; finish real UI/device flows | Player sees authority-consistent combat and can configure controls/settings |
 | 4 / T071 | Clean source-matched Client/Server builds, archive, extract/manual playtest and rollback | Owner-playable candidate with actual path/hash/launcher/controls and all known issues |
-| 5 / T070 + T062 | Fix multi-match soak/counter semantics; validate collector; capture visual defects and resolve authorized scope | Valid product measurement and explicit visual disposition |
+| 5 / T070 + T062 | T070 software (finish/replay/counters) landed; run PendingHardware matrix/soaks on rebuilt tip; capture visual defects and resolve authorized scope | Valid product measurement and explicit visual disposition |
 | 6 / T065 | Full match/visual/device/reference-performance/soak matrix and final delivery | REL01–REL06 accepted only with actual evidence |
 
 T070 may proceed before T071, but final measurement and acceptance use one matching clean binary/content pair. One integrator owns shared Bootstrap/Contracts/settings/locks/workloads/coordination. This documentation assignment creates no coding lease or dispatch. Contract/generator/nav/schema changes require ADR and migration before consumers.
