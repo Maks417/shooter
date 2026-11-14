@@ -57,8 +57,9 @@ namespace Shooter.World
                 buildSettings.agentHeight = settings.AgentHeight;
                 buildSettings.agentClimb = settings.MaxStep;
                 buildSettings.agentSlope = settings.MaxSlopeDegrees;
+                // Unity requires voxelSize well below agentRadius; 0.08 with radius 0.05 yields empty NavMeshData.
                 buildSettings.overrideVoxelSize = true;
-                buildSettings.voxelSize = 0.08f;
+                buildSettings.voxelSize = 0.02f;
                 buildSettings.overrideTileSize = true;
                 buildSettings.tileSize = 64;
 
