@@ -57,6 +57,22 @@ namespace Shooter.Simulation.Tests.Motor
             if (displacement.LengthSquared == 0) return new SweepHit(QueryStatus.NoHit);
             float length = (float)Math.Sqrt(displacement.LengthSquared);
             var dir = new Float3(displacement.X / length, displacement.Y / length, displacement.Z / length);
+            if (Math.Abs(dir.X) < 1e-6f && Math.Abs(dir.Z) < 1e-6f && dir.Y > 0f)
+            {
+                // Upward sweep: the capsule footprint (square approximation) against box undersides.
+                float cx = capsule.TopSphereCenter.X, cz = capsule.TopSphereCenter.Z, r = capsule.Radius;
+                float top = Math.Max(capsule.BottomSphereCenter.Y, capsule.TopSphereCenter.Y) + r;
+                SweepHit? bestUp = null;
+                foreach (var box in boxes)
+                {
+                    if (!(cx + r > box.Min.X && cx - r < box.Max.X && cz + r > box.Min.Z && cz - r < box.Max.Z)) continue;
+                    float d = Math.Max(0f, box.Min.Y - top);
+                    if (box.Max.Y < top || d > length) continue;
+                    var upHit = new QueryHit(d, new Float3(cx, box.Min.Y, cz), new Float3(0, -1, 0), default, new SurfaceId(box.StableId + 1000), box.StableId, box.Tag, revision);
+                    if (bestUp == null || d < bestUp.Value.Hit.DistanceMeters) bestUp = new SweepHit(QueryStatus.Hit, upHit);
+                }
+                return bestUp ?? new SweepHit(QueryStatus.NoHit);
+            }
             // Approximate capsule sweep by ray from bottom sphere (sufficient for flat ground + box harness).
             var ray = Raycast(capsule.BottomSphereCenter, dir, length + capsule.Radius, filter);
             if (ray.Status != QueryStatus.Hit) return new SweepHit(QueryStatus.NoHit);
@@ -74,11 +90,12 @@ namespace Shooter.Simulation.Tests.Motor
             float minY = Math.Min(capsule.BottomSphereCenter.Y, capsule.TopSphereCenter.Y) - capsule.Radius;
             float maxY = Math.Max(capsule.BottomSphereCenter.Y, capsule.TopSphereCenter.Y) + capsule.Radius;
             if (minY < 0f && maxY > 0f)
-                hits.Add(new QueryHit(0, new Float3(capsule.BottomSphereCenter.X, 0, capsule.BottomSphereCenter.Z), new Float3(0, 1, 0), default, new SurfaceId(100), 1, 1, revision));
+                hits.Add(new QueryHit(-minY, new Float3(capsule.BottomSphereCenter.X, 0, capsule.BottomSphereCenter.Z), new Float3(0, 1, 0), default, new SurfaceId(100), 1, 1, revision));
             foreach (var box in boxes)
             {
                 if (!CapsuleAabbOverlap(capsule, box.Min, box.Max)) continue;
-                hits.Add(new QueryHit(0, box.Min, new Float3(0, 1, 0), default, new SurfaceId(box.StableId + 1000), box.StableId, box.Tag, revision));
+                BoxPushOut(capsule, box.Min, box.Max, out float depth, out Float3 pushNormal);
+                hits.Add(new QueryHit(depth, box.Min, pushNormal, default, new SurfaceId(box.StableId + 1000), box.StableId, box.Tag, revision));
             }
             int written = Math.Min(Math.Min(hits.Count, callerOwned.Capacity), 256);
             for (int i = 0; i < written; i++) callerOwned[i] = hits[i];
@@ -87,6 +104,20 @@ namespace Shooter.Simulation.Tests.Motor
             var result = new OverlapResult(QueryStatus.Hit, written, written);
             callerOwned.SortComplete(result);
             return result;
+        }
+
+        /// <summary>Minimum-axis push-out of the capsule's bounding box from a solid box (test approximation).</summary>
+        private static void BoxPushOut(Capsule capsule, Float3 min, Float3 max, out float depth, out Float3 normal)
+        {
+            float cx = capsule.BottomSphereCenter.X, cz = capsule.BottomSphereCenter.Z, r = capsule.Radius;
+            float y0 = Math.Min(capsule.BottomSphereCenter.Y, capsule.TopSphereCenter.Y) - r;
+            float y1 = Math.Max(capsule.BottomSphereCenter.Y, capsule.TopSphereCenter.Y) + r;
+            float bestD = float.MaxValue; Float3 bestN = new Float3(0, 1, 0);
+            void Try(float d, Float3 n) { if (d < bestD) { bestD = d; bestN = n; } }
+            Try((cx + r) - min.X, new Float3(-1, 0, 0)); Try(max.X - (cx - r), new Float3(1, 0, 0));
+            Try((y1) - min.Y, new Float3(0, -1, 0)); Try(max.Y - y0, new Float3(0, 1, 0));
+            Try((cz + r) - min.Z, new Float3(0, 0, -1)); Try(max.Z - (cz - r), new Float3(0, 0, 1));
+            depth = Math.Max(0f, bestD); normal = bestN;
         }
 
         private static bool CapsuleAabbOverlap(Capsule capsule, Float3 min, Float3 max)
