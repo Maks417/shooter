@@ -1,5 +1,11 @@
 # Launch and playtest the current candidate
 
+## Current visual preview — 0.3.1
+
+Use the **Windows installer 0.3.1**, source b531da9, at the exact path/hash in the [current M11 handoff](milestones/m11-playable-release/handoff.md#t074--scene-led-menu-and-tactical-hud-preview). It preserves the stable installer identity and preference policy; actual 0.3.1 install/upgrade acceptance has not been executed here. Main now uses a live procedural staging scene and two rendered operation cards. Choose Play or a map card, select 5v5/6v6, then Start match. Settings has Audio/Video/Controls/Accessibility groups and Apply/Cancel. Existing WASD/mouse/weapons/Slide/Escape/Tab controls remain.
+
+Final in-player review is **Pending: the owner stopped Computer Use with Escape**. The raw log confirms Main/menu-scenery readiness, not full gameplay acceptance. Maps, soldier/weapon/hand-animation detail, reference performance and P05 remain separate open stages/gates. Use a normal installer path or a short preview extraction path: the deep internal evidence extraction failed visual-file loading in an earlier attempt. The older 5eaced5 instructions below are retained history; that archive has a known startup crash and must not be used as the current preview.
+
 > **Known crash in the archive below (found 2026-11-14):** the `5eaced5` player crashes about 4 seconds after reaching Main (Windows APPCRASH 0x80000001; IL2CPP allocation-hook recursion when Unity attaches the audio thread). The fix and its root cause are in [ADR-042](decisions.md#adr-042--accepted-native-c-allocation-counter-for-benchmark-runs). Use the newer candidate recorded in the [M11 handoff](milestones/m11-playable-release/handoff.md#integration-session-2026-11-14) instead; the archive details below are kept as history.
 
 Current T072 playtest build, 2026-11-14: a Windows offline archive **with sliding** is available for testing. The final game will use an [upgrading Windows installer](features/windows-installer.md); this ZIP is a preview. Its build/package reports pass; manual gameplay and final release acceptance remain Pending. This guide helps reach the game and record what actually happens. See the [audit](product-state-audit.md) for technical findings and [M11 handoff](milestones/m11-playable-release/handoff.md) for retained build evidence.

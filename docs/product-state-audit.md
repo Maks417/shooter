@@ -1,5 +1,7 @@
 # Product state audit — 2026-11-14
 
+**Newest visual preview:** T074 installer **0.3.1**, clean binary source **b531da9**, supersedes the older candidate pointers below. Scene-led menu/map cards and compact tactical HUD are implemented; clean EditMode 29 / PlayMode 16, Client/Server, eight native packages and installer builders PASS. The player log confirms Main and three cosmetic menu actors/two map cards. The owner stopped the final Computer Use review with Escape, so final interactive visual/gameplay/device acceptance remains Pending. [Exact installer/hash, evidence, repaired failures and limits](milestones/m11-playable-release/handoff.md#t074--scene-led-menu-and-tactical-hud-preview). P05 FAIL, reference proofs and M8–M11 gates remain open. Older delivery sections below are historical snapshots, not the current installer recommendation.
+
 ## Latest delivery: T072 slide preview / final installer planned
 
 The owner-authorized slide is built into clean-source `5eaced5`: Client/Server, verified eight-package content and ZIP PASS; standalone extracted executable reaches Main. Final Game 56, EditMode 26 and PlayMode 13 pass, with actual flags/paths in [M11 delivery](milestones/m11-playable-release/handoff.md#t072--slide-enabled-playtest-delivery). [Playtest guide](playtest-guide.md) now points to that 40,668,944-byte ZIP (SHA256 8240e298…b34580f), including Sprint + F. Old 7cd7e81 has no slide and is retained as a prior pair. Manual gameplay/device/reference acceptance remains Pending, P05 FAIL remains and REL gates remain NotClaimed.

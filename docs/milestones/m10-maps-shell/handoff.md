@@ -2,6 +2,8 @@
 
 ## T074 — tactical shell and HUD, stage 1
 
+The owner's screenshot clarification supersedes the flat Main with a live procedural menu scene and actual map cards, plus a compact compass/minimap/squad/ammo/elimination HUD. The clean 0.3.1 installer uses source b531da9; EditMode 29 / PlayMode 16 and Client/Server builds pass. [Exact identities and limits](../m11-playable-release/handoff.md#t074--scene-led-menu-and-tactical-hud-preview) record the interrupted final Computer Use review. Named visual/device/full-game acceptance remains Pending. Existing soldier/environment fidelity is not accepted by this interface pass.
+
 Owner assigned implementation on 2026-11-14, beginning with menus/HUD and using Battlefield/Call of Duty/Warface/Bodycam as references. [Brandbook](../../brandbook.md) records the original procedural direction and later visual stages. This stage changes only the client presentation and related docs: `Presentation/Session/TacticalUi.cs`, `Presentation/Session/ProductShellHost.cs` and `ProductSessionView.cs`. No gameplay, map bytes, generator identities, settings schema, contract lock, toolchain or installer identity changes.
 
 Main/local setup/loading/pause/confirms/settings/live and final team tables use the shared charcoal/amber design, applied scale, 5% safe area, keyboard focus and grouped scrollable settings. The HUD adds backed health/ammo, formatted team score/time, authoritative reload progress, empty-ammo hint, respawn feedback and ADS-aware analytic reticle. Binding capture skips its initiating frame. Existing display Keep/Revert and persistent preferences remain in their services.

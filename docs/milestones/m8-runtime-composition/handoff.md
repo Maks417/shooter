@@ -1,5 +1,7 @@
 # M8 — Runtime composition and Game-v1 foundation — handoff and gate record
 
+T074 delivery adds read-only menu visual-byte access and cosmetic presentation, without changing C0/Game-v1/content schemas. Reproduced loading-to-play overload was repaired by rebasing the first active clock sample (`e3851f1`): foundation regression 73/73 preserves genuine active overload and fractional debt. The independent bot fix remains intact; its client measurement assembly dependency was repaired. [M11 visual-preview evidence](../m11-playable-release/handoff.md#t074--scene-led-menu-and-tactical-hud-preview) identifies clean b531da9 builds, menu startup and the owner-stopped interactive review. RUN/player, reference and P05 acceptance are not closed.
+
 **Current disposition — 2026-11-14 review from 84befb9 / a54ed83:** M8 integration validation remains open. T066 provenance/cancellation and T067 packaged catalog/visual loading are repaired; T068 authority-driven weapon/action views are landed in the retained `7cd7e81` candidate. Native-navigation publication/query semantics and actual RUN/player/repeated-life evidence remain open. See the [audit](../../product-state-audit.md), [remaining queue](../../next-playable-build.md), [playtest guide](../../playtest-guide.md) and [FIX acceptance](../../release-remediation-validation.md). Original requirements and historical evidence remain; this review creates no coding lease or waiver.
 
 

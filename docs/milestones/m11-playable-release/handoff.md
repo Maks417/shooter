@@ -1,5 +1,47 @@
 # M11 — Playable build and acceptance — handoff and gate record
 
+## T074 — scene-led menu and tactical HUD preview
+
+Current visual preview: **Windows installer 0.3.1**, binary source **`b531da9cceb0607b9c5046bb1700077fd9cb8d4a`**. The owner's six Battlefield screenshots superseded the contour-only Main: the new menu has a live procedural staging scene, compact left navigation and rendered cards for both maps. The compact HUD adds compass/score, a friendly-only minimap, squad, ammo/reload and four recent elimination rows. [Brandbook](../../brandbook.md) and [scope](../../task-supplement.md#t074--visual-redesign-stage-1-shell-and-combat-hud) define the code and later visual stages. All completed source is committed to main; no task worktrees were created.
+
+```text
+Artifacts/m11-playable-release/b531da9cceb0607b9c5046bb1700077fd9cb8d4a/installer-20261114T223635947Z-fc640123/installer/Shooter-Setup-0.3.1.exe
+Bytes: 26114012
+SHA256: 05cf16e263d2bbef8032e41dff5945994395bda53c22c94e8a918f42cb8b133c
+```
+
+AppId `B01E0F69-2123-4D91-AB59-88864A944E39`, the per-user upgrade policy and schema-2 preferences are preserved. This task built the installer but did not execute its install/update flow. INS01–INS06 retain their existing individual dispositions. `53cb9ea` updates packaging text only; later documentation does not relabel the binary. ZIP remains an internal preview.
+
+### Source-matched evidence
+
+The following Unity directories share prefix `Artifacts/m0-foundation/b531da9cceb0607b9c5046bb1700077fd9cb8d4a/`.
+
+| Check | Actual result / retained evidence |
+|---|---|
+| Client | PASS, IL2CPP, non-development, sourceDirty=false; `build-client-20261114T223131165Z-cb3c8dbe/` |
+| Server | PASS, sourceDirty=false, no graphicsSourceAssets; `build-server-20261114T223407718Z-c276b57e/` |
+| EditMode / PlayMode | **29/29** / **16/16**, zero skipped; `tests-editmode-20261114T222917776Z-5c34addc/`, `tests-playmode-20261114T223103219Z-a68277c3/` |
+| Visual regressions | Cold initial FP bind assigns the rifle before slot switching; menu renders three packaged soldiers and both map cards with zero colliders/rigidbodies. Editor capture: `Artifacts/t074-visual-review/editor-20261114T223031255Z/staging-area.png` |
+| Native package | PASS, eight native packages / 246 inventoried files; `Artifacts/m11-playable-release/b531da9cceb0607b9c5046bb1700077fd9cb8d4a/package-20261114T223625514Z-04d80c8c/` |
+| Package / installer regressions | **7/7** (`Artifacts/tooling-tests/package-release/20261114T223612066Z-8390febd/`); **11/11** (`Artifacts/tooling-tests/build-installer/20261114T212025155Z-63da5cc5/`) |
+| Source / content | Source hash `92a9a34a0b59844b7b46902a066d1b205cc7d2c276b1a178bf13c5fab96061d5`; unchanged native closure `a494f206aaeb6838e4121fb837324e8266635a8bc2236722520eddf44bd4c0a4`; seeds 460072030 / 460072031; locked toolchain unchanged |
+| Archive | SHA256 `6b61451e2df1561b17cf08353e7017c3230e117b2b4d4dcb4034376837a99ce4`; software extract/corrupt/rollback rehearsals PASS, no player acceptance implied |
+| Contrast math | Palette / worst-white-world backing calculations PASS: `Artifacts/t074-visual-review/b531da9cceb0607b9c5046bb1700077fd9cb8d4a/palette-contrast.json` |
+| Player startup | Short extraction `Artifacts/t074-scene-preview-031/`; raw `Artifacts/t074-visual-review/b531da9cceb0607b9c5046bb1700077fd9cb8d4a/player.log` records `SHOOTER_MENU_SCENE_READY actors=3 cards=2 colliders=0 authority=0` and `SHOOTER_READY_CLIENT` |
+| Final interactive review | **Pending — owner stopped Computer Use with physical Escape**. Window left available. No final-source match/HUD/scoreboard/results, keyboard/device or 100%/150% visual acceptance is claimed |
+
+Earlier pure runs in this task, not fresh b531 all-suite results: Contracts/Foundation **73/73** at e3851f1 (`20261114T215050895Z-959e58c0`); Generation **329/329** at e462821 (`20261114T210952690Z-68fb71d0`); Game **57/57** at 0aa57aa (`20261114T214331162Z-e45eac24`); Simulation **128/128** at 0aa57aa (`20261114T214514945Z-06cff397`). Reports remain in their normal milestone artifact roots. Final Unity/build evidence above is source-matched.
+
+### Repairs and open checks
+
+- Preserved independent bot fix `2ee1a3d`; repaired its direct client `Shooter.Simulation` assembly reference after real CS0012 failure. The visual task changes no bot rules.
+- Earlier b3f54ce play counted a 3.5278115-second visual bind as combat time and exited on overload. `e3851f1` rebases suspended-to-active time; its regression preserves real active overload/fractional debt. A prior e385 6v6 player reached a live 150%-scale HUD beyond that failure; this is not final b531 gameplay acceptance.
+- Deep internal extraction failed visual-file loading; a short extraction resolved it. Long-path robustness stays open. Use the normal installer path or a short preview path. Earlier raw logs/captures remain under `Artifacts/t074-visual-review/b3f54cefd358016b8dee71336e0429eb93addd5b/` and `e3851f1ff37cfbc390df72eb222f665b486a634c/`.
+- Corrected 150% contour transforms, Linear-color IMGUI font tints, backed HUD hints and once-per-frame Escape recovery. The scene-led Main supersedes the contour-only version. Final device review was interrupted.
+- Retained failures: initial sandboxed Unity socket crash; Generation zero-allocation assertion (328/329) and loose audio host-time assertion (127/128), each followed by a passing serial full-suite rerun. No generator/audio/assertion relaxation. Initial scene compile missed a MeshData namespace, then passed after correction. Evidence remains under 9f2219f / 0aa57aa / 3d67279 artifact roots.
+- Existing soldier generator/rig remains non-accepted. Menu composition/palette is cosmetic; no soldier clearance search or P05 waiver. Environment, soldier, hands, magazine/optics and animation detail remain staged work.
+- Full normal matches/results/replay, two-map routes/spawns, player recovery/installed rollback, named UI/device/audio review, reference captures/soaks and REL01–REL06 remain Pending/NotClaimed. **P05 FAIL remains.** Hashes, documentation and diagnostic scene renders are not those gates.
+
 **Current disposition — 2026-11-14 T072:** Slide-enabled 5eaced5 preview is built/packaged and independently reaches Main; installer/upgrades T073 remain planned. Earlier review from 84befb9 / a54ed83 follows: M11 acceptance remains open. Clean `7cd7e81` Client/Server reports and verified local ZIP exist; T071 manual gameplay/recovery/rollback handoff remains partial. T067 native-navigation publication/query work, T062 visual disposition and T065 match/device/reference/soak/delivery exits remain open. REL01–REL06 are NotClaimed; P05 FAIL is retained. The `114815c` archive remains historical/superseded for measurement. Use the [playtest guide](../../playtest-guide.md), [audit](../../product-state-audit.md), [remaining tasks](../../next-playable-build.md) and [FIX acceptance](../../release-remediation-validation.md). No online multiplayer or hosted server is required for the first local-bot version.
 
 

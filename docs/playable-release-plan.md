@@ -1,5 +1,7 @@
 # Playable offline release — current state and next action
 
+Latest visual checkpoint: [T074 installer 0.3.1](milestones/m11-playable-release/handoff.md#t074--scene-led-menu-and-tactical-hud-preview), source b531da9, has clean builds/tests and native package/installer proof. It delivers the screenshot-directed menu/HUD software. Final interactive review was stopped by the owner; full gameplay, visual/device, installed-upgrade, reference and P05 acceptance remain open. Earlier dated candidate descriptions below do not supersede this entry.
+
 Reviewed 2026-11-14 from `84befb9` (subsequent `a54ed83` adds only CLAUDE guidance). The latest retained build is `7cd7e81`: clean Client/Server, passing retained Unity reports, eight packaged content roots and a verified Windows archive. Fresh review confirms archive SHA256/inventory and repaired pure/provenance baseline. **The remaining owner-facing gap is demonstrated gameplay, not creation of the first ZIP.** Native-navigation publication also remains technically incomplete. See the [audit](product-state-audit.md) and [launch/playtest guide](playtest-guide.md).
 
 ## Required playable product
