@@ -9,34 +9,30 @@ namespace Shooter.Bootstrap
     {
         private static bool initialized, nativeAvailable, threadAvailable;
         private static object controlRoot;
-        private static long totalBytes;
-        [ThreadStatic] private static long threadBytes;
         public static bool AllThreadsAvailable => nativeAvailable;
         public static bool ThreadAvailable => threadAvailable;
         public static long MainControlBytes { get; private set; }
         public static long WorkerControlBytes { get; private set; }
         public static string Method { get; private set; } = "Unavailable";
         public static string Diagnostic { get; private set; } = "Not calibrated";
-        public static long TotalBytes => nativeAvailable ? Interlocked.Read(ref totalBytes) : -1;
-        public static long ThreadBytes => !threadAvailable ? -1 : nativeAvailable ? threadBytes : GC.GetAllocatedBytesForCurrentThread();
+        public static long TotalBytes =>
+#if ENABLE_IL2CPP && UNITY_STANDALONE_WIN && !UNITY_EDITOR
+            nativeAvailable ? shooter_alloc_total_bytes() : -1;
+#else
+            -1;
+#endif
+        public static long ThreadBytes =>
+#if ENABLE_IL2CPP && UNITY_STANDALONE_WIN && !UNITY_EDITOR
+            !threadAvailable ? -1 : shooter_alloc_thread_bytes();
+#else
+            !threadAvailable ? -1 : GC.GetAllocatedBytesForCurrentThread();
+#endif
 
 #if ENABLE_IL2CPP && UNITY_STANDALONE_WIN && !UNITY_EDITOR
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        private delegate void AllocationCallback(IntPtr profiler, IntPtr obj, IntPtr klass);
-        private static readonly AllocationCallback callback = Allocated;
-        [DllImport("GameAssembly", CallingConvention = CallingConvention.Cdecl)] private static extern void il2cpp_profiler_install(IntPtr context, IntPtr shutdown);
-        [DllImport("GameAssembly", CallingConvention = CallingConvention.Cdecl)] private static extern void il2cpp_profiler_install_allocation(AllocationCallback callback);
-        [DllImport("GameAssembly", CallingConvention = CallingConvention.Cdecl)] private static extern void il2cpp_profiler_set_events(int events);
-        [DllImport("GameAssembly", CallingConvention = CallingConvention.Cdecl)] private static extern uint il2cpp_object_get_size(IntPtr obj);
-        [AOT.MonoPInvokeCallback(typeof(AllocationCallback))]
-        private static void Allocated(IntPtr profiler, IntPtr obj, IntPtr klass)
-        {
-            // The pinned IL2CPP invokes this for objects, strings and arrays, on the allocating thread.
-            // No allocation, Unity API, reflection or logging is permitted inside this callback.
-            long bytes = il2cpp_object_get_size(obj);
-            threadBytes += bytes;
-            Interlocked.Add(ref totalBytes, bytes);
-        }
+        // Pure native counter (Assets/Plugins/x86_64/ShooterAllocationMeter.cpp, compiled into GameAssembly): no managed callback exists.
+        [DllImport("__Internal")] private static extern int shooter_alloc_install();
+        [DllImport("__Internal")] private static extern long shooter_alloc_total_bytes();
+        [DllImport("__Internal")] private static extern long shooter_alloc_thread_bytes();
 #endif
         public static void Initialize()
         {
@@ -45,20 +41,18 @@ namespace Shooter.Bootstrap
             try
             {
 #if ENABLE_IL2CPP && UNITY_STANDALONE_WIN && !UNITY_EDITOR
-                // One bounded, process-lifetime profiler registration. No engine/package edits or development build.
-                il2cpp_profiler_install(new IntPtr(0x53484f54), IntPtr.Zero);
-                il2cpp_profiler_install_allocation(callback);
-                il2cpp_profiler_set_events(1 << 7); // IL2CPP_PROFILE_ALLOCATIONS in the pinned il2cpp-api-types.h.
-                long before = threadBytes;
+                // One bounded, process-lifetime native registration; the callback is pure C++ (no managed re-entry).
+                shooter_alloc_install();
+                long before = shooter_alloc_thread_bytes();
                 AllocateControls();
-                MainControlBytes = threadBytes - before;
-                long worker = 0, allBefore = Interlocked.Read(ref totalBytes);
-                var thread = new Thread(() => { long start = threadBytes; AllocateControls(); worker = threadBytes - start; });
+                MainControlBytes = shooter_alloc_thread_bytes() - before;
+                long worker = 0, allBefore = shooter_alloc_total_bytes();
+                var thread = new Thread(() => { long start = shooter_alloc_thread_bytes(); AllocateControls(); worker = shooter_alloc_thread_bytes() - start; });
                 thread.Start(); thread.Join();
                 WorkerControlBytes = worker;
-                nativeAvailable = MainControlBytes >= 4352 && worker >= 4352 && Interlocked.Read(ref totalBytes) - allBefore >= worker;
+                nativeAvailable = MainControlBytes >= 4352 && worker >= 4352 && shooter_alloc_total_bytes() - allBefore >= worker;
                 threadAvailable = nativeAvailable;
-                Method = "Pinned IL2CPP allocation callbacks: object sizes, all threads plus thread-local tick counter";
+                Method = "Native C++ IL2CPP allocation callback (no managed callback): object sizes, all threads plus thread-local tick counter";
                 Diagnostic = nativeAvailable ? "Object/string/array and worker-thread positive controls passed" : "Native positive control failed; zeros are not measurements";
 #else
                 long before = GC.GetAllocatedBytesForCurrentThread();

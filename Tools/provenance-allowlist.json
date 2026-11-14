@@ -8,6 +8,13 @@
     ".json",
     ".shader"
   ],
+  "namedNativeSources": [
+    {
+      "path": "UnityProject/Assets/Plugins/x86_64/ShooterAllocationMeter.cpp",
+      "sha256": "3f0e531f41afc3b2200f83b14b42db67ad75b3e04d630cf4ff5484028242bc9c",
+      "reason": "Single hash-pinned benchmark-only IL2CPP allocation counter (ADR-042); pure native, no art/content; Standalone Win64 IL2CPP only"
+    }
+  ],
   "generatedAssetsManifest": "UnityProject/Assets/Shooter/Settings/provenance.json",
   "nonShippingFixtures": [
     {
