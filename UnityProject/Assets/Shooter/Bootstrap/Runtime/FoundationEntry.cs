@@ -141,7 +141,9 @@ namespace Shooter.Bootstrap
 
                 clock = new FixedTickClock(IsServer);
                 clock.SetSuspended(!CanAdvanceProduct());
-                AllocationMeter.Initialize();
+                // Measurement-only: the IL2CPP allocation hook re-enters itself when Unity first attaches a native
+                // thread (e.g. the audio thread), overflowing that thread's stack. Normal play never installs it.
+                if (benchmarkWorkload.Length != 0) AllocationMeter.Initialize();
                 tickAction = Step;
                 if (!IsServer)
                 {
