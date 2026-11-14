@@ -1,5 +1,7 @@
 #nullable enable
+using System.Collections.Generic;
 using Shooter.Contracts;
+using Shooter.Game.Contracts;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using EntityId = Shooter.Contracts.EntityId;
@@ -54,12 +56,14 @@ namespace Shooter.Presentation.Input
     /// <summary>
     /// M8 local keyboard/mouse command source. Hardware is sampled once per render frame;
     /// tick consumption retains edges across zero-tick frames and consumes each edge once.
+    /// Applied ADR-036 bindings drive gameplay sampling; Escape remains reserved for shell recovery.
     /// </summary>
     public sealed class LocalPlayerInput
     {
         // Largest convenient float below the exact Game-v1 +/-89 degree double boundary.
         public const float MaxPitchRadians = 1.5533429f;
         public const float MaxYawRadians = 3.1415925f;
+        private readonly BoundControlMap bindings = new BoundControlMap();
         private uint sequence;
         private bool fireWasDown;
         private bool reloadWasDown;
@@ -81,6 +85,11 @@ namespace Shooter.Presentation.Input
         private float sensitivityDegrees = 0.1f;
         private bool invertY;
 
+        public LocalPlayerInput()
+        {
+            bindings.ApplyDefaults();
+        }
+
         /// <summary>Degrees of yaw/pitch per mouse delta unit.</summary>
         public float Sensitivity
         {
@@ -99,10 +108,21 @@ namespace Shooter.Presentation.Input
             get => invertY;
             set => invertY = value;
         }
+
+        public BoundControlMap Bindings => bindings;
         public float Yaw => yaw;
         public float Pitch => pitch;
         public byte SelectedSlot => selectedSlot;
         public bool AimHeld => aimHeld;
+        public bool ScoreboardHeld => bindings.IsPressed("Scoreboard");
+        public bool PausePressedThisFrame =>
+            bindings.WasPressedThisFrame("Pause")
+            || BoundControlMap.WasControlPressedThisFrame(UserSettings.ReservedEscapeControl);
+
+        public void ApplyBindings(IReadOnlyList<InputBinding> map)
+        {
+            bindings.Apply(map ?? throw new System.ArgumentNullException(nameof(map)));
+        }
 
         public void ResetForLife(float yawRadians, float pitchRadians, byte activeSlot)
         {
@@ -123,30 +143,27 @@ namespace Shooter.Presentation.Input
 
         public void CaptureFrame(bool acceptsGameplayInput)
         {
-            var keyboard = Keyboard.current;
-            var mouse = Mouse.current;
             float mx = 0f, my = 0f;
-            if (keyboard != null)
-            {
-                if (keyboard.aKey.isPressed || keyboard.leftArrowKey.isPressed) mx -= 1f;
-                if (keyboard.dKey.isPressed || keyboard.rightArrowKey.isPressed) mx += 1f;
-                if (keyboard.sKey.isPressed || keyboard.downArrowKey.isPressed) my -= 1f;
-                if (keyboard.wKey.isPressed || keyboard.upArrowKey.isPressed) my += 1f;
-            }
+            if (bindings.IsPressed("MoveLeft")) mx -= 1f;
+            if (bindings.IsPressed("MoveRight")) mx += 1f;
+            if (bindings.IsPressed("MoveBack")) my -= 1f;
+            if (bindings.IsPressed("MoveForward")) my += 1f;
+
+            var mouse = Mouse.current;
             Vector2 look = mouse == null ? Vector2.zero : mouse.delta.ReadValue();
             CaptureFrame(new FrameInputSample(
                 mx,
                 my,
                 look.x,
                 look.y,
-                mouse != null && mouse.leftButton.isPressed,
-                keyboard != null && keyboard.rKey.isPressed,
-                keyboard != null && keyboard.spaceKey.isPressed,
-                mouse != null && mouse.rightButton.isPressed,
-                keyboard != null && (keyboard.leftShiftKey.isPressed || keyboard.rightShiftKey.isPressed),
-                keyboard != null && (keyboard.leftCtrlKey.isPressed || keyboard.cKey.isPressed),
-                keyboard != null && keyboard.digit1Key.isPressed,
-                keyboard != null && keyboard.digit2Key.isPressed),
+                bindings.IsPressed("Fire"),
+                bindings.IsPressed("Reload"),
+                bindings.IsPressed("Jump"),
+                bindings.IsPressed("Aim"),
+                bindings.IsPressed("Sprint"),
+                bindings.IsPressed("Crouch"),
+                bindings.IsPressed("Slot1"),
+                bindings.IsPressed("Slot2")),
                 acceptsGameplayInput);
         }
 

@@ -69,9 +69,9 @@ Use T067 packaged meshes/rig/materials. Preserve bounded corpse/life binding, sn
 
 Owner: client integrator. Allowed paths: settings UI/editor/device application, `Presentation/Input/`, `Session/`, menus/scoreboard/audio and relevant tests. Preserve ADR-036 schema 2 unless a reviewed migration is necessary.
 
-`ProductShellHost.DrawSettings` displays a binding count and copies bindings unchanged; `LocalPlayerInput.CaptureFrame` reads fixed W/A/S/D/mouse/R/etc. `ProductSessionView.ApplyUserSettings` applies sensitivity/invert/FOV/HUD/audio but not bindings, ReducedFlash or Subtitles. Complete editable controls with conflict swap/cancel, defaults, staged Apply/Cancel and persistence; gameplay, scoreboard and pause must read the applied bindings while reserved Escape retains recovery. Connect required flash/subtitle behavior, or document the precise supported event behavior and verify it against the normative [shell requirements](features/game-shell.md).
+**Software landed (T069):** editable bindings with conflict swap/cancel; `LocalPlayerInput`/scoreboard read applied bindings; Escape reserved; `ApplyUserSettings` consumes bindings, ReducedFlash (cosmetic muzzle overlay), ReducedCameraMotion (ADS FOV zoom off) and Subtitles (shot/impact/hit/reload/UI captions); device resolution enumeration (baseline pair only when empty); pending display persisted only after Keep. ADR-036 schema 2 unchanged; no gameplay hash changes.
 
-Review resolution options against real display support (the current adapter unconditionally adds 1280×720 and 1920×1080), saved settings across view creation/replay, focus loss, 15-second Keep/Revert and restart rollback. Verify full settings scroll/navigation and twelve rows at 720p / 100–150% scale; drawing toggle labels is not proof their effects work. Attach named audible output/gain/mute review. Exit: FIX08–FIX10/SET01–02 real UI/device checks and 20 alternating load/replay cycles; no gameplay hash changes.
+**Still required for FIX08–FIX10/SET01–02 exit:** named 720p 100%/150% UI keyboard/pointer review, 15s Keep/Revert on real display, audible output/gain/mute review, and 20 alternating load/replay cycles — record Pending until player/device evidence exists.
 
 ## T070 — Make measurements executable
 

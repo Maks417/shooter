@@ -1,10 +1,17 @@
 # M10 — Two maps, menus and settings — handoff and gate record
 
-**Current disposition — 2026-11-14, reviewed at 59316d3:** M10 integration open: two-map package publication and shell/schema-2/settings/audio software landed in 59316d3; release catalog/native content delivery, editable applied bindings/accessibility and named UI/device validation remain (T067/T069). See the [current audit](../../product-state-audit.md), [next playable-build tasks](../../next-playable-build.md) and [FIX acceptance](../../release-remediation-validation.md). Original requirements and historical evidence below remain; no new coding lease is created.
+**Current disposition — 2026-11-14, T069 software:** M10 integration open for named UI/device gates. Shell/schema-2/settings/audio plus editable applied bindings, accessibility consumers, device resolution enumeration and Keep-before-persist display are in source. T067 content/native delivery and T068 presentation remain separate. See the [current audit](../../product-state-audit.md), [next playable-build tasks](../../next-playable-build.md) and [FIX acceptance](../../release-remediation-validation.md).
 
-## Latest-commit review — 59316d3
+## T069 — preferences / usability software
 
-Shell, settings schema 2/editor/device applier and audio callback are committed in 59316d3. T067 still owns data-only catalog/actual visual closure/native nav and packaged recovery; T069 owns editable applied bindings and missing accessibility consumers. LocalPlayerInput still reads fixed keys, so binding count/store tests do not meet control acceptance. Named UI/display/audio reviews and 20 load/replay cycles remain pending.
+| Field | Record |
+|---|---|
+| Task | T069 / FIX09–10 preferences completion (software) |
+| Paths | `Game/Settings/InputBindingEditor.cs`, `UserSettingsEditor` display persist; `Presentation/Input/BoundControlMap.cs`, `LocalPlayerInput`; `ProductShellHost` binding UI; `ProductSessionView.ApplyUserSettings`; `ProductClientSettingsApplier` resolutions |
+| Behavior | Editable bindings with conflict swap/cancel; gameplay/scoreboard use applied map; Escape reserved; ReducedFlash/Subtitles/ReducedCameraMotion applied; resolution list from device modes; pending display not disk-persisted until Keep |
+| Schema | ADR-036 schema 2 unchanged |
+| Pure tests | `Tools/Test-Game.ps1 -Offline` UserSettings binding/apply/persist/confirm cases; EditMode `InputBufferTests.AppliedBindingsDriveActionLookupAndSampledGameplay` |
+| FIX08–10 / SET01–02 | **Partial (software)** — Pending named 720p 100%/150% UI, 15s Keep/Revert on real display, audible output/gain/mute review, 20 load/replay cycles |
 
 ## T059 / FIX08 — shell software (2026-11-14)
 
@@ -20,7 +27,7 @@ Shell, settings schema 2/editor/device applier and audio callback are committed 
 
 ### Settings / audio bind (T059+T061 → ADR-036)
 
-- Settings UI → `UserSettingsEditor` Draft/Apply/Cancel/RestoreDefaults; display Keep/Revert + `DisplayChangeConfirmClock` (15s / focus loss).
+- Settings UI → `UserSettingsEditor` Draft/Apply/Cancel/RestoreDefaults + `InputBindingEditor` rebind/conflict; display Keep/Revert + `DisplayChangeConfirmClock` (15s / focus loss / restart rollback via confirmed-surface persist).
 - Store path: `Application.persistentDataPath/shooter-user-settings.json` via `FileUserSettingsStore` (schema-1 migrates; newer schema never overwritten).
 - Audio: `ProductClientSettingsApplier` / `UserSettingsAudioBinding` → `SynthAudioMixer.SetChannelGains`; `ClearPresentation` / leave / abort detaches and stops voices.
 - **Integrator:** Do not treat pure shell PASS as UI01–UI02 player acceptance. Alternate-load soak and 720p scale review still required for FIX08 closeout.

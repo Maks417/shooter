@@ -1,5 +1,7 @@
+using System.Collections.Generic;
 using NUnit.Framework;
 using Shooter.Contracts;
+using Shooter.Game.Contracts;
 using Shooter.Presentation.Input;
 using UnityEngine;
 using EntityId = Shooter.Contracts.EntityId;
@@ -85,6 +87,37 @@ namespace Shooter.Tests
             Assert.That(command.AimPitch, Is.EqualTo(LocalPlayerInput.MaxPitchRadians));
             Assert.Throws<System.ArgumentOutOfRangeException>(() => input.Sensitivity = 0f);
             Assert.Throws<System.ArgumentOutOfRangeException>(() => input.Sensitivity = 1.01f);
+        }
+
+        [Test]
+        public void AppliedBindingsDriveActionLookupAndSampledGameplay()
+        {
+            var input = new LocalPlayerInput();
+            input.ResetForLife(0f, 0f, 0);
+            Assert.That(input.Bindings.TryGetControl("Reload", out string reload), Is.True);
+            Assert.That(reload, Is.EqualTo("Key.R"));
+
+            var remapped = new List<InputBinding>(UserSettings.DefaultBindings());
+            for (int i = 0; i < remapped.Count; i++)
+            {
+                if (remapped[i].Action == "Reload")
+                    remapped[i] = new InputBinding("Reload", "Key.F");
+                else if (remapped[i].Action == "Scoreboard")
+                    remapped[i] = new InputBinding("Scoreboard", "Key.Q");
+            }
+            input.ApplyBindings(remapped);
+            Assert.That(input.Bindings.TryGetControl("Reload", out reload), Is.True);
+            Assert.That(reload, Is.EqualTo("Key.F"));
+            Assert.That(input.Bindings.TryGetControl("Scoreboard", out string score), Is.True);
+            Assert.That(score, Is.EqualTo("Key.Q"));
+            Assert.That(input.Bindings.TryGetControl("Pause", out string pause), Is.True);
+            Assert.That(pause, Is.EqualTo(UserSettings.ReservedEscapeControl));
+
+            // Device-free path: FrameInputSample remains authoritative when shell injects samples.
+            input.CaptureFrame(default, true);
+            input.CaptureFrame(new FrameInputSample(0, 0, 0, 0, reload: true), true);
+            InputCommand command = input.ConsumeTick(Player, 0);
+            Assert.That(command.Buttons & InputButtons.ReloadPressed, Is.Not.EqualTo(InputButtons.None));
         }
     }
 }

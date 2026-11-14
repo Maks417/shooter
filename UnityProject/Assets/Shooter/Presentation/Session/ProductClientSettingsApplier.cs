@@ -13,7 +13,7 @@ namespace Shooter.Presentation.Session
     public sealed class ProductClientSettingsApplier : IClientSettingsApplier
     {
         private readonly ProductSessionView view;
-        private readonly HashSet<(int Width, int Height)> supportedResolutions;
+        private readonly List<(int Width, int Height)> supportedResolutions;
         private UserSettings? applied;
         private UserSettings? pendingDisplay;
         private UserSettings? confirmedDisplay;
@@ -21,24 +21,34 @@ namespace Shooter.Presentation.Session
         public ProductClientSettingsApplier(ProductSessionView view, IEnumerable<(int Width, int Height)>? supportedResolutions = null)
         {
             this.view = view ?? throw new ArgumentNullException(nameof(view));
-            this.supportedResolutions = new HashSet<(int, int)>();
+            this.supportedResolutions = new List<(int, int)>();
+            var unique = new HashSet<(int, int)>();
             if (supportedResolutions == null)
-                CollectDeviceResolutions(this.supportedResolutions);
+                CollectDeviceResolutions(unique);
             else
             {
                 foreach (var mode in supportedResolutions)
-                    this.supportedResolutions.Add(mode);
+                    unique.Add(mode);
             }
-            if (this.supportedResolutions.Count == 0)
+            if (unique.Count == 0)
             {
-                this.supportedResolutions.Add((1280, 720));
-                this.supportedResolutions.Add((1920, 1080));
+                // Device enumeration empty (editor headless / no display): keep baseline pair only.
+                unique.Add((1280, 720));
+                unique.Add((1920, 1080));
             }
+            foreach (var mode in unique)
+                this.supportedResolutions.Add(mode);
+            this.supportedResolutions.Sort((a, b) =>
+            {
+                int cmp = a.Width.CompareTo(b.Width);
+                return cmp != 0 ? cmp : a.Height.CompareTo(b.Height);
+            });
         }
 
         public bool HasPendingDisplayChange => pendingDisplay != null;
         public UserSettings? PendingDisplaySettings => pendingDisplay;
         public UserSettings? AppliedSettings => applied;
+        public IReadOnlyList<(int Width, int Height)> SupportedResolutions => supportedResolutions;
 
         public GameOperationResult Apply(UserSettings settings)
         {
@@ -96,6 +106,26 @@ namespace Shooter.Presentation.Session
             return GameOperationResult.Ok;
         }
 
+        public bool TryCycleResolution(int currentWidth, int currentHeight, out int width, out int height)
+        {
+            width = currentWidth;
+            height = currentHeight;
+            if (supportedResolutions.Count == 0) return false;
+            int index = 0;
+            for (int i = 0; i < supportedResolutions.Count; i++)
+            {
+                if (supportedResolutions[i].Width == currentWidth && supportedResolutions[i].Height == currentHeight)
+                {
+                    index = i;
+                    break;
+                }
+            }
+            var next = supportedResolutions[(index + 1) % supportedResolutions.Count];
+            width = next.Width;
+            height = next.Height;
+            return true;
+        }
+
         private void ApplyNonDisplay(UserSettings settings)
         {
             view.ApplyUserSettings(settings);
@@ -110,8 +140,13 @@ namespace Shooter.Presentation.Session
             Screen.SetResolution(settings.ResolutionWidth, settings.ResolutionHeight, ToFullScreenMode(settings.DisplayMode));
         }
 
-        private bool IsSupportedResolution(int width, int height) =>
-            supportedResolutions.Contains((width, height));
+        private bool IsSupportedResolution(int width, int height)
+        {
+            for (int i = 0; i < supportedResolutions.Count; i++)
+                if (supportedResolutions[i].Width == width && supportedResolutions[i].Height == height)
+                    return true;
+            return false;
+        }
 
         private static void CollectDeviceResolutions(HashSet<(int, int)> into)
         {
@@ -123,8 +158,7 @@ namespace Shooter.Presentation.Session
                 if (m.width >= GameContractVersion.MinResolutionWidth && m.height >= GameContractVersion.MinResolutionHeight)
                     into.Add((m.width, m.height));
             }
-            into.Add((1280, 720));
-            into.Add((1920, 1080));
+            // Do not invent 1280×720 / 1920×1080 when the adapter already enumerated real modes.
         }
 
         private static FullScreenMode ToFullScreenMode(DisplayMode mode) => mode switch

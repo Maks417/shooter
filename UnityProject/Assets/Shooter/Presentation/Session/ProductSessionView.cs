@@ -28,6 +28,7 @@ namespace Shooter.Presentation.Session
         private readonly SynthAudioMixer mixer = new SynthAudioMixer();
         private readonly ProductAudioEventRouter audio;
         private readonly List<ActorLifecycleState> footstepScratch = new List<ActorLifecycleState>(GameContractVersion.MaxParticipants);
+        private readonly HashSet<string> accessibilityCueKeys = new HashSet<string>(System.StringComparer.Ordinal);
         private UnitySynthAudioOutput? audioOutput;
         private Camera? camera;
         private ProductMapView? mapView;
@@ -40,13 +41,23 @@ namespace Shooter.Presentation.Session
         private bool audioAttached;
         private ulong audioSessionId;
         private float adsFovDegrees = 60f;
+        private bool reducedCameraMotion;
+        private bool reducedFlash;
+        private bool subtitlesEnabled;
+        private float muzzleFlashRemaining;
+        private string subtitleText = "";
+        private float subtitleRemaining;
 
         public ProductMapView? MapView => mapView;
         public ProductActorPresentation? Actors => actors;
         public ProductVisualReviewOverlay? VisualReview => visualReview;
+        public LocalPlayerInput Input => input;
         public bool GameplayFocus => cursorLocked;
         public SynthAudioMixer Mixer => mixer;
         public ProductAudioEventRouter Audio => audio;
+        public bool ReducedFlash => reducedFlash;
+        public bool SubtitlesEnabled => subtitlesEnabled;
+        public bool ReducedCameraMotion => reducedCameraMotion;
 
         public ProductSessionView()
         {
@@ -149,8 +160,8 @@ namespace Shooter.Presentation.Session
         }
 
         /// <summary>
-        /// Apply non-display UserSettings (audio/FOV/input/HUD). Display surface is owned by
-        /// <see cref="ProductClientSettingsApplier"/>.
+        /// Apply non-display UserSettings (audio/FOV/input/HUD/bindings/accessibility).
+        /// Display surface is owned by <see cref="ProductClientSettingsApplier"/>.
         /// </summary>
         public void ApplyUserSettings(UserSettings settings)
         {
@@ -168,6 +179,16 @@ namespace Shooter.Presentation.Session
             adsFovDegrees = settings.HipFovDegrees * (60f / 80f);
             input.Sensitivity = settings.MouseSensitivity;
             input.InvertY = settings.InvertY;
+            input.ApplyBindings(settings.Bindings);
+            reducedCameraMotion = settings.ReducedCameraMotion;
+            reducedFlash = settings.ReducedFlash;
+            subtitlesEnabled = settings.Subtitles;
+            if (!subtitlesEnabled)
+            {
+                subtitleText = "";
+                subtitleRemaining = 0f;
+            }
+            if (reducedFlash) muzzleFlashRemaining = 0f;
             if (camera != null && !IsAiming())
                 camera.fieldOfView = settings.HipFovDegrees;
         }
@@ -278,7 +299,11 @@ namespace Shooter.Presentation.Session
                     float cameraYaw = acceptsGameplayInput ? input.Yaw : human.AimYaw;
                     float cameraPitch = acceptsGameplayInput ? input.Pitch : human.AimPitch;
                     camera.transform.rotation = Quaternion.Euler(cameraPitch * Mathf.Rad2Deg, cameraYaw * Mathf.Rad2Deg, 0f);
-                    camera.fieldOfView = aimHeld ? adsFovDegrees : hud.Settings.HipFov;
+                    float hip = hud.Settings.HipFov;
+                    float ads = adsFovDegrees;
+                    // Reduced camera motion: keep hip FOV (cosmetic ADS zoom only when preference is off).
+                    float targetFov = (!reducedCameraMotion && aimHeld) ? ads : hip;
+                    camera.fieldOfView = targetFov;
                 }
             }
             else input.CaptureFrame(false);
@@ -303,6 +328,50 @@ namespace Shooter.Presentation.Session
             }
 
             PumpProductAudio(hasListener ? listenerFeet : default);
+            TickAccessibilityPresentation(Time.unscaledDeltaTime);
+        }
+
+        private void TickAccessibilityPresentation(float dt)
+        {
+            if (dt < 0f) dt = 0f;
+            if (muzzleFlashRemaining > 0f)
+            {
+                muzzleFlashRemaining -= dt;
+                if (muzzleFlashRemaining < 0f) muzzleFlashRemaining = 0f;
+            }
+            if (subtitleRemaining > 0f)
+            {
+                subtitleRemaining -= dt;
+                if (subtitleRemaining <= 0f)
+                {
+                    subtitleRemaining = 0f;
+                    subtitleText = "";
+                }
+            }
+        }
+
+        private void NotifyAccessibilityCue(CombatEventKind kind)
+        {
+            if (kind == CombatEventKind.ShotAccepted)
+            {
+                // Cosmetic view flash only; ReducedFlash suppresses it while preserving shot audio/hit info.
+                if (!reducedFlash) muzzleFlashRemaining = 0.06f;
+                if (subtitlesEnabled) ShowSubtitle("Shot");
+            }
+            else if (kind == CombatEventKind.Impact || kind == CombatEventKind.DamageApplied)
+            {
+                if (subtitlesEnabled) ShowSubtitle(kind == CombatEventKind.Impact ? "Impact" : "Hit");
+            }
+            else if (kind == CombatEventKind.ReloadStarted && subtitlesEnabled)
+                ShowSubtitle("Reloading");
+            else if (kind == CombatEventKind.ReloadCompleted && subtitlesEnabled)
+                ShowSubtitle("Reload complete");
+        }
+
+        private void ShowSubtitle(string text)
+        {
+            subtitleText = text ?? "";
+            subtitleRemaining = 1.6f;
         }
 
         private void PumpProductAudio(Float3 listenerFeet)
@@ -331,7 +400,16 @@ namespace Shooter.Presentation.Session
             using (var lease = session.TryLeaseCombatEvents())
             {
                 if (lease != null)
+                {
                     audio.ConsumeCombatEvents(lease.Events, listenerFeet);
+                    for (int i = 0; i < lease.Events.Count; i++)
+                    {
+                        var ev = lease.Events[i];
+                        string key = ev.Id.AuthoritySessionId + ":" + ev.Id.Tick + ":" + ev.Id.EntityId + ":" + ev.Id.Ordinal;
+                        if (!accessibilityCueKeys.Add(key)) continue;
+                        NotifyAccessibilityCue(ev.Kind);
+                    }
+                }
             }
 
             footstepScratch.Clear();
@@ -355,6 +433,7 @@ namespace Shooter.Presentation.Session
             audio.DetachSession();
             audioAttached = false;
             audioSessionId = 0;
+            accessibilityCueKeys.Clear();
             audioOutput?.Detach();
         }
 
@@ -380,10 +459,15 @@ namespace Shooter.Presentation.Session
             mixer.TryPlay(voice, distanceMeters, seed);
         }
 
-        public bool PlayUiCue(ulong seed) => audio.PlayUi(seed);
+        public bool PlayUiCue(ulong seed)
+        {
+            if (subtitlesEnabled) ShowSubtitle("UI");
+            return audio.PlayUi(seed);
+        }
 
         private void OnGUI()
         {
+            DrawAccessibilityOverlays();
             // Shell host draws menus/scoreboard/results; keep a minimal combat HUD only while playing under shell.
             if (session == null) return;
             if (shellOwned)
@@ -424,6 +508,25 @@ namespace Shooter.Presentation.Session
                 GUI.Label(new Rect(24, 104, 900, 24),
                     "Result " + results.Outcome + " / " + results.Reason + "  " + results.Team1Kills + "-" + results.Team2Kills,
                     GuiStyle());
+        }
+
+        private void DrawAccessibilityOverlays()
+        {
+            if (muzzleFlashRemaining > 0f && !reducedFlash)
+            {
+                float alpha = Mathf.Clamp01(muzzleFlashRemaining / 0.06f) * 0.35f;
+                var prev = GUI.color;
+                GUI.color = new Color(1f, 1f, 0.85f, alpha);
+                GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), Texture2D.whiteTexture);
+                GUI.color = prev;
+            }
+            if (subtitlesEnabled && subtitleRemaining > 0f && !string.IsNullOrEmpty(subtitleText))
+            {
+                GUI.Label(
+                    new Rect(Screen.width * 0.5f - 160f, Screen.height - 120f, 320f, 28f),
+                    subtitleText,
+                    GuiStyle());
+            }
         }
 
         private static GUIStyle? cached;

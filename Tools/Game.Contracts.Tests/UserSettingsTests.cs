@@ -148,6 +148,12 @@ namespace Shooter.Game.Contracts.Tests
             Assert.True(editor.Apply(store, applier).Succeeded);
             Assert.True(applier.HasPendingDisplayChange);
             Assert.False(editor.IsDirty);
+            // Restart rollback: disk keeps confirmed display until Keep.
+            Assert.True(store.Load(out var pendingDisk).Succeeded);
+            Assert.Equal(1280, pendingDisk.ResolutionWidth);
+            Assert.Equal(720, pendingDisk.ResolutionHeight);
+            Assert.Equal(0.5f, pendingDisk.MasterVolume);
+            Assert.Equal(1920, editor.Applied.ResolutionWidth);
 
             editor.SetDraft(UserSettings.Defaults);
             editor.Cancel();
@@ -172,6 +178,69 @@ namespace Shooter.Game.Contracts.Tests
             var saveFail = editor.Apply(store, applier);
             Assert.Equal(GameErrorCode.StorageError, saveFail.Error);
             Assert.Equal(0.2f, editor.Applied.MasterVolume);
+        }
+
+        [Fact]
+        public void Editor_ConfirmDisplay_Persists_New_Surface()
+        {
+            var store = new MemoryUserSettingsStore();
+            var applier = new MemoryClientSettingsApplier();
+            var editor = new UserSettingsEditor(UserSettings.Defaults);
+            editor.SetDraft(new UserSettings(
+                2, 1f, 1f, 0.7f, 0, 1920, 1080, DisplayMode.Borderless, false, 60, 80f, 0.1f, false, 1f, false, false, 1f, false,
+                UserSettings.DefaultBindings()));
+            Assert.True(editor.Apply(store, applier).Succeeded);
+            Assert.True(applier.HasPendingDisplayChange);
+            Assert.True(editor.ConfirmDisplay(store, applier).Succeeded);
+            Assert.False(applier.HasPendingDisplayChange);
+            Assert.True(store.Load(out var kept).Succeeded);
+            Assert.Equal(1920, kept.ResolutionWidth);
+            Assert.Equal(1080, kept.ResolutionHeight);
+            Assert.Equal(DisplayMode.Borderless, kept.DisplayMode);
+        }
+
+        [Fact]
+        public void BindingEditor_Apply_Persist_Conflict_Swap_And_Cancel()
+        {
+            var editor = new InputBindingEditor(UserSettings.DefaultBindings());
+            Assert.False(editor.TryBeginListen("Pause"));
+            Assert.True(editor.TryBeginListen("Reload"));
+            Assert.True(editor.IsListening);
+
+            // Offer a free control.
+            Assert.True(editor.TryOfferControl("Key.F"));
+            Assert.False(editor.IsListening);
+            Assert.Contains(editor.Working, b => b.Action == "Reload" && b.Control == "Key.F");
+
+            // Conflict with Fire (Mouse.Left): require swap/cancel.
+            Assert.True(editor.TryBeginListen("Jump"));
+            Assert.True(editor.TryOfferControl("Mouse.Left"));
+            Assert.True(editor.HasConflict);
+            Assert.Equal("Fire", editor.ConflictAction);
+            Assert.True(editor.TryCancelConflict());
+            Assert.False(editor.HasConflict);
+            Assert.True(editor.IsListening);
+
+            Assert.True(editor.TryOfferControl("Mouse.Left"));
+            Assert.True(editor.TrySwapConflict());
+            Assert.False(editor.IsListening);
+            Assert.Contains(editor.Working, b => b.Action == "Jump" && b.Control == "Mouse.Left");
+            Assert.Contains(editor.Working, b => b.Action == "Fire" && b.Control == "Key.Space");
+
+            // Escape cannot steal Pause.
+            Assert.True(editor.TryBeginListen("Crouch"));
+            Assert.False(editor.TryOfferControl(UserSettings.ReservedEscapeControl));
+            editor.CancelListen();
+
+            var store = new MemoryUserSettingsStore();
+            var applier = new MemoryClientSettingsApplier();
+            var settingsEditor = new UserSettingsEditor(UserSettings.Defaults);
+            settingsEditor.SetDraft(editor.WithBindings(UserSettings.Defaults));
+            Assert.True(settingsEditor.Apply(store, applier).Succeeded);
+            Assert.True(store.Load(out var loaded).Succeeded);
+            Assert.Contains(loaded.Bindings, b => b.Action == "Reload" && b.Control == "Key.F");
+            Assert.Contains(loaded.Bindings, b => b.Action == "Jump" && b.Control == "Mouse.Left");
+            Assert.Contains(loaded.Bindings, b => b.Action == "Pause" && b.Control == UserSettings.ReservedEscapeControl);
         }
 
         [Fact]

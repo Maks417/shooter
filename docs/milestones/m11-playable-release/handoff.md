@@ -31,7 +31,7 @@ Implementation-time summary, now committed in 59316d3. Current audit B01–B10 a
 | T057 | FIX06 | **Pure AI met** — enemy-only sensing/corners | Mixed-team real-map player **Pending** |
 | T058 | FIX07 | **Software spawn safety** — rank/defer/deadline | Native/player route+spawn review **Pending** |
 | T059 | FIX08 | **Shell software** — menu/load/pause/results | 20-launch soak + 720p UI review **Pending** |
-| T060 | FIX09 | **ADR-036 + UI/audio bind** | T069 binding editor/applied controls/accessibility; SET02 Keep/Revert **Pending** |
+| T060 | FIX09 | **ADR-036 + T069 software** — bindings/accessibility applied | SET02 named Keep/Revert/device **Pending** |
 | T061 | FIX10 | **Device callback software** | Named audible review **Pending** |
 | T062 | FIX11 | **ToolingReady** inventory/overlay | P05 **FAIL** retained; REL03 **Open** |
 | T063 | FIX12 | **ADR-037 tooling** collector/matrix/soak scripts | T070 multi-match/counter repair; twelve captures + soaks **PendingHardware** |

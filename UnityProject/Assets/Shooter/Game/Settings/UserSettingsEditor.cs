@@ -38,12 +38,19 @@ namespace Shooter.Game.Settings
             if (applier == null) throw new ArgumentNullException(nameof(applier));
 
             bool displayChanged = applied == null || !draft.SameDisplaySurface(applied);
+            // Persist confirmed display only. Pending surface stays in memory/device until Keep,
+            // so focus-loss timeout and app restart roll back to the last confirmed mode.
+            UserSettings confirmedSurface = applied ?? UserSettings.Defaults;
+            UserSettings persistable = displayChanged
+                ? WithDisplaySurface(draft, confirmedSurface)
+                : draft;
+
             GameOperationResult applyResult = displayChanged
                 ? applier.StageDisplayChange(draft)
                 : applier.Apply(draft);
             if (!applyResult.Succeeded) return applyResult;
 
-            var save = store.Save(draft);
+            var save = store.Save(persistable);
             if (!save.Succeeded)
             {
                 // Keep applied device preview; surface nonblocking save failure.
@@ -58,10 +65,25 @@ namespace Shooter.Game.Settings
             return GameOperationResult.Ok;
         }
 
-        public GameOperationResult ConfirmDisplay(IClientSettingsApplier applier)
+        public GameOperationResult ConfirmDisplay(IClientSettingsApplier applier) =>
+            ConfirmDisplay(store: null, applier);
+
+        public GameOperationResult ConfirmDisplay(IUserSettingsStore? store, IClientSettingsApplier applier)
         {
             if (applier == null) throw new ArgumentNullException(nameof(applier));
-            return applier.ConfirmDisplayChange();
+            var result = applier.ConfirmDisplayChange();
+            if (!result.Succeeded) return result;
+            if (applier.AppliedSettings != null)
+            {
+                applied = applier.AppliedSettings;
+                draft = Clone(applied);
+            }
+            if (store != null)
+            {
+                var save = store.Save(applied);
+                if (!save.Succeeded) return save;
+            }
+            return GameOperationResult.Ok;
         }
 
         public GameOperationResult RevertDisplay(IClientSettingsApplier applier)
@@ -76,10 +98,33 @@ namespace Shooter.Game.Settings
             return result;
         }
 
+        private static UserSettings WithDisplaySurface(UserSettings source, UserSettings displaySource)
+        {
+            if (displaySource == null) throw new ArgumentNullException(nameof(displaySource));
+            return new UserSettings(
+                source.Schema,
+                source.MasterVolume,
+                source.EffectsVolume,
+                source.UiVolume,
+                source.QualityTier,
+                displaySource.ResolutionWidth,
+                displaySource.ResolutionHeight,
+                displaySource.DisplayMode,
+                displaySource.VSync,
+                displaySource.FpsCap,
+                source.HipFovDegrees,
+                source.MouseSensitivity,
+                source.InvertY,
+                source.UiScale,
+                source.ReducedCameraMotion,
+                source.ReducedFlash,
+                source.Contrast,
+                source.Subtitles,
+                CopyBindings(source));
+        }
+
         private static UserSettings Clone(UserSettings source)
         {
-            var bindings = new InputBinding[source.Bindings.Count];
-            for (int i = 0; i < bindings.Length; i++) bindings[i] = source.Bindings[i];
             return new UserSettings(
                 source.Schema,
                 source.MasterVolume,
@@ -99,7 +144,14 @@ namespace Shooter.Game.Settings
                 source.ReducedFlash,
                 source.Contrast,
                 source.Subtitles,
-                bindings);
+                CopyBindings(source));
+        }
+
+        private static InputBinding[] CopyBindings(UserSettings source)
+        {
+            var bindings = new InputBinding[source.Bindings.Count];
+            for (int i = 0; i < bindings.Length; i++) bindings[i] = source.Bindings[i];
+            return bindings;
         }
 
         private static bool EqualsSettings(UserSettings a, UserSettings b)

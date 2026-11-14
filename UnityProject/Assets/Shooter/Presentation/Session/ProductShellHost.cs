@@ -4,6 +4,7 @@ using System.Threading;
 using Shooter.Game.Contracts;
 using Shooter.Game.Session;
 using Shooter.Game.Settings;
+using Shooter.Presentation.Input;
 using Shooter.Presentation.Menus;
 using Shooter.Presentation.Scoreboard;
 using UnityEngine;
@@ -32,6 +33,8 @@ namespace Shooter.Presentation.Session
         private IUserSettingsStore? settingsStore;
         private UserSettingsEditor? settingsEditor;
         private IClientSettingsApplier? settingsApplier;
+        private ProductClientSettingsApplier? productSettingsApplier;
+        private InputBindingEditor? bindingEditor;
         private readonly DisplayChangeConfirmClock displayClock = new DisplayChangeConfirmClock();
         private string settingsStatus = "";
         private Vector2 settingsScroll;
@@ -75,7 +78,9 @@ namespace Shooter.Presentation.Session
             settingsStore = new FileUserSettingsStore(path);
             var load = settingsStore.Load(out var loaded);
             settingsEditor = new UserSettingsEditor(loaded);
-            settingsApplier = new ProductClientSettingsApplier(view);
+            productSettingsApplier = new ProductClientSettingsApplier(view);
+            settingsApplier = productSettingsApplier;
+            bindingEditor = new InputBindingEditor(loaded.Bindings);
             var bootApply = settingsApplier.Apply(loaded);
             if (!bootApply.Succeeded)
                 settingsStatus = bootApply.UserFacing;
@@ -95,14 +100,13 @@ namespace Shooter.Presentation.Session
         {
             if (backend == null || session == null || view == null || setup == null) return;
 
-            var keyboard = Keyboard.current;
-            if (keyboard != null)
-            {
-                if (keyboard.escapeKey.wasPressedThisFrame)
-                    HandleEscape();
-                scoreboardHeld = keyboard.tabKey.isPressed && navigation.ScoreboardAllowed;
-            }
-            else scoreboardHeld = false;
+            // Reserved Escape always restores menu access (Pause is schema-locked to Escape).
+            if (BoundControlMap.WasControlPressedThisFrame(UserSettings.ReservedEscapeControl))
+                HandleEscape();
+
+            scoreboardHeld = navigation.ScoreboardAllowed
+                && view != null
+                && view.Input.ScoreboardHeld;
 
             if (session.Phase == GameMatchPhase.Finished)
             {
@@ -166,6 +170,12 @@ namespace Shooter.Presentation.Session
                     }
                     break;
                 case ShellScreen.Settings:
+                    if (bindingEditor != null && bindingEditor.IsListening)
+                    {
+                        bindingEditor.CancelListen();
+                        settingsStatus = "Rebind cancelled.";
+                        break;
+                    }
                     if (settingsApplier != null && settingsApplier.HasPendingDisplayChange)
                         RevertPendingDisplay();
                     CancelSettingsAndClose();
@@ -399,7 +409,7 @@ namespace Shooter.Presentation.Session
             if (GUI.Button(new Rect(60 * s, 100 * s, 200 * s, 36 * s), "Play"))
                 navigation.OpenSetup();
             if (GUI.Button(new Rect(60 * s, 150 * s, 200 * s, 36 * s), "Settings"))
-                navigation.OpenSettings();
+                OpenSettingsScreen();
             if (GUI.Button(new Rect(60 * s, 200 * s, 200 * s, 36 * s), "Quit"))
             {
                 quitRequested = true;
@@ -444,7 +454,7 @@ namespace Shooter.Presentation.Session
             float x = Screen.width * 0.5f - 100 * s;
             float y = Screen.height * 0.5f - 90 * s;
             if (GUI.Button(new Rect(x, y, 200 * s, 36 * s), "Resume")) ResumeMatch();
-            if (GUI.Button(new Rect(x, y + 44 * s, 200 * s, 36 * s), "Settings")) navigation.OpenSettings();
+            if (GUI.Button(new Rect(x, y + 44 * s, 200 * s, 36 * s), "Settings")) OpenSettingsScreen();
             if (GUI.Button(new Rect(x, y + 88 * s, 200 * s, 36 * s), "Restart match")) navigation.AskRestart();
             if (GUI.Button(new Rect(x, y + 132 * s, 200 * s, 36 * s), "Main menu")) navigation.AskLeave();
         }
@@ -464,6 +474,10 @@ namespace Shooter.Presentation.Session
         private void CancelSettingsAndClose()
         {
             settingsEditor?.Cancel();
+            if (settingsEditor != null)
+                bindingEditor?.Load(settingsEditor.Applied.Bindings);
+            else
+                bindingEditor?.CancelListen();
             navigation.CloseSettings();
             settingsStatus = "";
         }
@@ -478,8 +492,15 @@ namespace Shooter.Presentation.Session
         private void ApplySettingsDraft()
         {
             if (settingsEditor == null || settingsStore == null || settingsApplier == null) return;
+            if (bindingEditor != null && bindingEditor.IsListening)
+            {
+                settingsStatus = "Finish or cancel rebind before Apply.";
+                return;
+            }
             var result = settingsEditor.Apply(settingsStore, settingsApplier);
             SyncUiScaleFromApplied();
+            if (settingsEditor != null)
+                bindingEditor?.Load(settingsEditor.Applied.Bindings);
             if (settingsApplier.HasPendingDisplayChange)
             {
                 displayClock.Begin();
@@ -496,10 +517,20 @@ namespace Shooter.Presentation.Session
 
         private void ConfirmPendingDisplay()
         {
-            if (settingsEditor == null || settingsApplier == null) return;
-            var result = settingsEditor.ConfirmDisplay(settingsApplier);
+            if (settingsEditor == null || settingsApplier == null || settingsStore == null) return;
+            var result = settingsEditor.ConfirmDisplay(settingsStore, settingsApplier);
             displayClock.Clear();
             settingsStatus = result.Succeeded ? "Display kept." : result.UserFacing;
+        }
+
+        private void OpenSettingsScreen()
+        {
+            if (settingsEditor != null && bindingEditor != null)
+            {
+                settingsEditor.Cancel();
+                bindingEditor.Load(settingsEditor.Draft.Bindings);
+            }
+            navigation.OpenSettings();
         }
 
         private void RevertPendingDisplay()
@@ -513,22 +544,22 @@ namespace Shooter.Presentation.Session
 
         private void DrawSettings(float s)
         {
-            if (settingsEditor == null) return;
+            if (settingsEditor == null || bindingEditor == null) return;
             var draft = settingsEditor.Draft;
             GUI.Box(new Rect(40 * s, 40 * s, 720 * s, 560 * s), "Settings");
+
+            float contentHeight = 520 * s + bindingEditor.Working.Count * 30 * s + 80 * s;
             settingsScroll = GUI.BeginScrollView(
                 new Rect(50 * s, 70 * s, 700 * s, 400 * s),
                 settingsScroll,
-                new Rect(0, 0, 660 * s, 520 * s));
+                new Rect(0, 0, 660 * s, contentHeight));
 
             float y = 0;
             GUI.Label(new Rect(10 * s, y, 640 * s, 22 * s), "Audio (0 = mute)");
             y += 26 * s;
-            draft = WithAudio(
-                draft,
-                SliderRow(s, ref y, "Master", draft.MasterVolume),
-                SliderRow(s, ref y, "Effects", draft.EffectsVolume),
-                SliderRow(s, ref y, "UI", draft.UiVolume));
+            float master = SliderRow(s, ref y, "Master", draft.MasterVolume);
+            float effects = SliderRow(s, ref y, "Effects", draft.EffectsVolume);
+            float uiVol = SliderRow(s, ref y, "UI", draft.UiVolume);
 
             GUI.Label(new Rect(10 * s, y, 640 * s, 22 * s), "Display / quality");
             y += 26 * s;
@@ -567,14 +598,16 @@ namespace Shooter.Presentation.Session
             float contrast = SliderRow(s, ref y, "Contrast", draft.Contrast, GameContractVersion.MinContrast, GameContractVersion.MaxContrast);
             bool subtitles = GUI.Toggle(new Rect(10 * s, y, 200 * s, 24 * s), draft.Subtitles, "Subtitles");
             y += 28 * s;
-            GUI.Label(new Rect(10 * s, y, 640 * s, 40 * s),
-                "Bindings: " + draft.Bindings.Count + " actions (defaults recoverable; reserved Escape).");
+
+            GUI.Label(new Rect(10 * s, y, 640 * s, 22 * s), "Key bindings (Escape reserved for Pause)");
+            y += 26 * s;
+            DrawBindingRows(s, ref y);
 
             settingsEditor.SetDraft(new UserSettings(
                 draft.Schema,
-                draft.MasterVolume,
-                draft.EffectsVolume,
-                draft.UiVolume,
+                master,
+                effects,
+                uiVol,
                 quality,
                 width,
                 height,
@@ -589,7 +622,7 @@ namespace Shooter.Presentation.Session
                 reducedFlash,
                 contrast,
                 subtitles,
-                CopyBindings(draft)));
+                bindingEditor.ToArray()));
 
             GUI.EndScrollView();
 
@@ -611,6 +644,7 @@ namespace Shooter.Presentation.Session
                 if (GUI.Button(new Rect(340 * s, 480 * s, 180 * s, 36 * s), "Restore defaults"))
                 {
                     settingsEditor.RestoreDefaults();
+                    bindingEditor.RestoreDefaults();
                     settingsStatus = "Defaults staged — Apply to save.";
                 }
                 if (GUI.Button(new Rect(540 * s, 480 * s, 120 * s, 36 * s), "Back"))
@@ -623,6 +657,56 @@ namespace Shooter.Presentation.Session
                 GUI.Label(new Rect(60 * s, 552 * s, 680 * s, 24 * s), "Unsaved draft changes.");
         }
 
+        private void DrawBindingRows(float s, ref float y)
+        {
+            if (bindingEditor == null) return;
+
+            if (bindingEditor.HasConflict)
+            {
+                GUI.Label(new Rect(10 * s, y, 640 * s, 22 * s),
+                    "Conflict with " + bindingEditor.ConflictAction + " (" + bindingEditor.PendingControl + ")");
+                y += 26 * s;
+                if (GUI.Button(new Rect(10 * s, y, 120 * s, 28 * s), "Swap"))
+                    bindingEditor.TrySwapConflict();
+                if (GUI.Button(new Rect(140 * s, y, 120 * s, 28 * s), "Cancel"))
+                    bindingEditor.TryCancelConflict();
+                y += 34 * s;
+                return;
+            }
+
+            if (bindingEditor.IsListening)
+            {
+                GUI.Label(new Rect(10 * s, y, 640 * s, 22 * s),
+                    "Press a key/button for " + bindingEditor.ListeningAction + " (Esc cancels listen)");
+                y += 26 * s;
+                string? captured = BoundControlMap.TryCapturePressedControlThisFrame();
+                if (captured != null)
+                {
+                    if (string.Equals(captured, UserSettings.ReservedEscapeControl, StringComparison.OrdinalIgnoreCase))
+                        bindingEditor.CancelListen();
+                    else
+                        bindingEditor.TryOfferControl(captured);
+                }
+            }
+
+            for (int i = 0; i < bindingEditor.Working.Count; i++)
+            {
+                var binding = bindingEditor.Working[i];
+                bool isPause = string.Equals(binding.Action, "Pause", StringComparison.Ordinal);
+                string label = binding.Action + ": " + binding.Control;
+                if (isPause)
+                    GUI.Label(new Rect(10 * s, y, 500 * s, 26 * s), label + " (reserved)");
+                else if (GUI.Button(new Rect(10 * s, y, 500 * s, 26 * s),
+                             bindingEditor.IsListening && bindingEditor.ListeningAction == binding.Action
+                                 ? "Listening… " + binding.Action
+                                 : label))
+                {
+                    bindingEditor.TryBeginListen(binding.Action);
+                }
+                y += 30 * s;
+            }
+        }
+
         private static float SliderRow(float s, ref float y, string label, float value, float min = 0f, float max = 1f)
         {
             GUI.Label(new Rect(10 * s, y, 140 * s, 22 * s), label + " " + value.ToString("0.00"));
@@ -631,25 +715,17 @@ namespace Shooter.Presentation.Session
             return next;
         }
 
-        private static UserSettings WithAudio(UserSettings source, float master, float effects, float ui) =>
-            new UserSettings(
-                source.Schema, master, effects, ui, source.QualityTier,
-                source.ResolutionWidth, source.ResolutionHeight, source.DisplayMode, source.VSync, source.FpsCap,
-                source.HipFovDegrees, source.MouseSensitivity, source.InvertY, source.UiScale,
-                source.ReducedCameraMotion, source.ReducedFlash, source.Contrast, source.Subtitles,
-                CopyBindings(source));
-
-        private static InputBinding[] CopyBindings(UserSettings source)
-        {
-            var copy = new InputBinding[source.Bindings.Count];
-            for (int i = 0; i < copy.Length; i++) copy[i] = source.Bindings[i];
-            return copy;
-        }
-
         private static string QualityLabel(byte tier) => tier switch { 0 => "Low", 1 => "Balanced", _ => "High" };
 
-        private static void CycleResolution(ref int width, ref int height)
+        private void CycleResolution(ref int width, ref int height)
         {
+            if (productSettingsApplier != null
+                && productSettingsApplier.TryCycleResolution(width, height, out int nextW, out int nextH))
+            {
+                width = nextW;
+                height = nextH;
+                return;
+            }
             if (width == 1280 && height == 720) { width = 1920; height = 1080; }
             else { width = 1280; height = 720; }
         }
@@ -677,7 +753,12 @@ namespace Shooter.Presentation.Session
             if (snap != null)
                 line = "T1 " + snap.Team1Kills + "  T2 " + snap.Team2Kills + "  rem=" + snap.RemainingActiveTicks;
             GUI.Label(new Rect(24 * s, 24 * s, 640 * s, 24 * s), line);
-            GUI.Label(new Rect(24 * s, 48 * s, 640 * s, 24 * s), "Tab scoreboard · Esc pause");
+            string scoreHint = "Scoreboard";
+            string pauseHint = "Esc pause";
+            if (view != null
+                && view.Input.Bindings.TryGetControl("Scoreboard", out string scoreControl))
+                scoreHint = scoreControl + " scoreboard";
+            GUI.Label(new Rect(24 * s, 48 * s, 640 * s, 24 * s), scoreHint + " · " + pauseHint);
         }
 
         private void DrawResults(float s)
