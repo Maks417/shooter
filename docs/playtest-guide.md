@@ -1,6 +1,6 @@
 # Launch and playtest the current candidate
 
-Reviewed 2026-11-14. A Windows offline archive is available for testing. Its build/package reports pass; manual gameplay and final release acceptance remain Pending. This guide helps reach the game and record what actually happens. See the [audit](product-state-audit.md) for technical findings and [M11 handoff](milestones/m11-playable-release/handoff.md) for retained build evidence.
+Current T072 playtest build, 2026-11-14: a Windows offline archive **with sliding** is available for testing. The final game will use an [upgrading Windows installer](features/windows-installer.md); this ZIP is a preview. Its build/package reports pass; manual gameplay and final release acceptance remain Pending. This guide helps reach the game and record what actually happens. See the [audit](product-state-audit.md) for technical findings and [M11 handoff](milestones/m11-playable-release/handoff.md) for retained build evidence.
 
 ## This version runs locally
 
@@ -11,21 +11,21 @@ One player and all allied/enemy bots run on your PC. You do **not** need to buy/
 1. Find this verified archive:
 
    ```text
-   C:\Job\shooter\Artifacts\m11-playable-release\7cd7e8191e118929af742bef382774edb22a57c2\package-20261114T153524429Z-8edfd0c3\archive\Shooter-Offline.zip
+   C:\Job\shooter\Artifacts\m11-playable-release\5eaced5fe526ec9dbb8e5c18f1defd9235036808\package-20261114T172353598Z-47719aa8\archive\Shooter-Offline.zip
    ```
 
-2. Extract the entire ZIP into a new folder outside the repository, for example `C:\Games\Shooter-Playtest`. Keep `Shooter.exe`, `Shooter_Data`, DLLs, `Content` and the JSON lock files together. No Unity installation, internet connection or separate server should be needed by this package; a new independent run still needs confirmation.
-3. Run `launch-offline.cmd` from the extracted folder. The expected first screen is Main menu. The launcher sets its own working directory. Direct-executable discovery exists in source but has no new independent launch evidence in this review; use the launcher first.
+2. Extract the entire ZIP into a new folder outside the repository, for example `C:\Games\Shooter-Playtest`. Keep `Shooter.exe`, `Shooter_Data`, DLLs, `Content` and the JSON lock files together. The package is intended to run without Unity, internet or a separate server. Extracted startup was checked outside the repo; full clean-machine/manual gameplay validation is still pending.
+3. Run `launch-offline.cmd` from the extracted folder. The expected first screen is Main menu. The launcher sets its own working directory. Executable-relative defaults reached Main in the independent batch-mode probe; use the launcher for normal interactive play.
 4. Choose **Play**, use **Prev map / Next map** for Training Compound or Depot Yard, select **5v5 / 6v6** with **Cycle size**, then **Start match**. Map/team CLI text in packaged CONTROLS does not replace this shell-owned setup; default launch does not auto-start a match.
 5. Use **Esc** to pause, resume, change settings, restart or leave. A normal match ends at **150 team kills or 15 active minutes**. Check final results and **Play again** after finishing.
 
-The archive is 40,645,312 bytes (about 38.8 MiB). SHA256:
+The archive is 40,668,944 bytes (about 38.8 MiB). SHA256:
 
 ```text
-fd54c97e2ad8d7dbf6505d1ccbdd7e6b2c67d64e4bffa13fcc55b8b0c6aebb50
+8240e2983cc74a4e5ef665258ab12efd72fe4d05137b90c9b24fa5026b34580f
 ```
 
-Verify with `Get-FileHash -Algorithm SHA256 <path-to-Shooter-Offline.zip>`. Binary source is `7cd7e8191e118929af742bef382774edb22a57c2`; newer documentation does not change that identity. The original archive and its known-issues text are retained unchanged. Local `Artifacts` are ignored and are not included in a Git clone: preserve/copy the ZIP for delivery. If absent, a release integrator must build/package an explicitly identified source, not substitute an unrelated historical binary.
+Verify with `Get-FileHash -Algorithm SHA256 <path-to-Shooter-Offline.zip>`. Binary source is `5eaced5fe526ec9dbb8e5c18f1defd9235036808`; newer documentation does not change that identity. The original archive and its known-issues text are retained unchanged. Local `Artifacts` are ignored and are not included in a Git clone: preserve/copy the ZIP for delivery. If absent, a release integrator must build/package an explicitly identified source, not substitute an unrelated historical binary.
 
 ## Default controls
 
@@ -38,15 +38,15 @@ These come from `Game/Contracts/GameData.cs:DefaultBindings` and `Presentation/I
 | Reload | R |
 | Rifle / pistol | 1 / 2 |
 | Sprint / crouch / jump | Left Shift / Left Ctrl / Space |
-| Slide (T072 build only) | Hold Left Shift while sprinting forward, then press F |
+| Slide (подкат) | Hold Left Shift while sprinting forward, then press F |
 | Scoreboard | Hold Tab |
 | Pause / back / cancel | Esc (reserved recovery control) |
 
-**Slide availability:** T072 adds slide in newer source/builds; the historical `7cd7e81` archive documented above has **no sliding**. The T072 build/package and actual checks are recorded below when available. Default Slide is rebindable in Settings and combines with Sprint; custom legacy F bindings remain intact (Slide starts Unbound). See [slide behavior](features/combat.md#local-sprint-slide--t072--adr-039).
+**Slide availability:** the `5eaced5` archive above includes T072 sliding. The retained historical `7cd7e81` archive has no slide. Clean Unity EditMode 26/26, PlayMode 13/13 (including real wall/ceiling/quality tests), Client/Server builds and package validation pass; see [M11 delivery evidence](milestones/m11-playable-release/handoff.md#t072--slide-enabled-playtest-delivery). Default Slide is rebindable in Settings and combines with Sprint; custom legacy F bindings remain intact (Slide starts Unbound). See [slide behavior](features/combat.md#local-sprint-slide--t072--adr-039).
 
 ## What is still unproven
 
-The retained handoff records Main menu only. This review checked archive hashes and prior reports, and did not launch or play the game. Bots, navigation, movement, combat, repeated lives, match completion, sound/display/control behavior and visual readability still need actual player evidence. P05 visual FAIL remains under ADR-024. Reference 720p Low30 performance is unmeasured for this candidate. Native-navigation publication is still incomplete: the packaged data is software-grid output despite the native adapter now existing. Do not treat this as an accepted release.
+The T072 package was independently extracted outside the repository and its executable reached Main using packaged defaults from a different working directory (batch-mode probe, no server). Archive SHA256 and 245 inventory hashes match. This is startup evidence, not manual gameplay. Local input/physics tests pass; complete human matches and device/visual/performance reviews remain pending. Bots, navigation, movement, combat, repeated lives, match completion, sound/display/control behavior and visual readability still need actual player evidence. P05 visual FAIL remains under ADR-024. Reference 720p Low30 performance is unmeasured for this candidate. Native-navigation publication is still incomplete: the packaged data is software-grid output despite the native adapter now existing. Do not treat this as an accepted release.
 
 ## Slide checks for a T072 build
 
@@ -70,7 +70,7 @@ Check human camera/input after repeated death and ~3-second respawn, allies/enem
 For every attempt retain: reviewer/date, archive hash, binary/content identities, map/seed/team size/profile/resolution, exact steps, expected/actual result, duration/finish reason, log/capture paths and PASS/FAIL/Pending. A useful defect entry is:
 
 ```text
-Candidate: 7cd7e81 / archive fd54c97e...
+Candidate: 5eaced5 / archive 8240e298...
 Map / size / profile:
 Reviewer / date / machine:
 Steps:
@@ -90,6 +90,10 @@ $playtestRoot = (Get-Location).Path
 & "$playtestRoot\Shooter.exe" -logFile "$playtestRoot\playtest-player.log"
 ```
 
-This uses executable-relative content defaults and is a separate direct-launch check; do not call it passed until observed. Retain logs/captures in an ignored `Artifacts/project-state-audit/` or M11 run folder before deleting temporary extractions. The old handoff's `C:\Temp\shooter-t071-playtest-59bbcbb` directory was absent at this review, so it is not a current launch location.
+Executable-relative defaults passed the batch-mode startup probe; retain a separate log for this interactive run. Retain logs/captures in an ignored `Artifacts/project-state-audit/` or M11 run folder before deleting temporary extractions. The old handoff's `C:\Temp\shooter-t071-playtest-59bbcbb` directory was absent at this review, so it is not a current launch location.
 
-A prior archive exists at `114815c` but rollback was recorded **SkippedNoPrevious**; do not infer a successful player rollback. It is historical and lacks T070 measurement changes. T071/T065 must rehearse a real compatible prior binary/content pair and record the result.
+The prior `7cd7e81` archive is retained. T072 packaging validates its distinct rollback-pair identity and presence (software rehearsal PASS); actual player rollback remains Pending. Older `114815c` is historical and lacks T070 measurement changes. T071/T065 must rehearse an actual compatible player rollback; T073 must separately prove installed-version rollback.
+
+## Final delivery will be an installer
+
+The owner requires the final Windows game to be installed and updated by an installer: run a newer installer to upgrade the existing installed game while keeping settings/controls and stable application identity/path/shortcuts. T073 and [INS01–INS06](features/windows-installer.md#acceptance-evidence) are planned; no installer is shipped by the T072 ZIP. You do not need a server or online account to play the installed local-bot game.

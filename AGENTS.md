@@ -4,6 +4,10 @@ Repository: C:\Job\shooter. Implement a Unity 6 URP procedural military FPS unde
 
 Owner clarification 2026-11-14: first version is one human with local allied/enemy bots, running offline in one client process. No online/LAN multiplayer, external server process, server rental/hosting purchase or online service is required; online delivery is deferred. Preserve existing server-compatible architecture and regression/isolation checks without making online deployment a playable-release prerequisite.
 
+T072 delivery source 5eaced5 has a clean Client/Server build, Game 56 / EditMode 26 / PlayMode 13 passes, verified both-map content/ZIP and independent Main-menu startup. See docs/playtest-guide.md and the M11 T072 delivery record for the current archive/hash; 7cd7e81 remains a prior archive without slide. Manual gameplay/device/reference and remaining native-navigation acceptance are still pending.
+
+Final-delivery owner requirement 2026-11-14: ship a Windows installer; running a newer installer must update the existing installed game while preserving settings/controls and stable installation identity. ZIPs are preview/internal artifacts. See docs/features/windows-installer.md and planned T073; this requirement-recording request authorizes no installer implementation or dispatch.
+
 ## Scope and ownership
 
 - One integrator owns Contracts, Bootstrap, project/package settings, schemas, benchmark definitions and coordination.json. No parallel workers edit these without explicit assignment. Use worktrees and one Unity editor/project copy per worker.

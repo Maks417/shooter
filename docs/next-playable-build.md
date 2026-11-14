@@ -8,6 +8,14 @@ This is documentation/planning only: no coding lease, runtime edit, dispatch, P0
 
 The first version is a single offline process with one human and local allied/enemy bots. No server rental, hosting/account setup, external server process, online/LAN multiplayer implementation or deployment is needed. Keep existing authority boundaries and build-isolation guards; do not expand the current queue into networking work. The owner's 2026-11-14 clarification is recorded in [vision](vision.md#first-version-scope-local-bots-only).
 
+## Final installer/update delivery
+
+The owner now requires the final game to use a Windows installer: a newer installer updates the existing installed game and preserves preferences. Current ZIPs remain previews. [T073](task-supplement.md#t073--windows-installer-and-in-place-upgrade-planned) is a planned M11 implementation assignment with [INS01–INS06 acceptance](features/windows-installer.md); recording this requirement does not start installer coding. It supplements REL01/REL06 without waiving earlier exits.
+
+## T072 delivered preview
+
+Local sprint slide is implemented and built at 5eaced5; clean Game 56 / EditMode 26 / PlayMode 13, Client/Server, eight content packages and ZIP validation pass, with an independent menu startup. [Guide](playtest-guide.md) and [M11 evidence](milestones/m11-playable-release/handoff.md#t072--slide-enabled-playtest-delivery) identify the actual new archive/hash. Full player/device/native-nav/reference acceptance remains open. T073 installer/update implementation is planned separately.
+
 ## Current task disposition
 
 | Task | Delivered | Remaining |

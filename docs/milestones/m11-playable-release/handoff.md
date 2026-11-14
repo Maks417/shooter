@@ -1,6 +1,35 @@
 # M11 — Playable build and acceptance — handoff and gate record
 
-**Current disposition — 2026-11-14 review from 84befb9 / a54ed83:** M11 acceptance remains open. Clean `7cd7e81` Client/Server reports and verified local ZIP exist; T071 manual gameplay/recovery/rollback handoff remains partial. T067 native-navigation publication/query work, T062 visual disposition and T065 match/device/reference/soak/delivery exits remain open. REL01–REL06 are NotClaimed; P05 FAIL is retained. The `114815c` archive remains historical/superseded for measurement. Use the [playtest guide](../../playtest-guide.md), [audit](../../product-state-audit.md), [remaining tasks](../../next-playable-build.md) and [FIX acceptance](../../release-remediation-validation.md). No online multiplayer or hosted server is required for the first local-bot version.
+**Current disposition — 2026-11-14 T072:** Slide-enabled 5eaced5 preview is built/packaged and independently reaches Main; installer/upgrades T073 remain planned. Earlier review from 84befb9 / a54ed83 follows: M11 acceptance remains open. Clean `7cd7e81` Client/Server reports and verified local ZIP exist; T071 manual gameplay/recovery/rollback handoff remains partial. T067 native-navigation publication/query work, T062 visual disposition and T065 match/device/reference/soak/delivery exits remain open. REL01–REL06 are NotClaimed; P05 FAIL is retained. The `114815c` archive remains historical/superseded for measurement. Use the [playtest guide](../../playtest-guide.md), [audit](../../product-state-audit.md), [remaining tasks](../../next-playable-build.md) and [FIX acceptance](../../release-remediation-validation.md). No online multiplayer or hosted server is required for the first local-bot version.
+
+
+
+## T072 — Slide-enabled playtest delivery
+
+**Delivered preview source:** `5eaced5fe526ec9dbb8e5c18f1defd9235036808` (clean non-development Client request); later documentation commits do not relabel this binary. Local default: sprint forward with W + Left Shift, press F; Space cancels. No online game/server is required. This is a ZIP playtest candidate; final installer/update delivery is planned T073, not implemented.
+
+| Check | Actual result / repository-relative evidence |
+|---|---|
+| Contracts / Generation / Simulation | Clean `856d628` passes 72 / 319 / 119, zero skipped; code/ports unchanged by the later bounded settings fix. `Artifacts/m0-foundation/856d6285f832724a3e77d16a7f9621d73e4837d9/20261114T163202629Z-8530085b/`, Generation `…/20261114T163216892Z-807aa5cc/`, Simulation `…/20261114T163340705Z-ce95c7eb/`. |
+| Final Game suite | Clean `5eaced5fe526ec9dbb8e5c18f1defd9235036808` PASS 56/56, zero skipped, `Artifacts/m8-runtime-composition/5eaced5fe526ec9dbb8e5c18f1defd9235036808/20261114T172026341Z-d762b678/`. |
+| Final Unity EditMode | Clean `5eaced5fe526ec9dbb8e5c18f1defd9235036808` PASS 26/26, `Artifacts/m0-foundation/5eaced5fe526ec9dbb8e5c18f1defd9235036808/tests-editmode-20261114T172050192Z-c40e58ef/`. |
+| Final Unity PlayMode | Clean `5eaced5fe526ec9dbb8e5c18f1defd9235036808` PASS 13/13, `…/tests-playmode-20261114T172149395Z-c7d66562/`; real slide sweeps, ceiling recovery and all quality tiers. |
+| Source provenance / specifications | PASS 662 entries / 331 GUIDs; C0/Game/content guards, 35 specification assertions, legacy/new settings JSON schemas and doc/link/hash checks pass. |
+| Content | Clean Compile-GameContent Force PASS, 8 packages, `Artifacts/m8-runtime-composition/5eaced5fe526ec9dbb8e5c18f1defd9235036808/compile-gamecontent-20261114T170256678Z-16c13e1b/`; contentClosureHash `715e762129848f4942f908e896ead3f2fa42a8d2b19cb2ab5612339647e41f07`. Native bake/player route review still Pending. |
+| Client | PASS `Artifacts/m0-foundation/5eaced5fe526ec9dbb8e5c18f1defd9235036808/build-client-20261114T171221410Z-229cc4a0/`, IL2CPP, non-development, sourceDirty=false. |
+| Server isolation regression | PASS `…/build-server-20261114T171748901Z-016d4ae2/`, sourceDirty=false; graphicsSourceAssets empty. This is no online-hosting requirement. |
+| Package | PASS `Artifacts/m11-playable-release/5eaced5fe526ec9dbb8e5c18f1defd9235036808/package-20261114T172353598Z-47719aa8/`; clean matching identities, extraction/corruption checks, distinct prior 7cd7e81 pair presence/identity rehearsal PASS. These are software rehearsals, not actual player rollback/repair. |
+| ZIP | `Artifacts/m11-playable-release/5eaced5fe526ec9dbb8e5c18f1defd9235036808/package-20261114T172353598Z-47719aa8/archive/Shooter-Offline.zip`, 40,668,944 bytes, SHA256 `8240e2983cc74a4e5ef665258ab12efd72fe4d05137b90c9b24fa5026b34580f`. All 245 inventoried hashes and ZIP CRC pass (`archive-review.json`). |
+| Independent executable startup | PASS Main, `matchActive=0`, `Artifacts/m11-playable-release/5eaced5fe526ec9dbb8e5c18f1defd9235036808/package-20261114T172353598Z-47719aa8/launch-probe/player.log` and `result.json`. Extracted to fresh OS temp, cwd outside repo, executable-relative defaults, batch mode; no server/editor process used. Temporary extraction removed after retaining logs. |
+| Manual gameplay / installer / REL | Pending / NotRun / NotClaimed. No named complete matches, interactive two-map slide/device/visual review or reference matrix/soaks were performed here. P05 FAIL unchanged. |
+
+Both Unity test modes create unrelated persistent New Agent settings through existing nav code; the final clean runs retain `navsettings-test-side-effect.patch` and restore only that tracked project-setting side effect after exit. No navigation setting change is included in the slide source. Earlier dirty passing runs and native startup failures remain separate, with their true flags/results.
+
+The first Client attempt `build-client-20261114T170523318Z-73e41930` failed because pinned Windows IL2CPP support was missing. Official exact-version Windows IL2CPP/server modules were reinstalled (no upgrade); proof/log is `Artifacts/unity-setup/t072-windows-module-repair.log`. The failed build and generated performance-test Resources were retained in its evidence folder; those untracked build-hook leftovers were then removed. Successful retry source stayed clean. The previously damaged engine/Mono/SDK repair and hashes are retained in the implementation record below.
+
+Owner-requested cleanup removed 24.64 GiB historical nonshipping debug backups, then 1.07 GiB new nonshipping debug output after archive verification; runtime files/archives/reports/P05 evidence stay. Temporary authenticated repair installation/installer (11.73 GiB) and startup extraction were removed; the working locked editor remains intact. Cleanup proof: `Artifacts/workspace-cleanup/t072-generated-debug-cleanup.json`, `t072-current-build-debug-cleanup.json`, `t072-temporary-repair-cleanup.json`.
+
+Use the [updated playtest guide](../../playtest-guide.md). The retained 7cd7e81/114815c records below are historical; neither archive gains slide through these documentation changes. Final [Windows installer/update](../../features/windows-installer.md) acceptance remains planned.
 
 
 ## T072 — Owner-requested local sprint slide — implementation record
@@ -22,7 +51,7 @@ T067 is still technical work, not just missing sign-off: the normal pure MapCont
 
 The old `C:/Temp/shooter-t071-playtest-59bbcbb` extraction is absent at review time. Preserve the archive; use a fresh independent extraction and retain new raw player logs under Artifacts. Recorded menu launch in this handoff was not independently repeated. Package `playerLaunchEvidence=Pending` remains unchanged; no REL stamp is inferred.
 
-## T071 — Owner playtest candidate (post-T070 rebuild) — 2026-11-14
+## Historical T071 owner candidate — 7cd7e81 before T072 — 2026-11-14
 
 | Field | Disposition |
 |---|---|
@@ -287,3 +316,7 @@ Historical 2026-11-13 software closeout (retained; superseded for current produc
 ## Owner-requested disk cleanup — 2026-11-14
 
 Removed 65 generated IL2CPP/debug backup/PDB entries directly under historical `Artifacts/m0-foundation/*/build-*/player/` folders: **26,453,819,207 bytes (24.64 GiB)**. Exact checked paths/bytes are retained in `Artifacts/workspace-cleanup/t072-generated-debug-cleanup.json`. These are nonshipping debug products excluded by the release policy. Runtime executables/data, archives/rollback pairs, manifests/reports/logs, P05 failed artifacts, source and the locked working editor were preserved. The 7cd7e81 archive SHA256 was rechecked unchanged after cleanup. Temporary authenticated repair installation/download cleanup follows successful test/build execution; no active dependencies are removed.
+
+## Planned final Windows installer (T073)
+
+Owner requirement, 2026-11-14: the final game is delivered by a Windows installer. Running a newer installer must update the existing installed game, preserve settings/controls and stable app identity/path/shortcuts, and maintain a matching executable/content pair. ZIPs remain preview/internal artifacts. [Installer contract and INS01–INS06](../../features/windows-installer.md) extend REL01/REL06 and FIX13/FIX14. T073 is planned documentation scope only here; a future bounded release-integrator assignment implements installer/version/upgrade/repair/uninstall/rollback tooling. No installer, online service or acceptance waiver is delivered by this update.

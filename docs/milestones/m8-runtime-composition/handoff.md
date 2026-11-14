@@ -3,6 +3,10 @@
 **Current disposition — 2026-11-14 review from 84befb9 / a54ed83:** M8 integration validation remains open. T066 provenance/cancellation and T067 packaged catalog/visual loading are repaired; T068 authority-driven weapon/action views are landed in the retained `7cd7e81` candidate. Native-navigation publication/query semantics and actual RUN/player/repeated-life evidence remain open. See the [audit](../../product-state-audit.md), [remaining queue](../../next-playable-build.md), [playtest guide](../../playtest-guide.md) and [FIX acceptance](../../release-remediation-validation.md). Original requirements and historical evidence remain; this review creates no coding lease or waiver.
 
 
+## T072 — Final slide validation
+
+Source 5eaced5 has clean Game 56/56, EditMode 26/26, PlayMode 13/13, Client/Server and package passes; the independent extracted executable reaches Main. The [M11 delivery record](../m11-playable-release/handoff.md#t072--slide-enabled-playtest-delivery) records actual paths/hash, prior failing/dirty attempts and cleanup. Final native tests cover real slide collision/low-ceiling recovery across quality tiers; named both-map gameplay/visual/device/performance reviews remain Pending. The current [guide](../../playtest-guide.md) points to the slide-enabled preview; final installer/upgrade delivery is planned T073.
+
 ## T072 — Owner-requested local sprint slide — implementation record
 
 Owner Max requested **implementation now** of slide (подкат), default Left Shift + F, on 2026-11-14. ADR-039 and the T072 card bound this work to local motor/input/session/read-only views/settings/tests/build/docs; no agents, online rollout or waiver. The old 7cd7e81 ZIP is retained unchanged and has no slide.

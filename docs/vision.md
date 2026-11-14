@@ -14,6 +14,10 @@ That paragraph defines the historical M0–M7 slice. **The next owner-requested 
 
 Owner clarification, 2026-11-14: the first version is **one human playing locally with allied/enemy bots**, entirely on the player's PC. No online multiplayer, LAN/remote player support, external server process, rented server, hosting purchase/account or online service is required to launch or complete it. Online multiplayer and hosting are deferred beyond this release. Existing dedicated-server-compatible authority boundaries and historical network code may stay; they do not create a new online delivery gate. Retained Server build/isolation checks are architectural regression evidence, not a request to provision a server. Existing local gameplay, visual/provenance and reference-performance requirements remain unchanged.
 
+## Windows installer delivery
+
+Owner clarification, 2026-11-14: final delivery is a **Windows installer**, and running a newer version's installer must update the existing game in the system, preserving settings/controls and the installation identity/path/shortcuts. A ZIP is only a preview/internal artifact. [Installation and upgrade contract](features/windows-installer.md) defines the required install/update/repair/uninstall/rollback evidence; T073 is planned, not implemented here.
+
 ## Confirmed constraints
 
 | ID | Requirement | Evidence of acceptance |
@@ -31,7 +35,7 @@ Owner clarification, 2026-11-14: the first version is **one human playing locall
 | R11 | Offline 5v5/6v6 with one human, allied/enemy bots, 150 kills / 15 minutes, safe respawn and immutable results | M9 TDM01–TDM08 and M11 REL02 |
 | R12 | Two distinct packaged procedural maps, both supporting the team mode and sizes | M10 MAP01–MAP03; clean release REL01 |
 | R13 | Actual main/setup/pause/settings/scoreboard/results UI; persistent applied sound/video/control/accessibility preferences | M10 UI01–UI02, SET01–SET02; M11 player review |
-| R14 | Source-matched Windows archive playable offline without Unity/dev cache and with actual release acceptance | M11 REL01–REL06, including new full-roster performance |
+| R14 | Source-matched Windows installer, clean offline installation and in-place N→N+1 upgrade preserving user preferences; ZIP remains preview/internal only | M11 REL01–REL06, including new full-roster performance |
 
 Two occupied memory slots do not prove dual-channel operation. The temporary memory-usage screenshot is explicitly excluded from requirements, budgets and diagnosis.
 

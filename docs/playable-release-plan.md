@@ -4,13 +4,17 @@ Reviewed 2026-11-14 from `84befb9` (subsequent `a54ed83` adds only CLAUDE guidan
 
 ## Required playable product
 
-A source-matched Windows x64 archive launches offline into Main menu. Select Training Compound or Depot Yard, Team Deathmatch, and 5v5 or 6v6. One human joins Team 1 with nine/eleven total bots. Teams race to 150 enemy kills or 15 active minutes; equal scores draw. Movement, rifle/pistol aim/fire/reload, death/respawn, pause, live/final tables, replay and return to menu must work. Audio/video/control/accessibility settings persist and affect actual devices.
+The final deliverable is a source-matched Windows x64 installer with [in-place version upgrades](features/windows-installer.md); its installed game launches offline into Main menu. ZIPs remain interim playtest artifacts. Select Training Compound or Depot Yard, Team Deathmatch, and 5v5 or 6v6. One human joins Team 1 with nine/eleven total bots. Teams race to 150 enemy kills or 15 active minutes; equal scores draw. Movement, rifle/pistol aim/fire/reload, death/respawn, pause, live/final tables, replay and return to menu must work. Audio/video/control/accessibility settings persist and affect actual devices.
 
 [Vision](vision.md), [team rules](features/team-deathmatch.md), [maps](features/playable-maps.md) and [shell](features/game-shell.md) retain exact requirements. Native1280×720 Low30 on the reference machine remains an acceptance gate; 60 FPS is separate stretch. No external art, extra online scope, optional T025 or public distribution is added.
 
 ## First-version scope
 
 Owner confirmed on 2026-11-14: **local play with bots only**. Run one human plus allied/enemy bots on the same PC; no online multiplayer, external server process, server rental/hosting purchase, online account or service is required. Online/LAN multiplayer and hosted deployment are deferred. Existing server-compatible design and Server isolation tests can remain as regression guards; online delivery does not block the first playable version. See [vision](vision.md#first-version-scope-local-bots-only).
+
+## Final installer requirement (T073, planned)
+
+Running a newer game installer must detect and update the existing installation, preserve settings/controls and stable shortcuts/app registration, and replace matching binary/content together. Rehearse install, upgrade, repair, interrupted update, uninstall and installed rollback under [INS01–INS06](features/windows-installer.md#acceptance-evidence). This requirement extends M11 delivery; no installer implementation is claimed by the current ZIP package.
 
 ## Project estimate
 
@@ -36,6 +40,6 @@ The [remaining-work cards](next-playable-build.md) keep original owners, boundar
 
 The existing archive is a **test candidate**, not an assertion that T071's manual exit passed. A usable owner handoff needs all required interactions exercised and at least one complete normal match/map. Disclose P05 FAIL, incomplete native publication and unmeasured reference performance. Any observed functional blocker prevents calling it proven playable.
 
-T065 retains eight full matches (both maps × both sizes × score/unshortened timeout), draw fixture, named reviews, 20 shell cycles, actual display/audio/control behavior, twelve reference Low captures and two ≥30-minute normal-AI soaks, server isolation/provenance/regressions and independent archive/rollback. Missing reviewers/hardware/counters remain Pending/PendingHardware. REL01–REL06 remain NotClaimed.
+T065 retains eight full matches (both maps × both sizes × score/unshortened timeout), draw fixture, named reviews, 20 shell cycles, actual display/audio/control behavior, twelve reference Low captures and two ≥30-minute normal-AI soaks, server isolation/provenance/regressions and independent installer install/update/repair/uninstall/rollback (plus retained internal archive). Missing reviewers/hardware/counters remain Pending/PendingHardware. REL01–REL06 remain NotClaimed.
 
 Use the [M11 operator runbook](milestones/m11-playable-release/handoff.md) for the final candidate. Documentation hashes and diagnostic Smoke/READY do not prove gameplay. Commit completed assigned work to main and preserve ignored evidence and old archives; never relabel them as newer source.

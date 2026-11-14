@@ -4,7 +4,7 @@
 
 ## Goal
 
-Deliver a source-matched Windows release archive the owner can extract and play offline on either map, with verified match rules, working settings, reviewed procedural soldiers and honest native-720p performance evidence. Administrative closeouts of earlier milestones do not satisfy this delivery gate.
+Deliver a source-matched Windows installer that installs the local game and upgrades an existing installation when a newer installer is run, preserving settings/controls. The owner can play offline on either map, with verified match rules, working settings, reviewed procedural soldiers and honest native-720p performance evidence. Administrative closeouts of earlier milestones do not satisfy this delivery gate.
 
 ## Entry gate
 
@@ -23,3 +23,7 @@ M10 integrated two-map game is on main; exact content/contract/workload versions
 Exit requires the real artifacts and validation in this pack, reviewed by the integrator. Missing tools/hardware remain Pending; historical owner waivers are not inherited. Future implementation needs an explicit assignment and actual base commit.
 
 [Release roadmap](../../playable-release-plan.md) · [Shared documentation](../../index.md) · [Previous pack](../m10-maps-shell/index.md) · [Next pack](../index.md).
+
+## Planned final Windows installer (T073)
+
+Owner requirement, 2026-11-14: the final game is delivered by a Windows installer. Running a newer installer must update the existing installed game, preserve settings/controls and stable app identity/path/shortcuts, and maintain a matching executable/content pair. ZIPs remain preview/internal artifacts. [Installer contract and INS01–INS06](../../features/windows-installer.md) extend REL01/REL06 and FIX13/FIX14. T073 is planned documentation scope only here; a future bounded release-integrator assignment implements installer/version/upgrade/repair/uninstall/rollback tooling. No installer, online service or acceptance waiver is delivered by this update.

@@ -1,5 +1,11 @@
 # Product state audit — 2026-11-14
 
+## Latest delivery: T072 slide preview / final installer planned
+
+The owner-authorized slide is built into clean-source `5eaced5`: Client/Server, verified eight-package content and ZIP PASS; standalone extracted executable reaches Main. Final Game 56, EditMode 26 and PlayMode 13 pass, with actual flags/paths in [M11 delivery](milestones/m11-playable-release/handoff.md#t072--slide-enabled-playtest-delivery). [Playtest guide](playtest-guide.md) now points to that 40,668,944-byte ZIP (SHA256 8240e298…b34580f), including Sprint + F. Old 7cd7e81 has no slide and is retained as a prior pair. Manual gameplay/device/reference acceptance remains Pending, P05 FAIL remains and REL gates remain NotClaimed.
+
+The owner additionally requires a final [Windows installer with in-place upgrades](features/windows-installer.md), preserving controls/settings and stable installation identity. T073 is planned documentation scope, not an implemented installer. ZIP previews do not close that final delivery gate. Requested cleanup removed 24.64 GiB of old generated debug backups; current-build debug/temporary repair files were also cleaned after proof was retained, preserving runtime archives and required evidence.
+
 ## T072 follow-up: local sprint slide
 
 The owner subsequently requested and authorized implementation of Left Shift + F slide. ADR-039/T072 extend local authority/input/settings and copied camera/rig movement views; existing C0/N1/content formats remain intact. The original review below is historical to that feature addition: 7cd7e81 has no slide. Follow [M8/M11 handoff evidence](milestones/m11-playable-release/handoff.md#t072--owner-requested-local-sprint-slide--implementation-record) and [playtest guide](playtest-guide.md) for actual new-build availability, test results and retained limitations. No acceptance gates are closed by adding this feature.

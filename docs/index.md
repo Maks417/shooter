@@ -2,11 +2,13 @@
 
 Unity 6 URP / C# / HLSL design for a realistic modern-world shooter generated from code and numeric recipes. No imported/manual meshes, painted textures, sprites or authored animation. Initial hardware target: Ryzen 5 4600H integrated Radeon, 16 GB DDR4-3200, NVMe; native 720p Low at 30 FPS, 60 FPS stretch.
 
-**Status, 2026-11-14 review from 84befb9 / a54ed83:** a clean `7cd7e81` Windows playtest archive exists; its SHA256 and 245 inventoried file hashes were rechecked. T066 baseline and T068/T069/T070 software repairs are landed. Manual gameplay is still Pending, and T067 native-navigation publication is incomplete. M8–M10 integration validation and M11 acceptance remain open; M0–M7 waivers and P05 FAIL remain. Start with the [launch/playtest guide](playtest-guide.md), [current audit](product-state-audit.md) and [remaining-work queue](next-playable-build.md).
+**Latest, 2026-11-14:** slide-enabled `5eaced5` preview is built/packaged, hash-verified and starts independently to Main; see [guide](playtest-guide.md) and [M11 delivery](milestones/m11-playable-release/handoff.md#t072--slide-enabled-playtest-delivery). Manual game/device/performance acceptance remains pending; final installer/upgrades are planned T073. **Earlier review from 84befb9 / a54ed83:** a clean `7cd7e81` Windows playtest archive exists; its SHA256 and 245 inventoried file hashes were rechecked. T066 baseline and T068/T069/T070 software repairs are landed. Manual gameplay is still Pending, and T067 native-navigation publication is incomplete. M8–M10 integration validation and M11 acceptance remain open; M0–M7 waivers and P05 FAIL remain. Start with the [launch/playtest guide](playtest-guide.md), [current audit](product-state-audit.md) and [remaining-work queue](next-playable-build.md).
 
 First-version owner priority: **play locally with bots; no online multiplayer or server purchase/hosting required**. Existing network/server architecture is retained, with online delivery deferred. See [scope](vision.md#first-version-scope-local-bots-only).
 
 **T072 follow-up:** the owner authorized local sprint slide implementation (default Left Shift + F) under [ADR-039](decisions.md#adr-039--accepted-local-authoritative-sprint-slide-t072). See [combat rules](features/combat.md#local-sprint-slide--t072--adr-039) and [guide](playtest-guide.md) for actual build availability; the older 7cd7e81 archive has no slide.
+
+**Final delivery requirement:** the Windows game must have an [installer that updates an existing installation](features/windows-installer.md) when a newer installer is run, preserving settings/controls. ZIPs are playtest artifacts; T073 installer implementation is planned.
 
 ## Next development
 
@@ -50,6 +52,7 @@ Use the [remaining T067/T071 work](next-playable-build.md): play the existing ar
 | [Feature: Team Deathmatch](features/team-deathmatch.md) | Rosters, scoring, timer, respawn, team AI and results |
 | [Feature: two playable maps](features/playable-maps.md) | Approved map catalog, procedural layouts, packaging and safety |
 | [Feature: game shell and settings](features/game-shell.md) | Menu flows, interactive tables, persistence, audio/video/controls |
+| [Feature: Windows installer and upgrades](features/windows-installer.md) | Final installer, in-place updates, preference preservation and install/upgrade acceptance |
 | [Feature: staged authoritative networking](features/networking.md) | Feature implementation, edge cases and acceptance |
 | [Visual direction and UI design system](brandbook.md) | Proposed visual direction, HUD and accessibility |
 | [Architecture decision records](decisions.md) | Accepted/provisional ADRs and change process |

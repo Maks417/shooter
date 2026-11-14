@@ -22,3 +22,7 @@ On a fresh Unity checkout run ./Tools/Configure-Unity.ps1 with the locked instal
 Retain raw XML/TRX/logs, versioned fixture/manifest/provenance reports, real player captures and machine/counter/thermal evidence where required. Use PASS only for measured checks, FAIL for actual failures, Pending/PendingHardware for unavailable execution, and NotRun for work not attempted. Screenshots/pure loops/docs hashes cannot replace actual Unity/player/performance or named human review. Detailed historical gates remain in their original handoffs.
 
 [Release roadmap](../../playable-release-plan.md) · [Shared documentation](../../index.md) · [Previous pack](../m10-maps-shell/index.md) · [Next pack](../index.md).
+
+## Installer and update delivery — owner requirement 2026-11-14
+
+Final REL01/REL06 delivery requires a Windows installer and a successful N→N+1 in-place upgrade of an existing installation, preserving settings/controls, stable application identity/path/shortcuts and a matching verified binary/content pair. A ZIP-only handoff does not close final delivery. Execute [INS01–INS06](../../features/windows-installer.md#acceptance-evidence): clean install, upgrade, repair, interrupted replacement, uninstall/data retention and installed rollback. Keep all original gates and FIX13/FIX14 identity/provenance safeguards. T073 is Planned / NotRun; the doc update claims no installer implementation or acceptance.
