@@ -384,3 +384,16 @@ Owner-authorized orchestration: an integrator (Opus) dispatched bounded Sonnet w
 
 1. **Crash ~4 s after Main** in every build since synthesized audio (including the 5eaced5 playtest ZIP): fixed, see ADR-042. Earlier "reaches Main" evidence stopped looking too early; release checks now keep the windowed player alive for 60 s.
 2. **Native packages could not start a match**: editor-published (Mono) content differed from .NET/IL2CPP in the lowest float bits of `skeleton-soldier.bin`, so the player's skeleton identity check rejected every native package (all 12 reference captures and both soaks aborted at match start on `075c548`). The `075c548` package/installer are therefore not playable deliverables. Fixed by [ADR-043](../../decisions.md#adr-043--accepted-two-stage-native-navigation-publication): the editor bakes only navigation from .NET-published collision and a byte-identity guard protects all other payloads; release checks now start a real match on both maps. The defective cache is retained as ignored `Artifacts/map-packages-native-mono-defect-075c548`.
+3. **Bots never fought** (found by the reference captures below): the product session never passed the packaged patrol/combat destinations to the bot planner, so every bot orbited 4 m around its spawn with its spawn yaw, never met the enemy team and retried a failing path every tick. Fixed in `2ee1a3d`: map destinations are applied, bots face their route, rotate destinations, back off 30 ticks after a failed path and leave SeekCover when no cover site is free; due-south yaw is clamped into the C0 interval. Pure tests PASS (Simulation 128, Game 57, five new regressions). **Real-player confirmation is Pending**: the verify run was stopped by owner decision before any build; bots moving, shooting and scoring in a player has not been observed.
+
+### Reference captures on 9f2219f — reference laptop, AC power
+
+Twelve product captures (4 workloads × 3, Low 1280×720, native content) and two soaks ran on 2026-11-14. None is reference evidence:
+
+| Result | Detail |
+|---|---|
+| 9 captures ComputedFail | No crash. Frame p50 ≈ 1.34–1.48 ms, p99 ≈ 1.95–2.14 ms, RSS ≈ 240–273 MB, but **0 shots, kills and vision rays** (defect 3), so the frames contain no combat. Each also fails the zero-allocation tick gate: 19,082 B/tick (5v5) and 21,626 B/tick (6v6) of managed allocation; not fixed. |
+| 3 captures FAIL (330 s timeout) | Player stalled after validation. A concurrent session launched builds and game windows during the run; focus loss pauses the product match, the likely cause (not proven). Captures now abort with an explicit focus-loss reason (`2ee1a3d`). |
+| 2 soaks FAIL | `Product TDM frame capacity exceeded` after ~6 minutes: a fixed 262,144-frame buffer at ~700 fps uncapped. Capacity now scales with the capture window (`2ee1a3d`). |
+
+Not measured: GPU timing (PresentMon produced a CSV during the soak, but it was not analyzed), thermal stabilization (no sensor log). The 12-capture/2-soak reference set must be rerun on an idle machine after the bot fix and the per-tick allocation work; the owner deferred that long run on 2026-11-14. Evidence: ignored `Artifacts/m0-foundation/9f2219f9d67a91c5103decdf5ea6bd0958eb0573/benchmark-*`.
