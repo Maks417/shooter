@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "policyId": "shooter.windows-installer.v1",
+  "installerTechnology": "Inno Setup",
+  "isccVersion": "6.7.3",
+  "isccSha256": "0a8757031b33777e4c9cbffee40f11a5062b36d25cbe144c1db73b6102b80ad7",
+  "appId": "B01E0F69-2123-4D91-AB59-88864A944E39",
+  "appName": "Shooter",
+  "publisher": "Procedural Shooter",
+  "installScope": "per-user",
+  "requiredPackageFiles": [
+    "Shooter.exe",
+    "identities.json",
+    "rollback-pair.json",
+    "toolchain-lock.json",
+    "LICENSES.txt",
+    "Content/map-packages/index.json",
+    "Content/map-packages/catalog.json"
+  ],
+  "notes": [
+    "AppId is frozen forever; changing it creates an unrelated second installation.",
+    "ISCC is pinned by SHA256; an unpinned compiler is rejected.",
+    "Installer success is not INS01-INS06 or REL acceptance."
+  ]
+}
