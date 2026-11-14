@@ -22,6 +22,23 @@ function Get-Sha256File([string]$Path) {
     (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant()
 }
 
+function Remove-InstallerTemp([string]$Path, [switch]$Junction) {
+    if (!$Path) { return }
+    $full = [IO.Path]::GetFullPath($Path)
+    $tempRoot = [IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd('\', '/')
+    if (![IO.Path]::GetDirectoryName($full).Equals($tempRoot, [StringComparison]::OrdinalIgnoreCase) -or
+        [IO.Path]::GetFileName($full) -cnotmatch '^s[iox][0-9a-f]{8}$') {
+        throw "Refusing installer cleanup outside its generated temp directory: $full"
+    }
+    if (!(Test-Path -LiteralPath $full)) { return }
+    if ($Junction) {
+        if ((Get-Item -LiteralPath $full).LinkType -cne 'Junction') { throw "Expected installer junction: $full" }
+        # Delete only the link, using PowerShell end to end; never recurse into the staged package.
+        Remove-Item -LiteralPath $full -Force
+    }
+    else { Remove-Item -LiteralPath $full -Recurse -Force }
+}
+
 $runId = [DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ') + '-' + [Guid]::NewGuid().ToString('N').Substring(0, 8)
 $sourceCommit = 'preflight-rejected'
 $outDir = $null
@@ -201,15 +218,15 @@ try {
         $issPath)
     $isccLog = Join-Path $outDir 'iscc.log'
     try { & $IsccPath @isccArgs *> $isccLog; $isccExit = $LASTEXITCODE }
-    finally { & cmd.exe /c rmdir "$junction" | Out-Null }
+    finally { Remove-InstallerTemp $junction -Junction }
     if ($isccExit -ne 0) { throw "ISCC failed with exit code $isccExit; see $isccLog" }
     $builtPath = Join-Path $shortOut "$outputName.exe"
     if (!(Test-Path -LiteralPath $builtPath -PathType Leaf)) { throw "ISCC reported success but installer is missing: $builtPath" }
     $installerPath = Join-Path $installerDir "$outputName.exe"
     Move-Item -LiteralPath $builtPath -Destination $installerPath -Force
-    Remove-Item -LiteralPath $shortOut -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-InstallerTemp $shortOut
     Copy-Item -LiteralPath $extraDir -Destination (Join-Path $outDir 'installer-extra') -Recurse -Force
-    Remove-Item -LiteralPath $extraDir -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-InstallerTemp $extraDir
     $sha = Get-Sha256File $installerPath
     [IO.File]::WriteAllText("$installerPath.sha256", "$sha  $outputName.exe`n")
     $report.installerPath = $installerPath
@@ -219,7 +236,7 @@ try {
 }
 catch {
     $report.failure = "$_"
-    foreach ($tmp in @($shortOut, $extraDir)) { if ($tmp) { Remove-Item -LiteralPath $tmp -Recurse -Force -ErrorAction SilentlyContinue } }
+    foreach ($tmp in @($shortOut, $extraDir)) { if ($tmp) { Remove-InstallerTemp $tmp } }
     Save-Report
     Write-Host ($report | ConvertTo-Json -Depth 8)
     throw
