@@ -112,7 +112,7 @@ namespace Shooter.Bootstrap
             }
         }
 
-        private sealed class EntryShellBackend : IProductShellBackend
+        private sealed class EntryShellBackend : IProductShellBackend, IProductMenuVisualSource
         {
             private readonly FoundationEntry entry;
 
@@ -143,6 +143,8 @@ namespace Shooter.Bootstrap
 
             public bool TryGetVerifiedVisuals(out PackagedVisualPayloads visuals, out string diagnostic) =>
                 entry.TryGetVerifiedVisuals(out visuals, out diagnostic);
+            public bool TryLoadMenuVisuals(MapId map, out PackagedVisualPayloads visuals, out string diagnostic) =>
+                entry.TryLoadMenuVisuals(map, out visuals, out diagnostic);
         }
     }
 }

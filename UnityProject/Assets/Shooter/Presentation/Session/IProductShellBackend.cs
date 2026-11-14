@@ -8,6 +8,12 @@ using Shooter.Generation.Environment;
 
 namespace Shooter.Presentation.Session
 {
+    /// <summary>Pure verified-byte read for the menu's cosmetic stage; never starts a gameplay session.</summary>
+    public interface IProductMenuVisualSource
+    {
+        bool TryLoadMenuVisuals(MapId map, out PackagedVisualPayloads visuals, out string diagnostic);
+    }
+
     /// <summary>Bootstrap-owned services the product shell needs without referencing FoundationEntry.</summary>
     public interface IProductShellBackend
     {

@@ -94,6 +94,7 @@ namespace Shooter.Presentation.Rig
         private float aggregateMinArmClearance = float.MaxValue;
         private float aggregateMaxEyeSightError;
         private int reviewSampleCount;
+        private ActorLifecycleState[]? showcaseStates;
 
         public int LiveAvatarCount
         {
@@ -163,7 +164,7 @@ namespace Shooter.Presentation.Rig
         /// <summary>
         /// Upload verified packaged soldier/rifle/pistol meshes and materials. Missing deps fail recoverably; no generation fallback.
         /// </summary>
-        public void BindPackagedVisuals(PackagedVisualPayloads visuals)
+        public void BindPackagedVisuals(PackagedVisualPayloads visuals, bool showcase = false)
         {
             if (visuals == null) throw new ArgumentNullException(nameof(visuals));
             var shader = Shader.Find("Universal Render Pipeline/Lit");
@@ -188,8 +189,8 @@ namespace Shooter.Presentation.Rig
                     if (expected[i] != actual[i])
                         throw new InvalidOperationException("Packaged soldier skeleton identity mismatch.");
 
-                int soldierLod = MapVisualClosure.SoldierLodIndex(visuals.Profile);
-                int weaponLod = MapVisualClosure.WeaponLodIndex(visuals.Profile);
+                int soldierLod = showcase ? 0 : MapVisualClosure.SoldierLodIndex(visuals.Profile);
+                int weaponLod = showcase ? 0 : MapVisualClosure.WeaponLodIndex(visuals.Profile);
                 bodyMesh = Own(Upload(MapVisualClosure.DecodeSoldierLod(visuals, soldierLod), true));
                 rifleMesh = Own(Upload(MapVisualClosure.DecodeRifleLod(visuals, weaponLod), false));
                 pistolMesh = Own(Upload(MapVisualClosure.DecodePistolLod(visuals, weaponLod), false));
@@ -214,9 +215,8 @@ namespace Shooter.Presentation.Rig
                 rifleMetal = FromPackaged(shader, visuals, MapVisualClosure.WeaponMaterialPaths[0], "Product rifle metal", 0.15f, 0.35f);
                 riflePolymer = FromPackaged(shader, visuals, MapVisualClosure.WeaponMaterialPaths[1], "Product rifle polymer");
 
-                ApplyLocalWeaponVisual(ProductAuthorityActionView.RifleSlot);
-
                 visualsBound = true;
+                ApplyLocalWeaponVisual(ProductAuthorityActionView.RifleSlot);
                 Debug.Log("SHOOTER_PRODUCT_ACTOR_VIEW packaged visuals ready profile=" + visuals.Profile +
                           " soldierLod=" + soldierLod + " weaponLod=" + weaponLod);
             }
@@ -242,6 +242,35 @@ namespace Shooter.Presentation.Rig
             aggregateMinArmClearance = float.MaxValue;
             aggregateMaxEyeSightError = 0f;
             reviewSampleCount = 0;
+            showcaseStates = null;
+        }
+
+        /// <summary>Three cosmetic stage actors. These IDs never enter a session, collider, hit registry or authority.</summary>
+        public void BindMenuShowcase(PackagedVisualPayloads visuals)
+        {
+            ClearAll();
+            BindPackagedVisuals(visuals, showcase: true);
+            showcaseStates = new[]
+            {
+                new ActorLifecycleState(new EntityId(1), 1, true, 100, new Float3(1.25f, 0, .3f), -.45f, -.14f, 0, 30, 90),
+                new ActorLifecycleState(new EntityId(2), 1, true, 100, new Float3(-.25f, 0, 3.2f), -.7f, -.06f, 0, 30, 90),
+                new ActorLifecycleState(new EntityId(3), 1, true, 100, new Float3(3.2f, 0, 4.8f), .3f, -.1f, 0, 30, 90)
+            };
+            // Menu-only palette overrides are numeric presentation styling, not a soldier-generator iteration.
+            team1Palette![0].SetColor("_BaseColor", new Color(.16f, .21f, .19f));
+            team1Palette[1].SetColor("_BaseColor", new Color(.12f, .15f, .14f));
+            team1Palette[2].SetColor("_BaseColor", new Color(.35f, .28f, .22f));
+            for (int i = 0; i < showcaseStates.Length; i++) CreateAvatar(showcaseStates[i], false);
+        }
+
+        public void TickMenuShowcase(float seconds)
+        {
+            if (showcaseStates == null) return;
+            for (int i = 0; i < showcaseStates.Length; i++)
+            {
+                var state = showcaseStates[i];
+                if (avatars.TryGetValue(state.EntityId.Value, out var avatar)) PoseAvatar(avatar, state, seconds, 0);
+            }
         }
 
         public void SetReviewContext(string mapId, string profile, uint completedTick)

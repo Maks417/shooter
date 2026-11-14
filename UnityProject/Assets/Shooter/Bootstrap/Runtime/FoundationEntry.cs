@@ -267,6 +267,20 @@ namespace Shooter.Bootstrap
             return productPackageStore.TryLoadVisual(new MapId(mapId), profile, root, out visuals, out diagnostic);
         }
 
+        /// <summary>Immutable package reads only: safe for the menu IO worker, with no Unity API or live-world access.</summary>
+        public bool TryLoadMenuVisuals(MapId map, out PackagedVisualPayloads visuals, out string diagnostic)
+        {
+            visuals = default!;
+            var store = productPackageStore;
+            var catalog = productStaticCatalog;
+            if (store == null || catalog == null || !catalog.TryGet(map, out var entry))
+            {
+                diagnostic = "menu-visual-catalog-missing";
+                return false;
+            }
+            return store.TryLoadVisual(map, "low", entry.LowVisualRootHash, out visuals, out diagnostic);
+        }
+
         public static string QualityTierToVisualProfile(int qualityTier) =>
             qualityTier >= 2 ? "high" : qualityTier == 1 ? "balanced" : "low";
 

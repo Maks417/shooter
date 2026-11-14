@@ -31,6 +31,7 @@ namespace Shooter.Presentation.Session
         public float Width { get; private set; }
         public float Height { get; private set; }
         public Rect Safe { get; private set; }
+        public Texture? SceneTexture { get; set; }
 
         public static Rect SafeArea(float width, float height) => new Rect(width * .05f, height * .05f, width * .9f, height * .9f);
 
@@ -109,7 +110,7 @@ namespace Shooter.Presentation.Session
         {
             if (!labels.TryGetValue(size, out var style))
             {
-                style = new GUIStyle(GUI.skin.label) { fontSize = size, wordWrap = true, padding = new RectOffset(0, 0, 0, 0), richText = false };
+                style = new GUIStyle(GUI.skin.label) { fontSize = size, fontStyle = size >= 28 ? FontStyle.Bold : FontStyle.Normal, wordWrap = true, padding = new RectOffset(0, 0, 0, 0), richText = false };
                 labels.Add(size, style);
             }
             style.normal.textColor = StyleInk(color ?? Text);
@@ -117,16 +118,16 @@ namespace Shooter.Presentation.Session
             GUI.Label(r, text, style);
         }
 
-        public bool Button(Rect r, string id, string text, bool primary = false, bool selected = false)
+        public bool Button(Rect r, string id, string text, bool primary = false, bool selected = false, bool quiet = false)
         {
             if (GUI.enabled && Event.current.type == EventType.MouseDown && r.Contains(Event.current.mousePosition)) focused = id;
             bool focus = focused == id;
             if (focus && focusMoved) GUI.ScrollTo(r);
             bool hover = r.Contains(Event.current.mousePosition);
-            Color fill = primary ? Accent : (hover || selected ? Raised : Surface);
+            Color fill = quiet ? new Color(1, 1, 1, hover || selected ? .10f : 0) : primary ? Accent : (hover || selected ? Raised : Surface);
             Fill(r, GUI.enabled ? fill : Surface);
             if (focus || selected) Fill(new Rect(r.x, r.y, 3, r.height), primary ? Background : Accent);
-            if (focus)
+            if (focus && !quiet)
             {
                 Color edge = primary ? Background : Accent;
                 Fill(new Rect(r.x + 4, r.y + 3, r.width - 8, 1), edge);
@@ -138,6 +139,7 @@ namespace Shooter.Presentation.Session
                 foreach (var state in new[] { buttonStyle.normal, buttonStyle.hover, buttonStyle.active, buttonStyle.focused }) state.background = null;
             }
             Color ink = StyleInk(GUI.enabled ? (primary ? Background : Text) : Muted);
+            buttonStyle.fontSize = quiet ? 22 : 18;
             buttonStyle.normal.textColor = ink;
             buttonStyle.hover.textColor = ink;
             buttonStyle.active.textColor = ink;
@@ -146,6 +148,18 @@ namespace Shooter.Presentation.Session
             GUI.SetNextControlName(id);
             bool clicked = GUI.Button(r, text, buttonStyle);
             return GUI.enabled && (clicked || activate == id);
+        }
+
+        public bool MapCard(Rect r, string id, Texture? image, string title, string subtitle, bool selected = false)
+        {
+            Fill(r, Surface);
+            if (image != null && Event.current.type == EventType.Repaint) GUI.DrawTexture(r, image, ScaleMode.ScaleAndCrop);
+            Fill(new Rect(r.x, r.yMax - 58, r.width, 58), new Color(.025f, .04f, .05f, .9f));
+            bool clicked = Button(r, id, "", selected: selected, quiet: true);
+            Label(new Rect(r.x + 14, r.yMax - 49, r.width - 28, 22), title, 18);
+            Label(new Rect(r.x + 14, r.yMax - 24, r.width - 28, 20), subtitle, 12, Muted);
+            if (selected) Fill(new Rect(r.x, r.yMax - 3, r.width, 3), Accent);
+            return clicked;
         }
 
         public float Slider(Rect r, string id, string text, float value, float min, float max, string formatted)
@@ -182,6 +196,18 @@ namespace Shooter.Presentation.Session
 
         public void Backdrop(bool overlay = false)
         {
+            if (!overlay && SceneTexture != null)
+            {
+                if (Event.current.type == EventType.Repaint) GUI.DrawTexture(new Rect(0, 0, Width, Height), SceneTexture, ScaleMode.ScaleAndCrop);
+                // A left-to-right scrim keeps navigation legible while the rendered scene dominates.
+                for (int i = 0; i < 32; i++)
+                {
+                    float u = i / 31f;
+                    Fill(new Rect(i * Width / 42, 0, Width / 42 + 1, Height), new Color(.015f, .025f, .03f, .88f * Mathf.Pow(1 - u, 2)));
+                    Fill(new Rect(0, Height - i * Height / 95, Width, Height / 95 + 1), new Color(.015f, .025f, .03f, .4f * (1 - u)));
+                }
+                return;
+            }
             Fill(new Rect(0, 0, Width, Height), overlay ? new Color(.03f, .05f, .06f, .94f) : Background);
             if (overlay) return;
             // Analytic contour lines: decorative terrain, never a tactical map or an imported image.

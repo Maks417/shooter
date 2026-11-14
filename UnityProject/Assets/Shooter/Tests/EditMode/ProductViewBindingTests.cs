@@ -8,6 +8,7 @@ using Shooter.Generation.Environment;
 using Shooter.Presentation.Rendering;
 using Shooter.Presentation.Rig;
 using Shooter.Presentation.View;
+using Shooter.Presentation.Session;
 using UnityEngine;
 using EntityId = Shooter.Contracts.EntityId;
 
@@ -114,6 +115,8 @@ namespace Shooter.Tests
                 var presentation = ProductActorPresentation.Create(root.transform, camera);
                 presentation.BindPackagedVisuals(visuals);
                 Assert.That(presentation.VisualsBound, Is.True);
+                Assert.That(camera.transform.Find("Local FP rifle").GetComponent<MeshFilter>().sharedMesh, Is.Not.Null,
+                    "The first cold bind must assign the first-person weapon, before any slot switch.");
 
                 var lifecycle = new FakeLifecycle();
                 var human = new EntityId(42);
@@ -177,6 +180,45 @@ namespace Shooter.Tests
             }
             finally
             {
+                Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void MenuStageRendersPackagedSoldiersAndMapCardsWithoutGameplayObjects()
+        {
+            var hash = ContentIdentity.Hash(System.Text.Encoding.ASCII.GetBytes("menu-stage-review"));
+            var visuals = new[]
+            {
+                PackagedVisualPayloads.FromBuild(MapPackageBuilder.Build("training-compound", "low", hash)),
+                PackagedVisualPayloads.FromBuild(MapPackageBuilder.Build("depot-yard", "low", hash))
+            };
+            var root = new GameObject("MenuStageReview");
+            var previous = RenderTexture.active;
+            var texture = new Texture2D(1280, 720, TextureFormat.RGB24, false);
+            try
+            {
+                var scene = root.AddComponent<ProductMenuScene>();
+                scene.BindVerified(visuals);
+                Assert.That(scene.IsReady, Is.True);
+                Assert.That(scene.ShowcaseActorCount, Is.EqualTo(3));
+                Assert.That(scene.MapCard("training-compound"), Is.Not.Null);
+                Assert.That(scene.MapCard("depot-yard"), Is.Not.Null);
+                Assert.That(root.GetComponentsInChildren<Collider>().Length, Is.Zero);
+                Assert.That(root.GetComponentsInChildren<Rigidbody>().Length, Is.Zero);
+                string directory = System.IO.Path.GetFullPath(System.IO.Path.Combine(Application.dataPath,
+                    "../../Artifacts/t074-visual-review/editor-" + System.DateTime.UtcNow.ToString("yyyyMMddTHHmmssfffZ")));
+                System.IO.Directory.CreateDirectory(directory);
+                RenderTexture.active = (RenderTexture)scene.Frame!;
+                texture.ReadPixels(new Rect(0, 0, 1280, 720), 0, 0);
+                texture.Apply();
+                System.IO.File.WriteAllBytes(System.IO.Path.Combine(directory, "staging-area.png"), ImageConversion.EncodeToPNG(texture));
+                TestContext.Progress.WriteLine("SHOOTER_MENU_REVIEW_CAPTURE " + directory);
+            }
+            finally
+            {
+                RenderTexture.active = previous;
+                Object.DestroyImmediate(texture);
                 Object.DestroyImmediate(root);
             }
         }

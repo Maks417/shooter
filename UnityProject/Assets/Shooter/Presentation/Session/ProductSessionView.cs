@@ -49,6 +49,11 @@ namespace Shooter.Presentation.Session
         private string subtitleText = "";
         private float subtitleRemaining;
         private readonly TacticalUi combatUi = new TacticalUi();
+        private IReadOnlyList<CollisionBox> hudBoxes = System.Array.Empty<CollisionBox>();
+        private readonly EventId[] recentDeathIds = new EventId[32];
+        private int deathIdCursor;
+        private readonly string[] killFeed = new string[4];
+        private readonly float[] killFeedUntil = new float[4];
 
         public ProductMapView? MapView => mapView;
         public ProductActorPresentation? Actors => actors;
@@ -97,6 +102,7 @@ namespace Shooter.Presentation.Session
             camera.backgroundColor = new Color(0.35f, 0.55f, 0.85f, 1f);
             camera.allowHDR = false;
             camera.allowMSAA = QualitySettings.GetQualityLevel() == 2;
+            camera.cullingMask &= ~(1 << ProductMenuScene.StageLayer);
 
             var sun = new GameObject("Product sun").AddComponent<Light>();
             sun.transform.SetParent(transform, false);
@@ -104,6 +110,7 @@ namespace Shooter.Presentation.Session
             sun.transform.rotation = Quaternion.Euler(50f, 40f, 0f);
             sun.intensity = 1.1f;
             sun.shadows = LightShadows.Hard;
+            sun.cullingMask &= ~(1 << ProductMenuScene.StageLayer);
             RenderSettings.ambientMode = AmbientMode.Flat;
             RenderSettings.ambientLight = new Color(0.28f, 0.30f, 0.34f, 1f);
             QualitySettings.vSyncCount = 0;
@@ -219,6 +226,7 @@ namespace Shooter.Presentation.Session
             actors.ClearAll();
             actors.BindPackagedVisuals(visuals);
             boundMapId = mapId ?? "";
+            hudBoxes = boxes;
             if (camera != null && mapView.IsInstalled)
                 camera.clearFlags = CameraClearFlags.Skybox;
             visualReview?.SetContext(boundMapId, QualitySettings.names[QualitySettings.GetQualityLevel()], 0);
@@ -231,6 +239,10 @@ namespace Shooter.Presentation.Session
             mapView?.ClearVisuals();
             actors?.ClearAll();
             boundMapId = "";
+            hudBoxes = System.Array.Empty<CollisionBox>();
+            System.Array.Clear(recentDeathIds, 0, recentDeathIds.Length);
+            System.Array.Clear(killFeedUntil, 0, killFeedUntil.Length);
+            deathIdCursor = 0;
             if (camera != null)
             {
                 camera.clearFlags = CameraClearFlags.SolidColor;
@@ -318,6 +330,7 @@ namespace Shooter.Presentation.Session
             {
                 combatLease = session.TryLeaseCombatEvents();
                 if (combatLease != null) combatEvents = combatLease.Events;
+                if (shellOwned && combatEvents != null) ObserveEliminations(combatEvents);
 
                 if (actors != null)
                 {
@@ -551,32 +564,28 @@ namespace Shooter.Presentation.Session
                 }
                 // Read the current life again for definite assignment; never retain an authority-owned object.
                 if (!session.Lifecycle!.TryGetActorState(session.HumanEntityId, out var human)) return;
-                float y = a.yMax - 82;
-                TacticalUi.Fill(new Rect(a.x, y, 182, 82), TacticalUi.Background);
-                combatUi.Label(new Rect(a.x + 14, y + 10, 154, 18), "HEALTH / OPERATOR", 12, TacticalUi.Muted);
-                Color healthColor = human.Health <= 25 ? TacticalUi.Enemy : TacticalUi.Text;
-                combatUi.Label(new Rect(a.x + 14, y + 28, 140, 43), human.Health.ToString("000"), 34, healthColor);
-                TacticalUi.Fill(new Rect(a.x + 14, y + 73, 154, 3), TacticalUi.Raised);
-                TacticalUi.Fill(new Rect(a.x + 14, y + 73, 154 * Mathf.Clamp01(human.Health / 100f), 3), healthColor);
-                float x = a.xMax - 258;
-                TacticalUi.Fill(new Rect(x, y - 10, 258, 92), TacticalUi.Background);
-                string weapon = human.ActiveWeaponSlot == 0 ? "01 / ASSAULT RIFLE" : "02 / SIDEARM";
-                combatUi.Label(new Rect(x + 14, y, 230, 20), weapon, 14, TacticalUi.Muted);
-                combatUi.Label(new Rect(x + 14, y + 24, 106, 44), human.Magazine.ToString("00"), 38, human.Magazine == 0 ? TacticalUi.Enemy : TacticalUi.Text);
-                combatUi.Label(new Rect(x + 126, y + 37, 118, 32), "/ " + human.Reserve.ToString("000"), 22, TacticalUi.Muted);
+                DrawTacticalMap(a, human, snap);
+                float x = a.xMax - 174, y = a.yMax - 76;
+                TacticalUi.Fill(new Rect(x, y, 174, 76), new Color(.025f, .04f, .05f, .62f));
+                string weapon = human.ActiveWeaponSlot == 0 ? "RIFLE / 01" : "SIDEARM / 02";
+                combatUi.Label(new Rect(x + 12, y + 8, 150, 18), weapon, 12, TacticalUi.Muted, TextAnchor.UpperRight);
+                combatUi.Label(new Rect(x + 12, y + 26, 78, 42), human.Magazine.ToString("00"), 30, human.Magazine == 0 ? TacticalUi.Enemy : TacticalUi.Text, TextAnchor.MiddleRight);
+                combatUi.Label(new Rect(x + 98, y + 37, 64, 28), "/ " + human.Reserve.ToString("000"), 18, TacticalUi.Muted, TextAnchor.MiddleRight);
                 bool reloading = actors != null && actors.Actions.IsReloading(session.HumanEntityId);
                 if (reloading)
                 {
                     float phase = actors!.Actions.ReloadPhaseAtTick(session.HumanEntityId, snap?.CompletedSimulationTick ?? 0);
-                    combatUi.Label(new Rect(x + 14, y - 42, 230, 26), "RELOADING", 18, TacticalUi.Accent, TextAnchor.MiddleRight);
-                    TacticalUi.Fill(new Rect(x + 14, y + 74, 230, 3), TacticalUi.Raised);
-                    TacticalUi.Fill(new Rect(x + 14, y + 74, 230 * Mathf.Clamp01(phase), 3), TacticalUi.Accent);
+                    combatUi.Label(new Rect(x, y - 32, 174, 26), "RELOADING", 14, TacticalUi.Accent, TextAnchor.MiddleRight);
+                    TacticalUi.Fill(new Rect(x + 12, y + 70, 150, 2), TacticalUi.Raised);
+                    TacticalUi.Fill(new Rect(x + 12, y + 70, 150 * Mathf.Clamp01(phase), 2), TacticalUi.Accent);
                 }
                 else if (human.Magazine == 0)
                 {
                     string reload = input.Bindings.TryGetControl("Reload", out string control) ? TacticalUi.ControlLabel(control) : "R";
-                    combatUi.Label(new Rect(x, y - 42, 258, 26), human.Reserve > 0 ? reload + "  RELOAD" : "OUT OF AMMUNITION", 18, TacticalUi.Accent, TextAnchor.MiddleRight);
+                    combatUi.Label(new Rect(x - 30, y - 30, 204, 26), human.Reserve > 0 ? reload + "  RELOAD" : "OUT OF AMMUNITION", 14, TacticalUi.Accent, TextAnchor.MiddleRight);
                 }
+                DrawCompass(a, human.AimYaw);
+                DrawKillFeed(a);
                 // Analytic center reticle. ADS uses the physical weapon sight instead.
                 if (!input.AimHeld)
                 {
@@ -588,6 +597,121 @@ namespace Shooter.Presentation.Session
                 }
             }
             finally { combatUi.End(); }
+        }
+
+        private void DrawTacticalMap(Rect safe, ActorLifecycleState human, MatchViewSnapshot? snapshot)
+        {
+            const float size = 122, range = 42;
+            Rect map = new Rect(safe.x, safe.yMax - size, size, size);
+            GUI.BeginGroup(map);
+            try
+            {
+                TacticalUi.Fill(new Rect(0, 0, size, size), new Color(.025f, .065f, .08f, .88f));
+                for (int i = 1; i < 4; i++)
+                {
+                    TacticalUi.Fill(new Rect(i * size / 4, 0, 1, size), new Color(.45f, .65f, .7f, .12f));
+                    TacticalUi.Fill(new Rect(0, i * size / 4, size, 1), new Color(.45f, .65f, .7f, .12f));
+                }
+                float scale = size / (range * 2);
+                for (int i = 0; i < hudBoxes.Count; i++)
+                {
+                    var box = hudBoxes[i];
+                    if (!box.Gameplay || box.Size.Y < .3f) continue;
+                    float cx = size * .5f + (box.Center.X - human.Feet.X) * scale;
+                    float cy = size * .5f - (box.Center.Z - human.Feet.Z) * scale;
+                    Rect r = new Rect(cx - box.Size.X * scale * .5f, cy - box.Size.Z * scale * .5f, box.Size.X * scale, box.Size.Z * scale);
+                    if (r.xMax < 0 || r.yMax < 0 || r.x > size || r.y > size) continue;
+                    TacticalUi.Fill(r, new Color(.38f, .49f, .51f, .7f));
+                }
+                if (snapshot != null && session?.Lifecycle != null)
+                    for (int i = 0; i < snapshot.Participants.Count; i++)
+                    {
+                        var participant = snapshot.Participants[i];
+                        if (!participant.Alive || participant.Team != human.Team || participant.IsHuman) continue;
+                        if (!session.Lifecycle.TryGetActorState(participant.EntityId, out var ally)) continue;
+                        float px = size * .5f + (ally.Feet.X - human.Feet.X) * scale;
+                        float py = size * .5f - (ally.Feet.Z - human.Feet.Z) * scale;
+                        if (px > 3 && px < size - 3 && py > 3 && py < size - 3)
+                            TacticalUi.Fill(new Rect(px - 2, py - 2, 4, 4), TacticalUi.Ally);
+                    }
+                float center = size * .5f;
+                Vector2 forward = new Vector2(Mathf.Sin(human.AimYaw), -Mathf.Cos(human.AimYaw));
+                Vector2 side = new Vector2(-forward.y, forward.x);
+                Vector2 tip = new Vector2(center, center) + forward * 7;
+                TacticalUi.Line(tip, new Vector2(center, center) - forward * 4 + side * 4, TacticalUi.Text, 2);
+                TacticalUi.Line(tip, new Vector2(center, center) - forward * 4 - side * 4, TacticalUi.Text, 2);
+                combatUi.Label(new Rect(size - 19, 4, 16, 18), "N", 12, TacticalUi.Text, TextAnchor.UpperCenter);
+            }
+            finally { GUI.EndGroup(); }
+            float x = map.xMax + 12, y = safe.yMax - 150;
+            combatUi.Label(new Rect(x, y, 136, 20), "YOUR SQUAD", 12, TacticalUi.Ally);
+            int row = 0;
+            if (snapshot != null)
+                for (int i = 0; i < snapshot.Participants.Count; i++)
+                {
+                    var participant = snapshot.Participants[i];
+                    if (participant.Team != human.Team || participant.IsHuman) continue;
+                    string name = participant.DisplayName.Length > 14 ? participant.DisplayName.Substring(0, 13) + "…" : participant.DisplayName;
+                    combatUi.Label(new Rect(x, y + 20 + row * 18, 140, 18), (participant.Alive ? "+  " : "-  ") + name, 12, participant.Alive ? TacticalUi.Text : TacticalUi.Muted);
+                    row++;
+                }
+            Color health = human.Health <= 25 ? TacticalUi.Enemy : TacticalUi.Text;
+            combatUi.Label(new Rect(x, safe.yMax - 38, 66, 36), human.Health.ToString(), 28, health);
+            combatUi.Label(new Rect(x + 65, safe.yMax - 24, 58, 24), "HEALTH", 12, TacticalUi.Muted);
+            TacticalUi.Fill(new Rect(x, safe.yMax - 2, 124, 2), new Color(.05f, .08f, .09f, .7f));
+            TacticalUi.Fill(new Rect(x, safe.yMax - 2, 124 * Mathf.Clamp01(human.Health / 100f), 2), health);
+        }
+
+        private void DrawCompass(Rect safe, float yaw)
+        {
+            float center = combatUi.Width * .5f;
+            float degrees = Mathf.Repeat(yaw * Mathf.Rad2Deg, 360);
+            int nearest = Mathf.RoundToInt(degrees / 30) * 30;
+            for (int i = -2; i <= 2; i++)
+            {
+                int bearing = ((nearest + i * 30) % 360 + 360) % 360;
+                float offset = Mathf.DeltaAngle(degrees, bearing) * 1.5f;
+                string label = bearing == 0 ? "N" : bearing == 90 ? "E" : bearing == 180 ? "S" : bearing == 270 ? "W" : bearing.ToString();
+                Rect r = new Rect(center + offset - 20, safe.y, 40, 20);
+                TacticalUi.Fill(new Rect(r.x, r.y, r.width, r.height), new Color(.02f, .03f, .04f, .3f));
+                combatUi.Label(r, label, 12, TacticalUi.Text, TextAnchor.UpperCenter);
+            }
+        }
+
+        private void ObserveEliminations(IReadOnlyList<CombatEvent> events)
+        {
+            var snapshot = session?.TryAcquireSnapshot();
+            if (snapshot == null) return;
+            for (int i = 0; i < events.Count; i++)
+            {
+                var ev = events[i];
+                if (ev.Kind != CombatEventKind.Death) continue;
+                bool seen = false;
+                for (int j = 0; j < recentDeathIds.Length; j++) if (recentDeathIds[j].Equals(ev.Id)) { seen = true; break; }
+                if (seen) continue;
+                recentDeathIds[deathIdCursor++ % recentDeathIds.Length] = ev.Id;
+                string killer = "Operator", victim = "Operator";
+                for (int j = 0; j < snapshot.Participants.Count; j++)
+                {
+                    var p = snapshot.Participants[j];
+                    if (p.EntityId.Equals(ev.Instigator)) killer = p.IsHuman ? "YOU" : p.DisplayName;
+                    if (p.EntityId.Equals(ev.Target)) victim = p.IsHuman ? "YOU" : p.DisplayName;
+                }
+                for (int j = killFeed.Length - 1; j > 0; j--) { killFeed[j] = killFeed[j - 1]; killFeedUntil[j] = killFeedUntil[j - 1]; }
+                killFeed[0] = killer + "  >  " + victim;
+                killFeedUntil[0] = Time.unscaledTime + 6;
+            }
+        }
+
+        private void DrawKillFeed(Rect safe)
+        {
+            for (int i = 0; i < killFeed.Length; i++)
+            {
+                if (killFeedUntil[i] <= Time.unscaledTime) continue;
+                Rect r = new Rect(safe.xMax - 230, safe.y + i * 24, 230, 22);
+                TacticalUi.Fill(r, new Color(.02f, .035f, .04f, .55f));
+                combatUi.Label(new Rect(r.x + 6, r.y, r.width - 12, r.height), killFeed[i], 12, TacticalUi.Text, TextAnchor.MiddleRight);
+            }
         }
 
         private static void ReticleStroke(Rect rect)
@@ -609,7 +733,7 @@ namespace Shooter.Presentation.Session
             if (subtitlesEnabled && subtitleRemaining > 0f && !string.IsNullOrEmpty(subtitleText))
             {
                 GUI.Label(
-                    new Rect(Screen.width * 0.5f - 160f, Screen.height - 120f, 320f, 28f),
+                    new Rect(Screen.width * 0.5f - 160f, Screen.height - 178f * hud.Settings.UiScale, 320f, 28f),
                     subtitleText,
                     GuiStyle());
             }
