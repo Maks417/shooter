@@ -269,6 +269,10 @@ namespace Shooter.Game.Session
                 measurement.LeaseAcquires++;
                 lifecycle.SyncFromSnapshot(lease.Snapshot);
             }
+            // Position rescue runs after the motor step and snapshot sync (so the sync cannot overwrite the new feet
+            // with the pre-rescue snapshot) and before bot planning / spawn-safety checks of the next tick, which
+            // therefore see the relocated feet. Actors killed this tick are Alive=false after the sync and skipped.
+            RescueEmbeddedActors(snap, lifecycle, harness, mapRuntime);
             deathsThisTick.Clear();
             using (var events = harness.AcquireEvents())
             {
@@ -405,6 +409,47 @@ namespace Shooter.Game.Session
             return roster;
         }
 
+        private readonly Dictionary<uint, uint> rescueSlotLastUsed = new Dictionary<uint, uint>();
+        private readonly List<EntityId> rescueLiving = new List<EntityId>(GameContractVersion.MaxParticipants);
+        private readonly List<Float3> rescueOccupancy = new List<Float3>(1);
+
+        /// <summary>
+        /// Relocates living actors whose motor reports OverlapUnresolved to a valid same-team spawn chosen by
+        /// SpawnSafetyPolicy (deterministic, participant order). No death, score, LifeId, EntityId, health or ammo
+        /// change. If no safe slot exists the actor stays put and is retried next tick.
+        /// </summary>
+        private void RescueEmbeddedActors(
+            MatchViewSnapshot snap, HarnessActorLifecycle actorLifecycle, CombatHarnessSimulation sim, IMapRuntime runtime)
+        {
+            if (gameplayDefinition == null) return;
+            for (int i = 0; i < snap.Participants.Count; i++)
+            {
+                var p = snap.Participants[i];
+                if (!p.Alive) continue;
+                if (!sim.TryGetMotorState(p.EntityId, out var motorState) || !motorState.OverlapUnresolved) continue;
+                if (!actorLifecycle.TryGetActorState(p.EntityId, out var state) || !state.Alive) continue;
+
+                rescueLiving.Clear();
+                for (int j = 0; j < snap.Participants.Count; j++)
+                    if (j != i && snap.Participants[j].Alive) rescueLiving.Add(snap.Participants[j].EntityId);
+                // Block slots next to the embedded position so the actor is not put back where it was.
+                rescueOccupancy.Clear();
+                rescueOccupancy.Add(motorState.Feet);
+                if (!SpawnSafetyPolicy.TryPick(
+                        p.Team, gameplayDefinition.SpawnSlots, runtime, actorLifecycle, rescueLiving,
+                        rescueSlotLastUsed, rescueOccupancy, out var slot))
+                    continue;
+                if (!actorLifecycle.RelocateLife(p.EntityId, slot.Position, slot.Yaw)) continue;
+                rescueSlotLastUsed[slot.SlotId] = snap.ActiveTicksElapsed;
+                if (!p.IsHuman)
+                {
+                    // Drop stale path/target state and restart the bot command sequence with the harness epoch.
+                    actorLifecycle.ResetCommandEpoch(p.EntityId);
+                    bots?.TryReplaceLife(p.EntityId, p.EntityId, slot.Position, slot.Yaw, p.Team);
+                }
+            }
+        }
+
         private bool RebindReplacements(MatchViewSnapshot before, MatchViewSnapshot after)
         {
             bool changed = false;
@@ -455,6 +500,7 @@ namespace Shooter.Game.Session
 
         private void ReleaseRuntime()
         {
+            rescueSlotLastUsed.Clear();
             CancelBotPlanner();
             // Unload the inner runtime; counting decorator forwards Unload.
             mapRuntime?.Unload();

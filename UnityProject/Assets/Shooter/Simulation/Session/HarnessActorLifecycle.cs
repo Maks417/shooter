@@ -96,6 +96,20 @@ namespace Shooter.Simulation.Session
             stances[entity.Value] = Stance.Standing;
         }
 
+        /// <summary>
+        /// Position rescue (not a respawn): moves a living actor to <paramref name="feet"/> keeping entity, life,
+        /// health and ammo. Returns false for unknown or dead actors.
+        /// </summary>
+        public bool RelocateLife(EntityId entity, Float3 feet, float yaw)
+        {
+            if (!states.TryGetValue(entity.Value, out var prev) || !prev.Alive) return false;
+            if (!harness.RelocateActor(entity, feet, yaw)) return false;
+            states[entity.Value] = new ActorLifecycleState(
+                entity, prev.Team, true, prev.Health, feet, yaw, prev.AimPitch, prev.ActiveWeaponSlot, prev.Magazine, prev.Reserve);
+            stances[entity.Value] = Stance.Standing;
+            return true;
+        }
+
         public bool TryGetActorState(EntityId entity, out ActorLifecycleState state) => states.TryGetValue(entity.Value, out state);
 
         /// <summary>Last synchronized authoritative stance (Standing until the first snapshot sync).</summary>
