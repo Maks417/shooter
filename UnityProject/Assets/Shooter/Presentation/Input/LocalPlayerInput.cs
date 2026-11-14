@@ -92,6 +92,7 @@ namespace Shooter.Presentation.Input
         private int fireBufferTicks;
         /// <summary>Longer than a pistol cooldown (10 ticks) would double-fire, so keep this below it.</summary>
         public const int FirePressBufferTicks = 8;
+        private const byte PistolSlot = 1;
         private bool gameplayEnabled;
         private bool blockFireUntilRelease = true;
         private float moveX;
@@ -256,7 +257,9 @@ namespace Shooter.Presentation.Input
             bool slide = pendingSlide;
             var buttons = InputButtons.None;
             if (fireHeld) buttons |= InputButtons.FireHeld;
-            if (pendingFire) fireBufferTicks = FirePressBufferTicks;
+            // Buffer only the semi-automatic pistol slot: on the automatic rifle a buffered edge
+            // after a quick tap would read as a fresh press once fire is released (double shot).
+            if (pendingFire) fireBufferTicks = selectedSlot == PistolSlot ? FirePressBufferTicks : 1;
             if (fireBufferTicks > 0) { buttons |= InputButtons.FirePressed; fireBufferTicks--; }
             if (pendingReload) buttons |= InputButtons.ReloadPressed;
             if (pendingJump) buttons |= InputButtons.JumpPressed;
