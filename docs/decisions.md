@@ -459,3 +459,15 @@ Decision: normal play never installs an allocation hook (`FoundationEntry` insta
 Provenance: `Tools/provenance-allowlist.json` `namedNativeSources` lists exactly this path and its SHA256; `Test-SourceProvenance.ps1` accepts only listed paths with matching hashes and no extension wildcard. Any edit needs a deliberate hash update. This is code, not art.
 
 Validation (worktree, b701468): Client/Server builds, smoke, EditMode/PlayMode, Test-Measurement (injected allocation detected) PASS; one full TDM-5v5-v1 Low run completed 128,165 frames / 10,800 ticks with allocation counters available (controls 4426/4426/4128) and no APPCRASH. One earlier identical run hit the 330 s wrapper timeout after VALIDATED without a capture and was not reproduced; watch for it in reference captures. Revalidate the `il2cpp_profiler_*` signatures and rerun the controls on any editor migration. Never restore the managed hook.
+
+## ADR-043 — Accepted: two-stage native navigation publication
+
+Date 2026-11-14. Amends the T067 C01 native publication path.
+
+Context: the first native path published whole map packages inside the Unity Editor. Mono's floating-point rounding differs from .NET/IL2CPP, so `skeleton-soldier.bin` differed in the lowest bit of 12 floats; the IL2CPP player's skeleton identity check rejected every native package and no match could start (all twelve reference captures and both soaks aborted on `075c548`).
+
+Decision: Mono never generates map content. `Compile-GameContent.ps1 -Native` first runs the pure .NET MapContent publisher; `ShooterBuild.CompileNativeGameContent` then only reads the .NET-published `collision-gameplay.bin` per map, runs the pinned native NavMesh bake plus a byte-identical repeat bake, and writes `<map>.nvb1` with a `<map>.nav-stage.json` descriptor (provenance, tool identity, collision SHA, input key, bake SHA). MapContent republishes with those bakes injected through `NavBakeStage` into `Artifacts/map-packages-native`. `NavBakeStage.InputKey` binds each bake to the raw float bits of the gameplay boxes and nav parameters; any mismatched, malformed, non-native or unknown-map entry fails publication, never falling back to software.
+
+Guard: the wrapper requires each native package to equal its pure .NET counterpart byte-for-byte except `navigation-gameplay.bin` and the navigation hash/dependency entries in `package.json`, requires the native nav hash to differ from the software grid, and requires stage collision SHA and editor identity to match. Release checks start a real match on both maps against native content before packaging.
+
+Validation: all `skeleton-soldier.bin` copies identical to the pure cache; native nav hashes unchanged (compound `07560a8d…`, depot `802dcfbb…`); diagnostic 5v5 matches started on both maps from native content; Generation 329, Maps 29, EditMode/PlayMode and provenance PASS. No lock, schema or format version changed.
