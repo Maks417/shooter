@@ -22,6 +22,9 @@ namespace Shooter.World
     public sealed class CompoundMapRuntime : IMapRuntime, IDisposable
     {
         private readonly List<GameObject> solids = new List<GameObject>();
+
+        /// <summary>Diagnostics only: allow the packaged NVB1 graph to answer when the native NavMesh query fails. Off in product composition.</summary>
+        public bool AllowPackagedPathFallback { get; set; }
         private readonly Transform? parent;
         private readonly VerifiedMapPackageStore? packageStore;
         private readonly Func<MapId, ContentId>? gameplayRootResolver;
@@ -123,10 +126,10 @@ namespace Shooter.World
                     LocateActor,
                     (a, b, corners) =>
                     {
-                        if (corners == null) return false;
-                        if (!install.TrySamplePosition(a, settings.RequiredClearance * 2f, out var snappedA)) return false;
-                        if (!install.TrySamplePosition(b, settings.RequiredClearance * 2f, out var snappedB)) return false;
-                        return install.TryCalculatePath(snappedA, snappedB, corners);
+                        if (corners == null) return NavPathOutcome.Failed;
+                        if (!install.TrySamplePosition(a, settings.RequiredClearance * 2f, out var snappedA)) return NavPathOutcome.Failed;
+                        if (!install.TrySamplePosition(b, settings.RequiredClearance * 2f, out var snappedB)) return NavPathOutcome.Failed;
+                        return install.CalculatePath(snappedA, snappedB, corners, AllowPackagedPathFallback);
                     });
 
                 return Task.FromResult(GameOperationResult.Ok);

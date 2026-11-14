@@ -5,6 +5,12 @@ using Shooter.Contracts;
 
 namespace Shooter.World.Navigation
 {
+    /// <summary>
+    /// Truthful solver outcome (non-contract). FallbackComplete means a complete path came from a
+    /// non-native fallback graph; it is counted separately and never reported as native Complete by diagnostics.
+    /// </summary>
+    public enum NavPathOutcome { Failed = 0, Complete = 1, Partial = 2, FallbackComplete = 3 }
+
     /// <summary>Pure revisioned path adapter used by AI tests; Unity NavMesh adapter remains separate.</summary>
     public sealed class RevisionedPathAdapter : INavigation
     {
@@ -17,7 +23,7 @@ namespace Shooter.World.Navigation
 
         private readonly Dictionary<NavTicketId, Request> requests = new Dictionary<NavTicketId, Request>();
         private readonly Func<EntityId, Float3?> locate;
-        private readonly Func<Float3, Float3, List<Float3>?, bool> solve;
+        private readonly Func<Float3, Float3, List<Float3>?, NavPathOutcome> solve;
         private readonly int owner = System.Threading.Thread.CurrentThread.ManagedThreadId;
         private ulong next;
 
@@ -25,12 +31,25 @@ namespace Shooter.World.Navigation
         public int PendingCount => requests.Count;
         public int PathsSolved { get; private set; }
         public int StaleRejects { get; private set; }
+        public int PartialPathCount { get; private set; }
+        public int FallbackPathCount { get; private set; }
 
         public RevisionedPathAdapter(uint revision, Func<EntityId, Float3?> locate, Func<Float3, Float3, List<Float3>?, bool> solve)
+            : this(revision, locate, Wrap(solve))
+        {
+        }
+
+        public RevisionedPathAdapter(uint revision, Func<EntityId, Float3?> locate, Func<Float3, Float3, List<Float3>?, NavPathOutcome> solve)
         {
             Revision = revision;
             this.locate = locate ?? throw new ArgumentNullException(nameof(locate));
             this.solve = solve ?? throw new ArgumentNullException(nameof(solve));
+        }
+
+        private static Func<Float3, Float3, List<Float3>?, NavPathOutcome> Wrap(Func<Float3, Float3, List<Float3>?, bool> solve)
+        {
+            if (solve == null) throw new ArgumentNullException(nameof(solve));
+            return (a, b, c) => solve(a, b, c) ? NavPathOutcome.Complete : NavPathOutcome.Failed;
         }
 
         public void SetRevision(uint revision)
@@ -84,12 +103,19 @@ namespace Shooter.World.Navigation
             Float3? origin = locate(ticket.Actor);
             if (!origin.HasValue) return new PathResult(PathStatus.Failed, 0, 0, ErrorCode.MissingContent);
             var corners = new List<Float3>();
-            if (!solve(origin.Value, request.Destination, corners) || corners.Count == 0)
+            var outcome = solve(origin.Value, request.Destination, corners);
+            if (outcome == NavPathOutcome.Failed || corners.Count == 0)
                 return new PathResult(PathStatus.Failed, 0, 0, ErrorCode.MissingContent);
             if (corners.Count > callerOwned.Capacity)
                 return new PathResult(PathStatus.Failed, 0, corners.Count, ErrorCode.LimitExceeded);
             for (int i = 0; i < corners.Count; i++) callerOwned[i] = corners[i];
             PathsSolved++;
+            if (outcome == NavPathOutcome.FallbackComplete) FallbackPathCount++;
+            if (outcome == NavPathOutcome.Partial)
+            {
+                PartialPathCount++;
+                return new PathResult(PathStatus.Partial, corners.Count, corners.Count, ErrorCode.None);
+            }
             return new PathResult(PathStatus.Complete, corners.Count, corners.Count, ErrorCode.None);
         }
     }
