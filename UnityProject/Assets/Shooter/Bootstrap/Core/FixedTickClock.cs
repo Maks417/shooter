@@ -14,6 +14,15 @@ namespace Shooter.Bootstrap
         private readonly bool server;
         private double excessiveDebtDuration;
         public FixedTickClock(bool server) { this.server = server; }
+        /// <summary>The interval crossing a suspended/loading boundary is not active play time.</summary>
+        public double SampleActiveElapsed(double elapsedSeconds, bool running)
+        {
+            if (double.IsNaN(elapsedSeconds) || double.IsInfinity(elapsedSeconds) || elapsedSeconds < 0)
+                throw new ArgumentOutOfRangeException(nameof(elapsedSeconds));
+            bool resumed = Suspended && running;
+            SetSuspended(!running);
+            return running && !resumed ? elapsedSeconds : 0;
+        }
         /// <summary>
         /// Suspended wall time is deliberately discarded. Existing fractional debt and the next
         /// tick identity are retained so resume cannot reorder or catch up simulation ticks.

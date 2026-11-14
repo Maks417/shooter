@@ -72,6 +72,27 @@ namespace Shooter.Contracts.Tests
             Assert.False(clock.Overloaded);
         }
         [Fact]
+        public void LoadingToPlayRebasesWallTimeButActiveHitchesStillOverload()
+        {
+            var clock = new FixedTickClock(false); var ticks = new List<uint>();
+            clock.SetSuspended(true);
+            clock.Advance(clock.SampleActiveElapsed(10, false), ticks.Add);
+            clock.Advance(clock.SampleActiveElapsed(3.5, true), ticks.Add);
+            Assert.Empty(ticks);
+            Assert.False(clock.Overloaded);
+            clock.Advance(clock.SampleActiveElapsed(1.5 / 60, true), ticks.Add);
+            Assert.Equal(new uint[] { 0 }, ticks);
+            double debt = clock.DebtSeconds;
+            clock.Advance(clock.SampleActiveElapsed(20, false), ticks.Add);
+            clock.Advance(clock.SampleActiveElapsed(20, true), ticks.Add);
+            Assert.Equal(debt, clock.DebtSeconds, 12);
+            clock.Advance(clock.SampleActiveElapsed(.5 / 60, true), ticks.Add);
+            Assert.Equal(new uint[] { 0, 1 }, ticks);
+            clock.Advance(clock.SampleActiveElapsed(.2, true), ticks.Add);
+            Assert.True(clock.Overloaded);
+            Assert.Equal(4, clock.LastAdvanceTicks);
+        }
+        [Fact]
         public void EmptyAuthorityBoundsPublicationAndAllowsRetryWithoutOverwritingHeldLeases()
         {
             var simulation = new FoundationSimulation(); var snapshots = new List<SnapshotLease>(); var events = new List<EventLease>();

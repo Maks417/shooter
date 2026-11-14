@@ -332,7 +332,7 @@ namespace Shooter.Bootstrap
                 long now = monotonic.ElapsedTicks;
                 LastElapsedSeconds = (now - previousTimestamp) / (double)Stopwatch.Frequency;
                 bool canAdvance = diagnosticMode || CanAdvanceProduct();
-                clock.SetSuspended(!canAdvance);
+                LastElapsedSeconds = clock.SampleActiveElapsed(LastElapsedSeconds, canAdvance);
                 if (!canAdvance)
                 {
                     LastElapsedSeconds = 0;
