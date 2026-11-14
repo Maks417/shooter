@@ -308,26 +308,41 @@ namespace Shooter.Presentation.Session
             }
             else input.CaptureFrame(false);
 
-            if (actors != null)
+            IReadOnlyList<CombatEvent>? combatEvents = null;
+            EventLease? combatLease = null;
+            try
             {
-                var snap = session.TryAcquireSnapshot();
-                actors.SetReviewContext(boundMapId, QualitySettings.names[QualitySettings.GetQualityLevel()], session.CompletedTick);
-                actors.Sync(
-                    snap,
-                    session.Lifecycle,
-                    i =>
-                    {
-                        session.TryGetCosmeticCorpse(i, out var corpse);
-                        return corpse;
-                    },
-                    session.CosmeticCorpseCount,
-                    session.HumanEntityId,
-                    aimHeld,
-                    Time.unscaledDeltaTime);
-                visualReview?.SetContext(boundMapId, QualitySettings.names[QualitySettings.GetQualityLevel()], session.CompletedTick);
+                combatLease = session.TryLeaseCombatEvents();
+                if (combatLease != null) combatEvents = combatLease.Events;
+
+                if (actors != null)
+                {
+                    var snap = session.TryAcquireSnapshot();
+                    actors.SetReviewContext(boundMapId, QualitySettings.names[QualitySettings.GetQualityLevel()], session.CompletedTick);
+                    actors.Sync(
+                        snap,
+                        session.Lifecycle,
+                        i =>
+                        {
+                            session.TryGetCosmeticCorpse(i, out var corpse);
+                            return corpse;
+                        },
+                        session.CosmeticCorpseCount,
+                        session.HumanEntityId,
+                        aimHeld,
+                        Time.unscaledDeltaTime,
+                        combatEvents,
+                        session.CompletedTick);
+                    visualReview?.SetContext(boundMapId, QualitySettings.names[QualitySettings.GetQualityLevel()], session.CompletedTick);
+                }
+
+                PumpProductAudio(hasListener ? listenerFeet : default, combatEvents);
+            }
+            finally
+            {
+                combatLease?.Dispose();
             }
 
-            PumpProductAudio(hasListener ? listenerFeet : default);
             TickAccessibilityPresentation(Time.unscaledDeltaTime);
         }
 
@@ -374,7 +389,7 @@ namespace Shooter.Presentation.Session
             subtitleRemaining = 1.6f;
         }
 
-        private void PumpProductAudio(Float3 listenerFeet)
+        private void PumpProductAudio(Float3 listenerFeet, IReadOnlyList<CombatEvent>? combatEvents)
         {
             if (session == null) return;
             if (session.Phase == GameMatchPhase.Stopped || session.Phase == GameMatchPhase.Loading)
@@ -397,18 +412,15 @@ namespace Shooter.Presentation.Session
                 audioOutput?.ArmOutput();
             }
 
-            using (var lease = session.TryLeaseCombatEvents())
+            if (combatEvents != null)
             {
-                if (lease != null)
+                audio.ConsumeCombatEvents(combatEvents, listenerFeet);
+                for (int i = 0; i < combatEvents.Count; i++)
                 {
-                    audio.ConsumeCombatEvents(lease.Events, listenerFeet);
-                    for (int i = 0; i < lease.Events.Count; i++)
-                    {
-                        var ev = lease.Events[i];
-                        string key = ev.Id.AuthoritySessionId + ":" + ev.Id.Tick + ":" + ev.Id.EntityId + ":" + ev.Id.Ordinal;
-                        if (!accessibilityCueKeys.Add(key)) continue;
-                        NotifyAccessibilityCue(ev.Kind);
-                    }
+                    var ev = combatEvents[i];
+                    string key = ev.Id.AuthoritySessionId + ":" + ev.Id.Tick + ":" + ev.Id.EntityId + ":" + ev.Id.Ordinal;
+                    if (!accessibilityCueKeys.Add(key)) continue;
+                    NotifyAccessibilityCue(ev.Kind);
                 }
             }
 

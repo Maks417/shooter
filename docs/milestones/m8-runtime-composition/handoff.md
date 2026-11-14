@@ -62,6 +62,19 @@ T056 binds read-only product presentation to verified map-package solids and aut
 
 FIX05 software wiring is implemented. Full FIX05 remains **Pending** until source-matched product-player captures on each map show terrain/cover, team-readable actors, weapons and authority-bound motion, and until player stale-view cycles are evidenced. T059 owns functional shell/menu start-stop; T061 owns audible device path; T062 owns P05 visual defect acceptance.
 
+## T068 / FIX05 authority-driven weapon and action views — 2026-11-14
+
+T068 finishes presentation from real authority without Game-v1 contract changes. `ProductAuthorityActionView` consumes `ActorLifecycleState.ActiveWeaponSlot` plus combat `ReloadStarted`/`ReloadCompleted`/`ShotAccepted`/`Death` events (`ActionPayload` start/end ticks for slot-correct duration). `ProductActorPresentation` switches packaged rifle/pistol meshes (held + local FP), drives reload/fire from those events, and never infers reload from magazine decrease. `ProductSessionView` leases combat events once per frame for actors, audio and accessibility cues. SoldierMotion remains the Generation rifle-socket spike; pistol mesh is re-anchored at the right hand. P05 generator parameters are unchanged.
+
+| Check | Result | Evidence / limitation |
+|---|---|---|
+| Pure View suite (`FullyQualifiedName~View`) | PASS — 18/18, zero skipped | Includes 8 `ProductAuthorityActionViewTests` (slot, shot≠reload, rifle/pistol durations, life replacement, FP filter) |
+| Pure Fx regression | PASS — 10/10 | Unchanged audio path with shared event lease |
+| Unity EditMode authority presentation | NotRun this handoff | `ProductViewBindingTests.ProductActorPresentation_ConsumesActiveWeaponSlotAndReloadEventsNotAmmoDrop` added; locked editor run Pending |
+| Source-matched player captures / FIX05 profile lifecycle load/traversal | **Pending** | Honest Pending; no player captures claimed |
+
+T068 software closes B06. Full FIX05 player evidence remains **Pending**.
+
 ## T054 / FIX03 pause and buffered-input repair — 2026-11-14
 
 T054 makes the Bootstrap fixed-tick clock explicitly suspendable. Product pause, non-playing phases and client focus loss stop calls into `OfflineGameSession.Step`; suspended wall time is discarded while the fractional pre-pause debt and next tick identity are retained. Focus loss pauses only a running product session, focus return resumes only that focus-owned pause, and both transitions reset the wall-clock baseline. Diagnostic composition and its overload behavior remain separate and unchanged.

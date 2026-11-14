@@ -15,25 +15,28 @@ namespace Shooter.Presentation.Rig
 {
     /// <summary>
     /// Authority-bound procedural soldiers/weapons for the product client.
-    /// Reuses SoldierGeometry/WeaponGeometry/SoldierMotion; never launches galleries or mutates authority.
+    /// Consumes ActiveWeaponSlot and combat Reload/Shot events; never infers reload from ammo drop.
     /// </summary>
     public sealed class ProductActorPresentation : MonoBehaviour
     {
+        private const int RightHandJoint = 14;
+
         private sealed class Avatar
         {
             public EntityId EntityId;
             public byte Team;
             public bool Corpse;
+            public byte WeaponSlot;
             public Transform Root = null!;
             public Transform Weapon = null!;
             public Transform[] Bones = null!;
             public SkinnedMeshRenderer Body = null!;
             public MeshRenderer WeaponRenderer = null!;
+            public MeshFilter WeaponFilter = null!;
             public SoldierMotion Motion = null!;
             public Float3 PreviousFeet;
             public double Distance;
             public ushort PreviousHealth = 100;
-            public ushort PreviousMagazine = 30;
             public float ReloadPhase = -1f;
             public bool HasPrevious;
             // T062 review metrics (read-only presentation; does not change authority or generator sources).
@@ -59,6 +62,7 @@ namespace Shooter.Presentation.Rig
 
         private readonly Dictionary<ulong, Avatar> avatars = new Dictionary<ulong, Avatar>();
         private readonly ProductActorBinder binder = new ProductActorBinder();
+        private readonly ProductAuthorityActionView actions = new ProductAuthorityActionView();
         private readonly List<ActorLifecycleState> livingScratch = new List<ActorLifecycleState>(16);
         private readonly List<ActorLifecycleState> corpseScratch = new List<ActorLifecycleState>(4);
         private readonly List<EntityId> spawnScratch = new List<EntityId>(16);
@@ -79,7 +83,8 @@ namespace Shooter.Presentation.Rig
         private Camera? fpsCamera;
         private Transform? localWeapon;
         private readonly ProceduralViewModel localView = new ProceduralViewModel();
-        private Float3 sightSocketLocal;
+        private Float3 rifleSightSocketLocal;
+        private Float3 pistolSightSocketLocal;
         private bool ready;
         private bool visualsBound;
         private string reviewMapId = "";
@@ -118,6 +123,7 @@ namespace Shooter.Presentation.Rig
 
         public int HandleCount => avatars.Count;
         public ProductActorBinder Binder => binder;
+        public ProductAuthorityActionView Actions => actions;
         public bool VisualsBound => visualsBound;
 
         public static ProductActorPresentation Create(Transform parent, Camera fpsCamera)
@@ -141,7 +147,7 @@ namespace Shooter.Presentation.Rig
             pistolRecipe = WeaponRecipe.Parse(Encoding.ASCII.GetBytes(
                 "{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/pistol\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.0.1\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"pistol\"},\"dependencies\":[]}"));
 
-            localWeapon = new GameObject("Local FP rifle").transform;
+            localWeapon = new GameObject("Local FP weapon").transform;
             localWeapon.SetParent(fpsCamera!.transform, false);
             localWeapon.gameObject.AddComponent<MeshFilter>();
             localWeapon.gameObject.AddComponent<MeshRenderer>();
@@ -187,16 +193,8 @@ namespace Shooter.Presentation.Rig
                 rifleMesh = Own(Upload(MapVisualClosure.DecodeRifleLod(visuals, weaponLod), false));
                 pistolMesh = Own(Upload(MapVisualClosure.DecodePistolLod(visuals, weaponLod), false));
 
-                sightSocketLocal = default;
-                var sockets = WeaponGeometry.Sockets(rifleRecipe!);
-                for (int i = 0; i < sockets.Count; i++)
-                {
-                    if (sockets[i].Id == "sight-eye")
-                    {
-                        sightSocketLocal = sockets[i].Position;
-                        break;
-                    }
-                }
+                rifleSightSocketLocal = FindSocket(WeaponGeometry.Sockets(rifleRecipe!), "sight-eye");
+                pistolSightSocketLocal = FindSocket(WeaponGeometry.Sockets(pistolRecipe!), "sight-eye");
 
                 team1Palette = new[]
                 {
@@ -215,11 +213,7 @@ namespace Shooter.Presentation.Rig
                 rifleMetal = FromPackaged(shader, visuals, MapVisualClosure.WeaponMaterialPaths[0], "Product rifle metal", 0.15f, 0.35f);
                 riflePolymer = FromPackaged(shader, visuals, MapVisualClosure.WeaponMaterialPaths[1], "Product rifle polymer");
 
-                if (localWeapon != null)
-                {
-                    localWeapon.GetComponent<MeshFilter>().sharedMesh = rifleMesh;
-                    localWeapon.GetComponent<MeshRenderer>().sharedMaterials = new[] { rifleMetal, riflePolymer };
-                }
+                ApplyLocalWeaponVisual(ProductAuthorityActionView.RifleSlot);
 
                 visualsBound = true;
                 Debug.Log("SHOOTER_PRODUCT_ACTOR_VIEW packaged visuals ready profile=" + visuals.Profile +
@@ -238,6 +232,8 @@ namespace Shooter.Presentation.Rig
         public void ClearAll()
         {
             binder.Clear();
+            actions.Clear();
+            localView.ResetForLife();
             foreach (var pair in avatars)
                 if (pair.Value.Root != null) DestroyObject(pair.Value.Root.gameObject);
             avatars.Clear();
@@ -294,12 +290,17 @@ namespace Shooter.Presentation.Rig
             int corpseCount,
             EntityId humanEntity,
             bool aimHeld,
-            float dtSeconds)
+            float dtSeconds,
+            IReadOnlyList<CombatEvent>? combatEvents = null,
+            uint completedTick = 0)
         {
             if (!ready || !visualsBound) return;
             localHuman = humanEntity;
             livingScratch.Clear();
             corpseScratch.Clear();
+
+            if (combatEvents != null)
+                actions.ApplyEvents(combatEvents);
 
             if (snapshot != null && lifecycle != null)
             {
@@ -309,6 +310,7 @@ namespace Shooter.Presentation.Rig
                     if (!p.Alive || !p.EntityId.IsValid) continue;
                     if (!lifecycle.TryGetActorState(p.EntityId, out var state) || !state.Alive) continue;
                     livingScratch.Add(state);
+                    actions.SyncLifecycle(state.EntityId, state.ActiveWeaponSlot, state.Alive);
                 }
             }
 
@@ -317,7 +319,11 @@ namespace Shooter.Presentation.Rig
                 for (int i = 0; i < corpseCount && i < ProductActorBinder.MaxCosmeticCorpses; i++)
                 {
                     var state = tryCorpse(i);
-                    if (state.EntityId.IsValid) corpseScratch.Add(state);
+                    if (state.EntityId.IsValid)
+                    {
+                        corpseScratch.Add(state);
+                        actions.SyncLifecycle(state.EntityId, state.ActiveWeaponSlot, false);
+                    }
                 }
             }
 
@@ -337,6 +343,7 @@ namespace Shooter.Presentation.Rig
                 if (avatars.TryGetValue(corpseEnsureScratch[i].Value, out var existing))
                 {
                     existing.Corpse = true;
+                    actions.SyncLifecycle(existing.EntityId, existing.WeaponSlot, false);
                     continue;
                 }
                 ActorLifecycleState state = default;
@@ -361,7 +368,7 @@ namespace Shooter.Presentation.Rig
                         if (corpseScratch[i].EntityId.Equals(avatar.EntityId)) { state = corpseScratch[i]; found = true; break; }
                 }
                 if (!found) continue;
-                PoseAvatar(avatar, state, dtSeconds);
+                PoseAvatar(avatar, state, dtSeconds, completedTick);
             }
 
             bool showLocalWeapon = humanEntity.IsValid
@@ -371,8 +378,14 @@ namespace Shooter.Presentation.Rig
             if (localWeapon != null) localWeapon.gameObject.SetActive(showLocalWeapon);
             if (showLocalWeapon)
             {
-                // Cosmetic FP spring only; hit poses remain authority feet/aim.
-                localView.TickAim(aimHeld, dtSeconds);
+                byte slot = human.ActiveWeaponSlot;
+                actions.SyncLifecycle(human.EntityId, slot, true);
+                localView.SetActiveWeaponSlot(slot);
+                ApplyLocalWeaponVisual(slot);
+                if (combatEvents != null)
+                    localView.ConsumeEvents(combatEvents, human.EntityId, aimHeld, dtSeconds);
+                else
+                    localView.TickAim(aimHeld, dtSeconds);
                 var pose = localView.Pose;
                 localWeapon.localPosition = new Vector3(pose.RightHand.X, pose.RightHand.Y, pose.RightHand.Z);
                 localWeapon.localRotation = Quaternion.Euler(pose.RecoilPitch * Mathf.Rad2Deg, pose.RecoilYaw * Mathf.Rad2Deg, 0f);
@@ -400,19 +413,22 @@ namespace Shooter.Presentation.Rig
         private void CreateAvatar(ActorLifecycleState state, bool corpse)
         {
             if (avatars.ContainsKey(state.EntityId.Value)) return;
-            if (!visualsBound || rifleRecipe == null || bodyMesh == null || rifleMesh == null) return;
+            if (!visualsBound || rifleRecipe == null || bodyMesh == null || rifleMesh == null || pistolMesh == null) return;
 
+            byte slot = state.ActiveWeaponSlot;
+            actions.SyncLifecycle(state.EntityId, slot, state.Alive && !corpse);
             var avatar = new Avatar
             {
                 EntityId = state.EntityId,
                 Team = state.Team,
                 Corpse = corpse,
+                WeaponSlot = slot,
                 Root = new GameObject("Actor " + state.EntityId.Value).transform,
                 Bones = new Transform[SoldierSkeleton.JointCount],
+                // Generation SoldierMotion spike validates rifle sockets; pistol mesh shares the bind.
                 Motion = new SoldierMotion(rifleRecipe),
                 PreviousFeet = state.Feet,
-                PreviousHealth = state.Health,
-                PreviousMagazine = state.Magazine
+                PreviousHealth = state.Health
             };
             avatar.Root.SetParent(transform, false);
             var skeleton = SoldierSkeleton.Definition;
@@ -435,11 +451,11 @@ namespace Shooter.Presentation.Rig
             avatar.Body.updateWhenOffscreen = true;
             avatar.Body.localBounds = new Bounds(new Vector3(0, 1, 0), new Vector3(4, 4, 4));
 
-            avatar.Weapon = new GameObject("Held rifle").transform;
+            avatar.Weapon = new GameObject("Held weapon").transform;
             avatar.Weapon.SetParent(avatar.Root, false);
-            avatar.Weapon.gameObject.AddComponent<MeshFilter>().sharedMesh = rifleMesh;
+            avatar.WeaponFilter = avatar.Weapon.gameObject.AddComponent<MeshFilter>();
             avatar.WeaponRenderer = avatar.Weapon.gameObject.AddComponent<MeshRenderer>();
-            avatar.WeaponRenderer.sharedMaterials = new[] { rifleMetal, riflePolymer };
+            ApplyHeldWeaponVisual(avatar, slot);
 
             bool local = state.EntityId.Equals(localHuman) && !corpse;
             if (local)
@@ -449,10 +465,10 @@ namespace Shooter.Presentation.Rig
             }
 
             avatars[state.EntityId.Value] = avatar;
-            PoseAvatar(avatar, state, 0f);
+            PoseAvatar(avatar, state, 0f, 0u);
         }
 
-        private void PoseAvatar(Avatar avatar, ActorLifecycleState state, float dtSeconds)
+        private void PoseAvatar(Avatar avatar, ActorLifecycleState state, float dtSeconds, uint completedTick)
         {
             float speed = 0f;
             if (avatar.HasPrevious && !avatar.Corpse && state.Alive)
@@ -465,18 +481,22 @@ namespace Shooter.Presentation.Rig
                 if (dtSeconds > 1e-4f) speed = Mathf.Clamp(dist / dtSeconds, 0f, 5.5f);
             }
 
-            if (!avatar.Corpse && state.Alive)
+            byte slot = state.ActiveWeaponSlot;
+            actions.SyncLifecycle(state.EntityId, slot, state.Alive && !avatar.Corpse);
+            if (slot != avatar.WeaponSlot)
             {
-                if (state.Magazine > avatar.PreviousMagazine) avatar.ReloadPhase = -1f;
-                else if (state.Magazine < avatar.PreviousMagazine && state.Reserve > avatar.PreviousMagazine)
-                    avatar.ReloadPhase = 0.01f;
-                if (avatar.ReloadPhase >= 0f)
-                {
-                    avatar.ReloadPhase = Mathf.Min(1f, avatar.ReloadPhase + dtSeconds / 2.4f);
-                    if (avatar.ReloadPhase >= 1f) avatar.ReloadPhase = -1f;
-                }
+                avatar.WeaponSlot = slot;
+                ApplyHeldWeaponVisual(avatar, slot);
             }
-            else avatar.ReloadPhase = -1f;
+
+            // Authority ReloadStarted/Completed only — never magazine decrease.
+            if (!avatar.Corpse && state.Alive)
+                avatar.ReloadPhase = actions.ResolveReloadPhase(state.EntityId, completedTick, dtSeconds);
+            else
+            {
+                avatar.ReloadPhase = -1f;
+                actions.SyncLifecycle(state.EntityId, slot, false);
+            }
 
             bool reset = !avatar.HasPrevious || avatar.Corpse || !state.Alive;
             ground.Height = state.Feet.Y;
@@ -503,9 +523,16 @@ namespace Shooter.Presentation.Rig
             var pose = avatar.Motion.Evaluate(input, ground);
             for (int j = 0; j < SoldierSkeleton.JointCount; j++)
                 avatar.Bones[j].SetPositionAndRotation(V(pose.WorldPositions[j]), Q(pose.WorldRotations[j]));
-            avatar.Weapon.SetPositionAndRotation(V(pose.WeaponPosition), Q(pose.WeaponRotation));
+
+            Float3 weaponPosition = pose.WeaponPosition;
+            Quat weaponRotation = pose.WeaponRotation;
+            if (ProductAuthorityActionView.IsPistolSlot(slot) && !avatar.Corpse && state.Alive)
+                weaponPosition = pose.WorldPositions[RightHandJoint];
+
+            avatar.Weapon.SetPositionAndRotation(V(weaponPosition), Q(weaponRotation));
             avatar.Weapon.gameObject.SetActive(!avatar.Corpse && state.Alive);
 
+            Float3 sightLocal = ProductAuthorityActionView.IsPistolSlot(slot) ? pistolSightSocketLocal : rifleSightSocketLocal;
             avatar.LastArmBodyClearance = pose.ArmBodyClearanceMeters;
             avatar.LastEyeSightLineError = pose.EyeSightLineErrorMeters;
             avatar.LastLeftGripError = pose.LeftGripError;
@@ -514,18 +541,41 @@ namespace Shooter.Presentation.Rig
             avatar.LastStockError = pose.RightStockErrorMeters;
             avatar.LastAimPitch = pitch;
             avatar.LastRightEye = pose.RightEyePosition;
-            avatar.LastWeaponPosition = pose.WeaponPosition;
-            avatar.LastSightWorld = Add(pose.WeaponPosition, Rotate(sightSocketLocal, pose.WeaponRotation));
+            avatar.LastWeaponPosition = weaponPosition;
+            avatar.LastSightWorld = Add(weaponPosition, Rotate(sightLocal, weaponRotation));
             avatar.LastFeet = state.Feet;
             avatar.HasReviewMetrics = true;
 
             avatar.PreviousFeet = state.Feet;
             avatar.PreviousHealth = state.Health;
-            avatar.PreviousMagazine = state.Magazine;
             avatar.HasPrevious = true;
             avatar.Team = state.Team;
             if (avatar.Body != null)
                 avatar.Body.sharedMaterials = state.Team == 1 ? team1Palette : team2Palette;
+        }
+
+        private void ApplyHeldWeaponVisual(Avatar avatar, byte slot)
+        {
+            bool pistol = ProductAuthorityActionView.IsPistolSlot(slot);
+            avatar.Weapon.name = pistol ? "Held pistol" : "Held rifle";
+            avatar.WeaponFilter.sharedMesh = pistol ? pistolMesh : rifleMesh;
+            avatar.WeaponRenderer.sharedMaterials = new[] { rifleMetal, riflePolymer };
+        }
+
+        private void ApplyLocalWeaponVisual(byte slot)
+        {
+            if (localWeapon == null || !visualsBound) return;
+            bool pistol = ProductAuthorityActionView.IsPistolSlot(slot);
+            localWeapon.name = pistol ? "Local FP pistol" : "Local FP rifle";
+            localWeapon.GetComponent<MeshFilter>().sharedMesh = pistol ? pistolMesh : rifleMesh;
+            localWeapon.GetComponent<MeshRenderer>().sharedMaterials = new[] { rifleMetal, riflePolymer };
+        }
+
+        private static Float3 FindSocket(FrozenList<WeaponSocket> sockets, string id)
+        {
+            for (int i = 0; i < sockets.Count; i++)
+                if (sockets[i].Id == id) return sockets[i].Position;
+            return default;
         }
 
         private static Float3 Add(Float3 a, Float3 b) => new Float3(a.X + b.X, a.Y + b.Y, a.Z + b.Z);
@@ -546,12 +596,13 @@ namespace Shooter.Presentation.Rig
         {
             if (!avatars.TryGetValue(id.Value, out var avatar)) return;
             avatars.Remove(id.Value);
+            actions.Forget(id);
             if (avatar.Root != null) DestroyObject(avatar.Root.gameObject);
         }
 
         private Mesh Upload(MeshData data, bool skin)
         {
-            var mesh = Own(new Mesh { name = skin ? "Product soldier" : "Product rifle" });
+            var mesh = Own(new Mesh { name = skin ? "Product soldier" : "Product weapon" });
             mesh.vertices = data.Positions.Select(V).ToArray();
             mesh.normals = data.Normals.Select(V).ToArray();
             mesh.tangents = data.Tangents.Select(t => new Vector4(t.X, t.Y, t.Z, t.W)).ToArray();

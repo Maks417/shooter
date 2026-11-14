@@ -27,7 +27,7 @@ Implementation-time summary, now committed in 59316d3. Current audit B01–B10 a
 | T053 | FIX02 | **Software met** — harness lifecycle/respawn | Actual-player lifecycle evidence **Pending** |
 | T054 | FIX03 | **Software met** — pause/focus/input buffer | Player pause/focus device review **Pending** |
 | T055 | FIX04 | **Partial** — packages/load (ADR-035) | T067 data-only catalog, actual visual closure and native bake/install; player proof **Pending** |
-| T056 | FIX05 | **Software wired** — map/actor/rifle views | T067 packaged visuals / T068 selected weapon/action state; player captures **Pending** |
+| T056 | FIX05 | **Software wired** — map/actor/rifle+pistol/action views (T068) | Player captures / FIX05 full coverage **Pending** |
 | T057 | FIX06 | **Pure AI met** — enemy-only sensing/corners | Mixed-team real-map player **Pending** |
 | T058 | FIX07 | **Software spawn safety** — rank/defer/deadline | Native/player route+spawn review **Pending** |
 | T059 | FIX08 | **Shell software** — menu/load/pause/results | 20-launch soak + 720p UI review **Pending** |
