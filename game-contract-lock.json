@@ -29,7 +29,7 @@
     "docs/game-fixtures/session-request.valid.json": "02cbb1ccedcf45912c91ff669d815f3ee5fa12bb214e808604cbd6d8f6245669",
     "docs/game-fixtures/tdm-workloads.json": "eaf98274b800d01ed9469cacbc053d0f6888e5f95e4ee1072931222eefea8df3",
     "docs/game-fixtures/user-settings-slide.valid.json": "4a3d69069a7c212e9679d0b194c13cd6a560c6c32772753479a07bc104611f6a",
-    "docs/game-fixtures/user-settings.schema.json": "c3678df87892d3fe4398ed5ba52fcab1d12f4a77363f60f4aed51e01b3c16020",
-    "docs/game-fixtures/user-settings.valid.json": "e51a87de10f5d90566cd7d9080bcf5bca733d7cec6c950dac3fcd38d1beacac0"
+    "docs/game-fixtures/user-settings.schema.json": "a67004574cb2223024d3b2b0242290baea10c1bc0d7918ce11f0cf673beadb6a",
+    "docs/game-fixtures/user-settings.valid.json": "5fce4b51e5cf79f2f97b10f963dd625c6f6973a8a154c2d4f67b4cbb2ae2ae01"
   }
 }
