@@ -1,5 +1,13 @@
 # M10 — Two maps, menus and settings — handoff and gate record
 
+## T074 — tactical shell and HUD, stage 1
+
+Owner assigned implementation on 2026-11-14, beginning with menus/HUD and using Battlefield/Call of Duty/Warface/Bodycam as references. [Brandbook](../../brandbook.md) records the original procedural direction and later visual stages. This stage changes only the client presentation and related docs: `Presentation/Menus/TacticalUi.cs`, `Presentation/Session/ProductShellHost.cs` and `ProductSessionView.cs`. No gameplay, map bytes, generator identities, settings schema, contract lock, toolchain or installer identity changes.
+
+Main/local setup/loading/pause/confirms/settings/live and final team tables use the shared charcoal/amber design, applied scale, 5% safe area, keyboard focus and grouped scrollable settings. The HUD adds backed health/ammo, formatted team score/time, authoritative reload progress, empty-ammo hint, respawn feedback and ADS-aware analytic reticle. Binding capture skips its initiating frame. Existing display Keep/Revert and persistent preferences remain in their services.
+
+Initial dirty-workspace verification at base `9f2219f`: EditMode **28/28 PASS** (`Artifacts/m0-foundation/9f2219f9d67a91c5103decdf5ea6bd0958eb0573/tests-editmode-20261114T210613272Z-7f73f778/`); provenance **676 entries / 338 GUIDs PASS**; fixtures **35 assertions / 17 JSON files PASS**; documentation verification PASS. The sandboxed editor first crashed in Mono's internal socket initialization (`tests-editmode-20261114T210422584Z-e2a35f08/`); retained rerun used the locked editor outside that sandbox. These are software checks, not named visual/device acceptance. Clean-build/player evidence follows in the [M11 handoff](../m11-playable-release/handoff.md). P05 FAIL, manual full-match/reference/soak and formal M10/M11 acceptance remain open.
+
 **Current disposition — 2026-11-14 review from 84befb9 / a54ed83:** M10 integration validation remains open. Persisted catalog/visual packages, shell/schema-2/settings/audio and T069 editable applied bindings/accessibility are built into `7cd7e81`. Native-navigation publication and named map/UI/control/display/audio/20-cycle player review remain open. See the [audit](../../product-state-audit.md), [remaining queue](../../next-playable-build.md), [playtest guide](../../playtest-guide.md) and [FIX acceptance](../../release-remediation-validation.md). Original requirements and historical evidence remain; this review creates no coding lease or waiver.
 
 

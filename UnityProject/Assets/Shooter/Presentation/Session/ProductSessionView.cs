@@ -7,6 +7,7 @@ using Shooter.Generation.Environment;
 using Shooter.Presentation.Audio;
 using Shooter.Presentation.Hud;
 using Shooter.Presentation.Input;
+using Shooter.Presentation.Menus;
 using Shooter.Presentation.Rendering;
 using Shooter.Presentation.Rig;
 using Shooter.Presentation.View;
@@ -48,6 +49,7 @@ namespace Shooter.Presentation.Session
         private float muzzleFlashRemaining;
         private string subtitleText = "";
         private float subtitleRemaining;
+        private readonly TacticalUi combatUi = new TacticalUi();
 
         public ProductMapView? MapView => mapView;
         public ProductActorPresentation? Actors => actors;
@@ -488,13 +490,8 @@ namespace Shooter.Presentation.Session
             if (session == null) return;
             if (shellOwned)
             {
-                if (session.Phase != GameMatchPhase.Playing || session.PauseState != SessionPauseState.Running) return;
-                if (session.Lifecycle != null && session.Lifecycle.TryGetActorState(session.HumanEntityId, out var humanHud))
-                {
-                    GUI.Label(new Rect(24, Screen.height - 72, 640, 24),
-                        "HP " + humanHud.Health + "  Ammo " + humanHud.Magazine + "/" + humanHud.Reserve + "  slot " + humanHud.ActiveWeaponSlot,
-                        GuiStyle());
-                }
+                if (!cursorLocked || session.Phase != GameMatchPhase.Playing || session.PauseState != SessionPauseState.Running) return;
+                DrawCombatHud();
                 return;
             }
 
@@ -524,6 +521,80 @@ namespace Shooter.Presentation.Session
                 GUI.Label(new Rect(24, 104, 900, 24),
                     "Result " + results.Outcome + " / " + results.Reason + "  " + results.Team1Kills + "-" + results.Team2Kills,
                     GuiStyle());
+        }
+
+        private void DrawCombatHud()
+        {
+            if (session == null) return;
+            combatUi.Begin(hud.Settings.UiScale, "combat", keyboardNavigation: false);
+            try
+            {
+                Rect a = combatUi.Safe;
+                var snap = session.TryAcquireSnapshot();
+                bool alive = session.Lifecycle != null && session.Lifecycle.TryGetActorState(session.HumanEntityId, out var state) && state.Alive;
+                if (!alive)
+                {
+                    string respawn = "Awaiting a safe spawn";
+                    if (snap != null)
+                        for (int i = 0; i < snap.Participants.Count; i++)
+                        {
+                            var participant = snap.Participants[i];
+                            if (!participant.IsHuman) continue;
+                            uint due = participant.RespawnDueActiveTick;
+                            uint remaining = Serial32.IsNewer(due, snap.ActiveTicksElapsed) ? Serial32.ForwardDistance(due, snap.ActiveTicksElapsed) : 0;
+                            if (remaining > 0) respawn = "Returning in " + (remaining / 60f).ToString("0.0") + "s";
+                        }
+                    Rect panel = new Rect(combatUi.Width * .5f - 220, combatUi.Height * .5f - 38, 440, 96);
+                    TacticalUi.Fill(panel, TacticalUi.Background);
+                    combatUi.Label(new Rect(panel.x, panel.y + 12, panel.width, 32), "KILLED IN ACTION", 26, TacticalUi.Enemy, TextAnchor.UpperCenter);
+                    combatUi.Label(new Rect(panel.x, panel.y + 54, panel.width, 30), respawn, 18, TacticalUi.Text, TextAnchor.UpperCenter);
+                    return;
+                }
+                // Read the current life again for definite assignment; never retain an authority-owned object.
+                if (!session.Lifecycle!.TryGetActorState(session.HumanEntityId, out var human)) return;
+                float y = a.yMax - 82;
+                TacticalUi.Fill(new Rect(a.x, y, 182, 82), TacticalUi.Background);
+                combatUi.Label(new Rect(a.x + 14, y + 10, 154, 18), "HEALTH / OPERATOR", 12, TacticalUi.Muted);
+                Color healthColor = human.Health <= 25 ? TacticalUi.Enemy : TacticalUi.Text;
+                combatUi.Label(new Rect(a.x + 14, y + 28, 140, 43), human.Health.ToString("000"), 34, healthColor);
+                TacticalUi.Fill(new Rect(a.x + 14, y + 73, 154, 3), TacticalUi.Raised);
+                TacticalUi.Fill(new Rect(a.x + 14, y + 73, 154 * Mathf.Clamp01(human.Health / 100f), 3), healthColor);
+                float x = a.xMax - 258;
+                TacticalUi.Fill(new Rect(x, y - 10, 258, 92), TacticalUi.Background);
+                string weapon = human.ActiveWeaponSlot == 0 ? "01 / ASSAULT RIFLE" : "02 / SIDEARM";
+                combatUi.Label(new Rect(x + 14, y, 230, 20), weapon, 14, TacticalUi.Muted);
+                combatUi.Label(new Rect(x + 14, y + 24, 106, 44), human.Magazine.ToString("00"), 38, human.Magazine == 0 ? TacticalUi.Enemy : TacticalUi.Text);
+                combatUi.Label(new Rect(x + 126, y + 37, 118, 32), "/ " + human.Reserve.ToString("000"), 22, TacticalUi.Muted);
+                bool reloading = actors != null && actors.Actions.IsReloading(session.HumanEntityId);
+                if (reloading)
+                {
+                    float phase = actors!.Actions.ReloadPhaseAtTick(session.HumanEntityId, snap?.CompletedSimulationTick ?? 0);
+                    combatUi.Label(new Rect(x + 14, y - 42, 230, 26), "RELOADING", 18, TacticalUi.Accent, TextAnchor.MiddleRight);
+                    TacticalUi.Fill(new Rect(x + 14, y + 74, 230, 3), TacticalUi.Raised);
+                    TacticalUi.Fill(new Rect(x + 14, y + 74, 230 * Mathf.Clamp01(phase), 3), TacticalUi.Accent);
+                }
+                else if (human.Magazine == 0)
+                {
+                    string reload = input.Bindings.TryGetControl("Reload", out string control) ? TacticalUi.ControlLabel(control) : "R";
+                    combatUi.Label(new Rect(x, y - 42, 258, 26), human.Reserve > 0 ? reload + "  RELOAD" : "OUT OF AMMUNITION", 18, TacticalUi.Accent, TextAnchor.MiddleRight);
+                }
+                // Analytic center reticle. ADS uses the physical weapon sight instead.
+                if (!input.AimHeld)
+                {
+                    float cx = combatUi.Width * .5f, cy = combatUi.Height * .5f;
+                    ReticleStroke(new Rect(cx - 14, cy - 1, 7, 2));
+                    ReticleStroke(new Rect(cx + 7, cy - 1, 7, 2));
+                    ReticleStroke(new Rect(cx - 1, cy - 14, 2, 7));
+                    ReticleStroke(new Rect(cx - 1, cy + 7, 2, 7));
+                }
+            }
+            finally { combatUi.End(); }
+        }
+
+        private static void ReticleStroke(Rect rect)
+        {
+            TacticalUi.Fill(new Rect(rect.x - 1, rect.y - 1, rect.width + 2, rect.height + 2), TacticalUi.Background);
+            TacticalUi.Fill(rect, TacticalUi.Text);
         }
 
         private void DrawAccessibilityOverlays()
