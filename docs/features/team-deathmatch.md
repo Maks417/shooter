@@ -1,6 +1,6 @@
 # Feature: offline Team Deathmatch
 
-Status: M9 implementation specification, not implemented. Depends on [M8 runtime composition](../milestones/m8-runtime-composition/index.md) and the integrator's [Game-v1 freeze](../game-session-contracts.md). Existing `Simulation/Match/CompoundClearMatch.cs` continues to implement the historical one-player objective mode; this new mode lives in planned `Simulation/TeamDeathmatch/`.
+Status reviewed 2026-11-14: Game-v1 reducer/session/11-bot code exists, but real lifecycle, safe spawns and team AI remain incomplete per [audit](../product-state-audit.md). Requirements below remain normative, not claims of passing coverage. [T053/T057/T058/T065](../release-remediation-plan.md) repair and prove the match; historical M9 software closure does not accept it.
 
 ## Player flow and roster
 

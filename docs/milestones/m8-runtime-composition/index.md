@@ -1,16 +1,18 @@
 # M8 — Runtime composition and Game-v1 foundation — implementation pack
 
-Status: **CLOSED (software)**, 2026-11-13. Tasks T035–T039. Product OfflineGameSession is default Bootstrap; diagnostic smoke retained. Named human/P05 review Pending. See [handoff](handoff.md).
+**Current disposition — 2026-11-14: M8 integration incomplete.** RUN02–RUN05 remain unaccepted as complete product gates: verified full content, visible views/audio, pause and real lifecycle evidence are missing. Repairs: T052–T056, T061–T063 in the [shared implementation plan](../../release-remediation-plan.md), with [FIX acceptance](../../release-remediation-validation.md). The [audit](../../product-state-audit.md) supersedes earlier readiness interpretations; original requirements, dated ledgers and raw evidence below are retained. No runtime assignment or worker lease is created here.
+
+Status corrected 2026-11-14: **M8 integration incomplete**. Historical software closeout is retained in [handoff](handoff.md); its labels do not establish acceptance. Follow [remediation tasks](../../release-remediation-plan.md) and [FIX validation](../../release-remediation-validation.md).
 
 ## Goal
 
-Produce a real one-map player that connects existing procedural content, authority, local input, bots, rig/HUD/audio and safe session teardown. Freeze product seams before feature workers touch them. This is the next recommended implementation assignment; this documentation task does not assign it.
+Complete a real one-map player connecting procedural content, authority, buffered input, bots, rig/HUD/audio and safe teardown. Game-v1 is already frozen; T052–T056/T061 repair the incomplete paths. Start with bounded T052–T054 assignments, not a new contract freeze or the entire milestone at once.
 
 ## Entry gate
 
 M0–M7 closure dispositions have been reviewed without promoting waived evidence to PASS. The integrator can verify the locked editor/modules or records the exact missing tool and confines work to independent pure tasks. Existing C0/content/network locks and previous regression outputs are retained.
 
-The current [planning audit](../../planning-validation.md) found an existing source-provenance FAIL (51 missing metadata entries and one unapproved Assets Markdown file). T035 owns baseline repair and RUN00 before feature dispatch. Its fix must preserve existing GUIDs/contract/provenance rules; documentation delivery does not waive it.
+The [historical planning audit](../../planning-validation.md) recorded 51 missing metadata entries and one unapproved Assets Markdown file. That repair is retained and fresh source provenance passes at f3d9954. The [current audit](../../product-state-audit.md) instead records the Contracts NU1004 lock failure plus incomplete runtime integration. Preserve GUID/contract/provenance guards; do not recreate the repaired baseline.
 
 ## Execute
 

@@ -1,6 +1,6 @@
 # Domain model
 
-M8–M11 adds planned product entities specified in [Game-v1](game-session-contracts.md). The existing table below remains the C0/generation baseline. New ParticipantId identifies a scoreboard slot across respawns; LifeId identifies that participant's incarnation and maps to a fresh EntityId, never reused in an authority session. No old death event can score against a newer life. Team scores/results are authority data, independent of local Won/Lost UI labels and frozen C0 MatchState.
+M8–M11 adds implemented Game-v1 product entities specified in [session contracts](game-session-contracts.md), with incomplete lifecycle integration documented in the [audit](product-state-audit.md). The existing table below remains the C0/generation baseline. ParticipantId is stable across respawns; LifeId maps each incarnation to a fresh EntityId. These are required invariants, not proof the current adapter correctly retires/rebinds lives. Team results remain independent of frozen C0 MatchState.
 
 ## Planned game entities
 

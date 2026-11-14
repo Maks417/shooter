@@ -1,12 +1,14 @@
 # M8 — Runtime composition and Game-v1 foundation — implementation order
 
-Status: planned. Read [entry](index.md), [Game-v1](../../game-session-contracts.md) and the authoritative feature specs before editing. Task IDs extend T001–T034 without renumbering historical tasks. Start only assigned work; integrate through main in dependency order.
+**Current disposition — 2026-11-14: M8 integration incomplete.** RUN02–RUN05 remain unaccepted as complete product gates: verified full content, visible views/audio, pause and real lifecycle evidence are missing. Repairs: T052–T056, T061–T063 in the [shared implementation plan](../../release-remediation-plan.md), with [FIX acceptance](../../release-remediation-validation.md). The [audit](../../product-state-audit.md) supersedes earlier readiness interpretations; original requirements, dated ledgers and raw evidence below are retained. No runtime assignment or worker lease is created here.
+
+Original implementation/port requirements retained. Current implementation is partial; product acceptance is open. Read [entry](index.md), [Game-v1](../../game-session-contracts.md) and the authoritative feature specs before editing. Task IDs extend T001–T034 without renumbering historical tasks. Start only assigned work; integrate through main in dependency order.
 
 ## T035 — Freeze product boundary first
 
-First repair the current source-audit baseline: 51 missing Unity metadata entries plus the unapproved Assets Markdown file identified in [planning validation](../../planning-validation.md). Integrator preserves established GUIDs/references, creates missing metadata through the approved Unity/source workflow and relocates explanatory prose outside Assets where appropriate. Audit assembly boundaries for the later pure-only additions, notably Bootstrap/Release. Regenerate any affected provenance only from its authorized generator; never edit installed packages/Library/cache payloads or broaden the allowlist to hide the failure. Required existing locks and source-provenance audit must pass before runtime acceptance or feature dispatch.
+Historical T035 entry: the 51 missing metadata entries and Assets Markdown failure were repaired before the audited source; fresh provenance passes and Game-v1 is frozen under ADR-034. Preserve established GUIDs and actual source guards. Do not rerun that repair or recreate the contracts; T052 addresses the newly observed Contracts dependency-lock failure, and T053–T056 complete authority/content/presentation integration. Assembly/server isolation still needs source-matched player verification.
 
-Create the separate Game-v1 contracts/fixtures/lock, session/map/settings ports and task harnesses per the shared contract plan; implement explicit schema/version validation and conformance. Freeze TDM tick/death/respawn semantics, IDs and settings before dispatch. Define new TDM-5v5-v1 and TDM-6v6-v1 workloads now, with counters/inputs; preserve historical B01–B04.
+T035 already created/froze separate Game-v1 sources/fixtures/lock and compound TDM workload descriptions. Review coverage against current required semantics; FIX checks expose missing lifecycle/settings/publication/depot-workload behavior. Changes follow ADR/version/migration before consumers, without altering historical B01–B04 or assuming freeze means complete acceptance.
 
 ## T036 — Extract and compose real authority
 
@@ -14,7 +16,7 @@ Integrator extracts reusable actor lifecycle from CombatHarnessSimulation into S
 
 ## T037 — Compile and install the compound
 
-World/content worker builds a genuine full compound dependency package and real Unity collision/nav runtime against frozen ports. Validate required content before Ready; follow actual native path corners. Keep diagnostic compilers explicit; add proposed Compile-GameContent and Test-Maps wrappers with bounded failures and provenance.
+World/content worker builds a genuine full compound dependency package and real Unity collision/nav runtime against frozen ports. Validate required content before Ready; follow actual native path corners. Keep diagnostic compilers explicit; complete the existing limited Compile-GameContent and Test-Maps wrappers through T055, with bounded failures and real content provenance.
 
 ## T038 — Connect the client path
 

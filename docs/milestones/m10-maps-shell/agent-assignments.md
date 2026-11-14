@@ -1,5 +1,7 @@
 # M10 — Two maps, menus and settings — bounded future agent assignments
 
+**Current disposition — 2026-11-14: M10 integration incomplete.** Numeric planners/minimal shell/store exist; compiled content, functional session screens/tables and complete applied settings remain open. Repairs: T055–T056, T058–T061, T064–T065 in the [shared implementation plan](../../release-remediation-plan.md), with [FIX acceptance](../../release-remediation-validation.md). The [audit](../../product-state-audit.md) supersedes earlier readiness interpretations; original requirements, dated ledgers and raw evidence below are retained. No runtime assignment or worker lease is created here.
+
 Status: proposed roles only, no active leases. Integrator fills named owner, branch/worktree, exact base commit and expiry in coordination.json after explicit implementation assignment. All paths below are relative to UnityProject/Assets/Shooter unless beginning Tools/, docs/ or referring to a root file. Test-project includes/asmdefs/.meta/scene and schema/lock edits remain integrator-owned unless explicitly leased.
 
 | Role | Tasks | Permitted paths | Boundary |

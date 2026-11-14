@@ -1,17 +1,21 @@
 # Architecture
 
+## Current runtime versus intended architecture
+
+The component/flow/lifecycle rules below remain the intended release architecture, not a claim that every adapter is installed. In particular, catalog label hashes and runtime map-plan generation are not verified compiled content delivery; copied Game-v1 snapshots are not the C0 leased publication API. Contract/allocation changes require reviewed compatibility decisions and measured bounds, not silent documentation relaxation.
+
 Read [vision](vision.md), [contracts](contracts.md) and [repo layout](repo-layout.md) before changing boundaries.
 
-Implementation status, reviewed 2026-11-13: C0/contracts, generation/compiler/cache, procedural weapon/material/soldier libraries, motor/combat/pose, compound/nav/streaming, eight-bot AI, Compound Clear/HUD/audio helpers, networking and release tooling exist. Pure feature evidence and pending Unity/hardware limits are recorded in [M0–M7 handoffs](milestones/index.md). The default `Bootstrap/Runtime/FoundationEntry.cs` creates a floor/box, uses empty-actor `CombatHarnessSimulation` and sends empty commands; `FoundationClientComposition.cs` selects diagnostic views. These paths do not compose the requested complete game. Existing client/presentation assembly exclusions remain in source; M8 must reverify player/server isolation for later additions. P05 soldier acceptance remains FAIL under ADR-024.
+Implementation status, reviewed 2026-11-14 at f3d9954: default Bootstrap starts Game/Session/OfflineGameSession with real map colliders, harness authority, TDM reducer and 9/11 initial bots. Floor/box remains an explicit smoke/gallery/benchmark diagnostic. Client composition installs GameShellMenu and ProductSessionView (camera/light/text/input), but no product map/soldier/weapon renderer or audio-device output. Respawn, pause, team sensing/path following and menu-owned lifecycle are incomplete; see the [audit](product-state-audit.md). P05 remains FAIL; no fresh player/server-isolation or hardware acceptance is inferred.
 
-The [next architecture work](playable-release-plan.md) is planned M8–M11. [Game-v1](game-session-contracts.md) adds a separate pure product contract assembly, an extracted reusable `Simulation/Session/` actor authority, a Bootstrap-owned session service, real `World/Runtime/` map installation, `Content/Maps/` catalog, `Simulation/TeamDeathmatch/` rules/spawns, and presentation/menu/settings device adapters. These paths are proposals until T035 onward implement them. Existing `CombatHarnessSimulation` remains a diagnostic compatibility adapter; reuse motor/weapon/hit logic rather than duplicating damage authority. Menu/results/Draw state stays separate from frozen C0 MatchState; networking is not on the offline launch path.
+Actual new paths include Game/Contracts/ (frozen Game-v1), Game/Session/, Game/Settings/, Simulation/Session/, Simulation/TeamDeathmatch/, Content/Maps/, World/Runtime/ and Unity collider installation in World/Foundation/CompoundMapRuntime.cs. HarnessActorLifecycle currently wraps the sealed CombatHarnessSimulation; reusable authority retirement is still required, not a completed extraction. [T052–T065](release-remediation-plan.md) complete verified content loading, coherent life/view/event publication, device adapters and shell-owned start/stop. Keep one damage authority, read-only presentation, separate C0/Game result states and no remote dependency on offline launch.
 
 ## Components and dependency rules
 
-| Layer / proposed assembly | Owns | May depend on |
+| Layer / assembly or intended boundary | Owns | May depend on |
 |---|---|---|
 | Shooter.Contracts | IDs, immutable DTOs, schema constants, ports | BCL only; no UnityEngine |
-| Shooter.Game.Contracts (planned T035) | Map/session/participant/results/settings records and ports; separate Game-v1 freeze | C0 + BCL only; no Unity or remote wire requirement |
+| Shooter.Game.Contracts (frozen ADR-034) | Map/session/participant/results/settings records and ports; separate Game-v1 freeze | C0 + BCL only; no Unity or remote wire requirement |
 | Shooter.Generation.Core | deterministic primitives, recipes, validation | Contracts; pure math adapter |
 | Shooter.AssetCompiler.Editor | Unity conversion, LOD/material/nav baking, manifests | Generation.Core, Contracts, Unity Editor |
 | Shooter.Content.Runtime | verified cache loading, residency, async handles | Contracts, BCL-only Generation.Core format helpers; future Unity runtime adapter |

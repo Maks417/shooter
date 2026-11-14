@@ -1,13 +1,13 @@
 # Feature: two playable procedural maps
 
-Status: proposed release content for M8/M10, not packaged maps. Read [generation](../generation.md), [environment](environment.md) and [Game-v1](../game-session-contracts.md). Actual baseline source is `Generation/Core/Environment/CompoundPlanner.cs`, `CompoundPlan.cs`, `World/Navigation/NavCompiler.cs` and `Content/Runtime/FileContentStore.cs` under `UnityProject/Assets/Shooter`.
+Status reviewed 2026-11-14: CompoundPlanner/DepotPlanner, Content/Maps catalog and World/Foundation/CompoundMapRuntime.cs install generated collision plans. Verified compiled gameplay/visual packages and product renderers are missing; see [audit](../product-state-audit.md), [T055/T056/T058](../release-remediation-plan.md) and [FIX04–FIX07](../release-remediation-validation.md). Requirements below remain normative, not packaged-map acceptance.
 
 ## Catalog and layouts
 
 | Stable MapId / display name | Proposed numeric layout | Gameplay |
 |---|---|---|
 | `training-compound` / Training Compound | Adapt the existing 256×256 m compound, seed `460072030`, opposite team staging areas, mixed indoor/outdoor routes, generated walls/building shells and cover | Team Deathmatch, 5v5 and 6v6 |
-| `depot-yard` / Depot Yard | New bounded 256×256 m numeric depot recipe, seed `42`, two warehouse rows, central loading yard and perimeter flanks; separate spatial grammar/connectivity from compound | Team Deathmatch, 5v5 and 6v6 |
+| `depot-yard` / Depot Yard | New bounded 256×256 m numeric depot recipe, historical proposed seed `42` (source now uses `460072031`; T058 must review/freeze this discrepancy), two warehouse rows, central loading yard and perimeter flanks; separate spatial grammar/connectivity from compound | Team Deathmatch, 5v5 and 6v6 |
 
 These names/layouts are chosen product defaults. Two seeds or lighting variants of the same topology do not count as two maps. Depot uses existing primitive/material families and procedural recipe rules, without imported props or authored meshes. Stay within the existing baseline building/prop ceilings until measured: maximum 12 building shells / 120 repeated props per map initially. Density budgets do not prove frame-time acceptance.
 
@@ -15,7 +15,7 @@ Each map has ≥12 validated spawn slots per team, at least two separate exits p
 
 ## Content path to implement
 
-T037 builds the first real compound package; T044 adds the catalog and T045 the depot recipe. Proposed new compiler wrapper `Tools/Compile-GameContent.ps1` and map validation wrapper `Tools/Test-Maps.ps1` are **not implemented today**. They must enumerate exact approved MapIds, profiles and recipes, compile gameplay+visual dependencies with provenance, publish atomically and record cold/warm/forced-reproduction evidence. Existing Compile-Content supports only box-collision; Compile-Gallery/Soldier/M1Content are diagnostic sets, not full-map compilers.
+T037/T044/T045 retain the original package requirements. Current Tools/Compile-GameContent.ps1 runs Compound-filtered tests and does not publish content; Tools/Test-Maps.ps1 runs filtered pure tests. T055 replaces that limited behavior with exact MapIds/profiles/recipes, verified gameplay+visual dependencies, atomic publication and cold/warm/forced-reproduction evidence. Existing diagnostic compilers remain restricted to their named content sets.
 
 Freeze exact recipe/schema/nav payload encoding under an ADR before worker integration if existing SGAF v1 cannot express the package. Use existing typed collision/navigation support where valid; no arbitrary Unity object deserialization or silently renamed diagnostic artifact. Bake real Unity navigation against installed authoritative collision using the pinned toolchain in compiler/editor code; version the adapter/settings/blob and prove load/query correctness. The pure `NavCompiler` accepts delegates and does not by itself establish a Unity nav surface or path-following runtime.
 

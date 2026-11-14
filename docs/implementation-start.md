@@ -1,12 +1,12 @@
 # Start implementation here
 
-Planning update 2026-11-13 (implementation). M0–M7 remain administratively closed with their recorded owner waivers. M8 is **in progress**: Game-v1 frozen (ADR-034), RUN00 provenance repaired, pure OfflineGameSession/TDM reducer landed, diagnostic client/server builds+smoke PASS. Default Bootstrap still composes the floor/box empty-actor diagnostic; product vertical (real map install, input/HUD path, OfflineGameSession as launch) remains open. Specification/fixture checks do not prove product or hardware acceptance.
+Status correction 2026-11-14: M0–M7 retain their recorded historical closures/waivers. M8–M11 contain software and historical build/package evidence, but M8–M10 integration is incomplete and M11 acceptance is open. The [source audit](product-state-audit.md) identifies missing visible presentation/audio, broken respawn/pause integration, incomplete AI/shell/settings/content delivery and a stale Contracts dependency lock. READY/diagnostic smoke and pure tests do not establish a playable product.
 
 ## First assignment
 
-**Current next step:** continue [M8 runtime composition](milestones/m8-runtime-composition/index.md) T037–T039 (real map runtime, client adapters, product vertical), then M9–M11. Game-v1 is frozen in `game-contract-lock.json`; do not invent parallel session contracts. Read [playable release review](playable-release-plan.md), [Game-v1 contracts](game-session-contracts.md) and the M8 handoff before edits.
+**Current next step:** assign an integrator to [T052 regression-lock repair](release-remediation-plan.md#t052--restore-trustworthy-regression-execution), then T053 lifecycle and T054 pause/input. Continue the dependency-ordered T055–T065 repairs and [FIX acceptance](release-remediation-validation.md). This documentation assignment creates no coding lease or authorization to dispatch agents. Read the affected milestone index, original T035–T051 requirements and Game-v1 before implementation.
 
-M0–M7 are the eight closed historical milestones (ADR-017/025–028/030–032); M8–M11 are the four new gates (M8 started). C0-v1 remains frozen in root `contract-lock.json`, SGAF/P02 format v1 in `content-format-lock.json` under ADR-018, wire N1-v1 under ADR-029, Game-v1 under ADR-034. P05 FAIL under ADR-024 unchanged. T025 remains optional/deferred. No worker independently edits shared contracts, Bootstrap, schemas, locks or project settings.
+M0–M7 are the eight historical closures (ADR-017/025–028/030–032). M8–M11 are implemented in part but not technically accepted. C0-v1 remains frozen in root contract-lock.json, SGAF/P02 v1 in content-format-lock.json (ADR-018), N1-v1 under ADR-029 and Game-v1 under ADR-034. P05 FAIL and the ADR-024 stop on further clearance search remain unchanged. T025 remains deferred. No worker independently edits shared Contracts, Bootstrap, schemas, locks or project settings.
 
 ## Newly resolved design details
 

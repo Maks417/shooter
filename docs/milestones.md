@@ -2,7 +2,7 @@
 
 Milestones are dependency gates, not calendar promises. [Backlog](backlog.md) gives ordered tasks. No milestone is complete until implementation exists and attached evidence passes [validation](validation.md).
 
-Owner disposition on 2026-11-13: **all eight original milestones M0–M7 closed with explicit owner waivers** (ADR-017/025–028/030–032). Original automated FAIL/Pending results, P05 FAIL under ADR-024 and outstanding real player/hardware evidence are unchanged; see [M7 handoff](milestones/m7-hardening-stretch/handoff.md) and earlier linked packs. The [playable-release plan](playable-release-plan.md) adds four gates M8–M11; **M8 is in progress** (Game-v1 freeze ADR-034; product vertical open). Eight historical closures out of twelve now-documented milestones does not mean eight technical acceptance passes. Future gates do not inherit the waivers.
+Current disposition, 2026-11-14: M0–M7 retain historical owner-waived administrative closures (ADR-017/025–028/030–032), with original FAIL/Pending evidence and P05 FAIL unchanged. M8–M11 have software closeout records, but the [current audit](product-state-audit.md) leaves M8–M10 integration incomplete and M11 acceptance open. [T052–T065](release-remediation-plan.md) repair these same gates; no M12 or inherited waiver is created. Closure counts must not be presented as technical acceptance counts.
 
 | Gate | Deliverable | Required exit evidence |
 |---|---|---|
@@ -31,4 +31,4 @@ Tag each passing gate with source, toolchain, content and benchmark manifest. Ke
 
 ## Milestone implementation packs
 
-[Open the milestone folders](milestones/index.md) for stage-specific implementation sequences, contracts, agent assignments, tests and handoff records. Each folder links to the shared specifications in the docs root. Root specifications remain authoritative; implementation status is planned until evidence is reviewed.
+[Open the milestone folders](milestones/index.md) for stage-specific implementation sequences, contracts, agent assignments, tests and handoff records. Each folder links to the shared specifications in the docs root. Root specifications remain authoritative; current product disposition and repair evidence are linked in the audit and FIX matrix.

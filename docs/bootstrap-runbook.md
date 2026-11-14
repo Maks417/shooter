@@ -1,5 +1,9 @@
 # M0 bootstrap runbook
 
+## Current product/tool boundary — 2026-11-14
+
+This runbook retains historical M0/M1 commands and evidence. Default launch now starts OfflineGameSession; Smoke/gallery/Benchmark arguments select diagnostics. Current Compile-GameContent/Test-Maps/Test-Game/Package-Release scopes and the Contracts NU1004 blocker are recorded in the [audit](product-state-audit.md) and [repair validation](release-remediation-validation.md). Do not use the B01-only collector, test-only map compiler or copy/inventory package PASS as a full-game gate.
+
 Owner: integrator/WP-00. Follow [M0](milestones/m0-foundation/implementation.md). Repository root is `C:\Job\shooter`; project is `C:\Job\shooter\UnityProject`. The locked editor, project, contracts, generated-box composition, quality presets, test/build/smoke/capture wrappers now exist. Acceptance and limitations are in [handoff](milestones/m0-foundation/handoff.md). Preserve source, settings, metadata and package locks; do not recreate the project over them.
 
 ## F01 — establish the actual toolchain

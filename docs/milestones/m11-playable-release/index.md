@@ -1,6 +1,8 @@
 # M11 — Playable build and acceptance — implementation pack
 
-Status: **CLOSED (software package tooling)**, 2026-11-13. Tasks T048–T051. Local package tooling PASS; named visual/720p/soak PendingHardware. See [handoff](handoff.md).
+**Current disposition — 2026-11-14: M11 release acceptance open.** Copy/inventory tooling is not clean independent delivery; REL01–REL06 still require complete source-matched product evidence, including P05, full matches and reference performance/soak. Repairs: T052, T062–T065 in the [shared implementation plan](../../release-remediation-plan.md), with [FIX acceptance](../../release-remediation-validation.md). The [audit](../../product-state-audit.md) supersedes earlier readiness interpretations; original requirements, dated ledgers and raw evidence below are retained. No runtime assignment or worker lease is created here.
+
+Status corrected 2026-11-14: **M11 release acceptance open**. Historical software closeout is retained in [handoff](handoff.md); its labels do not establish acceptance. Follow [remediation tasks](../../release-remediation-plan.md) and [FIX validation](../../release-remediation-validation.md).
 
 ## Goal
 

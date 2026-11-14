@@ -24,7 +24,7 @@ Likelihood/impact H/M/L are planning judgments, not statistical forecasts. Owner
 
 | New release risk | Trigger / response | Owner / gate |
 |---|---|---|
-| RSK16 Closed tools mistaken for usable game | Default Bootstrap still empty-actor diagnostic; require real input/world/AI/view/audio player before expansion | Integrator / M8 |
+| RSK16 Closed tools mistaken for usable game | Product auto-start exists but renderer/audio/shell/lifecycle integration is incomplete; repair T053–T061 before acceptance | Integrator / M8 |
 | RSK17 11-bot starvation/state drift | Single-target/eight-bot assumptions, reset sequences, stale visibility or fake reload; full-roster fairness and authority-state tests | AI / M9 |
 | RSK18 Respawn traps and map imbalance | Unsafe team slots, all candidates exposed, recurrent spawn failure; native nav/LOS and normal-play route review | World/match / M9–M10 |
 | RSK19 Menu/settings only exist as models | Pure layout serializes but devices/input/storage do not change; real UI/device/relaunch acceptance | Client / M10 |
@@ -32,3 +32,7 @@ Likelihood/impact H/M/L are planning judgments, not statistical forecasts. Owner
 | RSK21 Historical waivers silently inherited | Required player/P05/reference checks missing; preserve old reports and keep new exit Pending until actual evidence | Integrator / M8–M11 |
 
 Editor/URP versions are already locked, not an unresolved T001 choice. M5 selected UTP but its remote package version remains pending locked-editor verification; offline M8–M11 does not depend on it. Soldier P05 remains FAIL under ADR-024; new live remediation/review is T039/T049. Actual reference driver/counters/thermal acceptance remains empirical. External sounds/fonts and public authentication stay outside this release. No temporary screenshot memory usage is a requirement. See [playable release review](playable-release-plan.md) for the new dependency order.
+
+## Observed product defects — 2026-11-14
+
+[Audit A01–A13](product-state-audit.md) converts the applicable risks into observed source gaps, including first-6v6-respawn capacity, fatal pause handling and the Contracts NU1004 restore failure. [T052–T065](release-remediation-plan.md) assign repair scope and [FIX01–FIX14](release-remediation-validation.md) define evidence. M8–M10 integration and M11 acceptance remain open; owner scope for any fourth P05 clearance search is still required under ADR-024.

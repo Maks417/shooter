@@ -2,7 +2,7 @@
 
 All paths are relative to `UnityProject/Assets/Shooter` unless noted. Contracts owned by integrator. Every work package must meet [agent done rules](agent-coordination.md). Estimate after spikes; no speculative hour counts.
 
-Current next work: M8–M11 software closed 2026-11-13 with honest Pending/PendingHardware leftovers (named review, P05, 720p/soak). Game-v1 is frozen (ADR-034). T001–T034 retain historical scope/dispositions; T025 stays deferred. [T035–T051](task-supplement.md#playable-release-task-cards--t035t051) retain cards. No completed historical gate is reopened merely to implement the new mode; historical waivers do not accept the new deliverables.
+Current next work: assign [T052–T065 remediation](release-remediation-plan.md), starting T052 regression lock, T053 actor lifecycle and T054 pause/input. M8–M11 software closeout records do not establish product acceptance; [audit](product-state-audit.md) identifies incomplete M8–M10 integration and open M11. T001–T051 keep their original IDs/requirements; T035 Game-v1 is already frozen (ADR-034), T025 remains deferred, and historical waivers do not accept new gates.
 
 ## Dependency graph
 
@@ -82,3 +82,7 @@ WP-02 starts on C0/base commit, edits only geometry/weapon generator folders and
 ## Review closure tasks
 
 [T026–T034 task cards](task-supplement.md) assign explicit ownership for C0 details, gameplay/layer matrix, soldier baseline/pose tests, objective, synthesized audio, generated lighting, analytic collapse/optional ragdoll, exact benchmarks and repository runbook. Their milestone dependencies are mandatory; no optional task silently expands the original slice.
+
+## Product remediation tasks
+
+[T052–T065](release-remediation-plan.md) define dependencies, exact role boundaries and outputs for audit findings A01–A13. [FIX01–FIX14](release-remediation-validation.md) add regression specificity to the existing RUN/TDM/MAP/UI/SET/REL gates. Implementation is planned/unassigned; this documentation task neither edits coordination leases nor starts code or agents.

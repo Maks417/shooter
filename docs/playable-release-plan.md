@@ -1,60 +1,45 @@
-# Playable bot release — next development order
+# Playable offline release — current state and repair order
 
-Planning baseline: 2026-11-13, source `ad4544f`. This assignment prepares documentation only. M0–M7 remain administratively closed under their recorded waivers; M8–M11 below are new, **planned and unassigned**. No new game tests, build or release acceptance is implied. Start future implementation at [M8](milestones/m8-runtime-composition/index.md), under one integrator, before dispatching feature workers.
+Reviewed 2026-11-14 at `f3d995497d88376d171c86b4088ae37fa8f289f0`. M0–M7 retain their historical owner-waived closures. M8–M11 code and historical software closeouts exist, but the [source audit](product-state-audit.md) leaves M8–M10 integration incomplete and M11 release acceptance open. This page supersedes the old 2026-11-13 next-development narrative; [planning validation](planning-validation.md) retains its original results. The current assignment is documentation only, with no runtime implementation or agent dispatch.
 
-## Target the owner can play
+## Required product
 
-A Windows x64 offline build launches into a menu. The player selects one of two distinct procedural maps, Team Deathmatch, and 5v5 or 6v6. One human joins Team 1; bots fill every other slot on both teams. Teams race to 150 enemy kills, with a 15-minute active-play limit. A results table follows, with replay and return-to-menu actions. Sound, video, controls and accessibility settings persist between launches.
+A source-matched Windows x64 archive launches offline into a menu. Select Training Compound or Depot Yard, Team Deathmatch, and 5v5 or 6v6. One human joins Team 1; bots fill the other nine/eleven slots. Teams race to 150 enemy kills or a 15-minute active-play deadline; equal scores at deadline draw without overtime. Results include team/player stats, replay and return to menu. Audio/video/control/accessibility preferences persist and apply to real devices.
 
-Interpretation of “15 mins left”: **15 minutes elapsed / countdown reaches zero**. Defaults chosen for implementation: 5v5 selected initially, 6v6 also required; score/time limits fixed for this release; ties at the deadline are draws without overtime. These are explicit product defaults, changeable before the M8 contract freeze. [Team-match rules](features/team-deathmatch.md), [map catalog](features/playable-maps.md), [menu/settings](features/game-shell.md) and [session contracts](game-session-contracts.md) are normative for this new scope. Compound Clear remains a regression/diagnostic mode and is absent from the public mode selector.
+[Vision](vision.md), [team rules](features/team-deathmatch.md), [maps](features/playable-maps.md) and [shell](features/game-shell.md) retain exact requirements. Compound Clear remains diagnostic, remote networking is not required, T025/public networking remain deferred, and procedural-only art rules remain unchanged. Native1280×720 Low30 on the reference machine is mandatory; 60 FPS remains separate stretch.
 
-## Review of what exists
+## Reusable foundation and actual gaps
 
-| Evidence / actual source | Reusable foundation | Gap to this target |
+| Area | Existing code/evidence | Remaining product gap |
 |---|---|---|
-| [M0–M2 handoffs](milestones/m2-combat-harness/handoff.md); `Bootstrap/Runtime/FoundationEntry.cs` | Locked editor, client/server build wrappers; 60 Hz motor, weapons, hit poses and combat harness | Default runtime builds a 10 m floor and box, installs empty-actor combat authority, submits empty commands; it does not compose the requested game |
-| [M3 handoff](milestones/m3-generated-compound/handoff.md); `Generation/Core/Environment`, `World/Navigation`, `World/Streaming` | Numeric compound plan, connectivity checks, revisioned path seam and visual streaming scheduler | Need actual map compilation/packaging, Unity collision/nav installation and rendered map/actor lifecycle; planner and delegate tests alone do not prove runtime navigation |
-| `Simulation/AI/CombatAiDirector.cs`, `PerceptionSystem.cs` | Bounded sensing, covers and normal-command intent | `MaxBots=8`, `Plan(...SenseTarget? playerTarget...)`; nine/eleven bots need enemy selection, allied behavior, fair scheduling, real path-corner following and state from authority |
-| [M4 handoff](milestones/m4-offline-slice/handoff.md); `Simulation/Match/CompoundClearMatch.cs` | Pure objective/restart rules | One human against eight enemies, no respawn; cannot supply team scoring, deadline or results |
-| `Presentation/Hud/HudLayout.cs`, `Presentation/Audio/SynthAudioMixer.cs` | Pure layout/settings and synthesized voice helpers | Need actual interactive UI, input/camera/cursor lifecycle, device audio adapter, versioned settings read/write and application to live services |
-| [M5–M7 handoffs](milestones/m7-hardening-stretch/handoff.md) | Pure codec/prediction/recovery and release tools | Unity/player validation pending, remote UTP version unpinned; neither blocks local offline composition; no LAN/public UI in this release |
-| [M1 handoff](milestones/m1-procedural-feasibility/handoff.md), ADR-024 | Numeric soldier/rig generator and galleries | P05 remains FAIL / not accepted; live soldier readability, skin/pose defects and acceptance need an explicit bounded remediation task |
+| Contracts/regression | Game-v1 frozen ADR-034; 298 Generation, 61 Simulation and 15 Game tests passed at audited source | Required Contracts wrapper fails NU1004 before tests; green fake/reducer cases omit real integration |
+| Product Bootstrap | OfflineGameSession default; real collider/path installation, initial 9/11 bots, camera/input/text; historical IL2CPP client/server builds and READY logs | Pause treated as fatal Busy; actors not retired/rebound across respawns; no product map/soldier/weapon renderers or audio-device output |
+| Team match/AI | Pure score/deadline/draw reducer and eleven-bot capacity | Teammates enter sensing candidates, nav corners discarded, reload/life-reset behavior incomplete; safe spawn occupancy/pressure/timeout policy missing |
+| Maps/content | Separate CompoundPlanner and DepotPlanner, map catalog and initial spawns | Compile-GameContent runs tests rather than publishes dependencies; visual roots are label hashes, maps regenerate at runtime, six slots/team versus required twelve |
+| Shell/settings | Minimal GameShellMenu, ProductSessionView and file store | Match auto-starts; Start only saves next-launch preferences; full tables/replay/menu/settings/device flows absent |
+| Delivery/measurement | Package-Release copy/inventory wrapper; historical package at dirty 03fa6dd source | No clean-current-source independent archive/rollback evidence; collector supports B01, not real TDM; P05 FAIL, full player matrix, reference performance and soak open |
 
-Paths in this table are under `UnityProject/Assets/Shooter` unless noted. Closure summaries formerly saying three of eight closed are superseded in the root navigation pages. Historical handoffs/reports/waivers are preserved. M4 explicitly records no player binary at close; M7 records player rehearsal pending. Administrative closure is not playable-release evidence.
+Paths and exact observed failures are centralized in [audit A01–A13](product-state-audit.md), not duplicated in milestone reference folders. Source provenance now passes; the earlier 51-metadata/one-Markdown entry blocker was repaired. RUN00 repair and T035 freeze must not be restarted merely because the original planning pages described them as future work.
 
-Current-source audit during planning: `Tools/Test-SourceProvenance.ps1` fails with **51 missing metadata entries and one unapproved Markdown source** (`Tests/EditMode/View/ProceduralViewModelEditMode.md` under Assets). These predate the documentation changes; no Unity source was edited here. The M7 regression tool records lock-file presence/hashes and does not replace the full asset-source audit. T035 must repair the tracked metadata/source layout through integrator ownership and rerun the audit before accepting new runtime work; do not allowlist the whole Assets tree or disable the guard. The locked editor executable is present at the ignored local configured path on this machine, although earlier closing workers lacked it; current installation presence alone proves no fresh build or license/module acceptance. See [planning validation](planning-validation.md) for the actual check record.
+## Dependency-ordered implementation
 
-## Recommended order
+[Tasks T052–T065](release-remediation-plan.md) give ownership, permitted path boundaries, compatibility decisions and exact outputs; [FIX01–FIX14](release-remediation-validation.md) define acceptance. Original T035–T051 and RUN/TDM/MAP/UI/SET/REL IDs remain in place.
 
-| Order / gate | Concrete result | Why it comes here |
+| Order | Bounded tasks | Reviewable result |
 |---|---|---|
-| 1 — [M8 Runtime composition](milestones/m8-runtime-composition/index.md), T035–T039 | Frozen Game-v1 seams, one generated compound in an actual player, working input/combat/AI/view/audio path and safe teardown | Establishes an executable vertical path and exposes missing adapters before expanding gameplay or content |
-| 2 — [M9 Team Deathmatch](milestones/m9-team-deathmatch/index.md), T040–T043 | One-map 5v5 and 6v6 with allied/enemy bots, scoring, respawn, timer and immutable results data | Proves the whole match loop before multiplying maps; 11 bots is a new measured capacity |
-| 3 — [M10 Maps and game shell](milestones/m10-maps-shell/index.md), T044–T047 | Two packaged maps, map/mode/team-size selection, pause, scoreboard/results, persistent settings | Turns the loop into an independently usable game; map and shell workers can prepare independently after Game-v1 freeze |
-| 4 — [M11 Playable build acceptance](milestones/m11-playable-release/index.md), T048–T051 | Clean installable release archive, accepted soldier presentation, full match tests and reference performance evidence | Closes real delivery gaps using the exact two-map, 12-actor workload |
+| 1 | T052 regression baseline, T053 actor lifecycle, T054 pause/input | Locked suites execute; first/repeated 6v6 respawn works; pause/focus never kills session or consumes duplicate input |
+| 2 | T055 verified compiled content, T056 visible presentation | One real generated map with visible actors/weapons and coherent lifecycle in the player; then both approved maps/profiles |
+| 3 | T057 team AI, T058 safe spawns/routes | Enemy-only sensed combat, actual corner following/reload and bounded fair 9/11-bot behavior; safe distinct maps |
+| 4 | T059 shell, T060 settings, T061 event audio | Menu owns loading/play/pause/results/replay; all required preferences apply/persist; synthesized output is audible |
+| 5 | T062 scoped visual review, T063 TDM measurement, T064 clean archive | Explicit P05 disposition, actual product capture tooling and source-matched independent package/rollback |
+| 6 | T065 final acceptance | Full match matrix, named visual/UI review, native720p reference captures, soaks and REL01–REL06 handoff |
 
-These are dependencies, not dates. Exit gates are serial; bounded work inside them may overlap as described in [agent coordination](agent-coordination.md). M10 map planning and shell models may run against frozen fakes after T035, but cannot be accepted before M9. Do not start all milestones merely because their docs exist. M8 also defines the performance workload early; M11 collects final evidence rather than designing the benchmark late.
+These are dependencies, not dates or active worker assignments. One integrator owns shared contracts/Bootstrap/settings/locks/workloads/coordination. Game-v1 is frozen; missing settings/workload/content coverage must follow reviewed ADR/fixture migration before dependent edits. Parallelism requires explicit authorization and separate ownership/worktrees. The docs update creates no leases and does not alter historical coordination entries.
 
-```mermaid
-flowchart LR
-  Freeze[T035 Game-v1 freeze] --> Runtime[T036-T039 playable runtime]
-  Runtime --> Match[T040-T043 TDM and 11 bots]
-  Freeze --> Maps[T044-T045 two-map content]
-  Freeze --> Shell[T046-T047 shell and settings]
-  Match --> Product[M10 integrated game]
-  Maps --> Product
-  Shell --> Product
-  Product --> Release[T048-T051 clean release acceptance]
-```
+## Acceptance boundary
 
-## Acceptance boundary and remaining risks
+Historical CLOSED_SOFTWARE and package PASS labels remain history, not technical completion. READY proves initialization only; diagnostic Smoke selects floor/box, pure tests do not prove device behavior, and copying a player does not prove a source-matched release. Both maps must ship all verified collision/nav/visual/weapon/rig/shader/font dependencies and run without Unity, developer cache, internet or a server process. No release-player map compilation or silent diagnostic fallback.
 
-The release must run without Unity, a developer cache, internet or a separate server process. It ships all verified gameplay and visual content. One human plus bots is the release topology; 6v6 does not authorize 12 networked humans or T025 projectiles/penetration. Preserve compile-time server isolation and old network tests without adding a remote transport dependency to offline play.
+P05 remains FAIL under ADR-024. T062 can triage/capture live defects, but a fourth clearance/parameter search still needs an explicit owner scope decision; this documentation task does not provide it. New generated identities require review and retained failed evidence. Unavailable reviewers/devices/counters/reference hardware leave required gates Pending, without inheriting M0–M7 waivers.
 
-Historical waivers apply only to their historical milestone closures. M8–M11 need fresh real Unity/player evidence for their stated exits. Missing editor, native counters or reference hardware remains Pending, with pure work allowed to continue independently. Do not carry waivers forward automatically or declare “ready build” from green pure suites. Mandatory performance remains native 720p Low 30 FPS under [performance](performance.md), including the 6v6 workload; 60 FPS is separate stretch.
-
-P05's failed clearance/skin acceptance is a visible release risk. T039 investigates/fixes the live visual path; T049 requires review against explicit defects and the original tolerances. If source recipes/generators must change, preserve old failed evidence and follow provenance/version migration. No implicit acceptance of the old skin, external art fallback or unreviewed requirement reduction is authorized.
-
-## Future implementation entry
-
-Read [implementation start](implementation-start.md), M8's full pack and the [contract plan](game-session-contracts.md). Integrator records an actual base commit, named owners, exact allowed paths, fixture hashes and lock versions in `coordination.json` only when implementation is assigned. This planning task does not create worker leases or alter existing locks. Every completed future task lands on `main`, checks pass, evidence is retained, and temporary branches/worktrees are removed after preservation is verified.
+The release matrix remains [M11 REL01–REL06](milestones/m11-playable-release/validation-acceptance.md), supplemented by FIX01–FIX14: both maps/sizes, score and unshortened timeout matches, results/replay/settings, actual product workloads and per-map soaks. Implementation handoffs attach exact source/toolchain/content/workload/evidence identities and all real limitations, commit completed work to main and preserve evidence before temporary-workspace cleanup.

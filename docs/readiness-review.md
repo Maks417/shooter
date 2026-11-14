@@ -1,5 +1,7 @@
 # Implementation readiness review — closure record
 
+**Current readiness correction — 2026-11-14:** dated reviews below are retained as history. Game-v1 is frozen and source provenance passes; default launch is a partial product session, not the old empty diagnostic. The [source audit](product-state-audit.md) leaves M8–M10 integration incomplete and M11 acceptance open. [T052–T065](release-remediation-plan.md) and [FIX01–FIX14](release-remediation-validation.md) supersede the historical next-action instructions. No workers are assigned by this docs update.
+
 Revision1.1, 2026-11-11. This historical record resolves the pre-implementation documentation review, which authorized M0 under one integrator. Current implementation/tests/builds and remaining acceptance conditions are in the [M0 handoff](milestones/m0-foundation/handoff.md); this review itself implies no Unity/gameplay/graphics/performance result.
 
 | Finding | Resolution | Implementation evidence required at review time |
@@ -36,4 +38,4 @@ The historical review above is retained. [ADR-033](decisions.md#adr-033--accepte
 | No accepted complete product archive | M11 clean extraction, full match matrix, P05 remediation/review and exact-roster performance | Actual binary/content pair, named review and real reference captures |
 | Future agents need bounded assignments | Four complete packs, T035–T051 dependency cards, path ownership and merge order | Explicit assignment, named owners/current main SHA/fixture hashes and worktree leases |
 
-Planning readiness is distinct from parallel execution readiness: Game-v1 code/fixtures are still planned, so do not mark coordination.json ready or launch new agents from the existence of these docs. Actual remaining external evidence is editor/license/modules, native runtime behavior, human visual/playability review and reference hardware performance. No additional product decision is needed to start T035 with the documented defaults.
+Historical 2026-11-13 disposition (superseded above): planning readiness was distinct from parallel execution readiness; Game-v1 code/fixtures were still planned, so do not mark coordination.json ready or launch new agents from the existence of these docs. Actual remaining external evidence is editor/license/modules, native runtime behavior, human visual/playability review and reference hardware performance. No additional product decision is needed to start T035 with the documented defaults.

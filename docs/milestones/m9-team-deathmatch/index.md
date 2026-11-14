@@ -1,6 +1,8 @@
 # M9 — Team Deathmatch and bot teams — implementation pack
 
-Status: **CLOSED (software)**, 2026-11-13. Tasks T040–T043. Pure TDM + 11-bot planner + session binding on main; unshortened player matrix Pending. See [handoff](handoff.md).
+**Current disposition — 2026-11-14: M9 integration incomplete.** Reducer tests and initial roster capacity pass in their scope; real repeated respawn/team AI/spawn safety and TDM07/08 are not accepted. Repairs: T053, T057–T058, T063, T065 in the [shared implementation plan](../../release-remediation-plan.md), with [FIX acceptance](../../release-remediation-validation.md). The [audit](../../product-state-audit.md) supersedes earlier readiness interpretations; original requirements, dated ledgers and raw evidence below are retained. No runtime assignment or worker lease is created here.
+
+Status corrected 2026-11-14: **M9 integration incomplete**. Historical software closeout is retained in [handoff](handoff.md); its labels do not establish acceptance. Follow [remediation tasks](../../release-remediation-plan.md) and [FIX validation](../../release-remediation-validation.md).
 
 ## Goal
 

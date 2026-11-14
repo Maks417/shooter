@@ -24,7 +24,7 @@ T026/T034 first; T027 and T028 share pose schema and merge through integrator; T
 
 ## Playable release task cards — T035–T051
 
-Status: planned/unassigned, 2026-11-13. These extend the original backlog for [M8–M11](playable-release-plan.md), without reassigning T025. Exact exclusive paths, future worker roles, fixtures and evidence are in each pack's agent/validation pages. All tasks use locked Unity 6000.3.28f1/URP17.3.0, C0-v1/content-v1/N1-v1 and the T035 Game-v1 freeze; changes require integrator ADR/migration. Default resource envelope is [performance](performance.md), with a global 16 AI vision rays and 2 new paths/tick at the new 11-bot capacity. No speculative timing estimates or active leases are created here.
+Status corrected 2026-11-14: T035–T051 are original requirement cards, with partial implementation and historical software closeout records. They are not all unstarted or all accepted. Read the [source audit](product-state-audit.md), [T052–T065 repairs](release-remediation-plan.md) and [FIX matrix](release-remediation-validation.md) before dispatch. Game-v1 is already frozen (ADR-034); all toolchain/contracts remain locked. Future owners must receive explicit bounded assignments. No implementation lease is created here.
 
 | Task / milestone | Dependency | Owner / output | Required acceptance |
 |---|---|---|---|
@@ -46,4 +46,4 @@ Status: planned/unassigned, 2026-11-13. These extend the original backlog for [M
 | T050 / M11 | T048,T049 stable candidate | Validation/perf: complete match matrix, real hardware and soak | REL02,REL04–REL05; all four map/size workloads, normal-AI capacity |
 | T051 / M11 | T048–T050 accepted | Integrator: playable local archive/hash, controls, evidence/rollback handoff and main cleanup | REL06; all required checks actual PASS or explicitly unresolved, no inherited waiver |
 
-Future task dispatch replaces role placeholders with actual owner/base SHA/branch/allowed files, accepted fixture hashes and exact commands. Proposed wrappers and APIs are deliverables, not currently executable instructions. Workers return a versioned evidence record and rollback reference; integrator updates shared docs and the assigned pack handoff once. All completed work lands on main before verified branch/worktree cleanup.
+Future task dispatch uses current accepted main, actual owner/base SHA/branch/allowed files, fixture hashes and exact commands. Compile-GameContent, Test-Maps, Test-Game and Package-Release now exist but have the limited scopes recorded in the audit; their names do not prove content/player acceptance. T052–T065 supply the remaining repair cards. Workers return versioned evidence/rollback references; integrator updates shared docs and affected handoffs, commits completed work to main and verifies preservation before cleanup.

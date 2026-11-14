@@ -1,20 +1,24 @@
 # Game session contracts — Game-v1 freeze
 
+## Frozen API versus required release behavior
+
+The source freeze is real; complete implementation/fixture coverage is not. UserSettings currently contains schema, master/SFX/music volumes, quality, sensitivity, invert Y, subtitles and UI scale; display modes/FOV/bindings and other required shell preferences are absent. IClientSettingsApplier stages a quality byte, not complete display settings. MatchViewSnapshot is a bounded copied object, not a leased Game-v1 publication API; C0 leases remain unchanged. T053/T060/T063 resolve lifecycle/allocation/settings/workload gaps through implementation fixes or reviewed ADR/version/fixture migrations. Normative lifecycle/tick/settings rules below remain requirements; prose alone does not add methods to the frozen API. This docs update changes no frozen source/fixture bytes.
+
 Status: **implemented and frozen** (ADR-034, T035). Owner: sole M8 integrator. Existing C0-v1, SGAF/content v1 and N1-v1 remain unchanged. Read [contract details](contract-details.md), [simulation order](simulation-protocol.md) and [release plan](playable-release-plan.md). Workers consume the compiling freeze on `main` (`UnityProject/Assets/Shooter/Game/Contracts/`, `game-contract-lock.json`, `docs/game-fixtures/`).
 
 ## Placement and compatibility
 
-`UnityProject/Assets/Shooter/Game/Contracts/` contains BCL-only `Shooter.Game.Contracts`, referencing C0. It owns immutable product/session DTOs and ports; no Unity objects, storage implementation, UI toolkit or network codec. Test-only fakes (`FakeMapRuntime`, `MemoryUserSettingsStore`) are rejected by shipping `OfflineGameSession` unless explicitly allowed for pure tests. Do not add fields or enum values to frozen C0 to express results/draws.
+`UnityProject/Assets/Shooter/Game/Contracts/` contains BCL-only Shooter.Game.Contracts referencing C0. It defines immutable product/session DTOs and ports, without Unity/storage/UI/transport implementation. Shipping OfflineGameSession explicitly rejects FakeMapRuntime unless allowed for tests; this is not a complete fake-adapter or device-composition audit. The [2026-11-14 audit](product-state-audit.md) records lifecycle/publication/settings gaps and limited test coverage. Keep frozen C0 results separate.
 
 Lock/fixtures: `game-contract-lock.json`, `docs/game-fixtures/`. Verify with `python Tools/verify_game_contract_lock.py` and `Tools/Test-Game.ps1 -Offline`. Existing C0 fixtures stay immutable. Any need to change C0, SGAF, generator identities, nav encoding or N1 requires a separate reviewed ADR, fixtures/migration and impacted-suite validation before dependent workers rebase. New settings file schema is independent of `HudSettings`' existing semicolon diagnostic string.
 
 ## Values and immutable records
 
-| Proposed value / record | Required semantics and bounds |
+| Value / record | Required semantics and bounds |
 |---|---|
 | MapId / ModeId | ASCII lower-case identifiers, 1–64 bytes; fixed initial maps `training-compound`, `depot-yard`; mode `team-deathmatch`; unknown IDs reject before load |
 | ParticipantId / LifeId | ParticipantId uint32 nonzero, stable for a match; LifeId uint32 nonzero, increasing per participant; each life maps to a fresh C0 EntityId, never reused within the authority session |
-| GameMatchPhase | Planned explicit byte values Loading=0, Ready=1, Playing=2, Finished=3, Stopped=4; pause is a local session service state, not a C0 MatchState enum addition |
+| GameMatchPhase | Explicit byte values Loading=0, Ready=1, Playing=2, Finished=3, Stopped=4; pause is a local session service state, not a C0 MatchState enum addition |
 | MatchOutcome / FinishReason | Outcome None=0, Team1=1, Team2=2, Draw=3; reason None=0, ScoreLimit=1, TimeLimit=2, Aborted=3; aborted sessions do not produce a victory |
 | SessionRequest | MapId, ModeId, teamSize (5 or 6), seed uint64, ruleVersion=1; limits fixed 150 kills / 54000 active ticks; one local participant on Team 1; cannot carry user paths or arbitrary recipes |
 | MapCatalogEntry | MapId, display name ≤64 characters, short description ≤256, supported ModeIds, supported team sizes, fixed recipe seed/version, gameplay root hash, per-profile visual roots; ≤16 maps, ≤8 modes/map; release requires exactly the two approved entries |
@@ -31,7 +35,7 @@ For product authority's C0 snapshot compatibility, map GameMatchPhase Loading/Re
 
 ## Ports compiled at T035
 
-Concrete method signatures live in `UnityProject/Assets/Shooter/Game/Contracts/GamePorts.cs`. Capacity/error returns and adapter-conformance tests are covered by `Tools/Game.Contracts.Tests`.
+Concrete method signatures live in `UnityProject/Assets/Shooter/Game/Contracts/GamePorts.cs`. Tools/Game.Contracts.Tests covers a limited subset (15 audit-time cases), including reducer and fake-map scenarios; it does not certify all lifecycle/thread/publication/device requirements below. FIX01–FIX14 add missing integration coverage through reviewed seams.
 
 | Port / owner | Responsibility and lifetime |
 |---|---|
@@ -44,7 +48,7 @@ Concrete method signatures live in `UnityProject/Assets/Shooter/Game/Contracts/G
 | IUserSettingsStore / Game/Settings | Load/validate/migrate settings, save atomically, report corrupt/newer schema/read-only storage without blocking play; storage path supplied by platform adapter, never a content-cache mutation |
 | IClientSettingsApplier / Bootstrap client adapter | Apply view/audio/input settings, report unsupported choices, stage display change with rollback; cannot reference or mutate match/world gameplay rules |
 
-Existing `CombatHarnessSimulation` is sealed with private actor state. T036 must first extract reusable authority/lifecycle code into planned `Simulation/Session/`, retaining the harness as a compatibility adapter and preserving C0 test outcomes. Do not make a parallel second damage system or let an M9 worker access harness internals with reflection. Integrator alone owns this extraction and edits to `Simulation/Foundation/`.
+Existing `CombatHarnessSimulation` is sealed with private actor state. Simulation/Session/HarnessActorLifecycle.cs now wraps the harness, but authority retirement/reset is incomplete. T053 completes the reusable lifecycle boundary, retaining diagnostic compatibility and C0 test outcomes. Do not make a parallel second damage system or let an M9 worker access harness internals with reflection. Integrator alone owns this extraction and edits to `Simulation/Foundation/`.
 
 Retire dead actor records from authority snapshots before reusing bounded storage, while issuing a new EntityId for every new life. C0's 64-actor cap is not permission to retain every historical respawn actor forever. Death/life dedupe uses bounded per-participant state, not an ever-growing event set. Cosmetic corpse views are capped at four globally and expire after five active seconds; eviction cannot affect obstruction, hit tests or score. Aborted async work carries a session epoch and cannot leak a slot into the next match.
 

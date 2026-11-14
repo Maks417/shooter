@@ -1,6 +1,8 @@
 # M10 — Two maps, menus and settings — implementation pack
 
-Status: **CLOSED (software)**, 2026-11-13. Tasks T044–T047. Two maps, shell menu, file settings on main; named UI/device review Pending. See [handoff](handoff.md).
+**Current disposition — 2026-11-14: M10 integration incomplete.** Numeric planners/minimal shell/store exist; compiled content, functional session screens/tables and complete applied settings remain open. Repairs: T055–T056, T058–T061, T064–T065 in the [shared implementation plan](../../release-remediation-plan.md), with [FIX acceptance](../../release-remediation-validation.md). The [audit](../../product-state-audit.md) supersedes earlier readiness interpretations; original requirements, dated ledgers and raw evidence below are retained. No runtime assignment or worker lease is created here.
+
+Status corrected 2026-11-14: **M10 integration incomplete**. Historical software closeout is retained in [handoff](handoff.md); its labels do not establish acceptance. Follow [remediation tasks](../../release-remediation-plan.md) and [FIX validation](../../release-remediation-validation.md).
 
 ## Goal
 

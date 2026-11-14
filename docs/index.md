@@ -2,11 +2,11 @@
 
 Unity 6 URP / C# / HLSL design for a realistic modern-world shooter generated from code and numeric recipes. No imported/manual meshes, painted textures, sprites or authored animation. Initial hardware target: Ryzen 5 4600H integrated Radeon, 16 GB DDR4-3200, NVMe; native 720p Low at 30 FPS, 60 FPS stretch.
 
-**Status, 2026-11-13:** all eight original milestones M0–M7 are closed with the explicit owner waivers recorded in ADR-017/025–028/030–032. Closure does not establish a ready game: later Unity/player/reference gates remain Pending where waived, and M1 P05 remains FAIL / not accepted under ADR-024. C0-v1, content v1 and N1-v1 remain frozen; Game-v1 is frozen under ADR-034; hosted CI is deferred. Historical handoffs and failed/pending evidence are preserved. The [playable release roadmap](playable-release-plan.md) defines M8–M11; **M8 is in progress** (T035–T036 software done; product vertical open).
+**Status, 2026-11-14:** M0–M7 retain their historical owner-waived closures and P05 remains FAIL under ADR-024. M8–M11 software/build/package records exist, but the [source audit](product-state-audit.md) identifies incomplete M8–M10 integration and open M11 acceptance. Game-v1 is frozen under ADR-034; C0/content/N1 remain unchanged. Historical closeout labels do not establish a finished product. No new runtime work is assigned by this documentation update.
 
 ## Next development
 
-Continue [M8 runtime composition](milestones/m8-runtime-composition/index.md) T037–T039, then M9–M11. Consume the compiling [Game-v1 freeze](game-session-contracts.md). See also the [relocated view EditMode note](notes/procedural-viewmodel-editmode.md) from RUN00 provenance repair.
+Use [T052–T065 remediation tasks](release-remediation-plan.md) and the [repair validation matrix](release-remediation-validation.md). Begin with T052 regression-lock repair, then T053 actor lifecycle and T054 pause/input under an explicit implementation assignment. Preserve the original M8–M11 requirements and historical evidence; do not restart the already frozen T035 boundary.
 
 ## Reading order
 
@@ -22,8 +22,12 @@ Continue [M8 runtime composition](milestones/m8-runtime-composition/index.md) T0
 |---|---|
 | [Vision, scope and requirements](vision.md) | Scope, requirements, art constraint and non-goals |
 | [Playable release review and order](playable-release-plan.md) | Current-code gaps, next four gates and deliverable boundary |
+| [Current product state audit](product-state-audit.md) | Findings, actual source/evidence and current milestone disposition |
+| [Release remediation implementation](release-remediation-plan.md) | Bounded tasks T052–T065, ownership, dependencies and compatibility |
+| [Release remediation validation](release-remediation-validation.md) | FIX01–FIX14, real-player acceptance and evidence requirements |
+| [Relocated view EditMode note](notes/procedural-viewmodel-editmode.md) | Historical RUN00 source-layout note |
 | [Planning validation record](planning-validation.md) | Actual documentation/fixture/tool/source audit outcomes and remaining baseline blockers |
-| [Game session contract plan](game-session-contracts.md) | Planned Game-v1 records/ports, lifecycle, fixtures and compatibility freeze |
+| [Game session contract plan](game-session-contracts.md) | Frozen Game-v1 ports, intended semantics and documented integration gaps |
 | [Architecture](architecture.md) | Boundaries, dependency rules and lifecycle |
 | [Proposed repository and toolchain](repo-layout.md) | Proposed paths and exact-version pinning procedure |
 | [Domain model](domain-model.md) | Entities, units and invariants |
@@ -58,12 +62,12 @@ Freeze contracts C0 at M0. Treat paths and signatures as specifications to imple
 
 ## Milestone implementation packs
 
-[Open the milestone folders](milestones/index.md) for stage-specific implementation sequences, contracts, agent assignments, tests and handoff records. Each folder links to the shared specifications in the docs root. Root specifications remain authoritative; implementation status is planned until evidence is reviewed.
+[Open the milestone folders](milestones/index.md) for stage-specific implementation sequences, contracts, agent assignments, tests and handoff records. Each folder links to the shared specifications in the docs root. Root specifications remain authoritative; current M8–M11 acceptance is governed by the audit and repair matrix, not historical software-close labels.
 
 
 ## Implementation readiness refinements — revision 1.1
 
-Begin with [implementation start](implementation-start.md), then the assigned milestone; M8 is the recommended next assignment. M0 remains the historical bootstrap reference. Shared details remain in one place.
+Begin with [implementation start](implementation-start.md), then the assigned milestone; T052–T054 are the recommended next bounded implementation assignments. M0 remains the historical bootstrap reference. Shared details remain in one place.
 
 - [Start implementation here](implementation-start.md)
 - [M0 bootstrap runbook](bootstrap-runbook.md)

@@ -1,6 +1,8 @@
 # M11 — Playable build and acceptance — implementation order
 
-Status: planned. Read [entry](index.md), [Game-v1](../../game-session-contracts.md) and the authoritative feature specs before editing. Task IDs extend T001–T034 without renumbering historical tasks. Start only assigned work; integrate through main in dependency order.
+**Current disposition — 2026-11-14: M11 release acceptance open.** Copy/inventory tooling is not clean independent delivery; REL01–REL06 still require complete source-matched product evidence, including P05, full matches and reference performance/soak. Repairs: T052, T062–T065 in the [shared implementation plan](../../release-remediation-plan.md), with [FIX acceptance](../../release-remediation-validation.md). The [audit](../../product-state-audit.md) supersedes earlier readiness interpretations; original requirements, dated ledgers and raw evidence below are retained. No runtime assignment or worker lease is created here.
+
+Original implementation/port requirements retained. Current implementation is partial; product acceptance is open. Read [entry](index.md), [Game-v1](../../game-session-contracts.md) and the authoritative feature specs before editing. Task IDs extend T001–T034 without renumbering historical tasks. Start only assigned work; integrate through main in dependency order.
 
 ## T048 — Build and rehearse clean delivery
 

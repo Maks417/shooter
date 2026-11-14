@@ -1,5 +1,9 @@
 # Validation strategy and requirement traceability
 
+## Current product regression status — 2026-11-14
+
+The [audit](product-state-audit.md) records fresh component results and the Contracts locked-restore failure. Use [FIX01–FIX14](release-remediation-validation.md) with existing milestone acceptance: green pure suites, source provenance and documentation hashes do not establish real product behavior or reference performance. M8–M10 integration is incomplete; M11 acceptance is open.
+
 Test through public ports with small deterministic fixtures; add integration/hardware checks where unit tests cannot establish correctness. Numerical tolerances live in fixture schemas. Avoid tests that merely duplicate implementation formulas. All tests report build, toolchain, seed, content hash and profile.
 
 ## Layers and scenarios

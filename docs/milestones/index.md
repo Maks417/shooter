@@ -2,7 +2,7 @@
 
 Each folder contains only its milestone entry, detailed sequence, contracts/integration, agent assignment cards, validation/acceptance and handoff record. Requirements and feature specifications live once in the docs root, reached through relative links from each milestone. Code and accepted artifacts from prerequisite milestones are still required to execute.
 
-Current disposition, 2026-11-13: all eight original M0–M7 milestones are administratively closed under the recorded owner waivers, most recently ADR-032 in [M7 handoff](m7-hardening-stretch/handoff.md). Outstanding player/Unity/hardware evidence remains Pending; M1 P05 remains FAIL under ADR-024. New M8–M11 are **planned and unassigned** for the [requested playable game](../playable-release-plan.md). Their packs add no acceptance claim and inherit no waiver.
+Current disposition, 2026-11-14: M0–M7 retain historical owner-waived closures and P05 FAIL under ADR-024. M8–M11 have partial implementation and historical software closeout records; [current source audit](../product-state-audit.md) leaves M8–M10 integration incomplete and M11 acceptance open. Use [T052–T065 repairs](../release-remediation-plan.md) and [FIX01–FIX14](../release-remediation-validation.md), preserving original milestone requirements and historical reports. No coding leases are created by this documentation assignment.
 
 | Milestone | Implementation pack |
 |---|---|
