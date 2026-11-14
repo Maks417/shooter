@@ -12,7 +12,8 @@
     "GUID:a8f3c1d92e7b4f6a9d0e1b2c3a4f5e60",
     "Shooter.Generation.Core",
     "Shooter.Content.Runtime",
-    "Shooter.Contracts"
+    "Shooter.Contracts",
+    "Shooter.Simulation"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

@@ -99,8 +99,9 @@ namespace Shooter.Presentation.Session
         {
             if (Event.current.type != EventType.Repaint) return;
             Matrix4x4 prior = GUI.matrix;
-            GUIUtility.RotateAroundPivot(Mathf.Atan2(b.y - a.y, b.x - a.x) * Mathf.Rad2Deg, a);
-            Fill(new Rect(a.x, a.y, Vector2.Distance(a, b), thickness), color);
+            GUI.matrix = prior * Matrix4x4.TRS(new Vector3(a.x, a.y, 0),
+                Quaternion.Euler(0, 0, Mathf.Atan2(b.y - a.y, b.x - a.x) * Mathf.Rad2Deg), Vector3.one);
+            Fill(new Rect(0, 0, Vector2.Distance(a, b), thickness), color);
             GUI.matrix = prior;
         }
 
