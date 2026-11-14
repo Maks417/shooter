@@ -42,6 +42,33 @@ namespace Shooter.Simulation.Tests.Harness
         }
 
         [Fact]
+        public void RelocateActorMovesBodyButKeepsHealthAmmoAndIdentity()
+        {
+            var sim = new CombatHarnessSimulation(new StaticPlaneWorld());
+            var id = sim.SpawnActor(new Float3(0, 0, 0), 0, 1);
+            // Fire once so ammo differs from a fresh loadout.
+            sim.Step(0, new[] { new InputCommand(id, 0, 1, 0, 0, 0, 0, InputButtons.FireHeld | InputButtons.FirePressed, 0) });
+            ushort ammo;
+            using (var before = sim.AcquireSnapshot()) ammo = before.Snapshot.Entities[0].Weapon.AmmoInMagazine;
+            Assert.True(ammo < 30);
+
+            Assert.True(sim.RelocateActor(id, new Float3(10, 0, 20), 1.5f));
+
+            Assert.True(sim.TryGetMotorState(id, out var motor));
+            Assert.Equal(10f, motor.Feet.X);
+            Assert.Equal(20f, motor.Feet.Z);
+            Assert.Equal(1.5f, motor.AimYaw);
+            Assert.False(motor.OverlapUnresolved);
+            Assert.Equal(0f, motor.Velocity.X);
+            sim.Step(1, new[] { new InputCommand(id, 1, 2, 0, 0, 1.5f, 0, InputButtons.None, 0) });
+            using var after = sim.AcquireSnapshot();
+            Assert.Equal(id, after.Snapshot.Entities[0].Id);
+            Assert.Equal(ammo, after.Snapshot.Entities[0].Weapon.AmmoInMagazine);
+            Assert.Equal((ushort)100, after.Snapshot.Entities[0].Health);
+            Assert.False(sim.RelocateActor(new EntityId(9999), default, 0));
+        }
+
+        [Fact]
         public void RetiredActorRejectsCommandsAndFreshIdsAreMonotonic()
         {
             var sim = new CombatHarnessSimulation(new StaticPlaneWorld());

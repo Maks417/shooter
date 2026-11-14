@@ -159,6 +159,28 @@ namespace Shooter.Simulation
             return false;
         }
 
+        /// <summary>
+        /// Position rescue for a living actor embedded in geometry. Only the motor body moves (feet, yaw, zero
+        /// velocity, standing, no slide); health, weapons/ammo, recoil and command sequence are preserved.
+        /// Dead or unknown actors are left untouched.
+        /// </summary>
+        public bool RelocateActor(EntityId entity, Float3 feet, float yaw)
+        {
+            MainThread();
+            for (int i = 0; i < actors.Count; i++)
+            {
+                var actor = actors[i];
+                if (!actor.Id.Equals(entity)) continue;
+                if (!actor.Alive) return false;
+                actor.Motor = new MotorBodyState(
+                    feet, default, yaw, actor.Motor.AimPitch, Stance.Standing, motor.Config.StandingHeight, false,
+                    default, new Float3(0, 1, 0), actor.Motor.LastGroundedTick,
+                    actor.Motor.JumpConsumedSequence, actor.Motor.LocomotionDistanceMeters, false, 0, 0, false);
+                return true;
+            }
+            return false;
+        }
+
         public bool ResetCommandEpoch(EntityId entity)
         {
             MainThread();
