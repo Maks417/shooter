@@ -11,7 +11,7 @@
   "dependsOnContract": "C0-v1",
   "toolchainHash": "9ac31fe82117043e2bba3bfb843dd1ca32834b15425188e96d6f3369e2c627a8",
   "sources": {
-    "UnityProject/Assets/Shooter/Game/Contracts/GameData.cs": "411c8e1d7a245e25b01571a541562fe1dd809c7714881a83159a2377143116b1",
+    "UnityProject/Assets/Shooter/Game/Contracts/GameData.cs": "7c538785df9d6d4ab920dd882c9aa7f676d7c63c802bba071f6b0be1cb6cd8e1",
     "UnityProject/Assets/Shooter/Game/Contracts/GameData.cs.meta": "da2d99bee98c3ea0a1088ded28a27e5b7e7a7da3e5df1edff7afd0239ae0d61b",
     "UnityProject/Assets/Shooter/Game/Contracts/GameIds.cs": "04e4a4f76caa560278808ee9e9207f3756c1eb8d7124ea738ea8b5ec990e3c07",
     "UnityProject/Assets/Shooter/Game/Contracts/GameIds.cs.meta": "c2c91bdde4ddf87b4f89e13fdf43a704bab107522a63128711ae6d8c09dee498",

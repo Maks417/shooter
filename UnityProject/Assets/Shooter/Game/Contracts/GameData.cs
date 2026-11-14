@@ -445,7 +445,8 @@ namespace Shooter.Game.Contracts
         {
             if (bindings == null) throw new ArgumentNullException(nameof(bindings));
             // ADR-039: preserve custom controls in existing schema-2 settings.
-            var normalized = new List<InputBinding>(bindings.Count + 1);
+            GameRequire.That(bindings.Count >= 1 && bindings.Count <= GameContractVersion.MaxSettingsBindings, nameof(bindings));
+            var normalized = new List<InputBinding>(Math.Min(bindings.Count + 1, GameContractVersion.MaxSettingsBindings));
             bool hasSlide = false, fUsed = false;
             foreach (var binding in bindings)
             {
@@ -453,7 +454,8 @@ namespace Shooter.Game.Contracts
                 hasSlide |= binding.Action == "Slide";
                 fUsed |= string.Equals(binding.Control, "Key.F", StringComparison.OrdinalIgnoreCase);
             }
-            if (!hasSlide) normalized.Add(new InputBinding("Slide", fUsed ? "Unbound" : "Key.F"));
+            if (!hasSlide && normalized.Count < GameContractVersion.MaxSettingsBindings)
+                normalized.Add(new InputBinding("Slide", fUsed ? "Unbound" : "Key.F"));
             var list = new FrozenList<InputBinding>(normalized, GameContractVersion.MaxSettingsBindings);
             GameRequire.That(list.Count >= 1, nameof(bindings));
             var actions = new HashSet<string>(StringComparer.Ordinal);

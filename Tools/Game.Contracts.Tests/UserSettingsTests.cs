@@ -53,6 +53,20 @@ namespace Shooter.Game.Contracts.Tests
         }
 
         [Fact]
+        public void FullLegacyBindingTableIsPreservedWithinTheSchemaBound()
+        {
+            var bindings = new System.Collections.Generic.List<InputBinding>(UserSettings.DefaultBindings());
+            bindings.RemoveAll(b => b.Action == "Slide");
+            for (int i = bindings.Count; i < GameContractVersion.MaxSettingsBindings; i++)
+                bindings.Add(new InputBinding("Extra" + i, "Key.Extra" + i));
+            var settings = new InputBindingEditor(bindings).WithBindings(UserSettings.Defaults);
+            Assert.Equal(GameContractVersion.MaxSettingsBindings, settings.Bindings.Count);
+            Assert.True(UserSettingsJson.TryDecode(UserSettingsJson.Encode(settings), out var loaded, out string diagnostic), diagnostic);
+            Assert.Equal(settings.Bindings.Count, loaded!.Bindings.Count);
+            Assert.Contains(loaded.Bindings, b => b.Action == "Reload" && b.Control == "Key.R");
+        }
+
+        [Fact]
         public void SlideSettingsFixtureRoundtripsWithSprintChordBindings()
         {
             string path = Path.Combine(AppContext.BaseDirectory, "Fixtures", "user-settings-slide.valid.json");
