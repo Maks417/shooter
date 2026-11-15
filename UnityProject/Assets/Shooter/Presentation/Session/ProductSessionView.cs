@@ -119,7 +119,8 @@ namespace Shooter.Presentation.Session
             sun.shadowStrength = 0.82f;
             sun.cullingMask &= ~(1 << ProductMenuScene.StageLayer);
             RenderSettings.ambientMode = AmbientMode.Flat;
-            RenderSettings.ambientLight = new Color(0.32f, 0.30f, 0.26f, 1f);            QualitySettings.vSyncCount = 0;
+            RenderSettings.ambientLight = new Color(0.32f, 0.30f, 0.26f, 1f);
+            QualitySettings.vSyncCount = 0;
             Application.targetFrameRate = -1;
             int profile = QualitySettings.GetQualityLevel();
             Screen.SetResolution(profile == 0 ? 1280 : profile == 1 ? 1600 : 1920, profile == 0 ? 720 : profile == 1 ? 900 : 1080, FullScreenMode.Windowed);
