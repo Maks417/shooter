@@ -241,10 +241,16 @@ namespace Shooter.Presentation.Rig
                 ApplyPresentationSoldierPalette(team1Palette, team1: true);
                 ApplyPresentationSoldierPalette(team2Palette, team1: false);
 
-                rifleMetal = FromPackaged(shader, visuals, MapVisualClosure.WeaponMaterialPaths[0], "Product rifle metal", 0.15f, 0.35f);
-                riflePolymer = FromPackaged(shader, visuals, MapVisualClosure.WeaponMaterialPaths[1], "Product rifle polymer");
-                ApplyPresentationWeaponMaterials(rifleMetal, riflePolymer);
-                firstPersonHandMaterials = new[] { team1Palette[0], riflePolymer, team1Palette[1] };
+                Material NearFieldSurface(string path, string label) => Shooter.Presentation.Rendering.ProductSurfaceMaterial.Create(
+                    shader, MapVisualClosure.DecodeMapMaterial(visuals, path),
+                    MapVisualClosure.DecodeMapMaterial(visuals, MapVisualClosure.MaterialCompanionPath(path, "normal")),
+                    MapVisualClosure.DecodeMapMaterial(visuals, MapVisualClosure.MaterialCompanionPath(path, "mask")),
+                    label, 1f / FirstPersonSurfaceBaker.TileMeters, value => owned.Add(value));
+                rifleMetal = NearFieldSurface(MapVisualClosure.FirstPersonSurfacePaths[0], "Product coated weapon metal");
+                riflePolymer = NearFieldSurface(MapVisualClosure.FirstPersonSurfacePaths[1], "Product stippled polymer");
+                var sleeve = NearFieldSurface(MapVisualClosure.FirstPersonSurfacePaths[2], "Product woven sleeve");
+                var glove = NearFieldSurface(MapVisualClosure.FirstPersonSurfacePaths[3], "Product glove grain");
+                firstPersonHandMaterials = new[] { sleeve, glove, riflePolymer };
 
                 visualsBound = true;
                 ApplyLocalWeaponVisual(ProductAuthorityActionView.RifleSlot);
@@ -481,10 +487,11 @@ namespace Shooter.Presentation.Rig
                 localWeapon.localScale = new Vector3(scale, scale, scale);
                 localWeapon.localPosition = Vector3.Lerp(hip, aligned, pose.AdsBlend) + V(offset) + V(kick);
                 float rotKick = FirstPersonHandling.RecoilRotationScale(pose.AdsBlend, reducedMotion);
+                var composition = FirstPersonHandling.HipRotationDegrees(slot, pose.AdsBlend);
                 localWeapon.localRotation = Quaternion.Euler(
-                    rotation.X + pose.RecoilPitch * Mathf.Rad2Deg * rotKick,
-                    rotation.Y + pose.RecoilYaw * Mathf.Rad2Deg * rotKick,
-                    rotation.Z);
+                    rotation.X + composition.X + pose.RecoilPitch * Mathf.Rad2Deg * rotKick,
+                    rotation.Y + composition.Y + pose.RecoilYaw * Mathf.Rad2Deg * rotKick,
+                    rotation.Z + composition.Z);
                 if (supportHand != null)
                     supportHand.transform.localPosition = V(FirstPersonHandling.SupportHandOffset(slot, reload, reducedMotion));
             }
@@ -795,27 +802,6 @@ namespace Shooter.Presentation.Rig
                 SetLit(palette[1], new Color(0.16f, 0.10f, 0.07f), 0.24f, 0.34f); // gear
                 SetLit(palette[2], new Color(0.50f, 0.36f, 0.26f), 0f, 0.34f);    // skin
                 SetLit(palette[3], new Color(0.20f, 0.09f, 0.06f), 0.52f, 0.70f); // goggles
-            }
-        }
-
-        /// <summary>
-        /// Keep packaged weapon albedo; raise metal vs polymer metallic/smoothness so LOD0 FP
-        /// rifle reads as gun-metal and grip polymer instead of chalky grey plastic.
-        /// </summary>
-        private static void ApplyPresentationWeaponMaterials(Material? metal, Material? polymer)
-        {
-            if (metal != null)
-            {
-                // Coated gunmetal: retain the verified albedo but avoid a bright polished-plastic receiver.
-                metal.SetColor("_BaseColor", new Color(.30f, .33f, .35f));
-                metal.SetFloat("_Metallic", 0.82f);
-                metal.SetFloat("_Smoothness", 0.46f);
-            }
-            if (polymer != null)
-            {
-                polymer.SetColor("_BaseColor", new Color(.24f, .26f, .23f));
-                polymer.SetFloat("_Metallic", 0.02f);
-                polymer.SetFloat("_Smoothness", 0.12f);
             }
         }
 

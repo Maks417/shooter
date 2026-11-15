@@ -52,6 +52,12 @@ namespace Shooter.Generation.Environment
             "material-weapon-polymer.bin"
         };
 
+        public static readonly string[] FirstPersonSurfacePaths =
+        {
+            "material-weapon-metal.bin", "material-weapon-polymer.bin",
+            "material-fp-sleeve.bin", "material-fp-glove.bin"
+        };
+
         public static readonly string[] SoldierMaterialPaths =
         {
             "material-soldier-team1-uniform.bin",
@@ -109,7 +115,12 @@ namespace Shooter.Generation.Environment
                 list.Add(MaterialCompanionPath(path, "normal"));
                 list.Add(MaterialCompanionPath(path, "mask"));
             }
-            list.AddRange(WeaponMaterialPaths);
+            foreach (string path in FirstPersonSurfacePaths)
+            {
+                list.Add(path);
+                list.Add(MaterialCompanionPath(path, "normal"));
+                list.Add(MaterialCompanionPath(path, "mask"));
+            }
             list.AddRange(SoldierMaterialPaths);
             return list;
         }

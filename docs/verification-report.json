@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "root": "C:\\Job\\shooter\\docs",
+  "root": "C:\\Job\\shooter\\.local\\worktrees\\t084-bot-awareness\\docs",
   "markdownFiles": 127,
-  "wordCount": 137751,
-  "relativeLinksChecked": 1276,
+  "wordCount": 140424,
+  "relativeLinksChecked": 1293,
   "integrityFiles": 176,
   "errors": [],
   "result": "PASS",

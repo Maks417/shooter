@@ -43,6 +43,15 @@ Reports were copied to `Artifacts/m0-foundation/`, `m1-procedural-feasibility/`,
 
 Known limits: hearing ignores walls; slow or crouched movement behind a bot beyond 5 m stays unheard; spread scoring knows allies' goals but not their routes.
 
+## T084 — Near-field finish and hip composition
+
+Owner requested continued visual implementation after 0.3.11, base `12ff5ac`; sole integrator. [Task](../../task-supplement.md#t084--near-field-surfaces-sleeve-shape-and-hip-framing), [ADR-053](../../decisions.md#adr-053--accepted-procedural-near-field-finish-triplets-and-hip-composition-t084).
+
+Adds offline 128px PBR triplets for coated weapon metal, stippled polymer, cloth weave and glove grain at a 100 mm metric tile; all albedo/normal/mask dependencies are required, dimension/channel/mip validated and uploaded with shared metallic/occlusion textures. Sleeve-only geometry gains shallow folds and bend while glove/finger/grip coordinates remain unchanged. Static hip yaw/roll fades to identity at full ADS; aim/ballistics, weapon meshes/sockets, soldier/P05, physics/nav/spawn data and frozen formats/generators remain unchanged. The T082 bot baseline is preserved.
+
+Initial working-source EditMode PASS 53 under `Artifacts/m0-foundation/12ff5acefaa45637a184512d024a6e9de4fefcbf/tests-editmode-20261115T142519437Z-4fb52083/`. Initial Generation 392/393 failed a new test demanding >8 distinct encoded normal values even for shallow coated-metal relief. The test now requires spatial variation independently in both tangent axes, rather than forcing exaggerated bump amplitude. No generated payload/golden changed to pass it; raw failure retained in `Artifacts/m1-procedural-feasibility/12ff5acefaa45637a184512d024a6e9de4fefcbf/20261115T142458573Z-064b9be7/`. Final working-source pure lanes PASS: Contracts 76, Generation 393, Simulation 229, Game 70, Maps 56. Final EditMode 53/53 PASS at `Artifacts/m0-foundation/12ff5acefaa45637a184512d024a6e9de4fefcbf/tests-editmode-20261115T142920806Z-8cf1e2cc/`; these runs retain sourceDirty=true at base 12ff5ac. Later clean-source publication/build/review evidence follows below.
+
+This does not implement articulated fingers/full magazine exchange or repair third-person soldier anatomy. P05 FAIL and all comparison/VD/REL/full gameplay/installed-upgrade/reference GPU/thermal/performance gates remain open. Rollback the new material closure/consumers and sleeve changes together and restore a matching retained 0.3.11 pair.
 
 ## T083 — First-person glove and sleeve presentation
 

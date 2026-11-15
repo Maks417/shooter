@@ -209,8 +209,16 @@ namespace Shooter.Generation.Environment
                 AddSgaf(dependencies, "material", MapVisualClosure.MaterialCompanionPath(path, "mask"), ContentKind.Material,
                     GeometryCodec.EncodeMaterial(bake.Mask), mapFingerprint, toolchainHash);
             }
-            AddSolidMaterial(dependencies, MapVisualClosure.WeaponMaterialPaths[0], 20, 23, 26, 255, mapFingerprint, toolchainHash);
-            AddSolidMaterial(dependencies, MapVisualClosure.WeaponMaterialPaths[1], 13, 14, 11, 255, mapFingerprint, toolchainHash);
+            for (int family = 0; family < MapVisualClosure.FirstPersonSurfacePaths.Length; family++)
+            {
+                string path = MapVisualClosure.FirstPersonSurfacePaths[family];
+                MaterialBake bake = FirstPersonSurfaceBaker.Bake(family);
+                AddSgaf(dependencies, "material", path, ContentKind.Material, GeometryCodec.EncodeMaterial(bake.Albedo), mapFingerprint, toolchainHash);
+                AddSgaf(dependencies, "material", MapVisualClosure.MaterialCompanionPath(path, "normal"), ContentKind.Material,
+                    GeometryCodec.EncodeMaterial(bake.Normal), mapFingerprint, toolchainHash);
+                AddSgaf(dependencies, "material", MapVisualClosure.MaterialCompanionPath(path, "mask"), ContentKind.Material,
+                    GeometryCodec.EncodeMaterial(bake.Mask), mapFingerprint, toolchainHash);
+            }
             AddSolidMaterial(dependencies, MapVisualClosure.SoldierMaterialPaths[0], 41, 71, 107, 255, mapFingerprint, toolchainHash);
             AddSolidMaterial(dependencies, MapVisualClosure.SoldierMaterialPaths[1], 15, 20, 31, 255, mapFingerprint, toolchainHash);
             AddSolidMaterial(dependencies, MapVisualClosure.SoldierMaterialPaths[2], 122, 82, 56, 255, mapFingerprint, toolchainHash);
@@ -354,7 +362,23 @@ namespace Shooter.Generation.Environment
                         throw new InvalidOperationException("Map surface companion mismatch: " + companionPath);
                 }
             }
-            for (int i = 0; i < MapVisualClosure.WeaponMaterialPaths.Length; i++) RequireMaterial(MapVisualClosure.WeaponMaterialPaths[i]);
+            foreach (string path in MapVisualClosure.FirstPersonSurfacePaths)
+            {
+                RequireMaterial(path);
+                var albedo = MapVisualClosure.DecodeMapMaterial(payloads, path);
+                if (albedo.Width != FirstPersonSurfaceBaker.Resolution || albedo.Height != albedo.Width ||
+                    albedo.ChannelFormat != "rgba8-srgb" || albedo.MipBytes.Count != 8)
+                    throw new InvalidOperationException("First-person surface requires a complete 128px production plane: " + path);
+                foreach (string plane in new[] { "normal", "mask" })
+                {
+                    string companionPath = MapVisualClosure.MaterialCompanionPath(path, plane);
+                    RequireMaterial(companionPath);
+                    var companion = MapVisualClosure.DecodeMapMaterial(payloads, companionPath);
+                    if (companion.Width != albedo.Width || companion.Height != albedo.Height ||
+                        companion.ChannelFormat != "rgba8-linear" || companion.MipBytes.Count != 8)
+                        throw new InvalidOperationException("First-person surface companion mismatch: " + companionPath);
+                }
+            }
             for (int i = 0; i < MapVisualClosure.SoldierMaterialPaths.Length; i++) RequireMaterial(MapVisualClosure.SoldierMaterialPaths[i]);
 
             var shader = MapJsonValue.Parse(payloads.Bytes(MapVisualClosure.ShaderPath(profile))).Object;

@@ -1,5 +1,9 @@
 # VD0 visual art brief — Battlefield V / Bodycam / Warface
 
+## T084 — Near-field finish and composition
+
+Replace the flat weapon/glove/sleeve surfaces with original numeric coated-metal, stippled-polymer, woven-cloth and glove-grain PBR triplets at a 100 mm tile scale. Keep the coated metal restrained, cloth/gloves rough, and polymer distinct from both. Sleeve taper gains shallow folds and a slight bend. Hip-held equipment uses a modest cant toward the center of the view, fading fully out for accurate ADS. No new camera shake, weapon mechanics or third-person anatomy is introduced. [ADR-053](decisions.md#adr-053--accepted-procedural-near-field-finish-triplets-and-hip-composition-t084), [evidence](milestones/m11-playable-release/handoff.md). Named visual acceptance and reference-machine cost remain separate Pending checks.
+
 ## T083 — First-person presence
 
 Implement original gloved trigger/support hands and long uniform sleeves as offline numeric meshes for both weapons. Palms/fingers follow existing grip coordinates; cuffs and knuckle pads separate fabric, glove and protective material. Support-hand reach follows the authority reload phase and returns continuously to the grip, with reduced-motion scaling. This closes the floating-weapon presentation gap in software; it does not solve third-person soldier anatomy or provide articulated fingers/full magazine exchange. [ADR-052](decisions.md#adr-052--accepted-packaged-first-person-glove-and-sleeve-props-t083), [delivery evidence](milestones/m11-playable-release/handoff.md).

@@ -11,6 +11,36 @@ using Xunit;
 [Collection("NativeNavProvider")]
 public sealed class MapPackageSurfaceTests : IDisposable
 {
+    [Fact]
+    public void FirstPersonFinishTripletsHavePhysicalScaleSpatialChannelsAndDistinctRoughness()
+    {
+        Assert.Equal(.1f, FirstPersonSurfaceBaker.TileMeters);
+        var package = MapPackageBuilder.Build("training-compound", "low", toolchain);
+        var payloads = PackagedVisualPayloads.FromBuild(package);
+        for (int family = 0; family < MapVisualClosure.FirstPersonSurfacePaths.Length; family++)
+        {
+            string path = MapVisualClosure.FirstPersonSurfacePaths[family];
+            var albedo = MapVisualClosure.DecodeMapMaterial(payloads, path);
+            var normal = MapVisualClosure.DecodeMapMaterial(payloads, MapVisualClosure.MaterialCompanionPath(path, "normal"));
+            var mask = MapVisualClosure.DecodeMapMaterial(payloads, MapVisualClosure.MaterialCompanionPath(path, "mask"));
+            Assert.Equal(128, albedo.Width);
+            Assert.Equal(8, albedo.MipBytes.Count);
+            Assert.Equal("rgba8-srgb", albedo.ChannelFormat);
+            Assert.Equal("rgba8-linear", normal.ChannelFormat);
+            Assert.Equal("rgba8-linear", mask.ChannelFormat);
+            Assert.True(albedo.MipBytes[0].Distinct().Count() > 8);
+            // Shallow coated-metal relief may span only a few encoded normal values.
+            // Require real variation in both tangent axes without demanding exaggerated bump depth.
+            Assert.True(normal.MipBytes[0].Where((v, i) => i % 4 == 0).Distinct().Count() > 1);
+            Assert.True(normal.MipBytes[0].Where((v, i) => i % 4 == 1).Distinct().Count() > 1);
+            Assert.All(normal.MipBytes[0].Where((v, i) => i % 4 == 3), a => Assert.Equal(255, a));
+            double roughness = mask.MipBytes[0].Where((v, i) => i % 4 == 2).Average(v => (double)v);
+            if (family == 0) Assert.InRange(roughness, 115, 160);
+            if (family == 1 || family == 2) Assert.InRange(roughness, 210, 245);
+            Assert.All(mask.MipBytes[0].Where((v, i) => i % 4 == 0), m => Assert.Equal(family == 0 ? 190 : 0, m));
+        }
+    }
+
     private readonly string root = Path.Combine(Path.GetTempPath(), "shooter-map-surface-" + Guid.NewGuid().ToString("N"));
     private readonly ContentId toolchain = ContentIdentity.Hash(Encoding.ASCII.GetBytes("map-surface-publication-tests"));
 

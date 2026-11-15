@@ -144,6 +144,12 @@ Owner-authorized visual continuation, 2026-11-15. Sole integrator, base merged T
 
 Deliver ADR-052 offline packaged rifle/pistol glove/sleeve pairs, material reuse, slot/life/session ownership, support-hand reach and continuous reload path. Preserve T081 architecture and landed T082 bot behaviour. Required checks: Contracts/Generation/Simulation/Game/Maps, Unity EditMode/PlayMode, frozen/provenance guards, docs/fixtures, clean native publication, Client/Server/package/installer and actual player review. Tests/pure evidence cannot close P05, visual comparison, full gameplay, installed-upgrade or reference performance. Rollback the paired closure/runtime changes together. [M11 handoff](milestones/m11-playable-release/handoff.md) records actual results.
 
+## T084 — Near-field surfaces, sleeve shape and hip framing
+
+Owner-authorized continuation, 2026-11-15, sole integrator at `12ff5ac`. Paths: new `Generation/Core/Environment/FirstPersonSurfaceBaker.cs`, existing `FirstPersonHandGeometry.cs`, map closure/builder, `Presentation/Rig/ProductActorPresentation.cs`, `View/FirstPersonHandling.cs`, associated Generation/Simulation/Unity tests and shared design/delivery docs. Preserve T082 bot baseline, all gameplay and frozen generators/locks/settings/toolchain. No delegation or third-person soldier/P05 iteration.
+
+Deliver ADR-053 numeric PBR triplets and strict dependencies, mask-driven binding/resource ownership, shallow sleeve folds and ADS-safe hip composition. Run Contracts/Generation/Simulation/Game/Maps, Unity EditMode/PlayMode, provenance/frozen guards, docs/fixtures, native content publication, clean Client/Server and installer builder; record actual player/device limits in the [M11 handoff](milestones/m11-playable-release/handoff.md). Old paired installers remain rollback artifacts; no comparison/hardware/acceptance waiver.
+
 ## T085 — Bot rear awareness, team spread and readable time-to-kill (2026-11-15)
 
 The owner playtested T082 and reported: bots "running after each other", they "don't see enemies behind their back", and time-to-kill "is not obvious and too short". Base `12ff5ac`; worktree `.local/worktrees/t084-bot-awareness`, branch `t084-bot-awareness`. Scope:
@@ -161,7 +167,7 @@ Investigation found:
 - **Front-loaded accuracy.** Accuracy recovery ran from sighting. The 250–500 ms reaction delay consumed most of the acquisition error, so the opening shots hit and still targets died within about 0.4 s of the first shot.
 - **No direction cue.** The player had no direction cue for incoming hits, only a full-screen flash.
 
-Implementation is described in [AI awareness, team spread and lethality](features/ai.md#awareness-team-spread-and-lethality-t084-2026-11-15).
+Implementation is described in [AI awareness, team spread and lethality](features/ai.md#awareness-team-spread-and-lethality-t085-2026-11-15).
 
 Validation:
 - New `BotAwarenessTests` (6 tests) and `BotLethalityTests` (TTK envelope at 8, 20 and 40 m on the real combat harness).
