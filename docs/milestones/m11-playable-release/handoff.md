@@ -1,6 +1,6 @@
 # M11 — Playable build and acceptance — handoff and gate record
 
-**Latest source — 2026-11-15:** T079 design wave merged at `73a18e4` (env/menu/combat). Native content republish Verified for this source; Client/package/installer delivery in progress or Pending in this handoff section. Prior installer **0.3.7** at `e251702` remains the last shipped binary until 0.3.8 lands. VD/REL acceptance remains open and P05 FAIL is unchanged.
+**Latest preview — 2026-11-15:** T079 installer **0.3.8**, binary source `07c5db7` (env/menu/combat design wave). [Delivery evidence](#t079--design-wave-installer-038). Prior installer **0.3.7** at `e251702` remains a valid rollback pair. VD/REL acceptance remains open and P05 FAIL is unchanged.
 
 ## T079 — Material-split maps, menu staging, combat presence
 
@@ -12,7 +12,21 @@ Owner-directed continuation after T078. Three worktrees merged to main: env `7bf
 | Menu | BFV-like staging depth bands, packaged materials, stronger operation cards | EditMode assertions extended; Unity EditMode run Pending (editor contention) |
 | Combat | Camera bob, hit marker/damage flash, thinner HUD, denser FX | Simulation 211 PASS |
 
-Native `Compile-GameContent -Native -Force` Verified (`allNative=true`) for `73a18e4`. Provenance 736/368 PASS. Player comparative review and VD exits remain Pending. P05 unauthorized.
+Native `Compile-GameContent -Native -Force` Verified (`allNative=true`) for merge source `73a18e4` (docs tip `07c5db7`). Provenance 736/368 PASS. Player comparative review and VD exits remain Pending. P05 unauthorized.
+
+### T079 — Design wave installer 0.3.8
+
+Offline-only delivery from clean `07c5db7` (includes T079 merges + docs). Locked Unity 6000.3.28f1 / 8f082d2fe476.
+
+| Gate | Result | Evidence |
+|---|---|---|
+| Pure lanes | Generation 387, Maps 53, Simulation 211, provenance 736/368 PASS at merge | `Artifacts/*/73a18e42…/` |
+| Content | `Compile-GameContent.ps1 -Native -Force` PASS, unity-native-navmesh | `Artifacts/map-packages-native` + compile-gamecontent under `73a18e42…` |
+| Client / smoke | IL2CPP client PASS; client smoke PASS | `Artifacts/m0-foundation/07c5db7f…/build-client-20261115T125203351Z-59cca004/`, `smoke-client-20261115T125453238Z-41220655/` |
+| Package | `Package-Release.ps1 -RequireNativeNav` PASS, 294 files, content closure `a4b2827a…` | `…/package-20261115T125501399Z-75276c03/` |
+| Installer | `Shooter-Setup-0.3.8.exe`, 26,433,023 bytes, SHA256 `13954c29686ddd42e7d0c3df01b9414d11aa8b0eb90c78d44ee89482dad66a56`, predecessor 0.3.7, AppId unchanged | `…/installer-20261115T125512181Z-c97a7959/installer/` |
+
+Pending: actual install/upgrade and named visual/gameplay review of T078/T079 presentation. `releaseAcceptance` NotClaimed.
 
 ## T078 — Architectural / FP / material readability (source merge)
 
