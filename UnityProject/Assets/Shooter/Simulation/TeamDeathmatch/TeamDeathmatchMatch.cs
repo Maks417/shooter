@@ -204,7 +204,8 @@ namespace Shooter.Simulation.TeamDeathmatch
                         living,
                         slotLastUsedActiveTick,
                         provisional,
-                        out var slot))
+                        out var slot,
+                        relaxLineOfFire: RelaxDue(activeTicks, row.SpawnFailureDeadlineActiveTick)))
                 {
                     if (row.SpawnFailureDeadlineActiveTick == 0)
                         row.SpawnFailureDeadlineActiveTick = unchecked(activeTicks + (uint)GameContractVersion.SpawnFailureTimeoutTicks);
@@ -230,6 +231,13 @@ namespace Shooter.Simulation.TeamDeathmatch
                 provisional.Add(slot.Position);
                 living.Add(entity);
             }
+        }
+
+        private static bool RelaxDue(uint activeTicks, uint failureDeadline)
+        {
+            if (failureDeadline == 0) return false;
+            uint firstFailure = unchecked(failureDeadline - (uint)GameContractVersion.SpawnFailureTimeoutTicks);
+            return unchecked(activeTicks - firstFailure) >= (uint)SpawnSafetyPolicy.SpawnRelaxAfterTicks;
         }
 
         public MatchViewSnapshot AcquireSnapshot(ulong sessionId, uint completedSimulationTick)

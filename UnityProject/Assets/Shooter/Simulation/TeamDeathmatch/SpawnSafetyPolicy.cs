@@ -15,6 +15,8 @@ namespace Shooter.Simulation.TeamDeathmatch
         public const float EnemyLosRangeMeters = 40f;
         public const float ActorSpacingMeters = 2f;
         public const float EyeHeightMeters = 1.65f;
+        /// <summary>Active ticks of failed safe-slot search before the line-of-fire filter is dropped (ADR pending).</summary>
+        public const int SpawnRelaxAfterTicks = 120;
 
         public static bool TryPick(
             byte team,
@@ -24,7 +26,8 @@ namespace Shooter.Simulation.TeamDeathmatch
             IReadOnlyList<EntityId> livingActors,
             IReadOnlyDictionary<uint, uint> slotLastUsedActiveTick,
             IReadOnlyList<Float3> provisionalOccupancy,
-            out SpawnSlot chosen)
+            out SpawnSlot chosen,
+            bool relaxLineOfFire = false)
         {
             chosen = default;
             if (slots == null || map == null || lifecycle == null) return false;
@@ -69,7 +72,9 @@ namespace Shooter.Simulation.TeamDeathmatch
             if (best == null) return false;
             // All remaining candidates are navigable and unoccupied. Prefer safe-LOS ranking;
             // if every candidate is LOS-exposed, still refuse to spawn into exposed pressure.
-            if (!bestSafeLos) return false;
+            // Relaxed fallback: ranking already prefers safe slots, so the best exposed slot has the
+            // farthest nearest enemy, then least recently used, then lowest slot ID.
+            if (!bestSafeLos && !relaxLineOfFire) return false;
             chosen = best.Value;
             return true;
         }

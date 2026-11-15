@@ -42,6 +42,7 @@ namespace Shooter.Game.Session
         private readonly ProductMeasurementTelemetry measurement = new ProductMeasurementTelemetry();
         private QueryCountingMapRuntime? countingMap;
         private long querySamplesAtMatchStart;
+        private GameOperationResult? terminalFault;
         private bool disposed;
 
         public OfflineGameSession(IMapCatalog catalog, Func<IWorldQueries, INavigation, IMapRuntime> mapFactory, bool allowFakeMapRuntime = false)
@@ -53,6 +54,11 @@ namespace Shooter.Game.Session
 
         public ulong AuthoritySessionId => sessionId;
         public GameMatchPhase Phase => phase;
+        /// <summary>
+        /// Terminal recoverable fault (for example SpawnFailure after the match aborted because no navigable,
+        /// unoccupied slot exists). Null while healthy; cleared by the next BeginLoadAsync. Read-only for the shell.
+        /// </summary>
+        public GameOperationResult? TerminalFault => terminalFault;
         public SessionPauseState PauseState => pause;
         public uint CompletedTick => tick == 0 && phase != GameMatchPhase.Playing ? 0 : tick;
         public EntityId HumanEntityId => humanEntity;
@@ -107,6 +113,7 @@ namespace Shooter.Game.Session
                 return new GameOperationResult(GameErrorCode.InvalidRequest, "seed-mismatch", "Seed does not match packaged map.");
 
             ReleaseRuntime();
+            terminalFault = null;
             epoch++;
             sessionId = unchecked(epoch + 1000UL);
             this.request = request;
@@ -217,6 +224,8 @@ namespace Shooter.Game.Session
         /// <summary>Advance one authority tick. Local human command optional; bots planned from match snapshot.</summary>
         public GameOperationResult Step(InputCommand? humanCommand, bool slideRequested = false)
         {
+            if (terminalFault != null && phase == GameMatchPhase.Stopped)
+                return GameOperationResult.Ok; // Faulted: no-op until the shell returns to the menu.
             if (phase != GameMatchPhase.Playing || pause != SessionPauseState.Running)
                 return new GameOperationResult(GameErrorCode.Busy, "not-playing", "Session is not advancing.");
             if (harness == null || lifecycle == null || bots == null || mapRuntime == null || request == null)
@@ -229,6 +238,13 @@ namespace Shooter.Game.Session
 
             var snap = match.AcquireSnapshot(sessionId, tick);
             measurement.LeaseAcquires++;
+            if (snap.Phase == GameMatchPhase.Stopped && snap.Reason == FinishReason.Aborted)
+            {
+                terminalFault = new GameOperationResult(GameErrorCode.SpawnFailure, "spawn-failure", "No safe spawn available. Returning to the menu.");
+                phase = GameMatchPhase.Stopped;
+                pause = SessionPauseState.Running;
+                return GameOperationResult.Ok;
+            }
             // Real respawn semantics: count life/entity replacements, not net alive growth
             // (same-tick death elsewhere must not cancel a successful respawn event).
             measurement.Respawns += CountRespawnEvents(pre, snap);
