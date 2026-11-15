@@ -259,7 +259,8 @@ namespace Shooter.Presentation.Session
         private void BuildMapCard(PackagedVisualPayloads visuals, Shader shader, int index)
         {
             float offset = 1000 + index * 1000;
-            var root = new GameObject("Verified map card " + visuals.MapId);
+            // The overview renders immediately below, before the final recursive stage setup.
+            var root = new GameObject("Verified map card " + visuals.MapId) { layer = StageLayer };
             root.transform.SetParent(transform, false);
             root.transform.position = new Vector3(offset, 0, 0);
             root.layer = StageLayer;
