@@ -71,11 +71,11 @@ The probe was deleted after tuning. It is a tuning aid, not acceptance.
 | Test-Contracts / Test-Generation | PASS 76 / 391 |
 | Test-SourceProvenance | PASS, 746 entries / 373 GUIDs (5 new `.meta`) |
 | Fixtures, C0 lock, Game-v1 lock, docs | PASS (35 fixture assertions) |
+| Unity EditMode / PlayMode on merged `main` `e2c26e9` (clean) | PASS 53 / 20; PlayMode includes `ProductBotNavigationTests` on the real DepotYard package (Passed, not Inconclusive). Reports: `Artifacts/m0-foundation/e2c26e9629cdf694836f4cad2b336362c4d3a312/tests-editmode-20261115T135637676Z-ebb80009/` and `tests-playmode-20261115T135804010Z-dade6d9a/` |
 
 Reports were copied from the worktree to `Artifacts/m2-combat-harness/`, `m8-runtime-composition/`, `m0-foundation/` and `m1-procedural-feasibility/` under `c5a16a4fb6102c7882bf8858fe728aed7b0ff074/`. A first run on the pre-rebase commit `d5e8db0` also passed in every lane, and its reports are kept alongside.
 
 **Pending** (not run; never PASS without evidence):
-- Unity EditMode/PlayMode on the merged source.
 - Client and server builds and smoke tests.
 - A `SHOOTER_AI_SUMMARY` capture on real maps.
 - A benchmark of AI CPU against the 1.5 ms mean budget.
