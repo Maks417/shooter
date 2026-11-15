@@ -139,13 +139,22 @@ namespace Shooter.Presentation.Session
         public static void CombatPlate(Rect r, bool strong = false, bool accentLeft = false, bool accentBottom = false)
         {
             Fill(r, strong ? HudPlateStrong : HudPlate);
+            Edge(r);
+            if (accentLeft) AccentBar(new Rect(r.x, r.y + 1, 2, r.height - 2), Accent);
+            if (accentBottom) AccentBar(new Rect(r.x + 2, r.yMax - 2, Mathf.Min(28, r.width - 4), 1), Accent);
+        }
+
+        /// <summary>1px plate edge: soft top/left highlight, quiet bottom/right shadow.</summary>
+        public static void Edge(Rect r)
+        {
             Fill(new Rect(r.x, r.y, r.width, 1), HudEdge);
             Fill(new Rect(r.x, r.yMax - 1, r.width, 1), new Color(0, 0, 0, .28f));
             Fill(new Rect(r.x, r.y, 1, r.height), HudEdgeSoft);
             Fill(new Rect(r.xMax - 1, r.y, 1, r.height), new Color(0, 0, 0, .18f));
-            if (accentLeft) Fill(new Rect(r.x, r.y + 1, 2, r.height - 2), Accent);
-            if (accentBottom) Fill(new Rect(r.x + 2, r.yMax - 2, Mathf.Min(28, r.width - 4), 1), Accent);
         }
+
+        /// <summary>Thin accent rail or progress fill (ally/enemy/amber).</summary>
+        public static void AccentBar(Rect r, Color color) => Fill(r, color);
 
         /// <summary>Soft edge vignette from observed health/damage. Analytic fills only.</summary>
         public static void EdgeVignette(float width, float height, float strength, Color tint)

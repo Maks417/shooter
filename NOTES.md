@@ -1,20 +1,22 @@
 # T077 HUD polish (visual/t077-hud)
 
 ## Visual changes
-- Combat plates: translucent charcoal + hairline edges (`TacticalUi.CombatPlate`)
+- Combat plates: translucent charcoal + hairline edges (`TacticalUi.CombatPlate` / `Edge` / `AccentBar`)
 - Health: large HP number, 5-segment dual-layer bar, warn (≤40 amber) / danger (≤25 coral), edge vignette (honors ReducedFlash)
-- Ammo: mag-dominant hierarchy, tactile reload progress caret
+- Ammo: larger mag digits, clearer reserve, edged reload progress bar
 - Compass: 15° ticks, stronger cardinals under score strip
-- Minimap/squad: denser list with ally rail, ally facing ticks (friendly-only)
-- Kill feed: fade + YOU killer/victim tint rails
-- Reticle: thinner arms, center gap/dot; ADS still hides hip reticle
-- Shell: denser Main rail; compact score/clock strip
+- Minimap/squad: stronger building contrast, thin border, quieter squad chrome with +/- alive/dead (friendly-only)
+- Kill feed: fade + left YOU killer/victim tint rails
+- Reticle: refined stroke + center gap; ADS still hides hip reticle
+- Shell: compact BFV score/clock strip
+- Product sun: Bodycam daylight (~1,0.92,0.82 @ 1.45, Euler 48/-35); soft ambient for GeneratedSky trilight
+- Menu stage: warmer key + denser apron bounce (StageLayer isolation preserved)
 
 ## Files
 - `Presentation/Hud/CombatHudVisual.cs`, `KillFeedText.cs` (+ metas)
-- `Presentation/Session/ProductSessionView.cs` (HUD draw methods only)
-- `Presentation/Session/TacticalUi.cs`, `ProductShellHost.cs`
+- `Presentation/Session/ProductSessionView.cs` (HUD draw + sun/ambient)
+- `Presentation/Session/TacticalUi.cs`, `ProductShellHost.cs`, `ProductMenuScene.cs`
 - Tests under `Tools/Simulation.Tests/Hud/`
 
 ## Merge note
-Leave `ProductSessionView` sun/FX / actor presentation regions untouched; expect conflicts only if another branch edits the same HUD draw methods.
+Sun/ambient and menu lights are intentional for this slice; expect conflicts if atmosphere workers edit the same Initialize lighting block.

@@ -12,7 +12,7 @@ namespace Shooter.Presentation.Hud
         public const float KillFeedFadeSeconds = 1.6f;
         public const int HealthDangerThreshold = 25;
         public const int HealthWarnThreshold = 40;
-        public const float DamagePulseSeconds = 0.45f;
+        public const float DamagePulseSeconds = 0.55f;
         public const float MaxHealth = 100f;
         public const float HealthBarHeight = 5f;
         public const int HealthSegments = 5;

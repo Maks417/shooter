@@ -109,15 +109,17 @@ namespace Shooter.Presentation.Session
             camera.allowMSAA = QualitySettings.GetQualityLevel() == 2;
             camera.cullingMask &= ~(1 << ProductMenuScene.StageLayer);
 
+            // Bodycam daylight key: warm hard sun. Soft ambient lets GeneratedSky trilight own the map.
             var sun = new GameObject("Product sun").AddComponent<Light>();
             sun.transform.SetParent(transform, false);
             sun.type = LightType.Directional;
-            sun.transform.rotation = Quaternion.Euler(50f, 40f, 0f);
-            sun.intensity = 1.1f;
+            sun.color = new Color(1f, 0.92f, 0.82f, 1f);
+            sun.transform.rotation = Quaternion.Euler(48f, -35f, 0f);
+            sun.intensity = 1.45f;
             sun.shadows = LightShadows.Hard;
             sun.cullingMask &= ~(1 << ProductMenuScene.StageLayer);
             RenderSettings.ambientMode = AmbientMode.Flat;
-            RenderSettings.ambientLight = new Color(0.28f, 0.30f, 0.34f, 1f);
+            RenderSettings.ambientLight = new Color(0.16f, 0.17f, 0.18f, 1f);
             QualitySettings.vSyncCount = 0;
             Application.targetFrameRate = -1;
             int profile = QualitySettings.GetQualityLevel();
@@ -627,16 +629,15 @@ namespace Shooter.Presentation.Session
                 DrawAmmoPanel(a, human, snap);
                 DrawCompass(a, human.AimYaw);
                 DrawKillFeed(a);
-                // Analytic center reticle. ADS uses the physical weapon sight instead.
+                // Analytic center reticle with a small center gap. ADS uses the weapon sight instead.
                 if (!input.AimHeld)
                 {
                     float cx = combatUi.Width * .5f, cy = combatUi.Height * .5f;
-                    const float arm = 4.5f, gap = 3.5f;
+                    const float arm = 5f, gap = 3.5f;
                     ReticleStroke(new Rect(cx - gap - arm, cy - 0.5f, arm, 1));
                     ReticleStroke(new Rect(cx + gap, cy - 0.5f, arm, 1));
                     ReticleStroke(new Rect(cx - 0.5f, cy - gap - arm, 1, arm));
                     ReticleStroke(new Rect(cx - 0.5f, cy + gap, 1, arm));
-                    ReticleStroke(new Rect(cx - 0.75f, cy - 0.75f, 1.5f, 1.5f));
                 }
             }
             finally { combatUi.End(); }
@@ -644,25 +645,26 @@ namespace Shooter.Presentation.Session
 
         private void DrawAmmoPanel(Rect safe, ActorLifecycleState human, MatchViewSnapshot? snapshot)
         {
-            const float w = 156f, h = 62f;
+            const float w = 164f, h = 68f;
             float x = safe.xMax - w, y = safe.yMax - h;
             TacticalUi.CombatPlate(new Rect(x, y, w, h), accentBottom: true);
             string weapon = human.ActiveWeaponSlot == 0 ? "RIFLE" : "SIDEARM";
-            combatUi.Label(new Rect(x + 8, y + 4, w - 16, 12), weapon, 10, TacticalUi.Muted, TextAnchor.UpperRight);
+            combatUi.Label(new Rect(x + 8, y + 5, w - 16, 12), weapon, 10, TacticalUi.Muted, TextAnchor.UpperRight);
             Color magColor = human.Magazine == 0 ? TacticalUi.Enemy : TacticalUi.Text;
             // Mag dominates; reserve stays quieter (BFV/Warface hierarchy).
-            combatUi.Label(new Rect(x + 6, y + 14, 72, 34), human.Magazine.ToString("00"), 30, magColor, TextAnchor.MiddleRight);
-            combatUi.Label(new Rect(x + 80, y + 18, 12, 16), "/", 11, TacticalUi.Muted, TextAnchor.MiddleCenter);
-            combatUi.Label(new Rect(x + 90, y + 28, 54, 18), human.Reserve.ToString("000"), 13, TacticalUi.Muted, TextAnchor.MiddleLeft);
+            combatUi.Label(new Rect(x + 6, y + 16, 78, 36), human.Magazine.ToString("00"), 32, magColor, TextAnchor.MiddleRight);
+            combatUi.Label(new Rect(x + 86, y + 22, 12, 16), "/", 12, TacticalUi.Muted, TextAnchor.MiddleCenter);
+            combatUi.Label(new Rect(x + 98, y + 32, 54, 18), human.Reserve.ToString("000"), 14, TacticalUi.Muted, TextAnchor.MiddleLeft);
             bool reloading = actors != null && actors.Actions.IsReloading(session!.HumanEntityId);
-            float trackX = x + 8, trackY = y + h - 7, trackW = w - 16, trackH = 3f;
+            float trackX = x + 8, trackY = y + h - 8, trackW = w - 16, trackH = 3f;
             TacticalUi.Fill(new Rect(trackX, trackY, trackW, trackH), new Color(.06f, .08f, .09f, .65f));
+            TacticalUi.Edge(new Rect(trackX, trackY, trackW, trackH));
             if (reloading)
             {
                 float phase = Mathf.Clamp01(actors!.Actions.ReloadPhaseAtTick(session.HumanEntityId, snapshot?.CompletedSimulationTick ?? 0));
                 combatUi.Label(new Rect(x, y - 14, w, 14), "RELOADING", 10, TacticalUi.Accent, TextAnchor.MiddleRight);
                 float fillW = trackW * phase;
-                TacticalUi.Fill(new Rect(trackX, trackY, fillW, trackH), TacticalUi.Accent);
+                TacticalUi.AccentBar(new Rect(trackX, trackY, fillW, trackH), TacticalUi.Accent);
                 if (fillW > 2f) TacticalUi.Fill(new Rect(trackX + fillW - 2f, trackY - 1, 2, trackH + 2), TacticalUi.Text);
             }
             else if (human.Magazine == 0)
@@ -694,7 +696,7 @@ namespace Shooter.Presentation.Session
                     float cy = size * .5f - (box.Center.Z - human.Feet.Z) * scale;
                     Rect r = new Rect(cx - box.Size.X * scale * .5f, cy - box.Size.Z * scale * .5f, box.Size.X * scale, box.Size.Z * scale);
                     if (r.xMax < 0 || r.yMax < 0 || r.x > size || r.y > size) continue;
-                    TacticalUi.Fill(r, new Color(.42f, .52f, .54f, .55f));
+                    TacticalUi.Fill(r, new Color(.48f, .58f, .60f, .72f));
                 }
                 if (snapshot != null && session?.Lifecycle != null)
                     for (int i = 0; i < snapshot.Participants.Count; i++)
@@ -743,17 +745,10 @@ namespace Shooter.Presentation.Session
                     if (participant.Team != human.Team || participant.IsHuman) continue;
                     string name = participant.DisplayName.Length > 11 ? participant.DisplayName.Substring(0, 10) + "…" : participant.DisplayName;
                     float ry = squadTop + 14 + row * 14;
-                    if (participant.Alive)
-                    {
-                        TacticalUi.Fill(new Rect(squadX, ry + 3, 4, 4), TacticalUi.Ally);
-                        combatUi.Label(new Rect(squadX + 8, ry, 114, 13), name, 10, TacticalUi.Text);
-                    }
-                    else
-                    {
-                        TacticalUi.Fill(new Rect(squadX, ry + 3, 4, 4), TacticalUi.Raised);
-                        TacticalUi.Fill(new Rect(squadX + 1, ry + 4, 2, 1), TacticalUi.Muted);
-                        combatUi.Label(new Rect(squadX + 8, ry, 114, 13), "× " + name, 10, TacticalUi.Muted);
-                    }
+                    // Alive/dead cue stays color-independent (+ / -).
+                    string mark = participant.Alive ? "+  " : "-  ";
+                    combatUi.Label(new Rect(squadX, ry, 114, 13), mark + name, 10,
+                        participant.Alive ? TacticalUi.Text : TacticalUi.Muted);
                     row++;
                 }
 
@@ -879,7 +874,7 @@ namespace Shooter.Presentation.Session
                 bool localVictim = KillFeedText.IsLocalVictim(line);
                 Color rail = localKiller ? TacticalUi.Ally : (localVictim ? TacticalUi.Enemy : TacticalUi.HudEdge);
                 rail.a *= alpha;
-                TacticalUi.Fill(new Rect(r.xMax - 2, r.y + 2, 2, r.height - 4), rail);
+                TacticalUi.AccentBar(new Rect(r.x, r.y + 2, 2, r.height - 4), rail);
                 if (CombatHudVisual.TrySplitKillFeed(line, out string left, out string right))
                 {
                     bool env = string.Equals(right, "ENVIRONMENT", System.StringComparison.Ordinal);
@@ -891,7 +886,7 @@ namespace Shooter.Presentation.Session
                     rightInk.a = alpha;
                     Color sep = TacticalUi.Muted;
                     sep.a = alpha * 0.85f;
-                    combatUi.Label(new Rect(r.x + 4, r.y, 86, r.height), left, 11, leftInk, TextAnchor.MiddleRight);
+                    combatUi.Label(new Rect(r.x + 8, r.y, 82, r.height), left, 11, leftInk, TextAnchor.MiddleRight);
                     combatUi.Label(new Rect(r.x + 92, r.y, 16, r.height), "›", 11, sep, TextAnchor.MiddleCenter);
                     combatUi.Label(new Rect(r.x + 110, r.y, 100, r.height), right, 11, rightInk, TextAnchor.MiddleLeft);
                 }
@@ -899,7 +894,7 @@ namespace Shooter.Presentation.Session
                 {
                     Color ink = localKiller ? TacticalUi.Ally : (localVictim ? TacticalUi.Enemy : TacticalUi.Text);
                     ink.a = alpha;
-                    combatUi.Label(new Rect(r.x + 4, r.y, r.width - 10, r.height), line, 11, ink, TextAnchor.MiddleRight);
+                    combatUi.Label(new Rect(r.x + 8, r.y, r.width - 14, r.height), line, 11, ink, TextAnchor.MiddleRight);
                 }
             }
         }
