@@ -5,6 +5,7 @@ Status: T089 / [ADR-062](../decisions.md#adr-062--accepted-stereo-foundauthored-
 ## Policy
 
 - Product combat feedback loads **stereo 48 kHz WAV** clips from `Content/Audio/combat/` via `manifest.json` (source note + SHA-256 per file). Not live MIDI/sine beeps.
+- **Rifle vs pistol shots** are distinct CC0 outdoor recordings (OpenGameArt Tabasco/kurt packs), sliced to one-shots — not shared synthetic beeps.
 - This build is non-commercial; paid licensing workflow is not required. Extracting audio from third-party commercial games is forbidden.
 - Generated stereo Foley (`CombatAudioBankBaker.BakeGenerated`) is **emergency fallback** only when the bank is missing or a hash fails.
 - Presentation-only: authority combat events and stride footsteps drive cues; audio never mutates simulation.

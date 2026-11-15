@@ -55,7 +55,9 @@ namespace Shooter.Simulation.Tests.Fx
             var mix = new SynthAudioMixer();
             mix.SetChannelGains(1f, 1f, 0.7f);
             Assert.True(mix.TryPlay(SynthVoiceKind.Shot, 0f, 7));
-            float loud = System.Math.Abs(mix.Mix(1f / 48000f));
+            float loud = 0f;
+            for (int i = 0; i < 256; i++)
+                loud += System.Math.Abs(mix.Mix(1f / 48000f));
 
             mix.SetChannelGains(0f, 1f, 0.7f, masterMuted: true);
             float muted = System.Math.Abs(mix.Mix(1f / 48000f));
@@ -293,6 +295,19 @@ namespace Shooter.Simulation.Tests.Fx
                 right += System.Math.Abs(rifle[i * 2 + 1]);
             }
             Assert.True(System.Math.Abs(left - right) > 1e-4f);
+        }
+
+        [Fact]
+        public void Rifle_and_pistol_found_shots_are_distinct_waveforms()
+        {
+            string? root = CombatAudioSamplePaths.ResolveCombatSampleRoot();
+            Assert.False(string.IsNullOrEmpty(root));
+            var bank = CombatAudioBankBaker.Bake(sampleRoot: root);
+            Assert.True(bank.TryGetClip(SynthVoiceKind.RifleShot, 0, out var rifle));
+            Assert.True(bank.TryGetClip(SynthVoiceKind.PistolShot, 0, out var pistol));
+            Assert.True(rifle.Length != pistol.Length || !SameSamples(rifle, pistol));
+            // Rifle one-shots are longer outdoor reports than pistol cracks.
+            Assert.True(rifle.Length > pistol.Length);
         }
 
         [Fact]

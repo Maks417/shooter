@@ -7,64 +7,64 @@
       "kind": "rifle_shot",
       "variation": 0,
       "file": "rifle_shot_00.wav",
-      "sha256": "7abfb108e66de77dd67a8e14d6c80d8814c59e572abeebe48152bdb79d0d3ee8",
-      "source": "project-authored stereo Foley PCM render (T089); non-commercial; not extracted from any commercial game",
+      "sha256": "a7790f99dcf889cbc13c66832479758f6a6269ef9ba48aba48bf735fa49e21eb",
+      "source": "OpenGameArt CC0 real recordings \u2014 Tabasco Gunshot Sounds (https://opengameart.org/content/gunshot-sounds) SKS/Mosin Nagant rifle takes; sliced to 48 kHz stereo one-shots. Not from commercial games.",
       "license": "CC0-1.0"
     },
     {
       "kind": "rifle_shot",
       "variation": 1,
       "file": "rifle_shot_01.wav",
-      "sha256": "571f785f21979063715a5b91b9ab704e097be4d736fc08632ef93705bef1945f",
-      "source": "project-authored stereo Foley PCM render (T089); non-commercial; not extracted from any commercial game",
+      "sha256": "87e8cc0204b50982a9451c99d88aed52130b60189689a04a39cb46078e212bde",
+      "source": "OpenGameArt CC0 real recordings \u2014 Tabasco Gunshot Sounds (https://opengameart.org/content/gunshot-sounds) SKS/Mosin Nagant rifle takes; sliced to 48 kHz stereo one-shots. Not from commercial games.",
       "license": "CC0-1.0"
     },
     {
       "kind": "rifle_shot",
       "variation": 2,
       "file": "rifle_shot_02.wav",
-      "sha256": "aac639bada60776f2e3d48b19f2df4e6c9306cd056713521fbe16f05443ca991",
-      "source": "project-authored stereo Foley PCM render (T089); non-commercial; not extracted from any commercial game",
+      "sha256": "f19b82e07688975eb13a6fc93f149100f4c6e8982bfdc89a15777aca88269029",
+      "source": "OpenGameArt CC0 real recordings \u2014 Tabasco Gunshot Sounds (https://opengameart.org/content/gunshot-sounds) SKS/Mosin Nagant rifle takes; sliced to 48 kHz stereo one-shots. Not from commercial games.",
       "license": "CC0-1.0"
     },
     {
       "kind": "rifle_shot",
       "variation": 3,
       "file": "rifle_shot_03.wav",
-      "sha256": "7b7f400dc90a60474a956ac2387aceeca9842ea2f56f2cfad0b9b036a5ee994a",
-      "source": "project-authored stereo Foley PCM render (T089); non-commercial; not extracted from any commercial game",
+      "sha256": "90be7e863961003527ef256c6e1ed51aa3fbc4eed27dfa6750437fdf4fc9f9b4",
+      "source": "OpenGameArt CC0 real recordings \u2014 Tabasco Gunshot Sounds (https://opengameart.org/content/gunshot-sounds) SKS/Mosin Nagant rifle takes; sliced to 48 kHz stereo one-shots. Not from commercial games.",
       "license": "CC0-1.0"
     },
     {
       "kind": "pistol_shot",
       "variation": 0,
       "file": "pistol_shot_00.wav",
-      "sha256": "06b81e7cf6de1702d9af78cebbc2953be2d4a277248168a0911ae4a34805052d",
-      "source": "project-authored stereo Foley PCM render (T089); non-commercial; not extracted from any commercial game",
+      "sha256": "16da2fa03aa9a65f31eaca09e01992724b12792914873788a941e710f936c37c",
+      "source": "OpenGameArt CC0 real recordings \u2014 Tabasco CZ-52 (https://opengameart.org/content/gunshot-sounds) and kurt Gunshots (https://opengameart.org/content/gunshots); sliced to 48 kHz stereo one-shots. Not from commercial games.",
       "license": "CC0-1.0"
     },
     {
       "kind": "pistol_shot",
       "variation": 1,
       "file": "pistol_shot_01.wav",
-      "sha256": "9a46592a1524890d01b38466c4d3190b2503b228ec47b39c9bce80e33d37f0d4",
-      "source": "project-authored stereo Foley PCM render (T089); non-commercial; not extracted from any commercial game",
+      "sha256": "acdbdf2a3ec31d3494d55ab7463e26668d530ba0427a7669ac0d9838150bbb17",
+      "source": "OpenGameArt CC0 real recordings \u2014 Tabasco CZ-52 (https://opengameart.org/content/gunshot-sounds) and kurt Gunshots (https://opengameart.org/content/gunshots); sliced to 48 kHz stereo one-shots. Not from commercial games.",
       "license": "CC0-1.0"
     },
     {
       "kind": "pistol_shot",
       "variation": 2,
       "file": "pistol_shot_02.wav",
-      "sha256": "2739c4512c02f49a7fd00b82ec9cc6a7ab5d17dfef666e9acfc83d1193db6d1b",
-      "source": "project-authored stereo Foley PCM render (T089); non-commercial; not extracted from any commercial game",
+      "sha256": "4715bac74f2619e2fdea21f7cd347833ab5464757ba21ff4ead57a45e184ac50",
+      "source": "OpenGameArt CC0 real recordings \u2014 Tabasco CZ-52 (https://opengameart.org/content/gunshot-sounds) and kurt Gunshots (https://opengameart.org/content/gunshots); sliced to 48 kHz stereo one-shots. Not from commercial games.",
       "license": "CC0-1.0"
     },
     {
       "kind": "pistol_shot",
       "variation": 3,
       "file": "pistol_shot_03.wav",
-      "sha256": "d847356f97cdedf643d358a1dba0c089d4f1cd4cf47ded4a395ec1004cc99f04",
-      "source": "project-authored stereo Foley PCM render (T089); non-commercial; not extracted from any commercial game",
+      "sha256": "6a5eff7939b83b41b19889820516e8bfdbc663d518a4fff4ca2a70b3619cfd69",
+      "source": "OpenGameArt CC0 real recordings \u2014 Tabasco CZ-52 (https://opengameart.org/content/gunshot-sounds) and kurt Gunshots (https://opengameart.org/content/gunshots); sliced to 48 kHz stereo one-shots. Not from commercial games.",
       "license": "CC0-1.0"
     },
     {
