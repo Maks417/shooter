@@ -1,5 +1,42 @@
 # M11 — Playable build and acceptance — handoff and gate record
 
+## ADR-074 — Compact 64 × 80 m maps with distinct layouts — 2026-11-15
+
+Owner: the maps were too big (all fights happened in the middle) and looked alike (a box building in the middle surrounded by odd free-standing walls). Shrink all three maps, keep Oil Depot's best parts, and give Compound and Depot Yard new layouts. [ADR-074](../../decisions.md#adr-074--accepted-compact-64--80-m-arenas-with-distinct-per-map-layouts); layouts in [tdm-map-layouts.md](../../features/tdm-map-layouts.md).
+
+**Implemented (software):**
+- `ArenaRules` compact thresholds: 56–72 × 72–88 m, anchors 60–76 m, spawn→centre 26–44 m, spawn→enemy 60–100 m, sightline ≤ 48 m.
+- `ArenaSymmetry` (`MirrorZ` / `Rotate180`) in `ArenaLayout`, `ArenaBoxBuilder` and the mirror rule.
+- `ArenaFeature` / `CompoundPlan.Features` plus the mesh-only `ArenaFeatureDressing` (trucks, tankers, trailers, boxcars, flatcar, tarped load, sandbags, booths, flag, pipe racks).
+- Planners: `environment.compound.arena` 3.0.0 (garrison square, `Rotate180`), `environment.depot.arena` 3.0.0 (rail crossing), `environment.oil.arena` 2.0.0 (compacted).
+- `ArenaVisualDetail` and `OilDepotDressing` re-placed for the new layouts. The ADR-071 loading gantry was removed with its containers.
+- Map ids, seeds, recipes, package/metadata schemas, nav settings and the 256 m frame are unchanged. The legacy W01 compound (B02/B03 freeze) is untouched.
+
+**Measured (pure `ArenaRules`):**
+
+| Map | Path to centre | Path to enemy | Sightline |
+|---|---|---|---|
+| Compound | 40 m | 84 m | 46.5 m |
+| Depot | 42 m | 80 m | 47.25 m |
+| Oil | 40 m | 88 m | 46 m |
+
+- All three maps: 64 × 80 m, zero spawn LOS, worst cover gap ≤ 5.7 m.
+- Spawn visibility from outside staging is ≤ 4 own slots on Compound and Depot (gate chutes and offset staging openings).
+- ArenaVisualDetail gameplay fingerprints refrozen for the new planners: compound 113 boxes `3157c05b…`, depot 81 boxes `83b8251d…`.
+
+**Checks (clean source `d7adc84`):**
+- **Wrapper lanes:** `Test-Generation` 437 PASS, `Test-Maps` 15+53 PASS, `Test-Simulation` 321 PASS, `Test-Contracts` 76 PASS, `Test-SourceProvenance` PASS.
+- **Game-v1 tests:** 88/88 PASS via `dotnet test`.
+- **`Test-Game.ps1` wrapper:** FAILs its Game-v1 lock pre-check on any clean LF checkout. This is pre-existing at `334812b`: the lock hash for `docs/game-fixtures/user-settings-last-weapon.valid.json` was frozen from a CRLF working copy. It is not caused by ADR-074.
+- **Content:** software `Compile-GameContent.ps1 -Force` PASS, 12 packages; gameplay package roots compound `0653de52…`, depot `5da3d4af…`, oil `d5f1e3e4…` (software-walkable-grid NVB1). Evidence: `Artifacts/m8-runtime-composition/d7adc84…/compile-gamecontent-20261115T220041193Z-bda40418/`.
+
+**Pending:**
+- Native `-Native` nav republish with the locked editor.
+- Unity EditMode/PlayMode, Client/Server builds and the installer.
+- The named 5v5/6v6 playtest of all three maps: time to first contact, spawn pressure, bot routing on the new topologies.
+
+This does not close FIX/SET/REL/P05/VD exits.
+
 ## Kill-streak and headshot score badges — 2026-11-15
 
 Owner: different score badges for 2 / 3 / 4+ kills in a row until local death, plus an extra headshot badge.

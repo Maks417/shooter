@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "root": "C:\\Job\\shooter\\docs",
+  "root": "C:\\Job\\shooter\\.local\\worktrees\\compact-maps\\docs",
   "markdownFiles": 128,
-  "wordCount": 156533,
-  "relativeLinksChecked": 1390,
+  "wordCount": 157949,
+  "relativeLinksChecked": 1393,
   "integrityFiles": 183,
   "errors": [],
   "result": "PASS",
