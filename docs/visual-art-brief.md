@@ -1,5 +1,11 @@
 # VD0 visual art brief — Battlefield V / Bodycam / Warface
 
+## T081 — Place and construction language
+
+Owner-requested continuation from `615b6a5`: make architecture read as constructed surfaces instead of decorated collision boxes. Compound uses pale concrete/plaster walls, dark footing bands, narrow 3.2 m panel joints and lighter coping/end protection. Depot contrasts those surfaces with muted blue/oxide cargo, steel corrugations, perimeter rails and door locking hardware. Human-scale loading-bay facades replace blank menu building faces. Weapon metal uses a dark, rougher coated finish; polymer remains matte. These are implemented numeric visual recipes, not imported art.
+
+New geometry is baked into the verified map mesh; six shared material roles reuse existing PBR planes. The collision/nav/spawn identities remain unchanged. Do not infer reference-machine cost from the 180k vertex cap or six submeshes. See [ADR-050](decisions.md#adr-050--accepted-packaged-architectural-surface-construction-t081) and [M11 handoff](milestones/m11-playable-release/handoff.md). Soldier anatomy, first-person hands and full weapon-action continuity remain unresolved. A credible environment improvement is one part of the requested BFV quality target; no visual comparison or P05 acceptance follows from this source change.
+
 ## T080 review — quality priorities (2026-11-15)
 
 The source baseline is T079 / installer 0.3.8 at `07c5db7`; older top-level delivery notes below are historical. This review found four concrete source defects: inconsistent physical material scale on scaled boxes; cover textures eight times denser than architectural solids; overview cameras still sized for old 256 m maps; and card renderers losing metal/trim submesh materials. T080 corrects those presentation paths; [delivery and verification](milestones/m11-playable-release/handoff.md#t080--visual-review-and-material-scale-correction) records actual results.

@@ -9,6 +9,24 @@ namespace Shooter.Presentation.Rendering
     /// <summary>Loading-time adaptation of verified SGAF planes to the locked URP Lit channel layout.</summary>
     public static class ProductSurfaceMaterial
     {
+        /// <summary>Numeric painted-steel / concrete variants share verified PBR planes and texture residency.</summary>
+        public static Material[] ArchitecturalAccents(Material concrete, Material metal, Action<UnityEngine.Object> own)
+        {
+            Material Variant(Material source, string name, Color tint)
+            {
+                var material = new Material(source) { name = name };
+                own(material);
+                material.SetColor("_BaseColor", tint);
+                return material;
+            }
+            return new[]
+            {
+                Variant(metal, "Weathered depot blue", new Color(.19f, .34f, .40f)),
+                Variant(metal, "Weathered oxide paint", new Color(.43f, .22f, .13f)),
+                Variant(concrete, "Concrete footing and joints", new Color(.32f, .34f, .33f))
+            };
+        }
+
         /// <summary>Retains verified box geometry; adapts face UVs to metres after nonuniform scaling.</summary>
         public static Mesh MetricBoxUv(Mesh source, Vector3 size, Action<UnityEngine.Object> own)
         {

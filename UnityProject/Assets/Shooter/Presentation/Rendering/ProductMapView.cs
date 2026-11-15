@@ -37,6 +37,7 @@ namespace Shooter.Presentation.Rendering
         private Material? ground;
         private Material? asphalt;
         private Material? apron;
+        private Material[] architecturalAccents = Array.Empty<Material>();
         private GeneratedSky? sky;
         private GeneratedReflectionProbe? probe;
         private string mapId = "";
@@ -96,7 +97,7 @@ namespace Shooter.Presentation.Rendering
             solidsGo.transform.SetParent(transform, false);
             solidsGo.AddComponent<MeshFilter>().sharedMesh = mapSolids;
             var solidsRenderer = solidsGo.AddComponent<MeshRenderer>();
-            AssignSolidsMaterials(solidsRenderer, solidsMeshData!, concrete!, cover!, trim!);
+            AssignSolidsMaterials(solidsRenderer, solidsMeshData!, concrete!, cover!, trim!, architecturalAccents);
             solids.Add(solidsGo);
             solidCount = boxes.Count;
             for (int i = 0; i < boxes.Count; i++)
@@ -146,6 +147,7 @@ namespace Shooter.Presentation.Rendering
                     ProductSurfaceResponse.TrimPlaster, .5f);
                 cover = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[1], "Numeric cover",
                     ProductSurfaceResponse.CoverMetal, .5f);
+                architecturalAccents = ProductSurfaceMaterial.ArchitecturalAccents(concrete, cover, value => owned.Add(value));
                 ground = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[2], "Numeric soil ground",
                     ProductSurfaceResponse.Soil, .5f);
                 asphalt = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[3], "Numeric asphalt",
@@ -262,25 +264,29 @@ namespace Shooter.Presentation.Rendering
         /// Submesh array order follows MeshAssembly's ascending slot sort; empty roles are omitted.
         /// </summary>
         public static void AssignSolidsMaterials(
-            MeshRenderer renderer, MeshData meshData, Material concreteMaterial, Material coverMaterial, Material trimMaterial)
+            MeshRenderer renderer, MeshData meshData, Material concreteMaterial, Material coverMaterial, Material trimMaterial,
+            params Material[] accents)
         {
             if (meshData.Submeshes.Count <= 1)
             {
-                renderer.sharedMaterial = MaterialForSlot(meshData.Submeshes[0].MaterialSlot, concreteMaterial, coverMaterial, trimMaterial);
+                renderer.sharedMaterial = MaterialForSlot(meshData.Submeshes[0].MaterialSlot, concreteMaterial, coverMaterial, trimMaterial, accents);
                 return;
             }
             var materials = new Material[meshData.Submeshes.Count];
             for (int i = 0; i < meshData.Submeshes.Count; i++)
-                materials[i] = MaterialForSlot(meshData.Submeshes[i].MaterialSlot, concreteMaterial, coverMaterial, trimMaterial);
+                materials[i] = MaterialForSlot(meshData.Submeshes[i].MaterialSlot, concreteMaterial, coverMaterial, trimMaterial, accents);
             renderer.sharedMaterials = materials;
         }
 
         private static Material MaterialForSlot(
-            ushort slot, Material concreteMaterial, Material coverMaterial, Material trimMaterial)
+            ushort slot, Material concreteMaterial, Material coverMaterial, Material trimMaterial, Material[] accents)
         {
             if (slot == (ushort)MapSolidsMaterialRole.MetalCover) return coverMaterial;
             if (slot == (ushort)MapSolidsMaterialRole.Trim) return trimMaterial;
-            return concreteMaterial;
+            if (slot == (ushort)MapSolidsMaterialRole.StructureConcrete) return concreteMaterial;
+            int accent = slot - (ushort)MapSolidsMaterialRole.DepotBlue;
+            if (accent >= 0 && accent < accents.Length) return accents[accent];
+            throw new InvalidOperationException("Packaged architectural material role is unsupported: " + slot);
         }
 
         private void Place(string label, Vector3 center, Vector3 size, Material material, Mesh mesh)
@@ -364,6 +370,7 @@ namespace Shooter.Presentation.Rendering
             ground = null;
             asphalt = null;
             apron = null;
+            architecturalAccents = Array.Empty<Material>();
             for (int i = 0; i < owned.Count; i++)
                 if (owned[i] != null) DestroyObject(owned[i]);
             owned.Clear();

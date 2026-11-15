@@ -97,11 +97,12 @@ namespace Shooter.Tests
             finally { foreach (Object value in owned) if (value != null) Object.DestroyImmediate(value); }
         }
 
-        [Test]
-        public void ProductMapView_InstallsApronInnerYardAndInsetCoverOverlays()
+        [TestCase("training-compound")]
+        [TestCase("depot-yard")]
+        public void ProductMapView_InstallsApronInnerYardAndInsetCoverOverlays(string mapId)
         {
             var hash = ContentIdentity.Hash(System.Text.Encoding.ASCII.GetBytes("product-surface-apron-cover"));
-            var visuals = PackagedVisualPayloads.FromBuild(MapPackageBuilder.Build("training-compound", "low", hash));
+            var visuals = PackagedVisualPayloads.FromBuild(MapPackageBuilder.Build(mapId, "low", hash));
             var boxes = new[]
             {
                 new CollisionBox(1001, 2001, 1, new Float3(0, 1, 0), new Float3(2, 2, 2), true),
@@ -111,7 +112,7 @@ namespace Shooter.Tests
             try
             {
                 ProductMapView view = ProductMapView.Create(root.transform);
-                view.Install(boxes, null, "training-compound", visuals);
+                view.Install(boxes, null, mapId, visuals);
                 Assert.That(view.CoverCount, Is.EqualTo(1), "Heuristic cover box must count as metal overlay.");
                 Transform apron = view.transform.Find("Product apron");
                 Transform ground = view.transform.Find("Product ground");
@@ -131,6 +132,16 @@ namespace Shooter.Tests
                     "Apron/cover overlays must stay presentation-only.");
                 MeshRenderer solidsRenderer = view.transform.Find("Product map solids").GetComponent<MeshRenderer>();
                 Material[] solidsMats = solidsRenderer.sharedMaterials;
+                Assert.That(solidsMats.Length, Is.EqualTo(solidsRenderer.GetComponent<MeshFilter>().sharedMesh.subMeshCount));
+                if (mapId == "depot-yard")
+                {
+                    Assert.That(solidsMats.Length, Is.EqualTo(6));
+                    Assert.That(solidsMats[3].GetTexture("_BaseMap"), Is.SameAs(solidsMats[1].GetTexture("_BaseMap")),
+                        "Painted cargo variants share verified steel planes without extra texture residency.");
+                    Assert.That(solidsMats[4].GetTexture("_BumpMap"), Is.SameAs(solidsMats[1].GetTexture("_BumpMap")));
+                    Assert.That(solidsMats[3].GetColor("_BaseColor").b, Is.GreaterThan(solidsMats[3].GetColor("_BaseColor").r));
+                    Assert.That(solidsMats[4].GetColor("_BaseColor").r, Is.GreaterThan(solidsMats[4].GetColor("_BaseColor").b));
+                }
                 Assert.That(solidsMats.Length, Is.GreaterThanOrEqualTo(2), "Packaged solids must expose multi-material submeshes.");
                 Assert.That(solidsMats[0].GetColor("_BaseColor"), Is.EqualTo(ProductSurfaceResponse.Concrete.BaseColor));
                 bool sawMetal = false, sawTrim = false;

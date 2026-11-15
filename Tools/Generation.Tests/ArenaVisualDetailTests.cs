@@ -144,7 +144,7 @@ namespace Shooter.Generation.Tests
                 Assert.True(mesh.Submeshes[i].IndexCount > 0 && mesh.Submeshes[i].IndexCount % 3 == 0);
                 slots.Add(mesh.Submeshes[i].MaterialSlot);
                 indexCoverage += mesh.Submeshes[i].IndexCount;
-                Assert.InRange(mesh.Submeshes[i].MaterialSlot, (ushort)0, (ushort)2);
+                Assert.InRange(mesh.Submeshes[i].MaterialSlot, (ushort)0, (ushort)MapSolidsMaterialRole.Foundation);
             }
             Assert.Equal((uint)mesh.Indices.Count, indexCoverage);
             Assert.Contains((ushort)MapSolidsMaterialRole.StructureConcrete, slots);

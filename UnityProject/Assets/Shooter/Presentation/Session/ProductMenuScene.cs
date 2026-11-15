@@ -198,6 +198,15 @@ namespace Shooter.Presentation.Session
                 float z = MenuStagingComposition.DistantShellBandZ + (i % 2) * 10;
                 Place("Skyline shell", new Vector3(x, h * .5f, z), new Vector3(8.2f, h, 12), i % 2 == 0 ? concrete : concreteCool, castShadows: false);
                 Place("Skyline roof", new Vector3(x, h + .14f, z), new Vector3(8.6f, .28f, 12.4f), steel, castShadows: false);
+                // Functional loading-bay facades give the distant masses a human scale.
+                if (i % 2 == 0)
+                {
+                    Place("Warehouse loading shutter", new Vector3(x, 1.8f, z - 6.025f), new Vector3(4.2f, 3.6f, .06f), steelMatte);
+                    Place("Warehouse clerestory", new Vector3(x, 4.6f, z - 6.04f), new Vector3(5.6f, .72f, .08f), steel);
+                    Place("Warehouse lintel", new Vector3(x, 3.72f, z - 6.08f), new Vector3(4.5f, .18f, .18f), concreteWarm);
+                    for (int jamb = -1; jamb <= 1; jamb += 2)
+                        Place("Warehouse portal jamb", new Vector3(x + jamb * 2.2f, 1.8f, z - 6.08f), new Vector3(.18f, 3.6f, .18f), concreteWarm);
+                }
                 if (i % 2 == 0)
                     Place("Skyline vent", new Vector3(x + 2.2f, h + 1.1f, z - 2f), new Vector3(1.4f, 1.6f, 1.4f), steelMatte, castShadows: false);
             }
@@ -314,7 +323,8 @@ namespace Shooter.Presentation.Session
             Material structure = PackagedMaterial(visuals, shader, MapVisualClosure.MapMaterialPaths[0], "Card concrete " + visuals.MapId, .5f);
             Material metal = PackagedMaterial(visuals, shader, MapVisualClosure.MapMaterialPaths[1], "Card metal " + visuals.MapId, .5f);
             Material trim = Variant(structure, "Card plaster " + visuals.MapId, ProductSurfaceResponse.TrimPlaster.BaseColor);
-            ProductMapView.AssignSolidsMaterials(root.AddComponent<MeshRenderer>(), meshData, structure, metal, trim);
+            var accents = ProductSurfaceMaterial.ArchitecturalAccents(structure, metal, value => owned.Add(value));
+            ProductMapView.AssignSolidsMaterials(root.AddComponent<MeshRenderer>(), meshData, structure, metal, trim, accents);
             // Fit actual packaged bounds: compact arenas no longer occupy a tiny old 256m plate.
             Bounds bounds = mesh.bounds;
             Vector3 center = bounds.center + new Vector3(offset, 0, 0);

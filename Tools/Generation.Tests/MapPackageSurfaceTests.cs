@@ -143,12 +143,17 @@ public sealed class MapPackageSurfaceTests : IDisposable
         var mesh = MapVisualClosure.DecodeMapMesh(payloads, MapVisualClosure.MapSolidsMeshPath);
         Assert.True(mesh.Submeshes.Count >= 3);
         var slots = mesh.Submeshes.Select(s => s.MaterialSlot).OrderBy(s => s).ToArray();
-        Assert.Equal(new ushort[]
+        Assert.Contains((ushort)MapSolidsMaterialRole.StructureConcrete, slots);
+        Assert.Contains((ushort)MapSolidsMaterialRole.MetalCover, slots);
+        Assert.Contains((ushort)MapSolidsMaterialRole.Trim, slots);
+        Assert.Contains((ushort)MapSolidsMaterialRole.Foundation, slots);
+        if (mapId == "depot-yard")
         {
-            (ushort)MapSolidsMaterialRole.StructureConcrete,
-            (ushort)MapSolidsMaterialRole.MetalCover,
-            (ushort)MapSolidsMaterialRole.Trim
-        }, slots);
+            Assert.Contains((ushort)MapSolidsMaterialRole.DepotBlue, slots);
+            Assert.Contains((ushort)MapSolidsMaterialRole.OxidePaint, slots);
+        }
+        Assert.All(slots, slot => Assert.InRange(slot, (ushort)0, (ushort)MapSolidsMaterialRole.Foundation));
+        Assert.InRange(mesh.Positions.Count, 1, MapSolidsMesh.MaxVisualVertices);
         Assert.All(mesh.Uv, uv => Assert.True(float.IsFinite(uv.X) && float.IsFinite(uv.Y)));
     }
 }

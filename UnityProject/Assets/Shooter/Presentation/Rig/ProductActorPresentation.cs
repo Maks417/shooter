@@ -774,11 +774,14 @@ namespace Shooter.Presentation.Rig
         {
             if (metal != null)
             {
-                metal.SetFloat("_Metallic", 0.88f);
-                metal.SetFloat("_Smoothness", 0.72f);
+                // Coated gunmetal: retain the verified albedo but avoid a bright polished-plastic receiver.
+                metal.SetColor("_BaseColor", new Color(.30f, .33f, .35f));
+                metal.SetFloat("_Metallic", 0.82f);
+                metal.SetFloat("_Smoothness", 0.46f);
             }
             if (polymer != null)
             {
+                polymer.SetColor("_BaseColor", new Color(.24f, .26f, .23f));
                 polymer.SetFloat("_Metallic", 0.02f);
                 polymer.SetFloat("_Smoothness", 0.12f);
             }

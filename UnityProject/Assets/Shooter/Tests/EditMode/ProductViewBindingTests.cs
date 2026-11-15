@@ -156,7 +156,9 @@ namespace Shooter.Tests
                 var fpWeapon = camera.transform.Find("Local FP rifle").GetComponent<MeshRenderer>();
                 Assert.That(fpWeapon.sharedMaterials.Length, Is.GreaterThanOrEqualTo(2));
                 Assert.That(fpWeapon.sharedMaterials[0].GetFloat("_Metallic"), Is.GreaterThan(0.7f));
-                Assert.That(fpWeapon.sharedMaterials[0].GetFloat("_Smoothness"), Is.GreaterThan(0.5f));
+                Assert.That(fpWeapon.sharedMaterials[0].GetFloat("_Smoothness"), Is.InRange(.35f, .60f),
+                    "Coated gunmetal retains a broad highlight rather than the prior polished finish.");
+                Assert.That(fpWeapon.sharedMaterials[0].GetColor("_BaseColor").maxColorComponent, Is.LessThan(.5f));
                 Assert.That(fpWeapon.sharedMaterials[1].GetFloat("_Metallic"), Is.LessThan(0.1f));
                 Assert.That(fpWeapon.sharedMaterials[1].GetFloat("_Smoothness"), Is.LessThan(0.25f));
 
