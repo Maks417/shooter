@@ -32,10 +32,10 @@ Owner: the maps were too big (all fights happened in the middle) and looked alik
 - **Native content (merged `48373d1`, locked editor):** `Compile-GameContent.ps1 -Native -Force` PASS. All 12 packages are native (`unity-ai-navigation-2.0.0;pinned-physx-collision-bake`) and the non-navigation byte-identity guard PASSes. Gameplay package roots: compound `d15c01d7…`, depot `50229906…`, oil `5a77763e…`. Evidence: `Artifacts/m8-runtime-composition/48373d1…/compile-gamecontent-20261115T221531760Z-36b2c426/`.
 
 **Pending:**
-- Unity EditMode/PlayMode, Client/Server builds and the installer.
+- Unity EditMode/PlayMode and Server build.
 - The named 5v5/6v6 playtest of all three maps: time to first contact, spawn pressure, bot routing on the new topologies.
 
-This does not close FIX/SET/REL/P05/VD exits.
+Client/native/package/installer for the compact maps shipped as [Delivery 0.3.16](#delivery-0316). This does not close FIX/SET/REL/P05/VD exits.
 
 ## Kill-streak and headshot score badges — 2026-11-15
 
@@ -1207,6 +1207,21 @@ Before the build, the repository was consolidated: the merged `codex/audio-pass`
 Failure history retained: three native compiles at `ea09345` failed in the final .NET republish with `Unable to remove the file to be replaced` (`nav-provenance.json` twice, `catalog.json` once), each leaving an orphan stage `.tmp`. The cause is an external transient sharing lock; it was not reproduced outside the publisher and no lingering editor/dotnet process held the files. `d51e377` routes the three staged writes through `MapPackagePublisher.CommitStagedFile` (bounded IOException retry, stage cleanup). The failed runs remain under `m8-runtime-composition/ea09345…/`.
 
 Package ZIP SHA256 `815977a8b8f094925949cb9008864f2e503674896adc957cfd577b47b1551f24`; source hash `6fbddf5f2cf6f90a62f4c530e207c944e96365e519bf5c038035fff1f74485a8`; content closure `5c32c37f8287d2b6deb9b3e2fd4cd7c41a82c71ffba09c05158ba90926a7396c`; index `aba6dbbc5ee4ce9dc20b814884548ceb5b194169ae092dc5c3ef997f5ca9c9f0`. No release, visual or performance acceptance is claimed.
+
+### Delivery 0.3.16
+
+Clean binary/content source **`7e54be9ae8ff720baccf5aab221bf5cabfb6bc9b`**. It adds everything merged since 0.3.15: Oil Depot petroleum dressing, combat-feel auto-reload/empty-grenade/bot stuck rescue, unique bot first names, ADR-072 DefinitionId weapon profiles, kill-feed weapon/headshot icons, life-scoped multi-kill/headshot HUD badges, ADR-074 compact 64 × 80 m arenas with distinct layouts, and the ADR-040 last-weapon fixture LF lock refreeze. Windows installer **0.3.16**, **37,380,820 bytes**, SHA256 **`03e50de130978f98e7fb524e583e3e73e7cb1b03c24ed4c7b6518bf1ae5841cb`**. Convenient delivery: `Artifacts/deliveries/Shooter-Setup-0.3.16.exe`. Stable per-user AppId `B01E0F69-2123-4D91-AB59-88864A944E39` is unchanged; predecessor is 0.3.15. Locked Unity 6000.3.28f1 / 8f082d2fe476; Inno Setup 6.7.3.
+
+| Check | Actual result / retained run |
+|---|---|
+| Pure lanes | Game **96/96**, Maps **68**, Generation **437**, SourceProvenance **828/414** PASS at clean `7e54be9` (`m8-runtime-composition/7e54be9…/20261115T222351628Z-3d80aa99`, `test-maps-20261115T222429628Z-8abef4d6`; `m1-procedural-feasibility/7e54be9…/20261115T222544155Z-b028c807`). |
+| Native packages | **12 PASS** (3 maps × 4 profiles), `nativeUnityNavBake=PASS`, `sourceDirty=false`; `m8-runtime-composition/7e54be9…/compile-gamecontent-20261115T222717623Z-4c1f5810/`. |
+| Clean IL2CPP Client | PASS, `sourceDirty=false`; `m0-foundation/7e54be9…/build-client-20261115T222905078Z-266f7d6b/`. |
+| Release smoke | PASS; `m0-foundation/7e54be9…/smoke-client-20261115T223246495Z-a1412ca6/`. Boot/shutdown only, not manual gameplay. |
+| Package / installer | PASS, native navigation required, 956 inventory files; `m11-playable-release/7e54be9…/package-20261115T223254515Z-edab47ab/` and `installer-20261115T223324333Z-7960e785/`. Extraction and corrupt-content rehearsals PASS; rollback `SkippedNoPrevious`. |
+| Not run | Unity EditMode/PlayMode, Server build, benchmarks/reference captures, actual install/upgrade/settings preservation, named compact-map playtest. All remain Pending / NotClaimed. |
+
+Package ZIP SHA256 `4d9326ae4e43ab9e348c567ecffca59dc245c5ec1826101395fdddba686f2ec1`; source hash `e27dcaf30098f88b2c3a9ec7154a687db12e10e971e56b7d32a85eabd1b49032`; content closure `10162c185d48bbd1491df5c5f9370e323b2d21dbf5057bd1282a5cdac1a4e6f4`; index `89fc582497d8d2c70b0f2db09d3aa6d823cc06a23c0589b6dfbfc0b220980e8b`. No release, visual or performance acceptance is claimed.
 
 ## Workspace cleanup evidence loss — 2026-11-15
 
