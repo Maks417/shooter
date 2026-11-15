@@ -1,5 +1,7 @@
 # Next playable build — finish playtest and native navigation
 
+**Weapon visual preview — 2026-11-15:** installer **0.3.14** at `Artifacts/deliveries/Shooter-Setup-0.3.14.exe`, clean binary/content source `b8235a3`. Improves rifle, pistol, knife and grenade geometry and spatial PBR finishes; Contracts 76, Generation 402, Unity EditMode 57 / PlayMode 21, native publication, clean Client, smoke, package and installer builders PASS. Installation/upgrade, first-person/world visual review, reference performance and acceptance remain Pending. [Exact evidence and limitations](milestones/m11-playable-release/handoff.md#arsenal-delivery-0314).
+
 **ADR-066 UI copy + Barlow Condensed fonts — 2026-11-15 (source):** OFL typeface bank in `Presentation/Fonts/Resources`, `UiFonts`/`TacticalUi` wiring, player-facing `ShellUiCopy`/`InsertionScreenCopy` rewrite, provenance `namedFontSources`, closure `ui-typeface-bank-v1`; pure tests Pending named 720p readability/installer. [Handoff](milestones/m11-playable-release/handoff.md#adr-066--ui-copy--barlow-condensed-typeface-bank--2026-11-15).
 
 **T087 follow-up knife/grenade presentation — 2026-11-15 (source):** ADR-064 FP slash/stab + cook/throw + flying grenade; rising-edge cook after equip; knife no longer uses gun muzzle/audio; Game-v1 `WeaponAction` on lifecycle; pure tests Pending player/installer. [Handoff](milestones/m11-playable-release/handoff.md#t087--knife-slot-3-and-grenade-slot-4-adr-057).
