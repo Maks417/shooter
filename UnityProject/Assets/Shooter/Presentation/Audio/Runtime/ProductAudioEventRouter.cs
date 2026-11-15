@@ -39,6 +39,8 @@ namespace Shooter.Presentation.Audio
             listenerYaw = yawRadians;
             reflections = Math.Clamp(reflectionAmount, 0f, 1f);
             mixer.UpdateListener(yawRadians, listenerFeet.X, listenerFeet.Z);
+            // Ambience may yield its voice during combat; restore it once capacity returns.
+            if (attached) mixer.EnsureAmbient(attachedSessionId);
         }
 
         public ProductAudioEventRouter(SynthAudioMixer mixer)

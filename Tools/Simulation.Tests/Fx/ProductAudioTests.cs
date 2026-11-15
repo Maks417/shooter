@@ -101,6 +101,22 @@ namespace Shooter.Simulation.Tests.Fx
         }
 
         [Fact]
+        public void Ambient_recovers_after_yielding_its_voice_to_combat()
+        {
+            var mix = new SynthAudioMixer();
+            var router = new ProductAudioEventRouter(mix);
+            router.AttachSession(55);
+            for (int i = 0; i < SynthAudioMixer.MaxVoices; i++)
+                Assert.True(mix.TryPlay(SynthVoiceKind.RifleShot, 0f, (ulong)i));
+            Assert.True(mix.StolenVoices > 0);
+            mix.Fill(new float[48000 * 4], 2, 48000);
+            Assert.Equal(0, mix.ActiveVoices);
+            router.SetListenerAcoustics(0f, 0f);
+            mix.Mix(1f / 48000);
+            Assert.Equal(1, mix.ActiveVoices);
+        }
+
+        [Fact]
         public void Local_shot_replaces_lower_priority_voice_without_exceeding_cap()
         {
             var mix = new SynthAudioMixer();
