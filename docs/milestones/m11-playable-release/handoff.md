@@ -2,6 +2,37 @@
 
 **Latest preview — 2026-11-15:** T076 installer **0.3.5** (compact TDM maps), binary source `ad6bdea`; [exact delivery and evidence](#t076--compact-tdm-map-layouts-2026-11-15). Previous: T075 installer 0.3.4, source `7407bc4` ([evidence](#t075--procedural-presentation-preview-034)). Older deliveries below are retained history. VD/REL acceptance remains open and P05 FAIL is unchanged.
 
+## Bot navigation, spawn fallback and pre-match countdown — 2026-11-15
+
+Three behaviour changes merged into `main` on 2026-11-15. Commits: bot NavMesh `70538c4` and `bd5ffb3`; relaxed spawn `8c7df18`; countdown `cd52534` and merge `3785db4`.
+
+| Fix | Behaviour | Decision / docs |
+|---|---|---|
+| Bot NavMesh winding | `UnityNavMeshBakeInstaller` installs triangles wound face-up via `UnityNavMeshBakeCodec.BuildUpFacingTriangleIndices`. The native clockwise bake had been installed face-down, giving an effectively empty NavMesh, so bots failed every path and idled at spawn. Code-reading hypothesis, not yet confirmed on a real player. Product composition enables `CompoundMapRuntime.AllowPackagedPathFallback` (sample miss or native failure falls back to the packaged nav graph; fallback corners capped at 120). New counters: `NavStartSampleMisses`, `NavGoalSampleMisses`, `NavCalculatePathFailures`, `NavPartialPaths`, `NavFallbackPathsUsed`, `NavFallbackPathsFailed`. `SHOOTER_AI_SUMMARY` is written to Player.log every 300 ticks. | [Bot navigation](../../features/team-deathmatch.md#team-bot-behavior-and-capacity), [AI note](../../features/ai.md) |
+| Relaxed spawn fallback | `SpawnSafetyPolicy.SpawnRelaxAfterTicks` = 120. After 120 failed active ticks the 40 m enemy line-of-fire rejection is dropped; slots are ranked by farthest nearest enemy, least-recently-used, then lowest slot ID. Retry cadence (30 ticks) and failure deadline (600) are unchanged. | [ADR-047](../../decisions.md#adr-047--accepted-relaxed-spawn-fallback-and-recoverable-spawn-failure) |
+| Recoverable spawn failure | On abort, `OfflineGameSession` records `GameErrorCode.SpawnFailure` in a non-frozen `TerminalFault`, moves to Stopped, and `Step` returns Ok as a no-op. `ProductShellHost` returns to the main menu with "No safe spawn available. Returning to the menu." Previously the match stopped silently while still Playing, soft-locking the player on "Awaiting a safe spawn". IGameSession and Game-v1 are unchanged. | [ADR-047](../../decisions.md#adr-047--accepted-relaxed-spawn-fallback-and-recoverable-spawn-failure) |
+| Pre-match countdown | `SessionDefaults.PreMatchCountdownTicks` = 300, read through `OfflineGameSession.PreMatchTicksRemaining`. Phase stays Playing; no `GameMatchPhase` or Game-v1 change. Human input, bot planning, respawns and end-of-tick evaluation are held; the clock and timeout stay at 0. HUD shows "MATCH STARTS IN N" then "FIGHT!". Only `ProductShellHost` sets 300. | [ADR-048](../../decisions.md#adr-048--accepted-session-internal-pre-match-countdown), [Team Deathmatch](../../features/team-deathmatch.md#pre-match-countdown) |
+
+Tests added: `ProductBotNavigationTests` (PlayMode, not yet run in Unity), `NavBakeInstallWindingTests` (xUnit), `SpawnRelaxedFallbackTests` (3), `PreMatchCountdownTests` (4).
+
+### Pure-lane results (recorded from the merged `main`, 2026-11-15)
+
+| Lane | Result |
+|---|---|
+| `Tools/Test-Generation.ps1` | PASS, 376 |
+| `Tools/Test-Simulation.ps1` | PASS, 204 |
+| `Tools/Test-Game.ps1` | PASS, 68 |
+| `Tools/Test-Maps.ps1` | PASS, 51 |
+| `Tools/Test-SourceProvenance.ps1` | PASS |
+| `Tools/verify_contract_lock.py` | PASS |
+
+### Pending (not run; never PASS without evidence)
+
+- Unity EditMode and PlayMode, including `ProductBotNavigationTests`, the countdown HUD and the relaxed-spawn path in the product shell.
+- Client build (`Tools/Build.ps1 -Target Client`) and a fresh Client/Server identity for this change set.
+- Real-player playtest: bots moving on both maps, `SHOOTER_AI_SUMMARY` values, respawn after the relaxed fallback, the SpawnFailure menu return and the countdown feel.
+- Confirmation that the empty-NavMesh cause was the face-down winding; until the player log shows fewer path failures, this stays a hypothesis.
+
 ## Physics gap fixes — motor overlap recovery, stand-up sweep, muzzle cover, stuck-actor rescue
 
 Owner request 2026-11-15: audit the physics path against [gameplay baseline](../../gameplay-baseline.md#motor-camera-and-weapons) and fill missing pieces with agents. Merged to `main` at `956a27d` and `e6312bd`. Worker worktrees and branches were removed after the merges.

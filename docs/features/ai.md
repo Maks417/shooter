@@ -20,6 +20,8 @@ Queue path requests with priority, max two new path solves/tick initially; poll 
 
 `UnityProject/Assets/Shooter/Simulation/AI` — `CombatAiDirector`, `PerceptionSystem`, `CoverReservationBoard`. Emits normal `InputCommand` values; shipping `CompositionPolicy.RequireReal` rejects test fakes. Milestone status: [M3 handoff](../milestones/m3-generated-compound/handoff.md).
 
+**Navigation note (2026-11-15):** the Unity NavMesh installer winds triangles face-up, and the product client falls back to the packaged nav graph on sample misses or native path failures. Details, counters and tests are in [Team Deathmatch bot navigation](team-deathmatch.md#team-bot-behavior-and-capacity). Real-player bot movement is Pending.
+
 ## Acceptance
 
 Seeded scripted scenarios: occluded enemy never acquired via vision; hearing triggers investigation at last-known position; target loss decays confidence; bots reload safely without infinite loop; two bots do not permanently reserve same cover; unreachable destination exits bounded retry. Eight bots run 30-minute B03 soak with no unbounded path queue, query cap breaches or orphan reservations. Accuracy/reaction distribution matches configuration, not constant instant headshots. Same command/collision recording across profiles produces equivalent AI decisions within documented adapter nondeterminism. AI counters expose sense age, path latency, state changes, shot rate and CPU budget.
