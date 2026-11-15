@@ -91,7 +91,19 @@ Rifle ADS now raises a procedural circular scope mask (soft housing + mil-dot re
 - `ProductAudioEventRouter` maps reload/death/damage and rifle vs pistol; starts ambient on session attach.
 - Pure `ProductAudioTests` extended (bank stability, reload/death/pistol mapping, stereo pan).
 
-**Pending (not PASS):** named FIX10 / SET02 device hearing of distinct cues and mute/gains; installer/player package identity for this change. Analytic beep path is superseded; rollback is revert T086.
+**Pending (not PASS):** named FIX10 / SET02 device hearing of distinct cues and mute/gains; installer/player package identity for this change. Analytic beep path is superseded; rollback is revert T086. **Superseded for product path by T089** (stereo WAV bank + per-kind distance); T086 remains historical.
+
+## T089 — Stereo combat WAV bank and footstep distance (ADR-062)
+
+2026-11-15. Owner: weapon sound still bad; bot footsteps audible across the map. Software path:
+
+- [ADR-062](../../decisions.md#adr-062--accepted-stereo-foundauthored-combat-wav-bank-and-per-kind-distance-t089), [features/audio.md](../../features/audio.md), [task card](../../task-supplement.md#t089--stereo-combat-wav-bank-and-footstep-distance-adr-062-2026-11-15).
+- `Content/Audio/combat/` stereo 48 kHz WAVs + `manifest.json` (sha256/source/license); bank id `combat-audio-bank-v3-stereo`.
+- Mixer plays interleaved L/R with mild azimuth balance; per-kind distance (footsteps 18 m steep, soft cues 35 m, gunfire 80 m).
+- Client build and `Package-Release` copy the bank beside the player; generated stereo Foley is fallback only.
+- Pure Simulation audio tests PASS (cull, found-bank load, hash-mismatch fallback).
+
+**Pending (not PASS):** FIX10 / SET02 named device hearing; package/installer identity that includes this bank. Does not close REL/P05.
 
 ## ADR-056 — Last weapon (Q) and local-only muzzle overlay
 

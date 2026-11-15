@@ -245,6 +245,90 @@ namespace Shooter.Simulation.Tests.Fx
             Assert.True(leftEnergy > rightEnergy);
         }
 
+        [Fact]
+        public void Far_footstep_is_culled_near_footstep_plays()
+        {
+            var mix = new SynthAudioMixer();
+            mix.SetChannelGains(1f, 1f, 0.7f);
+            Assert.False(mix.TryPlay(SynthVoiceKind.Footstep, 25f, 1));
+            Assert.True(mix.TryPlay(SynthVoiceKind.Footstep, 4f, 2));
+            Assert.Equal(0f, CombatAudioDistance.Attenuation(SynthVoiceKind.Footstep, 25f));
+            Assert.True(CombatAudioDistance.Attenuation(SynthVoiceKind.Footstep, 4f) >
+                        CombatAudioDistance.Attenuation(SynthVoiceKind.Footstep, 12f));
+        }
+
+        [Fact]
+        public void Router_suppresses_distant_bot_footsteps()
+        {
+            var mix = new SynthAudioMixer();
+            var router = new ProductAudioEventRouter(mix);
+            router.AttachSession(91);
+            var living = new List<ActorLifecycleState>
+            {
+                new ActorLifecycleState(new EntityId(3), 1, true, 100, new Float3(0, 0, 0), 0, 0, 1, 30, 90)
+            };
+            Assert.Equal(0, router.TickFootsteps(living, new Float3(0, 0, 0), 1));
+            living[0] = new ActorLifecycleState(new EntityId(3), 1, true, 100,
+                new Float3(ProductAudioEventRouter.FootstepStrideMeters, 0, 40f), 0, 0, 1, 30, 90);
+            Assert.Equal(0, router.TickFootsteps(living, new Float3(0, 0, 0), 2));
+        }
+
+        [Fact]
+        public void Found_stereo_bank_loads_when_manifest_present()
+        {
+            string? root = CombatAudioSamplePaths.ResolveCombatSampleRoot();
+            Assert.False(string.IsNullOrEmpty(root));
+            var bank = CombatAudioBankBaker.Bake(sampleRoot: root);
+            Assert.True(bank.LoadedFromFoundSamples);
+            Assert.Equal(CombatAudioBank.RecipeId, CombatAudioBank.RecipeId);
+            Assert.True(bank.TryGetClip(SynthVoiceKind.RifleShot, 0, out var rifle));
+            Assert.True(rifle.Length >= CombatAudioBank.Channels * 100);
+            Assert.True((rifle.Length % CombatAudioBank.Channels) == 0);
+            // Stereo image: L/R should differ on authored width.
+            float left = 0f, right = 0f;
+            int frames = System.Math.Min(rifle.Length / 2, 2048);
+            for (int i = 0; i < frames; i++)
+            {
+                left += System.Math.Abs(rifle[i * 2]);
+                right += System.Math.Abs(rifle[i * 2 + 1]);
+            }
+            Assert.True(System.Math.Abs(left - right) > 1e-4f);
+        }
+
+        [Fact]
+        public void Manifest_hash_mismatch_falls_back_to_generated()
+        {
+            string? root = CombatAudioSamplePaths.ResolveCombatSampleRoot();
+            Assert.False(string.IsNullOrEmpty(root));
+            string temp = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "shooter-audio-" + System.Guid.NewGuid().ToString("N"));
+            System.IO.Directory.CreateDirectory(temp);
+            try
+            {
+                foreach (var file in System.IO.Directory.GetFiles(root!))
+                    System.IO.File.Copy(file, System.IO.Path.Combine(temp, System.IO.Path.GetFileName(file)), overwrite: true);
+                string manPath = System.IO.Path.Combine(temp, CombatAudioSamplePaths.ManifestFileName);
+                string json = System.IO.File.ReadAllText(manPath);
+                json = json.Replace("\"sha256\": \"", "\"sha256\": \"deadbeef");
+                // Force first sha invalid without breaking JSON structure too badly — rewrite one entry.
+                var manifest = CombatAudioManifest.ParseFile(manPath);
+                Assert.True(manifest.Clips.Count > 0);
+                var bad = new System.Text.StringBuilder();
+                bad.Append("{\"bankId\":\"combat-audio-bank-v3-stereo\",\"sampleRate\":48000,\"channels\":2,\"clips\":[");
+                var c0 = manifest.Clips[0];
+                bad.Append("{\"kind\":\"").Append(c0.Kind).Append("\",\"variation\":").Append(c0.Variation)
+                    .Append(",\"file\":\"").Append(c0.File).Append("\",\"sha256\":\"0000000000000000000000000000000000000000000000000000000000000000\",")
+                    .Append("\"source\":\"test\",\"license\":\"CC0-1.0\"}]}");
+                System.IO.File.WriteAllText(manPath, bad.ToString());
+                var bank = CombatAudioBankBaker.Bake(sampleRoot: temp);
+                Assert.False(bank.LoadedFromFoundSamples);
+                Assert.True(bank.TryGetClip(SynthVoiceKind.RifleShot, 0, out _));
+            }
+            finally
+            {
+                try { System.IO.Directory.Delete(temp, recursive: true); } catch { /* ignore */ }
+            }
+        }
+
         private static bool SameSamples(float[] a, float[] b)
         {
             int n = System.Math.Min(a.Length, b.Length);

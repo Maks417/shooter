@@ -13,7 +13,8 @@ namespace Shooter.Presentation.Audio
     public sealed class ProductAudioEventRouter
     {
         public const float FootstepStrideMeters = 0.75f;
-        public const float MaxAudibleDistanceMeters = 80f;
+        /// <summary>Legacy gunfire ceiling; prefer <see cref="CombatAudioDistance.MaxAudibleMeters"/>.</summary>
+        public const float MaxAudibleDistanceMeters = CombatAudioDistance.GunfireMaxMeters;
         /// <summary>Gameplay pose region 1 = head (DamageMath / hit volumes).</summary>
         public const ushort HeadRegionId = 1;
         public const string RifleWeaponId = "weapons/rifle";
@@ -76,7 +77,8 @@ namespace Shooter.Presentation.Audio
                 if (!TryMapCombat(ev, localEntity, out var voice)) continue;
                 Float3 pos = EventPosition(ev, listenerFeet);
                 float distance = DistanceMeters(listenerFeet, pos);
-                if (distance > MaxAudibleDistanceMeters) continue;
+                float max = CombatAudioDistance.MaxAudibleMeters(voice);
+                if (max > 0f && distance > max) continue;
                 float pan = ComputePan(listenerFeet, pos);
                 ulong seed = ev.Id.Tick ^ ((ulong)ev.Id.Ordinal << 16) ^ ev.Id.EntityId.Value;
                 if (mixer.TryPlay(voice, distance, pan, seed)) played++;
@@ -110,7 +112,7 @@ namespace Shooter.Presentation.Audio
                     string key = "fs:" + attachedSessionId + ":" + completedTick + ":" + id + ":" + consumed.Count;
                     if (!consumed.Add(key)) continue;
                     float distance = DistanceMeters(listenerFeet, actor.Feet);
-                    if (distance > MaxAudibleDistanceMeters) continue;
+                    if (distance > CombatAudioDistance.FootstepMaxMeters) continue;
                     float pan = ComputePan(listenerFeet, actor.Feet);
                     ulong seed = attachedSessionId ^ id ^ completedTick;
                     if (mixer.TryPlay(SynthVoiceKind.Footstep, distance, pan, seed)) played++;

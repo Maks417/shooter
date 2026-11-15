@@ -1,0 +1,335 @@
+{
+  "bankId": "combat-audio-bank-v3-stereo",
+  "sampleRate": 48000,
+  "channels": 2,
+  "clips": [
+    {
+      "kind": "rifle_shot",
+      "variation": 0,
+      "file": "rifle_shot_00.wav",
+      "sha256": "7abfb108e66de77dd67a8e14d6c80d8814c59e572abeebe48152bdb79d0d3ee8",
+      "source": "project-authored stereo Foley PCM render (T089); non-commercial; not extracted from any commercial game",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "rifle_shot",
+      "variation": 1,
+      "file": "rifle_shot_01.wav",
+      "sha256": "571f785f21979063715a5b91b9ab704e097be4d736fc08632ef93705bef1945f",
+      "source": "project-authored stereo Foley PCM render (T089); non-commercial; not extracted from any commercial game",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "rifle_shot",
+      "variation": 2,
+      "file": "rifle_shot_02.wav",
+      "sha256": "aac639bada60776f2e3d48b19f2df4e6c9306cd056713521fbe16f05443ca991",
+      "source": "project-authored stereo Foley PCM render (T089); non-commercial; not extracted from any commercial game",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "rifle_shot",
+      "variation": 3,
+      "file": "rifle_shot_03.wav",
+      "sha256": "7b7f400dc90a60474a956ac2387aceeca9842ea2f56f2cfad0b9b036a5ee994a",
+      "source": "project-authored stereo Foley PCM render (T089); non-commercial; not extracted from any commercial game",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "pistol_shot",
+      "variation": 0,
+      "file": "pistol_shot_00.wav",
+      "sha256": "06b81e7cf6de1702d9af78cebbc2953be2d4a277248168a0911ae4a34805052d",
+      "source": "project-authored stereo Foley PCM render (T089); non-commercial; not extracted from any commercial game",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "pistol_shot",
+      "variation": 1,
+      "file": "pistol_shot_01.wav",
+      "sha256": "9a46592a1524890d01b38466c4d3190b2503b228ec47b39c9bce80e33d37f0d4",
+      "source": "project-authored stereo Foley PCM render (T089); non-commercial; not extracted from any commercial game",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "pistol_shot",
+      "variation": 2,
+      "file": "pistol_shot_02.wav",
+      "sha256": "2739c4512c02f49a7fd00b82ec9cc6a7ab5d17dfef666e9acfc83d1193db6d1b",
+      "source": "project-authored stereo Foley PCM render (T089); non-commercial; not extracted from any commercial game",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "pistol_shot",
+      "variation": 3,
+      "file": "pistol_shot_03.wav",
+      "sha256": "d847356f97cdedf643d358a1dba0c089d4f1cd4cf47ded4a395ec1004cc99f04",
+      "source": "project-authored stereo Foley PCM render (T089); non-commercial; not extracted from any commercial game",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "impact",
+      "variation": 0,
+      "file": "impact_00.wav",
+      "sha256": "5715df10bee31a8f628c3f8c72f741e01fc48b814a2fa5f1da7794da7b83904e",
+      "source": "project-authored stereo Foley PCM render (T089); non-commercial; not extracted from any commercial game",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "impact",
+      "variation": 1,
+      "file": "impact_01.wav",
+      "sha256": "23d6e72a4008da93e95b7297e75963e50d908a0b14515aea76d58a3c23bd7307",
+      "source": "project-authored stereo Foley PCM render (T089); non-commercial; not extracted from any commercial game",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "impact",
+      "variation": 2,
+      "file": "impact_02.wav",
+      "sha256": "c39b05dcb81a5aa3eac7b07f4f6c10e0768eba933d6e94d6601cd558f3bcc58a",
+      "source": "project-authored stereo Foley PCM render (T089); non-commercial; not extracted from any commercial game",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "impact",
+      "variation": 3,
+      "file": "impact_03.wav",
+      "sha256": "3273ab981889cb4eb50be2981f32fba743dc4bfaa5cb9436b931ad8e34ca3009",
+      "source": "project-authored stereo Foley PCM render (T089); non-commercial; not extracted from any commercial game",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "damage_taken",
+      "variation": 0,
+      "file": "damage_taken_00.wav",
+      "sha256": "fdfa2b287bf01e2581c72f7ae939ee2016d71309df35a941659a52a884cd2f26",
+      "source": "project-authored stereo Foley PCM render (T089); non-commercial; not extracted from any commercial game",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "damage_taken",
+      "variation": 1,
+      "file": "damage_taken_01.wav",
+      "sha256": "1d2292fecf2fead399264c80b30164de927d30adc398549f0b1a4afacf9a557d",
+      "source": "project-authored stereo Foley PCM render (T089); non-commercial; not extracted from any commercial game",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "damage_taken",
+      "variation": 2,
+      "file": "damage_taken_02.wav",
+      "sha256": "81e6b3a4c8b08457e26dce8401615e5b789c55790671e1f3a1a4cecd21c47e64",
+      "source": "project-authored stereo Foley PCM render (T089); non-commercial; not extracted from any commercial game",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "damage_taken",
+      "variation": 3,
+      "file": "damage_taken_03.wav",
+      "sha256": "f2c9396feb4fd097a465278b253f8706bd86e8cae6540411c7a0a739f0030381",
+      "source": "project-authored stereo Foley PCM render (T089); non-commercial; not extracted from any commercial game",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "footstep",
+      "variation": 0,
+      "file": "footstep_00.wav",
+      "sha256": "7bc4ef189f7c727695f403b539b8a7b8e3536b06932c289da4bbbe72707a65b5",
+      "source": "project-authored stereo Foley PCM render (T089); non-commercial; not extracted from any commercial game",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "footstep",
+      "variation": 1,
+      "file": "footstep_01.wav",
+      "sha256": "dd68aa74087eb03492e5119b8dbe723f4031fe0cc4911656fbf6d34b97750baf",
+      "source": "project-authored stereo Foley PCM render (T089); non-commercial; not extracted from any commercial game",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "footstep",
+      "variation": 2,
+      "file": "footstep_02.wav",
+      "sha256": "7c6f4d67be6e822e4ac1aba5f4d2495fe86e680214844fc083aeebfb60caac8f",
+      "source": "project-authored stereo Foley PCM render (T089); non-commercial; not extracted from any commercial game",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "footstep",
+      "variation": 3,
+      "file": "footstep_03.wav",
+      "sha256": "d84d00cd904c696d0884b0bafb40280d6b30d6f4be9c36ea841b013b46e2dd63",
+      "source": "project-authored stereo Foley PCM render (T089); non-commercial; not extracted from any commercial game",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "reload_start",
+      "variation": 0,
+      "file": "reload_start_00.wav",
+      "sha256": "e4dba3d460dd2d7220cccafe7dea9e42e286f426196ecdbdaf99bb5530ffdd39",
+      "source": "project-authored stereo Foley PCM render (T089); non-commercial; not extracted from any commercial game",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "reload_start",
+      "variation": 1,
+      "file": "reload_start_01.wav",
+      "sha256": "0e7898bd0349ce628c17cf47b5d845886510d780e108d09baed44b7591079a9d",
+      "source": "project-authored stereo Foley PCM render (T089); non-commercial; not extracted from any commercial game",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "reload_start",
+      "variation": 2,
+      "file": "reload_start_02.wav",
+      "sha256": "6ae98ce2201362385e1ee1ab3c6bc6e3b72519b30221936415c91c1cdc5e3cee",
+      "source": "project-authored stereo Foley PCM render (T089); non-commercial; not extracted from any commercial game",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "reload_start",
+      "variation": 3,
+      "file": "reload_start_03.wav",
+      "sha256": "54640ccbceff52ee5f52363efd946704580baa8f76a79ac55b840aca930833cb",
+      "source": "project-authored stereo Foley PCM render (T089); non-commercial; not extracted from any commercial game",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "reload_complete",
+      "variation": 0,
+      "file": "reload_complete_00.wav",
+      "sha256": "86ff55f3744a139e4c09596ff381404d6bc5af359cab7b20e8294d79dabe638d",
+      "source": "project-authored stereo Foley PCM render (T089); non-commercial; not extracted from any commercial game",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "reload_complete",
+      "variation": 1,
+      "file": "reload_complete_01.wav",
+      "sha256": "483b7ae1f16a67ca9f4fd230ed8bbb58e903432e02546e529a7e223f8ef6ded8",
+      "source": "project-authored stereo Foley PCM render (T089); non-commercial; not extracted from any commercial game",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "reload_complete",
+      "variation": 2,
+      "file": "reload_complete_02.wav",
+      "sha256": "d32cd745af9be6bb039be779169a4e63616033488d2e0a27e8e9d54282ad965f",
+      "source": "project-authored stereo Foley PCM render (T089); non-commercial; not extracted from any commercial game",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "reload_complete",
+      "variation": 3,
+      "file": "reload_complete_03.wav",
+      "sha256": "ad3ff77cd321ba1bbc94b1c067a92a291ab70122398f85fd84f5d9b6e5471166",
+      "source": "project-authored stereo Foley PCM render (T089); non-commercial; not extracted from any commercial game",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "death",
+      "variation": 0,
+      "file": "death_00.wav",
+      "sha256": "785517fba20c13fca3f9f5ce8ac1f4a2b1a320c5d37ccda388b92fc31fd06111",
+      "source": "project-authored stereo Foley PCM render (T089); non-commercial; not extracted from any commercial game",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "death",
+      "variation": 1,
+      "file": "death_01.wav",
+      "sha256": "36c565e90733562bbebed30e1dea061c761b09fa6010ab528ad61aea8b6d0309",
+      "source": "project-authored stereo Foley PCM render (T089); non-commercial; not extracted from any commercial game",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "death",
+      "variation": 2,
+      "file": "death_02.wav",
+      "sha256": "972f06a8d4520b778d77630e535acda431998c7f22c35d7db7643bddb4633df1",
+      "source": "project-authored stereo Foley PCM render (T089); non-commercial; not extracted from any commercial game",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "death",
+      "variation": 3,
+      "file": "death_03.wav",
+      "sha256": "7aecfdad4395959bece797c79ec59f2ac6702adf37ca036f148e596c1553ddd9",
+      "source": "project-authored stereo Foley PCM render (T089); non-commercial; not extracted from any commercial game",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "ui",
+      "variation": 0,
+      "file": "ui_00.wav",
+      "sha256": "6fb1014491e4a6757124b80fedf14fde5899276374c114f7d88cffb8edf4d5e2",
+      "source": "project-authored stereo Foley PCM render (T089); non-commercial; not extracted from any commercial game",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "ui",
+      "variation": 1,
+      "file": "ui_01.wav",
+      "sha256": "26dfcd2484668babd8bbbc06928df8bfedf428136d88e5c48900de679c98407f",
+      "source": "project-authored stereo Foley PCM render (T089); non-commercial; not extracted from any commercial game",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "ui",
+      "variation": 2,
+      "file": "ui_02.wav",
+      "sha256": "e46981974238d10046cf8fb158d89f7b9e49acfbec3bff7e6de9cff1c8badf84",
+      "source": "project-authored stereo Foley PCM render (T089); non-commercial; not extracted from any commercial game",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "ui",
+      "variation": 3,
+      "file": "ui_03.wav",
+      "sha256": "f61a14c54bd3ceb1372493f6f251953ce88613ef105ce6ad1fdb3e2427eaf33a",
+      "source": "project-authored stereo Foley PCM render (T089); non-commercial; not extracted from any commercial game",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "ambient",
+      "variation": 0,
+      "file": "ambient_00.wav",
+      "sha256": "d980376c8235b39273f1c8f9022d5fa312e47916e398c488ab63fd9f25a014eb",
+      "source": "project-authored stereo Foley PCM render (T089); non-commercial; not extracted from any commercial game",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "headshot",
+      "variation": 0,
+      "file": "headshot_00.wav",
+      "sha256": "07013d0f76b82752341ea211656c1fcc5b68b53f4bc8ec87df94616cbfbb3cce",
+      "source": "project-authored stereo Foley PCM render (T089); non-commercial; not extracted from any commercial game",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "headshot",
+      "variation": 1,
+      "file": "headshot_01.wav",
+      "sha256": "3945820ef1aa3ea78955b6748e3b0f5f9b0b05fe4d0f0950f86ae269d607a7e5",
+      "source": "project-authored stereo Foley PCM render (T089); non-commercial; not extracted from any commercial game",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "headshot",
+      "variation": 2,
+      "file": "headshot_02.wav",
+      "sha256": "13ba9f78931942b14e4c51ba41ff01c73ab3e10051ac8f3459c9e11cafc4ca97",
+      "source": "project-authored stereo Foley PCM render (T089); non-commercial; not extracted from any commercial game",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "headshot",
+      "variation": 3,
+      "file": "headshot_03.wav",
+      "sha256": "95daa01f75c466f4588f2748a16bc076fb225f7f08be961de5011754ec6a5f51",
+      "source": "project-authored stereo Foley PCM render (T089); non-commercial; not extracted from any commercial game",
+      "license": "CC0-1.0"
+    }
+  ]
+}

@@ -206,6 +206,22 @@ Validation: Contracts/Simulation/Game/Generation/Maps pure suites, Unity EditMod
 
 Rollback: restore prior contract-lock/fixture/prediction-schema-1 pair and two-slot combat kit together.
 
+## T089 — Stereo combat WAV bank and footstep distance (ADR-062) (2026-11-15)
+
+Owner playtest: weapon audio still felt synthetic and bot footsteps were audible across the map. Sole integrator. Decision: [ADR-062](decisions.md#adr-062--accepted-stereo-foundauthored-combat-wav-bank-and-per-kind-distance-t089).
+
+Scope:
+- `Presentation/Audio/**` — stereo bank load (`WavPcmReader`, `CombatAudioManifest`, path resolve), mixer true L/R + mild azimuth, per-kind distance (`CombatAudioDistance`), router cull.
+- `Content/Audio/combat/*.wav` + `manifest.json` (provenance + hashes); `Tools/generate_combat_audio_bank.py` authoring helper.
+- Client/`Package-Release` copy bank beside player under `Content/Audio/combat` (not under `Assets`).
+- Pure `Tools/Simulation.Tests/Fx/ProductAudioTests.cs`; docs/audio/ADR/handoff/index.
+
+Frozen: C0/Game-v1, ≤24-voice peak limiter, schema-2 gains, no FMOD/Wwise, no commercial-game extraction.
+
+Deliver: stereo product bank path; footsteps hard-culled beyond 18 m; gunfire retains longer range; FIX10 named hearing remains Pending.
+
+Rollback: revert T089; prior T086 mono/soft-distance path.
+
 ## T088 — Full weapon visual overhaul (VD3 slice+) and fire FX
 
 Owner-authorized 2026-11-15. Sole integrator. Decision: [ADR-061](decisions.md#adr-061--accepted-geometryweapon-102-mechanical-parts-and-denser-fire-fx-t088).

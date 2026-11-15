@@ -4,21 +4,23 @@ using System;
 namespace Shooter.Presentation.Audio
 {
     /// <summary>
-    /// Deterministic PCM combat cue bank (ADR-055). Mono float samples at a fixed rate; layers are pre-composited.
+    /// Deterministic PCM combat cue bank (ADR-055 / T089). Interleaved stereo float samples at a fixed rate.
     /// </summary>
     public sealed class CombatAudioBank
     {
-        public const string RecipeId = "combat-audio-bank-v2";
-        public const int BankVersion = 2;
+        public const string RecipeId = "combat-audio-bank-v3-stereo";
+        public const int BankVersion = 3;
         public const int DefaultSampleRate = 48000;
+        public const int Channels = 2;
         public const int VariationsPerCue = 4;
 
-        private readonly float[][][] clips; // [kindIndex][variation][sample]
+        private readonly float[][][] clips; // [kindIndex][variation][interleaved L,R…]
 
         public int SampleRate { get; }
         public string ContentHashHex { get; }
+        public bool LoadedFromFoundSamples { get; }
 
-        public CombatAudioBank(int sampleRate, float[][][] clips, string contentHashHex)
+        public CombatAudioBank(int sampleRate, float[][][] clips, string contentHashHex, bool loadedFromFoundSamples = false)
         {
             if (sampleRate < 8000) throw new ArgumentOutOfRangeException(nameof(sampleRate));
             if (clips == null) throw new ArgumentNullException(nameof(clips));
@@ -26,6 +28,7 @@ namespace Shooter.Presentation.Audio
             SampleRate = sampleRate;
             this.clips = clips;
             ContentHashHex = contentHashHex;
+            LoadedFromFoundSamples = loadedFromFoundSamples;
         }
 
         public bool TryGetClip(SynthVoiceKind kind, ulong seed, out float[] samples)
@@ -39,7 +42,7 @@ namespace Shooter.Presentation.Audio
             var vars = clips[kindIndex];
             int variation = (int)(seed % (ulong)vars.Length);
             samples = vars[variation];
-            return samples != null && samples.Length > 0;
+            return samples != null && samples.Length >= Channels;
         }
 
         public static int KindIndex(SynthVoiceKind kind) => kind switch
@@ -57,6 +60,22 @@ namespace Shooter.Presentation.Audio
             SynthVoiceKind.Ambient => 9,
             SynthVoiceKind.Headshot => 10,
             _ => -1
+        };
+
+        public static string KindFolderName(SynthVoiceKind kind) => KindIndex(kind) switch
+        {
+            0 => "rifle_shot",
+            1 => "pistol_shot",
+            2 => "impact",
+            3 => "damage_taken",
+            4 => "footstep",
+            5 => "reload_start",
+            6 => "reload_complete",
+            7 => "death",
+            8 => "ui",
+            9 => "ambient",
+            10 => "headshot",
+            _ => "unknown"
         };
 
         public static int KindCount => 11;

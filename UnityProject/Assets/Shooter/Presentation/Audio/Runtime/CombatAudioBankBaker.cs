@@ -1,17 +1,36 @@
 #nullable enable
 using System;
+using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 
 namespace Shooter.Presentation.Audio
 {
     /// <summary>
-    /// Offline/runtime baker for ADR-055 layered combat PCM. Pure BCL; deterministic for a given recipe id + rate.
-    /// Layers (transient, body, mech, LFE, tail) are composited into one mono clip per variation.
+    /// Loads stereo found/authored WAV banks when present; otherwise bakes stereo emergency fallback (T089 / ADR-055).
     /// </summary>
     public static class CombatAudioBankBaker
     {
-        public static CombatAudioBank Bake(int sampleRate = CombatAudioBank.DefaultSampleRate)
+        public static CombatAudioBank Bake(int sampleRate = CombatAudioBank.DefaultSampleRate, string? sampleRoot = null)
+        {
+            if (sampleRate < 8000) throw new ArgumentOutOfRangeException(nameof(sampleRate));
+            string? root = CombatAudioSamplePaths.ResolveCombatSampleRoot(sampleRoot);
+            if (root != null)
+            {
+                try
+                {
+                    var loaded = TryLoadFound(root, sampleRate);
+                    if (loaded != null) return loaded;
+                }
+                catch
+                {
+                    // Fall through to generated emergency bank.
+                }
+            }
+            return BakeGenerated(sampleRate);
+        }
+
+        public static CombatAudioBank BakeGenerated(int sampleRate = CombatAudioBank.DefaultSampleRate)
         {
             if (sampleRate < 8000) throw new ArgumentOutOfRangeException(nameof(sampleRate));
             var clips = new float[CombatAudioBank.KindCount][][];
@@ -26,9 +45,108 @@ namespace Shooter.Presentation.Audio
             clips[8] = BakeVariations(sampleRate, BakeUi);
             clips[9] = BakeVariations(sampleRate, BakeAmbient, count: 1);
             clips[10] = BakeVariations(sampleRate, BakeHeadshot);
+            string hash = ComputeHash(sampleRate, clips, found: false);
+            return new CombatAudioBank(sampleRate, clips, hash, loadedFromFoundSamples: false);
+        }
 
-            string hash = ComputeHash(sampleRate, clips);
-            return new CombatAudioBank(sampleRate, clips, hash);
+        private static CombatAudioBank? TryLoadFound(string root, int sampleRate)
+        {
+            string manifestPath = Path.Combine(root, CombatAudioSamplePaths.ManifestFileName);
+            if (!File.Exists(manifestPath)) return null;
+            var manifest = CombatAudioManifest.ParseFile(manifestPath);
+            if (manifest.Channels != CombatAudioBank.Channels) return null;
+
+            var clips = new float[CombatAudioBank.KindCount][][];
+            for (int k = 0; k < clips.Length; k++)
+                clips[k] = new float[CombatAudioBank.VariationsPerCue][];
+
+            int loaded = 0;
+            for (int i = 0; i < manifest.Clips.Count; i++)
+            {
+                var entry = manifest.Clips[i];
+                int kindIndex = KindFolderToIndex(entry.Kind);
+                if (kindIndex < 0) continue;
+                if (entry.Variation < 0 || entry.Variation >= CombatAudioBank.VariationsPerCue) continue;
+
+                string path = Path.Combine(root, entry.File);
+                if (!File.Exists(path)) return null;
+                string actualHash = HashFileHex(path);
+                if (!string.Equals(actualHash, entry.Sha256, StringComparison.OrdinalIgnoreCase))
+                    return null;
+
+                var wav = WavPcmReader.ReadFile(path);
+                float[] stereo = WavPcmReader.ToStereo48k(wav, sampleRate);
+                if (stereo.Length < CombatAudioBank.Channels) return null;
+                clips[kindIndex][entry.Variation] = stereo;
+                loaded++;
+            }
+
+            // Ambient may ship a single variation; duplicate into slot 0 only and shrink.
+            for (int k = 0; k < clips.Length; k++)
+            {
+                int present = 0;
+                for (int v = 0; v < clips[k].Length; v++)
+                    if (clips[k][v] != null && clips[k][v].Length > 0) present++;
+                if (present == 0)
+                {
+                    // Missing cue: fill from generated emergency for that kind only.
+                    clips[k] = BakeVariations(sampleRate, FallbackBaker(k), count: k == 9 ? 1 : CombatAudioBank.VariationsPerCue);
+                }
+                else if (present < clips[k].Length)
+                {
+                    // Compact to present variations (ambient=1); fill holes from v0 when possible.
+                    float[]? first = null;
+                    for (int v = 0; v < clips[k].Length; v++)
+                        if (clips[k][v] != null) { first = clips[k][v]; break; }
+                    if (first == null) return null;
+                    if (k == 9)
+                    {
+                        clips[k] = new[] { first };
+                    }
+                    else
+                    {
+                        for (int v = 0; v < clips[k].Length; v++)
+                            if (clips[k][v] == null || clips[k][v].Length == 0)
+                                clips[k][v] = first;
+                    }
+                }
+            }
+
+            if (loaded == 0) return null;
+            string hash = ComputeHash(sampleRate, clips, found: true);
+            return new CombatAudioBank(sampleRate, clips, hash, loadedFromFoundSamples: true);
+        }
+
+        private static Func<int, int, float[]> FallbackBaker(int kindIndex) => kindIndex switch
+        {
+            0 => BakeRifleShot,
+            1 => BakePistolShot,
+            2 => BakeImpact,
+            3 => BakeDamageTaken,
+            4 => BakeFootstep,
+            5 => BakeReloadStart,
+            6 => BakeReloadComplete,
+            7 => BakeDeath,
+            8 => BakeUi,
+            9 => BakeAmbient,
+            10 => BakeHeadshot,
+            _ => BakeImpact
+        };
+
+        private static int KindFolderToIndex(string kind)
+        {
+            if (string.Equals(kind, "rifle_shot", StringComparison.Ordinal)) return 0;
+            if (string.Equals(kind, "pistol_shot", StringComparison.Ordinal)) return 1;
+            if (string.Equals(kind, "impact", StringComparison.Ordinal)) return 2;
+            if (string.Equals(kind, "damage_taken", StringComparison.Ordinal)) return 3;
+            if (string.Equals(kind, "footstep", StringComparison.Ordinal)) return 4;
+            if (string.Equals(kind, "reload_start", StringComparison.Ordinal)) return 5;
+            if (string.Equals(kind, "reload_complete", StringComparison.Ordinal)) return 6;
+            if (string.Equals(kind, "death", StringComparison.Ordinal)) return 7;
+            if (string.Equals(kind, "ui", StringComparison.Ordinal)) return 8;
+            if (string.Equals(kind, "ambient", StringComparison.Ordinal)) return 9;
+            if (string.Equals(kind, "headshot", StringComparison.Ordinal)) return 10;
+            return -1;
         }
 
         private static float[][] BakeVariations(int sampleRate, Func<int, int, float[]> bake, int count = CombatAudioBank.VariationsPerCue)
@@ -39,21 +157,54 @@ namespace Shooter.Presentation.Audio
             return vars;
         }
 
-        private static float[] BakeRifleShot(int rate, int variation)
+        private static float[] BakeRifleShot(int rate, int variation) =>
+            Stereoize(BakeMonoRifle(rate, variation), rate, variation, 0.00035f);
+
+        private static float[] BakePistolShot(int rate, int variation) =>
+            Stereoize(BakeMonoPistol(rate, variation), rate, variation, 0.00028f);
+
+        private static float[] BakeImpact(int rate, int variation) =>
+            Stereoize(BakeMonoImpact(rate, variation), rate, variation, 0.00022f);
+
+        private static float[] BakeDamageTaken(int rate, int variation) =>
+            Stereoize(BakeMonoDamage(rate, variation), rate, variation, 0.0002f);
+
+        private static float[] BakeHeadshot(int rate, int variation) =>
+            Stereoize(BakeMonoHeadshot(rate, variation), rate, variation, 0.00025f);
+
+        private static float[] BakeFootstep(int rate, int variation) =>
+            Stereoize(BakeMonoFootstep(rate, variation), rate, variation, 0.0004f);
+
+        private static float[] BakeReloadStart(int rate, int variation) =>
+            Stereoize(BakeMonoReloadStart(rate, variation), rate, variation, 0.00018f);
+
+        private static float[] BakeReloadComplete(int rate, int variation) =>
+            Stereoize(BakeMonoReloadComplete(rate, variation), rate, variation, 0.00018f);
+
+        private static float[] BakeDeath(int rate, int variation) =>
+            Stereoize(BakeMonoDeath(rate, variation), rate, variation, 0.0005f);
+
+        private static float[] BakeUi(int rate, int variation) =>
+            Stereoize(BakeMonoUi(rate, variation), rate, variation, 0.0001f);
+
+        private static float[] BakeAmbient(int rate, int variation) =>
+            Stereoize(BakeMonoAmbient(rate, variation), rate, variation, 0.0012f);
+
+        private static float[] BakeMonoRifle(int rate, int variation)
         {
             int n = (int)(rate * 0.48f);
             var buf = new float[n];
             uint rng = MixSeed(0xA11F1E01u, variation);
-            AddNoiseBurst(buf, rate, ref rng, 0.000f, 0.018f, 1.00f, 1800f, 9000f); // transient / muzzle
-            AddNoiseBurst(buf, rate, ref rng, 0.002f, 0.120f, 0.72f, 200f, 2800f);   // body
-            AddThump(buf, rate, 0.000f, 0.080f, 68f + variation * 3f, 0.55f);         // LFE
-            AddMetallicClick(buf, rate, ref rng, 0.012f, 0.060f, 2200f + variation * 40f, 0.35f); // mech
-            AddNoiseBurst(buf, rate, ref rng, 0.040f, 0.420f, 0.28f, 120f, 1400f);  // tail
+            AddNoiseBurst(buf, rate, ref rng, 0.000f, 0.018f, 1.00f, 1800f, 9000f);
+            AddNoiseBurst(buf, rate, ref rng, 0.002f, 0.120f, 0.72f, 200f, 2800f);
+            AddThump(buf, rate, 0.000f, 0.080f, 68f + variation * 3f, 0.55f);
+            AddMetallicClick(buf, rate, ref rng, 0.012f, 0.060f, 2200f + variation * 40f, 0.35f);
+            AddNoiseBurst(buf, rate, ref rng, 0.040f, 0.420f, 0.28f, 120f, 1400f);
             NormalizePeak(buf, 0.92f);
             return buf;
         }
 
-        private static float[] BakePistolShot(int rate, int variation)
+        private static float[] BakeMonoPistol(int rate, int variation)
         {
             int n = (int)(rate * 0.34f);
             var buf = new float[n];
@@ -67,7 +218,7 @@ namespace Shooter.Presentation.Audio
             return buf;
         }
 
-        private static float[] BakeImpact(int rate, int variation)
+        private static float[] BakeMonoImpact(int rate, int variation)
         {
             int n = (int)(rate * 0.22f);
             var buf = new float[n];
@@ -79,7 +230,7 @@ namespace Shooter.Presentation.Audio
             return buf;
         }
 
-        private static float[] BakeDamageTaken(int rate, int variation)
+        private static float[] BakeMonoDamage(int rate, int variation)
         {
             int n = (int)(rate * 0.16f);
             var buf = new float[n];
@@ -91,13 +242,12 @@ namespace Shooter.Presentation.Audio
             return buf;
         }
 
-        /// <summary>Sharper, higher crack than body Impact/DamageTaken (gameplay region 1 = head).</summary>
-        private static float[] BakeHeadshot(int rate, int variation)
+        private static float[] BakeMonoHeadshot(int rate, int variation)
         {
             int n = (int)(rate * 0.18f);
             var buf = new float[n];
             uint rng = MixSeed(0xCEA05001u, variation);
-            AddNoiseBurst(buf, rate, ref rng, 0.000f, 0.012f, 1.00f, 2500f, 12000f); // bright transient
+            AddNoiseBurst(buf, rate, ref rng, 0.000f, 0.012f, 1.00f, 2500f, 12000f);
             AddMetallicClick(buf, rate, ref rng, 0.001f, 0.045f, 3200f + variation * 60f, 0.70f);
             AddThump(buf, rate, 0.000f, 0.050f, 85f + variation * 4f, 0.35f);
             AddNoiseBurst(buf, rate, ref rng, 0.008f, 0.120f, 0.28f, 600f, 4500f);
@@ -105,7 +255,7 @@ namespace Shooter.Presentation.Audio
             return buf;
         }
 
-        private static float[] BakeFootstep(int rate, int variation)
+        private static float[] BakeMonoFootstep(int rate, int variation)
         {
             int n = (int)(rate * 0.11f);
             var buf = new float[n];
@@ -117,7 +267,7 @@ namespace Shooter.Presentation.Audio
             return buf;
         }
 
-        private static float[] BakeReloadStart(int rate, int variation)
+        private static float[] BakeMonoReloadStart(int rate, int variation)
         {
             int n = (int)(rate * 0.28f);
             var buf = new float[n];
@@ -129,7 +279,7 @@ namespace Shooter.Presentation.Audio
             return buf;
         }
 
-        private static float[] BakeReloadComplete(int rate, int variation)
+        private static float[] BakeMonoReloadComplete(int rate, int variation)
         {
             int n = (int)(rate * 0.32f);
             var buf = new float[n];
@@ -142,7 +292,7 @@ namespace Shooter.Presentation.Audio
             return buf;
         }
 
-        private static float[] BakeDeath(int rate, int variation)
+        private static float[] BakeMonoDeath(int rate, int variation)
         {
             int n = (int)(rate * 0.45f);
             var buf = new float[n];
@@ -154,7 +304,7 @@ namespace Shooter.Presentation.Audio
             return buf;
         }
 
-        private static float[] BakeUi(int rate, int variation)
+        private static float[] BakeMonoUi(int rate, int variation)
         {
             int n = (int)(rate * 0.07f);
             var buf = new float[n];
@@ -172,9 +322,9 @@ namespace Shooter.Presentation.Audio
             return buf;
         }
 
-        private static float[] BakeAmbient(int rate, int variation)
+        private static float[] BakeMonoAmbient(int rate, int variation)
         {
-            int n = rate * 2; // 2 s loop
+            int n = rate * 2;
             var buf = new float[n];
             uint rng = MixSeed(0xA4B1E001u, variation);
             for (int i = 0; i < n; i++)
@@ -185,7 +335,6 @@ namespace Shooter.Presentation.Audio
                 float hum = (float)Math.Sin(2 * Math.PI * 55 * t) * 0.008f;
                 buf[i] = wind + hiss + hum;
             }
-            // Crossfade edges for seamless loop
             int fade = rate / 20;
             for (int i = 0; i < fade; i++)
             {
@@ -197,6 +346,21 @@ namespace Shooter.Presentation.Audio
             }
             NormalizePeak(buf, 0.12f);
             return buf;
+        }
+
+        /// <summary>Haas-style stereo width from a mono emergency bake.</summary>
+        private static float[] Stereoize(float[] mono, int rate, int variation, float delaySec)
+        {
+            int delay = Math.Max(1, (int)(delaySec * rate) + variation);
+            var stereo = new float[mono.Length * 2];
+            for (int i = 0; i < mono.Length; i++)
+            {
+                float l = mono[i];
+                float r = i >= delay ? mono[i - delay] * 0.92f : mono[i] * 0.75f;
+                stereo[i * 2] = l;
+                stereo[i * 2 + 1] = r;
+            }
+            return stereo;
         }
 
         private static void AddNoiseBurst(float[] buf, int rate, ref uint rng, float startSec, float durSec, float amp, float lowHz, float highHz)
@@ -214,7 +378,6 @@ namespace Shooter.Presentation.Audio
                 float t = i / (float)len;
                 float env = (float)Math.Exp(-4.2 * t) * (1f - t * 0.15f);
                 float n = NextFloat(ref rng) * 2f - 1f;
-                // crude band shaping
                 lp += lpCoeff * (n - lp);
                 hp += hpCoeff * ((n - lp) - hp);
                 buf[idx] += hp * amp * env;
@@ -266,10 +429,19 @@ namespace Shooter.Presentation.Audio
             for (int i = 0; i < buf.Length; i++) buf[i] *= g;
         }
 
-        private static string ComputeHash(int sampleRate, float[][][] clips)
+        private static string HashFileHex(string path)
         {
             using var sha = SHA256.Create();
-            var preamble = Encoding.ASCII.GetBytes(CombatAudioBank.RecipeId + "|" + CombatAudioBank.BankVersion + "|" + sampleRate + "|");
+            using var stream = File.OpenRead(path);
+            var hash = sha.ComputeHash(stream);
+            return ToHex(hash);
+        }
+
+        private static string ComputeHash(int sampleRate, float[][][] clips, bool found)
+        {
+            using var sha = SHA256.Create();
+            var preamble = Encoding.ASCII.GetBytes(
+                CombatAudioBank.RecipeId + "|" + CombatAudioBank.BankVersion + "|" + sampleRate + "|ch" + CombatAudioBank.Channels + "|" + (found ? "found" : "gen") + "|");
             sha.TransformBlock(preamble, 0, preamble.Length, null, 0);
             var scratch = new byte[4];
             for (int k = 0; k < clips.Length; k++)
@@ -281,7 +453,6 @@ namespace Shooter.Presentation.Audio
                     if (s == null) continue;
                     WriteIntLe(scratch, s.Length);
                     sha.TransformBlock(scratch, 0, 4, null, 0);
-                    // Stride sample for speed while remaining sensitive to recipe changes.
                     for (int i = 0; i < s.Length; i += 64)
                     {
                         WriteFloatLe(scratch, s[i]);
@@ -295,7 +466,11 @@ namespace Shooter.Presentation.Audio
                 }
             }
             sha.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
-            var hash = sha.Hash ?? Array.Empty<byte>();
+            return ToHex(sha.Hash ?? Array.Empty<byte>());
+        }
+
+        private static string ToHex(byte[] hash)
+        {
             var sb = new StringBuilder(hash.Length * 2);
             for (int i = 0; i < hash.Length; i++) sb.Append(hash[i].ToString("x2"));
             return sb.ToString();

@@ -698,3 +698,16 @@ Decision:
 - Extend `AnalyticFxPool` with `ShellCasing` and `Tracer`. Densify muzzle (secondary flash lobe). `ReducedFlash` suppresses muzzle and tracer meshes plus the local overlay; casings/impact/smoke remain.
 
 Validation: Generation/Simulation/Maps pure suites, Unity EditMode/PlayMode where applicable, feature-content-lock refresh, native content republish, clean Client/Server/package/installer. Named visual acceptance and reference cost remain Pending. Rollback restores 1.0.1 recipes/lock pair and prior presentation/FX.
+
+## ADR-062 — Accepted: stereo found/authored combat WAV bank and per-kind distance (T089)
+
+Date 2026-11-15; owner reported synthetic/beep combat audio and map-wide bot footsteps. Sole integrator owns Presentation/Audio, Content/Audio packaging, pure tests and docs. Extends [ADR-055](#adr-055--accepted-generated-pcm-combat-sample-banks-t086). No C0/Game-v1 freeze, no FMOD/Wwise, no commercial-game extraction, no acceptance waiver.
+
+Context: T086 shipped a mono recipe bank with a soft `1/(1+0.05d)` atten and a single 80 m cull for every cue, so footsteps stayed audible across the map. Owner directed **stereo real-sample quality** (not MIDI/oscillator focus).
+
+Decision:
+- **Product path.** Ship interleaved **stereo 48 kHz** WAV clips under `Content/Audio/combat/` with `manifest.json` (kind, variation, file, sha256, source, license). Bank id `combat-audio-bank-v3-stereo`. Client/Package-Release copy the folder beside the player; WAVs stay outside `Assets` so they are not treated as imported art.
+- **Mixer.** Play authored L/R with distance gain + HF rolloff and a **mild azimuth balance** (do not mono-collapse then pan). Generated stereo Foley remains emergency fallback when manifest/files/hash fail.
+- **Distance.** Per-kind ceilings: footsteps **18 m** with steep atten + 0.45 base gain; reload/death/impact **35 m**; gunfire/headshot **80 m**; UI/ambient listener-local.
+
+Validation: `Tools/Test-Simulation.ps1` audio cases; docs/manifest. FIX10 named device hearing and installer identity remain Pending. Rollback: revert T089 and restore the T086 mono/soft-distance path.

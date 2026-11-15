@@ -354,6 +354,7 @@ public static class ShooterBuild
             if (report.summary.result != BuildResult.Succeeded) throw new InvalidOperationException("Build failed: " + report.summary.result);
             if (importedArt.Length != 0) throw new InvalidOperationException("Unapproved imported art in player: " + string.Join(",", importedArt));
             if (server && graphics.Length != 0) throw new InvalidOperationException("Server unexpectedly includes graphics payloads: " + string.Join(",", graphics));
+            if (!server) CopyCombatAudioBankBesidePlayer(output);
             Debug.Log("SHOOTER_BUILD_SUCCEEDED " + manifest.target);
         }
         finally
@@ -369,4 +370,19 @@ public static class ShooterBuild
     }
     public static void CompileContent() => Guard(ShooterContentBuild.Compile);
     public static void CompileNativeGameContent() => Guard(ShooterNativeContentBuild.Compile);
+
+    /// <summary>
+    /// T089: ship stereo combat WAV bank beside the client (not under Assets — .wav is rejected as imported art).
+    /// </summary>
+    private static void CopyCombatAudioBankBesidePlayer(string playerOutputDirectory)
+    {
+        string src = Path.Combine(RepositoryRoot, "Content", "Audio", "combat");
+        string manifest = Path.Combine(src, "manifest.json");
+        if (!Directory.Exists(src) || !File.Exists(manifest))
+            throw new InvalidOperationException("Missing Content/Audio/combat bank; run Tools/generate_combat_audio_bank.py");
+        string dst = Path.Combine(playerOutputDirectory, "Content", "Audio", "combat");
+        Directory.CreateDirectory(dst);
+        foreach (string file in Directory.GetFiles(src))
+            File.Copy(file, Path.Combine(dst, Path.GetFileName(file)), overwrite: true);
+    }
 }

@@ -61,7 +61,7 @@ Use the [remaining T067/T071 work](next-playable-build.md): play the existing ar
 | [Feature: two playable maps](features/playable-maps.md) | Approved map catalog, procedural layouts, packaging and safety |
 | [Feature: compact TDM map layouts](features/tdm-map-layouts.md) | T076 three-lane 5v5/6v6 arena design rules and per-map layouts |
 | [Feature: game shell and settings](features/game-shell.md) | Menu flows, interactive tables, persistence, audio/video/controls |
-| [Feature: combat audio (sample bank)](features/audio.md) | ADR-055 generated PCM bank, cue map, mixer and FIX10 device hearing |
+| [Feature: combat audio (sample bank)](features/audio.md) | ADR-062 stereo WAV bank + per-kind distance (extends ADR-055); FIX10 device hearing Pending |
 | [Feature: Windows installer and upgrades](features/windows-installer.md) | Final installer, in-place updates, preference preservation and install/upgrade acceptance |
 | [Feature: staged authoritative networking](features/networking.md) | Feature implementation, edge cases and acceptance |
 | [Visual direction and UI design system](brandbook.md) | Proposed visual direction, HUD and accessibility |

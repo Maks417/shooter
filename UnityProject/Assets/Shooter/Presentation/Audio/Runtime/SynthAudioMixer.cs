@@ -28,9 +28,11 @@ namespace Shooter.Presentation.Audio
         public float LowPassCoeff { get; }
         public float[] Samples { get; }
         public int SampleRate { get; }
+        public int Channels { get; }
         public bool Loop { get; }
         public int FrameIndex { get; private set; }
-        public float FilterState { get; private set; }
+        public float FilterStateL { get; private set; }
+        public float FilterStateR { get; private set; }
         public float AgeSeconds { get; private set; }
         public float DurationSeconds { get; }
 
@@ -40,23 +42,25 @@ namespace Shooter.Presentation.Audio
             {
                 if (BaseAmplitude <= 1e-4f) return false;
                 if (Loop) return true;
-                return FrameIndex < Samples.Length;
+                return FrameIndex * Channels < Samples.Length;
             }
         }
 
-        public SynthVoice(SynthVoiceKind kind, float baseAmplitude, float pan, float lowPassCoeff, float[] samples, int sampleRate, bool loop)
+        public SynthVoice(SynthVoiceKind kind, float baseAmplitude, float pan, float lowPassCoeff, float[] samples, int sampleRate, bool loop, int channels = CombatAudioBank.Channels)
         {
             if (samples == null || samples.Length == 0) throw new ArgumentException("samples required", nameof(samples));
             if (sampleRate < 8000) throw new ArgumentOutOfRangeException(nameof(sampleRate));
             if (baseAmplitude < 0) throw new ArgumentOutOfRangeException(nameof(baseAmplitude));
+            if (channels < 1 || channels > 2) throw new ArgumentOutOfRangeException(nameof(channels));
             Kind = kind;
             BaseAmplitude = baseAmplitude;
             Pan = Math.Clamp(pan, -1f, 1f);
             LowPassCoeff = Math.Clamp(lowPassCoeff, 0.02f, 1f);
             Samples = samples;
             SampleRate = sampleRate;
+            Channels = channels;
             Loop = loop;
-            DurationSeconds = samples.Length / (float)sampleRate;
+            DurationSeconds = (samples.Length / (float)channels) / sampleRate;
         }
 
         public float ReadSample(float dt, out float left, out float right)
@@ -69,19 +73,22 @@ namespace Shooter.Presentation.Audio
                 return 0f;
             }
 
-            float raw = Samples[FrameIndex];
+            int baseIndex = FrameIndex * Channels;
+            float rawL = Samples[baseIndex];
+            float rawR = Channels > 1 ? Samples[baseIndex + 1] : rawL;
             FrameIndex++;
-            if (Loop && FrameIndex >= Samples.Length) FrameIndex = 0;
+            if (Loop && FrameIndex * Channels >= Samples.Length) FrameIndex = 0;
 
-            // One-pole low-pass; lower coeff = duller far shots.
-            float filtered = FilterState + LowPassCoeff * (raw - FilterState);
-            FilterState = filtered;
+            float filteredL = FilterStateL + LowPassCoeff * (rawL - FilterStateL);
+            float filteredR = FilterStateR + LowPassCoeff * (rawR - FilterStateR);
+            FilterStateL = filteredL;
+            FilterStateR = filteredR;
 
             float amp = BaseAmplitude;
-            // Short fade-out for one-shots near the end.
-            if (!Loop && Samples.Length > 8)
+            int totalFrames = Samples.Length / Channels;
+            if (!Loop && totalFrames > 8)
             {
-                int remain = Samples.Length - FrameIndex;
+                int remain = totalFrames - FrameIndex;
                 if (remain < 64)
                 {
                     float fade = Math.Max(0f, remain / 64f);
@@ -89,32 +96,31 @@ namespace Shooter.Presentation.Audio
                 }
             }
 
-            float mono = filtered * amp;
-            // Constant-power pan.
-            float angle = (Pan + 1f) * 0.25f * (float)Math.PI; // 0..π/2
-            left = mono * (float)Math.Cos(angle);
-            right = mono * (float)Math.Sin(angle);
-            return mono;
+            // Mild directional balance on top of authored stereo (do not mono-collapse).
+            float leftGain = 1f - 0.4f * Math.Max(0f, Pan);
+            float rightGain = 1f - 0.4f * Math.Max(0f, -Pan);
+            left = filteredL * amp * leftGain;
+            right = filteredR * amp * rightGain;
+            return 0.5f * (left + right);
         }
 
-        // Legacy envelope helper for older tests that inspect duration-style voices.
         public float EnvelopeAmplitude()
         {
             if (!Active) return 0f;
             if (Loop) return BaseAmplitude;
-            float t = Samples.Length <= 1 ? 1f : FrameIndex / (float)Samples.Length;
+            int totalFrames = Math.Max(1, Samples.Length / Channels);
+            float t = FrameIndex / (float)totalFrames;
             return BaseAmplitude * Math.Max(0f, 1f - t);
         }
 
         public void Advance(float dt)
         {
-            // Kept for API compatibility; ReadSample advances frames.
             AgeSeconds += dt;
         }
     }
 
     /// <summary>
-    /// Sample-bank mixer (ADR-055). Plays generated PCM cues with distance atten, stereo pan, HF rolloff.
+    /// Stereo sample-bank mixer (ADR-055 / T089). Found PCM with per-kind distance atten, mild azimuth balance, HF rolloff.
     /// ≤24 voices, peak limited. Device-rate Fill is allocation-free under the mixer lock.
     /// </summary>
     public sealed class SynthAudioMixer
@@ -152,10 +158,6 @@ namespace Shooter.Presentation.Audio
             lock (gate) MasterVolume = volume;
         }
 
-        /// <summary>
-        /// Apply channel gains/mutes to subsequent and existing voices (gains are sampled at mix time).
-        /// Prefer <see cref="UserSettingsAudioBinding.ApplyGains"/> from ADR-036 UserSettings schema 2.
-        /// </summary>
         public void SetChannelGains(float master, float effects, float ui, bool masterMuted = false, bool effectsMuted = false, bool uiMuted = false)
         {
             if (master < 0 || master > 1) throw new ArgumentOutOfRangeException(nameof(master));
@@ -179,15 +181,15 @@ namespace Shooter.Presentation.Audio
         {
             if (distanceMeters < 0) throw new ArgumentOutOfRangeException(nameof(distanceMeters));
             var playKind = NormalizeKind(kind);
+            float max = CombatAudioDistance.MaxAudibleMeters(playKind);
+            if (max > 0f && distanceMeters > max) return false;
+
             if (!bank.TryGetClip(playKind, seed, out var samples))
                 return false;
 
-            float atten = 1f / (1f + distanceMeters * 0.05f);
-            if (playKind == SynthVoiceKind.Ambient) atten *= 0.35f;
-            // Far cues get stronger low-pass (smaller coeff).
-            float far = Math.Clamp(distanceMeters / 80f, 0f, 1f);
-            float lp = 1f - far * 0.85f;
-            if (lp < 0.08f) lp = 0.08f;
+            float atten = CombatAudioDistance.Attenuation(playKind, distanceMeters);
+            if (atten <= 1e-4f) return false;
+            float lp = CombatAudioDistance.LowPassCoeff(distanceMeters, max > 0f ? max : CombatAudioDistance.GunfireMaxMeters);
             bool loop = playKind == SynthVoiceKind.Ambient;
 
             lock (gate)
@@ -200,7 +202,7 @@ namespace Shooter.Presentation.Audio
                     RejectedPlays++;
                     return false;
                 }
-                voices[slot] = new SynthVoice(playKind, atten, pan, lp, samples, bank.SampleRate, loop);
+                voices[slot] = new SynthVoice(playKind, atten, pan, lp, samples, bank.SampleRate, loop, CombatAudioBank.Channels);
                 if (loop) ambientPlaying = true;
                 return true;
             }
@@ -233,7 +235,6 @@ namespace Shooter.Presentation.Audio
             }
         }
 
-        /// <summary>Single-sample mix for pure waveform tests. Prefer <see cref="Fill"/> for device output.</summary>
         public float Mix(float dt)
         {
             if (dt <= 0) throw new ArgumentOutOfRangeException(nameof(dt));
@@ -246,10 +247,6 @@ namespace Shooter.Presentation.Audio
             }
         }
 
-        /// <summary>
-        /// Device-rate synthesis into an interleaved PCM buffer. No allocations; no authority access.
-        /// Intended for Unity audio callbacks.
-        /// </summary>
         public void Fill(float[] buffer, int channels, int sampleRate)
         {
             if (buffer == null) throw new ArgumentNullException(nameof(buffer));

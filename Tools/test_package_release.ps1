@@ -50,6 +50,10 @@ function New-CaseRoot([string]$Name) {
     # ADR-038: Package-Release requires the persisted release catalog beside the index.
     $catalog = [ordered]@{ catalogSchema = 'shooter.release-catalog.v1'; toolchainHash = $toolchainHash; syntheticTestOnly = $true }
     Write-TestFile (Join-Path $caseRoot 'Artifacts/map-packages/catalog.json') ($catalog | ConvertTo-Json -Depth 4)
+    # T089 combat audio bank required by Package-Release.
+    $audioDir = Join-Path $caseRoot 'Content/Audio/combat'
+    Write-TestFile (Join-Path $audioDir 'manifest.json') '{"bankId":"combat-audio-bank-v3-stereo","sampleRate":48000,"channels":2,"clips":[]}'
+    Write-TestFile (Join-Path $audioDir 'rifle_shot_00.wav') 'RIFF-synthetic'
     return [pscustomobject]@{ Root = $caseRoot; ToolchainHash = $toolchainHash }
 }
 
@@ -112,7 +116,7 @@ function Invoke-PackageCase([string]$Name, [scriptblock]$Setup, [string]$Expecte
         if ($report.sourceCommit -cne 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') { throw "$Name stamped unexpected sourceCommit" }
         $inventory = Get-Content -LiteralPath $report.inventoryPath -Raw | ConvertFrom-Json
         $paths = @($inventory | ForEach-Object { $_.path })
-        foreach ($required in @('Shooter.exe', 'CONTROLS.txt', 'LICENSES.txt', 'KNOWN_ISSUES.txt', 'Content/map-packages/index.json')) {
+        foreach ($required in @('Shooter.exe', 'CONTROLS.txt', 'LICENSES.txt', 'KNOWN_ISSUES.txt', 'Content/map-packages/index.json', 'Content/Audio/combat/manifest.json')) {
             if ($paths -notcontains $required) { throw "$Name inventory missing $required" }
         }
         foreach ($banned in @('Shooter_BackUpThisFolder_ButDontShipItWithYourGame/il2cppOutput/x.c', 'Shooter_BurstDebugInformation_DoNotShip/debug.txt', 'Shooter_Data/leak.pdb', 'Player.log', 'user-settings.json')) {

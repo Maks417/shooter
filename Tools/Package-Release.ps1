@@ -294,6 +294,16 @@ try {
         }
     }
 
+    # T089 stereo combat sample bank beside the player (Content/Audio/combat).
+    $audioSrc = Join-Path $repoRoot 'Content/Audio/combat'
+    if (!(Test-Path -LiteralPath $audioSrc -PathType Container)) { throw "Missing combat audio bank to ship: $audioSrc" }
+    if (!(Test-Path -LiteralPath (Join-Path $audioSrc 'manifest.json') -PathType Leaf)) { throw "Missing combat audio manifest: $audioSrc/manifest.json" }
+    $audioDest = Join-Path $stage 'Content/Audio/combat'
+    $null = New-Item -ItemType Directory -Path $audioDest -Force
+    Get-ChildItem -LiteralPath $audioSrc -Force -File | ForEach-Object {
+        Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $audioDest $_.Name) -Force
+    }
+
     $controls = @"
 Shooter offline team-deathmatch (local package)
 Binary commit: $sourceCommit

@@ -27,8 +27,8 @@ namespace Shooter.Presentation.Session
         private System.Func<EntityId, LocalMovementView?>? movementReader;
         private System.Func<GameOperationResult>? resumeSession;
         private readonly HudLayout hud = new HudLayout();
-        private readonly SynthAudioMixer mixer = new SynthAudioMixer();
-        private readonly ProductAudioEventRouter audio;
+        private SynthAudioMixer? mixer;
+        private ProductAudioEventRouter? audio;
         private readonly AnalyticFxPool analyticFxPool = new AnalyticFxPool();
         private readonly FirstPersonCameraBob cameraBob = new FirstPersonCameraBob();
         private readonly List<ActorLifecycleState> footstepScratch = new List<ActorLifecycleState>(GameContractVersion.MaxParticipants);
@@ -88,15 +88,41 @@ namespace Shooter.Presentation.Session
         public ProductVisualReviewOverlay? VisualReview => visualReview;
         public LocalPlayerInput Input => input;
         public bool GameplayFocus => cursorLocked;
-        public SynthAudioMixer Mixer => mixer;
-        public ProductAudioEventRouter Audio => audio;
+        public SynthAudioMixer Mixer => EnsureAudio().mixer;
+        public ProductAudioEventRouter Audio => EnsureAudio().audio;
         public bool ReducedFlash => reducedFlash;
         public bool SubtitlesEnabled => subtitlesEnabled;
         public bool ReducedCameraMotion => reducedCameraMotion;
 
-        public ProductSessionView()
+        private (SynthAudioMixer mixer, ProductAudioEventRouter audio) EnsureAudio()
         {
+            if (mixer != null && audio != null) return (mixer, audio);
+            string? sampleRoot = ResolveCombatAudioRoot();
+            mixer = new SynthAudioMixer(CombatAudioBankBaker.Bake(sampleRoot: sampleRoot));
             audio = new ProductAudioEventRouter(mixer);
+            return (mixer, audio);
+        }
+
+        private static string? ResolveCombatAudioRoot()
+        {
+            try
+            {
+                string installRoot = System.IO.Path.GetFullPath(System.IO.Path.Combine(
+                    Application.dataPath, Application.isEditor ? "../.." : ".."));
+                string content = System.IO.Path.Combine(installRoot, "Content", "Audio", "combat");
+                if (System.IO.Directory.Exists(content)
+                    && System.IO.File.Exists(System.IO.Path.Combine(content, CombatAudioSamplePaths.ManifestFileName)))
+                    return content;
+                string streaming = System.IO.Path.Combine(Application.streamingAssetsPath, "Audio", "combat");
+                if (System.IO.Directory.Exists(streaming)
+                    && System.IO.File.Exists(System.IO.Path.Combine(streaming, CombatAudioSamplePaths.ManifestFileName)))
+                    return streaming;
+            }
+            catch (System.Exception)
+            {
+                // Fall through to BCL path walk / generated bank.
+            }
+            return CombatAudioSamplePaths.ResolveCombatSampleRoot();
         }
 
         public static ProductSessionView Create(OfflineGameSession session, bool shellOwned = false)
@@ -158,8 +184,9 @@ namespace Shooter.Presentation.Session
             mapView = ProductMapView.Create(transform);
             actors = ProductActorPresentation.Create(transform, camera);
             analyticFxPresenter = AnalyticFxPresenter.Create(transform, analyticFxPool);
-            audioOutput = UnitySynthAudioOutput.Attach(gameObject, mixer);
-            UserSettingsAudioBinding.ApplyGains(UserSettings.Defaults, mixer);
+            var audioPair = EnsureAudio();
+            audioOutput = UnitySynthAudioOutput.Attach(gameObject, audioPair.mixer);
+            UserSettingsAudioBinding.ApplyGains(UserSettings.Defaults, audioPair.mixer);
             TryEnableVisualReviewFromCommandLine();
             Debug.Log("SHOOTER_PRODUCT_VIEW gpu=" + SystemInfo.graphicsDeviceName + " profile=" + QualitySettings.names[profile] +
                       " shellOwned=" + (shellOwned ? 1 : 0) +
@@ -209,7 +236,7 @@ namespace Shooter.Presentation.Session
         public void ApplyUserSettings(UserSettings settings)
         {
             if (settings == null) throw new System.ArgumentNullException(nameof(settings));
-            UserSettingsAudioBinding.ApplyGains(settings, mixer);
+            UserSettingsAudioBinding.ApplyGains(settings, EnsureAudio().mixer);
             string qualityName = settings.QualityTier < QualitySettings.names.Length
                 ? QualitySettings.names[settings.QualityTier]
                 : "Low";
@@ -648,9 +675,10 @@ namespace Shooter.Presentation.Session
                 DetachAudioSession();
                 return;
             }
+            var router = EnsureAudio().audio;
             if (!audioAttached || audioSessionId != sid)
             {
-                audio.AttachSession(sid);
+                router.AttachSession(sid);
                 audioSessionId = sid;
                 audioAttached = true;
                 audioOutput?.ArmOutput();
@@ -658,7 +686,7 @@ namespace Shooter.Presentation.Session
 
             if (combatEvents != null)
             {
-                audio.ConsumeCombatEvents(combatEvents, listenerFeet, session.HumanEntityId);
+                router.ConsumeCombatEvents(combatEvents, listenerFeet, session.HumanEntityId);
                 for (int i = 0; i < combatEvents.Count; i++)
                 {
                     var ev = combatEvents[i];
@@ -683,13 +711,14 @@ namespace Shooter.Presentation.Session
                     footstepScratch.Add(state);
                 }
             }
-            audio.TickFootsteps(footstepScratch, listenerFeet, session.CompletedTick);
+            router.TickFootsteps(footstepScratch, listenerFeet, session.CompletedTick);
         }
 
         private void DetachAudioSession()
         {
-            if (!audioAttached && !audio.IsAttached) return;
-            audio.DetachSession();
+            var router = audio;
+            if (!audioAttached && (router == null || !router.IsAttached)) return;
+            router?.DetachSession();
             audioAttached = false;
             audioSessionId = 0;
             accessibilityCueKeys.Clear();
@@ -719,13 +748,13 @@ namespace Shooter.Presentation.Session
                 CombatEventKind.Death => SynthVoiceKind.Death,
                 _ => SynthVoiceKind.Footstep
             };
-            mixer.TryPlay(voice, distanceMeters, seed);
+            EnsureAudio().mixer.TryPlay(voice, distanceMeters, seed);
         }
 
         public bool PlayUiCue(ulong seed)
         {
             if (subtitlesEnabled) ShowSubtitle("UI");
-            return audio.PlayUi(seed);
+            return EnsureAudio().audio.PlayUi(seed);
         }
 
         private void OnGUI()
