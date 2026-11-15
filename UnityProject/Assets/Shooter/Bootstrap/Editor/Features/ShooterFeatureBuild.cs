@@ -15,6 +15,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 using Debug = UnityEngine.Debug;
+using EntityId = Shooter.Contracts.EntityId;
 
 public static class ShooterFeatureBuild
 {
