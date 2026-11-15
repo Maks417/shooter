@@ -37,6 +37,7 @@ namespace Shooter.Generation.Environment
             BuildApron(b);
             BuildRailLane(b);
             BuildContainerLane(b);
+            ArenaVisualDetail.AppendDepot(b, Layout);
             return ArenaGeometry.CreatePlan(GeneratorId, GeneratorVersion, seed, Layout, b);
         }
 

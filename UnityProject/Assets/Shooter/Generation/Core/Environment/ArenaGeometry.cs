@@ -58,6 +58,16 @@ namespace Shooter.Generation.Environment
         public IReadOnlyList<CoverProxy> Covers => covers;
         public ulong NextId => nextId;
 
+        /// <summary>
+        /// Advances the stable-id cursor to a higher base (e.g. visual-detail ranges). Rejects rewind so
+        /// gameplay ids already emitted cannot collide with later visual appends.
+        /// </summary>
+        public void JumpIdsTo(ulong id)
+        {
+            if (id < nextId) throw new ArgumentOutOfRangeException(nameof(id), "Cannot rewind stable ids.");
+            nextId = id;
+        }
+
         /// <summary>Adds one box (centre/size) and, when <paramref name="mirror"/> is set and the centre is off z = 0, its z-mirror twin.</summary>
         public void Add(Float3 center, Float3 size, ushort tag = TagSolid, bool mirror = true, bool gameplay = true)
         {

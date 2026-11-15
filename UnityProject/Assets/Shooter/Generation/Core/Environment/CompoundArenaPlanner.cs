@@ -44,6 +44,7 @@ namespace Shooter.Generation.Environment
             BuildRangeLane(b);
             BuildSeparators(b);
             BuildBarracks(b);
+            ArenaVisualDetail.AppendCompound(b, Layout);
             return ArenaGeometry.CreatePlan(GeneratorId, GeneratorVersion, seed, Layout, b);
         }
 

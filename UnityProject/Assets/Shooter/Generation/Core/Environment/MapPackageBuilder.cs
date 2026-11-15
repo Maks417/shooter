@@ -363,6 +363,11 @@ namespace Shooter.Generation.Environment
                 throw new InvalidOperationException("Font provenance incomplete.");
         }
 
+        /// <summary>
+        /// Emits every collision box (gameplay + visual) so non-gameplay roofs/trim are visible.
+        /// Collision SGAF / metadata still filter to gameplay-only via <see cref="ToCollisionData"/>.
+        /// UVs stay metric (PrimitiveGeometry.Box scales with world size).
+        /// </summary>
         private static MeshData BuildSolidsMesh(CompoundPlan plan)
         {
             var positions = new List<Float3>();
@@ -373,7 +378,6 @@ namespace Shooter.Generation.Environment
             for (int i = 0; i < plan.CollisionBoxes.Count; i++)
             {
                 var box = plan.CollisionBoxes[i];
-                if (!box.Gameplay) continue;
                 var local = PrimitiveGeometry.Box(box.Size, 0f, 1);
                 uint baseIndex = (uint)positions.Count;
                 for (int v = 0; v < local.Positions.Count; v++)
