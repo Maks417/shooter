@@ -503,3 +503,18 @@ Owner report after installing 0.3.5: nobody (player or bots) could sprint, jump 
 Evidence at base `9940fb1` with the working-tree fix: Contracts 76, Simulation 196, Game 61, Maps 37, source provenance, docs, fixtures and contract lock PASS; Unity EditMode 44/44 (`Artifacts/m0-foundation/9940fb1600e9f14e495715045beb2104cac349df/tests-editmode-20261115T101232639Z-1cd38f4a/`) and PlayMode 19/19 (`…/tests-playmode-20261115T101327899Z-7cf9f574/`) PASS.
 
 Pending: no new client build or installer; `Tools/Test-FailureShutdown.ps1` NotRun (needs a matching release build); manual playtest of sprint/jump/slide, bot movement, Pause → Resume → Main Menu and first-person weapon view in an installed build. The cause of the ≥83 ms hitch frames is unexplained. The stray merge-conflict markers left in this file by the T075/T076 merge were removed, keeping both sections.
+
+### Delivery 0.3.6 (2026-11-15)
+
+Offline-only delivery (owner: server build not required while online play is postponed) from clean `946a58d`, which contains the 0.3.5 playtest fixes (`2a43277`) and the T077 presentation merge. Locked Unity 6000.3.28f1 / 8f082d2fe476.
+
+| Gate | Result | Evidence |
+|---|---|---|
+| Pure lanes | Contracts 76, Simulation 204, Game 61, Maps 37, Generation 371, source provenance (718 entries / 359 GUIDs), docs, contract lock PASS. The first Generation run failed `SoldierMotionTests.ReusedPoseEvaluationDoesNotAllocateAfterWarmup` (7,056 B) and passed on an unchanged rerun, so that allocation test is flaky. | `Artifacts/*/946a58da684099abc1e6fd220ac49e97dde7891c/` |
+| Unity | EditMode and PlayMode PASS | `Artifacts/m0-foundation/946a58da684099abc1e6fd220ac49e97dde7891c/tests-editmode-20261115T102813708Z-58eefdca/`, `tests-playmode-20261115T102902043Z-8311cd86/` |
+| Content | `Compile-GameContent.ps1 -Native -Force` PASS; content closure `c8ca52fb…` unchanged from 0.3.5 | `Artifacts/map-packages-native` |
+| Client / smoke | IL2CPP client PASS, client smoke PASS; server build and smoke not run (offline-only) | `…/build-client-20261115T103130236Z-bffc9b91/`, `…/smoke-client-20261115T103646563Z-336f4ac6/` |
+| Package | `Package-Release.ps1 -RequireNativeNav -MapCacheRoot Artifacts/map-packages-native` PASS, unity-native-navmesh, 294 files | `Artifacts/m11-playable-release/946a58da684099abc1e6fd220ac49e97dde7891c/package-20261115T103704961Z-379f2cb3/` |
+| Installer | `Shooter-Setup-0.3.6.exe`, 26,355,085 bytes, SHA256 `57659b9d8be7b687cdcf18f44e07959a0a0a3f4fc3728eaa1f0299dad11bc690`, predecessor 0.3.5, AppId unchanged, workspace clean | `Artifacts/m11-playable-release/946a58da684099abc1e6fd220ac49e97dde7891c/installer-20261115T103721220Z-d25742a5/installer/` |
+
+Pending: actual install/upgrade and manual playtest of sprint/jump/slide, bot movement, Pause → Resume → Main Menu, first-person weapon view and the T077 visuals. `releaseAcceptance` NotClaimed.
