@@ -9,7 +9,9 @@
 - Knife melee (1.8 m / 55 / sprint 24 / sprint fire) and cook/throw grenade (fuse 120, blast 5 m, self-damage yes, friendly 0) in `WeaponSimulator` / `GrenadeSimulator` / combat harness.
 - Game-v1 additive `Slot3`/`Slot4`; local input + HUD; AI empty-ammo knife / single grenade; procedural `LoadoutPropGeometry` packaged in map visuals.
 
-**Pending:** native republish (package identities change), clean Client/Server/installer identity, Unity EditMode/PlayMode on the locked editor, interactive two-map playtest. Does not close FIX/SET/REL/P05.
+**Checks (software):** Contracts 76/76, Simulation 251/251 (incl. KnifeGrenadeTests), Game 74/74, Generation 394/394, docs/fixtures + C0/Game-v1 locks PASS on the working tree.
+
+**Pending:** native republish (package identities change with knife/grenade meshes), clean Client/Server/installer identity, Unity EditMode/PlayMode on the locked editor, interactive two-map playtest. Does not close FIX/SET/REL/P05.
 
 ## ADR-058 — Minimap self marker and temporary gunfire reveal
 

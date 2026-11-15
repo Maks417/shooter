@@ -82,6 +82,10 @@ New counters: `FootstepsHeard`, `ThreatTurns`, `CrowdedStimuliHeld`, `AllyGunfir
 
 Known limits: hearing ignores walls (distance only, like gunfire). Footstep speed comes from planner positions, so a teleport or respawn counts as one fast step and is heard at most once. Spread scoring only knows allies' goals and positions, not which routes they take. Real-player feel is Pending.
 
+## Knife and grenade loadout (T087, 2026-11-15)
+
+When rifle then pistol magazines and reserves are empty, bots switch to knife (slot 2) inside ~2.5 m or spend their single grenade (slot 3) once against a visible target at ~8–22 m with a short cook, then fall back to knife. Respawn refills one grenade with the life kit ([ADR-057](../decisions.md#adr-057--accepted-knife-and-grenade-loadout-slots-t087)).
+
 ## Acceptance
 
 Seeded scripted scenarios: occluded enemy never acquired via vision; hearing triggers investigation at last-known position; target loss decays confidence; bots reload safely without infinite loop; two bots do not permanently reserve same cover; unreachable destination exits bounded retry. Eight bots run 30-minute B03 soak with no unbounded path queue, query cap breaches or orphan reservations. Accuracy/reaction distribution matches configuration, not constant instant headshots. Same command/collision recording across profiles produces equivalent AI decisions within documented adapter nondeterminism. AI counters expose sense age, path latency, state changes, shot rate and CPU budget.
