@@ -217,13 +217,13 @@ public static class ShooterFeatureBuild
                     new[]{new Shooter.Game.Contracts.ParticipantState(new Shooter.Game.Contracts.ParticipantId(1),"Diagnostic",1,true,id,new Shooter.Game.Contracts.LifeId((uint)slot+1),true,0,0,0)},0);
                 presentation.Sync(snapshot,lifecycle,null,0,id,true,0,Array.Empty<CombatEvent>(),10);
                 string name=new[]{"rifle","pistol","knife","grenade"}[slot];
-                Render(camera,Path.Combine(output,name+"-ready.png"));
+                RenderHandPose(camera,Path.Combine(output,name+"-ready.png"));
                 if(slot<2)
                 {
                     var reload=new CombatEvent(new EventId(1,10,id,1),CombatEventKind.ReloadStarted,id,default,new ActionPayload(slot,10,110));
-                    presentation.Sync(snapshot,lifecycle,null,0,id,true,0,new[]{reload},24); Render(camera,Path.Combine(output,name+"-reach.png"));
-                    presentation.Sync(snapshot,lifecycle,null,0,id,true,0,Array.Empty<CombatEvent>(),52); Render(camera,Path.Combine(output,name+"-extract.png"));
-                    presentation.Sync(snapshot,lifecycle,null,0,id,true,0,Array.Empty<CombatEvent>(),86); Render(camera,Path.Combine(output,name+"-seat.png"));
+                    presentation.Sync(snapshot,lifecycle,null,0,id,true,0,new[]{reload},24); RenderHandPose(camera,Path.Combine(output,name+"-reach.png"));
+                    presentation.Sync(snapshot,lifecycle,null,0,id,true,0,Array.Empty<CombatEvent>(),52); RenderHandPose(camera,Path.Combine(output,name+"-extract.png"));
+                    presentation.Sync(snapshot,lifecycle,null,0,id,true,0,Array.Empty<CombatEvent>(),86); RenderHandPose(camera,Path.Combine(output,name+"-seat.png"));
                     presentation.Sync(snapshot,lifecycle,null,0,id,true,0,Array.Empty<CombatEvent>(),110);
                 }
             }
@@ -232,6 +232,32 @@ public static class ShooterFeatureBuild
         }
         finally { sky?.Dispose(); UnityEngine.Object.DestroyImmediate(root); }
     });
+
+    private static void RenderHandPose(Camera camera,string path)
+    {
+        // Synchronous Editor render requests can retain skin matrices from the previous pose.
+        // Bake the actual current bones, as the soldier diagnostic already does.
+        var sources=camera.GetComponentsInChildren<SkinnedMeshRenderer>();
+        var proxies=new List<GameObject>();var meshes=new List<Mesh>();
+        try
+        {
+            foreach(var source in sources)
+            {
+                var mesh=new Mesh();source.BakeMesh(mesh);meshes.Add(mesh);
+                var proxy=new GameObject("Baked diagnostic hand");proxy.transform.SetParent(source.transform,false);proxies.Add(proxy);
+                proxy.AddComponent<MeshFilter>().sharedMesh=mesh;
+                var renderer=proxy.AddComponent<MeshRenderer>();renderer.sharedMaterials=source.sharedMaterials;renderer.shadowCastingMode=source.shadowCastingMode;
+                source.enabled=false;
+            }
+            Render(camera,path);
+        }
+        finally
+        {
+            foreach(var source in sources)source.enabled=true;
+            foreach(var proxy in proxies)UnityEngine.Object.DestroyImmediate(proxy);
+            foreach(var mesh in meshes)UnityEngine.Object.DestroyImmediate(mesh);
+        }
+    }
 
     internal static void Render(Camera camera, string path)
     {
