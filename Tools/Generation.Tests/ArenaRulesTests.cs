@@ -56,9 +56,13 @@ namespace Shooter.Generation.Tests
             Assert.Equal(a.NavHash, b.NavHash);
             Assert.NotEqual(a.CollisionHash, a.NavHash);
 
-            // Identity is derived from the box list, not the seed alone.
+            // Identity is derived from the gameplay box list, not the seed alone (skip trailing visual extras).
             var boxes = new List<CollisionBox>(a.CollisionBoxes);
-            boxes.RemoveAt(boxes.Count - 1);
+            int removeAt = -1;
+            for (int i = boxes.Count - 1; i >= 0; i--)
+                if (boxes[i].Gameplay) { removeAt = i; break; }
+            Assert.True(removeAt >= 0);
+            boxes.RemoveAt(removeAt);
             var altered = ArenaGeometry.HashGameplay(
                 mapId == "depot-yard" ? DepotArenaPlanner.GeneratorId : CompoundArenaPlanner.GeneratorId,
                 mapId == "depot-yard" ? DepotArenaPlanner.GeneratorVersion : CompoundArenaPlanner.GeneratorVersion,
