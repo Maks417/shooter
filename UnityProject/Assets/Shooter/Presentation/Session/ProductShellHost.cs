@@ -115,6 +115,17 @@ namespace Shooter.Presentation.Session
                 && view != null
                 && view.Input.ScoreboardHeld;
 
+            if (session.TerminalFault != null
+                && (navigation.Screen == ShellScreen.Playing || navigation.Screen == ShellScreen.Paused))
+            {
+                // Recoverable terminal fault (for example SpawnFailure): return to the menu with the message.
+                string message = session.TerminalFault.UserFacing;
+                LeaveMatch(abort: false);
+                navigation.ResetToMain(message);
+                ApplyCursorForScreen();
+                return;
+            }
+
             if (session.Phase == GameMatchPhase.Finished)
             {
                 var results = session.TryAcquireResults();
