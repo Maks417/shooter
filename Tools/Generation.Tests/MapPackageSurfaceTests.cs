@@ -1,0 +1,135 @@
+using System;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading;
+using Shooter.Contracts;
+using Shooter.Generation;
+using Shooter.Generation.Environment;
+using Xunit;
+
+[Collection("NativeNavProvider")]
+public sealed class MapPackageSurfaceTests : IDisposable
+{
+    private readonly string root = Path.Combine(Path.GetTempPath(), "shooter-map-surface-" + Guid.NewGuid().ToString("N"));
+    private readonly ContentId toolchain = ContentIdentity.Hash(Encoding.ASCII.GetBytes("map-surface-publication-tests"));
+
+    public void Dispose()
+    {
+        if (Directory.Exists(root)) Directory.Delete(root, true);
+    }
+
+    [Theory]
+    [InlineData("training-compound")]
+    [InlineData("depot-yard")]
+    public void MapSurfaceTripletsContainSpatialDataAndCompleteMips(string mapId)
+    {
+        var package = MapPackageBuilder.Build(mapId, "low", toolchain);
+        var payloads = PackagedVisualPayloads.FromBuild(package);
+        foreach (string path in MapVisualClosure.MapMaterialPaths)
+        {
+            var albedo = MapVisualClosure.DecodeMapMaterial(payloads, path);
+            Assert.Equal("rgba8-srgb", albedo.ChannelFormat);
+            foreach (string plane in new[] { "albedo", "normal", "mask" })
+            {
+                string planePath = plane == "albedo" ? path : MapVisualClosure.MaterialCompanionPath(path, plane);
+                var data = MapVisualClosure.DecodeMapMaterial(payloads, planePath);
+                Assert.Equal(128, data.Width);
+                Assert.Equal(128, data.Height);
+                Assert.Equal(8, data.MipBytes.Count);
+                Assert.Equal(plane == "albedo" ? "rgba8-srgb" : "rgba8-linear", data.ChannelFormat);
+                int size = 128;
+                for (int mip = 0; mip < data.MipBytes.Count; mip++)
+                {
+                    Assert.Equal(size * size * 4, data.MipBytes[mip].Count);
+                    size = Math.Max(1, size / 2);
+                }
+                var pixels = Enumerable.Range(0, 128 * 128).Select(i =>
+                    (data.MipBytes[0][i * 4], data.MipBytes[0][i * 4 + 1], data.MipBytes[0][i * 4 + 2]));
+                Assert.True(pixels.Distinct().Take(2).Count() > 1, planePath + " must not be a flat color placeholder.");
+                Assert.All(Enumerable.Range(0, 128 * 128), i => Assert.Equal(255, data.MipBytes[0][i * 4 + 3]));
+            }
+        }
+    }
+
+    [Fact]
+    public void VisualColdWarmForcedPublicationRetainsIdenticalCompanionsOnDisk()
+    {
+        var cold = MapPackagePublisher.Publish(root, toolchain, new[] { "training-compound" }, new[] { "low" }, false, CancellationToken.None);
+        Assert.Equal(ErrorCode.None, cold.Error);
+        Assert.False(cold.Reused);
+        var package = MapPackageBuilder.Build("training-compound", "low", toolchain);
+        string directory = MapPackagePublisher.PackageDirectory(root, package.PackageRootHash);
+        var firstBytes = package.Dependencies.ToDictionary(d => d.Path, d => File.ReadAllBytes(Path.Combine(directory, d.Path)));
+        var warm = MapPackagePublisher.Publish(root, toolchain, new[] { "training-compound" }, new[] { "low" }, false, CancellationToken.None);
+        Assert.Equal(ErrorCode.None, warm.Error);
+        Assert.True(warm.Reused);
+        var forced = MapPackagePublisher.Publish(root, toolchain, new[] { "training-compound" }, new[] { "low" }, true, CancellationToken.None);
+        Assert.Equal(ErrorCode.None, forced.Error);
+        foreach (var entry in firstBytes) Assert.Equal(entry.Value, File.ReadAllBytes(Path.Combine(directory, entry.Key)));
+        Assert.True(MapVisualClosure.TryLoadFromPackageDirectory(directory, package.PackageRootHash, toolchain,
+            out var loaded, out string diagnostic), diagnostic);
+        foreach (string path in MapVisualClosure.MapMaterialPaths)
+            foreach (string plane in new[] { "normal", "mask" })
+            {
+                string companion = MapVisualClosure.MaterialCompanionPath(path, plane);
+                Assert.True(loaded.Has(companion));
+                Assert.Equal(firstBytes[companion], loaded.Bytes(companion));
+                Assert.Equal(128, MapVisualClosure.DecodeMapMaterial(loaded, companion).Width);
+            }
+    }
+
+    [Fact]
+    public void MissingOrCorruptSurfaceCompanionFailsClosed()
+    {
+        var package = MapPackageBuilder.Build("depot-yard", "low", toolchain);
+        string companion = MapVisualClosure.MaterialCompanionPath(MapVisualClosure.MapMaterialPaths[0], "normal");
+        var incomplete = package.Dependencies.Where(d => d.Path != companion).ToArray();
+        Assert.False(MapVisualClosure.TryExtract(incomplete, package.MapId, package.VisualProfile, toolchain, out _, out string missing));
+        Assert.Contains(companion, missing);
+        Assert.Equal(ErrorCode.None, MapPackagePublisher.Publish(root, toolchain, new[] { "depot-yard" }, new[] { "low" }, false, CancellationToken.None).Error);
+        string directory = MapPackagePublisher.PackageDirectory(root, package.PackageRootHash);
+        string fullPath = Path.Combine(directory, companion);
+        byte[] corrupt = File.ReadAllBytes(fullPath);
+        corrupt[corrupt.Length - 1] ^= 1;
+        File.WriteAllBytes(fullPath, corrupt);
+        Assert.False(MapVisualClosure.TryLoadFromPackageDirectory(directory, package.PackageRootHash, toolchain, out _, out string diagnostic));
+        Assert.Contains("hash", diagnostic, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(corrupt, File.ReadAllBytes(fullPath));
+    }
+
+    [Theory]
+    [InlineData("training-compound")]
+    [InlineData("depot-yard")]
+    public void NewSurfacePublicationPreservesGameplayBytesAcrossQualityTiers(string mapId)
+    {
+        var gameplay = MapPackageBuilder.Build(mapId, "gameplay", toolchain);
+        var fingerprint = MapVisualClosure.MapFingerprint(mapId);
+        byte[] expectedCollision = ArtifactCodec.Decode(gameplay.CollisionSgaf, ContentKind.Collision, fingerprint, toolchain);
+        byte[] expectedNavigation = ArtifactCodec.Decode(gameplay.NavigationSgaf, ContentKind.Navigation, fingerprint, toolchain);
+        foreach (string profile in new[] { "low", "balanced", "high" })
+        {
+            var visual = MapPackageBuilder.Build(mapId, profile, toolchain);
+            Assert.Equal(expectedCollision, ArtifactCodec.Decode(visual.CollisionSgaf, ContentKind.Collision, fingerprint, toolchain));
+            Assert.Equal(expectedNavigation, ArtifactCodec.Decode(visual.NavigationSgaf, ContentKind.Navigation, fingerprint, toolchain));
+            Assert.Equal(gameplay.MetadataBytes, visual.MetadataBytes);
+            var payloads = PackagedVisualPayloads.FromBuild(visual);
+            var low = PackagedVisualPayloads.FromBuild(MapPackageBuilder.Build(mapId, "low", toolchain));
+            foreach (string path in MapVisualClosure.MapMaterialPaths)
+            {
+                Assert.Equal(low.Bytes(path), payloads.Bytes(path));
+                Assert.Equal(low.Bytes(MapVisualClosure.MaterialCompanionPath(path, "normal")), payloads.Bytes(MapVisualClosure.MaterialCompanionPath(path, "normal")));
+                Assert.Equal(low.Bytes(MapVisualClosure.MaterialCompanionPath(path, "mask")), payloads.Bytes(MapVisualClosure.MaterialCompanionPath(path, "mask")));
+            }
+        }
+    }
+
+    [Fact]
+    public void MapRecipeVersionRejectsHistoricalGenerationInputs()
+    {
+        byte[] source = MapRecipe.CreateSource("training-compound");
+        Assert.Equal("1.0.1", MapRecipe.Parse(source).Document.GeneratorVersion);
+        string old = Encoding.UTF8.GetString(source).Replace("\"generatorVersion\":\"1.0.1\"", "\"generatorVersion\":\"1.0.0\"");
+        Assert.Throws<FormatException>(() => MapRecipe.Parse(Encoding.UTF8.GetBytes(old)));
+    }
+}
