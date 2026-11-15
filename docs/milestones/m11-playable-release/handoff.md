@@ -1,5 +1,13 @@
 # M11 — Playable build and acceptance — handoff and gate record
 
+## Archived T079 alternate branch integration — 2026-11-15
+
+Owner explicitly requested merging the highlighted `archive/t079-env-alt-2415153` ref. It is an archive tag at `241515387f2ed1780e05c154b1b879080dbcd69a`, not a live branch, and was not an ancestor of `main` (`ffd0754`). Merge resolution integrates its distinct plaza/yard lamp posts, outer fence rows, full-length axis-aware ridge caps and package/prop tests. Existing main gate lamps, inner fence stubs, container corners, finer concrete/metal/trim classification and all T080 metric UV/menu-card fixes are retained; alternative material assignment/tint implementations are superseded by those newer consumers. Short roof ridges are replaced, avoiding duplicate ridge geometry.
+
+Validation of the resolved working tree (sourceDirty=true at base `ffd0754`): Generation **391**, Contracts **76**, Maps **55**, Unity EditMode **52** and source provenance **736 entries / 368 GUIDs** PASS. Generation includes both maps' unchanged gameplay box/count/collision fingerprints and visual symmetry/budget checks. Evidence: `Artifacts/m1-procedural-feasibility/ffd0754a2181112c163a8d18c20f0b9c6fd69e2e/20261115T133038119Z-0249d5bb/`; Contracts `Artifacts/m0-foundation/ffd0754a2181112c163a8d18c20f0b9c6fd69e2e/20261115T133206617Z-8e9f6658/`; EditMode `tests-editmode-20261115T133057239Z-c7cf4d57/` under that same source root. Map wrapper results follow its retained report `Artifacts/m8-runtime-composition/ffd0754a2181112c163a8d18c20f0b9c6fd69e2e/test-maps-20261115T133215973Z-e4a5d92d/`.
+
+This is source integration only. Visual mesh/package identities change; native content publication, new Client/Server builds, PlayMode/player review and a new installer are **NotRun** for this merge. The 0.3.9 installer below remains the prior `beac9ae` binary/content pair and does not contain these newly merged props. P05 and VD/REL acceptance remain unchanged. The archive tag is retained; no temporary branch/worktree was created, and the unrelated active `t080-bot-tactics` worktree is preserved.
+
 ## T080 — Visual review and material-scale correction
 
 2026-11-15 owner-authorized visual review and implementation, base `7b05e9e`; sole integrator, no temporary branches/worktrees. Scope and rollback: [task card](../../task-supplement.md#t080--visual-review-and-material-scale-correction-2026-11-15).

@@ -132,4 +132,23 @@ public sealed class MapPackageSurfaceTests : IDisposable
         string old = Encoding.UTF8.GetString(source).Replace("\"generatorVersion\":\"1.0.1\"", "\"generatorVersion\":\"1.0.0\"");
         Assert.Throws<FormatException>(() => MapRecipe.Parse(Encoding.UTF8.GetBytes(old)));
     }
+
+    [Theory]
+    [InlineData("training-compound")]
+    [InlineData("depot-yard")]
+    public void PackagedSolidsMeshExposesMaterialRoleSubmeshes(string mapId)
+    {
+        var package = MapPackageBuilder.Build(mapId, "low", toolchain);
+        var payloads = PackagedVisualPayloads.FromBuild(package);
+        var mesh = MapVisualClosure.DecodeMapMesh(payloads, MapVisualClosure.MapSolidsMeshPath);
+        Assert.True(mesh.Submeshes.Count >= 3);
+        var slots = mesh.Submeshes.Select(s => s.MaterialSlot).OrderBy(s => s).ToArray();
+        Assert.Equal(new ushort[]
+        {
+            (ushort)MapSolidsMaterialRole.StructureConcrete,
+            (ushort)MapSolidsMaterialRole.MetalCover,
+            (ushort)MapSolidsMaterialRole.Trim
+        }, slots);
+        Assert.All(mesh.Uv, uv => Assert.True(float.IsFinite(uv.X) && float.IsFinite(uv.Y)));
+    }
 }
