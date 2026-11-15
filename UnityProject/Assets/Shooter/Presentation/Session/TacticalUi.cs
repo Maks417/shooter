@@ -18,6 +18,11 @@ namespace Shooter.Presentation.Session
         public static readonly Color Accent = new Color32(230, 197, 106, 255);
         public static readonly Color Ally = new Color32(123, 197, 209, 255);
         public static readonly Color Enemy = new Color32(228, 123, 112, 255);
+        // Combat HUD plates: thinner charcoal with restrained edge contrast (world-first readability).
+        public static readonly Color HudPlate = new Color(.04f, .055f, .06f, .58f);
+        public static readonly Color HudPlateStrong = new Color(.035f, .048f, .055f, .72f);
+        public static readonly Color HudEdge = new Color(1f, 1f, 1f, .10f);
+        public static readonly Color HudEdgeSoft = new Color(1f, 1f, 1f, .06f);
 
         private readonly List<string> controls = new List<string>(48);
         private readonly Dictionary<int, GUIStyle> labels = new Dictionary<int, GUIStyle>();
@@ -128,6 +133,37 @@ namespace Shooter.Presentation.Session
             Fill(new Rect(r.xMax - 1, r.y, 1, r.height), new Color(0, 0, 0, .22f));
             if (accentTop) Fill(new Rect(r.x, r.y, r.width, 2), Accent);
             if (rail) Fill(new Rect(r.x, r.y, 3, r.height), Accent);
+        }
+
+        /// <summary>Compact in-match plate: translucent charcoal + 1px edge, optional accent hairline.</summary>
+        public static void CombatPlate(Rect r, bool strong = false, bool accentLeft = false, bool accentBottom = false)
+        {
+            Fill(r, strong ? HudPlateStrong : HudPlate);
+            Fill(new Rect(r.x, r.y, r.width, 1), HudEdge);
+            Fill(new Rect(r.x, r.yMax - 1, r.width, 1), new Color(0, 0, 0, .28f));
+            Fill(new Rect(r.x, r.y, 1, r.height), HudEdgeSoft);
+            Fill(new Rect(r.xMax - 1, r.y, 1, r.height), new Color(0, 0, 0, .18f));
+            if (accentLeft) Fill(new Rect(r.x, r.y + 1, 2, r.height - 2), Accent);
+            if (accentBottom) Fill(new Rect(r.x + 2, r.yMax - 2, Mathf.Min(28, r.width - 4), 1), Accent);
+        }
+
+        /// <summary>Soft edge vignette from observed health/damage. Analytic fills only.</summary>
+        public static void EdgeVignette(float width, float height, float strength, Color tint)
+        {
+            if (strength <= 0f || Event.current.type != EventType.Repaint) return;
+            float band = Mathf.Max(28f, height * .12f);
+            int steps = 10;
+            for (int i = 0; i < steps; i++)
+            {
+                float u = i / (float)(steps - 1);
+                float a = strength * (1f - u) * (1f - u);
+                Color c = new Color(tint.r, tint.g, tint.b, a);
+                float t = band * u / steps + 1f;
+                Fill(new Rect(0, i * band / steps, width, t), c);
+                Fill(new Rect(0, height - (i + 1) * band / steps, width, t), c);
+                Fill(new Rect(i * band / steps, 0, t, height), c);
+                Fill(new Rect(width - (i + 1) * band / steps, 0, t, height), c);
+            }
         }
 
         public void Section(Rect r, string title)

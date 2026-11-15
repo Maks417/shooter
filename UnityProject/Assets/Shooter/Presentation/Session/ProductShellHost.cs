@@ -823,17 +823,20 @@ namespace Shooter.Presentation.Session
         {
             var snap = session?.TryAcquireSnapshot();
             if (snap == null) return;
-            float w = 248, x = (ui.Width - w) * .5f, y = ui.Safe.y + 14;
-            TacticalUi.Fill(new Rect(x, y, w, 34), new Color(.02f, .03f, .035f, .92f));
-            TacticalUi.Fill(new Rect(x, y, w, 1), new Color(1, 1, 1, .08f));
-            TacticalUi.Fill(new Rect(x, y, 3, 34), TacticalUi.Ally);
-            TacticalUi.Fill(new Rect(x + w - 3, y, 3, 34), TacticalUi.Enemy);
-            ui.Label(new Rect(x + 12, y + 3, 54, 28), snap.Team1Kills.ToString("000"), 20, TacticalUi.Ally, TextAnchor.MiddleLeft);
-            ui.Label(new Rect(x + 66, y + 4, w - 132, 26), TacticalUi.Clock(snap.RemainingActiveTicks), 16, TacticalUi.Text, TextAnchor.MiddleCenter);
-            ui.Label(new Rect(x + w - 66, y + 3, 54, 28), snap.Team2Kills.ToString("000"), 20, TacticalUi.Enemy, TextAnchor.MiddleRight);
-            TacticalUi.Fill(new Rect(x + 3, y + 32, (w - 6) * .5f * Mathf.Clamp01(snap.Team1Kills / 150f), 2), TacticalUi.Ally);
-            float enemy = (w - 6) * .5f * Mathf.Clamp01(snap.Team2Kills / 150f);
-            TacticalUi.Fill(new Rect(x + w - 3 - enemy, y + 32, enemy, 2), TacticalUi.Enemy);
+            // BFV-like top score/clock strip; combat compass sits just below (ProductSessionView).
+            float w = 248, h = 26, x = (ui.Width - w) * .5f, y = ui.Safe.y + 8;
+            TacticalUi.CombatPlate(new Rect(x, y, w, h), strong: true);
+            TacticalUi.Fill(new Rect(x, y, 2, h), TacticalUi.Ally);
+            TacticalUi.Fill(new Rect(x + w - 2, y, 2, h), TacticalUi.Enemy);
+            TacticalUi.Fill(new Rect(x + 2, y + h - 1, w - 4, 1), new Color(1f, 1f, 1f, .06f));
+            ui.Label(new Rect(x + 10, y + 1, 54, 24), snap.Team1Kills.ToString("000"), 20, TacticalUi.Ally, TextAnchor.MiddleLeft);
+            ui.Label(new Rect(x + 64, y + 1, w - 128, 24), TacticalUi.Clock(snap.RemainingActiveTicks), 16, TacticalUi.Text, TextAnchor.MiddleCenter);
+            ui.Label(new Rect(x + w - 64, y + 1, 54, 24), snap.Team2Kills.ToString("000"), 20, TacticalUi.Enemy, TextAnchor.MiddleRight);
+            float mid = x + w * .5f;
+            float allyBar = (w * .5f - 6) * Mathf.Clamp01(snap.Team1Kills / 150f);
+            float enemyBar = (w * .5f - 6) * Mathf.Clamp01(snap.Team2Kills / 150f);
+            TacticalUi.Fill(new Rect(mid - allyBar, y + h - 2, allyBar, 1), TacticalUi.Ally);
+            TacticalUi.Fill(new Rect(mid, y + h - 2, enemyBar, 1), TacticalUi.Enemy);
         }
 
         private void DrawResults(float s)
