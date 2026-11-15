@@ -8,6 +8,7 @@ using Shooter.Game.Contracts;
 using Shooter.Generation;
 using Shooter.Generation.Environment;
 using Shooter.Presentation.Rig;
+using Shooter.Presentation.Rendering;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -77,22 +78,53 @@ namespace Shooter.Presentation.Session
         public void BindVerified(PackagedVisualPayloads[] visuals)
         {
             if (built) throw new InvalidOperationException("Menu scenery is already bound.");
+            try
+            {
+                BuildVerified(visuals);
+                failed = false;
+            }
+            catch
+            {
+                // A corrupt late dependency may fail after earlier textures were uploaded. Release
+                // the whole cosmetic transaction, allowing repair/retry without duplicate resources.
+                for (int i = transform.childCount - 1; i >= 0; i--)
+                    DestroyObject(transform.GetChild(i).gameObject);
+                ReleaseOwned();
+                actors = null;
+                stageCamera = null;
+                frame = null;
+                box = null;
+                mapCards.Clear();
+                motes.Clear();
+                built = false;
+                failed = true;
+                throw;
+            }
+        }
+
+        private void BuildVerified(PackagedVisualPayloads[] visuals)
+        {
             if (visuals == null || visuals.Length != 2 || visuals[0].MapId != "training-compound" || visuals[1].MapId != "depot-yard")
                 throw new InvalidOperationException("Both approved menu visual packages are required.");
             var shader = Shader.Find("Universal Render Pipeline/Lit");
             if (shader == null || !shader.isSupported) throw new InvalidOperationException("Locked URP Lit is required.");
+            for (int i = 0; i < visuals.Length; i++) ValidateShader(visuals[i]);
             box = Upload(MapVisualClosure.DecodeMapMesh(visuals[0], MapVisualClosure.UnitBoxMeshPath), "Verified menu unit box");
 
-            // Layered numeric recipe: warm concrete / cool steel / dark apron / lamp metal.
-            Material concrete = Material(shader, "Stage concrete", new Color(.20f, .22f, .21f), .10f);
-            Material concreteWarm = Material(shader, "Stage concrete warm", new Color(.24f, .22f, .18f), .08f);
-            Material steel = Material(shader, "Stage steel", new Color(.07f, .11f, .13f), .48f);
-            Material steelMatte = Material(shader, "Stage steel matte", new Color(.10f, .14f, .15f), .22f);
-            Material ground = Material(shader, "Stage ground", new Color(.06f, .075f, .078f), .32f);
-            Material apron = Material(shader, "Stage apron", new Color(.09f, .10f, .095f), .18f);
+            // The stage and live maps share verified procedural surface families. Variants share
+            // uploaded planes; numeric tint changes do not create new texture caches or art inputs.
+            Material concrete = PackagedMaterial(visuals[0], shader, MapVisualClosure.MapMaterialPaths[0], "Stage concrete", 4f);
+            Material concreteWarm = Variant(concrete, "Stage concrete warm", new Color(1f, .93f, .82f));
+            Material steel = PackagedMaterial(visuals[0], shader, MapVisualClosure.WeaponMaterialPaths[0], "Stage steel", 3f);
+            steel.SetColor("_BaseColor", new Color(.56f, .68f, .73f));
+            Material steelMatte = Variant(steel, "Stage steel matte", new Color(.72f, .83f, .86f));
+            steelMatte.SetFloat("_Smoothness", .42f);
+            Material ground = PackagedMaterial(visuals[1], shader, MapVisualClosure.MapMaterialPaths[3], "Stage ground", 24f);
+            Material apron = Variant(ground, "Stage apron", new Color(.62f, .64f, .60f));
             Material contact = Material(shader, "Stage contact", new Color(.03f, .035f, .04f), .05f);
             Material light = Material(shader, "Stage lamps", new Color(.62f, .48f, .28f), .12f);
-            Material sandbag = Material(shader, "Stage sandbag", new Color(.28f, .24f, .16f), .06f);
+            Material sandbag = PackagedMaterial(visuals[0], shader, MapVisualClosure.MapMaterialPaths[1], "Stage sandbags", 3f);
+            sandbag.SetColor("_BaseColor", new Color(.94f, .88f, .68f));
 
             // Background — distant industrial skyline and hangar shells.
             for (int i = 0; i < 6; i++)
@@ -116,6 +148,16 @@ namespace Shooter.Presentation.Session
                 Place("Cargo container", new Vector3(x, 1.25f, z), new Vector3(2.55f, 2.5f, 6.2f), steel, castShadows: true);
                 for (int rib = 0; rib < 12; rib++)
                     Place("Container rib", new Vector3(x - 1.3f, 1.25f, z - 2.9f + rib * .5f), new Vector3(.09f, 2.48f, .07f), concrete, castShadows: false);
+                // Numeric door construction gives the cargo a recognizable loading-site scale.
+                for (int door = -1; door <= 1; door += 2)
+                {
+                    Place("Cargo door panel", new Vector3(x + door * .61f, 1.25f, z - 3.13f),
+                        new Vector3(1.14f, 2.28f, .06f), steelMatte, castShadows: false);
+                    Place("Cargo locking bar", new Vector3(x + door * .58f, 1.25f, z - 3.19f),
+                        new Vector3(.055f, 2.12f, .055f), concrete, castShadows: false);
+                    Place("Cargo latch", new Vector3(x + door * .48f, 1.05f, z - 3.23f),
+                        new Vector3(.22f, .065f, .055f), steel, castShadows: false);
+                }
                 Place("Container contact", new Vector3(x, .02f, z), new Vector3(2.7f, .04f, 6.4f), contact, castShadows: false);
             }
             for (int i = 0; i < 7; i++)
@@ -222,7 +264,15 @@ namespace Shooter.Presentation.Session
             root.transform.position = new Vector3(offset, 0, 0);
             root.layer = StageLayer;
             root.AddComponent<MeshFilter>().sharedMesh = Upload(MapVisualClosure.DecodeMapMesh(visuals, MapVisualClosure.MapSolidsMeshPath), "Map card " + visuals.MapId);
-            root.AddComponent<MeshRenderer>().sharedMaterial = PackagedCardMaterial(visuals, shader);
+            root.AddComponent<MeshRenderer>().sharedMaterial = PackagedMaterial(
+                visuals, shader, MapVisualClosure.MapMaterialPaths[0], "Packaged card " + visuals.MapId, 4f);
+            // Actual packaged solids above their matching material-family ground plane. No map
+            // generator, collision or navigation is installed for these static overview renders.
+            Place("Map card ground " + visuals.MapId,
+                new Vector3(offset, -.05f, 0), new Vector3(256f, .1f, 256f),
+                PackagedMaterial(visuals, shader,
+                    MapVisualClosure.MapMaterialPaths[visuals.MapId == "depot-yard" ? 3 : 2],
+                    "Map card ground " + visuals.MapId, 128f));
             var camera = new GameObject("Map card camera").AddComponent<Camera>();
             camera.transform.SetParent(transform, false);
             camera.transform.position = new Vector3(offset + 145, 175, -150);
@@ -247,19 +297,32 @@ namespace Shooter.Presentation.Session
             // Retain the tiny static card mesh inside this bounded scene until destruction.
         }
 
-        private Material PackagedCardMaterial(PackagedVisualPayloads visuals, Shader shader)
+        private static void ValidateShader(PackagedVisualPayloads visuals)
         {
-            try
-            {
-                var data = MapVisualClosure.DecodeMapMaterial(visuals, MapVisualClosure.MapMaterialPaths[0]);
-                var mip0 = data.MipBytes[0];
-                return Material(shader, "Packaged card " + visuals.MapId,
-                    new Color(mip0[0] / 255f, mip0[1] / 255f, mip0[2] / 255f, 1f), .16f);
-            }
-            catch
-            {
-                return Material(shader, "Map card surfaces", new Color(.30f, .38f, .36f), .15f);
-            }
+            var descriptor = MapJsonValue.Parse(visuals.Bytes(MapVisualClosure.ShaderPath(visuals.Profile))).Object;
+            if (descriptor["unityShader"].String != "Universal Render Pipeline/Lit" ||
+                descriptor["shaderException"].String != "procedural-urp-lit-v1")
+                throw new InvalidOperationException("Packaged menu shader provenance rejected.");
+        }
+
+        private Material PackagedMaterial(PackagedVisualPayloads visuals, Shader shader, string path, string label, float repeats)
+        {
+            // Present companion planes must decode successfully. Missing optional planes retain
+            // the material adapter's scalar defaults; corrupt bytes never turn into flat art.
+            string prefix = path.EndsWith(".bin", StringComparison.Ordinal) ? path.Substring(0, path.Length - 4) : path;
+            MaterialData? normal = visuals.Has(prefix + "-normal.bin")
+                ? MapVisualClosure.DecodeMapMaterial(visuals, prefix + "-normal.bin") : null;
+            MaterialData? mask = visuals.Has(prefix + "-mask.bin")
+                ? MapVisualClosure.DecodeMapMaterial(visuals, prefix + "-mask.bin") : null;
+            return ProductSurfaceMaterial.Create(shader, MapVisualClosure.DecodeMapMaterial(visuals, path),
+                normal, mask, label, repeats, value => owned.Add(value));
+        }
+
+        private Material Variant(Material source, string label, Color tint)
+        {
+            var material = Own(new Material(source) { name = label, enableInstancing = true });
+            material.SetColor("_BaseColor", tint);
+            return material;
         }
 
         private void LateUpdate()
@@ -346,6 +409,7 @@ namespace Shooter.Presentation.Session
             var mesh = Own(new Mesh { name = name, indexFormat = IndexFormat.UInt32 });
             mesh.vertices = data.Positions.Select(v => new Vector3(v.X, v.Y, v.Z)).ToArray();
             mesh.normals = data.Normals.Select(v => new Vector3(v.X, v.Y, v.Z)).ToArray();
+            mesh.tangents = data.Tangents.Select(v => new Vector4(v.X, v.Y, v.Z, v.W)).ToArray();
             mesh.uv = data.Uv.Select(v => new Vector2(v.X, v.Y)).ToArray();
             mesh.triangles = data.Indices.Select(v => (int)v).ToArray();
             mesh.RecalculateBounds();
@@ -368,8 +432,16 @@ namespace Shooter.Presentation.Session
         }
 
         private T Own<T>(T value) where T : UnityEngine.Object { owned.Add(value); return value; }
-        private void OnDestroy()
+        private static void DestroyObject(UnityEngine.Object value)
         {
+            if (Application.isPlaying) Destroy(value); else DestroyImmediate(value);
+        }
+
+        private void OnDestroy() => ReleaseOwned();
+
+        private void ReleaseOwned()
+        {
+            if (stageCamera != null) stageCamera.targetTexture = null;
             for (int i = 0; i < owned.Count; i++)
             {
                 if (owned[i] is RenderTexture rt) rt.Release();
