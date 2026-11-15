@@ -23,8 +23,22 @@ namespace Shooter.World
     {
         private readonly List<GameObject> solids = new List<GameObject>();
 
-        /// <summary>Diagnostics only: allow the packaged NVB1 graph to answer when the native NavMesh query fails. Off in product composition.</summary>
+        /// <summary>Allow the packaged NVB1 graph to answer when the native NavMesh sample/query fails. On in product composition so bots never idle; fallback paths are counted separately and never reported as native Complete.</summary>
         public bool AllowPackagedPathFallback { get; set; }
+
+        /// <summary>Read-only per-reason path failure counters (cumulative since construction).</summary>
+        public int NavStartSampleMisses { get; private set; }
+        public int NavGoalSampleMisses { get; private set; }
+        public int NavCalculatePathFailures { get; private set; }
+        public int NavPartialPaths { get; private set; }
+        public int NavFallbackPathsUsed { get; private set; }
+        public int NavFallbackPathsFailed { get; private set; }
+
+        /// <summary>One-line summary of the nav counters for diagnostics logs.</summary>
+        public string NavCounterSummary =>
+            "navStartMiss=" + NavStartSampleMisses + " navGoalMiss=" + NavGoalSampleMisses +
+            " navCalcFail=" + NavCalculatePathFailures + " navPartial=" + NavPartialPaths +
+            " navFallbackUsed=" + NavFallbackPathsUsed + " navFallbackFailed=" + NavFallbackPathsFailed;
         private readonly Transform? parent;
         private readonly VerifiedMapPackageStore? packageStore;
         private readonly Func<MapId, ContentId>? gameplayRootResolver;
@@ -124,13 +138,7 @@ namespace Shooter.World
                 navigation = new RevisionedPathAdapter(
                     definition.NavRevision,
                     LocateActor,
-                    (a, b, corners) =>
-                    {
-                        if (corners == null) return NavPathOutcome.Failed;
-                        if (!install.TrySamplePosition(a, settings.RequiredClearance * 2f, out var snappedA)) return NavPathOutcome.Failed;
-                        if (!install.TrySamplePosition(b, settings.RequiredClearance * 2f, out var snappedB)) return NavPathOutcome.Failed;
-                        return install.CalculatePath(snappedA, snappedB, corners, AllowPackagedPathFallback);
-                    });
+                    (a, b, corners) => SolvePath(install, settings, a, b, corners));
 
                 return Task.FromResult(GameOperationResult.Ok);
             }
@@ -145,6 +153,32 @@ namespace Shooter.World
                 return Task.FromResult(new GameOperationResult(GameErrorCode.CorruptContent, "map-package-corrupt",
                     "Corrupt package retained for repair: " + Trim(error.Message)));
             }
+        }
+
+        private NavPathOutcome SolvePath(UnityNavMeshBakeInstaller install, NavSettings settings, Float3 a, Float3 b, List<Float3>? corners)
+        {
+            if (corners == null) return NavPathOutcome.Failed;
+            float radius = settings.RequiredClearance * 2f;
+            bool startOk = install.TrySamplePosition(a, radius, out var snappedA);
+            bool goalOk = install.TrySamplePosition(b, radius, out var snappedB);
+            if (!startOk) NavStartSampleMisses++;
+            if (!goalOk) NavGoalSampleMisses++;
+            if (startOk && goalOk)
+            {
+                var outcome = install.CalculatePath(snappedA, snappedB, corners, false);
+                if (outcome == NavPathOutcome.Complete) return outcome;
+                if (outcome == NavPathOutcome.Partial) { NavPartialPaths++; return outcome; }
+                NavCalculatePathFailures++;
+            }
+            if (!AllowPackagedPathFallback) return NavPathOutcome.Failed;
+            if (install.TryCalculatePackagedPath(a, b, corners))
+            {
+                NavFallbackPathsUsed++;
+                return NavPathOutcome.FallbackComplete;
+            }
+            NavFallbackPathsFailed++;
+            corners.Clear();
+            return NavPathOutcome.Failed;
         }
 
         public bool TryValidateSpawn(SpawnSlot slot, out string diagnostic)

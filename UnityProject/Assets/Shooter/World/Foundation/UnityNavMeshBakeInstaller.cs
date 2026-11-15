@@ -118,10 +118,24 @@ namespace Shooter.World
                     corners.Add(UnityWorldQueries.F(nativeCorners[i]));
                 return path.status == NavMeshPathStatus.PathComplete ? NavPathOutcome.Complete : NavPathOutcome.Partial;
             }
-            if (allowPackagedFallback && UnityNavMeshBakeCodec.TryFindPath(Bake, start, goal, corners))
+            if (allowPackagedFallback && TryCalculatePackagedPath(start, goal, corners))
                 return NavPathOutcome.FallbackComplete;
             corners.Clear();
             return NavPathOutcome.Failed;
+        }
+
+        /// <summary>Packaged-graph path only (no native query), capped to the contract corner limit.</summary>
+        public bool TryCalculatePackagedPath(Float3 start, Float3 goal, List<Float3> corners)
+        {
+            if (corners == null) throw new ArgumentNullException(nameof(corners));
+            corners.Clear();
+            if (!UnityNavMeshBakeCodec.TryFindPath(Bake, start, goal, corners) || corners.Count == 0)
+            {
+                corners.Clear();
+                return false;
+            }
+            UnityNavMeshBakeCodec.DecimateCorners(corners, ContractVersion.MaxPathCorners - 8);
+            return true;
         }
 
         public void Dispose()
@@ -146,18 +160,8 @@ namespace Shooter.World
                 var v = bake.Vertices[i];
                 verts[i] = new Vector3(v.X, v.Y, v.Z);
             }
-            var indices = new List<int>(bake.Polygons.Count * 6);
-            for (int p = 0; p < bake.Polygons.Count; p++)
-            {
-                var poly = bake.Polygons[p];
-                // Fan triangulation for 3..6-gons. Winding must face +Y so Unity NavMesh keeps the surface.
-                for (int i = 1; i + 1 < poly.Indices.Length; i++)
-                {
-                    indices.Add((int)poly.Indices[0]);
-                    indices.Add((int)poly.Indices[i + 1]);
-                    indices.Add((int)poly.Indices[i]);
-                }
-            }
+            // Winding is chosen per triangle so the surface faces +Y whether the bake is native (clockwise) or software grid (counter-clockwise).
+            var indices = new List<int>(UnityNavMeshBakeCodec.BuildUpFacingTriangleIndices(bake));
             mesh.SetVertices(verts);
             mesh.SetTriangles(indices, 0, true);
             mesh.RecalculateBounds();
