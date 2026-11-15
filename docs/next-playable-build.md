@@ -1,5 +1,7 @@
 # Next playable build — finish playtest and native navigation
 
+**Visible insertion loading — 2026-11-15 (source):** match/boot insertion briefing paints before sync load/bind (`DrawInsertionScreen`, paint yields, `BootLoadingHost`); pure shell copy tests PASS; named player review Pending. [Handoff](milestones/m11-playable-release/handoff.md#visible-insertion-loading-screens--2026-11-15).
+
 **Analytic death collapse — 2026-11-15 (source):** `soldier.motion.spike.v4` cosmetic DeathPhase collapse replaces crouch-idle corpses; pure motion tests PASS; player/installer Pending. [Handoff](milestones/m11-playable-release/handoff.md#analytic-death-collapse-soldiermotionspikev4).
 
 **T088 weapon visual overhaul — 2026-11-15 (source):** ADR-061 `geometry.weapon` 1.0.2 richer rifle/pistol LODs, detachable mag + bolt/slide, denser muzzle/casing/tracer FX; native republish and named visual review Pending. [Handoff](milestones/m11-playable-release/handoff.md#t088--weapon-visual-overhaul-adr-061).

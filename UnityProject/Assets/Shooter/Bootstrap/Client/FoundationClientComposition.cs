@@ -50,8 +50,11 @@ namespace Shooter.Bootstrap
                     if (authority.ProductMode && soldier.Length == 0 && gallery.Length == 0
                         && benchmark.Length == 0)
                     {
+                        // Paint a briefing insertion screen before Main so cold start is not a blank hitch.
+                        var boot = BootLoadingHost.Create();
                         if (authority.ContentRecoveryRequired)
                         {
+                            UnityEngine.Object.Destroy(boot.gameObject);
                             ContentRecoveryHost.Create(
                                 ReleasePackagePolicy.CorruptContentRecoveryMessage,
                                 authority.ContentRecoveryDetail,
@@ -78,7 +81,8 @@ namespace Shooter.Bootstrap
                             System.Globalization.CultureInfo.InvariantCulture);
                         if (preferredSize != 5 && preferredSize != 6) preferredSize = 5;
                         // T059: shell owns start/stop; CLI/PlayerPrefs are setup defaults only.
-                        GameShellMenu.Create(new EntryShellBackend(authority), preferredMap, preferredSize);
+                        boot.ContinueAfterPaint(() =>
+                            GameShellMenu.Create(new EntryShellBackend(authority), preferredMap, preferredSize));
                         return;
                     }
                     if (soldier.Length != 0)

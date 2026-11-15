@@ -508,6 +508,107 @@ namespace Shooter.Presentation.Session
             Fill(new Rect(Safe.x + 56, Safe.y + 58, 24, 1), PanelEdge);
         }
 
+        /// <summary>
+        /// Full-screen operations insertion briefing. Indeterminate activity only; optional packaged map-card media.
+        /// Returns true when the Cancel control is clicked (match path).
+        /// </summary>
+        public bool DrawInsertionScreen(
+            string headerTitle,
+            string briefingTitle,
+            string mapDisplayName,
+            string rulesLine,
+            string phaseText,
+            Texture? media,
+            bool showCancel,
+            bool reducedMotion,
+            string footer)
+        {
+            Backdrop();
+            Header("OPERATIONS / INSERTION", headerTitle);
+            Rect a = Safe;
+            float panelW = Mathf.Min(920, a.width);
+            float panelH = Mathf.Min(268, a.height * .48f);
+            Rect panel = new Rect(a.x, a.y + 78, panelW, panelH);
+            Panel(panel, accentTop: true, rail: true);
+
+            float mediaW = 0f;
+            if (media != null)
+            {
+                mediaW = Mathf.Min(280, panel.width * .34f);
+                Rect mediaRect = new Rect(panel.x + 14, panel.y + 16, mediaW, panel.height - 32);
+                Fill(mediaRect, new Color(.02f, .03f, .035f, .98f));
+                Edge(mediaRect);
+                Rect inset = new Rect(mediaRect.x + 3, mediaRect.y + 3, mediaRect.width - 6, mediaRect.height - 6);
+                Fill(inset, Surface);
+                if (Event.current.type == EventType.Repaint)
+                    GUI.DrawTexture(inset, media, ScaleMode.ScaleAndCrop);
+                for (int i = 0; i < 7; i++)
+                {
+                    float u = i / 6f;
+                    Fill(new Rect(inset.x, inset.y + i * 3f, inset.width, 4f), new Color(0f, 0f, 0f, .18f * (1f - u)));
+                }
+                // Selection-style corner brackets on the media plate.
+                AccentBar(new Rect(mediaRect.x, mediaRect.y, 14, 2), Accent);
+                AccentBar(new Rect(mediaRect.x, mediaRect.y, 2, 14), Accent);
+                AccentBar(new Rect(mediaRect.xMax - 14, mediaRect.y, 14, 2), Accent);
+                AccentBar(new Rect(mediaRect.xMax - 2, mediaRect.y, 2, 14), Accent);
+                AccentBar(new Rect(mediaRect.x, mediaRect.yMax - 2, 14, 2), Accent);
+                AccentBar(new Rect(mediaRect.x, mediaRect.yMax - 14, 2, 14), Accent);
+                AccentBar(new Rect(mediaRect.xMax - 14, mediaRect.yMax - 2, 14, 2), Accent);
+                AccentBar(new Rect(mediaRect.xMax - 2, mediaRect.yMax - 14, 2, 14), Accent);
+                mediaW += 18f;
+            }
+
+            float textX = panel.x + 18 + mediaW;
+            float textW = panel.xMax - textX - 18;
+            Label(new Rect(textX, panel.y + 18, textW, 28), briefingTitle, 22);
+            Label(new Rect(textX, panel.y + 52, textW, 28), (mapDisplayName ?? "").ToUpperInvariant(), 26);
+            Label(new Rect(textX, panel.y + 88, textW, 22), rulesLine ?? "", 14, Muted);
+
+            // Phase strip with accent tick.
+            float phaseY = panel.y + 128;
+            Fill(new Rect(textX, phaseY, 3, 36), Accent);
+            Fill(new Rect(textX + 3, phaseY, textW - 3, 36), new Color(1f, 1f, 1f, .04f));
+            Label(new Rect(textX + 14, phaseY + 6, textW - 28, 24), phaseText ?? "", 16, Muted);
+
+            // Dual-track indeterminate activity with corner brackets (never a fabricated %).
+            float barY = panel.yMax - 36;
+            float barX = textX;
+            float barW = textW;
+            Fill(new Rect(barX, barY, barW, 10), Raised);
+            Fill(new Rect(barX, barY, barW, 1), PanelEdge);
+            Fill(new Rect(barX, barY + 9, barW, 1), new Color(0f, 0f, 0f, .35f));
+            AccentBar(new Rect(barX, barY - 4, 10, 2), Accent);
+            AccentBar(new Rect(barX, barY - 4, 2, 10), Accent);
+            AccentBar(new Rect(barX + barW - 10, barY - 4, 10, 2), Accent);
+            AccentBar(new Rect(barX + barW - 2, barY - 4, 2, 10), Accent);
+            AccentBar(new Rect(barX, barY + 12, 10, 2), Accent);
+            AccentBar(new Rect(barX, barY + 4, 2, 10), Accent);
+            AccentBar(new Rect(barX + barW - 10, barY + 12, 10, 2), Accent);
+            AccentBar(new Rect(barX + barW - 2, barY + 4, 2, 10), Accent);
+            if (reducedMotion)
+            {
+                Fill(new Rect(barX, barY + 3, barW, 4), Accent);
+            }
+            else
+            {
+                float seg = Mathf.Max(48f, barW * .22f);
+                float travel = Mathf.Max(1f, barW - seg);
+                float offset = Mathf.PingPong(Time.realtimeSinceStartup * .42f, 1f) * travel;
+                Fill(new Rect(barX + offset, barY + 2, seg, 6), Accent);
+                Fill(new Rect(barX + offset, barY + 2, 3, 6), Text);
+            }
+
+            bool cancel = false;
+            if (showCancel)
+                cancel = Button(new Rect(a.x, a.yMax - 66, 180, 44), "load.cancel", "CANCEL");
+
+            Fill(new Rect(a.x, a.yMax - 24, Mathf.Min(96, a.width * .16f), 1), Raised);
+            Fill(new Rect(a.x, a.yMax - 24, 16, 1), Accent);
+            Label(new Rect(a.x, a.yMax - 16, a.width, 16), footer ?? "", 12, Muted);
+            return cancel;
+        }
+
         public static string Clock(uint remainingTicks)
         {
             uint seconds = (uint)Math.Ceiling(remainingTicks / 60.0);

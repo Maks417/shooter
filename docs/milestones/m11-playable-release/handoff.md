@@ -1,5 +1,17 @@
 # M11 — Playable build and acceptance — handoff and gate record
 
+## Visible insertion loading screens — 2026-11-15
+
+Owner feedback: match/boot felt like a blank hitch with no loading UI. Software already had `DrawLoading`, but synchronous package/nav/visual bind finished (or froze) before IMGUI could paint.
+
+**Implemented (software):**
+- Shared `TacticalUi.DrawInsertionScreen` briefing layout (contour backdrop, accent-rail plate, map name, rules, phase strip, optional packaged map-card media, bracketed indeterminate activity bar; reduced-motion freezes the segment).
+- `ProductShellHost.StartSelectedMatch` awaits paint frames before `BeginLoadAsync` and before `BindVerifiedMap`; Cancel remains usable between phases.
+- `BootLoadingHost` paints the same insertion screen for at least two frames before Main; recovery still replaces it immediately when content is missing/corrupt.
+- Pure `InsertionScreenCopy` helpers + Simulation shell tests.
+
+**Checks:** Simulation shell tests and docs/fixtures refresh in this change set. Named player visual review of boot/match insertion, Unity EditMode/PlayMode, Client/Server/package/installer remain Pending. Does not close FIX08/SET/REL/P05/VD exits.
+
 ## T088 — Weapon visual overhaul (ADR-061)
 
 2026-11-15. Owner: improve weapon models, animations and fire feedback (full VD3 slice). [ADR-061](../../decisions.md#adr-061--accepted-geometryweapon-102-mechanical-parts-and-denser-fire-fx-t088).

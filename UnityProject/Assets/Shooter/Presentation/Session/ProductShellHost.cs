@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 using Shooter.Game.Contracts;
 using Shooter.Game.Session;
 using Shooter.Game.Settings;
@@ -252,9 +253,18 @@ namespace Shooter.Presentation.Session
             loadCancel?.Dispose();
             loadCancel = new CancellationTokenSource();
             ulong epoch = coordinator.LoadEpoch;
-            navigation.BeginLoading("Loading " + request.MapId.Value + "…");
+            navigation.BeginLoading(InsertionScreenCopy.LoadingPhase(request.MapId.Value));
             ApplyCursorForScreen();
             view.ClearPresentation();
+            // Let OnGUI paint the insertion screen before synchronous package/nav work.
+            await AwaitLoadingPaintAsync().ConfigureAwait(true);
+            if (!coordinator.SameLoadEpoch(epoch)) return;
+            if (loadCancel.IsCancellationRequested)
+            {
+                coordinator.CancelStart();
+                navigation.CancelLoad();
+                return;
+            }
 
             GameOperationResult load;
             try
@@ -285,7 +295,16 @@ namespace Shooter.Presentation.Session
                 return;
             }
 
-            navigation.SetLoadingPhase("Binding presentation…");
+            navigation.SetLoadingPhase(InsertionScreenCopy.BindingPresentation);
+            await AwaitLoadingPaintAsync().ConfigureAwait(true);
+            if (!coordinator.SameLoadEpoch(epoch)) return;
+            if (loadCancel.IsCancellationRequested)
+            {
+                coordinator.CompleteStartFailure();
+                navigation.CancelLoad();
+                return;
+            }
+
             backend.WireMapActors();
             if (!backend.TryGetVerifiedMap(out var boxes, out var metadata, out var mapId))
             {
@@ -520,19 +539,27 @@ namespace Shooter.Presentation.Session
 
         private void DrawLoading(float s)
         {
-            ui.Backdrop();
-            ui.Header("OPERATIONS / INSERTION", setup!.SelectedDisplayName);
-            Rect a = ui.Safe;
-            float panelW = Mathf.Min(660, a.width * .74f);
-            ui.Panel(new Rect(a.x, a.y + 86, panelW, 118), accentTop: true);
-            ui.Label(new Rect(a.x + 18, a.y + 102, panelW - 36, 32), "PREPARING THE BATTLEFIELD", 22);
-            ui.Label(new Rect(a.x + 18, a.y + 140, panelW - 36, 44), navigation.StatusMessage, 18, TacticalUi.Muted);
-            // Indeterminate activity, not a fabricated percentage or readiness claim.
-            TacticalUi.Fill(new Rect(a.x, a.yMax - 100, a.width, 3), TacticalUi.Raised);
-            float offset = Mathf.PingPong(Time.realtimeSinceStartup * .35f, .8f);
-            TacticalUi.Fill(new Rect(a.x + a.width * offset, a.yMax - 100, a.width * .2f, 3), TacticalUi.Accent);
-            if (ui.Button(new Rect(a.x, a.yMax - 66, 180, 44), "load.cancel", "CANCEL")) CancelLoading();
-            DrawFooter("TEAM DEATHMATCH   /   " + setup.SelectedTeamSize + " v " + setup.SelectedTeamSize);
+            Texture? card = menuScene?.MapCard(setup!.SelectedMapId.Value);
+            bool reducedMotion = settingsEditor != null && settingsEditor.Applied.ReducedCameraMotion;
+            string mapName = InsertionScreenCopy.DisplayNameOrFallback(setup.SelectedDisplayName, setup.SelectedMapId.Value);
+            if (ui.DrawInsertionScreen(
+                    mapName,
+                    InsertionScreenCopy.MatchTitle,
+                    mapName,
+                    InsertionScreenCopy.MatchRules(setup.SelectedTeamSize),
+                    navigation.StatusMessage,
+                    card,
+                    showCancel: true,
+                    reducedMotion,
+                    InsertionScreenCopy.MatchFooter(setup.SelectedTeamSize)))
+                CancelLoading();
+        }
+
+        /// <summary>Yields so IMGUI can paint Loading before the next synchronous hitch.</summary>
+        private static async Task AwaitLoadingPaintAsync()
+        {
+            await Task.Yield();
+            await Task.Yield();
         }
 
         private void DrawPause(float s)
