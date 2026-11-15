@@ -76,12 +76,15 @@ namespace Shooter.Simulation.Combat
             if (muzzleProbe.Status == QueryStatus.Hit && muzzleProbe.Hit.DistanceMeters <= 0.001f)
                 return new HitscanResult(true, false, request.Muzzle, dir, false, default);
 
-            var eyeHit = world.Raycast(request.Eye, dir, MaxMeters, coverFilter);
+            float maxRange = request.Definition.MaxRangeMeters > 0f
+                ? Math.Min(MaxMeters, request.Definition.MaxRangeMeters)
+                : MaxMeters;
+            var eyeHit = world.Raycast(request.Eye, dir, maxRange, coverFilter);
             Float3 targetPoint;
             if (eyeHit.Status == QueryStatus.Hit)
                 targetPoint = eyeHit.Hit.Point;
             else
-                targetPoint = new Float3(request.Eye.X + dir.X * MaxMeters, request.Eye.Y + dir.Y * MaxMeters, request.Eye.Z + dir.Z * MaxMeters);
+                targetPoint = new Float3(request.Eye.X + dir.X * maxRange, request.Eye.Y + dir.Y * maxRange, request.Eye.Z + dir.Z * maxRange);
 
             Float3 toTarget = new Float3(targetPoint.X - request.Muzzle.X, targetPoint.Y - request.Muzzle.Y, targetPoint.Z - request.Muzzle.Z);
             double len2 = toTarget.LengthSquared;
@@ -104,7 +107,7 @@ namespace Shooter.Simulation.Combat
                 {
                     var vol = volumes[i];
                     if (vol.EntityId.Equals(request.Shooter)) continue;
-                    if (!RayCapsule(request.Muzzle, muzzleDir, MaxMeters, vol.Capsule, out float t, out Float3 point, out Float3 normal)) continue;
+                    if (!RayCapsule(request.Muzzle, muzzleDir, maxRange, vol.Capsule, out float t, out Float3 point, out Float3 normal)) continue;
                     var hit = new QueryHit(t, point, normal, vol.EntityId, default, vol.EntityId.Value * 10 + vol.RegionId, vol.RegionId, request.CollisionRevision);
                     if (!any || QueryOrder.CompareClosest(hit, best) < 0) { best = hit; any = true; }
                 }
@@ -119,7 +122,7 @@ namespace Shooter.Simulation.Combat
                 return new HitscanResult(false, true, request.Muzzle, muzzleDir, true, best);
             }
 
-            var far = world.Raycast(request.Muzzle, muzzleDir, MaxMeters, bulletFilter);
+            var far = world.Raycast(request.Muzzle, muzzleDir, maxRange, bulletFilter);
             if (far.Status == QueryStatus.Hit)
                 return new HitscanResult(false, true, request.Muzzle, muzzleDir, true, far.Hit);
             return new HitscanResult(false, true, request.Muzzle, muzzleDir, false, default);

@@ -136,6 +136,18 @@ namespace Shooter.Tests
             Assert.That(FirstPersonHitFeedback.DamageShakeMeters(0.2f, true, false), Is.EqualTo(0f));
         }
 
+        [Test]
+        public void LocalShotOverlayIgnoresBotAndInvalidInstigators()
+        {
+            var local = new EntityId(3);
+            var bot = new EntityId(9);
+            Assert.That(FirstPersonHitFeedback.IsLocalShot(CombatEventKind.ShotAccepted, local, local), Is.True);
+            Assert.That(FirstPersonHitFeedback.IsLocalShot(CombatEventKind.ShotAccepted, bot, local), Is.False);
+            Assert.That(FirstPersonHitFeedback.IsLocalShot(CombatEventKind.ShotAccepted, default, local), Is.False);
+            Assert.That(FirstPersonHitFeedback.IsLocalShot(CombatEventKind.Impact, local, local), Is.False);
+            Assert.That(FirstPersonHitFeedback.IsLocalShot(CombatEventKind.ShotAccepted, local, default), Is.False);
+        }
+
         private sealed class Lifecycle : IActorLifecycle
         {
             public ActorLifecycleState State;

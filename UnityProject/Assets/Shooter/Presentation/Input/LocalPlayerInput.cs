@@ -25,11 +25,15 @@ namespace Shooter.Presentation.Input
         public readonly bool Crouch;
         public readonly bool SelectRifle;
         public readonly bool SelectPistol;
+        public readonly bool SelectKnife;
+        public readonly bool SelectGrenade;
         public readonly bool Slide;
         /// <summary>Press edges reported by the device layer (Input System WasPressedThisFrame); catches clicks shorter than a frame.</summary>
         public readonly bool FireEdge;
         public readonly bool ReloadEdge;
         public readonly bool JumpEdge;
+        /// <summary>Last-weapon quick-switch press edge (default Q).</summary>
+        public readonly bool SelectLastWeapon;
 
         public FrameInputSample(
             float moveX,
@@ -47,7 +51,10 @@ namespace Shooter.Presentation.Input
             bool slide = false,
             bool fireEdge = false,
             bool reloadEdge = false,
-            bool jumpEdge = false)
+            bool jumpEdge = false,
+            bool selectLastWeapon = false,
+            bool selectKnife = false,
+            bool selectGrenade = false)
         {
             MoveX = moveX;
             MoveY = moveY;
@@ -61,10 +68,13 @@ namespace Shooter.Presentation.Input
             Crouch = crouch;
             SelectRifle = selectRifle;
             SelectPistol = selectPistol;
+            SelectKnife = selectKnife;
+            SelectGrenade = selectGrenade;
             Slide = slide;
             FireEdge = fireEdge;
             ReloadEdge = reloadEdge;
             JumpEdge = jumpEdge;
+            SelectLastWeapon = selectLastWeapon;
         }
     }
 
@@ -93,6 +103,9 @@ namespace Shooter.Presentation.Input
         /// <summary>Longer than a pistol cooldown (10 ticks) would double-fire, so keep this below it.</summary>
         public const int FirePressBufferTicks = 8;
         private const byte PistolSlot = 1;
+        private const byte KnifeSlot = 2;
+        private const byte GrenadeSlot = 3;
+        private const byte MaxSlot = 3;
         private bool gameplayEnabled;
         private bool blockFireUntilRelease = true;
         private float moveX;
@@ -102,6 +115,8 @@ namespace Shooter.Presentation.Input
         private bool sprintHeld;
         private bool crouchHeld;
         private byte selectedSlot;
+        /// <summary>Previous active weapon slot for LastWeapon quick-switch (ADR-056).</summary>
+        private byte lastSlot = 1;
         private float yaw;
         private float pitch;
         private float sensitivityDegrees = 0.1f;
@@ -150,7 +165,9 @@ namespace Shooter.Presentation.Input
         {
             yaw = NormalizeYaw(yawRadians);
             pitch = Mathf.Clamp(pitchRadians, -MaxPitchRadians, MaxPitchRadians);
-            selectedSlot = activeSlot > 1 ? (byte)0 : activeSlot;
+            selectedSlot = activeSlot > MaxSlot ? (byte)0 : activeSlot;
+            // Prefer the previous gun slot so the first Q after spawn/respawn remains useful.
+            lastSlot = selectedSlot == 0 ? (byte)1 : (byte)0;
             ClearCapturedInput();
         }
 
@@ -190,7 +207,10 @@ namespace Shooter.Presentation.Input
                 bindings.IsPressed("Slide"),
                 bindings.WasPressedThisFrame("Fire"),
                 bindings.WasPressedThisFrame("Reload"),
-                bindings.WasPressedThisFrame("Jump")),
+                bindings.WasPressedThisFrame("Jump"),
+                bindings.WasPressedThisFrame("LastWeapon"),
+                bindings.IsPressed("Slot3"),
+                bindings.IsPressed("Slot4")),
                 acceptsGameplayInput);
         }
 
@@ -242,8 +262,20 @@ namespace Shooter.Presentation.Input
             aimHeld = frame.Aim;
             sprintHeld = frame.Sprint;
             crouchHeld = frame.Crouch;
-            if (wasEnabled && frame.SelectRifle) selectedSlot = 0;
-            if (wasEnabled && frame.SelectPistol) selectedSlot = 1;
+            if (wasEnabled)
+            {
+                // Absolute slots win over LastWeapon in the same frame; update previous only on a real change.
+                if (frame.SelectRifle) SelectAbsolute(0);
+                else if (frame.SelectPistol) SelectAbsolute(1);
+                else if (frame.SelectKnife) SelectAbsolute(KnifeSlot);
+                else if (frame.SelectGrenade) SelectAbsolute(GrenadeSlot);
+                else if (frame.SelectLastWeapon)
+                {
+                    byte previous = selectedSlot;
+                    selectedSlot = lastSlot;
+                    lastSlot = previous;
+                }
+            }
             fireWasDown = acceptedFire;
             reloadWasDown = frame.Reload;
             jumpWasDown = frame.Jump;
@@ -259,7 +291,8 @@ namespace Shooter.Presentation.Input
             if (fireHeld) buttons |= InputButtons.FireHeld;
             // Buffer only the semi-automatic pistol slot: on the automatic rifle a buffered edge
             // after a quick tap would read as a fresh press once fire is released (double shot).
-            if (pendingFire) fireBufferTicks = selectedSlot == PistolSlot ? FirePressBufferTicks : 1;
+            if (pendingFire)
+                fireBufferTicks = selectedSlot == PistolSlot ? FirePressBufferTicks : 1;
             if (fireBufferTicks > 0) { buttons |= InputButtons.FirePressed; fireBufferTicks--; }
             if (pendingReload) buttons |= InputButtons.ReloadPressed;
             if (pendingJump) buttons |= InputButtons.JumpPressed;
@@ -270,6 +303,11 @@ namespace Shooter.Presentation.Input
             sequence++;
             return new LocalPlayerCommand(
                 new InputCommand(entity, tick, sequence, moveX, moveY, yaw, pitch, buttons, selectedSlot), slide);
+        }
+
+        private void SelectAbsolute(byte slot)
+        {
+            if (selectedSlot != slot) { lastSlot = selectedSlot; selectedSlot = slot; }
         }
 
         private static float NormalizeYaw(float value)

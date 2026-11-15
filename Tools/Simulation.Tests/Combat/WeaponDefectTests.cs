@@ -80,20 +80,26 @@ namespace Shooter.Simulation.Tests.Combat
             Assert.True(Math.Abs(pitch) < 1e-4f);
         }
 
-        private static (WeaponSimulator sim, WeaponState[] slots) Setup(WeaponState? rifle = null) =>
-            (new WeaponSimulator(), new[] { rifle ?? WeaponSimulator.CreateLoaded(WeaponDefinition.Rifle), WeaponSimulator.CreateLoaded(WeaponDefinition.Pistol) });
+        private static (WeaponSimulator sim, WeaponState[] slots) Setup(WeaponState? rifle = null)
+        {
+            var slots = WeaponSimulator.CreateDefaultLoadout();
+            if (rifle.HasValue) slots[0] = rifle.Value;
+            return (new WeaponSimulator(), slots);
+        }
 
         [Fact]
         public void ReloadAcceptedDuringFiringRecovery()
         {
             var (sim, slots) = Setup();
             byte active = 0, desired = 0;
-            var shots = new List<AcceptedShot>(); var events = new List<CombatEvent>();
+            var shots = new List<AcceptedShot>();
+            var grenades = new List<AcceptedGrenade>();
+            var events = new List<CombatEvent>();
             var next = new EventId(1, 0, new EntityId(1), 0);
-            sim.Step(0, InputButtons.FireHeld | InputButtons.FirePressed, 0, true, false, slots, ref active, ref desired, shots, events, ref next, new EntityId(1));
+            sim.Step(0, InputButtons.FireHeld | InputButtons.FirePressed, 0, true, false, slots, ref active, ref desired, shots, grenades, events, ref next, new EntityId(1));
             Assert.Single(shots);
             Assert.Equal(WeaponAction.FiringRecovery, slots[0].Action);
-            sim.Step(1, InputButtons.FireHeld | InputButtons.ReloadPressed, 0, true, false, slots, ref active, ref desired, shots, events, ref next, new EntityId(1));
+            sim.Step(1, InputButtons.FireHeld | InputButtons.ReloadPressed, 0, true, false, slots, ref active, ref desired, shots, grenades, events, ref next, new EntityId(1));
             Assert.Equal(WeaponAction.Reloading, slots[0].Action);
             Assert.Empty(shots);
         }
@@ -103,13 +109,15 @@ namespace Shooter.Simulation.Tests.Combat
         {
             var (sim, slots) = Setup();
             byte active = 0, desired = 0;
-            var shots = new List<AcceptedShot>(); var events = new List<CombatEvent>();
+            var shots = new List<AcceptedShot>();
+            var grenades = new List<AcceptedGrenade>();
+            var events = new List<CombatEvent>();
             var next = new EventId(1, 0, new EntityId(1), 0);
-            sim.Step(0, InputButtons.ReloadPressed, 0, true, false, slots, ref active, ref desired, shots, events, ref next, new EntityId(1));
+            sim.Step(0, InputButtons.ReloadPressed, 0, true, false, slots, ref active, ref desired, shots, grenades, events, ref next, new EntityId(1));
             Assert.Equal(WeaponAction.Ready, slots[0].Action);
             var def = WeaponDefinition.Rifle;
             var (sim2, slots2) = Setup(new WeaponState(def.Id, WeaponAction.Ready, 5, 0, 0, 0, 0, 0, false));
-            sim2.Step(0, InputButtons.ReloadPressed, 0, true, false, slots2, ref active, ref desired, shots, events, ref next, new EntityId(1));
+            sim2.Step(0, InputButtons.ReloadPressed, 0, true, false, slots2, ref active, ref desired, shots, grenades, events, ref next, new EntityId(1));
             Assert.Equal(WeaponAction.Ready, slots2[0].Action);
         }
 
@@ -118,14 +126,16 @@ namespace Shooter.Simulation.Tests.Combat
         {
             var (sim, slots) = Setup();
             byte active = 1, desired = 1;
-            var shots = new List<AcceptedShot>(); var events = new List<CombatEvent>();
+            var shots = new List<AcceptedShot>();
+            var grenades = new List<AcceptedGrenade>();
+            var events = new List<CombatEvent>();
             var next = new EventId(1, 0, new EntityId(1), 0);
             int accepted = 0;
             for (uint tick = 0; tick < 12; tick++)
             {
                 var b = InputButtons.FireHeld;
                 if (tick == 0 || tick == 10) b |= InputButtons.FirePressed;
-                sim.Step(tick, b, 1, true, false, slots, ref active, ref desired, shots, events, ref next, new EntityId(1));
+                sim.Step(tick, b, 1, true, false, slots, ref active, ref desired, shots, grenades, events, ref next, new EntityId(1));
                 accepted += shots.Count;
             }
             Assert.Equal(2, accepted);
@@ -136,15 +146,18 @@ namespace Shooter.Simulation.Tests.Combat
         {
             var (sim, slots) = Setup();
             byte active = 0, desired = 0;
-            var shots = new List<AcceptedShot>(); var events = new List<CombatEvent>();
+            var shots = new List<AcceptedShot>();
+            var grenades = new List<AcceptedGrenade>();
+            var events = new List<CombatEvent>();
             var next = new EventId(1, 0, new EntityId(1), 0);
             int accepted = 0;
             for (uint tick = 0; tick < 60; tick++)
             {
-                sim.Step(tick, InputButtons.FireHeld | InputButtons.FirePressed, 0, true, false, slots, ref active, ref desired, shots, events, ref next, new EntityId(1));
+                sim.Step(tick, InputButtons.FireHeld | InputButtons.FirePressed, 0, true, false, slots, ref active, ref desired, shots, grenades, events, ref next, new EntityId(1));
                 accepted += shots.Count;
             }
             Assert.Equal(10, accepted);
         }
     }
 }
+

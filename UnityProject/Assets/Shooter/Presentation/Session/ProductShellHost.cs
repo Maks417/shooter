@@ -786,7 +786,11 @@ namespace Shooter.Presentation.Session
             for (int i = 0; i < bindingEditor.Working.Count; i++)
             {
                 var binding = bindingEditor.Working[i];
-                string action = binding.Action == "Slide" ? "Slide (hold Sprint)" : binding.Action;
+                string action = binding.Action == "Slide" ? "Slide (hold Sprint)"
+                    : binding.Action == "LastWeapon" ? "Last weapon"
+                    : binding.Action == "Slot3" ? "Knife"
+                    : binding.Action == "Slot4" ? "Grenade"
+                    : binding.Action;
                 bool pause = string.Equals(binding.Action, "Pause", StringComparison.Ordinal);
                 ui.Label(new Rect(0, y, width * .5f, 34), action, 18, TacticalUi.Text, TextAnchor.MiddleLeft);
                 if (pause) ui.Label(new Rect(width * .5f, y, width * .5f, 34), "Escape / reserved", 18, TacticalUi.Muted, TextAnchor.MiddleLeft);

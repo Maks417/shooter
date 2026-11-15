@@ -437,6 +437,9 @@ namespace Shooter.Game.Contracts
             new InputBinding("Jump", "Key.Space"),
             new InputBinding("Slot1", "Key.Digit1"),
             new InputBinding("Slot2", "Key.Digit2"),
+            new InputBinding("Slot3", "Key.Digit3"),
+            new InputBinding("Slot4", "Key.Digit4"),
+            new InputBinding("LastWeapon", "Key.Q"),
             new InputBinding("Scoreboard", "Key.Tab"),
             new InputBinding("Pause", ReservedEscapeControl)
         };
@@ -444,18 +447,33 @@ namespace Shooter.Game.Contracts
         private static FrozenList<InputBinding> ValidateBindings(IReadOnlyList<InputBinding> bindings)
         {
             if (bindings == null) throw new ArgumentNullException(nameof(bindings));
-            // ADR-039: preserve custom controls in existing schema-2 settings.
+            // ADR-039 / ADR-056 / ADR-057: preserve custom controls in existing schema-2 settings.
             GameRequire.That(bindings.Count >= 1 && bindings.Count <= GameContractVersion.MaxSettingsBindings, nameof(bindings));
-            var normalized = new List<InputBinding>(Math.Min(bindings.Count + 1, GameContractVersion.MaxSettingsBindings));
+            var normalized = new List<InputBinding>(Math.Min(bindings.Count + 4, GameContractVersion.MaxSettingsBindings));
             bool hasSlide = false, fUsed = false;
+            bool hasLastWeapon = false, qUsed = false;
+            bool hasSlot3 = false, digit3Used = false;
+            bool hasSlot4 = false, digit4Used = false;
             foreach (var binding in bindings)
             {
                 normalized.Add(binding);
                 hasSlide |= binding.Action == "Slide";
                 fUsed |= string.Equals(binding.Control, "Key.F", StringComparison.OrdinalIgnoreCase);
+                hasLastWeapon |= binding.Action == "LastWeapon";
+                qUsed |= string.Equals(binding.Control, "Key.Q", StringComparison.OrdinalIgnoreCase);
+                hasSlot3 |= binding.Action == "Slot3";
+                digit3Used |= string.Equals(binding.Control, "Key.Digit3", StringComparison.OrdinalIgnoreCase);
+                hasSlot4 |= binding.Action == "Slot4";
+                digit4Used |= string.Equals(binding.Control, "Key.Digit4", StringComparison.OrdinalIgnoreCase);
             }
             if (!hasSlide && normalized.Count < GameContractVersion.MaxSettingsBindings)
                 normalized.Add(new InputBinding("Slide", fUsed ? "Unbound" : "Key.F"));
+            if (!hasLastWeapon && normalized.Count < GameContractVersion.MaxSettingsBindings)
+                normalized.Add(new InputBinding("LastWeapon", qUsed ? "Unbound" : "Key.Q"));
+            if (!hasSlot3 && normalized.Count < GameContractVersion.MaxSettingsBindings)
+                normalized.Add(new InputBinding("Slot3", digit3Used ? "Unbound" : "Key.Digit3"));
+            if (!hasSlot4 && normalized.Count < GameContractVersion.MaxSettingsBindings)
+                normalized.Add(new InputBinding("Slot4", digit4Used ? "Unbound" : "Key.Digit4"));
             var list = new FrozenList<InputBinding>(normalized, GameContractVersion.MaxSettingsBindings);
             GameRequire.That(list.Count >= 1, nameof(bindings));
             var actions = new HashSet<string>(StringComparer.Ordinal);
@@ -464,7 +482,9 @@ namespace Shooter.Game.Contracts
             foreach (var binding in list)
             {
                 GameRequire.That(actions.Add(binding.Action), nameof(bindings));
-                GameRequire.That(controls.Add(binding.Control), nameof(bindings));
+                // Multiple additive optional actions may share Unbound when their defaults were already customized.
+                bool unbound = string.Equals(binding.Control, "Unbound", StringComparison.OrdinalIgnoreCase);
+                GameRequire.That(unbound || controls.Add(binding.Control), nameof(bindings));
                 if (string.Equals(binding.Action, "Pause", StringComparison.Ordinal)
                     && string.Equals(binding.Control, ReservedEscapeControl, StringComparison.OrdinalIgnoreCase))
                     pauseEscape = true;

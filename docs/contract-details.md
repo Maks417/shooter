@@ -19,7 +19,7 @@ Float2=(x,y:float32), Float3=(x,y,z:float32), Quat=(x,y,z,w:float32); identity q
 | InputButtons | FireHeld=1, FirePressed=2, ReloadPressed=4, SprintHeld=8, CrouchHeld=16, JumpPressed=32, AimHeld=64 |
 | Delivery | UnreliableSequenced=0, ReliableOrdered=1 |
 
-Unknown enum value is invalid unless its containing versioned optional field explicitly permits skipping. Unknown button bits reject command. SelectedSlot 0 rifle / 1 pistol; other values invalid. Event kind payload types are explicit, not runtime C# type names.
+Unknown enum value is invalid unless its containing versioned optional field explicitly permits skipping. Unknown button bits reject command. SelectedSlot 0 rifle / 1 pistol / 2 knife / 3 grenade; other values invalid (ADR-057 / prediction schema 2). Event kind payload types are explicit, not runtime C# type names.
 
 ## Physics query DTOs
 

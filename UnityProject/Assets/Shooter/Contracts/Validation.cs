@@ -7,7 +7,7 @@ namespace Shooter.Contracts
     public static class ContractVersion
     {
         public const string Current = "C0-v1";
-        public const uint PredictionSchema = 1;
+        public const uint PredictionSchema = 2;
         public const int SimulationHz = 60;
         public const int MaxActors = 64;
         public const int MaxCommands = 256;
@@ -48,7 +48,7 @@ namespace Shooter.Contracts
             for (int i = 0; i < copy.Length; i++) copy[i] = values[i];
             return copy;
         }
-        public static void Slot(byte value) => That(value <= 1, nameof(value));
+        public static void Slot(byte value) => That(value <= 3, nameof(value));
         public static void Buttons(InputButtons value) => That(((ushort)value & ~127) == 0, nameof(value));
         public static void Aim(float yaw, float pitch)
         {

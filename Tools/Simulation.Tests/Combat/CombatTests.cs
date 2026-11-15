@@ -23,9 +23,10 @@ namespace Shooter.Simulation.Tests.Combat
         public void AutomaticRifleShotCountIsExactForHeldFire()
         {
             var sim = new WeaponSimulator();
-            var slots = new[] { WeaponSimulator.CreateLoaded(WeaponDefinition.Rifle), WeaponSimulator.CreateLoaded(WeaponDefinition.Pistol) };
+            var slots = WeaponSimulator.CreateDefaultLoadout();
             byte active = 0, desired = 0;
             var shots = new List<AcceptedShot>();
+            var grenades = new List<AcceptedGrenade>();
             var events = new List<CombatEvent>();
             var next = new EventId(1, 0, new EntityId(1), 0);
             int accepted = 0;
@@ -33,7 +34,7 @@ namespace Shooter.Simulation.Tests.Combat
             for (uint tick = 0; tick < 60; tick++)
             {
                 var buttons = InputButtons.FireHeld | (tick == 0 ? InputButtons.FirePressed : InputButtons.None);
-                sim.Step(tick, buttons, 0, true, false, slots, ref active, ref desired, shots, events, ref next, new EntityId(1));
+                sim.Step(tick, buttons, 0, true, false, slots, ref active, ref desired, shots, grenades, events, ref next, new EntityId(1));
                 accepted += shots.Count;
             }
             Assert.Equal(10, accepted);
@@ -44,9 +45,10 @@ namespace Shooter.Simulation.Tests.Combat
         public void SemiAutoIgnoresHeldOnlyRepeats()
         {
             var sim = new WeaponSimulator();
-            var slots = new[] { WeaponSimulator.CreateLoaded(WeaponDefinition.Rifle), WeaponSimulator.CreateLoaded(WeaponDefinition.Pistol) };
+            var slots = WeaponSimulator.CreateDefaultLoadout();
             byte active = 1, desired = 1;
             var shots = new List<AcceptedShot>();
+            var grenades = new List<AcceptedGrenade>();
             var events = new List<CombatEvent>();
             var next = new EventId(1, 0, new EntityId(1), 0);
             int accepted = 0;
@@ -54,7 +56,7 @@ namespace Shooter.Simulation.Tests.Combat
             {
                 // Hold without edges after first.
                 var buttons = tick == 0 ? (InputButtons.FirePressed | InputButtons.FireHeld) : InputButtons.FireHeld;
-                sim.Step(tick, buttons, 1, true, false, slots, ref active, ref desired, shots, events, ref next, new EntityId(1));
+                sim.Step(tick, buttons, 1, true, false, slots, ref active, ref desired, shots, grenades, events, ref next, new EntityId(1));
                 accepted += shots.Count;
             }
             Assert.Equal(1, accepted);
@@ -78,16 +80,17 @@ namespace Shooter.Simulation.Tests.Combat
         public void ReloadCancelOnSwitchTransfersNoAmmo()
         {
             var sim = new WeaponSimulator();
-            var slots = new[] { WeaponSimulator.CreateLoaded(WeaponDefinition.Rifle), WeaponSimulator.CreateLoaded(WeaponDefinition.Pistol) };
+            var slots = WeaponSimulator.CreateDefaultLoadout();
             slots[0] = new WeaponState(WeaponDefinition.Rifle.Id, WeaponAction.Ready, 0, 90, 0, 0, 0, 0, false);
             byte active = 0, desired = 0;
             var shots = new List<AcceptedShot>();
+            var grenades = new List<AcceptedGrenade>();
             var events = new List<CombatEvent>();
             var next = new EventId(1, 0, new EntityId(1), 0);
-            sim.Step(0, InputButtons.ReloadPressed, 0, true, false, slots, ref active, ref desired, shots, events, ref next, new EntityId(1));
+            sim.Step(0, InputButtons.ReloadPressed, 0, true, false, slots, ref active, ref desired, shots, grenades, events, ref next, new EntityId(1));
             Assert.Equal(WeaponAction.Reloading, slots[0].Action);
             // Switch away before completion.
-            sim.Step(1, InputButtons.None, 1, true, false, slots, ref active, ref desired, shots, events, ref next, new EntityId(1));
+            sim.Step(1, InputButtons.None, 1, true, false, slots, ref active, ref desired, shots, grenades, events, ref next, new EntityId(1));
             Assert.Equal((byte)1, active);
             Assert.Equal(WeaponAction.Ready, slots[0].Action);
             Assert.Equal((ushort)0, slots[0].AmmoInMagazine);
@@ -98,18 +101,16 @@ namespace Shooter.Simulation.Tests.Combat
         public void AmmoNeverNegativeThroughReload()
         {
             var sim = new WeaponSimulator();
-            var slots = new[]
-            {
-                new WeaponState(WeaponDefinition.Rifle.Id, WeaponAction.Ready, 0, 5, 0, 0, 0, 0, false),
-                WeaponSimulator.CreateLoaded(WeaponDefinition.Pistol)
-            };
+            var slots = WeaponSimulator.CreateDefaultLoadout();
+            slots[0] = new WeaponState(WeaponDefinition.Rifle.Id, WeaponAction.Ready, 0, 5, 0, 0, 0, 0, false);
             byte active = 0, desired = 0;
             var shots = new List<AcceptedShot>();
+            var grenades = new List<AcceptedGrenade>();
             var events = new List<CombatEvent>();
             var next = new EventId(1, 0, new EntityId(1), 0);
-            sim.Step(0, InputButtons.ReloadPressed, 0, true, false, slots, ref active, ref desired, shots, events, ref next, new EntityId(1));
+            sim.Step(0, InputButtons.ReloadPressed, 0, true, false, slots, ref active, ref desired, shots, grenades, events, ref next, new EntityId(1));
             for (uint tick = 1; tick <= 144; tick++)
-                sim.Step(tick, InputButtons.None, 0, true, false, slots, ref active, ref desired, shots, events, ref next, new EntityId(1));
+                sim.Step(tick, InputButtons.None, 0, true, false, slots, ref active, ref desired, shots, grenades, events, ref next, new EntityId(1));
             Assert.Equal(WeaponAction.Ready, slots[0].Action);
             Assert.Equal((ushort)5, slots[0].AmmoInMagazine);
             Assert.Equal((ushort)0, slots[0].Reserve);

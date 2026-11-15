@@ -40,6 +40,28 @@
       "damage": 25,
       "hipSpreadMillidegrees": 1500,
       "adsSpreadMillidegrees": 300
+    },
+    "knife": {
+      "fireTicks": 24,
+      "reloadTicks": 0,
+      "equipTicks": 12,
+      "magazine": 1,
+      "reserve": 0,
+      "damage": 55,
+      "hipSpreadMillidegrees": 0,
+      "adsSpreadMillidegrees": 0,
+      "rangeMm": 1800
+    },
+    "grenade": {
+      "fireTicks": 0,
+      "reloadTicks": 0,
+      "equipTicks": 18,
+      "magazine": 1,
+      "reserve": 0,
+      "damage": 100,
+      "fuseTicks": 120,
+      "throwMmPerSecond": 18000,
+      "blastRadiusMm": 5000
     }
   },
   "objective": {

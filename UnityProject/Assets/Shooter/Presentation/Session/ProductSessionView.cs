@@ -68,6 +68,11 @@ namespace Shooter.Presentation.Session
         private readonly float[] damageSourceX = new float[CombatHudVisual.MaxDamageIndicators];
         private readonly float[] damageSourceZ = new float[CombatHudVisual.MaxDamageIndicators];
         private readonly float[] damageSourceUntil = new float[CombatHudVisual.MaxDamageIndicators];
+        // ADR-058: temporary enemy gunfire blips on the tactical map (ShotAccepted only; silent enemies stay hidden).
+        private readonly ulong[] gunfireRevealIds = new ulong[CombatHudVisual.MaxGunfireReveals];
+        private readonly float[] gunfireRevealX = new float[CombatHudVisual.MaxGunfireReveals];
+        private readonly float[] gunfireRevealZ = new float[CombatHudVisual.MaxGunfireReveals];
+        private readonly float[] gunfireRevealUntil = new float[CombatHudVisual.MaxGunfireReveals];
         private EntityId cameraBobLife;
 
         public ProductMapView? MapView => mapView;
@@ -447,21 +452,23 @@ namespace Shooter.Presentation.Session
             analyticFxPresenter?.Sync(suppressMuzzleFlash: reducedFlash);
         }
 
-        private void NotifyAccessibilityCue(CombatEventKind kind)
+        private void NotifyAccessibilityCue(CombatEvent ev)
         {
-            if (kind == CombatEventKind.ShotAccepted)
+            EntityId local = session != null && session.HumanEntityId.IsValid ? session.HumanEntityId : default;
+            if (FirstPersonHitFeedback.IsLocalShot(ev.Kind, ev.Instigator, local))
             {
-                // Cosmetic view flash only; ReducedFlash suppresses it while preserving shot audio/hit info.
+                // Cosmetic local view flash only; bot/remote ShotAccepted must not flash the screen.
+                // ReducedFlash suppresses the overlay while preserving shot audio and world muzzle proxies.
                 if (!reducedFlash) muzzleFlashRemaining = 0.09f;
                 if (subtitlesEnabled) ShowSubtitle("Shot");
             }
-            else if (kind == CombatEventKind.Impact || kind == CombatEventKind.DamageApplied)
+            else if (ev.Kind == CombatEventKind.Impact || ev.Kind == CombatEventKind.DamageApplied)
             {
-                if (subtitlesEnabled) ShowSubtitle(kind == CombatEventKind.Impact ? "Impact" : "Hit");
+                if (subtitlesEnabled) ShowSubtitle(ev.Kind == CombatEventKind.Impact ? "Impact" : "Hit");
             }
-            else if (kind == CombatEventKind.ReloadStarted && subtitlesEnabled)
+            else if (ev.Kind == CombatEventKind.ReloadStarted && subtitlesEnabled)
                 ShowSubtitle("Reloading");
-            else if (kind == CombatEventKind.ReloadCompleted && subtitlesEnabled)
+            else if (ev.Kind == CombatEventKind.ReloadCompleted && subtitlesEnabled)
                 ShowSubtitle("Reload complete");
         }
 
@@ -533,6 +540,41 @@ namespace Shooter.Presentation.Session
             damageSourceUntil[slot] = now + CombatHudVisual.DamageIndicatorSeconds;
         }
 
+        /// <summary>
+        /// Presentation-only: enemy ShotAccepted briefly marks last-known shot origin on the tactical map.
+        /// Does not stream live poses or change AI sensing.
+        /// </summary>
+        private void ObserveGunfireReveal(CombatEvent ev)
+        {
+            if (ev.Kind != CombatEventKind.ShotAccepted || ev.Payload is not ShotPayload shot) return;
+            if (session == null || !session.HumanEntityId.IsValid || session.Lifecycle == null) return;
+            if (!ev.Instigator.IsValid) return;
+            bool isLocal = ev.Instigator == session.HumanEntityId;
+            if (!session.Lifecycle.TryGetActorState(session.HumanEntityId, out var human)) return;
+            if (!session.Lifecycle.TryGetActorState(ev.Instigator, out var shooter)) return;
+            bool enemy = shooter.Team != human.Team;
+            if (!CombatHudVisual.ShouldRevealGunfire(true, isLocal, enemy)) return;
+
+            float now = Time.unscaledTime;
+            int slot = CombatHudVisual.PickGunfireRevealSlot(
+                gunfireRevealIds, gunfireRevealUntil, ev.Instigator.Value, now, CombatHudVisual.MaxGunfireReveals);
+            gunfireRevealIds[slot] = ev.Instigator.Value;
+            gunfireRevealX[slot] = shot.Origin.X;
+            gunfireRevealZ[slot] = shot.Origin.Z;
+            gunfireRevealUntil[slot] = now + CombatHudVisual.GunfireRevealSeconds;
+        }
+
+        private void ClearGunfireReveals()
+        {
+            for (int i = 0; i < gunfireRevealUntil.Length; i++)
+            {
+                gunfireRevealIds[i] = 0;
+                gunfireRevealX[i] = 0;
+                gunfireRevealZ[i] = 0;
+                gunfireRevealUntil[i] = 0;
+            }
+        }
+
         /// <summary>Red arc segments around the reticle pointing at whoever just hit the local player.</summary>
         private void DrawDamageIndicators(ActorLifecycleState human)
         {
@@ -586,15 +628,16 @@ namespace Shooter.Presentation.Session
 
             if (combatEvents != null)
             {
-                audio.ConsumeCombatEvents(combatEvents, listenerFeet);
+                audio.ConsumeCombatEvents(combatEvents, listenerFeet, session.HumanEntityId);
                 for (int i = 0; i < combatEvents.Count; i++)
                 {
                     var ev = combatEvents[i];
                     string key = ev.Id.AuthoritySessionId + ":" + ev.Id.Tick + ":" + ev.Id.EntityId + ":" + ev.Id.Ordinal;
                     if (!accessibilityCueKeys.Add(key)) continue;
-                    NotifyAccessibilityCue(ev.Kind);
+                    NotifyAccessibilityCue(ev);
                     ObserveCombatFx(ev);
                     ObserveHitFeedback(ev);
+                    ObserveGunfireReveal(ev);
                 }
             }
 
@@ -620,6 +663,7 @@ namespace Shooter.Presentation.Session
             audioAttached = false;
             audioSessionId = 0;
             accessibilityCueKeys.Clear();
+            ClearGunfireReveals();
             audioOutput?.Detach();
         }
 
@@ -637,9 +681,12 @@ namespace Shooter.Presentation.Session
             if (!audioAttached) return;
             var voice = kind switch
             {
-                CombatEventKind.ShotAccepted => SynthVoiceKind.Shot,
+                CombatEventKind.ShotAccepted => SynthVoiceKind.RifleShot,
                 CombatEventKind.Impact => SynthVoiceKind.Impact,
-                CombatEventKind.DamageApplied => SynthVoiceKind.Impact,
+                CombatEventKind.DamageApplied => SynthVoiceKind.DamageTaken,
+                CombatEventKind.ReloadStarted => SynthVoiceKind.ReloadStart,
+                CombatEventKind.ReloadCompleted => SynthVoiceKind.ReloadComplete,
+                CombatEventKind.Death => SynthVoiceKind.Death,
                 _ => SynthVoiceKind.Footstep
             };
             mixer.TryPlay(voice, distanceMeters, seed);
@@ -766,14 +813,24 @@ namespace Shooter.Presentation.Session
             const float w = 152f, h = 62f;
             float x = safe.xMax - w, y = safe.yMax - h;
             TacticalUi.CombatPlate(new Rect(x, y, w, h), accentBottom: true);
-            string weapon = human.ActiveWeaponSlot == 0 ? "RIFLE" : "SIDEARM";
+            string weapon = human.ActiveWeaponSlot switch
+            {
+                1 => "SIDEARM",
+                2 => "KNIFE",
+                3 => "GRENADE",
+                _ => "RIFLE"
+            };
             combatUi.Label(new Rect(x + 8, y + 4, w - 16, 11), weapon, 9, TacticalUi.Muted, TextAnchor.UpperRight);
-            Color magColor = human.Magazine == 0 ? TacticalUi.Enemy : TacticalUi.Text;
-            // Mag dominates; reserve stays quieter (BFV/Warface hierarchy).
-            combatUi.Label(new Rect(x + 6, y + 14, 72, 32), human.Magazine.ToString("00"), 30, magColor, TextAnchor.MiddleRight);
+            bool knife = human.ActiveWeaponSlot == 2;
+            bool grenade = human.ActiveWeaponSlot == 3;
+            Color magColor = !knife && human.Magazine == 0 ? TacticalUi.Enemy : TacticalUi.Text;
+            // Mag dominates; reserve stays quieter (BFV/Warface hierarchy). Knife shows an em dash; grenade is 1/0.
+            string magText = knife ? "--" : (grenade ? human.Magazine.ToString() : human.Magazine.ToString("00"));
+            string reserveText = knife ? "--" : (grenade ? human.Reserve.ToString() : human.Reserve.ToString("000"));
+            combatUi.Label(new Rect(x + 6, y + 14, 72, 32), magText, 30, magColor, TextAnchor.MiddleRight);
             combatUi.Label(new Rect(x + 80, y + 20, 12, 14), "/", 11, TacticalUi.Muted, TextAnchor.MiddleCenter);
-            combatUi.Label(new Rect(x + 92, y + 28, 50, 16), human.Reserve.ToString("000"), 13, TacticalUi.Muted, TextAnchor.MiddleLeft);
-            bool reloading = actors != null && actors.Actions.IsReloading(session!.HumanEntityId);
+            combatUi.Label(new Rect(x + 92, y + 28, 50, 16), reserveText, 13, TacticalUi.Muted, TextAnchor.MiddleLeft);
+            bool reloading = !knife && !grenade && actors != null && actors.Actions.IsReloading(session!.HumanEntityId);
             float trackX = x + 8, trackY = y + h - 7, trackW = w - 16, trackH = 2.5f;
             TacticalUi.Fill(new Rect(trackX, trackY, trackW, trackH), new Color(.06f, .08f, .09f, .65f));
             TacticalUi.Edge(new Rect(trackX, trackY, trackW, trackH));
@@ -785,11 +842,11 @@ namespace Shooter.Presentation.Session
                 TacticalUi.AccentBar(new Rect(trackX, trackY, fillW, trackH), TacticalUi.Accent);
                 if (fillW > 2f) TacticalUi.Fill(new Rect(trackX + fillW - 2f, trackY - 1, 2, trackH + 2), TacticalUi.Text);
             }
-            else if (human.Magazine == 0)
+            else if (!knife && human.Magazine == 0)
             {
                 string reload = input.Bindings.TryGetControl("Reload", out string control) ? TacticalUi.ControlLabel(control) : "R";
-                combatUi.Label(new Rect(x - 20, y - 14, w + 20, 14),
-                    human.Reserve > 0 ? reload + "  RELOAD" : "OUT OF AMMO", 10, TacticalUi.Accent, TextAnchor.MiddleRight);
+                string hint = grenade ? "EMPTY" : (human.Reserve > 0 ? reload + "  RELOAD" : "OUT OF AMMO");
+                combatUi.Label(new Rect(x - 20, y - 14, w + 20, 14), hint, 10, TacticalUi.Accent, TextAnchor.MiddleRight);
             }
         }
 
@@ -827,18 +884,17 @@ namespace Shooter.Presentation.Session
                         if (px > 4 && px < size - 4 && py > 4 && py < size - 4)
                             DrawAllyMarker(px, py, ally.AimYaw);
                     }
-                float center = size * .5f;
-                Vector2 forward = new Vector2(Mathf.Sin(human.AimYaw), -Mathf.Cos(human.AimYaw));
-                Vector2 side = new Vector2(-forward.y, forward.x);
-                Vector2 tip = new Vector2(center, center) + forward * 8;
-                Vector2 left = new Vector2(center, center) - forward * 4 + side * 3.5f;
-                Vector2 right = new Vector2(center, center) - forward * 4 - side * 3.5f;
-                TacticalUi.Line(tip, left, TacticalUi.Background, 3);
-                TacticalUi.Line(tip, right, TacticalUi.Background, 3);
-                TacticalUi.Line(left, right, TacticalUi.Background, 2);
-                TacticalUi.Line(tip, left, TacticalUi.Text, 1.25f);
-                TacticalUi.Line(tip, right, TacticalUi.Text, 1.25f);
-                TacticalUi.Line(left, right, TacticalUi.Accent, 1);
+                float now = Time.unscaledTime;
+                for (int i = 0; i < gunfireRevealUntil.Length; i++)
+                {
+                    float alpha = CombatHudVisual.GunfireRevealAlpha(gunfireRevealUntil[i] - now);
+                    if (alpha <= 0.02f) continue;
+                    float px = size * .5f + (gunfireRevealX[i] - human.Feet.X) * scale;
+                    float py = size * .5f - (gunfireRevealZ[i] - human.Feet.Z) * scale;
+                    if (px > 4 && px < size - 4 && py > 4 && py < size - 4)
+                        DrawGunfireRevealMarker(px, py, alpha);
+                }
+                DrawSelfMarker(size * .5f, human.AimYaw);
                 combatUi.Label(new Rect(size - 16, 2, 14, 14), "N", 11, TacticalUi.Muted, TextAnchor.UpperCenter);
             }
             finally { GUI.EndGroup(); }
@@ -901,14 +957,47 @@ namespace Shooter.Presentation.Session
 
         private static void DrawAllyMarker(float px, float py, float aimYaw)
         {
-            // Outlined ally pip + facing tick (shape + direction; color alone is not the cue).
+            // Outlined ally pip + Fill facing tick (no Line inside BeginGroup — IMGUI matrix clip).
             TacticalUi.Fill(new Rect(px - 3.5f, py - 3.5f, 7, 7), new Color(0.02f, 0.03f, 0.035f, 0.9f));
             TacticalUi.Fill(new Rect(px - 2f, py - 2f, 4, 4), TacticalUi.Ally);
             TacticalUi.Fill(new Rect(px - 0.5f, py - 0.5f, 1, 1), TacticalUi.Text);
+            DrawFacingTick(px, py, aimYaw, TacticalUi.Ally, TacticalUi.Text, 6f);
+        }
+
+        /// <summary>Local player at map center: Fill pip + facing tick (visible inside BeginGroup).</summary>
+        private static void DrawSelfMarker(float center, float aimYaw)
+        {
+            TacticalUi.Fill(new Rect(center - 4.5f, center - 4.5f, 9, 9), new Color(0.02f, 0.03f, 0.035f, 0.95f));
+            TacticalUi.Fill(new Rect(center - 3f, center - 3f, 6, 6), TacticalUi.Accent);
+            TacticalUi.Fill(new Rect(center - 1.5f, center - 1.5f, 3, 3), TacticalUi.Text);
+            DrawFacingTick(center, center, aimYaw, TacticalUi.Text, TacticalUi.Accent, 8f);
+        }
+
+        /// <summary>Enemy gunfire reveal: plus/diamond made of Fills so it stays distinct from ally squares.</summary>
+        private static void DrawGunfireRevealMarker(float px, float py, float alpha)
+        {
+            var outline = new Color(0.02f, 0.03f, 0.035f, 0.9f * alpha);
+            var ink = new Color(TacticalUi.Enemy.r, TacticalUi.Enemy.g, TacticalUi.Enemy.b, alpha);
+            var core = new Color(TacticalUi.Text.r, TacticalUi.Text.g, TacticalUi.Text.b, alpha);
+            TacticalUi.Fill(new Rect(px - 1.5f, py - 4.5f, 3, 9), outline);
+            TacticalUi.Fill(new Rect(px - 4.5f, py - 1.5f, 9, 3), outline);
+            TacticalUi.Fill(new Rect(px - 1f, py - 3.5f, 2, 7), ink);
+            TacticalUi.Fill(new Rect(px - 3.5f, py - 1f, 7, 2), ink);
+            TacticalUi.Fill(new Rect(px - 1f, py - 1f, 2, 2), core);
+        }
+
+        private static void DrawFacingTick(float px, float py, float aimYaw, Color outer, Color inner, float length)
+        {
             Vector2 fwd = new Vector2(Mathf.Sin(aimYaw), -Mathf.Cos(aimYaw));
-            Vector2 tip = new Vector2(px, py) + fwd * 6f;
-            TacticalUi.Line(new Vector2(px, py), tip, TacticalUi.Ally, 1.25f);
-            TacticalUi.Line(new Vector2(px, py), tip, TacticalUi.Text, 0.75f);
+            int steps = Mathf.Max(3, Mathf.CeilToInt(length));
+            for (int s = 2; s <= steps; s++)
+            {
+                float t = s;
+                float x = px + fwd.x * t;
+                float y = py + fwd.y * t;
+                float w = s >= steps - 1 ? 2f : 1.5f;
+                TacticalUi.Fill(new Rect(x - w * .5f, y - w * .5f, w, w), s >= steps - 1 ? inner : outer);
+            }
         }
 
         private void DrawCompass(Rect safe, float yaw)

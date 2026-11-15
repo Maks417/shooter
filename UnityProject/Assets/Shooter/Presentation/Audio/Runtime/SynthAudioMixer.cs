@@ -3,37 +3,119 @@ using System;
 
 namespace Shooter.Presentation.Audio
 {
-    public enum SynthVoiceKind : byte { Shot = 1, Impact = 2, Footstep = 3, Ui = 4 }
+    public enum SynthVoiceKind : byte
+    {
+        Shot = 1,
+        Impact = 2,
+        Footstep = 3,
+        Ui = 4,
+        RifleShot = 5,
+        PistolShot = 6,
+        ReloadStart = 7,
+        ReloadComplete = 8,
+        Death = 9,
+        DamageTaken = 10,
+        Ambient = 11,
+        Headshot = 12
+    }
 
     public sealed class SynthVoice
     {
         public SynthVoiceKind Kind { get; }
-        public float FrequencyHz { get; }
         /// <summary>Distance/base amplitude before master/effects/UI gains.</summary>
         public float BaseAmplitude { get; }
-        public float DurationSeconds { get; }
+        public float Pan { get; }
+        public float LowPassCoeff { get; }
+        public float[] Samples { get; }
+        public int SampleRate { get; }
+        public bool Loop { get; }
+        public int FrameIndex { get; private set; }
+        public float FilterState { get; private set; }
         public float AgeSeconds { get; private set; }
-        public bool Active => AgeSeconds < DurationSeconds && BaseAmplitude > 1e-4f;
-        public SynthVoice(SynthVoiceKind kind, float frequencyHz, float baseAmplitude, float durationSeconds)
+        public float DurationSeconds { get; }
+
+        public bool Active
         {
-            if (frequencyHz <= 0 || baseAmplitude < 0 || durationSeconds <= 0) throw new ArgumentOutOfRangeException(nameof(frequencyHz));
-            Kind = kind; FrequencyHz = frequencyHz; BaseAmplitude = baseAmplitude; DurationSeconds = durationSeconds;
-        }
-        public void Advance(float dt)
-        {
-            AgeSeconds += dt;
+            get
+            {
+                if (BaseAmplitude <= 1e-4f) return false;
+                if (Loop) return true;
+                return FrameIndex < Samples.Length;
+            }
         }
 
+        public SynthVoice(SynthVoiceKind kind, float baseAmplitude, float pan, float lowPassCoeff, float[] samples, int sampleRate, bool loop)
+        {
+            if (samples == null || samples.Length == 0) throw new ArgumentException("samples required", nameof(samples));
+            if (sampleRate < 8000) throw new ArgumentOutOfRangeException(nameof(sampleRate));
+            if (baseAmplitude < 0) throw new ArgumentOutOfRangeException(nameof(baseAmplitude));
+            Kind = kind;
+            BaseAmplitude = baseAmplitude;
+            Pan = Math.Clamp(pan, -1f, 1f);
+            LowPassCoeff = Math.Clamp(lowPassCoeff, 0.02f, 1f);
+            Samples = samples;
+            SampleRate = sampleRate;
+            Loop = loop;
+            DurationSeconds = samples.Length / (float)sampleRate;
+        }
+
+        public float ReadSample(float dt, out float left, out float right)
+        {
+            AgeSeconds += dt;
+            if (!Active)
+            {
+                left = 0f;
+                right = 0f;
+                return 0f;
+            }
+
+            float raw = Samples[FrameIndex];
+            FrameIndex++;
+            if (Loop && FrameIndex >= Samples.Length) FrameIndex = 0;
+
+            // One-pole low-pass; lower coeff = duller far shots.
+            float filtered = FilterState + LowPassCoeff * (raw - FilterState);
+            FilterState = filtered;
+
+            float amp = BaseAmplitude;
+            // Short fade-out for one-shots near the end.
+            if (!Loop && Samples.Length > 8)
+            {
+                int remain = Samples.Length - FrameIndex;
+                if (remain < 64)
+                {
+                    float fade = Math.Max(0f, remain / 64f);
+                    amp *= fade;
+                }
+            }
+
+            float mono = filtered * amp;
+            // Constant-power pan.
+            float angle = (Pan + 1f) * 0.25f * (float)Math.PI; // 0..π/2
+            left = mono * (float)Math.Cos(angle);
+            right = mono * (float)Math.Sin(angle);
+            return mono;
+        }
+
+        // Legacy envelope helper for older tests that inspect duration-style voices.
         public float EnvelopeAmplitude()
         {
-            float t = Math.Min(1f, AgeSeconds / DurationSeconds);
+            if (!Active) return 0f;
+            if (Loop) return BaseAmplitude;
+            float t = Samples.Length <= 1 ? 1f : FrameIndex / (float)Samples.Length;
             return BaseAmplitude * Math.Max(0f, 1f - t);
+        }
+
+        public void Advance(float dt)
+        {
+            // Kept for API compatibility; ReadSample advances frames.
+            AgeSeconds += dt;
         }
     }
 
     /// <summary>
-    /// Analytic oscillator/noise envelopes. No recorded samples. ≤24 voices, peak limited.
-    /// Device-rate Fill is allocation-free and safe under a mixer lock for the audio callback.
+    /// Sample-bank mixer (ADR-055). Plays generated PCM cues with distance atten, stereo pan, HF rolloff.
+    /// ≤24 voices, peak limited. Device-rate Fill is allocation-free under the mixer lock.
     /// </summary>
     public sealed class SynthAudioMixer
     {
@@ -43,7 +125,10 @@ namespace Shooter.Presentation.Audio
 
         private readonly object gate = new object();
         private readonly SynthVoice?[] voices = new SynthVoice[MaxVoices];
+        private readonly CombatAudioBank bank;
+        private bool ambientPlaying;
 
+        public CombatAudioBank Bank => bank;
         public int ActiveVoices { get; private set; }
         public float MasterVolume { get; private set; } = 1f;
         public float EffectsVolume { get; private set; } = 1f;
@@ -53,6 +138,13 @@ namespace Shooter.Presentation.Audio
         public bool UiMuted { get; private set; }
         public float LastMixCpuMs { get; private set; }
         public int RejectedPlays { get; private set; }
+
+        public SynthAudioMixer() : this(CombatAudioBankBaker.Bake()) { }
+
+        public SynthAudioMixer(CombatAudioBank bank)
+        {
+            this.bank = bank ?? throw new ArgumentNullException(nameof(bank));
+        }
 
         public void SetMasterVolume(float volume)
         {
@@ -80,23 +172,24 @@ namespace Shooter.Presentation.Audio
             }
         }
 
-        public bool TryPlay(SynthVoiceKind kind, float distanceMeters, ulong seed)
+        public bool TryPlay(SynthVoiceKind kind, float distanceMeters, ulong seed) =>
+            TryPlay(kind, distanceMeters, 0f, seed);
+
+        public bool TryPlay(SynthVoiceKind kind, float distanceMeters, float pan, ulong seed)
         {
             if (distanceMeters < 0) throw new ArgumentOutOfRangeException(nameof(distanceMeters));
+            var playKind = NormalizeKind(kind);
+            if (!bank.TryGetClip(playKind, seed, out var samples))
+                return false;
+
             float atten = 1f / (1f + distanceMeters * 0.05f);
-            float freq = kind switch
-            {
-                SynthVoiceKind.Shot => 180f + (seed % 40),
-                SynthVoiceKind.Impact => 90f + (seed % 30),
-                SynthVoiceKind.Ui => 440f + (seed % 80),
-                _ => 120f + (seed % 20)
-            };
-            float dur = kind switch
-            {
-                SynthVoiceKind.Footstep => 0.08f,
-                SynthVoiceKind.Ui => 0.05f,
-                _ => 0.12f
-            };
+            if (playKind == SynthVoiceKind.Ambient) atten *= 0.35f;
+            // Far cues get stronger low-pass (smaller coeff).
+            float far = Math.Clamp(distanceMeters / 80f, 0f, 1f);
+            float lp = 1f - far * 0.85f;
+            if (lp < 0.08f) lp = 0.08f;
+            bool loop = playKind == SynthVoiceKind.Ambient;
+
             lock (gate)
             {
                 int slot = -1;
@@ -107,9 +200,27 @@ namespace Shooter.Presentation.Audio
                     RejectedPlays++;
                     return false;
                 }
-                voices[slot] = new SynthVoice(kind, freq, atten, dur);
+                voices[slot] = new SynthVoice(playKind, atten, pan, lp, samples, bank.SampleRate, loop);
+                if (loop) ambientPlaying = true;
                 return true;
             }
+        }
+
+        public bool EnsureAmbient(ulong seed)
+        {
+            lock (gate)
+            {
+                if (ambientPlaying)
+                {
+                    for (int i = 0; i < MaxVoices; i++)
+                    {
+                        var v = voices[i];
+                        if (v != null && v.Kind == SynthVoiceKind.Ambient && v.Active) return true;
+                    }
+                    ambientPlaying = false;
+                }
+            }
+            return TryPlay(SynthVoiceKind.Ambient, 0f, 0f, seed);
         }
 
         public void StopAll()
@@ -118,6 +229,7 @@ namespace Shooter.Presentation.Audio
             {
                 for (int i = 0; i < MaxVoices; i++) voices[i] = null;
                 ActiveVoices = 0;
+                ambientPlaying = false;
             }
         }
 
@@ -128,9 +240,9 @@ namespace Shooter.Presentation.Audio
             lock (gate)
             {
                 long start = DateTime.UtcNow.Ticks;
-                float sample = MixUnlocked(dt);
+                MixUnlocked(dt, out float left, out float right);
                 LastMixCpuMs = (DateTime.UtcNow.Ticks - start) / 10000f;
-                return sample;
+                return 0.5f * (left + right);
             }
         }
 
@@ -151,41 +263,47 @@ namespace Shooter.Presentation.Audio
                 long start = DateTime.UtcNow.Ticks;
                 for (int f = 0; f < frames; f++)
                 {
-                    float sample = MixUnlocked(dt);
+                    MixUnlocked(dt, out float left, out float right);
                     int baseIndex = f * channels;
-                    for (int c = 0; c < channels; c++)
-                        buffer[baseIndex + c] = sample;
+                    if (channels == 1)
+                    {
+                        buffer[baseIndex] = 0.5f * (left + right);
+                    }
+                    else
+                    {
+                        buffer[baseIndex] = left;
+                        buffer[baseIndex + 1] = right;
+                        for (int c = 2; c < channels; c++)
+                            buffer[baseIndex + c] = 0.5f * (left + right);
+                    }
                 }
                 LastMixCpuMs = (DateTime.UtcNow.Ticks - start) / 10000f;
             }
         }
 
-        private float MixUnlocked(float dt)
+        private void MixUnlocked(float dt, out float left, out float right)
         {
-            float sample = 0;
+            left = 0f;
+            right = 0f;
             int active = 0;
+            ambientPlaying = false;
             for (int i = 0; i < MaxVoices; i++)
             {
                 var v = voices[i];
                 if (v == null || !v.Active) { voices[i] = null; continue; }
-                v.Advance(dt);
-                float amp = v.EnvelopeAmplitude() * ChannelGainUnlocked(v.Kind);
-                if (amp <= 1e-6f)
-                {
-                    if (!v.Active) voices[i] = null;
-                    else active++;
-                    continue;
-                }
-                double phase = v.AgeSeconds * v.FrequencyHz * Math.PI * 2;
-                float tone = (float)Math.Sin(phase) * amp;
-                float noise = ((v.AgeSeconds * 12345.678f) % 1f - 0.5f) * 0.15f * amp;
-                sample += tone + noise;
+                float gain = ChannelGainUnlocked(v.Kind);
+                v.ReadSample(dt, out float l, out float r);
+                if (!v.Active) { voices[i] = null; continue; }
+                if (v.Kind == SynthVoiceKind.Ambient) ambientPlaying = true;
+                left += l * gain;
+                right += r * gain;
                 active++;
             }
             ActiveVoices = active;
-            if (sample > PeakLimit) sample = PeakLimit;
-            if (sample < -PeakLimit) sample = -PeakLimit;
-            return sample;
+            if (left > PeakLimit) left = PeakLimit;
+            if (left < -PeakLimit) left = -PeakLimit;
+            if (right > PeakLimit) right = PeakLimit;
+            if (right < -PeakLimit) right = -PeakLimit;
         }
 
         private float ChannelGainUnlocked(SynthVoiceKind kind)
@@ -199,5 +317,11 @@ namespace Shooter.Presentation.Audio
             if (EffectsMuted || EffectsVolume <= 0f) return 0f;
             return MasterVolume * EffectsVolume;
         }
+
+        private static SynthVoiceKind NormalizeKind(SynthVoiceKind kind) => kind switch
+        {
+            SynthVoiceKind.Shot => SynthVoiceKind.RifleShot,
+            _ => kind
+        };
     }
 }

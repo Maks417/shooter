@@ -19,6 +19,13 @@ namespace Shooter.Presentation.View
         public static bool IsDamageDealt(CombatEventKind kind, EntityId instigator, EntityId localEntity) =>
             kind == CombatEventKind.DamageApplied && localEntity.IsValid && instigator.Equals(localEntity);
 
+        /// <summary>
+        /// Local first-person muzzle overlay / shot subtitle only — remote bot ShotAccepted must not flash the screen.
+        /// World muzzle mesh proxies stay driven separately from every ShotAccepted.
+        /// </summary>
+        public static bool IsLocalShot(CombatEventKind kind, EntityId instigator, EntityId localEntity) =>
+            kind == CombatEventKind.ShotAccepted && localEntity.IsValid && instigator.Equals(localEntity);
+
         /// <summary>Opacity for a center hit marker given remaining display time.</summary>
         public static float HitMarkerAlpha(float remainingSeconds, float fadeSeconds = HitMarkerFadeSeconds)
         {

@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "tick": 0,
   "actorId": "1",
   "worldRevision": 1,
@@ -47,6 +47,28 @@
       "action": 0,
       "ammoInMagazine": 15,
       "reserve": 45,
+      "nextAllowedFireTick": 0,
+      "phaseStartTick": 0,
+      "phaseEndTick": 0,
+      "shotIndex": 0,
+      "previousFireHeld": false
+    },
+    {
+      "definitionId": "weapons/knife",
+      "action": 0,
+      "ammoInMagazine": 1,
+      "reserve": 0,
+      "nextAllowedFireTick": 0,
+      "phaseStartTick": 0,
+      "phaseEndTick": 0,
+      "shotIndex": 0,
+      "previousFireHeld": false
+    },
+    {
+      "definitionId": "weapons/grenade",
+      "action": 0,
+      "ammoInMagazine": 1,
+      "reserve": 0,
       "nextAllowedFireTick": 0,
       "phaseStartTick": 0,
       "phaseEndTick": 0,

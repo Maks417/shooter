@@ -6,7 +6,7 @@ namespace Shooter.Contracts
 {
     public enum QueryStatus { NoHit = 0, Hit = 1, BufferOverflow = 2, InvalidInput = 3 }
     public enum Stance { Standing = 0, Crouching = 1, Dead = 2 }
-    public enum WeaponAction { Ready = 0, FiringRecovery = 1, Reloading = 2, Equipping = 3, Disabled = 4 }
+    public enum WeaponAction { Ready = 0, FiringRecovery = 1, Reloading = 2, Equipping = 3, Disabled = 4, Cooking = 5 }
     public enum ContentKind { Mesh = 1, Material = 2, Skeleton = 3, Collision = 4, Navigation = 5 }
     public enum PathStatus { Pending = 0, Complete = 1, Partial = 2, Failed = 3, Stale = 4, Cancelled = 5 }
     public enum MatchState { Loading = 0, Ready = 1, Playing = 2, Won = 3, Lost = 4, Stopped = 5 }

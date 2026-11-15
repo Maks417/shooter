@@ -155,12 +155,63 @@ namespace Shooter.Tests
         }
 
         [Test]
+        public void LastWeaponEdgeTogglesPreviousSlotAndResetsOppositeOnNewLife()
+        {
+            var input = new LocalPlayerInput();
+            input.ResetForLife(0f, 0f, 0);
+            input.CaptureFrame(default, true);
+            Assert.That(input.ConsumeTick(Player, 0).SelectedSlot, Is.EqualTo(0));
+
+            // First Q after spawn switches to the opposite slot (pistol).
+            input.CaptureFrame(new FrameInputSample(0, 0, 0, 0, selectLastWeapon: true), true);
+            Assert.That(input.ConsumeTick(Player, 1).SelectedSlot, Is.EqualTo(1));
+
+            // Frames without a LastWeapon edge keep the active slot.
+            input.CaptureFrame(default, true);
+            Assert.That(input.ConsumeTick(Player, 2).SelectedSlot, Is.EqualTo(1));
+
+            input.CaptureFrame(new FrameInputSample(0, 0, 0, 0, selectLastWeapon: true), true);
+            Assert.That(input.ConsumeTick(Player, 3).SelectedSlot, Is.EqualTo(0));
+
+            // Absolute Slot2 records previous; Q returns to rifle.
+            input.CaptureFrame(new FrameInputSample(0, 0, 0, 0, selectPistol: true), true);
+            Assert.That(input.ConsumeTick(Player, 4).SelectedSlot, Is.EqualTo(1));
+            input.CaptureFrame(default, true);
+            input.CaptureFrame(new FrameInputSample(0, 0, 0, 0, selectLastWeapon: true), true);
+            Assert.That(input.ConsumeTick(Player, 5).SelectedSlot, Is.EqualTo(0));
+
+            // Slot1 while already on rifle does not overwrite the previous (pistol) memory.
+            input.CaptureFrame(new FrameInputSample(0, 0, 0, 0, selectRifle: true), true);
+            input.CaptureFrame(default, true);
+            input.CaptureFrame(new FrameInputSample(0, 0, 0, 0, selectLastWeapon: true), true);
+            Assert.That(input.ConsumeTick(Player, 6).SelectedSlot, Is.EqualTo(1));
+
+            // New life with pistol active initializes previous to rifle.
+            input.ResetForLife(0f, 0f, 1);
+            input.CaptureFrame(default, true);
+            input.CaptureFrame(new FrameInputSample(0, 0, 0, 0, selectLastWeapon: true), true);
+            Assert.That(input.ConsumeTick(new EntityId(2), 7).SelectedSlot, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void LastWeaponYieldsToAbsoluteSlotInSameFrame()
+        {
+            var input = new LocalPlayerInput();
+            input.ResetForLife(0f, 0f, 0);
+            input.CaptureFrame(default, true);
+            input.CaptureFrame(new FrameInputSample(0, 0, 0, 0, selectPistol: true, selectLastWeapon: true), true);
+            Assert.That(input.ConsumeTick(Player, 0).SelectedSlot, Is.EqualTo(1));
+        }
+
+        [Test]
         public void AppliedBindingsDriveActionLookupAndSampledGameplay()
         {
             var input = new LocalPlayerInput();
             input.ResetForLife(0f, 0f, 0);
             Assert.That(input.Bindings.TryGetControl("Reload", out string reload), Is.True);
             Assert.That(reload, Is.EqualTo("Key.R"));
+            Assert.That(input.Bindings.TryGetControl("LastWeapon", out string lastWeapon), Is.True);
+            Assert.That(lastWeapon, Is.EqualTo("Key.Q"));
 
             var remapped = new List<InputBinding>(UserSettings.DefaultBindings());
             for (int i = 0; i < remapped.Count; i++)
@@ -168,13 +219,19 @@ namespace Shooter.Tests
                 if (remapped[i].Action == "Reload")
                     remapped[i] = new InputBinding("Reload", "Key.F");
                 else if (remapped[i].Action == "Scoreboard")
-                    remapped[i] = new InputBinding("Scoreboard", "Key.Q");
+                    remapped[i] = new InputBinding("Scoreboard", "Key.V");
+                else if (remapped[i].Action == "LastWeapon")
+                    remapped[i] = new InputBinding("LastWeapon", "Key.G");
+                else if (remapped[i].Action == "Slide")
+                    remapped[i] = new InputBinding("Slide", "Unbound");
             }
             input.ApplyBindings(remapped);
             Assert.That(input.Bindings.TryGetControl("Reload", out reload), Is.True);
             Assert.That(reload, Is.EqualTo("Key.F"));
             Assert.That(input.Bindings.TryGetControl("Scoreboard", out string score), Is.True);
-            Assert.That(score, Is.EqualTo("Key.Q"));
+            Assert.That(score, Is.EqualTo("Key.V"));
+            Assert.That(input.Bindings.TryGetControl("LastWeapon", out lastWeapon), Is.True);
+            Assert.That(lastWeapon, Is.EqualTo("Key.G"));
             Assert.That(input.Bindings.TryGetControl("Pause", out string pause), Is.True);
             Assert.That(pause, Is.EqualTo(UserSettings.ReservedEscapeControl));
 
@@ -184,5 +241,6 @@ namespace Shooter.Tests
             InputCommand command = input.ConsumeTick(Player, 0);
             Assert.That(command.Buttons & InputButtons.ReloadPressed, Is.Not.EqualTo(InputButtons.None));
         }
+
     }
 }

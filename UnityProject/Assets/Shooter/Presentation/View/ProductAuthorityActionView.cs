@@ -13,6 +13,9 @@ namespace Shooter.Presentation.View
     {
         public const byte RifleSlot = 0;
         public const byte PistolSlot = 1;
+        public const byte KnifeSlot = 2;
+        public const byte GrenadeSlot = 3;
+        public const byte MaxSlot = 3;
         public const float SimulationHz = ContractVersion.SimulationHz;
 
         private sealed class EntityAction
@@ -49,8 +52,8 @@ namespace Shooter.Presentation.View
         public void SyncLifecycle(EntityId entity, byte activeWeaponSlot, bool alive)
         {
             if (!entity.IsValid) throw new ArgumentException("Entity required.", nameof(entity));
-            if (activeWeaponSlot > PistolSlot)
-                throw new ArgumentOutOfRangeException(nameof(activeWeaponSlot), "Weapon slot must be 0 (rifle) or 1 (pistol).");
+            if (activeWeaponSlot > MaxSlot)
+                throw new ArgumentOutOfRangeException(nameof(activeWeaponSlot), "Weapon slot must be 0..3 (rifle/pistol/knife/grenade).");
             var state = GetOrCreate(entity.Value);
             state.Slot = activeWeaponSlot;
             state.HasSlot = true;
@@ -167,6 +170,12 @@ namespace Shooter.Presentation.View
         public bool IsPistol(EntityId entity, byte fallbackSlot = RifleSlot) =>
             ActiveWeaponSlot(entity, fallbackSlot) == PistolSlot;
 
+        public bool IsKnife(EntityId entity, byte fallbackSlot = RifleSlot) =>
+            ActiveWeaponSlot(entity, fallbackSlot) == KnifeSlot;
+
+        public bool IsGrenade(EntityId entity, byte fallbackSlot = RifleSlot) =>
+            ActiveWeaponSlot(entity, fallbackSlot) == GrenadeSlot;
+
         public bool IsReloading(EntityId entity) =>
             entity.IsValid && entities.TryGetValue(entity.Value, out var state) && state.Reloading;
 
@@ -180,6 +189,9 @@ namespace Shooter.Presentation.View
 
         public static bool IsRifleSlot(byte slot) => slot == RifleSlot;
         public static bool IsPistolSlot(byte slot) => slot == PistolSlot;
+        public static bool IsKnifeSlot(byte slot) => slot == KnifeSlot;
+        public static bool IsGrenadeSlot(byte slot) => slot == GrenadeSlot;
+        public static bool IsGunSlot(byte slot) => slot == RifleSlot || slot == PistolSlot;
 
         public static float DurationSeconds(uint startTick, uint endTick)
         {

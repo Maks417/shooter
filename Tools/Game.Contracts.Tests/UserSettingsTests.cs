@@ -27,8 +27,9 @@ namespace Shooter.Game.Contracts.Tests
             Assert.Equal(80f, s.HipFovDegrees);
             Assert.Equal(0.10f, s.MouseSensitivity);
             Assert.Equal(1f, s.UiScale);
-            Assert.Equal(15, s.Bindings.Count);
+            Assert.Equal(16, s.Bindings.Count);
             Assert.Equal(GameContractVersion.SettingsSchema, 2u);
+            Assert.Contains(s.Bindings, b => b.Action == "LastWeapon" && b.Control == "Key.Q");
         }
 
         [Theory]
@@ -42,6 +43,7 @@ namespace Shooter.Game.Contracts.Tests
             Assert.True(UserSettingsJson.TryDecodeText(legacy, out var settings, out string diagnostic), diagnostic);
             Assert.Contains(settings!.Bindings, b => b.Action == "Slide" && b.Control == (customizedF ? "Unbound" : "Key.F"));
             Assert.Contains(settings.Bindings, b => b.Action == "Reload" && b.Control == (customizedF ? "Key.F" : "Key.R"));
+            Assert.Contains(settings.Bindings, b => b.Action == "LastWeapon" && b.Control == "Key.Q");
             Assert.True(UserSettingsJson.TryDecode(UserSettingsJson.Encode(settings), out var again, out diagnostic), diagnostic);
             Assert.Equal(settings.Bindings.Count, again!.Bindings.Count);
             var editor = new InputBindingEditor(again.Bindings);
@@ -52,11 +54,46 @@ namespace Shooter.Game.Contracts.Tests
             Assert.Contains(editor.Working, b => b.Action == "Slide" && b.Control == "Key.Space");
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void LegacyBindingsGainLastWeaponWithoutStealingCustomizedQ(bool customizedQ)
+        {
+            string path = Path.Combine(AppContext.BaseDirectory, "Fixtures", "user-settings.valid.json");
+            string legacy = File.ReadAllText(path);
+            if (customizedQ) legacy = legacy.Replace("Key.R", "Key.Q");
+            Assert.True(UserSettingsJson.TryDecodeText(legacy, out var settings, out string diagnostic), diagnostic);
+            Assert.Contains(settings!.Bindings, b => b.Action == "LastWeapon" && b.Control == (customizedQ ? "Unbound" : "Key.Q"));
+            Assert.Contains(settings.Bindings, b => b.Action == "Reload" && b.Control == (customizedQ ? "Key.Q" : "Key.R"));
+            Assert.True(UserSettingsJson.TryDecode(UserSettingsJson.Encode(settings), out var again, out diagnostic), diagnostic);
+            Assert.Equal(settings.Bindings.Count, again!.Bindings.Count);
+            var editor = new InputBindingEditor(again.Bindings);
+            Assert.True(editor.TryBeginListen("LastWeapon"));
+            Assert.True(editor.TryOfferControl("Key.Space"));
+            Assert.Equal("Jump", editor.ConflictAction);
+            Assert.True(editor.TrySwapConflict());
+            Assert.Contains(editor.Working, b => b.Action == "LastWeapon" && b.Control == "Key.Space");
+        }
+
+        [Fact]
+        public void LegacyBindingsMayLeaveSlideAndLastWeaponBothUnbound()
+        {
+            string path = Path.Combine(AppContext.BaseDirectory, "Fixtures", "user-settings.valid.json");
+            string legacy = File.ReadAllText(path)
+                .Replace("Key.R", "Key.F")
+                .Replace("Key.Tab", "Key.Q");
+            Assert.True(UserSettingsJson.TryDecodeText(legacy, out var settings, out string diagnostic), diagnostic);
+            Assert.Contains(settings!.Bindings, b => b.Action == "Slide" && b.Control == "Unbound");
+            Assert.Contains(settings.Bindings, b => b.Action == "LastWeapon" && b.Control == "Unbound");
+            Assert.Contains(settings.Bindings, b => b.Action == "Reload" && b.Control == "Key.F");
+            Assert.Contains(settings.Bindings, b => b.Action == "Scoreboard" && b.Control == "Key.Q");
+        }
+
         [Fact]
         public void FullLegacyBindingTableIsPreservedWithinTheSchemaBound()
         {
             var bindings = new System.Collections.Generic.List<InputBinding>(UserSettings.DefaultBindings());
-            bindings.RemoveAll(b => b.Action == "Slide");
+            bindings.RemoveAll(b => b.Action == "Slide" || b.Action == "LastWeapon");
             for (int i = bindings.Count; i < GameContractVersion.MaxSettingsBindings; i++)
                 bindings.Add(new InputBinding("Extra" + i, "Key.Extra" + i));
             var settings = new InputBindingEditor(bindings).WithBindings(UserSettings.Defaults);
@@ -73,6 +110,17 @@ namespace Shooter.Game.Contracts.Tests
             Assert.True(UserSettingsJson.TryDecode(File.ReadAllBytes(path), out var settings, out string diagnostic), diagnostic);
             Assert.Contains(settings!.Bindings, b => b.Action == "Slide" && b.Control == "Key.F");
             Assert.Contains(settings.Bindings, b => b.Action == "Sprint" && b.Control == "Key.LeftShift");
+            Assert.Contains(settings.Bindings, b => b.Action == "LastWeapon" && b.Control == "Key.Q");
+        }
+
+        [Fact]
+        public void LastWeaponSettingsFixtureRoundtrips()
+        {
+            string path = Path.Combine(AppContext.BaseDirectory, "Fixtures", "user-settings-last-weapon.valid.json");
+            Assert.True(UserSettingsJson.TryDecode(File.ReadAllBytes(path), out var settings, out string diagnostic), diagnostic);
+            Assert.Contains(settings!.Bindings, b => b.Action == "LastWeapon" && b.Control == "Key.Q");
+            Assert.Contains(settings.Bindings, b => b.Action == "Slot1" && b.Control == "Key.Digit1");
+            Assert.Contains(settings.Bindings, b => b.Action == "Slot2" && b.Control == "Key.Digit2");
         }
 
         [Fact]

@@ -176,3 +176,16 @@ Validation:
 - A build, an installer and real-player feel are listed as Pending in the handoff.
 
 Rollback: revert the T085 merge. No persisted state or content identity changes.
+
+## T086 — Sample-bank combat audio (BFV-style feel, ADR-055) (2026-11-15)
+
+Owner authorized replacing the analytic sine+noise beeps with Battlefield V–class combat feel via generated (or provenance-recorded found) PCM banks for this non-commercial build. Sole integrator. Scope:
+- `Presentation/Audio/**` (bank baker, bank container, sample mixer, router, settings binding; Unity device output stays callback-only).
+- Pure `Tools/Simulation.Tests/Fx/**` audio coverage.
+- Shared docs: [ADR-055](decisions.md#adr-055--accepted-generated-pcm-combat-sample-banks-t086), [features/audio.md](features/audio.md), vision/game-shell/combat, M11 handoff, index.
+
+Frozen: C0/Game-v1 contracts and fixtures, weapon damage/rate, map packages, toolchain, ≤24-voice peak-limiter policy, master/effects/UI schema-2 gains. No music score, no commercial-game audio extraction, no middleware (FMOD/Wwise) requirement.
+
+Deliver: deterministic layered cue bank (rifle/pistol shot, impact, damage-taken, footstep, reload start/complete, death, UI, ambient loop); sample mixer with distance atten, stereo pan, HF rolloff; router mapping for reload/death/damage and weapon id; pure tests; FIX10 named device hearing remains Pending.
+
+Rollback: revert T086. Analytic-only mixer is the prior baseline.

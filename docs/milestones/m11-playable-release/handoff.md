@@ -1,5 +1,39 @@
 # M11 — Playable build and acceptance — handoff and gate record
 
+## ADR-058 — Minimap self marker and temporary gunfire reveal
+
+2026-11-15. Owner playtest: minimap did not show the local player; enemies who are shooting should appear briefly. [ADR-058](../../decisions.md#adr-058--accepted-minimap-self-marker-and-temporary-gunfire-reveal).
+
+**Implemented (software):**
+- Fill-based self pip + Fill facing tick at map center (replaces Line chevron clipped inside `GUI.BeginGroup`).
+- Enemy-team `ShotAccepted` → 8-slot presentation ring (2.5 s / 0.5 s fade) plotted as coral plus markers from shot origin XZ; allies/local ignored; silent enemies never plotted.
+- Pure `CombatHudVisual` filter/TTL/ring tests; brandbook / visual brief / VD7 wording updated.
+
+**Pending:** interactive player confirmation on both maps; package/installer identity for a build that includes this change. Does not close FIX/SET/REL/P05.
+
+## T086 — Sample-bank combat audio (ADR-055)
+
+2026-11-15. Owner asked for Battlefield V–class combat sound on the non-commercial build and authorized generated/found PCM (not commercial-game extraction). Software path:
+
+- [ADR-055](../../decisions.md#adr-055--accepted-generated-pcm-combat-sample-banks-t086) and [features/audio.md](../../features/audio.md).
+- `CombatAudioBankBaker` / `CombatAudioBank`: deterministic layered mono PCM (rifle/pistol shot, impact, damage-taken, footstep, reload start/complete, death, UI, ambient loop) with content hash.
+- `SynthAudioMixer` plays bank samples with distance atten, stereo pan, HF rolloff, ≤24 voices, peak limiter, schema-2 gains.
+- `ProductAudioEventRouter` maps reload/death/damage and rifle vs pistol; starts ambient on session attach.
+- Pure `ProductAudioTests` extended (bank stability, reload/death/pistol mapping, stereo pan).
+
+**Pending (not PASS):** named FIX10 / SET02 device hearing of distinct cues and mute/gains; installer/player package identity for this change. Analytic beep path is superseded; rollback is revert T086.
+
+## ADR-056 — Last weapon (Q) and local-only muzzle overlay
+
+2026-11-15. Owner playtest: screen flicks while bots fire nearby, and request for Q last-weapon quick switch. [ADR-056](../../decisions.md#adr-056--accepted-last-weapon-quick-switch-q-and-local-only-muzzle-overlay).
+
+**Implemented (software):**
+- Full-screen muzzle overlay / “Shot” subtitle gated to local human `ShotAccepted` via `FirstPersonHitFeedback.IsLocalShot`; world muzzle proxies and shot audio unchanged for bots.
+- Additive schema-2 `LastWeapon` binding (default Key.Q), client previous-slot toggle in `LocalPlayerInput`, settings label “Last weapon”, legacy normalize (Q free → Key.Q, else Unbound; multiple Unbound allowed).
+- Fixtures/tests: `user-settings-last-weapon.valid.json`, Game.Contracts UserSettings migration/conflict cases, EditMode last-weapon edge/life/device and local-shot unit tests. Game-v1 lock refrozen for Contracts sources + game-fixtures.
+
+**Checks:** Game.Contracts 74/74 PASS; Unity EditMode PASS (`Artifacts/m0-foundation/d6ac76c9cfafe2ef3b775c7c2bf6d859df1be475/tests-editmode-20261115T152955036Z-b87e6536/`); docs + Game-v1 lock PASS on the working tree. Interactive two-map confirmation, package/installer identity for a build that includes this change, and FIX/SET/REL/P05 remain Pending.
+
 ## Release 0.3.12
 
 2026-11-15. The owner asked to commit the pending main-checkout work and create a new release. The pending files were the T084 continuous sleeve loft and its welded-topology test, plus T084 doc wording. Generation 394 and docs verification PASS on the working tree (`Artifacts/m1-procedural-feasibility/7cbabd38bdd25c6e572c14f85d761da48448b1bd/20261115T145451354Z-dfce7da1/`); committed as `50e8939`.

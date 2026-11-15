@@ -4,7 +4,7 @@ using UnityEngine;
 namespace Shooter.Presentation.Audio
 {
     /// <summary>
-    /// Actual Unity device path: AudioSource + OnAudioFilterRead feeding device-rate synth PCM.
+    /// Actual Unity device path: AudioSource + OnAudioFilterRead feeding device-rate sample-bank PCM (ADR-055).
     /// Callback only mixes pre-queued voices; never touches authority or allocates.
     /// </summary>
     [DisallowMultipleComponent]
@@ -67,7 +67,7 @@ namespace Shooter.Presentation.Audio
             source.volume = 1f;
             source.mute = false;
             source.priority = 0;
-            // Silence clip keeps the filter callback pumping without recorded art samples.
+            // Silence clip keeps the filter callback pumping; audible content comes from the mixer bank.
             int rate = AudioSettings.outputSampleRate > 0 ? AudioSettings.outputSampleRate : 48000;
             var clip = AudioClip.Create("ShooterSynthSilence", rate, 1, rate, false);
             var zeros = new float[rate];
@@ -96,7 +96,7 @@ namespace Shooter.Presentation.Audio
             }
             int rate = AudioSettings.outputSampleRate;
             if (rate < 8000) rate = 48000;
-            // Mixer Fill overwrites the buffer with synthesized PCM; no authority / Unity API beyond this.
+            // Mixer Fill overwrites the buffer with sample-bank PCM; no authority / Unity API beyond this.
             mixer.Fill(data, channels, rate);
         }
 

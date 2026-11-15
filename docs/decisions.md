@@ -596,3 +596,61 @@ Decision:
 - **Team spread.** Destinations are chosen by a deterministic spread score instead of an id-ordered walk of the route. At most 2 allies investigate one noise. Allied gunfire never points at the ally.
 
 Consequences: bots are slower to kill and harder to sneak up on at a run, but still blind to slow or crouched movement behind them beyond 5 m. Hearing through walls is possible, as it already was for gunfire. No contract, fixture, budget, content or weapon change. Rollback: revert T085. The previous constants are recorded in the [M11 handoff](milestones/m11-playable-release/handoff.md#t085--bot-rear-awareness-team-spread-and-readable-time-to-kill).
+
+## ADR-055 — Accepted: generated PCM combat sample banks (T086)
+
+Date 2026-11-15. Status: accepted for the offline non-commercial product build. Named device hearing (FIX10) remains Pending.
+
+Context: owner quality direction for visuals already targets Battlefield V–class feedback. Shipping audio was a ≤24-voice sine+noise analytic synth (T030/T061) that reads as beeps, not weapon reports. `vision.md` baseline was synthesized sound with an explicit gate for recorded/external sound via provenance policy update. Owner authorized sample-bank combat audio for non-commercial use, with banks found or generated rather than purchased licensing workflow.
+
+Decision:
+- **Provenance.** Presentation may ship a deterministic **generated PCM combat audio bank** (recipe-baked mono clips + SHA-256 content hash). Drop-in found PCM is allowed only when recorded in the bank manifest with source note and hash; commercial license purchase is not required for this non-commercial build. Extracting audio from third-party commercial games (including Battlefield V) is out of scope and not used.
+- **Mixer.** `SynthAudioMixer` plays bank samples (not live sine tones) with distance attenuation, stereo pan, distance high-frequency rolloff, peak limiter, and master/effects/UI gains. Voice pool remains ≤24; one authority cue maps to one voice (layers are pre-composited in the bank).
+- **Cues.** Rifle and pistol shots, impact, damage-taken, footstep, reload start/complete, death, UI, and a quiet looping ambient bed. Reload/death/damage map from existing `CombatEventKind` values; weapon id selects rifle vs pistol shot.
+- **Fallback.** If a bank fails to load, the mixer may synthesize a degraded analytic fallback so playability is preserved; FIX10 still requires named audible review of the sample path.
+
+Consequences: audio CPU and memory grow with bank size; design still targets the 0.5 ms/frame mix budget as a soft host target. Docs (`vision`, `game-shell`, `combat`, [features/audio.md](features/audio.md)) and T061/FIX10 wording update to sample-bank policy. Rollback: revert T086 and restore the prior analytic-only mixer.
+
+## ADR-056 — Accepted: last-weapon quick switch (Q) and local-only muzzle overlay
+
+Date 2026-11-15; owner playtest feedback requested FPS-style Q last-weapon toggle and reported full-screen flicks while bots fired nearby. Sole integrator owns the bounded input/settings/presentation fix; no agents, art import, package upgrade or acceptance waiver.
+
+Context: cosmetic `muzzleFlashRemaining` overlay and “Shot” subtitle fired on every `ShotAccepted`, including remote bots, painting a full-screen flash while the local player was idle. Weapon selection already used Slot1/Slot2 (1/2) with no previous-weapon action.
+
+Decision — local muzzle overlay: `FirstPersonHitFeedback.IsLocalShot` gates the IMGUI overlay and shot subtitle to the local human instigator. World analytic muzzle/impact/smoke proxies and shot audio continue for all `ShotAccepted` events. ReducedFlash still suppresses the local overlay and world muzzle meshes.
+
+Decision — LastWeapon binding: additive optional `LastWeapon` defaults to `Key.Q`. Game-v1/settings schema 2 layout is unchanged. Client-side `LocalPlayerInput` tracks the previous slot; a press edge swaps the selected slot with that previous slot and writes the result into the existing C0 `InputCommand.SelectedSlot`. Slot1/Slot2 still set an absolute slot and update the previous slot only when the active slot actually changes. On life reset, previous slot initializes to the opposite of the active spawn slot so the first Q is useful with two weapons. Holding Slot1/Slot2 takes precedence over LastWeapon in the same frame. Normalize legacy settings by adding `LastWeapon=Key.Q` when free, or `LastWeapon=Unbound` when Q was already customized; preserve existing actions and never steal a control. A legacy binding table already at the schema count limit is preserved without adding a row; Restore defaults makes LastWeapon available in that exceptional case. Settings UI exposes LastWeapon rebind/swap/defaults labeled “Last weapon”.
+
+Validation: pure settings migration/conflict/persistence tests, EditMode input last-weapon edge/life-reset tests, local-shot overlay unit test, locked pure suites and provenance. Interactive two-map device evidence remains Pending. Rollback restores the prior Game-v1 lock/fixture pair and presentation gate; older players keep their retained binary/content/controls.
+
+## ADR-057 — Accepted: knife and grenade loadout slots (T087)
+
+Date 2026-11-15; owner-directed playable combat expansion so a player can still fight when rifle/pistol ammo is empty. Sole integrator owns the C0 prediction/slot migration, combat authority, settings bindings, AI, procedural visuals and verification. No acceptance waiver.
+
+Context: C0-v1 froze `Require.Slot` to `0..1` and prediction schema 1 to exactly two `WeaponState` records. Melee and grenades were deferred. Offline TDM needs knife (Digit3) and one cook/throw grenade per life (Digit4) for humans and bots.
+
+Decision:
+- Keep `ContractVersion.Current = "C0-v1"`. Bump `PredictionSchema` **1 → 2**. `Require.Slot` accepts `0..3` (rifle/pistol/knife/grenade). Prediction `WeaponSlots` count is **4**. Add `WeaponAction.Cooking = 5` for grenade pin/cook. Migrate `docs/fixtures/prediction-state.json` and `gameplay-defaults.json`; refresh `contract-lock.json` after reviewed source/fixture identity change.
+- Knife: short-range authoritative hitscan (1.8 m), base damage 55, interval 24 ticks, equip 12, no ammo consume, may fire while sprinting.
+- Grenade: magazine 1 / reserve 0 per life; cook on FirePressed, throw on release, fuse 120 ticks from cook start; held cook that expires detonates at the thrower (self-damage yes, friendly damage still 0). Throw uses reserved `ProjectileSpawned`/`ProjectilePayload`, gravity arc, bounce damp, explode on fuse with 5 m linear falloff to max 100 damage. Respawn refills one grenade.
+- Game-v1 settings schema 2 unchanged; additive optional `Slot3=Key.Digit3` / `Slot4=Key.Digit4` with the same legacy normalize pattern as Slide/LastWeapon. LastWeapon previous-slot spans all four loadout slots.
+- Bots switch to knife when guns are dry at close range and may spend their single grenade once at medium visible range.
+- Procedural knife/grenade meshes publish through the existing map visual closure; package identities change and require native republish for player review.
+
+Consequences: offline restoration/prediction fixtures and all two-slot weapon assumptions must migrate together. Historical N1 online prediction remains deferred and must not claim schema-2 wire compatibility without a later protocol ADR. Rollback restores the prior contract-lock/fixture/prediction-schema-1 pair and two-slot combat kit.
+
+Validation: Contracts/Simulation/Game/Generation/Maps pure suites, Unity EditMode slot/input/visual cases, provenance, docs/fixtures/manifest, native content + Client/Server when packages change. Manual gameplay and device audio remain Pending.
+
+## ADR-058 — Accepted: minimap self marker and temporary gunfire reveal
+
+Date 2026-11-15; owner playtest reported the tactical map did not show the local player and asked that enemies who are shooting appear on the minimap. Sole integrator owns the bounded presentation/HUD/docs fix. No contract, sensing, AI, content-format or acceptance waiver.
+
+Context: T074/brandbook required a north-up friendly-only map. The local marker was a `TacticalUi.Line` chevron inside `GUI.BeginGroup`, which commonly clips under IMGUI matrix draws so the self pip vanished while ally `Fill` squares remained. Enemies were never plotted.
+
+Decision:
+- Draw the local player with Fill-based center pip and Fill facing tick (no Line inside the map group).
+- On enemy-team `ShotAccepted` (not local, not ally), store a short-lived presentation blip from `ShotPayload.Origin` XZ in a fixed 8-slot ring (2.5 s hold, 0.5 s fade). Refresh on repeated shots. Plot coral plus/diamond Fills inside the existing 42 m plate only while the blip is live.
+- Silent enemies stay hidden. Do not stream live enemy poses, do not use AI Heard/LKP, and do not change combat authority or sensing.
+- Brandbook / visual brief language becomes “friendly + temporary gunfire reveal” rather than absolute friendly-only.
+
+Validation: pure `CombatHudVisual` filter/TTL/ring tests, Simulation suite. Interactive player review remains Pending. Rollback reverts the presentation ring and restores the prior Line chevron / friendly-only wording.

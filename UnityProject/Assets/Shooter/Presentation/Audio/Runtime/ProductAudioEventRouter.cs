@@ -14,6 +14,10 @@ namespace Shooter.Presentation.Audio
     {
         public const float FootstepStrideMeters = 0.75f;
         public const float MaxAudibleDistanceMeters = 80f;
+        /// <summary>Gameplay pose region 1 = head (DamageMath / hit volumes).</summary>
+        public const ushort HeadRegionId = 1;
+        public const string RifleWeaponId = "weapons/rifle";
+        public const string PistolWeaponId = "weapons/pistol";
 
         private readonly SynthAudioMixer mixer;
         private readonly HashSet<string> consumed = new HashSet<string>(StringComparer.Ordinal);
@@ -40,6 +44,7 @@ namespace Shooter.Presentation.Audio
             DetachSession();
             attachedSessionId = authoritySessionId;
             attached = true;
+            mixer.EnsureAmbient(authoritySessionId);
         }
 
         public void DetachSession()
@@ -53,7 +58,10 @@ namespace Shooter.Presentation.Audio
             mixer.StopAll();
         }
 
-        public int ConsumeCombatEvents(IReadOnlyList<CombatEvent> events, Float3 listenerFeet)
+        public int ConsumeCombatEvents(IReadOnlyList<CombatEvent> events, Float3 listenerFeet) =>
+            ConsumeCombatEvents(events, listenerFeet, default);
+
+        public int ConsumeCombatEvents(IReadOnlyList<CombatEvent> events, Float3 listenerFeet, EntityId localEntity)
         {
             if (events == null) throw new ArgumentNullException(nameof(events));
             if (!attached) return 0;
@@ -65,11 +73,13 @@ namespace Shooter.Presentation.Audio
                 string key = EventKey(ev.Id);
                 if (!consumed.Add(key)) continue;
 
-                if (!TryMapCombat(ev.Kind, out var voice)) continue;
-                float distance = DistanceMeters(listenerFeet, EventPosition(ev, listenerFeet));
+                if (!TryMapCombat(ev, localEntity, out var voice)) continue;
+                Float3 pos = EventPosition(ev, listenerFeet);
+                float distance = DistanceMeters(listenerFeet, pos);
                 if (distance > MaxAudibleDistanceMeters) continue;
+                float pan = ComputePan(listenerFeet, pos);
                 ulong seed = ev.Id.Tick ^ ((ulong)ev.Id.Ordinal << 16) ^ ev.Id.EntityId.Value;
-                if (mixer.TryPlay(voice, distance, seed)) played++;
+                if (mixer.TryPlay(voice, distance, pan, seed)) played++;
             }
             return played;
         }
@@ -101,8 +111,9 @@ namespace Shooter.Presentation.Audio
                     if (!consumed.Add(key)) continue;
                     float distance = DistanceMeters(listenerFeet, actor.Feet);
                     if (distance > MaxAudibleDistanceMeters) continue;
+                    float pan = ComputePan(listenerFeet, actor.Feet);
                     ulong seed = attachedSessionId ^ id ^ completedTick;
-                    if (mixer.TryPlay(SynthVoiceKind.Footstep, distance, seed)) played++;
+                    if (mixer.TryPlay(SynthVoiceKind.Footstep, distance, pan, seed)) played++;
                 }
                 strideAccum[id] = accum;
             }
@@ -116,19 +127,32 @@ namespace Shooter.Presentation.Audio
             if (uiOrdinal < ushort.MaxValue) uiOrdinal++;
             string key = "ui:" + attachedSessionId + ":" + ordinal;
             if (!consumed.Add(key)) return false;
-            return mixer.TryPlay(SynthVoiceKind.Ui, 0f, seed ^ ordinal);
+            return mixer.TryPlay(SynthVoiceKind.Ui, 0f, 0f, seed ^ ordinal);
         }
 
-        private static bool TryMapCombat(CombatEventKind kind, out SynthVoiceKind voice)
+        private static bool TryMapCombat(CombatEvent ev, EntityId localEntity, out SynthVoiceKind voice)
         {
-            switch (kind)
+            switch (ev.Kind)
             {
                 case CombatEventKind.ShotAccepted:
-                    voice = SynthVoiceKind.Shot;
+                    voice = MapShotVoice(ev);
                     return true;
                 case CombatEventKind.Impact:
+                    voice = IsHeadRegion(ev) ? SynthVoiceKind.Headshot : SynthVoiceKind.Impact;
+                    return true;
                 case CombatEventKind.DamageApplied:
-                    voice = SynthVoiceKind.Impact;
+                    // Punchier hit report; head uses a brighter crack than body hits.
+                    _ = localEntity;
+                    voice = IsHeadRegion(ev) ? SynthVoiceKind.Headshot : SynthVoiceKind.DamageTaken;
+                    return true;
+                case CombatEventKind.ReloadStarted:
+                    voice = SynthVoiceKind.ReloadStart;
+                    return true;
+                case CombatEventKind.ReloadCompleted:
+                    voice = SynthVoiceKind.ReloadComplete;
+                    return true;
+                case CombatEventKind.Death:
+                    voice = SynthVoiceKind.Death;
                     return true;
                 default:
                     voice = default;
@@ -136,11 +160,47 @@ namespace Shooter.Presentation.Audio
             }
         }
 
-        private static Float3 EventPosition(CombatEvent ev, Float3 fallback)
+        private static SynthVoiceKind MapShotVoice(CombatEvent ev)
+        {
+            if (ev.Payload is ShotPayload shot)
+            {
+                string id = shot.WeaponId.ToString();
+                if (string.Equals(id, PistolWeaponId, StringComparison.Ordinal))
+                    return SynthVoiceKind.PistolShot;
+            }
+            return SynthVoiceKind.RifleShot;
+        }
+
+        private static bool IsHeadRegion(CombatEvent ev)
+        {
+            if (ev.Payload is ImpactPayload impact) return impact.RegionId == HeadRegionId;
+            if (ev.Payload is DamagePayload damage) return damage.RegionId == HeadRegionId;
+            return false;
+        }
+
+        private Float3 EventPosition(CombatEvent ev, Float3 fallback)
         {
             if (ev.Payload is ShotPayload shot) return shot.Origin;
             if (ev.Payload is ImpactPayload impact) return impact.Position;
+            if (ev.Kind == CombatEventKind.ReloadStarted || ev.Kind == CombatEventKind.ReloadCompleted)
+            {
+                if (ev.Instigator.IsValid && lastFeet.TryGetValue(ev.Instigator.Value, out var feet))
+                    return feet;
+            }
+            if (ev.Kind == CombatEventKind.Death && ev.Target.IsValid && lastFeet.TryGetValue(ev.Target.Value, out var victim))
+                return victim;
+            if (ev.Kind == CombatEventKind.DamageApplied && ev.Target.IsValid && lastFeet.TryGetValue(ev.Target.Value, out var damaged))
+                return damaged;
             return fallback;
+        }
+
+        private static float ComputePan(Float3 listener, Float3 source)
+        {
+            float dx = source.X - listener.X;
+            float dz = source.Z - listener.Z;
+            float horiz = (float)Math.Sqrt(dx * dx + dz * dz);
+            if (horiz < 1e-4f) return 0f;
+            return Math.Clamp(dx / horiz, -1f, 1f);
         }
 
         private static string EventKey(EventId id) =>

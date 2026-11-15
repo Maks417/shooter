@@ -26,7 +26,7 @@ namespace Shooter.Contracts.Tests
             var expected = new Dictionary<Type, int[]>
             {
                 [typeof(QueryStatus)] = new[] { 0, 1, 2, 3 }, [typeof(Stance)] = new[] { 0, 1, 2 },
-                [typeof(WeaponAction)] = new[] { 0, 1, 2, 3, 4 }, [typeof(ContentKind)] = new[] { 1, 2, 3, 4, 5 },
+                [typeof(WeaponAction)] = new[] { 0, 1, 2, 3, 4, 5 }, [typeof(ContentKind)] = new[] { 1, 2, 3, 4, 5 },
                 [typeof(PathStatus)] = new[] { 0, 1, 2, 3, 4, 5 }, [typeof(MatchState)] = new[] { 0, 1, 2, 3, 4, 5 },
                 [typeof(CombatEventKind)] = new[] { 1, 2, 3, 4, 5, 6, 7, 8 }, [typeof(ErrorCode)] = Enumerable.Range(0, 10).ToArray(),
                 [typeof(InputButtons)] = new[] { 0, 1, 2, 4, 8, 16, 32, 64 }, [typeof(Delivery)] = new[] { 0, 1 }
@@ -104,7 +104,9 @@ namespace Shooter.Contracts.Tests
             Assert.Throws<ArgumentException>(() => Command(pitch: (float)(89 * Math.PI / 180)));
             Assert.Throws<ArgumentException>(() => Command(pitch: (float)Math.PI / 2));
             Assert.Throws<ArgumentException>(() => Command(buttons: (InputButtons)128));
-            Assert.Throws<ArgumentException>(() => Command(slot: 2));
+            Assert.True(Command(slot: 2).IsValid);
+            Assert.True(Command(slot: 3).IsValid);
+            Assert.Throws<ArgumentException>(() => Command(slot: 4));
             Assert.True(Command(moveX: 0.70710677f, moveY: 0.70710677f).IsValid);
         }
         [Fact]
@@ -128,8 +130,8 @@ namespace Shooter.Contracts.Tests
             Assert.True(JsonElement.DeepEquals(snapshot.RootElement, FixtureJson.WriteSnapshot(state)));
             using var prediction = FixtureJson.Load("prediction-state.json"); var p = FixtureJson.Prediction(prediction.RootElement);
             Assert.True(JsonElement.DeepEquals(prediction.RootElement, FixtureJson.WritePrediction(p)));
-            Assert.Equal(2, p.WeaponSlots.Count); Assert.Equal(100, p.Health); Assert.Equal(ContractVersion.PredictionSchema, p.SchemaVersion);
-            Assert.Throws<ArgumentException>(() => FixtureJson.Prediction(JsonSerializer.SerializeToElement(new { schemaVersion = 2 })));
+            Assert.Equal(4, p.WeaponSlots.Count); Assert.Equal(100, p.Health); Assert.Equal(ContractVersion.PredictionSchema, p.SchemaVersion);
+            Assert.Throws<ArgumentException>(() => FixtureJson.Prediction(JsonSerializer.SerializeToElement(new { schemaVersion = 1 })));
         }
         [Fact]
         public void EventsRejectWrongPayloadAndUnknownKinds()

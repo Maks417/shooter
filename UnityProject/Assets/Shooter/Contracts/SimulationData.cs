@@ -163,8 +163,10 @@ namespace Shooter.Contracts
             Require.That(Require.Finite(capsuleHeight, nameof(capsuleHeight)) > 0, nameof(capsuleHeight));
             Require.That(alive == (health > 0) && alive == (stance != Stance.Dead), "life state");
             Require.Slot(activeSlot); Require.Slot(desiredSlot); Require.Buttons(lastButtons);
-            WeaponSlots = new FrozenList<WeaponState>(weaponSlots, 2);
-            Require.That(WeaponSlots.Count == 2 && WeaponSlots[0].IsValid && WeaponSlots[1].IsValid, nameof(weaponSlots));
+            WeaponSlots = new FrozenList<WeaponState>(weaponSlots, 4);
+            Require.That(WeaponSlots.Count == 4
+                && WeaponSlots[0].IsValid && WeaponSlots[1].IsValid
+                && WeaponSlots[2].IsValid && WeaponSlots[3].IsValid, nameof(weaponSlots));
             RecoilYaw = Require.Finite(recoilYaw, nameof(recoilYaw)); RecoilPitch = Require.Finite(recoilPitch, nameof(recoilPitch));
             RecoilYawVelocity = Require.Finite(recoilYawVelocity, nameof(recoilYawVelocity)); RecoilPitchVelocity = Require.Finite(recoilPitchVelocity, nameof(recoilPitchVelocity));
             Require.That(Require.Finite(locomotionDistanceMeters, nameof(locomotionDistanceMeters)) >= 0, nameof(locomotionDistanceMeters));

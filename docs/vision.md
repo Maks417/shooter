@@ -48,7 +48,7 @@ Permitted source: code, numeric measurements, analytic curves, rule grammars, JS
 
 Generated textures are algorithmic raster caches, not painted art. Generated geometry may be serialized in Unity native form with provenance. Runtime animation uses gait/IK dynamics; optional sampled caches must be regenerated from those equations. Generated particles use analytic geometry/materials rather than sprite atlases. No mesh impostor/billboard texture requirement is assumed; low detail uses simplified mesh geometry.
 
-Fonts and sound are not 3D/surface/animation assets. Baseline UI uses an engine-supplied licensed font with a recorded exception in the provenance allowlist. Baseline sound is synthesized. Any later recorded sound or external font needs an explicit provenance policy update; neither is necessary for M0–M4.
+Fonts and sound are not 3D/surface/animation assets. Baseline UI uses an engine-supplied licensed font with a recorded exception in the provenance allowlist. M0–M4 baseline sound was synthesized. [ADR-055](decisions.md#adr-055--accepted-generated-pcm-combat-sample-banks-t086) authorizes a deterministic generated (or provenance-recorded found) PCM combat sample bank for non-commercial builds; see [features/audio.md](features/audio.md). Extracting audio from third-party commercial games remains out of scope.
 
 ## Non-goals for the first release slice
 

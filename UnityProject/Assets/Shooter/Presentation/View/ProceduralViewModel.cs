@@ -44,7 +44,7 @@ namespace Shooter.Presentation.View
 
         public void ResetForLife(byte weaponSlot = ProductAuthorityActionView.RifleSlot)
         {
-            if (weaponSlot > ProductAuthorityActionView.PistolSlot)
+            if (weaponSlot > ProductAuthorityActionView.MaxSlot)
                 throw new ArgumentOutOfRangeException(nameof(weaponSlot));
             activeSlot = weaponSlot;
             reloadPhase = 0f;
@@ -56,7 +56,7 @@ namespace Shooter.Presentation.View
 
         public void SetActiveWeaponSlot(byte weaponSlot)
         {
-            if (weaponSlot > ProductAuthorityActionView.PistolSlot)
+            if (weaponSlot > ProductAuthorityActionView.MaxSlot)
                 throw new ArgumentOutOfRangeException(nameof(weaponSlot));
             if (activeSlot != weaponSlot)
             {
@@ -107,9 +107,12 @@ namespace Shooter.Presentation.View
 
                 if (ev.Kind == CombatEventKind.ShotAccepted)
                 {
-                    recoilPitchVel += activeSlot == ProductAuthorityActionView.PistolSlot ? 3.2f : 2.5f;
-                    recoilYawVel += ((ev.Id.Ordinal & 1) == 0 ? -1f : 1f) *
-                        (activeSlot == ProductAuthorityActionView.PistolSlot ? 0.85f : 0.6f);
+                    if (ProductAuthorityActionView.IsGunSlot(activeSlot))
+                    {
+                        recoilPitchVel += activeSlot == ProductAuthorityActionView.PistolSlot ? 3.2f : 2.5f;
+                        recoilYawVel += ((ev.Id.Ordinal & 1) == 0 ? -1f : 1f) *
+                            (activeSlot == ProductAuthorityActionView.PistolSlot ? 0.85f : 0.6f);
+                    }
                 }
                 else if (ev.Kind == CombatEventKind.ReloadStarted && ev.Payload is ActionPayload started)
                 {
@@ -156,8 +159,8 @@ namespace Shooter.Presentation.View
             else
                 leftGrip = new Float3(-0.12f, -0.09f, 0.33f);
 
-            float hipZ = activeSlot == ProductAuthorityActionView.PistolSlot ? 0.28f : 0.36f;
-            float hipY = activeSlot == ProductAuthorityActionView.PistolSlot ? -0.09f : -0.12f;
+            float hipZ = ProductAuthorityActionView.IsRifleSlot(activeSlot) ? 0.36f : 0.28f;
+            float hipY = ProductAuthorityActionView.IsRifleSlot(activeSlot) ? -0.12f : -0.09f;
             rightGrip = new Float3(0.085f - adsPull, hipY + ads * 0.025f, hipZ + adsPull);
             leftGrip = new Float3(leftGrip.X - adsPull * 0.5f, leftGrip.Y, leftGrip.Z + adsPull * 0.5f);
         }

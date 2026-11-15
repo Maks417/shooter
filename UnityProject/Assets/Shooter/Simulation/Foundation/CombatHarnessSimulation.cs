@@ -22,7 +22,7 @@ namespace Shooter.Simulation
             public EntityId Id;
             public byte Team;
             public MotorBodyState Motor;
-            public WeaponState[] Weapons = new WeaponState[2];
+            public WeaponState[] Weapons = WeaponSimulator.CreateDefaultLoadout();
             public byte ActiveSlot;
             public byte DesiredSlot;
             public float RecoilYaw;
@@ -46,11 +46,14 @@ namespace Shooter.Simulation
         private readonly IWorldQueries world;
         private readonly KinematicMotor motor = new KinematicMotor();
         private readonly WeaponSimulator weapons = new WeaponSimulator();
+        private readonly GrenadeSimulator grenades = new GrenadeSimulator();
         private readonly HitscanResolver hitscan = new HitscanResolver(CollisionLayers.MotorMask, CollisionLayers.BulletObstructionMask);
         private readonly GameplayPoseEvaluator pose = new GameplayPoseEvaluator();
         private readonly List<Actor> actors = new List<Actor>();
         private readonly List<CombatEvent> tickEvents = new List<CombatEvent>();
         private readonly List<AcceptedShot> acceptedShots = new List<AcceptedShot>();
+        private readonly List<AcceptedGrenade> acceptedGrenades = new List<AcceptedGrenade>();
+        private readonly List<GrenadeExplosion> grenadeExplosions = new List<GrenadeExplosion>();
         private readonly List<PendingShot> pendingShots = new List<PendingShot>();
         private readonly List<HitVolume> hitVolumes = new List<HitVolume>();
         private readonly ulong authoritySessionId;
@@ -93,7 +96,7 @@ namespace Shooter.Simulation
                 Id = id,
                 Team = team,
                 Motor = new MotorBodyState(feet, default, yaw, 0, Stance.Standing, 1.8f, true, new SurfaceId(100), new Float3(0, 1, 0), 0, 0, 0, false),
-                Weapons = new[] { WeaponSimulator.CreateLoaded(WeaponDefinition.Rifle), WeaponSimulator.CreateLoaded(WeaponDefinition.Pistol) }
+                Weapons = WeaponSimulator.CreateDefaultLoadout()
             });
             matchState = MatchState.Playing;
             return id;
@@ -151,11 +154,7 @@ namespace Shooter.Simulation
                     0,
                     0,
                     false);
-                actor.Weapons = new[]
-                {
-                    WeaponSimulator.CreateLoaded(WeaponDefinition.Rifle),
-                    WeaponSimulator.CreateLoaded(WeaponDefinition.Pistol)
-                };
+                actor.Weapons = WeaponSimulator.CreateDefaultLoadout();
                 actor.ActiveSlot = 0;
                 actor.DesiredSlot = 0;
                 actor.RecoilYaw = 0;
@@ -251,6 +250,7 @@ namespace Shooter.Simulation
             tickEvents.Clear();
             hitVolumes.Clear();
             pendingShots.Clear();
+            grenadeExplosions.Clear();
             int accepted = 0, rejected = 0, shots = 0, damageEvents = 0;
 
             var activeById = new Dictionary<ulong, Actor>(actors.Count);
@@ -292,8 +292,10 @@ namespace Shooter.Simulation
 
                 if (nextEvent.IsEmpty) nextEvent = new EventId(authoritySessionId, requestedTick, actor.Id, 0);
                 weapons.Step(requestedTick, cmd.Buttons, cmd.SelectedSlot, actor.Alive, actor.Motor.SprintActive, actor.Weapons,
-                    ref actor.ActiveSlot, ref actor.DesiredSlot, acceptedShots, tickEvents, ref nextEvent, actor.Id);
+                    ref actor.ActiveSlot, ref actor.DesiredSlot, acceptedShots, acceptedGrenades, tickEvents, ref nextEvent, actor.Id);
                 for (int s = 0; s < acceptedShots.Count; s++) pendingShots.Add(new PendingShot(actor, acceptedShots[s]));
+                for (int g = 0; g < acceptedGrenades.Count; g++)
+                    ResolveGrenadeAction(actor, acceptedGrenades[g], requestedTick, ref nextEvent);
 
                 actor.Motor = motor.Step(actor.Motor, cmd, requestedTick, world, freshCommand && SlideRequested(actor.Id, localSlideActor, slideActors));
                 AuthoritativeRecoil.Decay(ref actor.RecoilYaw, ref actor.RecoilPitch);
@@ -318,39 +320,36 @@ namespace Shooter.Simulation
                 float aimYaw = shooter.Motor.AimYaw + shooter.RecoilYaw;
                 float aimPitch = shooter.Motor.AimPitch + shooter.RecoilPitch;
                 var aim = pose.AimDirection(aimYaw, aimPitch);
-                var muzzle = pose.CanonicalMuzzle(eye, aimYaw, aimPitch);
-                var result = hitscan.Resolve(new HitscanRequest(shooter.Id, eye, muzzle, aim, shot.Definition, shot.ShotIndex, shot.Ads, shotSeed, 1), world, volumeSnapshot);
+                // Knife: strike from the eye along aim so short range is measured from the player, not the rifle muzzle.
+                Float3 origin = shot.Definition.FireMode == FireMode.Melee ? eye : pose.CanonicalMuzzle(eye, aimYaw, aimPitch);
+                Float3 muzzleForProbe = shot.Definition.FireMode == FireMode.Melee ? eye : origin;
+                var result = hitscan.Resolve(new HitscanRequest(shooter.Id, eye, muzzleForProbe, aim, shot.Definition, shot.ShotIndex, shot.Ads, shotSeed, 1), world, volumeSnapshot);
                 if (result.BlockedAtMuzzle) continue;
                 tickEvents.Add(new CombatEvent(nextEvent, CombatEventKind.ShotAccepted, shooter.Id, default,
                     new ShotPayload(shot.Definition.Id, shot.ShotIndex, result.Origin, result.UnitDirection, shotSeed, 1)));
                 nextEvent = nextEvent.NextOrdinal();
                 shots++;
-                AuthoritativeRecoil.ApplyImpulse(shot.Definition, shot.ShotIndex, shotSeed, ref shooter.RecoilYaw, ref shooter.RecoilPitch);
+                if (shot.Definition.FireMode != FireMode.Melee)
+                    AuthoritativeRecoil.ApplyImpulse(shot.Definition, shot.ShotIndex, shotSeed, ref shooter.RecoilYaw, ref shooter.RecoilPitch);
                 if (!result.Impacted) continue;
                 ushort region = result.Impact.EntityId.IsValid ? result.Impact.SurfaceTag : (ushort)0;
                 tickEvents.Add(new CombatEvent(nextEvent, CombatEventKind.Impact, shooter.Id, result.Impact.EntityId,
                     new ImpactPayload(result.Impact.Point, result.Impact.Normal, result.Impact.SurfaceTag, region)));
                 nextEvent = nextEvent.NextOrdinal();
                 if (!result.Impact.EntityId.IsValid) continue;
-                Actor? target = null;
-                for (int a = 0; a < actors.Count; a++) if (actors[a].Id.Equals(result.Impact.EntityId)) { target = actors[a]; break; }
-                if (target == null || !target.Alive || target.Team == shooter.Team) continue;
-                if (region < 1 || region > 6) region = 2;
-                ushort amount = DamageMath.RoundDamage(shot.Definition.BaseDamage, region);
-                DamageMath.Apply(target.Health, amount, out ushort remaining);
-                target.Health = remaining;
-                tickEvents.Add(new CombatEvent(nextEvent, CombatEventKind.DamageApplied, shooter.Id, target.Id, new DamagePayload(amount, remaining, region)));
-                nextEvent = nextEvent.NextOrdinal();
-                damageEvents++;
-                if (remaining == 0)
-                {
-                    target.Alive = false;
-                    target.Motor = new MotorBodyState(target.Motor.Feet, default, target.Motor.AimYaw, target.Motor.AimPitch, Stance.Dead, target.Motor.CapsuleHeight,
-                        target.Motor.Grounded, target.Motor.GroundSurfaceId, target.Motor.GroundNormal, target.Motor.LastGroundedTick, target.Motor.JumpConsumedSequence, target.Motor.LocomotionDistanceMeters, false);
-                    tickEvents.Add(new CombatEvent(nextEvent, CombatEventKind.Death, shooter.Id, target.Id, new DeathPayload(shooter.Id)));
-                    nextEvent = nextEvent.NextOrdinal();
-                }
+                ApplyDirectDamage(shooter, result.Impact.EntityId, region, shot.Definition.BaseDamage, ref nextEvent, ref damageEvents);
             }
+
+            // Preserve any same-tick in-hand detonations queued during weapon step, then append flight fuse expiry.
+            var pendingHandBooms = grenadeExplosions.Count > 0 ? new List<GrenadeExplosion>(grenadeExplosions) : null;
+            grenades.Step(requestedTick, 1f / ContractVersion.SimulationHz, world, grenadeExplosions);
+            if (pendingHandBooms != null)
+            {
+                for (int i = 0; i < pendingHandBooms.Count; i++)
+                    grenadeExplosions.Add(pendingHandBooms[i]);
+            }
+            for (int i = 0; i < grenadeExplosions.Count; i++)
+                ResolveExplosion(grenadeExplosions[i], ref nextEvent, ref damageEvents);
 
             // Out-of-world kill volume: once per tick, after movement and after bullet resolution, so a bullet kill
             // earlier in this tick wins (the actor is already !Alive and skipped: no double death). The death is an
@@ -410,6 +409,86 @@ namespace Shooter.Simulation
             var slot = events[publishedEvents];
             slot.Readers++;
             return new EventLease(lastEvents, () => { MainThread(); slot.Readers--; });
+        }
+
+        private void ResolveGrenadeAction(Actor thrower, AcceptedGrenade action, uint tick, ref EventId nextEvent)
+        {
+            if (nextEvent.IsEmpty) nextEvent = new EventId(authoritySessionId, tick, thrower.Id, 0);
+            var eye = pose.EyePosition(thrower.Motor.Feet, thrower.Motor.Stance, thrower.Motor.CapsuleHeight);
+            float yaw = thrower.Motor.AimYaw;
+            float pitch = thrower.Motor.AimPitch;
+            var aim = pose.AimDirection(yaw, pitch);
+            var origin = pose.CanonicalMuzzle(eye, yaw, pitch);
+            if (action.DetonateInHand || action.RemainingFuseTicks == 0)
+            {
+                grenadeExplosions.Add(new GrenadeExplosion(thrower.Id, thrower.Id, thrower.Team, thrower.Motor.Feet, action.Definition, action.ShotIndex));
+                return;
+            }
+
+            if (!grenades.TrySpawn(thrower.Id, thrower.Team, origin, aim, action.Definition, action.RemainingFuseTicks, tick, action.ShotIndex, out var spawned))
+                return;
+            tickEvents.Add(new CombatEvent(nextEvent, CombatEventKind.ProjectileSpawned, thrower.Id, default,
+                new ProjectilePayload(spawned.Id, origin, spawned.Velocity, action.Definition.Id)));
+            nextEvent = nextEvent.NextOrdinal();
+        }
+
+        private void ResolveExplosion(GrenadeExplosion boom, ref EventId nextEvent, ref int damageEvents)
+        {
+            if (nextEvent.IsEmpty) nextEvent = new EventId(authoritySessionId, tick, boom.ThrowerId.IsValid ? boom.ThrowerId : new EntityId(1), 0);
+            tickEvents.Add(new CombatEvent(nextEvent, CombatEventKind.Impact, boom.ThrowerId, default,
+                new ImpactPayload(boom.Position, new Float3(0, 1, 0), 1, 0)));
+            nextEvent = nextEvent.NextOrdinal();
+
+            float radius = boom.Definition.BlastRadiusMeters;
+            for (int a = 0; a < actors.Count; a++)
+            {
+                var victim = actors[a];
+                if (!victim.Alive) continue;
+                // Friendly damage stays zero; self-damage is allowed.
+                if (victim.Team == boom.ThrowerTeam && !victim.Id.Equals(boom.ThrowerId)) continue;
+                var torso = pose.EyePosition(victim.Motor.Feet, victim.Motor.Stance, victim.Motor.CapsuleHeight);
+                float dx = torso.X - boom.Position.X, dy = torso.Y - boom.Position.Y, dz = torso.Z - boom.Position.Z;
+                float dist = (float)Math.Sqrt(dx * dx + dy * dy + dz * dz);
+                if (dist >= radius) continue;
+                ushort amount = GrenadeSimulator.BlastDamage(boom.Definition, dist);
+                if (amount == 0) continue;
+                DamageMath.Apply(victim.Health, amount, out ushort remaining);
+                victim.Health = remaining;
+                tickEvents.Add(new CombatEvent(nextEvent, CombatEventKind.DamageApplied, boom.ThrowerId, victim.Id,
+                    new DamagePayload(amount, remaining, 2)));
+                nextEvent = nextEvent.NextOrdinal();
+                damageEvents++;
+                if (remaining == 0)
+                {
+                    victim.Alive = false;
+                    victim.Motor = new MotorBodyState(victim.Motor.Feet, default, victim.Motor.AimYaw, victim.Motor.AimPitch, Stance.Dead, victim.Motor.CapsuleHeight,
+                        victim.Motor.Grounded, victim.Motor.GroundSurfaceId, victim.Motor.GroundNormal, victim.Motor.LastGroundedTick, victim.Motor.JumpConsumedSequence, victim.Motor.LocomotionDistanceMeters, false);
+                    tickEvents.Add(new CombatEvent(nextEvent, CombatEventKind.Death, boom.ThrowerId, victim.Id, new DeathPayload(boom.ThrowerId)));
+                    nextEvent = nextEvent.NextOrdinal();
+                }
+            }
+        }
+
+        private void ApplyDirectDamage(Actor shooter, EntityId targetId, ushort region, ushort baseDamage, ref EventId nextEvent, ref int damageEvents)
+        {
+            Actor? target = null;
+            for (int a = 0; a < actors.Count; a++) if (actors[a].Id.Equals(targetId)) { target = actors[a]; break; }
+            if (target == null || !target.Alive || target.Team == shooter.Team) return;
+            if (region < 1 || region > 6) region = 2;
+            ushort amount = DamageMath.RoundDamage(baseDamage, region);
+            DamageMath.Apply(target.Health, amount, out ushort remaining);
+            target.Health = remaining;
+            tickEvents.Add(new CombatEvent(nextEvent, CombatEventKind.DamageApplied, shooter.Id, target.Id, new DamagePayload(amount, remaining, region)));
+            nextEvent = nextEvent.NextOrdinal();
+            damageEvents++;
+            if (remaining == 0)
+            {
+                target.Alive = false;
+                target.Motor = new MotorBodyState(target.Motor.Feet, default, target.Motor.AimYaw, target.Motor.AimPitch, Stance.Dead, target.Motor.CapsuleHeight,
+                    target.Motor.Grounded, target.Motor.GroundSurfaceId, target.Motor.GroundNormal, target.Motor.LastGroundedTick, target.Motor.JumpConsumedSequence, target.Motor.LocomotionDistanceMeters, false);
+                tickEvents.Add(new CombatEvent(nextEvent, CombatEventKind.Death, shooter.Id, target.Id, new DeathPayload(shooter.Id)));
+                nextEvent = nextEvent.NextOrdinal();
+            }
         }
     }
 }

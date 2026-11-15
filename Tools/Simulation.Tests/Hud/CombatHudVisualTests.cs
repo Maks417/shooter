@@ -111,5 +111,43 @@ namespace Shooter.Simulation.Tests.Hud
             Assert.Equal(w * 0.5f, CombatHudVisual.SegmentFill(30f, 1, w));
             Assert.Equal(w, CombatHudVisual.SegmentFill(100f, 4, w));
         }
+
+        [Fact]
+        public void Gunfire_reveal_accepts_only_enemy_non_local_shots()
+        {
+            Assert.True(CombatHudVisual.ShouldRevealGunfire(true, isLocalHuman: false, isEnemyTeam: true));
+            Assert.False(CombatHudVisual.ShouldRevealGunfire(true, isLocalHuman: true, isEnemyTeam: true));
+            Assert.False(CombatHudVisual.ShouldRevealGunfire(true, isLocalHuman: false, isEnemyTeam: false));
+            Assert.False(CombatHudVisual.ShouldRevealGunfire(false, isLocalHuman: false, isEnemyTeam: true));
+        }
+
+        [Fact]
+        public void Gunfire_reveal_holds_then_fades()
+        {
+            Assert.Equal(0.95f, CombatHudVisual.GunfireRevealAlpha(CombatHudVisual.GunfireRevealSeconds));
+            Assert.Equal(0.95f, CombatHudVisual.GunfireRevealAlpha(CombatHudVisual.GunfireRevealFadeSeconds));
+            Assert.Equal(0.475f, CombatHudVisual.GunfireRevealAlpha(CombatHudVisual.GunfireRevealFadeSeconds * 0.5f), 4);
+            Assert.Equal(0f, CombatHudVisual.GunfireRevealAlpha(0f));
+            Assert.Equal(0f, CombatHudVisual.GunfireRevealAlpha(-1f));
+        }
+
+        [Fact]
+        public void Gunfire_reveal_ring_reuses_entity_then_oldest()
+        {
+            var ids = new ulong[4];
+            var until = new float[4];
+            Assert.Equal(0, CombatHudVisual.PickGunfireRevealSlot(ids, until, 10, now: 1f, capacity: 4));
+            ids[0] = 10; until[0] = 5f;
+            ids[1] = 20; until[1] = 3f;
+            ids[2] = 30; until[2] = 8f;
+            ids[3] = 40; until[3] = 4f;
+            // Active entity 20 refreshes its own slot.
+            Assert.Equal(1, CombatHudVisual.PickGunfireRevealSlot(ids, until, 20, now: 2f, capacity: 4));
+            // New entity takes the soonest-expiring slot (until 3).
+            Assert.Equal(1, CombatHudVisual.PickGunfireRevealSlot(ids, until, 99, now: 2f, capacity: 4));
+            // Expired same-entity slot is not treated as active; oldest wins.
+            until[0] = 1.5f;
+            Assert.Equal(0, CombatHudVisual.PickGunfireRevealSlot(ids, until, 10, now: 2f, capacity: 4));
+        }
     }
 }

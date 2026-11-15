@@ -22,6 +22,10 @@ namespace Shooter.Presentation.Hud
         public const int MaxDamageIndicators = 4;
         public const float DamageIndicatorRadius = 118f;
         public const float DamageIndicatorLength = 64f;
+        /// <summary>ADR-058 minimap gunfire reveal: temporary enemy blip after ShotAccepted (not continuous sensing).</summary>
+        public const float GunfireRevealSeconds = 2.5f;
+        public const float GunfireRevealFadeSeconds = 0.5f;
+        public const int MaxGunfireReveals = 8;
 
         /// <summary>
         /// Screen angle of a damage source relative to the viewer's aim yaw (radians in [-pi, pi)): 0 is straight
@@ -44,6 +48,40 @@ namespace Shooter.Presentation.Hud
             float t = remainingSeconds / DamageIndicatorSeconds;
             if (t >= 0.5f) return 0.9f;
             return 0.9f * (t / 0.5f);
+        }
+
+        /// <summary>
+        /// True when an authority ShotAccepted should create/refresh a minimap gunfire blip.
+        /// Local human and allied shots stay off the map; silent enemies are never plotted.
+        /// </summary>
+        public static bool ShouldRevealGunfire(bool instigatorValid, bool isLocalHuman, bool isEnemyTeam)
+            => instigatorValid && !isLocalHuman && isEnemyTeam;
+
+        /// <summary>Gunfire-reveal opacity: full until the last fade window, then linear to zero.</summary>
+        public static float GunfireRevealAlpha(float remainingSeconds)
+        {
+            if (remainingSeconds <= 0f) return 0f;
+            if (remainingSeconds >= GunfireRevealFadeSeconds) return 0.95f;
+            return 0.95f * (remainingSeconds / GunfireRevealFadeSeconds);
+        }
+
+        /// <summary>
+        /// Ring slot for a gunfire reveal: reuse the active slot for the same entity, else the oldest expiry.
+        /// </summary>
+        public static int PickGunfireRevealSlot(ulong[] ids, float[] until, ulong entityId, float now, int capacity)
+        {
+            if (ids == null || until == null || capacity <= 0) return 0;
+            int n = capacity;
+            if (ids.Length < n) n = ids.Length;
+            if (until.Length < n) n = until.Length;
+            if (n <= 0) return 0;
+            int oldest = 0;
+            for (int i = 0; i < n; i++)
+            {
+                if (ids[i] == entityId && until[i] > now) return i;
+                if (until[i] < until[oldest]) oldest = i;
+            }
+            return oldest;
         }
 
         /// <summary>Opacity for a kill-feed row given remaining display time.</summary>

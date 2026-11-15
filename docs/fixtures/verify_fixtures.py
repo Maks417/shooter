@@ -125,7 +125,7 @@ def main():
     require(count+600<65535,'warmup/capture ammo capacity')
     result=read('benchmark-result.json');require(result['gateStatus']=='PendingHardware','fixture must not imply measurement')
     require(all(x is None for x in result['metrics']['frameMs'].values()),'fabricated timing')
-    require(len(read('prediction-state.json')['weaponSlots'])==2,'prediction slots')
+    require(len(read('prediction-state.json')['weaponSlots'])==4,'prediction slots')
     # Mutation tests independently exercise the subset validator.
     require(bool(check_schema(dict(command,unexpected=1),read('command.schema.json'))),'extra field acceptance')
     require(bool(check_schema(dict(command,selectedSlot=2),read('command.schema.json'))),'invalid enum acceptance')

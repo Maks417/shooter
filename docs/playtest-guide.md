@@ -57,6 +57,7 @@ These come from `Game/Contracts/GameData.cs:DefaultBindings` and `Presentation/I
 | Fire / aim | Left / right mouse button |
 | Reload | R |
 | Rifle / pistol | 1 / 2 |
+| Last weapon | Q (toggles previous rifle/pistol) |
 | Sprint / crouch / jump | Left Shift / Left Ctrl / Space |
 | Slide (подкат) | Hold Left Shift while sprinting forward, then press F |
 | Scoreboard | Hold Tab |

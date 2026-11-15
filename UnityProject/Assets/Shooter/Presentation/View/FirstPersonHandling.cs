@@ -41,7 +41,7 @@ namespace Shooter.Presentation.View
         public void Step(Float3 feet, byte weaponSlot, float dt, bool sliding)
         {
             if (!float.IsFinite(dt) || dt < 0f) throw new ArgumentOutOfRangeException(nameof(dt));
-            if (weaponSlot > ProductAuthorityActionView.PistolSlot) throw new ArgumentOutOfRangeException(nameof(weaponSlot));
+            if (weaponSlot > ProductAuthorityActionView.MaxSlot) throw new ArgumentOutOfRangeException(nameof(weaponSlot));
             if (weaponSlot != slot) { slot = weaponSlot; equip = 0f; swayBlend = 0f; }
             if (dt > 0f)
             {
@@ -70,27 +70,30 @@ namespace Shooter.Presentation.View
         /// <summary>Camera-local hip bias layered on the procedural right-hand grip (meters).</summary>
         public static Float3 NearFieldHipBias(byte weaponSlot)
         {
-            return ProductAuthorityActionView.IsPistolSlot(weaponSlot)
-                ? new Float3(0.08f, -0.085f, 0.11f)
-                : new Float3(0.14f, -0.12f, 0.28f);
+            return ProductAuthorityActionView.IsRifleSlot(weaponSlot)
+                ? new Float3(0.14f, -0.12f, 0.28f)
+                : new Float3(0.08f, -0.085f, 0.11f);
         }
 
         public static float NearFieldScale(byte weaponSlot) =>
-            ProductAuthorityActionView.IsPistolSlot(weaponSlot) ? PistolNearFieldScale : RifleNearFieldScale;
+            ProductAuthorityActionView.IsRifleSlot(weaponSlot) ? RifleNearFieldScale : PistolNearFieldScale;
 
         /// <summary>Static hip composition; fade fully to identity for the verified ADS sight ray.</summary>
         public static Float3 HipRotationDegrees(byte slot, float ads)
         {
-            if (slot > 1 || !float.IsFinite(ads)) throw new ArgumentOutOfRangeException(nameof(slot));
+            if (slot > ProductAuthorityActionView.MaxSlot || !float.IsFinite(ads)) throw new ArgumentOutOfRangeException(nameof(slot));
             float hip = 1f - Math.Clamp(ads, 0f, 1f);
-            return slot == 0 ? new Float3(0, -18f * hip, -5f * hip) : new Float3(0, -3f * hip, -2f * hip);
+            return ProductAuthorityActionView.IsRifleSlot(slot)
+                ? new Float3(0, -18f * hip, -5f * hip)
+                : new Float3(0, -3f * hip, -2f * hip);
         }
 
         /// <summary>Camera-only support-hand reach toward the magazine; returns to its packaged grip at both endpoints.</summary>
         public static Float3 SupportHandOffset(byte slot, float reloadPhase, bool reducedMotion)
         {
-            if (slot > 1) throw new ArgumentOutOfRangeException(nameof(slot));
+            if (slot > ProductAuthorityActionView.MaxSlot) throw new ArgumentOutOfRangeException(nameof(slot));
             if (!float.IsFinite(reloadPhase)) throw new ArgumentOutOfRangeException(nameof(reloadPhase));
+            if (!ProductAuthorityActionView.IsGunSlot(slot)) return default;
             float phase = Math.Clamp(reloadPhase, 0f, 1f);
             float reach = (float)Math.Sin(Math.PI * phase);
             reach *= reach;

@@ -22,7 +22,7 @@ Projectile interface supports origin, velocity, gravity, drag ID, spawn tick and
 
 ## Feedback
 
-ShotAccepted event drives synthesized report, mesh muzzle flash/analytic glow, casing proxy and recoil. Impact creates bounded generated geometry/analytic decal or surface patch with pooled lifetime; no image sprite. Audio occlusion takes world queries under a budget. Hit confirmation follows server result; local predicted shots are provisional. First-person arms, weapon camera FOV and depth handling cannot reveal enemies through walls. Accessibility allows reducing camera shake, sway, flash and blur without changing authoritative spread.
+ShotAccepted event drives a weapon-specific sample-bank report (rifle/pistol under ADR-055), mesh muzzle flash/analytic glow, casing proxy and recoil. The first-person full-screen muzzle overlay and “Shot” subtitle are local-instigator only (ADR-056); remote bot shots must not flash the whole screen. Impact creates bounded generated geometry/analytic decal or surface patch with pooled lifetime; no image sprite. Reload start/complete, damage-taken and death also emit presentation audio from the same bank. Audio occlusion takes world queries under a budget (distance attenuation and HF rolloff ship first). Hit confirmation follows server result; local predicted shots are provisional. First-person arms, weapon camera FOV and depth handling cannot reveal enemies through walls. Accessibility allows reducing camera shake, sway, flash and blur without changing authoritative spread. Rifle/pistol select remains 1/2; Q toggles the last used weapon slot (ADR-056).
 
 ## Acceptance
 
