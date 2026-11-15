@@ -106,13 +106,28 @@ namespace Shooter.Tests
                     Is.EqualTo(ProductSurfaceResponse.CoverMetal.BumpScale).Within(0.0001f));
                 Assert.That(root.GetComponentsInChildren<Collider>().Length, Is.Zero,
                     "Apron/cover overlays must stay presentation-only.");
-                Material solidsMat = view.transform.Find("Product map solids").GetComponent<MeshRenderer>().sharedMaterial;
-                Assert.That(solidsMat.GetColor("_BaseColor"), Is.EqualTo(ProductSurfaceResponse.Concrete.BaseColor));
+                MeshRenderer solidsRenderer = view.transform.Find("Product map solids").GetComponent<MeshRenderer>();
+                Material[] solidsMats = solidsRenderer.sharedMaterials;
+                Assert.That(solidsMats.Length, Is.GreaterThanOrEqualTo(2), "Packaged solids must expose multi-material submeshes.");
+                Assert.That(solidsMats[0].GetColor("_BaseColor"), Is.EqualTo(ProductSurfaceResponse.Concrete.BaseColor));
+                bool sawMetal = false, sawTrim = false;
+                for (int i = 0; i < solidsMats.Length; i++)
+                {
+                    Color c = solidsMats[i].GetColor("_BaseColor");
+                    if (Approximately(c, ProductSurfaceResponse.CoverMetal.BaseColor)) sawMetal = true;
+                    if (Approximately(c, ProductSurfaceResponse.TrimPlaster.BaseColor)) sawTrim = true;
+                }
+                Assert.That(sawMetal, Is.True, "Metal cover submesh material missing on packaged solids.");
+                Assert.That(sawTrim, Is.True, "Trim plaster submesh material missing on packaged solids.");
                 view.ClearVisuals();
                 Assert.That(view.GetComponentsInChildren<MeshRenderer>().Length, Is.Zero);
             }
             finally { Object.DestroyImmediate(root); }
         }
+
+        private static bool Approximately(Color a, Color b) =>
+            Mathf.Abs(a.r - b.r) < 0.0001f && Mathf.Abs(a.g - b.g) < 0.0001f &&
+            Mathf.Abs(a.b - b.b) < 0.0001f && Mathf.Abs(a.a - b.a) < 0.0001f;
 
         [Test]
         public void InvalidCompanionCannotSilentlyBecomeFlatMaterial()

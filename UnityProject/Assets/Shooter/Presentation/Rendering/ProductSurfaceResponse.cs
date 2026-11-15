@@ -33,6 +33,10 @@ namespace Shooter.Presentation.Rendering
         public static readonly ProductSurfaceResponse Concrete = new ProductSurfaceResponse(
             new Color(0.90f, 0.91f, 0.93f, 1f), 1.38f, 1f, 0.02f, 0.18f);
 
+        /// <summary>Warmer plaster for door/window frames and curb trim (reuses packaged concrete planes).</summary>
+        public static readonly ProductSurfaceResponse TrimPlaster = new ProductSurfaceResponse(
+            new Color(0.86f, 0.84f, 0.78f, 1f), 1.22f, 0.94f, 0.01f, 0.22f);
+
         public static readonly ProductSurfaceResponse CoverMetal = new ProductSurfaceResponse(
             new Color(0.70f, 0.74f, 0.78f, 1f), 1.18f, 0.82f, 0.72f, 0.50f);
 
