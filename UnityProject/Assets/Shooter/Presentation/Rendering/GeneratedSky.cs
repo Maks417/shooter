@@ -14,17 +14,18 @@ namespace Shooter.Presentation
             public Rgb(float r, float g, float b) { R = r; G = g; B = b; }
         }
 
-        // Bodycam/BF grounded daylight: natural outdoor sky, soft haze, warm ground bounce; mid-range readable.
-        public static readonly Rgb DefaultZenith = new Rgb(.30f, .40f, .52f);
-        public static readonly Rgb DefaultHorizon = new Rgb(.58f, .62f, .64f);
-        public static readonly Rgb DefaultGround = new Rgb(.26f, .24f, .20f);
-        public const float DefaultFogStartMeters = 32f;
-        public const float DefaultFogEndMeters = 105f;
-        public const float DefaultFogDensity = .0075f;
+        // Bodycam/BFV grounded daylight: cooler zenith, brighter horizon band, warm ground bounce.
+        // Linear fog stays mid-range (~40–100 m) so 5v5/6v6 silhouettes remain readable.
+        public static readonly Rgb DefaultZenith = new Rgb(.24f, .36f, .52f);
+        public static readonly Rgb DefaultHorizon = new Rgb(.64f, .66f, .68f);
+        public static readonly Rgb DefaultGround = new Rgb(.22f, .20f, .16f);
+        public const float DefaultFogStartMeters = 40f;
+        public const float DefaultFogEndMeters = 100f;
+        public const float DefaultFogDensity = .007f;
 
         /// <summary>
-        /// Mild map-id atmosphere variants (presentation only). Does not change collision, nav, or authority.
-        /// training-compound: cooler compound air; depot-yard: warmer dusty yard haze.
+        /// Map-id atmosphere variants (presentation only). Does not change collision, nav, or authority.
+        /// training-compound: cooler plaster/concrete air; depot-yard: warmer dusty yard haze.
         /// </summary>
         public static void ResolveProductPalette(
             string mapId,
@@ -40,19 +41,24 @@ namespace Shooter.Presentation
             fogDensity = DefaultFogDensity;
             if (string.Equals(mapId, "training-compound", StringComparison.Ordinal))
             {
-                zenith = new Rgb(.28f, .40f, .50f);
-                horizon = new Rgb(.56f, .62f, .63f);
-                ground = new Rgb(.24f, .26f, .20f);
+                // Cooler outdoor compound: deeper blue zenith, clean cool horizon, modest depth fog.
+                zenith = new Rgb(.20f, .34f, .50f);
+                horizon = new Rgb(.58f, .64f, .70f);
+                ground = new Rgb(.18f, .20f, .17f);
+                fogStartMeters = 40f;
+                fogEndMeters = 100f;
+                fogDensity = .0068f;
                 return;
             }
             if (string.Equals(mapId, "depot-yard", StringComparison.Ordinal))
             {
-                zenith = new Rgb(.34f, .40f, .48f);
-                horizon = new Rgb(.62f, .60f, .56f);
-                ground = new Rgb(.30f, .26f, .20f);
-                fogStartMeters = 28f;
-                fogEndMeters = 95f;
-                fogDensity = .0085f;
+                // Warmer dusty yard: muted zenith, amber haze, earlier fog without washing silhouettes.
+                zenith = new Rgb(.30f, .38f, .44f);
+                horizon = new Rgb(.72f, .62f, .50f);
+                ground = new Rgb(.34f, .26f, .16f);
+                fogStartMeters = 36f;
+                fogEndMeters = 92f;
+                fogDensity = .008f;
                 return;
             }
             zenith = DefaultZenith;
@@ -166,6 +172,8 @@ namespace Shooter.Presentation
             RenderSettings.ambientSkyColor = Zenith;
             RenderSettings.ambientEquatorColor = Horizon;
             RenderSettings.ambientGroundColor = Ground;
+            // Slightly under-unity ambient so directional hard shadows read on Low/iGPU.
+            RenderSettings.ambientIntensity = .88f;
 
             // Panoramic accepts a generated lat-long strip; Cubemap would need a Cubemap asset.
             gradient = BuildGradientTexture(zenith, horizon, ground);
@@ -174,7 +182,7 @@ namespace Shooter.Presentation
             {
                 skybox = new Material(shader) { name = "Generated sky gradient" };
                 if (skybox.HasProperty("_MainTex")) skybox.SetTexture("_MainTex", gradient);
-                if (skybox.HasProperty("_Exposure")) skybox.SetFloat("_Exposure", 1f);
+                if (skybox.HasProperty("_Exposure")) skybox.SetFloat("_Exposure", 1.05f);
                 if (skybox.HasProperty("_Rotation")) skybox.SetFloat("_Rotation", 0f);
                 RenderSettings.skybox = skybox;
             }
@@ -200,6 +208,7 @@ namespace Shooter.Presentation
             disposed = true;
             if (RenderSettings.skybox == skybox) RenderSettings.skybox = null;
             RenderSettings.fog = false;
+            RenderSettings.ambientIntensity = 1f;
             DestroyOwned(skybox);
             DestroyOwned(gradient);
             DestroyOwned(root);
