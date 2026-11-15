@@ -32,9 +32,11 @@ namespace Shooter.Presentation.Rendering
         private Mesh? mapSolids;
         private Material? concrete;
         private Material? cover;
+        private Material? trim;
         private Material? ground;
         private Material? asphalt;
         private Material? apron;
+        private ushort[] solidsMaterialSlots = Array.Empty<ushort>();
         private GeneratedSky? sky;
         private GeneratedReflectionProbe? probe;
         private string mapId = "";
@@ -88,16 +90,14 @@ namespace Shooter.Presentation.Rendering
             Material yardSurface = PreferDepotYardAsphalt(mapId) ? asphalt! : ground!;
             Place("Product ground", new Vector3(0f, -0.02f, 0f), new Vector3(inner, 0.1f, inner), yardSurface, unitBox!);
 
-            // Packaged combined solids mesh already encodes gameplay boxes; one renderer, identity transform.
-            // Limitation (VD5/T076/T078): single-submesh packages still share one concrete slot — cover volumes
-            // baked into solids cannot get distinct metal without mesh/material splits. Presentation-only
-            // metal unit boxes from cover metadata/heuristics overlay those volumes so steel props still read.
-            // When env publishes multiple submeshes, fill every slot with concrete until material indices arrive.
+            // Packaged combined solids mesh already encodes gameplay + visual boxes with role submeshes
+            // (structure/concrete, metal/cover, trim). Presentation-only metal unit boxes still overlay
+            // cover volumes for readable crate silhouettes without mutating authority collision.
             var solidsGo = new GameObject("Product map solids") { layer = 11 };
             solidsGo.transform.SetParent(transform, false);
             solidsGo.AddComponent<MeshFilter>().sharedMesh = mapSolids;
             var solidsRenderer = solidsGo.AddComponent<MeshRenderer>();
-            AssignSolidsMaterials(solidsRenderer, mapSolids!, concrete!);
+            AssignSolidsMaterials(solidsRenderer);
             solids.Add(solidsGo);
             solidCount = boxes.Count;
             for (int i = 0; i < boxes.Count; i++)
@@ -134,7 +134,11 @@ namespace Shooter.Presentation.Rendering
                     shaderRoot["shaderException"].String != "procedural-urp-lit-v1")
                     throw new InvalidOperationException("Packaged shader provenance rejected.");
 
-                mapSolids = Own(UploadMesh(MapVisualClosure.DecodeMapMesh(visuals, MapVisualClosure.MapSolidsMeshPath), "Product map solids"));
+                var solidsData = MapVisualClosure.DecodeMapMesh(visuals, MapVisualClosure.MapSolidsMeshPath);
+                solidsMaterialSlots = new ushort[solidsData.Submeshes.Count];
+                for (int i = 0; i < solidsData.Submeshes.Count; i++)
+                    solidsMaterialSlots[i] = solidsData.Submeshes[i].MaterialSlot;
+                mapSolids = Own(UploadMesh(solidsData, "Product map solids"));
                 unitBox = Own(UploadMesh(MapVisualClosure.DecodeMapMesh(visuals, MapVisualClosure.UnitBoxMeshPath), "Product unit box"));
                 // Combined map solids retain metric UVs, so .5 repeats/m matches the two-metre recipe.
                 // The scaled unit-box ground uses 0..1 face UVs: 128 repeats across 256 metres.
@@ -143,6 +147,9 @@ namespace Shooter.Presentation.Rendering
                     ProductSurfaceResponse.Concrete, .5f);
                 cover = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[1], "Numeric cover",
                     ProductSurfaceResponse.CoverMetal, 4f);
+                // Trim reuses concrete albedo/normal/mask with a darker painted-edge response (no new package plane).
+                trim = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[0], "Numeric trim",
+                    ProductSurfaceResponse.Trim, .5f);
                 ground = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[2], "Numeric soil ground",
                     ProductSurfaceResponse.Soil, CompoundPlan.MapHalfExtent);
                 asphalt = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[3], "Numeric asphalt",
@@ -252,25 +259,34 @@ namespace Shooter.Presentation.Rendering
             return ids;
         }
 
-        private static bool LooksLikeCover(CollisionBox box)
-        {
-            return box.Size.Y <= 1.6f && box.Size.Y >= 0.8f
-                && box.Size.X <= 4f && box.Size.Z <= 4f
-                && box.Size.X >= 0.6f && box.Size.Z >= 0.6f;
-        }
+        private static bool LooksLikeCover(CollisionBox box) => MapSolidsMesh.LooksLikeMetalCover(box);
 
-        private static void AssignSolidsMaterials(MeshRenderer renderer, Mesh mesh, Material material)
+        private void AssignSolidsMaterials(MeshRenderer renderer)
         {
-            int slots = Math.Max(1, mesh.subMeshCount);
-            if (slots == 1)
+            if (mapSolids == null || concrete == null || cover == null || trim == null)
+                throw new InvalidOperationException("Solids materials require bound packaged visuals.");
+            int slots = Math.Max(1, mapSolids.subMeshCount);
+            if (slots == 1 && solidsMaterialSlots.Length == 0)
             {
-                renderer.sharedMaterial = material;
+                renderer.sharedMaterial = concrete;
                 return;
             }
             var materials = new Material[slots];
             for (int i = 0; i < slots; i++)
-                materials[i] = material;
+            {
+                ushort role = i < solidsMaterialSlots.Length
+                    ? solidsMaterialSlots[i]
+                    : (ushort)MapSolidsMaterialRole.StructureConcrete;
+                materials[i] = MaterialForRole(role);
+            }
             renderer.sharedMaterials = materials;
+        }
+
+        private Material MaterialForRole(ushort role)
+        {
+            if (role == (ushort)MapSolidsMaterialRole.MetalCover) return cover!;
+            if (role == (ushort)MapSolidsMaterialRole.Trim) return trim!;
+            return concrete!;
         }
 
         private void Place(string label, Vector3 center, Vector3 size, Material material, Mesh mesh)
@@ -349,9 +365,11 @@ namespace Shooter.Presentation.Rendering
             unitBox = null;
             concrete = null;
             cover = null;
+            trim = null;
             ground = null;
             asphalt = null;
             apron = null;
+            solidsMaterialSlots = Array.Empty<ushort>();
             for (int i = 0; i < owned.Count; i++)
                 if (owned[i] != null) DestroyObject(owned[i]);
             owned.Clear();

@@ -6,9 +6,10 @@ using Shooter.Contracts;
 namespace Shooter.Generation.Environment
 {
     /// <summary>
-    /// T078 VD5 software: non-gameplay architectural trim (eaves, door frames, windows, baseboards,
-    /// lane curbs, industrial extras). Appends after gameplay geometry; never mutates gameplay boxes.
-    /// Stable ids use high bases that do not collide with compound (10000+) / depot (20000+) gameplay.
+    /// T078/T079 VD5 software: non-gameplay architectural trim (eaves, door frames, windows, baseboards,
+    /// lane curbs, lamp posts, ridge caps, fence posts, industrial extras). Appends after gameplay
+    /// geometry; never mutates gameplay boxes. Stable ids use high bases that do not collide with
+    /// compound (10000+) / depot (20000+) gameplay.
     /// </summary>
     public static class ArenaVisualDetail
     {
@@ -29,6 +30,13 @@ namespace Shooter.Generation.Environment
         private const float WindowWidth = 1.4f;
         private const float CurbHeight = 0.18f;
         private const float CurbWidth = 0.35f;
+        private const float LampPostHeight = 4.2f;
+        private const float LampPostWidth = 0.16f;
+        private const float LampHeadSize = 0.45f;
+        private const float RidgeCapHeight = 0.14f;
+        private const float RidgeCapWidth = 0.28f;
+        private const float FencePostHeight = 1.35f;
+        private const float FencePostWidth = 0.14f;
 
         /// <summary>Appends training-compound visual-only boxes. Call after all gameplay geometry.</summary>
         public static void AppendCompound(ArenaBoxBuilder b, ArenaLayout layout)
@@ -69,6 +77,24 @@ namespace Shooter.Generation.Environment
             // Lane separator curb lips at x = ±18 (team-1 half + mirror via builder).
             AddLaneCurbAlongZ(b, 18f, -36f, -2f);
             AddLaneCurbAlongZ(b, -18f, -36f, -2f);
+
+            // Ridge caps along HQ / barracks roof spines.
+            AddRidgeCap(b, 0f, 0f, 16f, alongX: true, wallHeight: 3.5f, mirror: false);
+            AddRidgeCap(b, 32.2f, -19f, 22f, alongX: false, wallHeight: 3.5f, mirror: true);
+
+            // Lamp posts at plaza / staging / range approaches (mirrored across z = 0).
+            AddLampPost(b, -10f, -8f, mirror: true);
+            AddLampPost(b, 10f, -8f, mirror: true);
+            AddLampPost(b, -22f, -34f, mirror: true);
+            AddLampPost(b, 22f, -34f, mirror: true);
+            AddLampPost(b, 0f, -34f, mirror: true);
+            AddLampPost(b, 28f, -12f, mirror: true);
+
+            // Fence posts just outside the staging wall, gaps preserved at the three gates.
+            AddFencePostRow(b, -37.55f, -42f, -32f, spacing: 4f, mirror: true);
+            AddFencePostRow(b, -37.55f, -28f, -2f, spacing: 4.5f, mirror: true);
+            AddFencePostRow(b, -37.55f, 2f, 28f, spacing: 4.5f, mirror: true);
+            AddFencePostRow(b, -37.55f, 32f, 42f, spacing: 4f, mirror: true);
 
             EnsureBudget(b.Boxes.Count - start);
         }
@@ -111,6 +137,21 @@ namespace Shooter.Generation.Environment
             // Mirror the curb on the +Z half explicitly (separators span full Z with mirror:false).
             AddLaneCurbAlongZ(b, 20f, 2f, 40f, mirror: false);
             AddLaneCurbAlongZ(b, -20f, 2f, 40f, mirror: false);
+
+            // Warehouse roof ridge + lamp posts on loading apron / maze approaches.
+            AddRidgeCap(b, 0f, 0f, 26f, alongX: false, wallHeight: 5f, mirror: false);
+            AddLampPost(b, -14f, -16f, mirror: true);
+            AddLampPost(b, 14f, -16f, mirror: true);
+            AddLampPost(b, -30f, -38f, mirror: true);
+            AddLampPost(b, 24f, -38f, mirror: true);
+            AddLampPost(b, 0f, -38f, mirror: true);
+            AddLampPost(b, 30f, -8f, mirror: true);
+
+            // Fence posts just outside the gatehouse apron between funnelled gates.
+            AddFencePostRow(b, -42.55f, -40f, -30f, spacing: 3.5f, mirror: true);
+            AddFencePostRow(b, -42.55f, -26f, -2f, spacing: 4f, mirror: true);
+            AddFencePostRow(b, -42.55f, 2f, 24f, spacing: 4f, mirror: true);
+            AddFencePostRow(b, -42.55f, 28f, 40f, spacing: 3.5f, mirror: true);
 
             EnsureBudget(b.Boxes.Count - start);
         }
@@ -365,6 +406,36 @@ namespace Shooter.Generation.Environment
             b.Add(new Float3(x, y, z - sizeZ * 0.5f), new Float3(sizeX, rail, rail), ArenaBoxBuilder.TagSolid, mirror, false);
             b.Add(new Float3(x + sizeX * 0.5f, y, z), new Float3(rail, rail, sizeZ), ArenaBoxBuilder.TagSolid, mirror, false);
             b.Add(new Float3(x - sizeX * 0.5f, y, z), new Float3(rail, rail, sizeZ), ArenaBoxBuilder.TagSolid, mirror, false);
+        }
+
+        /// <summary>
+        /// Thin ridge along the longer roof axis so eaves read as a capped roof rather than a flat slab.
+        /// </summary>
+        private static void AddRidgeCap(ArenaBoxBuilder b, float cx, float cz, float length, bool alongX, float wallHeight, bool mirror)
+        {
+            float y = wallHeight + EaveThickness + 0.08f + RidgeCapHeight * 0.5f;
+            if (alongX)
+                b.Add(new Float3(cx, y, cz), new Float3(length + EaveOverhang, RidgeCapHeight, RidgeCapWidth), ArenaBoxBuilder.TagSolid, mirror, false);
+            else
+                b.Add(new Float3(cx, y, cz), new Float3(RidgeCapWidth, RidgeCapHeight, length + EaveOverhang), ArenaBoxBuilder.TagSolid, mirror, false);
+        }
+
+        private static void AddLampPost(ArenaBoxBuilder b, float x, float z, bool mirror)
+        {
+            float postY = LampPostHeight * 0.5f;
+            b.Add(new Float3(x, postY, z), new Float3(LampPostWidth, LampPostHeight, LampPostWidth), ArenaBoxBuilder.TagSolid, mirror, false);
+            // Cross-arm + head so the prop reads as a yard light, not a lone pole.
+            b.Add(new Float3(x + 0.35f, LampPostHeight - 0.08f, z), new Float3(0.7f, 0.1f, 0.1f), ArenaBoxBuilder.TagSolid, mirror, false);
+            b.Add(new Float3(x + 0.55f, LampPostHeight - 0.28f, z), new Float3(LampHeadSize, 0.2f, LampHeadSize), ArenaBoxBuilder.TagSolid, mirror, false);
+        }
+
+        /// <summary>Posts along X at fixed z (team-1 half); builder mirror fills the opposite staging wall.</summary>
+        private static void AddFencePostRow(ArenaBoxBuilder b, float z, float x0, float x1, float spacing, bool mirror)
+        {
+            if (x1 <= x0 || spacing <= 0.2f) return;
+            float y = FencePostHeight * 0.5f;
+            for (float x = x0; x <= x1 + 0.001f; x += spacing)
+                b.Add(new Float3(x, y, z), new Float3(FencePostWidth, FencePostHeight, FencePostWidth), ArenaBoxBuilder.TagSolid, mirror, false);
         }
 
         private static void EnsureBudget(int added)

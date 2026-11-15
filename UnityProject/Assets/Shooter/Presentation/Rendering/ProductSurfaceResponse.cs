@@ -36,6 +36,10 @@ namespace Shooter.Presentation.Rendering
         public static readonly ProductSurfaceResponse CoverMetal = new ProductSurfaceResponse(
             new Color(0.70f, 0.74f, 0.78f, 1f), 1.18f, 0.82f, 0.72f, 0.50f);
 
+        /// <summary>Painted/edge trim: darker than wall concrete, less metal than cover crates.</summary>
+        public static readonly ProductSurfaceResponse Trim = new ProductSurfaceResponse(
+            new Color(0.62f, 0.64f, 0.66f, 1f), 1.28f, 0.92f, 0.18f, 0.28f);
+
         public static readonly ProductSurfaceResponse Soil = new ProductSurfaceResponse(
             new Color(0.78f, 0.72f, 0.58f, 1f), 1.48f, 1f, 0f, 0.045f);
 

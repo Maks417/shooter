@@ -106,8 +106,20 @@ namespace Shooter.Tests
                     Is.EqualTo(ProductSurfaceResponse.CoverMetal.BumpScale).Within(0.0001f));
                 Assert.That(root.GetComponentsInChildren<Collider>().Length, Is.Zero,
                     "Apron/cover overlays must stay presentation-only.");
-                Material solidsMat = view.transform.Find("Product map solids").GetComponent<MeshRenderer>().sharedMaterial;
-                Assert.That(solidsMat.GetColor("_BaseColor"), Is.EqualTo(ProductSurfaceResponse.Concrete.BaseColor));
+                MeshRenderer solidsRenderer = view.transform.Find("Product map solids").GetComponent<MeshRenderer>();
+                Assert.That(solidsRenderer.sharedMaterials.Length, Is.GreaterThanOrEqualTo(2),
+                    "Packaged solids must expose structure/metal/trim role slots.");
+                Assert.That(solidsRenderer.sharedMaterials[0].GetColor("_BaseColor"),
+                    Is.EqualTo(ProductSurfaceResponse.Concrete.BaseColor));
+                bool sawCover = false, sawTrim = false;
+                foreach (Material mat in solidsRenderer.sharedMaterials)
+                {
+                    if (mat.GetColor("_BaseColor") == ProductSurfaceResponse.CoverMetal.BaseColor) sawCover = true;
+                    if (mat.GetColor("_BaseColor") == ProductSurfaceResponse.Trim.BaseColor) sawTrim = true;
+                }
+                Assert.That(sawCover, Is.True, "Metal/cover submesh material must be assigned.");
+                Assert.That(sawTrim, Is.True, "Trim submesh material must be assigned.");
+                Assert.That(ProductSurfaceResponse.Trim.BaseColor.r, Is.LessThan(ProductSurfaceResponse.Concrete.BaseColor.r));
                 view.ClearVisuals();
                 Assert.That(view.GetComponentsInChildren<MeshRenderer>().Length, Is.Zero);
             }
