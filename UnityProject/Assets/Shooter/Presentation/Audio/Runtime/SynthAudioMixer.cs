@@ -16,7 +16,10 @@ namespace Shooter.Presentation.Audio
         Death = 9,
         DamageTaken = 10,
         Ambient = 11,
-        Headshot = 12
+        Headshot = 12,
+        KnifeSwing = 13,
+        GrenadeThrow = 14,
+        GrenadeExplode = 15
     }
 
     public sealed class SynthVoice

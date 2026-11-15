@@ -25,7 +25,10 @@ Status: T089 / [ADR-062](../decisions.md#adr-062--accepted-stereo-foundauthored-
 | Cue | Trigger |
 |---|---|
 | RifleShot / PistolShot | `ShotAccepted` + weapon definition id |
-| Impact | `Impact` (non-head regions) |
+| KnifeSwing | `ShotAccepted` with `weapons/knife` |
+| GrenadeThrow | `ProjectileSpawned` (grenade leave-hand) |
+| GrenadeExplode | grenade blast `Impact` (invalid target, upward normal, surfaceTag 1) |
+| Impact | `Impact` (non-head, non-blast regions) |
 | DamageTaken | `DamageApplied` on body/limbs |
 | Headshot | `Impact` / `DamageApplied` with region 1 (head) |
 | ReloadStart / ReloadComplete | `ReloadStarted` / `ReloadCompleted` |

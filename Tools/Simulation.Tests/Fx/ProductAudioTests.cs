@@ -311,6 +311,35 @@ namespace Shooter.Simulation.Tests.Fx
         }
 
         [Fact]
+        public void Knife_swing_and_grenade_cues_map_from_combat_events()
+        {
+            var mix = new SynthAudioMixer();
+            var router = new ProductAudioEventRouter(mix);
+            router.AttachSession(1201);
+
+            var knife = new CombatEvent(
+                new EventId(1201, 1, new EntityId(3), 1), CombatEventKind.ShotAccepted, new EntityId(3), default,
+                new ShotPayload(new DefinitionId("weapons/knife"), 1, new Float3(0, 1.5f, 0), new Float3(0, 0, 1), 1, 1));
+            var throwEv = new CombatEvent(
+                new EventId(1201, 2, new EntityId(3), 2), CombatEventKind.ProjectileSpawned, new EntityId(3), default,
+                new ProjectilePayload(new EntityId(99), new Float3(1, 1.5f, 0), new Float3(0, 4, 8), new DefinitionId("weapons/grenade")));
+            var boom = new CombatEvent(
+                new EventId(1201, 3, new EntityId(3), 3), CombatEventKind.Impact, new EntityId(3), default,
+                new ImpactPayload(new Float3(5, 0, 5), new Float3(0, 1, 0), 1, 0));
+
+            Assert.Equal(1, router.ConsumeCombatEvents(new[] { knife }, new Float3(0, 0, 0)));
+            Assert.Equal(1, router.ConsumeCombatEvents(new[] { throwEv }, new Float3(0, 0, 0)));
+            Assert.Equal(1, router.ConsumeCombatEvents(new[] { boom }, new Float3(0, 0, 0)));
+
+            Assert.True(mix.Bank.TryGetClip(SynthVoiceKind.KnifeSwing, 0, out var ks));
+            Assert.True(mix.Bank.TryGetClip(SynthVoiceKind.GrenadeThrow, 0, out var gt));
+            Assert.True(mix.Bank.TryGetClip(SynthVoiceKind.GrenadeExplode, 0, out var ge));
+            Assert.False(SameSamples(ks, gt));
+            Assert.False(SameSamples(gt, ge));
+            Assert.True(ge.Length > ks.Length);
+        }
+
+        [Fact]
         public void Manifest_hash_mismatch_falls_back_to_generated()
         {
             string? root = CombatAudioSamplePaths.ResolveCombatSampleRoot();

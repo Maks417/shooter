@@ -142,10 +142,14 @@ namespace Shooter.Presentation.Audio
                     voice = MapShotVoice(ev);
                     return true;
                 case CombatEventKind.ProjectileSpawned:
-                    // Soft pin/throw cue; Impact covers the blast.
-                    voice = SynthVoiceKind.Ui;
+                    voice = SynthVoiceKind.GrenadeThrow;
                     return true;
                 case CombatEventKind.Impact:
+                    if (IsGrenadeBlast(ev))
+                    {
+                        voice = SynthVoiceKind.GrenadeExplode;
+                        return true;
+                    }
                     voice = IsHeadRegion(ev) ? SynthVoiceKind.Headshot : SynthVoiceKind.Impact;
                     return true;
                 case CombatEventKind.DamageApplied:
@@ -176,11 +180,26 @@ namespace Shooter.Presentation.Audio
                 if (string.Equals(id, PistolWeaponId, StringComparison.Ordinal))
                     return SynthVoiceKind.PistolShot;
                 if (string.Equals(id, KnifeWeaponId, StringComparison.Ordinal))
-                    return SynthVoiceKind.Impact;
+                    return SynthVoiceKind.KnifeSwing;
                 if (string.Equals(id, GrenadeWeaponId, StringComparison.Ordinal))
-                    return SynthVoiceKind.Impact;
+                    // Cooked in-hand boom is emitted as Impact/GrenadeExplode; ShotAccepted for grenade is unused.
+                    return SynthVoiceKind.GrenadeThrow;
             }
             return SynthVoiceKind.RifleShot;
+        }
+
+        /// <summary>
+        /// Authority grenade blast Impact uses invalid target, upward normal, surfaceTag=1, region=0
+        /// (see CombatHarnessSimulation.ResolveExplosion).
+        /// </summary>
+        private static bool IsGrenadeBlast(CombatEvent ev)
+        {
+            if (ev.Kind != CombatEventKind.Impact || ev.Target.IsValid) return false;
+            if (ev.Payload is not ImpactPayload impact) return false;
+            if (impact.SurfaceTag != 1 || impact.RegionId != 0) return false;
+            return Math.Abs(impact.Normal.X) < 1e-3f
+                && impact.Normal.Y > 0.95f
+                && Math.Abs(impact.Normal.Z) < 1e-3f;
         }
 
         private static bool IsHeadRegion(CombatEvent ev)

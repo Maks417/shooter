@@ -1,5 +1,5 @@
 {
-  "bankId": "combat-audio-bank-v3-stereo",
+  "bankId": "combat-audio-bank-v4-stereo",
   "sampleRate": 48000,
   "channels": 2,
   "clips": [
@@ -329,6 +329,102 @@
       "file": "headshot_03.wav",
       "sha256": "95daa01f75c466f4588f2748a16bc076fb225f7f08be961de5011754ec6a5f51",
       "source": "project-authored stereo Foley PCM render (T089); non-commercial; not extracted from any commercial game",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "knife_swing",
+      "variation": 0,
+      "file": "knife_swing_00.wav",
+      "sha256": "2e4fdff7437441ccd20889f7bec04ee93cd8224dbc47e2e37f0a5025563b24f3",
+      "source": "OpenGameArt CC0 melee swing take (swing.wav); sliced to 48 kHz stereo knife one-shots. Not from commercial games.",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "knife_swing",
+      "variation": 1,
+      "file": "knife_swing_01.wav",
+      "sha256": "bee63d0adbca3b6ac9607ec25b45fb559aa39ef4cca0d6b84f7fad1b2cdac5f4",
+      "source": "OpenGameArt CC0 melee swing take (swing.wav); sliced to 48 kHz stereo knife one-shots. Not from commercial games.",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "knife_swing",
+      "variation": 2,
+      "file": "knife_swing_02.wav",
+      "sha256": "072d70bd479edaf1538b1cef7b71259c35e24e0a02c86162c425ce9c7a7a9714",
+      "source": "OpenGameArt CC0 melee swing take (swing.wav); sliced to 48 kHz stereo knife one-shots. Not from commercial games.",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "knife_swing",
+      "variation": 3,
+      "file": "knife_swing_03.wav",
+      "sha256": "4f07c3719927e39535fea8f1233a6e107a90908c6801ec70fbd9a584e78b2483",
+      "source": "OpenGameArt CC0 melee swing take (swing.wav); sliced to 48 kHz stereo knife one-shots. Not from commercial games.",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "grenade_throw",
+      "variation": 0,
+      "file": "grenade_throw_00.wav",
+      "sha256": "b2080889b2d6dc7393382b200398b3fc7bbcdb4d1ac5da8389fcd8061a7fb4fc",
+      "source": "Project-authored stereo throw/whoosh PCM for grenade ProjectileSpawned (CC0-1.0).",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "grenade_throw",
+      "variation": 1,
+      "file": "grenade_throw_01.wav",
+      "sha256": "8125da06980971add55ea6018af901efb7dfddf00522b37fc228ab9156c15eec",
+      "source": "Project-authored stereo throw/whoosh PCM for grenade ProjectileSpawned (CC0-1.0).",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "grenade_throw",
+      "variation": 2,
+      "file": "grenade_throw_02.wav",
+      "sha256": "b2719fc0f084e2354c9b37746d2515745dc486cec245d16417755534ad9f0a60",
+      "source": "Project-authored stereo throw/whoosh PCM for grenade ProjectileSpawned (CC0-1.0).",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "grenade_throw",
+      "variation": 3,
+      "file": "grenade_throw_03.wav",
+      "sha256": "c8c3f130a014eeae094af9fa56502ec5517bbfb5fe534494998aee9585b94b9c",
+      "source": "Project-authored stereo throw/whoosh PCM for grenade ProjectileSpawned (CC0-1.0).",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "grenade_explode",
+      "variation": 0,
+      "file": "grenade_explode_00.wav",
+      "sha256": "6769211919f85f648849f3dcfe7cdcd1fa45745d3514de5cc331920c7e08872b",
+      "source": "OpenGameArt CC0 explosion.wav layered with Tabasco 10-gauge shotgun boom (https://opengameart.org/content/gunshot-sounds); 48 kHz stereo. Not from commercial games.",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "grenade_explode",
+      "variation": 1,
+      "file": "grenade_explode_01.wav",
+      "sha256": "216fa56ba29485abedbc35b6d063449e3c0fa080ff035705d1283b351362cf20",
+      "source": "OpenGameArt CC0 explosion.wav layered with Tabasco 10-gauge shotgun boom (https://opengameart.org/content/gunshot-sounds); 48 kHz stereo. Not from commercial games.",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "grenade_explode",
+      "variation": 2,
+      "file": "grenade_explode_02.wav",
+      "sha256": "671e3305d3f1f1ebcfffb64cac7124bb74a9e42ab68666d4a61ea529ac71b857",
+      "source": "OpenGameArt CC0 explosion.wav layered with Tabasco 10-gauge shotgun boom (https://opengameart.org/content/gunshot-sounds); 48 kHz stereo. Not from commercial games.",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "grenade_explode",
+      "variation": 3,
+      "file": "grenade_explode_03.wav",
+      "sha256": "fd8b6b20df9f37d3f0b97d6ca998f3e08ce99dca3d30b6d446dc5a434338ebc5",
+      "source": "OpenGameArt CC0 explosion.wav layered with Tabasco 10-gauge shotgun boom (https://opengameart.org/content/gunshot-sounds); 48 kHz stereo. Not from commercial games.",
       "license": "CC0-1.0"
     }
   ]

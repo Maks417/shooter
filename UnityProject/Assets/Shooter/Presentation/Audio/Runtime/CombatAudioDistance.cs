@@ -20,6 +20,9 @@ namespace Shooter.Presentation.Audio
             SynthVoiceKind.Death => SoftCueMaxMeters,
             SynthVoiceKind.Impact => SoftCueMaxMeters,
             SynthVoiceKind.DamageTaken => SoftCueMaxMeters,
+            SynthVoiceKind.KnifeSwing => SoftCueMaxMeters,
+            SynthVoiceKind.GrenadeThrow => SoftCueMaxMeters,
+            SynthVoiceKind.GrenadeExplode => GunfireMaxMeters,
             SynthVoiceKind.Ui => 0f,
             SynthVoiceKind.Ambient => 0f,
             _ => GunfireMaxMeters
@@ -40,6 +43,9 @@ namespace Shooter.Presentation.Audio
                 SynthVoiceKind.Death => 1f / (1f + distanceMeters * 0.12f),
                 SynthVoiceKind.Impact => 1f / (1f + distanceMeters * 0.12f),
                 SynthVoiceKind.DamageTaken => 1f / (1f + distanceMeters * 0.12f),
+                SynthVoiceKind.KnifeSwing => 0.85f / (1f + distanceMeters * 0.14f),
+                SynthVoiceKind.GrenadeThrow => 0.75f / (1f + distanceMeters * 0.12f),
+                SynthVoiceKind.GrenadeExplode => 1.15f / (1f + distanceMeters * 0.045f),
                 SynthVoiceKind.Ambient => 0.35f,
                 SynthVoiceKind.Ui => 1f,
                 _ => 1f / (1f + distanceMeters * 0.05f)

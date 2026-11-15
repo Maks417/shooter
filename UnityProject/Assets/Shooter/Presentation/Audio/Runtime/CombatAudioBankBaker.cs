@@ -45,6 +45,9 @@ namespace Shooter.Presentation.Audio
             clips[8] = BakeVariations(sampleRate, BakeUi);
             clips[9] = BakeVariations(sampleRate, BakeAmbient, count: 1);
             clips[10] = BakeVariations(sampleRate, BakeHeadshot);
+            clips[11] = BakeVariations(sampleRate, BakeKnifeSwing);
+            clips[12] = BakeVariations(sampleRate, BakeGrenadeThrow);
+            clips[13] = BakeVariations(sampleRate, BakeGrenadeExplode);
             string hash = ComputeHash(sampleRate, clips, found: false);
             return new CombatAudioBank(sampleRate, clips, hash, loadedFromFoundSamples: false);
         }
@@ -130,6 +133,9 @@ namespace Shooter.Presentation.Audio
             8 => BakeUi,
             9 => BakeAmbient,
             10 => BakeHeadshot,
+            11 => BakeKnifeSwing,
+            12 => BakeGrenadeThrow,
+            13 => BakeGrenadeExplode,
             _ => BakeImpact
         };
 
@@ -146,6 +152,9 @@ namespace Shooter.Presentation.Audio
             if (string.Equals(kind, "ui", StringComparison.Ordinal)) return 8;
             if (string.Equals(kind, "ambient", StringComparison.Ordinal)) return 9;
             if (string.Equals(kind, "headshot", StringComparison.Ordinal)) return 10;
+            if (string.Equals(kind, "knife_swing", StringComparison.Ordinal)) return 11;
+            if (string.Equals(kind, "grenade_throw", StringComparison.Ordinal)) return 12;
+            if (string.Equals(kind, "grenade_explode", StringComparison.Ordinal)) return 13;
             return -1;
         }
 
@@ -171,6 +180,15 @@ namespace Shooter.Presentation.Audio
 
         private static float[] BakeHeadshot(int rate, int variation) =>
             Stereoize(BakeMonoHeadshot(rate, variation), rate, variation, 0.00025f);
+
+        private static float[] BakeKnifeSwing(int rate, int variation) =>
+            Stereoize(BakeMonoKnifeSwing(rate, variation), rate, variation, 0.00055f);
+
+        private static float[] BakeGrenadeThrow(int rate, int variation) =>
+            Stereoize(BakeMonoGrenadeThrow(rate, variation), rate, variation, 0.0004f);
+
+        private static float[] BakeGrenadeExplode(int rate, int variation) =>
+            Stereoize(BakeMonoGrenadeExplode(rate, variation), rate, variation, 0.0007f);
 
         private static float[] BakeFootstep(int rate, int variation) =>
             Stereoize(BakeMonoFootstep(rate, variation), rate, variation, 0.0004f);
@@ -264,6 +282,43 @@ namespace Shooter.Presentation.Audio
             AddThump(buf, rate, 0.000f, 0.050f, 55f + variation * 4f, 0.40f);
             AddNoiseBurst(buf, rate, ref rng, 0.015f, 0.080f, 0.18f, 200f, 1800f);
             NormalizePeak(buf, 0.55f);
+            return buf;
+        }
+
+        private static float[] BakeMonoKnifeSwing(int rate, int variation)
+        {
+            int n = (int)(rate * 0.22f);
+            var buf = new float[n];
+            uint rng = MixSeed(0xA1FE0001u ^ 0x4B4E4946u, variation);
+            AddNoiseBurst(buf, rate, ref rng, 0.000f, 0.090f, 0.55f, 1200f, 9000f);
+            AddMetallicClick(buf, rate, ref rng, 0.010f, 0.080f, 2400f + variation * 80f, 0.55f);
+            AddNoiseBurst(buf, rate, ref rng, 0.040f, 0.140f, 0.28f, 400f, 3500f);
+            NormalizePeak(buf, 0.78f);
+            return buf;
+        }
+
+        private static float[] BakeMonoGrenadeThrow(int rate, int variation)
+        {
+            int n = (int)(rate * 0.28f);
+            var buf = new float[n];
+            uint rng = MixSeed(0x7A000001u ^ 0x54485257u, variation);
+            AddNoiseBurst(buf, rate, ref rng, 0.000f, 0.120f, 0.45f, 200f, 2800f);
+            AddMetallicClick(buf, rate, ref rng, 0.020f, 0.060f, 1200f + variation * 40f, 0.35f);
+            AddThump(buf, rate, 0.040f, 0.080f, 70f, 0.22f);
+            NormalizePeak(buf, 0.65f);
+            return buf;
+        }
+
+        private static float[] BakeMonoGrenadeExplode(int rate, int variation)
+        {
+            int n = (int)(rate * 0.85f);
+            var buf = new float[n];
+            uint rng = MixSeed(0xB0010001u ^ 0x424F4F4Du, variation);
+            AddNoiseBurst(buf, rate, ref rng, 0.000f, 0.040f, 1.00f, 400f, 10000f);
+            AddThump(buf, rate, 0.000f, 0.220f, 38f + variation * 3f, 0.85f);
+            AddNoiseBurst(buf, rate, ref rng, 0.020f, 0.350f, 0.70f, 80f, 2200f);
+            AddNoiseBurst(buf, rate, ref rng, 0.080f, 0.650f, 0.35f, 40f, 900f);
+            NormalizePeak(buf, 0.95f);
             return buf;
         }
 

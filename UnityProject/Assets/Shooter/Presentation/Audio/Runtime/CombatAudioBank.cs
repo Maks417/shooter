@@ -8,8 +8,8 @@ namespace Shooter.Presentation.Audio
     /// </summary>
     public sealed class CombatAudioBank
     {
-        public const string RecipeId = "combat-audio-bank-v3-stereo";
-        public const int BankVersion = 3;
+        public const string RecipeId = "combat-audio-bank-v4-stereo";
+        public const int BankVersion = 4;
         public const int DefaultSampleRate = 48000;
         public const int Channels = 2;
         public const int VariationsPerCue = 4;
@@ -59,6 +59,9 @@ namespace Shooter.Presentation.Audio
             SynthVoiceKind.Ui => 8,
             SynthVoiceKind.Ambient => 9,
             SynthVoiceKind.Headshot => 10,
+            SynthVoiceKind.KnifeSwing => 11,
+            SynthVoiceKind.GrenadeThrow => 12,
+            SynthVoiceKind.GrenadeExplode => 13,
             _ => -1
         };
 
@@ -75,9 +78,12 @@ namespace Shooter.Presentation.Audio
             8 => "ui",
             9 => "ambient",
             10 => "headshot",
+            11 => "knife_swing",
+            12 => "grenade_throw",
+            13 => "grenade_explode",
             _ => "unknown"
         };
 
-        public static int KindCount => 11;
+        public static int KindCount => 14;
     }
 }
