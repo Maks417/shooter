@@ -79,3 +79,13 @@ T075 delivery (2026-11-15): bounded presentation implementation merged to main, 
 ## T076 — Compact TDM map layouts
 
 Owner assigned 2026-11-15: focus on map design; maps should be small but sized for 5v5 and 6v6, planned from shooter level-design best practice, implemented by Sonnet/Haiku subagents. Integrator (Claude) owns the spec, shared docs, merge and verification; subagents owned the arena foundation and one planner each in isolated worktrees. Paths: `Generation/Core/Environment/Arena*`, `ProductMapPlanner`, `CompoundArenaPlanner`, `DepotArenaPlanner`, the arena-aware `CompoundPlan`/`MapSpawnLayout`/`MapTopologyValidation` branches, catalog dispatch in `MapPackageBuilder`/`ReleaseCatalogDocument`/`CompoundCatalogFactory`, and Generation/Game tests. No contract, lock, schema, seed, presentation (T075 leases) or soldier change. Decision: [ADR-045](decisions.md#adr-045--accepted-compact-tdm-arena-layouts-for-catalog-maps-t076).
+
+## T077 — Presentation polish (merged)
+
+Owner-authorized 2026-11-15 Battlefield V / Warface / Bodycam presentation polish. Three worktrees delivered HUD craft, atmosphere/sky-fog, and actors/FX; merged to main at `946a58d` and included in installer 0.3.6+. Software only; VD exits and P05 remain open. See [M11 handoff](milestones/m11-playable-release/handoff.md).
+
+## T078 — Architectural / FP / material readability wave
+
+Owner directed 2026-11-15: continue design until Battlefield V / Warface / Bodycam quality. Base `3c6f640`. Three disjoint worktrees merged to main at `ddce776` (env `d56c34f`, weapons `8e88a68`, materials `b5683e1`). Decision: [ADR-049](decisions.md#adr-049--accepted-non-gameplay-visual-architecture-boxes-for-map-solids-t078).
+
+Delivered software: non-gameplay architectural solids + roof inclusion in `BuildSolidsMesh`; FP near-field/kick/magazine travel/denser FX; concrete/cover/ground/apron material response. Frozen C0/Game-v1, weapon 1.0.1, soldier/P05 (ADR-024), and gameplay collision/nav hashes unchanged. Packaged mesh/package identities change — native republish and installer still required before player review. Temporary `visual/t078-*` worktrees/branches removed after merge preservation. VD/REL acceptance remains Pending.

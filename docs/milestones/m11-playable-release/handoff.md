@@ -1,6 +1,18 @@
 # M11 — Playable build and acceptance — handoff and gate record
 
-**Latest preview — 2026-11-15:** T076 installer **0.3.5** (compact TDM maps), binary source `ad6bdea`; [exact delivery and evidence](#t076--compact-tdm-map-layouts-2026-11-15). Previous: T075 installer 0.3.4, source `7407bc4` ([evidence](#t075--procedural-presentation-preview-034)). Older deliveries below are retained history. VD/REL acceptance remains open and P05 FAIL is unchanged.
+**Latest source — 2026-11-15:** T078 architectural/FP/material wave merged at `ddce776` ([ADR-049](../../decisions.md#adr-049--accepted-non-gameplay-visual-architecture-boxes-for-map-solids-t078)); no new installer yet — native content republish and package/installer still required. Prior installer **0.3.7** at `e251702` remains the last playable binary. VD/REL acceptance remains open and P05 FAIL is unchanged.
+
+## T078 — Architectural / FP / material readability (source merge)
+
+Owner-directed continuation toward Battlefield V / Warface / Bodycam design. Three disjoint worktrees merged to main: env `d56c34f` → `25ae4e5`, weapons `8e88a68` → `836b173`, materials `b5683e1` → `ddce776`. Temporary `visual/t078-*` worktrees/branches removed after preservation on main.
+
+| Slice | Software delivered | Limitation |
+|---|---|---|
+| Env | `ArenaVisualDetail` non-gameplay eaves/frames/windows/trim/curbs; `BuildSolidsMesh` includes roofs/visual boxes; gameplay collision unchanged | Packaged mesh identities stale until `Compile-GameContent -Native`; VD5 Pending |
+| Weapons/FP | Near-field scale, ADS-safe kick, magazine travel arcs, denser pooled FX; weapon recipe 1.0.1 untouched | Player handling review Pending |
+| Materials | Concrete/cover/soil/asphalt/apron response profiles; cover inset; sky/probe tune | Player material review Pending |
+
+Pending: Generation/Maps/Simulation/Unity verification of merged source, native republish, Client/package/installer, named visual review. P05 unauthorized.
 
 ## Bot navigation, spawn fallback and pre-match countdown — 2026-11-15
 

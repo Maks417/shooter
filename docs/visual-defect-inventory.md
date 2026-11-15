@@ -32,7 +32,7 @@ Do not delete failed M1 artifacts, do not relabel FAIL as PASS, and do not inher
 | VD-D02 | atmosphere | SoftFixedPendingReview | Product sky/fog/probe defaults tuned for grounded daylight; owner/player review Pending |
 | VD-D03 | fx | SoftFixedPendingReview | Product session spawns pooled mesh muzzle/impact/smoke via `AnalyticFxPresenter`; reduced-flash preserved; player review Pending |
 | VD-D04 | menu | SoftFixedPendingReview | Menu/HUD craft deepened toward BFV staging and denser shell; interactive Unity review still Pending |
-| VD-D05 | environment | Open | Both maps remain planner-box heavy vs VD5 production architecture/prop standard |
+| VD-D05 | environment | SoftFixedPendingReview | T078 merged: roofs/visual architecture boxes + material contrast (ADR-049); owner VD5 review Pending |
 | VD-D06 | reference | PendingOwner | Exact Bodycam/Warface comparison frames/timecodes not yet selected (BFV chat screenshots establish direction only) |
 
 VD gaps are tracked for the [VD0–VD9](design-milestones.md) track and the [art brief](visual-art-brief.md). Closing a VD-D* row requires evidence and owner/technical review; software merges alone do not mark them resolved.
