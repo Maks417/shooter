@@ -17,6 +17,14 @@ namespace Shooter.Presentation.Rendering
     /// </summary>
     public sealed class ProductMapView : MonoBehaviour
     {
+        /// <summary>Presentation-only shrink so metal cover reads as crates instead of coplanar slabs.</summary>
+        public const float CoverHorizontalInset = 0.94f;
+        public const float CoverVerticalInset = 0.97f;
+        /// <summary>Lift cover overlays a few centimetres to avoid z-fighting with baked solids.</summary>
+        public const float CoverLiftMeters = 0.035f;
+        /// <summary>Inner yard pad as a fraction of map half-extent (apron occupies the outer ring).</summary>
+        public const float InnerYardExtentFraction = 0.78f;
+
         private readonly List<UnityEngine.Object> owned = new List<UnityEngine.Object>();
         private readonly List<GameObject> solids = new List<GameObject>();
         private Shader? litShader;
@@ -26,6 +34,7 @@ namespace Shooter.Presentation.Rendering
         private Material? cover;
         private Material? ground;
         private Material? asphalt;
+        private Material? apron;
         private GeneratedSky? sky;
         private GeneratedReflectionProbe? probe;
         private string mapId = "";
@@ -71,18 +80,24 @@ namespace Shooter.Presentation.Rendering
 
             HashSet<ulong> coverIds = ParseCoverIds(metadataBytes);
             float half = CompoundPlan.MapHalfExtent;
-            // Collision-faithful ground plane: packaged soil/asphalt (depot), not flat tint. Prefer packaged materials.
-            Material groundSurface = PreferDepotYardAsphalt(mapId) ? asphalt! : ground!;
-            Place("Product ground", new Vector3(0f, -0.05f, 0f), new Vector3(half * 2f, 0.1f, half * 2f), groundSurface, unitBox!);
+            float full = half * 2f;
+            // Outer apron ring (darker asphalt response) + inner yard pad for lane readability.
+            // Presentation-only unit boxes; no colliders.
+            Place("Product apron", new Vector3(0f, -0.06f, 0f), new Vector3(full, 0.1f, full), apron!, unitBox!);
+            float inner = full * InnerYardExtentFraction;
+            Material yardSurface = PreferDepotYardAsphalt(mapId) ? asphalt! : ground!;
+            Place("Product ground", new Vector3(0f, -0.02f, 0f), new Vector3(inner, 0.1f, inner), yardSurface, unitBox!);
 
             // Packaged combined solids mesh already encodes gameplay boxes; one renderer, identity transform.
-            // Limitation (VD5/T076): single concrete material for the whole combined mesh — cover volumes
+            // Limitation (VD5/T076/T078): single-submesh packages still share one concrete slot — cover volumes
             // baked into solids cannot get distinct metal without mesh/material splits. Presentation-only
             // metal unit boxes from cover metadata/heuristics overlay those volumes so steel props still read.
+            // When env publishes multiple submeshes, fill every slot with concrete until material indices arrive.
             var solidsGo = new GameObject("Product map solids") { layer = 11 };
             solidsGo.transform.SetParent(transform, false);
             solidsGo.AddComponent<MeshFilter>().sharedMesh = mapSolids;
-            solidsGo.AddComponent<MeshRenderer>().sharedMaterial = concrete;
+            var solidsRenderer = solidsGo.AddComponent<MeshRenderer>();
+            AssignSolidsMaterials(solidsRenderer, mapSolids!, concrete!);
             solids.Add(solidsGo);
             solidCount = boxes.Count;
             for (int i = 0; i < boxes.Count; i++)
@@ -99,7 +114,8 @@ namespace Shooter.Presentation.Rendering
 
             // Atmosphere after materials/meshes so Trilight + one-shot probe sample the installed surfaces.
             GeneratedSkyMath.ResolveProductPalette(mapId, out var zenith, out var horizon, out var groundRgb, out float fogStart, out float fogEnd, out float fogDensity);
-            sky = GeneratedSky.Apply(transform, zenith, horizon, groundRgb, true, fogStart, fogEnd, fogDensity);
+            sky = GeneratedSky.Apply(transform, zenith, horizon, groundRgb, true, fogStart, fogEnd, fogDensity,
+                GeneratedSky.ProductAmbientIntensity);
             probe = GeneratedReflectionProbe.Apply(
                 transform,
                 GeneratedReflectionProbe.ProductMapBoxSizeMeters,
@@ -123,10 +139,17 @@ namespace Shooter.Presentation.Rendering
                 // Combined map solids retain metric UVs, so .5 repeats/m matches the two-metre recipe.
                 // The scaled unit-box ground uses 0..1 face UVs: 128 repeats across 256 metres.
                 // Scalar metallic/smoothness only apply when packaged mask planes are absent; T075 masks own response.
-                concrete = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[0], "Numeric concrete", 0.02f, 0.20f, .5f);
-                cover = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[1], "Numeric cover", 0.55f, 0.42f, 4f);
-                ground = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[2], "Numeric soil ground", 0f, 0.06f, CompoundPlan.MapHalfExtent);
-                asphalt = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[3], "Numeric asphalt", 0.04f, 0.14f, CompoundPlan.MapHalfExtent);
+                concrete = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[0], "Numeric concrete",
+                    ProductSurfaceResponse.Concrete, .5f);
+                cover = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[1], "Numeric cover",
+                    ProductSurfaceResponse.CoverMetal, 4f);
+                ground = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[2], "Numeric soil ground",
+                    ProductSurfaceResponse.Soil, CompoundPlan.MapHalfExtent);
+                asphalt = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[3], "Numeric asphalt",
+                    ProductSurfaceResponse.Asphalt, CompoundPlan.MapHalfExtent);
+                // Apron reuses asphalt albedo/normal/mask planes with a darker BaseColor response.
+                apron = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[3], "Numeric apron asphalt",
+                    ProductSurfaceResponse.Apron, CompoundPlan.MapHalfExtent);
                 visualsBound = true;
             }
             catch (Exception error)
@@ -165,12 +188,10 @@ namespace Shooter.Presentation.Rendering
                     if (alreadyPlaced.Contains(id)) continue;
                     var center = c["centerMeters"].Array;
                     var size = c["sizeMeters"].Array;
-                    Place(
+                    PlaceCover(
                         "Product cover-meta " + id.ToString(CultureInfo.InvariantCulture),
                         new Vector3((float)center[0].Number, (float)center[1].Number, (float)center[2].Number),
-                        new Vector3((float)size[0].Number, (float)size[1].Number, (float)size[2].Number),
-                        cover!,
-                        unitBox!);
+                        new Vector3((float)size[0].Number, (float)size[1].Number, (float)size[2].Number));
                     alreadyPlaced.Add(id);
                     // Overlays do not change SolidCount. CoverCount for ids already tallied from boxes stays put.
                     if (!countedCoverIds.Contains(id))
@@ -193,14 +214,23 @@ namespace Shooter.Presentation.Rendering
                 CollisionBox box = boxes[i];
                 if (!(coverIds.Contains(box.StableId) || LooksLikeCover(box))) continue;
                 if (alreadyPlaced.Contains(box.StableId)) continue;
-                Place(
+                PlaceCover(
                     "Product cover " + box.StableId.ToString(CultureInfo.InvariantCulture),
                     new Vector3(box.Center.X, box.Center.Y, box.Center.Z),
-                    new Vector3(box.Size.X, box.Size.Y, box.Size.Z),
-                    cover!,
-                    unitBox!);
+                    new Vector3(box.Size.X, box.Size.Y, box.Size.Z));
                 alreadyPlaced.Add(box.StableId);
             }
+        }
+
+        private void PlaceCover(string label, Vector3 center, Vector3 size)
+        {
+            // Inset + lift only; collision/authority boxes stay untouched.
+            var inset = new Vector3(
+                size.x * CoverHorizontalInset,
+                size.y * CoverVerticalInset,
+                size.z * CoverHorizontalInset);
+            var lifted = new Vector3(center.x, center.y + CoverLiftMeters, center.z);
+            Place(label, lifted, inset, cover!, unitBox!);
         }
 
         private static HashSet<ulong> ParseCoverIds(byte[]? metadataBytes)
@@ -229,6 +259,20 @@ namespace Shooter.Presentation.Rendering
                 && box.Size.X >= 0.6f && box.Size.Z >= 0.6f;
         }
 
+        private static void AssignSolidsMaterials(MeshRenderer renderer, Mesh mesh, Material material)
+        {
+            int slots = Math.Max(1, mesh.subMeshCount);
+            if (slots == 1)
+            {
+                renderer.sharedMaterial = material;
+                return;
+            }
+            var materials = new Material[slots];
+            for (int i = 0; i < slots; i++)
+                materials[i] = material;
+            renderer.sharedMaterials = materials;
+        }
+
         private void Place(string label, Vector3 center, Vector3 size, Material material, Mesh mesh)
         {
             var item = new GameObject(label) { layer = 11 };
@@ -244,15 +288,14 @@ namespace Shooter.Presentation.Rendering
             PackagedVisualPayloads visuals,
             string path,
             string label,
-            float metallic,
-            float smoothness,
+            ProductSurfaceResponse response,
             float tileRepeats)
         {
             var albedo = MapVisualClosure.DecodeMapMaterial(visuals, path);
             MaterialData? normal = DecodeCompanionPlane(visuals, path, "normal");
             MaterialData? mask = DecodeCompanionPlane(visuals, path, "mask");
             return ProductSurfaceMaterial.Create(litShader!, albedo, normal, mask, label, tileRepeats,
-                value => owned.Add(value), metallic, smoothness);
+                value => owned.Add(value), response);
         }
 
         private static bool PreferDepotYardAsphalt(string installedMapId) =>
@@ -308,6 +351,7 @@ namespace Shooter.Presentation.Rendering
             cover = null;
             ground = null;
             asphalt = null;
+            apron = null;
             for (int i = 0; i < owned.Count; i++)
                 if (owned[i] != null) DestroyObject(owned[i]);
             owned.Clear();
