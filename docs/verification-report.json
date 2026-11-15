@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "root": "C:\\Job\\shooter\\docs",
+  "root": "C:\\Job\\shooter\\.local\\worktrees\\t080-bot-tactics\\docs",
   "markdownFiles": 127,
-  "wordCount": 134113,
-  "relativeLinksChecked": 1254,
+  "wordCount": 136164,
+  "relativeLinksChecked": 1265,
   "integrityFiles": 176,
   "errors": [],
   "result": "PASS",
