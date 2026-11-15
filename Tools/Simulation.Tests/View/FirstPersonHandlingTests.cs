@@ -9,6 +9,25 @@ namespace Shooter.Simulation.Tests.View
 {
     public sealed class FirstPersonHandlingTests
     {
+        [Fact]
+        public void ReloadTravelAndSupportHandStayContinuousAndReturnToGrip()
+        {
+            foreach (bool reduced in new[] { false, true })
+            {
+                var before = FirstPersonMagazineTravel.Offset(FirstPersonMagazineTravel.RemoveEnd - .00001f, false, reduced);
+                var after = FirstPersonMagazineTravel.Offset(FirstPersonMagazineTravel.RemoveEnd + .00001f, false, reduced);
+                Assert.InRange(Math.Abs(before.X - after.X) + Math.Abs(before.Y - after.Y) + Math.Abs(before.Z - after.Z), 0, .0001f);
+                for (byte slot = 0; slot < 2; slot++)
+                {
+                    Assert.Equal(0f, FirstPersonHandling.SupportHandOffset(slot, 0, reduced).Y);
+                    Assert.InRange(Math.Abs(FirstPersonHandling.SupportHandOffset(slot, 1, reduced).Y), 0, .00001f);
+                    var middle = FirstPersonHandling.SupportHandOffset(slot, .5f, reduced);
+                    Assert.True(middle.Y < 0);
+                    Assert.True(middle.Z < 0);
+                    if (reduced) Assert.True(Math.Abs(middle.Z) < Math.Abs(FirstPersonHandling.SupportHandOffset(slot, .5f, false).Z));
+                }
+            }
+        }
         private static CombatEvent Shot(EntityId entity) => new CombatEvent(
             new EventId(1, 1, entity, 1), CombatEventKind.ShotAccepted, entity, default,
             new ShotPayload(new DefinitionId("weapons/rifle"), 1, default, new Float3(0, 0, 1), 1, 1));

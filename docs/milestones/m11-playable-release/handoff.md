@@ -1,5 +1,15 @@
 # M11 — Playable build and acceptance — handoff and gate record
 
+## T083 — First-person glove and sleeve presentation
+
+Owner requested continued visual implementation, 2026-11-15. T082 main/runtime merges are preserved; docs-only `a9f228d` landed while this working-source pass was underway. No agents or new worktrees. [Task](../../task-supplement.md#t083--first-person-gloved-hands-and-continuous-reload-reach), [ADR-052](../../decisions.md#adr-052--accepted-packaged-first-person-glove-and-sleeve-props-t083).
+
+Four offline, required mesh dependencies add gloved trigger/support hands and sleeves for rifle/pistol, using existing uniform/polymer/gear materials and weapon grip coordinates. Camera-only props swap with slots, hide with their weapon root on death/clear, do not cast shadows and release their camera-owned root on owner destruction. Support-hand reach and equipment motion use reload phase, with a corrected continuous remove/insert boundary and reduced-motion scaling. No soldier/P05, hit pose, weapon socket, authoritative rule or contract change. Art remains numerical code; shipping only uploads verified cached geometry.
+
+Initial pure working-source checks at `a9f228d`: Generation **392** and Simulation **228** PASS, including corruption rejection and reload continuity. Initial Unity EditMode failed its new camera-root destruction assertion because EditMode did not exercise the MonoBehaviour destruction lifecycle. The check now lives in PlayMode after a yielded activation; no runtime fallback or relaxed teardown requirement. Raw failure: `Artifacts/m0-foundation/a9f228d6aaed66dae062131de7fb43b08505b81b/tests-editmode-20261115T140323256Z-03c2b887/`. Final checks and delivery follow below.
+
+Limits: rigid camera-prop hands, not articulated fingers or a complete magazine replacement; third-person mannequin anatomy and historical P05 FAIL remain. Visual comparative acceptance, installed upgrade, full gameplay and reference GPU/thermal/performance proofs remain Pending. Revert the whole hand closure/presentation change and restore a paired prior installer for rollback.
+
 ## T081 — Architectural surface and place identity
 
 2026-11-15 owner-authorized continuation from `615b6a5`, sole integrator. [Task scope](../../task-supplement.md#t081--architectural-surface-and-place-identity), [ADR-050](../../decisions.md#adr-050--accepted-packaged-architectural-surface-construction-t081). Map mesh generation now adds small physical bevels, footing/coping/end bands and panel joints to long walls, with cargo corrugation/rails/door hardware and blue/oxide painted steel. Map/menu share six material roles; variants share texture planes. Menu skyline receives loading-bay facades; weapons receive dark rougher gunmetal/matte-polymer coating. Gameplay collision/nav/spawn/hit/weapon rules and soldier/P05 sources remain unchanged. No imported/AI art, authored animation or runtime fallback.

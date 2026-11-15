@@ -137,3 +137,9 @@ Validation:
 - Unity EditMode/PlayMode, client build and real-player feel are listed in the handoff.
 
 Rollback: revert the T082 merge. AI state is not persisted and no content identity changes.
+
+## T083 — First-person gloved hands and continuous reload reach
+
+Owner-authorized visual continuation, 2026-11-15. Sole integrator, base merged T082 `e2c26e9` with docs-only `a9f228d` retained. Paths: new `Generation/Core/Environment/FirstPersonHandGeometry.cs`, `MapVisualClosure.cs` / `MapPackageBuilder.cs`, `Presentation/Rig/ProductActorPresentation.cs`, existing `View/FirstPersonHandling.cs` / `FirstPersonMagazineTravel.cs`, associated Generation/Simulation/Unity tests, content publication/build/installer evidence and shared docs. No soldier-generator/clearance search, C0/Game-v1/N1/schema/toolchain or gameplay change.
+
+Deliver ADR-052 offline packaged rifle/pistol glove/sleeve pairs, material reuse, slot/life/session ownership, support-hand reach and continuous reload path. Preserve T081 architecture and landed T082 bot behaviour. Required checks: Contracts/Generation/Simulation/Game/Maps, Unity EditMode/PlayMode, frozen/provenance guards, docs/fixtures, clean native publication, Client/Server/package/installer and actual player review. Tests/pure evidence cannot close P05, visual comparison, full gameplay, installed-upgrade or reference performance. Rollback the paired closure/runtime changes together. [M11 handoff](milestones/m11-playable-release/handoff.md) records actual results.

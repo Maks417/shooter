@@ -171,6 +171,9 @@ namespace Shooter.Generation.Environment
                 GeometryCodec.EncodeMesh(MapSolidsMesh.Build(plan)), mapFingerprint, toolchainHash);
             AddSgaf(dependencies, "mesh", MapVisualClosure.UnitBoxMeshPath, ContentKind.Mesh,
                 GeometryCodec.EncodeMesh(PrimitiveGeometry.Box(new Float3(1f, 1f, 1f), 0f, 1)), mapFingerprint, toolchainHash);
+            for (int hand = 0; hand < MapVisualClosure.FirstPersonHandPaths.Length; hand++)
+                AddSgaf(dependencies, "mesh", MapVisualClosure.FirstPersonHandPaths[hand], ContentKind.Mesh,
+                    GeometryCodec.EncodeMesh(FirstPersonHandGeometry.Build(hand >= 2, hand % 2 == 1)), mapFingerprint, toolchainHash);
 
             ContentId soldierFp = MapVisualClosure.SoldierFingerprint;
             AddSgaf(dependencies, "skeleton", MapVisualClosure.SoldierSkeletonPath, ContentKind.Skeleton,
@@ -320,6 +323,7 @@ namespace Shooter.Generation.Environment
             }
             RequireMesh(MapVisualClosure.MapSolidsMeshPath, mapFingerprint);
             RequireMesh(MapVisualClosure.UnitBoxMeshPath, mapFingerprint);
+            foreach (string path in MapVisualClosure.FirstPersonHandPaths) RequireMesh(path, mapFingerprint);
             for (int i = 0; i < MapVisualClosure.SoldierLodPaths.Length; i++)
                 RequireMesh(MapVisualClosure.SoldierLodPaths[i], soldierFingerprint);
             for (int i = 0; i < MapVisualClosure.RifleLodPaths.Length; i++)

@@ -85,6 +85,10 @@ namespace Shooter.Presentation.Rig
         private EntityId localHuman;
         private Camera? fpsCamera;
         private Transform? localWeapon;
+        private MeshFilter? triggerHand;
+        private MeshFilter? supportHand;
+        private readonly Mesh?[] firstPersonHandMeshes = new Mesh?[4];
+        private Material[]? firstPersonHandMaterials;
         private readonly ProceduralViewModel localView = new ProceduralViewModel();
         private readonly FirstPersonHandling localHandling = new FirstPersonHandling();
         private EntityId localViewHuman;
@@ -157,6 +161,16 @@ namespace Shooter.Presentation.Rig
             localWeapon.SetParent(fpsCamera!.transform, false);
             localWeapon.gameObject.AddComponent<MeshFilter>();
             localWeapon.gameObject.AddComponent<MeshRenderer>();
+            MeshFilter CreateHand(string name)
+            {
+                var hand = new GameObject(name);
+                hand.transform.SetParent(localWeapon, false);
+                var renderer = hand.AddComponent<MeshRenderer>();
+                renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                return hand.AddComponent<MeshFilter>();
+            }
+            triggerHand = CreateHand("FP trigger glove and sleeve");
+            supportHand = CreateHand("FP support glove and sleeve");
             localWeapon.localPosition = new Vector3(0.08f, -0.10f, 0.40f);
             localWeapon.localRotation = Quaternion.identity;
             localWeapon.gameObject.SetActive(false);
@@ -202,6 +216,9 @@ namespace Shooter.Presentation.Rig
                 // scalability without replacing the player's sights/grips with distant proxies.
                 firstPersonRifleMesh = weaponLod == 0 ? rifleMesh : Own(Upload(MapVisualClosure.DecodeRifleLod(visuals, 0), false));
                 firstPersonPistolMesh = weaponLod == 0 ? pistolMesh : Own(Upload(MapVisualClosure.DecodePistolLod(visuals, 0), false));
+                for (byte slot = 0; slot < 2; slot++)
+                    for (int hand = 0; hand < 2; hand++)
+                        firstPersonHandMeshes[slot * 2 + hand] = Own(Upload(MapVisualClosure.DecodeFirstPersonHand(visuals, slot, hand == 1), false));
 
                 rifleSightSocketLocal = FindSocket(WeaponGeometry.Sockets(rifleRecipe!), "sight-eye");
                 pistolSightSocketLocal = FindSocket(WeaponGeometry.Sockets(pistolRecipe!), "sight-eye");
@@ -227,6 +244,7 @@ namespace Shooter.Presentation.Rig
                 rifleMetal = FromPackaged(shader, visuals, MapVisualClosure.WeaponMaterialPaths[0], "Product rifle metal", 0.15f, 0.35f);
                 riflePolymer = FromPackaged(shader, visuals, MapVisualClosure.WeaponMaterialPaths[1], "Product rifle polymer");
                 ApplyPresentationWeaponMaterials(rifleMetal, riflePolymer);
+                firstPersonHandMaterials = new[] { team1Palette[0], riflePolymer, team1Palette[1] };
 
                 visualsBound = true;
                 ApplyLocalWeaponVisual(ProductAuthorityActionView.RifleSlot);
@@ -467,6 +485,8 @@ namespace Shooter.Presentation.Rig
                     rotation.X + pose.RecoilPitch * Mathf.Rad2Deg * rotKick,
                     rotation.Y + pose.RecoilYaw * Mathf.Rad2Deg * rotKick,
                     rotation.Z);
+                if (supportHand != null)
+                    supportHand.transform.localPosition = V(FirstPersonHandling.SupportHandOffset(slot, reload, reducedMotion));
             }
             else if (localViewHuman.IsValid)
             {
@@ -651,6 +671,18 @@ namespace Shooter.Presentation.Rig
             localWeapon.name = pistol ? "Local FP pistol" : "Local FP rifle";
             localWeapon.GetComponent<MeshFilter>().sharedMesh = pistol ? firstPersonPistolMesh : firstPersonRifleMesh;
             localWeapon.GetComponent<MeshRenderer>().sharedMaterials = new[] { rifleMetal, riflePolymer };
+            if (triggerHand != null && supportHand != null)
+            {
+                int index = slot * 2;
+                if (triggerHand.sharedMesh != firstPersonHandMeshes[index])
+                {
+                    triggerHand.sharedMesh = firstPersonHandMeshes[index];
+                    supportHand.sharedMesh = firstPersonHandMeshes[index + 1];
+                    triggerHand.GetComponent<MeshRenderer>().sharedMaterials = firstPersonHandMaterials;
+                    supportHand.GetComponent<MeshRenderer>().sharedMaterials = firstPersonHandMaterials;
+                    supportHand.transform.localPosition = Vector3.zero;
+                }
+            }
         }
 
         private static Float3 FindSocket(FrozenList<WeaponSocket> sockets, string id)
@@ -821,6 +853,7 @@ namespace Shooter.Presentation.Rig
         private void OnDestroy()
         {
             ClearAll();
+            if (localWeapon != null) DestroyObject(localWeapon.gameObject);
             for (int i = 0; i < owned.Count; i++)
                 if (owned[i] != null) DestroyObject(owned[i]);
             owned.Clear();

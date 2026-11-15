@@ -181,7 +181,21 @@ namespace Shooter.Tests
                     Assert.That(eye.y, Is.EqualTo(0f).Within(.00001f));
                     Assert.That(eye.z, Is.GreaterThan(camera.nearClipPlane));
                     Assert.That(weapon.localRotation, Is.EqualTo(Quaternion.identity));
+                    foreach (bool support in new[] { false, true })
+                    {
+                        var hand = weapon.Find(support ? "FP support glove and sleeve" : "FP trigger glove and sleeve");
+                        Assert.That(hand, Is.Not.Null);
+                        Assert.That(hand.GetComponent<MeshFilter>().sharedMesh.vertexCount,
+                            Is.EqualTo(MapVisualClosure.DecodeFirstPersonHand(visuals, slot, support).Positions.Count));
+                        Assert.That(hand.GetComponent<MeshRenderer>().sharedMaterials.Length, Is.EqualTo(3));
+                        Assert.That(hand.GetComponent<MeshRenderer>().shadowCastingMode,
+                            Is.EqualTo(UnityEngine.Rendering.ShadowCastingMode.Off));
+                        Assert.That(hand.localPosition, Is.EqualTo(Vector3.zero), "New lives/weapon slots start at the packaged grip.");
+                    }
                 }
+                presentation.ClearAll();
+                Assert.That(camera.GetComponentsInChildren<MeshRenderer>().Length, Is.Zero,
+                    "Inactive local weapon must hide every glove/sleeve on session teardown.");
             }
             finally { UnityEngine.Object.DestroyImmediate(root); }
         }

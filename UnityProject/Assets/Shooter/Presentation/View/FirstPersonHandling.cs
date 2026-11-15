@@ -78,6 +78,21 @@ namespace Shooter.Presentation.View
         public static float NearFieldScale(byte weaponSlot) =>
             ProductAuthorityActionView.IsPistolSlot(weaponSlot) ? PistolNearFieldScale : RifleNearFieldScale;
 
+        /// <summary>Camera-only support-hand reach toward the magazine; returns to its packaged grip at both endpoints.</summary>
+        public static Float3 SupportHandOffset(byte slot, float reloadPhase, bool reducedMotion)
+        {
+            if (slot > 1) throw new ArgumentOutOfRangeException(nameof(slot));
+            if (!float.IsFinite(reloadPhase)) throw new ArgumentOutOfRangeException(nameof(reloadPhase));
+            float phase = Math.Clamp(reloadPhase, 0f, 1f);
+            float reach = (float)Math.Sin(Math.PI * phase);
+            reach *= reach;
+            float amplitude = reducedMotion ? .55f : 1f;
+            var travel = FirstPersonMagazineTravel.Offset(phase, false, reducedMotion);
+            return new Float3(.018f * reach * amplitude,
+                -.085f * reach * amplitude + travel.Y * .5f,
+                (slot == 0 ? -.275f : -.025f) * reach * amplitude + travel.Z * .5f);
+        }
+
         /// <summary>
         /// Short equipment-relative kick from cosmetic recoil springs. At full ADS, only Z kick remains
         /// so the verified sight line stays on the camera ray.

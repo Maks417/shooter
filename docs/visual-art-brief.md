@@ -1,5 +1,9 @@
 # VD0 visual art brief — Battlefield V / Bodycam / Warface
 
+## T083 — First-person presence
+
+Implement original gloved trigger/support hands and long uniform sleeves as offline numeric meshes for both weapons. Palms/fingers follow existing grip coordinates; cuffs and knuckle pads separate fabric, glove and protective material. Support-hand reach follows the authority reload phase and returns continuously to the grip, with reduced-motion scaling. This closes the floating-weapon presentation gap in software; it does not solve third-person soldier anatomy or provide articulated fingers/full magazine exchange. [ADR-052](decisions.md#adr-052--accepted-packaged-first-person-glove-and-sleeve-props-t083), [delivery evidence](milestones/m11-playable-release/handoff.md).
+
 ## T081 — Place and construction language
 
 Owner-requested continuation from `615b6a5`: make architecture read as constructed surfaces instead of decorated collision boxes. Compound uses pale concrete/plaster walls, dark footing bands, narrow 3.2 m panel joints and lighter coping/end protection. Depot contrasts those surfaces with muted blue/oxide cargo, steel corrugations, perimeter rails and door locking hardware. Human-scale loading-bay facades replace blank menu building faces. Weapon metal uses a dark, rougher coated finish; polymer remains matte. These are implemented numeric visual recipes, not imported art.

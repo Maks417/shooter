@@ -15,6 +15,31 @@ namespace Shooter.Tests
     public sealed class MenuStagingLifetimeTests
     {
         [UnityTest]
+        public IEnumerator DestroyingPresentationReleasesCameraOwnedHandsAndWeaponRoot()
+        {
+            var root = new GameObject("First person lifetime runtime");
+            var camera = new GameObject("Viewmodel camera").AddComponent<Camera>();
+            camera.transform.SetParent(root.transform, false);
+            var hash = ContentIdentity.Hash(Encoding.ASCII.GetBytes("first-person-lifetime"));
+            var visuals = PackagedVisualPayloads.FromBuild(MapPackageBuilder.Build("training-compound", "low", hash));
+            try
+            {
+                var presentation = Shooter.Presentation.Rig.ProductActorPresentation.Create(root.transform, camera);
+                presentation.BindPackagedVisuals(visuals);
+                yield return null; // Exercise the actual MonoBehaviour destruction lifecycle.
+                var weapon = camera.transform.GetChild(0);
+                var meshes = weapon.GetComponentsInChildren<MeshFilter>(true).Select(f => f.sharedMesh).ToArray();
+                Assert.That(meshes.Length, Is.EqualTo(3), "Weapon plus both packaged hands must be present.");
+                Object.Destroy(presentation.gameObject);
+                yield return null;
+                yield return null;
+                Assert.That(camera.transform.childCount, Is.Zero);
+                Assert.That(meshes.All(mesh => mesh == null), Is.True);
+            }
+            finally { Object.Destroy(root); }
+        }
+
+        [UnityTest]
         public IEnumerator DestroyingSuspendedStageReleasesMaterialsMeshesTexturesAndTargets()
         {
             var hash = ContentIdentity.Hash(Encoding.ASCII.GetBytes("menu-staging-lifetime"));

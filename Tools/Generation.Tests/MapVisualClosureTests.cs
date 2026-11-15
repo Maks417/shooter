@@ -44,6 +44,21 @@ public sealed class MapVisualClosureTests : IDisposable
         Assert.True(MapVisualClosure.DecodeSoldierLod(payloads, 0).Positions.Count > 0);
         Assert.True(MapVisualClosure.DecodeRifleLod(payloads, 0).Positions.Count > 0);
         Assert.True(MapVisualClosure.DecodePistolLod(payloads, 0).Positions.Count > 0);
+        for (byte slot = 0; slot < 2; slot++)
+            foreach (bool support in new[] { false, true })
+            {
+                var hand = MapVisualClosure.DecodeFirstPersonHand(payloads, slot, support);
+                Assert.InRange(hand.Positions.Count, 100, FirstPersonHandGeometry.MaxVerticesPerHand);
+                Assert.Equal(3, hand.Submeshes.Count);
+                Assert.Null(hand.Joints); // Camera props cannot inherit or modify authoritative soldier skin/hit poses.
+                Assert.All(hand.Positions, p =>
+                {
+                    Assert.InRange(p.X, -.31f, .31f);
+                    Assert.InRange(p.Y, -.31f, .095f); // Sight-eye is .100m pistol / .115m rifle.
+                    Assert.InRange(p.Z, -.36f, .42f);
+                });
+                Assert.Equal(GeometryCodec.EncodeMesh(hand), GeometryCodec.EncodeMesh(FirstPersonHandGeometry.Build(slot == 1, support)));
+            }
 
         var shader = MapJsonValue.Parse(payloads.Bytes(MapVisualClosure.ShaderPath("low"))).Object;
         Assert.Equal("procedural-urp-lit-v1", shader["shaderException"].String);
@@ -54,13 +69,15 @@ public sealed class MapVisualClosureTests : IDisposable
         Assert.True(font["retainedByPlayer"].Boolean);
     }
 
-    [Fact]
-    public void VisualPackageCorruptDependencyFailsClosed()
+    [Theory]
+    [InlineData("mesh-soldier-lod0.bin")]
+    [InlineData("mesh-fp-rifle-trigger-hand.bin")]
+    public void VisualPackageCorruptDependencyFailsClosed(string dependencyPath)
     {
         Assert.Equal(ErrorCode.None, MapPackagePublisher.Publish(root, toolchain, new[] { "training-compound" }, new[] { "low" }, false, CancellationToken.None).Error);
         var package = MapPackageBuilder.Build("training-compound", "low", toolchain);
         string dir = MapPackagePublisher.PackageDirectory(root, package.PackageRootHash);
-        string soldier = Path.Combine(dir, MapVisualClosure.SoldierLodPaths[0]);
+        string soldier = Path.Combine(dir, dependencyPath);
         byte[] corrupt = { 9, 9, 9, 9 };
         File.WriteAllBytes(soldier, corrupt);
         Assert.False(MapVisualClosure.TryLoadFromPackageDirectory(dir, package.PackageRootHash, toolchain, out _, out string diagnostic));

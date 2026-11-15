@@ -37,12 +37,11 @@ namespace Shooter.Presentation.View
 
             // Seat a fresh mag: rise into the well then settle.
             float v = (t - InsertStart) / (1f - InsertStart);
-            float seat = (float)Math.Sin(Math.PI * Math.Clamp(v, 0f, 1f));
-            float settle = 1f - v;
+            float settle = 1f - v * v * (3f - 2f * v);
             return new Float3(
-                0.012f * settle * amp,
-                -0.04f * seat * empty * amp,
-                -0.02f * settle * amp);
+                0.028f * settle * amp,
+                -(0.095f + 0.035f * (empty - 1f)) * settle * amp,
+                -0.055f * settle * amp);
         }
 
         /// <summary>Peak remove depth (more negative for empty). Used by pure tests.</summary>

@@ -14,6 +14,11 @@ namespace Shooter.Generation.Environment
     {
         public const string MapSolidsMeshPath = "mesh-map-solids.bin";
         public const string UnitBoxMeshPath = "mesh-unit-box.bin";
+        public static readonly string[] FirstPersonHandPaths =
+        {
+            "mesh-fp-rifle-trigger-hand.bin", "mesh-fp-rifle-support-hand.bin",
+            "mesh-fp-pistol-trigger-hand.bin", "mesh-fp-pistol-support-hand.bin"
+        };
         public const string SoldierSkeletonPath = "skeleton-soldier.bin";
         public const string ShaderPathPrefix = "shader-";
         public const string FontPath = "font-exception.json";
@@ -95,6 +100,7 @@ namespace Shooter.Generation.Environment
                 FontPath
             };
             list.AddRange(SoldierLodPaths);
+            list.AddRange(FirstPersonHandPaths);
             list.AddRange(RifleLodPaths);
             list.AddRange(PistolLodPaths);
             foreach (string path in MapMaterialPaths)
@@ -266,6 +272,14 @@ namespace Shooter.Generation.Environment
 
         public static MaterialData DecodeMapMaterial(PackagedVisualPayloads payloads, string path) =>
             DecodeMaterial(payloads, path, MapFingerprint(payloads.MapId));
+
+        public static MeshData DecodeFirstPersonHand(PackagedVisualPayloads payloads, byte slot, bool support)
+        {
+            if (slot > 1) throw new ArgumentOutOfRangeException(nameof(slot));
+            int index = slot * 2 + (support ? 1 : 0);
+            return GeometryCodec.DecodeMesh(ArtifactCodec.Decode(payloads.Bytes(FirstPersonHandPaths[index]),
+                ContentKind.Mesh, MapFingerprint(payloads.MapId), payloads.ToolchainHash));
+        }
 
         private static string Trim(string message) => message.Length <= 200 ? message : message.Substring(0, 200);
     }
