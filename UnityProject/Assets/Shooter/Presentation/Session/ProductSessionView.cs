@@ -30,6 +30,7 @@ namespace Shooter.Presentation.Session
         private readonly SynthAudioMixer mixer = new SynthAudioMixer();
         private readonly ProductAudioEventRouter audio;
         private readonly AnalyticFxPool analyticFxPool = new AnalyticFxPool();
+        private readonly FirstPersonCameraBob cameraBob = new FirstPersonCameraBob();
         private readonly List<ActorLifecycleState> footstepScratch = new List<ActorLifecycleState>(GameContractVersion.MaxParticipants);
         private readonly HashSet<string> accessibilityCueKeys = new HashSet<string>(System.StringComparer.Ordinal);
         private UnitySynthAudioOutput? audioOutput;
@@ -59,6 +60,9 @@ namespace Shooter.Presentation.Session
         private readonly float[] killFeedUntil = new float[4];
         private int lastSeenHealth = 100;
         private float damagePulseUntil;
+        private float hitMarkerUntil;
+        private float damageFlashUntil;
+        private EntityId cameraBobLife;
 
         public ProductMapView? MapView => mapView;
         public ProductActorPresentation? Actors => actors;
@@ -257,6 +261,11 @@ namespace Shooter.Presentation.Session
             hudBoxes = System.Array.Empty<CollisionBox>();
             System.Array.Clear(recentDeathIds, 0, recentDeathIds.Length);
             System.Array.Clear(killFeedUntil, 0, killFeedUntil.Length);
+            cameraBob.Reset();
+            hitMarkerUntil = 0f;
+            damageFlashUntil = 0f;
+            damagePulseUntil = 0f;
+            cameraBobLife = default;
             deathIdCursor = 0;
             if (camera != null)
             {
@@ -325,12 +334,41 @@ namespace Shooter.Presentation.Session
                 hasListener = true;
                 if (camera != null)
                 {
+                    bool sliding = false;
                     float eye = human.Alive ? 1.65f : 0.4f;
-                    if (session.TryGetMovementView(human.EntityId, out var movement)) eye = movement.EyeHeight;
-                    camera.transform.position = new Vector3(human.Feet.X, human.Feet.Y + eye, human.Feet.Z);
+                    if (session.TryGetMovementView(human.EntityId, out var movement))
+                    {
+                        eye = movement.EyeHeight;
+                        sliding = movement.Sliding;
+                    }
+                    if (!human.EntityId.Equals(cameraBobLife) || !human.Alive)
+                    {
+                        cameraBob.Reset();
+                        cameraBobLife = human.EntityId;
+                    }
+                    float dtBob = Time.unscaledDeltaTime;
+                    if (session.PauseState == SessionPauseState.Running && human.Alive)
+                        cameraBob.Step(human.Feet, dtBob, sliding);
+                    else if (!human.Alive)
+                        cameraBob.Reset();
+
+                    float adsBlend = aimHeld ? 1f : 0f;
+                    Float3 bobLocal = cameraBob.LocalOffsetMeters(adsBlend, reducedCameraMotion, human.Alive);
+                    float roll = cameraBob.RollDegrees(adsBlend, reducedCameraMotion, human.Alive);
+                    float shake = FirstPersonHitFeedback.DamageShakeMeters(
+                        damageFlashUntil - Time.unscaledTime, reducedCameraMotion, reducedFlash);
+                    if (shake > 0f && adsBlend < 0.95f)
+                    {
+                        // Presentation-only translation; does not mutate aim input / authority pose.
+                        bobLocal = new Float3(bobLocal.X + shake * 0.35f, bobLocal.Y + shake, bobLocal.Z);
+                    }
+
                     float cameraYaw = acceptsGameplayInput ? input.Yaw : human.AimYaw;
                     float cameraPitch = acceptsGameplayInput ? input.Pitch : human.AimPitch;
-                    camera.transform.rotation = Quaternion.Euler(cameraPitch * Mathf.Rad2Deg, cameraYaw * Mathf.Rad2Deg, 0f);
+                    var rotation = Quaternion.Euler(cameraPitch * Mathf.Rad2Deg, cameraYaw * Mathf.Rad2Deg, roll);
+                    camera.transform.rotation = rotation;
+                    var basePos = new Vector3(human.Feet.X, human.Feet.Y + eye, human.Feet.Z);
+                    camera.transform.position = basePos + rotation * new Vector3(bobLocal.X, bobLocal.Y, bobLocal.Z);
                     float hip = hud.Settings.HipFov;
                     float ads = adsFovDegrees;
                     // Reduced camera motion: keep hip FOV (cosmetic ADS zoom only when preference is off).
@@ -443,9 +481,31 @@ namespace Shooter.Presentation.Session
             if (ev.Kind == CombatEventKind.Impact && ev.Payload is ImpactPayload impact)
             {
                 analyticFxPool.TrySpawn(FxKind.ImpactSpark, impact.Position, impact.Normal);
-                // Occasional smoke so the smoke cap stays readable under heavy fire.
-                if ((ev.Id.Ordinal % 3) == 0)
+                // Body-region impacts get a denser second spark (Warface readable hit feedback).
+                if (impact.RegionId >= 1)
+                    analyticFxPool.TrySpawn(FxKind.ImpactSpark, impact.Position, impact.Normal);
+                // Smoke more often on hits; still capped by MaxSmokeProxies.
+                if (impact.RegionId >= 1 || (ev.Id.Ordinal % 2) == 0)
                     analyticFxPool.TrySpawn(FxKind.SmokeProxy, impact.Position, impact.Normal);
+            }
+        }
+
+        /// <summary>Authority-only damage feedback for local player (taken/dealt). No invented hits.</summary>
+        private void ObserveHitFeedback(CombatEvent ev)
+        {
+            if (session == null || !session.HumanEntityId.IsValid) return;
+            var local = session.HumanEntityId;
+            if (FirstPersonHitFeedback.IsDamageTaken(ev.Kind, ev.Target, local))
+            {
+                float now = Time.unscaledTime;
+                damagePulseUntil = now + CombatHudVisual.DamagePulseSeconds;
+                damageFlashUntil = now + FirstPersonHitFeedback.DamageFlashSeconds;
+                if (ev.Payload is DamagePayload dmg)
+                    lastSeenHealth = dmg.RemainingHealth;
+            }
+            else if (FirstPersonHitFeedback.IsDamageDealt(ev.Kind, ev.Instigator, local))
+            {
+                hitMarkerUntil = Time.unscaledTime + FirstPersonHitFeedback.HitMarkerSeconds;
             }
         }
 
@@ -488,6 +548,7 @@ namespace Shooter.Presentation.Session
                     if (!accessibilityCueKeys.Add(key)) continue;
                     NotifyAccessibilityCue(ev.Kind);
                     ObserveCombatFx(ev);
+                    ObserveHitFeedback(ev);
                 }
             }
 
@@ -597,6 +658,9 @@ namespace Shooter.Presentation.Session
                 {
                     lastSeenHealth = 100;
                     damagePulseUntil = 0f;
+                    damageFlashUntil = 0f;
+                    hitMarkerUntil = 0f;
+                    cameraBob.Reset();
                     string respawn = "Awaiting a safe spawn";
                     if (snap != null)
                         for (int i = 0; i < snap.Participants.Count; i++)
@@ -627,39 +691,43 @@ namespace Shooter.Presentation.Session
                 if (!session.Lifecycle!.TryGetActorState(session.HumanEntityId, out var human)) return;
                 if (human.Health < lastSeenHealth) damagePulseUntil = Time.unscaledTime + CombatHudVisual.DamagePulseSeconds;
                 lastSeenHealth = human.Health;
+                float flash = FirstPersonHitFeedback.DamageFlashStrength(damageFlashUntil - Time.unscaledTime, reducedFlash);
+                if (flash > 0.01f) TacticalUi.DamagePlateFlash(combatUi.Width, combatUi.Height, flash);
                 DrawHealthVignette(human.Health);
                 DrawTacticalMap(a, human, snap);
                 DrawAmmoPanel(a, human, snap);
                 DrawCompass(a, human.AimYaw);
                 DrawKillFeed(a);
+                float cx = combatUi.Width * .5f, cy = combatUi.Height * .5f;
                 // Analytic center reticle with a small center gap. ADS uses the weapon sight instead.
                 if (!input.AimHeld)
                 {
-                    float cx = combatUi.Width * .5f, cy = combatUi.Height * .5f;
                     const float arm = 5f, gap = 3.5f;
-                    ReticleStroke(new Rect(cx - gap - arm, cy - 0.5f, arm, 1));
-                    ReticleStroke(new Rect(cx + gap, cy - 0.5f, arm, 1));
-                    ReticleStroke(new Rect(cx - 0.5f, cy - gap - arm, 1, arm));
-                    ReticleStroke(new Rect(cx - 0.5f, cy + gap, 1, arm));
+                    TacticalUi.ReticleArm(new Rect(cx - gap - arm, cy - 0.5f, arm, 1));
+                    TacticalUi.ReticleArm(new Rect(cx + gap, cy - 0.5f, arm, 1));
+                    TacticalUi.ReticleArm(new Rect(cx - 0.5f, cy - gap - arm, 1, arm));
+                    TacticalUi.ReticleArm(new Rect(cx - 0.5f, cy + gap, 1, arm));
                 }
+                float markerAlpha = FirstPersonHitFeedback.HitMarkerAlpha(hitMarkerUntil - Time.unscaledTime);
+                if (markerAlpha > 0.02f) TacticalUi.HitMarker(cx, cy, markerAlpha);
             }
             finally { combatUi.End(); }
         }
 
         private void DrawAmmoPanel(Rect safe, ActorLifecycleState human, MatchViewSnapshot? snapshot)
         {
-            const float w = 164f, h = 68f;
+            const float w = 152f, h = 62f;
             float x = safe.xMax - w, y = safe.yMax - h;
             TacticalUi.CombatPlate(new Rect(x, y, w, h), accentBottom: true);
             string weapon = human.ActiveWeaponSlot == 0 ? "RIFLE" : "SIDEARM";
-            combatUi.Label(new Rect(x + 8, y + 5, w - 16, 12), weapon, 10, TacticalUi.Muted, TextAnchor.UpperRight);
+            combatUi.Label(new Rect(x + 8, y + 4, w - 16, 11), weapon, 9, TacticalUi.Muted, TextAnchor.UpperRight);
             Color magColor = human.Magazine == 0 ? TacticalUi.Enemy : TacticalUi.Text;
             // Mag dominates; reserve stays quieter (BFV/Warface hierarchy).
-            combatUi.Label(new Rect(x + 6, y + 16, 78, 36), human.Magazine.ToString("00"), 32, magColor, TextAnchor.MiddleRight);
-            combatUi.Label(new Rect(x + 86, y + 22, 12, 16), "/", 12, TacticalUi.Muted, TextAnchor.MiddleCenter);
-            combatUi.Label(new Rect(x + 98, y + 32, 54, 18), human.Reserve.ToString("000"), 14, TacticalUi.Muted, TextAnchor.MiddleLeft);
+            combatUi.Label(new Rect(x + 6, y + 14, 72, 32), human.Magazine.ToString("00"), 30, magColor, TextAnchor.MiddleRight);
+            combatUi.Label(new Rect(x + 80, y + 20, 12, 14), "/", 11, TacticalUi.Muted, TextAnchor.MiddleCenter);
+            combatUi.Label(new Rect(x + 92, y + 28, 50, 16), human.Reserve.ToString("000"), 13, TacticalUi.Muted, TextAnchor.MiddleLeft);
             bool reloading = actors != null && actors.Actions.IsReloading(session!.HumanEntityId);
-            float trackX = x + 8, trackY = y + h - 8, trackW = w - 16, trackH = 3f;
+            float trackX = x + 8, trackY = y + h - 7, trackW = w - 16, trackH = 2.5f;
             TacticalUi.Fill(new Rect(trackX, trackY, trackW, trackH), new Color(.06f, .08f, .09f, .65f));
             TacticalUi.Edge(new Rect(trackX, trackY, trackW, trackH));
             if (reloading)
@@ -680,7 +748,7 @@ namespace Shooter.Presentation.Session
 
         private void DrawTacticalMap(Rect safe, ActorLifecycleState human, MatchViewSnapshot? snapshot)
         {
-            const float size = 118, range = 42;
+            const float size = 108, range = 42;
             Rect map = new Rect(safe.x, safe.yMax - size, size, size);
             TacticalUi.CombatPlate(new Rect(map.x - 1, map.y - 1, map.width + 2, map.height + 2));
             GUI.BeginGroup(map);
@@ -728,7 +796,7 @@ namespace Shooter.Presentation.Session
             }
             finally { GUI.EndGroup(); }
 
-            float squadX = map.xMax + 10, squadTop = safe.yMax - 148;
+            float squadX = map.xMax + 8, squadTop = safe.yMax - 138;
             int allies = 0;
             if (snapshot != null)
                 for (int i = 0; i < snapshot.Participants.Count; i++)
@@ -736,10 +804,10 @@ namespace Shooter.Presentation.Session
                     var p = snapshot.Participants[i];
                     if (p.Team == human.Team && !p.IsHuman) allies++;
                 }
-            float squadH = 16 + allies * 14 + 40;
-            TacticalUi.CombatPlate(new Rect(squadX - 4, squadTop - 2, 138, squadH));
+            float squadH = 14 + allies * 13 + 36;
+            TacticalUi.CombatPlate(new Rect(squadX - 4, squadTop - 2, 128, squadH));
             TacticalUi.Fill(new Rect(squadX - 4, squadTop - 2, 2, squadH), TacticalUi.Ally);
-            combatUi.Label(new Rect(squadX, squadTop, 124, 12), "SQUAD", 10, TacticalUi.Ally);
+            combatUi.Label(new Rect(squadX, squadTop, 116, 11), "SQUAD", 9, TacticalUi.Ally);
             int row = 0;
             if (snapshot != null)
                 for (int i = 0; i < snapshot.Participants.Count; i++)
@@ -747,10 +815,10 @@ namespace Shooter.Presentation.Session
                     var participant = snapshot.Participants[i];
                     if (participant.Team != human.Team || participant.IsHuman) continue;
                     string name = participant.DisplayName.Length > 11 ? participant.DisplayName.Substring(0, 10) + "…" : participant.DisplayName;
-                    float ry = squadTop + 14 + row * 14;
+                    float ry = squadTop + 13 + row * 13;
                     // Alive/dead cue stays color-independent (+ / -).
                     string mark = participant.Alive ? "+  " : "-  ";
-                    combatUi.Label(new Rect(squadX, ry, 114, 13), mark + name, 10,
+                    combatUi.Label(new Rect(squadX, ry, 110, 12), mark + name, 9,
                         participant.Alive ? TacticalUi.Text : TacticalUi.Muted);
                     row++;
                 }
@@ -762,11 +830,11 @@ namespace Shooter.Presentation.Session
             float pulse = danger
                 ? CombatHudVisual.CriticalBarPulse(Time.unscaledTime, reducedFlash, reducedCameraMotion)
                 : 1f;
-            float hx = squadX, hy = safe.yMax - 36;
+            float hx = squadX, hy = safe.yMax - 34;
             float barH = CombatHudVisual.HealthBarHeight;
-            combatUi.Label(new Rect(hx, hy - 2, 48, 28), human.Health.ToString(), 26, healthInk, TextAnchor.MiddleLeft);
-            combatUi.Label(new Rect(hx + 46, hy + 8, 70, 12), "HP", 10, TacticalUi.Muted, TextAnchor.MiddleLeft);
-            float barW = 128f, gap = 2f;
+            combatUi.Label(new Rect(hx, hy - 2, 44, 26), human.Health.ToString(), 24, healthInk, TextAnchor.MiddleLeft);
+            combatUi.Label(new Rect(hx + 42, hy + 8, 60, 11), "HP", 9, TacticalUi.Muted, TextAnchor.MiddleLeft);
+            float barW = 118f, gap = 2f;
             float segW = (barW - gap * (CombatHudVisual.HealthSegments - 1)) / CombatHudVisual.HealthSegments;
             float barY = safe.yMax - barH;
             // Dual-layer track under segmented fill.
@@ -798,13 +866,13 @@ namespace Shooter.Presentation.Session
 
         private void DrawCompass(Rect safe, float yaw)
         {
-            // Sit under the shell score/clock strip (BFV-like top hierarchy).
+            // Sit under the shell score/clock strip (BFV-like top hierarchy). Quiet so world stays first.
             float center = combatUi.Width * .5f;
-            float y = safe.y + 42;
-            float w = 280, h = 16;
+            float y = safe.y + 40;
+            float w = 248, h = 14;
             TacticalUi.CombatPlate(new Rect(center - w * .5f, y, w, h));
             float degrees = Mathf.Repeat(yaw * Mathf.Rad2Deg, 360f);
-            TacticalUi.Fill(new Rect(center - 1, y, 2, 3), TacticalUi.Accent);
+            TacticalUi.Fill(new Rect(center - 1, y, 2, 2.5f), TacticalUi.Accent);
             int nearest = Mathf.RoundToInt(degrees / 15f) * 15;
             for (int i = -10; i <= 10; i++)
             {
@@ -900,12 +968,6 @@ namespace Shooter.Presentation.Session
                     combatUi.Label(new Rect(r.x + 8, r.y, r.width - 14, r.height), line, 11, ink, TextAnchor.MiddleRight);
                 }
             }
-        }
-
-        private static void ReticleStroke(Rect rect)
-        {
-            TacticalUi.Fill(new Rect(rect.x - 0.75f, rect.y - 0.75f, rect.width + 1.5f, rect.height + 1.5f), new Color(0.02f, 0.03f, 0.035f, 0.85f));
-            TacticalUi.Fill(rect, TacticalUi.Text);
         }
 
         private void DrawAccessibilityOverlays()
