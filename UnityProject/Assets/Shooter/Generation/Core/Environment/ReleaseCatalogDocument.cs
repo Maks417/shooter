@@ -45,8 +45,8 @@ namespace Shooter.Generation.Environment
                     ["mapId"] = mapId,
                     ["displayName"] = mapId == "depot-yard" ? "Depot Yard" : "Training Compound",
                     ["description"] = mapId == "depot-yard"
-                        ? "Distinct depot grammar for offline TDM."
-                        : "Bounded compound for offline TDM.",
+                        ? "Steel yards, cargo lanes, and hard cover for local TDM."
+                        : "Tight courtyards and training lanes for local TDM.",
                     ["supportedModes"] = new List<object?> { "team-deathmatch" },
                     ["supportedTeamSizes"] = new List<object?> { 5, 6 },
                     ["recipeSeed"] = seed.ToString(CultureInfo.InvariantCulture),

@@ -752,3 +752,17 @@ Decision:
 - **Shipping.** `Shooter/AdsScopePip` is preloaded beside `ProceduralSurface`; ADR-013 null `postProcessData` stays. Not a stock URP Volume feature.
 
 Validation: Simulation pure optic tests; provenance for new shader/presenter; docs/manifest. Named player optic review remains Pending. Rollback restores black-tube `AdsScope` fills and whole-camera rifle FOV blend.
+
+## ADR-066 — Accepted: non-commercial UI typeface bank (Barlow Condensed)
+
+Date 2026-11-15; owner authorized custom UI fonts for this non-commercial build (“any fonts”) so shell/HUD copy can leave the default Unity IMGUI face. Sole integrator owns Presentation font loading/`TacticalUi`, provenance allowlist entries, map visual closure font token, Package-Release license prose and docs. No C0/Game-v1 freeze, no TextMeshPro, no EA/BFV typeface extraction, no acceptance waiver.
+
+Context: ADR-002’s narrow `engine-allowlist-v1` exception covered only the engine IMGUI font. Player-facing menus still looked like default Arial while copy was partly technical. The combat audio bank (ADR-062) already shows how non-geometry media can ship with license + provenance outside the “imported art” ban.
+
+Decision:
+- **Named OFL bank.** Ship Barlow Condensed Regular / SemiBold / Bold under `UnityProject/Assets/Shooter/Presentation/Fonts/Resources/` as Unity TrueType fonts, loaded by `UiFonts` via `Resources.Load`. Display (≥22 px) uses Bold; body uses Regular; buttons use SemiBold. Engine font remains the silent fallback if a face fails to load.
+- **Provenance.** `Tools/provenance-allowlist.json` gains hash-pinned `namedFontSources` (`.ttf` only under that Fonts path). `Test-SourceProvenance.ps1` validates those hashes the same way as ADR-042 native sources. OFL text lives at `Content/Fonts/OFL-BarlowCondensed.txt` (outside Assets) and is summarized in Package-Release `LICENSES.txt`.
+- **Closure token.** Map visual `font-exception.json` records `fontException: ui-typeface-bank-v1` (still retained by the player; policy remains procedural UI, not authored scene art).
+- **Copy.** Player-facing shell/HUD strings move toward short military FPS language via `InsertionScreenCopy` / `ShellUiCopy`; diagnostics stay out of chrome.
+
+Validation: provenance PASS with the three TTFs; Generation font-closure assertion; Simulation shell copy tests; docs/manifest. Named 720p readability review remains Pending. Rollback restores engine-only IMGUI font + `engine-allowlist-v1`.

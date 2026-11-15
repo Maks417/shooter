@@ -54,6 +54,8 @@ function New-CaseRoot([string]$Name) {
     $audioDir = Join-Path $caseRoot 'Content/Audio/combat'
     Write-TestFile (Join-Path $audioDir 'manifest.json') '{"bankId":"combat-audio-bank-v3-stereo","sampleRate":48000,"channels":2,"clips":[]}'
     Write-TestFile (Join-Path $audioDir 'rifle_shot_00.wav') 'RIFF-synthetic'
+    # ADR-066 UI typeface license beside the package.
+    Write-TestFile (Join-Path $caseRoot 'Content/Fonts/OFL-BarlowCondensed.txt') 'SIL Open Font License synthetic'
     return [pscustomobject]@{ Root = $caseRoot; ToolchainHash = $toolchainHash }
 }
 

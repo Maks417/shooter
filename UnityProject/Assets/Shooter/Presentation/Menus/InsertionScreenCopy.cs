@@ -8,11 +8,11 @@ namespace Shooter.Presentation.Menus
     {
         public const string MatchTitle = "PREPARING THE BATTLEFIELD";
         public const string BootTitle = "PREPARING THE BATTLEFIELD";
-        public const string BootHeader = "Standing up local operations";
-        public const string BootPhase = "Binding packaged content…";
-        public const string BootRules = "LOCAL / OFFLINE  ·  TEAM DEATHMATCH";
-        public const string BootFooter = "PACKAGED CONTENT  ·  NO NETWORK";
-        public const string BindingPresentation = "Binding presentation…";
+        public const string BootHeader = "Standing by";
+        public const string BootPhase = "Loading your arsenal…";
+        public const string BootRules = "LOCAL MATCH  ·  TEAM DEATHMATCH";
+        public const string BootFooter = "SOLO OPS  ·  NO NETWORK";
+        public const string BindingPresentation = "Linking the battlefield…";
 
         public static string MatchRules(byte teamSize)
         {
@@ -28,14 +28,24 @@ namespace Shooter.Presentation.Menus
 
         public static string LoadingPhase(string mapId)
         {
-            if (string.IsNullOrEmpty(mapId)) return "Loading map…";
-            return "Loading " + mapId + "…";
+            if (string.IsNullOrEmpty(mapId)) return "Loading the map…";
+            return "Loading " + FriendlyMapName(mapId) + "…";
         }
 
         public static string DisplayNameOrFallback(string? displayName, string mapId)
         {
             if (!string.IsNullOrWhiteSpace(displayName)) return displayName.Trim();
-            return string.IsNullOrEmpty(mapId) ? "OPERATION" : mapId;
+            if (string.IsNullOrEmpty(mapId)) return "OPERATION";
+            return FriendlyMapName(mapId);
+        }
+
+        public static string FriendlyMapName(string mapId)
+        {
+            if (string.Equals(mapId, "training-compound", StringComparison.OrdinalIgnoreCase))
+                return "Training Compound";
+            if (string.Equals(mapId, "depot-yard", StringComparison.OrdinalIgnoreCase))
+                return "Depot Yard";
+            return mapId;
         }
     }
 }

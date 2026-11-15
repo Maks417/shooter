@@ -100,7 +100,7 @@ public sealed class MapVisualClosureTests : IDisposable
         Assert.Equal("Universal Render Pipeline/Lit", shader["unityShader"].String);
         Assert.True(shader["retainedByPlayer"].Boolean);
         var font = MapJsonValue.Parse(payloads.Bytes(MapVisualClosure.FontPath)).Object;
-        Assert.Equal("engine-allowlist-v1", font["fontException"].String);
+        Assert.Equal("ui-typeface-bank-v1", font["fontException"].String);
         Assert.True(font["retainedByPlayer"].Boolean);
     }
 

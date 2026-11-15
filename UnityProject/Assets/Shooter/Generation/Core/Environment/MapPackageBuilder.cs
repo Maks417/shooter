@@ -255,10 +255,10 @@ namespace Shooter.Generation.Environment
 
             byte[] font = MapDocumentJson.EncodeObject(new Dictionary<string, object?>
             {
-                ["fontException"] = "engine-allowlist-v1",
+                ["fontException"] = "ui-typeface-bank-v1",
                 ["policy"] = "procedural-v1",
                 ["retainedByPlayer"] = true,
-                ["decision"] = "docs/decisions.md#adr-002--accepted-zero-authored-visual-source-assets"
+                ["decision"] = "docs/decisions.md#adr-066--accepted-non-commercial-ui-typeface-bank-barlow-condensed"
             });
             AddJson(dependencies, "font", MapVisualClosure.FontPath, font);
 
@@ -409,7 +409,7 @@ namespace Shooter.Generation.Environment
                 !shader["retainedByPlayer"].Boolean)
                 throw new InvalidOperationException("Shader provenance incomplete.");
             var font = MapJsonValue.Parse(payloads.Bytes(MapVisualClosure.FontPath)).Object;
-            if (font["fontException"].String != "engine-allowlist-v1" || !font["retainedByPlayer"].Boolean)
+            if (font["fontException"].String != "ui-typeface-bank-v1" || !font["retainedByPlayer"].Boolean)
                 throw new InvalidOperationException("Font provenance incomplete.");
         }
 

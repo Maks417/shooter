@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using Shooter.Presentation.Menus;
 using UnityEngine;
 
 namespace Shooter.Presentation.Session
@@ -117,7 +118,18 @@ namespace Shooter.Presentation.Session
         {
             if (!labels.TryGetValue(size, out var style))
             {
-                style = new GUIStyle(GUI.skin.label) { fontSize = size, fontStyle = size >= 28 ? FontStyle.Bold : FontStyle.Normal, wordWrap = true, padding = new RectOffset(0, 0, 0, 0), richText = false };
+                // ADR-066: condensed bank supplies weight; avoid double-bold on the engine fallback.
+                style = new GUIStyle(GUI.skin.label)
+                {
+                    fontSize = size,
+                    fontStyle = FontStyle.Normal,
+                    wordWrap = true,
+                    padding = new RectOffset(0, 0, 0, 0),
+                    richText = false
+                };
+                Font? face = UiFonts.ForLabelSize(size);
+                if (face != null) style.font = face;
+                else if (size >= 28) style.fontStyle = FontStyle.Bold;
                 labels.Add(size, style);
             }
             style.normal.textColor = StyleInk(color ?? Text);
@@ -377,6 +389,8 @@ namespace Shooter.Presentation.Session
             if (buttonStyle == null)
             {
                 buttonStyle = new GUIStyle(GUI.skin.button) { fontSize = 18, alignment = TextAnchor.MiddleLeft, padding = new RectOffset(16, 12, 0, 0), wordWrap = true };
+                Font? face = UiFonts.Button;
+                if (face != null) buttonStyle.font = face;
                 foreach (var state in new[] { buttonStyle.normal, buttonStyle.hover, buttonStyle.active, buttonStyle.focused }) state.background = null;
             }
             Color ink = StyleInk(GUI.enabled ? (primary ? Background : Text) : Muted);
@@ -492,10 +506,10 @@ namespace Shooter.Presentation.Session
             Fill(new Rect(0, Height - 8, Width * .22f, 2), Accent);
         }
 
-        public void Header(string eyebrow, string title, string right = "LOCAL / OFFLINE")
+        public void Header(string eyebrow, string title, string right = "LOCAL MATCH")
         {
             Label(new Rect(Safe.x, Safe.y, Safe.width * .65f, 16), eyebrow, 12, Accent);
-            Label(new Rect(Safe.x, Safe.y + 16, Safe.width * .7f, 36), title, 28);
+            Label(new Rect(Safe.x, Safe.y + 16, Safe.width * .7f, 36), title, 32);
             Label(new Rect(Safe.x + Safe.width * .62f, Safe.y, Safe.width * .38f, 18), right, 12, Muted, TextAnchor.UpperRight);
             Fill(new Rect(Safe.x, Safe.y + 58, Safe.width, 1), Raised);
             Fill(new Rect(Safe.x, Safe.y + 58, 56, 2), Accent);
@@ -518,7 +532,7 @@ namespace Shooter.Presentation.Session
             string footer)
         {
             Backdrop();
-            Header("OPERATIONS / INSERTION", headerTitle);
+            Header(ShellUiCopy.EyebrowInsertion, headerTitle);
             Rect a = Safe;
             float panelW = Mathf.Min(920, a.width);
             float panelH = Mathf.Min(268, a.height * .48f);

@@ -857,7 +857,7 @@ namespace Shooter.Presentation.Session
                     damageFlashUntil = 0f;
                     hitMarkerUntil = 0f;
                     cameraBob.Reset();
-                    string respawn = "Awaiting a safe spawn";
+                    string respawn = ShellUiCopy.AwaitingSpawn;
                     if (snap != null)
                         for (int i = 0; i < snap.Participants.Count; i++)
                         {
@@ -865,7 +865,7 @@ namespace Shooter.Presentation.Session
                             if (!participant.IsHuman) continue;
                             uint due = participant.RespawnDueActiveTick;
                             uint remaining = Serial32.IsNewer(due, snap.ActiveTicksElapsed) ? Serial32.ForwardDistance(due, snap.ActiveTicksElapsed) : 0;
-                            if (remaining > 0) respawn = "Returning in " + (remaining / 60f).ToString("0.0") + "s";
+                            if (remaining > 0) respawn = ShellUiCopy.ReturningIn(remaining / 60f);
                         }
                     // Cinematic KIA: soft letterbox + centered status plate (code-only fills).
                     if (!reducedFlash)
@@ -877,8 +877,8 @@ namespace Shooter.Presentation.Session
                     TacticalUi.CombatPlate(panel, strong: true);
                     TacticalUi.Fill(new Rect(panel.x, panel.y, 3, panel.height), TacticalUi.Enemy);
                     TacticalUi.Fill(new Rect(panel.x + 3, panel.y, panel.width - 3, 1), new Color(TacticalUi.Enemy.r, TacticalUi.Enemy.g, TacticalUi.Enemy.b, .5f));
-                    combatUi.Label(new Rect(panel.x + 18, panel.y + 14, panel.width - 32, 16), "STATUS", 11, TacticalUi.Muted, TextAnchor.UpperLeft);
-                    combatUi.Label(new Rect(panel.x + 18, panel.y + 34, panel.width - 32, 32), "KILLED IN ACTION", 26, TacticalUi.Enemy, TextAnchor.UpperLeft);
+                    combatUi.Label(new Rect(panel.x + 18, panel.y + 14, panel.width - 32, 16), ShellUiCopy.StatusLabel, 11, TacticalUi.Muted, TextAnchor.UpperLeft);
+                    combatUi.Label(new Rect(panel.x + 18, panel.y + 34, panel.width - 32, 32), ShellUiCopy.StatusKilled, 26, TacticalUi.Enemy, TextAnchor.UpperLeft);
                     TacticalUi.Fill(new Rect(panel.x + 18, panel.y + 74, 42, 1), TacticalUi.Enemy);
                     combatUi.Label(new Rect(panel.x + 18, panel.y + 82, panel.width - 32, 22), respawn, 15, TacticalUi.Text, TextAnchor.UpperLeft);
                     return;
@@ -927,10 +927,10 @@ namespace Shooter.Presentation.Session
             TacticalUi.CombatPlate(new Rect(x, y, w, h), accentBottom: true);
             string weapon = human.ActiveWeaponSlot switch
             {
-                1 => "SIDEARM",
-                2 => "KNIFE",
-                3 => "GRENADE",
-                _ => "RIFLE"
+                1 => ShellUiCopy.Sidearm,
+                2 => ShellUiCopy.Knife,
+                3 => ShellUiCopy.Grenade,
+                _ => ShellUiCopy.Rifle
             };
             combatUi.Label(new Rect(x + 8, y + 4, w - 16, 11), weapon, 9, TacticalUi.Muted, TextAnchor.UpperRight);
             bool knife = human.ActiveWeaponSlot == 2;
@@ -949,7 +949,7 @@ namespace Shooter.Presentation.Session
             if (reloading)
             {
                 float phase = Mathf.Clamp01(actors!.Actions.ReloadPhaseAtTick(session.HumanEntityId, snapshot?.CompletedSimulationTick ?? 0));
-                combatUi.Label(new Rect(x, y - 14, w, 14), "RELOADING", 10, TacticalUi.Accent, TextAnchor.MiddleRight);
+                combatUi.Label(new Rect(x, y - 14, w, 14), ShellUiCopy.Reloading, 10, TacticalUi.Accent, TextAnchor.MiddleRight);
                 float fillW = trackW * phase;
                 TacticalUi.AccentBar(new Rect(trackX, trackY, fillW, trackH), TacticalUi.Accent);
                 if (fillW > 2f) TacticalUi.Fill(new Rect(trackX + fillW - 2f, trackY - 1, 2, trackH + 2), TacticalUi.Text);
@@ -957,7 +957,7 @@ namespace Shooter.Presentation.Session
             else if (!knife && human.Magazine == 0)
             {
                 string reload = input.Bindings.TryGetControl("Reload", out string control) ? TacticalUi.ControlLabel(control) : "R";
-                string hint = grenade ? "EMPTY" : (human.Reserve > 0 ? reload + "  RELOAD" : "OUT OF AMMO");
+                string hint = grenade ? ShellUiCopy.Empty : (human.Reserve > 0 ? reload + ShellUiCopy.ReloadHint : ShellUiCopy.OutOfAmmo);
                 combatUi.Label(new Rect(x - 20, y - 14, w + 20, 14), hint, 10, TacticalUi.Accent, TextAnchor.MiddleRight);
             }
         }

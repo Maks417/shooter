@@ -1,5 +1,6 @@
 #nullable enable
 using System;
+using Shooter.Presentation.Menus;
 using UnityEngine;
 
 namespace Shooter.Presentation.Session
@@ -37,12 +38,12 @@ namespace Shooter.Presentation.Session
             try
             {
                 ui.Backdrop();
-                ui.Header("OPERATIONS / RECOVERY", "Game content needs attention");
+                ui.Header(ShellUiCopy.EyebrowRecovery, ShellUiCopy.RecoveryTitle);
                 Rect a = ui.Safe;
                 ui.Label(new Rect(a.x, a.y + 108, a.width, 88), message, 22);
                 ui.Label(new Rect(a.x, a.y + 208, a.width, 120), detail, 18, TacticalUi.Muted);
-                if (onRetry != null && ui.Button(new Rect(a.x, a.yMax - 60, 180, 44), "recovery.retry", "RETRY", primary: true)) onRetry.Invoke();
-                if (ui.Button(new Rect(a.x + 192, a.yMax - 60, 210, 44), "recovery.quit", "QUIT TO DESKTOP"))
+                if (onRetry != null && ui.Button(new Rect(a.x, a.yMax - 60, 180, 44), "recovery.retry", ShellUiCopy.RecoveryRetry, primary: true)) onRetry.Invoke();
+                if (ui.Button(new Rect(a.x + 192, a.yMax - 60, 210, 44), "recovery.quit", ShellUiCopy.RecoveryQuit))
                 {
                     quitRequested = true;
                     onQuit?.Invoke();

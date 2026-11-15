@@ -304,6 +304,13 @@ try {
         Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $audioDest $_.Name) -Force
     }
 
+    # ADR-066 OFL notice for the UI typeface bank (fonts themselves are embedded in the player).
+    $fontLicense = Join-Path $repoRoot 'Content/Fonts/OFL-BarlowCondensed.txt'
+    if (!(Test-Path -LiteralPath $fontLicense -PathType Leaf)) { throw "Missing UI font license: $fontLicense" }
+    $fontDest = Join-Path $stage 'Content/Fonts'
+    $null = New-Item -ItemType Directory -Path $fontDest -Force
+    Copy-Item -LiteralPath $fontLicense -Destination (Join-Path $fontDest 'OFL-BarlowCondensed.txt') -Force
+
     $controls = @"
 Shooter offline team-deathmatch (local package)
 Binary commit: $sourceCommit
@@ -334,7 +341,7 @@ Diagnostic smoke remains a separate tool path and is not this package's acceptan
 Shooter local offline package — license / provenance summary
 ===========================================================
 - Game content is generated from numeric recipes under the repository procedural provenance policy.
-- Engine font allowlist exception: engine-allowlist-v1 (named Unity engine font exception only; no imported art).
+- UI typeface bank (ADR-066): Barlow Condensed Regular/SemiBold/Bold under the SIL Open Font License 1.1 (ui-typeface-bank-v1). Full OFL text: Content/Fonts/OFL-BarlowCondensed.txt in the source tree; engine IMGUI font remains the load fallback.
 - Unity player/runtime redistribution remains under Unity's own terms for the pinned editor $($build.editorVersion) ($($build.editorRevision)).
 - This archive does not include PresentMon, Unity Editor, Library/Temp caches, or developer absolute path dependencies.
 - Third-party notices packaged by the Unity player, if any, remain under their original terms inside Shooter_Data.

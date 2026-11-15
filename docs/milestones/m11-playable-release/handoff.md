@@ -1,5 +1,16 @@
 # M11 — Playable build and acceptance — handoff and gate record
 
+## ADR-066 — UI copy + Barlow Condensed typeface bank — 2026-11-15
+
+Owner: shell/HUD text felt technical; want BFV-like condensed fonts (non-commercial). [ADR-066](../../decisions.md#adr-066--accepted-non-commercial-ui-typeface-bank-barlow-condensed).
+
+**Implemented (software):**
+- OFL Barlow Condensed Regular/SemiBold/Bold under `Presentation/Fonts/Resources`; `UiFonts` + `TacticalUi` assign display/body/button faces; engine IMGUI fallback retained.
+- Provenance `namedFontSources` + `Test-SourceProvenance.ps1`; map closure token `ui-typeface-bank-v1`; Package-Release ships `Content/Fonts/OFL-BarlowCondensed.txt` and license prose.
+- Player-facing rewrite via `ShellUiCopy` / `InsertionScreenCopy` (e.g. Standing by, Linking the battlefield…, LOCAL MATCH, ON HOLD, Finding a safe drop…); catalog map flavor lines updated.
+
+**Checks:** provenance + Simulation shell/HUD copy tests + Generation font-closure assertion + docs/manifest in this change set. Named 720p readability, Unity EditMode/PlayMode, Client/Server/package/installer remain Pending. Does not close FIX08/SET/REL/P05/VD exits.
+
 ## ADR-065 — PiP rifle scope (blurred periphery) — 2026-11-15
 
 Owner: rifle ADS covered the whole screen; want sharp zoomed circle with live blurred world outside (reference PiP look). [ADR-065](../../decisions.md#adr-065--accepted-screen-space-pip-rifle-scope-blurred-periphery).

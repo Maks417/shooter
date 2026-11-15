@@ -14,6 +14,12 @@ foreach ($native in @($policy.namedNativeSources | Where-Object { $null -ne $_ }
     if ($native.path -isnot [string] -or $native.path -cnotmatch '^UnityProject/Assets/[A-Za-z0-9_./-]+\.cpp$' -or $native.path.Contains('..') -or $native.sha256 -cnotmatch '^[0-9a-f]{64}$') { throw 'Malformed namedNativeSources entry' }
     $namedNative[[IO.Path]::GetFullPath((Join-Path $repoRoot $native.path))] = $native.sha256
 }
+# ADR-066: hash-pinned UI typeface bank (.ttf only under Presentation/Fonts).
+$namedFonts = @{}
+foreach ($font in @($policy.namedFontSources | Where-Object { $null -ne $_ })) {
+    if ($font.path -isnot [string] -or $font.path -cnotmatch '^UnityProject/Assets/Shooter/Presentation/Fonts/[A-Za-z0-9_./-]+\.ttf$' -or $font.path.Contains('..') -or $font.sha256 -cnotmatch '^[0-9a-f]{64}$') { throw 'Malformed namedFontSources entry' }
+    $namedFonts[[IO.Path]::GetFullPath((Join-Path $repoRoot $font.path))] = $font.sha256
+}
 function Test-ProofFile($Proof, [string]$Kind) {
     if ($Proof -isnot [pscustomobject] -or $Proof.path -isnot [string] -or [string]::IsNullOrWhiteSpace($Proof.path) -or
         $Proof.sha256 -isnot [string] -or $Proof.sha256 -cnotmatch '^[0-9a-f]{64}$') { throw "Malformed $Kind provenance proof" }
@@ -58,7 +64,7 @@ else { $failures.Add('Generated settings provenance is missing') }
 $assetFiles = @(Get-ChildItem -LiteralPath $assetRoot -Recurse -Force)
 foreach ($item in $assetFiles) {
     if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) { $failures.Add("Unreviewed reparse point: $($item.FullName)") }
-    if (!$item.PSIsContainer -and $item.Extension -notin $policy.assetSourceExtensions -and !$generated.ContainsKey($item.FullName) -and !$namedNative.ContainsKey($item.FullName)) { $failures.Add("Unapproved asset source: $($item.FullName)") }
+    if (!$item.PSIsContainer -and $item.Extension -notin $policy.assetSourceExtensions -and !$generated.ContainsKey($item.FullName) -and !$namedNative.ContainsKey($item.FullName) -and !$namedFonts.ContainsKey($item.FullName)) { $failures.Add("Unapproved asset source: $($item.FullName)") }
     if ($item.Extension -eq '.meta') {
         $target = $item.FullName.Substring(0, $item.FullName.Length - 5)
         if (!(Test-Path -LiteralPath $target)) { $failures.Add("Orphan metadata: $($item.FullName)") }
@@ -76,6 +82,10 @@ foreach ($fixture in $policy.nonShippingFixtures) {
 foreach ($native in $namedNative.GetEnumerator()) {
     if (!(Test-Path -LiteralPath $native.Key -PathType Leaf)) { $failures.Add("Missing named native source: $($native.Key)"); continue }
     if ((Get-FileHash -LiteralPath $native.Key -Algorithm SHA256).Hash.ToLowerInvariant() -cne $native.Value) { $failures.Add("Named native source hash mismatch: $($native.Key)") }
+}
+foreach ($font in $namedFonts.GetEnumerator()) {
+    if (!(Test-Path -LiteralPath $font.Key -PathType Leaf)) { $failures.Add("Missing named font source: $($font.Key)"); continue }
+    if ((Get-FileHash -LiteralPath $font.Key -Algorithm SHA256).Hash.ToLowerInvariant() -cne $font.Value) { $failures.Add("Named font source hash mismatch: $($font.Key)") }
 }
 $reportDirectory = Join-Path $repoRoot 'Artifacts/source-provenance'
 $null = New-Item -ItemType Directory -Path $reportDirectory -Force

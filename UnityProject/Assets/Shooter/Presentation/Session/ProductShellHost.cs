@@ -310,14 +310,14 @@ namespace Shooter.Presentation.Session
             {
                 session.RequestAbort();
                 coordinator.CompleteStartFailure();
-                navigation.FailLoad("Verified map package solids missing.");
+                navigation.FailLoad("Map package is incomplete. Repair or reinstall the game.");
                 return;
             }
             if (!backend.TryGetVerifiedVisuals(out var visuals, out string visualDiagnostic))
             {
                 session.RequestAbort();
                 coordinator.CompleteStartFailure();
-                navigation.FailLoad("Verified visual package missing: " + visualDiagnostic + ". Repair required; no generation fallback.");
+                navigation.FailLoad("Visual package missing (" + visualDiagnostic + "). Repair or reinstall — no substitute map will load.");
                 return;
             }
 
@@ -385,7 +385,7 @@ namespace Shooter.Presentation.Session
             view.ClearPresentation();
             view.SetGameplayFocus(false);
             coordinator.LeaveToMenu();
-            navigation.ResetToMain(abort ? "Returned to menu." : "");
+            navigation.ResetToMain(abort ? "Back at headquarters." : "");
             ApplyCursorForScreen();
         }
 
@@ -442,10 +442,10 @@ namespace Shooter.Presentation.Session
                     DrawPause(s);
                     break;
                 case ShellScreen.ConfirmLeave:
-                    DrawConfirm(s, "Leave match? Progress will be lost.", ConfirmLeave, () => navigation.CancelConfirm());
+                    DrawConfirm(s, ShellUiCopy.ConfirmLeave, ConfirmLeave, () => navigation.CancelConfirm());
                     break;
                 case ShellScreen.ConfirmRestart:
-                    DrawConfirm(s, "Restart match? Progress will be lost.", () => RestartMatch(), () => navigation.CancelConfirm());
+                    DrawConfirm(s, ShellUiCopy.ConfirmRestart, () => RestartMatch(), () => navigation.CancelConfirm());
                     break;
                 case ShellScreen.Settings:
                     DrawSettings(s);
@@ -467,13 +467,13 @@ namespace Shooter.Presentation.Session
             ui.Backdrop();
             Rect a = ui.Safe;
             float navWidth = Mathf.Min(236, a.width * .22f);
-            ui.BrandMark(new Rect(a.x, a.y, navWidth, 28), "SHOOTER");
-            ui.Section(new Rect(a.x, a.y + 34, navWidth, 16), "LOCAL / OFFLINE");
-            ui.Label(new Rect(a.x, a.y + 58, navWidth + 56, 64), "YOUR NEXT\nOPERATION", 28);
+            ui.BrandMark(new Rect(a.x, a.y, navWidth, 28), ShellUiCopy.Brand);
+            ui.Section(new Rect(a.x, a.y + 34, navWidth, 16), ShellUiCopy.LocalMatch);
+            ui.Label(new Rect(a.x, a.y + 58, navWidth + 56, 64), ShellUiCopy.MainHeadline, 28);
             float y = a.y + 140;
-            if (ui.Button(new Rect(a.x, y, navWidth, 36), "main.play", "PLAY", quiet: true)) navigation.OpenSetup();
-            if (ui.Button(new Rect(a.x, y + 40, navWidth, 36), "main.settings", "SETTINGS", quiet: true)) OpenSettingsScreen();
-            if (ui.Button(new Rect(a.x, y + 80, navWidth, 36), "main.quit", "QUIT", quiet: true))
+            if (ui.Button(new Rect(a.x, y, navWidth, 36), "main.play", ShellUiCopy.Play, quiet: true)) navigation.OpenSetup();
+            if (ui.Button(new Rect(a.x, y + 40, navWidth, 36), "main.settings", ShellUiCopy.Settings, quiet: true)) OpenSettingsScreen();
+            if (ui.Button(new Rect(a.x, y + 80, navWidth, 36), "main.quit", ShellUiCopy.Quit, quiet: true))
             {
                 quitRequested = true;
                 Application.Quit();
@@ -483,35 +483,35 @@ namespace Shooter.Presentation.Session
             float cardWidth = (cardsWidth - 14) * .5f;
             float cardHeight = Mathf.Min(198, a.height * .38f);
             float cardsY = a.yMax - cardHeight - 22;
-            ui.Section(new Rect(cardsX, cardsY - 22, cardsWidth, 16), "OFFLINE BATTLES / TEAM DEATHMATCH");
+            ui.Section(new Rect(cardsX, cardsY - 22, cardsWidth, 16), ShellUiCopy.MainBattles);
             bool compound = setup!.SelectedMapId.Equals(WellKnownMaps.TrainingCompound);
-            if (ui.MapCard(new Rect(cardsX, cardsY, cardWidth, cardHeight), "main.compound", menuScene?.MapCard("training-compound"), "TRAINING COMPOUND", "5v5 / 6v6  ·  LOCAL BOTS", compound))
+            if (ui.MapCard(new Rect(cardsX, cardsY, cardWidth, cardHeight), "main.compound", menuScene?.MapCard("training-compound"), ShellUiCopy.MapCompound, ShellUiCopy.MainCardSubtitle, compound))
             {
                 if (!compound) setup.CycleMap(1);
                 navigation.OpenSetup();
             }
-            if (ui.MapCard(new Rect(cardsX + cardWidth + 14, cardsY, cardWidth, cardHeight), "main.depot", menuScene?.MapCard("depot-yard"), "DEPOT YARD", "5v5 / 6v6  ·  LOCAL BOTS", !compound))
+            if (ui.MapCard(new Rect(cardsX + cardWidth + 14, cardsY, cardWidth, cardHeight), "main.depot", menuScene?.MapCard("depot-yard"), ShellUiCopy.MapDepot, ShellUiCopy.MainCardSubtitle, !compound))
             {
                 if (compound) setup.CycleMap(1);
                 navigation.OpenSetup();
             }
             string status = !string.IsNullOrEmpty(navigation.StatusMessage) ? navigation.StatusMessage : menuScene?.Status ?? "";
-            DrawFooter(string.IsNullOrEmpty(status) ? "TAB / ARROWS  Navigate     ENTER  Select" : status);
+            DrawFooter(string.IsNullOrEmpty(status) ? ShellUiCopy.MainNavigate : status);
         }
 
         private void DrawSetup(float s)
         {
             ui.Backdrop();
-            ui.Header("OPERATIONS / BRIEFING", "Prepare to deploy");
+            ui.Header(ShellUiCopy.EyebrowBriefing, ShellUiCopy.SetupTitle);
             Rect a = ui.Safe;
             float y = a.y + 78;
             float left = a.width * .54f;
             float rx = a.x + left + 20;
             float rw = a.width - left - 20;
-            ui.Section(new Rect(a.x, y, left, 18), "SELECT OPERATION AREA");
+            ui.Section(new Rect(a.x, y, left, 18), ShellUiCopy.SetupSelectArea);
             bool compound = setup!.SelectedMapId.Equals(WellKnownMaps.TrainingCompound);
-            if (ui.Button(new Rect(a.x, y + 24, left, 40), "setup.compound", "01   TRAINING COMPOUND", selected: compound) && !compound) setup.CycleMap(1);
-            if (ui.Button(new Rect(a.x, y + 70, left, 40), "setup.depot", "02   DEPOT YARD", selected: !compound) && compound) setup.CycleMap(1);
+            if (ui.Button(new Rect(a.x, y + 24, left, 40), "setup.compound", ShellUiCopy.SetupCompound, selected: compound) && !compound) setup.CycleMap(1);
+            if (ui.Button(new Rect(a.x, y + 70, left, 40), "setup.depot", ShellUiCopy.SetupDepot, selected: !compound) && compound) setup.CycleMap(1);
             float previewH = Mathf.Min(118, a.height * .22f);
             Rect preview = new Rect(a.x, y + 120, left, previewH);
             ui.Panel(preview, rail: true);
@@ -522,18 +522,18 @@ namespace Shooter.Presentation.Session
             float textW = card != null ? preview.width * .54f : preview.width - 28;
             ui.Label(new Rect(textX, preview.y + 12, textW, 22), setup.SelectedDisplayName.ToUpperInvariant(), 16, TacticalUi.Text);
             ui.Label(new Rect(textX, preview.y + 36, textW, preview.height - 48), setup.SelectedDescription, 16, TacticalUi.Muted);
-            ui.Section(new Rect(rx, y, rw, 18), "TEAM DEATHMATCH");
+            ui.Section(new Rect(rx, y, rw, 18), ShellUiCopy.SetupMode);
             float half = (rw - 8) * .5f;
             if (ui.Button(new Rect(rx, y + 24, half, 40), "setup.5", "5 v 5", selected: setup.SelectedTeamSize == 5) && setup.SelectedTeamSize != 5) setup.CycleTeamSize(1);
             if (ui.Button(new Rect(rx + half + 8, y + 24, half, 40), "setup.6", "6 v 6", selected: setup.SelectedTeamSize == 6) && setup.SelectedTeamSize != 6) setup.CycleTeamSize(1);
             ui.Panel(new Rect(rx, y + 78, rw, 128), accentTop: true);
-            ui.Label(new Rect(rx + 14, y + 90, rw - 28, 22), "RULES", 12, TacticalUi.Accent);
-            ui.Label(new Rect(rx + 14, y + 112, rw - 28, 40), "150 kills to win\n15 minute time limit", 18);
-            ui.Label(new Rect(rx + 14, y + 156, rw - 28, 40), "YOU + " + (setup.SelectedTeamSize - 1) + " ALLIED BOTS\nVS " + setup.SelectedTeamSize + " ENEMY BOTS", 16, TacticalUi.Muted);
+            ui.Label(new Rect(rx + 14, y + 90, rw - 28, 22), ShellUiCopy.SetupRules, 12, TacticalUi.Accent);
+            ui.Label(new Rect(rx + 14, y + 112, rw - 28, 40), ShellUiCopy.SetupRulesBody, 18);
+            ui.Label(new Rect(rx + 14, y + 156, rw - 28, 40), ShellUiCopy.SetupRosterLine(setup.SelectedTeamSize), 16, TacticalUi.Muted);
             GUI.enabled = !coordinator.StartInFlight;
-            if (ui.Button(new Rect(rx, a.yMax - 66, rw, 44), "setup.start", "START MATCH", primary: true)) StartSelectedMatch();
+            if (ui.Button(new Rect(rx, a.yMax - 66, rw, 44), "setup.start", ShellUiCopy.SetupStart, primary: true)) StartSelectedMatch();
             GUI.enabled = true;
-            if (ui.Button(new Rect(a.x, a.yMax - 66, 150, 44), "setup.back", "BACK")) navigation.ResetToMain();
+            if (ui.Button(new Rect(a.x, a.yMax - 66, 150, 44), "setup.back", ShellUiCopy.SetupBack)) navigation.ResetToMain();
             DrawFooter(navigation.StatusMessage);
         }
 
@@ -565,21 +565,21 @@ namespace Shooter.Presentation.Session
         private void DrawPause(float s)
         {
             ui.Backdrop(overlay: true);
-            ui.Header("OPERATIONS / PAUSED", "Match on hold");
+            ui.Header(ShellUiCopy.EyebrowPaused, ShellUiCopy.PauseTitle);
             Rect a = ui.Safe;
             float w = Mathf.Min(300, a.width * .40f), y = a.y + 82;
-            ui.Section(new Rect(a.x, y - 22, w, 18), "COMMANDS");
-            if (ui.Button(new Rect(a.x, y, w, 42), "pause.resume", "RESUME", primary: true)) ResumeMatch();
-            if (ui.Button(new Rect(a.x, y + 50, w, 38), "pause.settings", "SETTINGS")) OpenSettingsScreen();
-            if (ui.Button(new Rect(a.x, y + 96, w, 38), "pause.restart", "RESTART MATCH")) navigation.AskRestart();
-            if (ui.Button(new Rect(a.x, y + 142, w, 38), "pause.leave", "MAIN MENU")) navigation.AskLeave();
+            ui.Section(new Rect(a.x, y - 22, w, 18), ShellUiCopy.PauseCommands);
+            if (ui.Button(new Rect(a.x, y, w, 42), "pause.resume", ShellUiCopy.Resume, primary: true)) ResumeMatch();
+            if (ui.Button(new Rect(a.x, y + 50, w, 38), "pause.settings", ShellUiCopy.Settings)) OpenSettingsScreen();
+            if (ui.Button(new Rect(a.x, y + 96, w, 38), "pause.restart", ShellUiCopy.RestartMatch)) navigation.AskRestart();
+            if (ui.Button(new Rect(a.x, y + 142, w, 38), "pause.leave", ShellUiCopy.MainMenu)) navigation.AskLeave();
             float px = a.x + w + 24;
             float pw = a.xMax - px;
             ui.Panel(new Rect(px, y, pw, 180), accentTop: true, rail: true);
-            ui.Label(new Rect(px + 16, y + 16, pw - 32, 22), "HOLDING PATTERN", 14, TacticalUi.Accent);
-            ui.Label(new Rect(px + 16, y + 46, pw - 32, 72), "The battlefield waits.\nResume to continue local TDM.", 18, TacticalUi.Muted);
-            ui.Label(new Rect(px + 16, y + 128, pw - 32, 36), "ESC resumes play. Settings keep schema-2 Apply / Cancel.", 14, TacticalUi.Muted);
-            DrawFooter("ESC  Resume");
+            ui.Label(new Rect(px + 16, y + 16, pw - 32, 22), ShellUiCopy.PauseHold, 14, TacticalUi.Accent);
+            ui.Label(new Rect(px + 16, y + 46, pw - 32, 72), ShellUiCopy.PauseBody, 18, TacticalUi.Muted);
+            ui.Label(new Rect(px + 16, y + 128, pw - 32, 36), ShellUiCopy.PauseHint, 14, TacticalUi.Muted);
+            DrawFooter(ShellUiCopy.PauseFooter);
         }
 
         private void DrawConfirm(float s, string message, Action confirm, Action cancel)
@@ -587,12 +587,12 @@ namespace Shooter.Presentation.Session
             ui.Backdrop(overlay: true);
             float w = Mathf.Min(540, ui.Safe.width), x = (ui.Width - w) * .5f, y = ui.Height * .5f - 92;
             ui.Panel(new Rect(x, y, w, 184), accentTop: true);
-            ui.Label(new Rect(x + 22, y + 18, w - 44, 24), "CONFIRM ACTION", 20);
+            ui.Label(new Rect(x + 22, y + 18, w - 44, 24), ShellUiCopy.ConfirmTitle, 20);
             ui.Label(new Rect(x + 22, y + 54, w - 44, 48), message, 18, TacticalUi.Muted);
             float bw = (w - 56) * .5f;
             // Safe choice receives initial keyboard focus.
-            if (ui.Button(new Rect(x + 22, y + 124, bw, 40), "confirm.cancel", "CANCEL")) cancel();
-            if (ui.Button(new Rect(x + 34 + bw, y + 124, bw, 40), "confirm.accept", "CONFIRM", primary: true)) confirm();
+            if (ui.Button(new Rect(x + 22, y + 124, bw, 40), "confirm.cancel", ShellUiCopy.ConfirmCancel)) cancel();
+            if (ui.Button(new Rect(x + 34 + bw, y + 124, bw, 40), "confirm.accept", ShellUiCopy.ConfirmAccept, primary: true)) confirm();
         }
 
         private void DrawFooter(string text)
@@ -681,7 +681,7 @@ namespace Shooter.Presentation.Session
         {
             if (settingsEditor == null || bindingEditor == null) return;
             ui.Backdrop(navigation.SettingsReturn == ShellScreen.Paused);
-            ui.Header("OPERATIONS / PREFERENCES", "Settings");
+            ui.Header(ShellUiCopy.EyebrowPreferences, ShellUiCopy.SettingsTitle);
             Rect a = ui.Safe;
             string[] tabs = SettingsTabs;
             float tw = (a.width - 18) / 4;
@@ -901,24 +901,24 @@ namespace Shooter.Presentation.Session
             var results = coordinator.RetainedResults;
             if (results == null)
             {
-                ui.Header("OPERATIONS / DEBRIEF", "Match results");
+                ui.Header(ShellUiCopy.EyebrowDebrief, ShellUiCopy.ResultsEmpty);
                 ui.Label(new Rect(ui.Safe.x, ui.Safe.y + 90, ui.Safe.width, 48), "No retained results.");
                 if (ui.Button(new Rect(ui.Safe.x, ui.Safe.yMax - 58, 180, 40), "results.menu", "MAIN MENU")) LeaveMatch(abort: false);
                 return;
             }
             scoreboard.BindResults(results);
-            ui.Header("OPERATIONS / DEBRIEF", scoreboard.LocalOutcomeLabel(1).ToUpperInvariant(), "TEAM DEATHMATCH");
+            ui.Header(ShellUiCopy.EyebrowDebrief, scoreboard.LocalOutcomeLabel(1).ToUpperInvariant(), ShellUiCopy.TeamDeathmatch);
             DrawTeamTables(ui.Safe.y + 78, ui.Safe.height - 150);
             float y = ui.Safe.yMax - 52;
-            if (ui.Button(new Rect(ui.Safe.x, y, 180, 40), "results.replay", "PLAY AGAIN", primary: true)) RestartMatch();
-            if (ui.Button(new Rect(ui.Safe.x + 192, y, 180, 40), "results.menu", "MAIN MENU")) LeaveMatch(abort: false);
+            if (ui.Button(new Rect(ui.Safe.x, y, 180, 40), "results.replay", ShellUiCopy.ResultsPlayAgain, primary: true)) RestartMatch();
+            if (ui.Button(new Rect(ui.Safe.x + 192, y, 180, 40), "results.menu", ShellUiCopy.ResultsMain)) LeaveMatch(abort: false);
             ui.Label(new Rect(ui.Safe.x + 392, y, ui.Safe.width - 392, 40), results.Reason == FinishReason.ScoreLimit ? "SCORE LIMIT REACHED" : "TIME LIMIT REACHED", 12, TacticalUi.Muted, TextAnchor.MiddleRight);
         }
 
         private void DrawScoreboard(float s)
         {
             ui.Backdrop(overlay: true);
-            ui.Header("OPERATIONS / LIVE ROSTER", "Scoreboard", "TEAM DEATHMATCH");
+            ui.Header(ShellUiCopy.EyebrowRoster, ShellUiCopy.ScoreboardTitle, ShellUiCopy.TeamDeathmatch);
             DrawTeamTables(ui.Safe.y + 78, ui.Safe.height - 112);
             DrawFooter("TEAM 1 / ALLIES     TEAM 2 / ENEMIES     YOU / LOCAL OPERATOR");
         }

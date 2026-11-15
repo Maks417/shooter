@@ -81,13 +81,13 @@ namespace Shooter.Presentation.Menus
         public void FailLoad(string message)
         {
             Screen = ShellScreen.Setup;
-            StatusMessage = message ?? "Load failed.";
+            StatusMessage = message ?? "Could not load the operation.";
         }
 
         public void CancelLoad(string? message = null)
         {
             Screen = ShellScreen.Setup;
-            StatusMessage = message ?? "Load cancelled.";
+            StatusMessage = message ?? "Insertion cancelled.";
         }
 
         /// <summary>Authority-driven transitions: Finished → Results; focus/session pause → Paused while playing.</summary>

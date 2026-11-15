@@ -16,22 +16,25 @@ namespace Shooter.Simulation.Tests.Shell
         }
 
         [Fact]
-        public void Loading_phase_and_display_name_stay_truthful()
+        public void Loading_phase_and_display_name_stay_friendly()
         {
-            Assert.Equal("Loading training-compound…", InsertionScreenCopy.LoadingPhase("training-compound"));
-            Assert.Equal("Loading map…", InsertionScreenCopy.LoadingPhase(""));
+            Assert.Equal("Loading Training Compound…", InsertionScreenCopy.LoadingPhase("training-compound"));
+            Assert.Equal("Loading Depot Yard…", InsertionScreenCopy.LoadingPhase("depot-yard"));
+            Assert.Equal("Loading the map…", InsertionScreenCopy.LoadingPhase(""));
             Assert.Equal("TRAINING COMPOUND", InsertionScreenCopy.DisplayNameOrFallback("TRAINING COMPOUND", "training-compound"));
-            Assert.Equal("depot-yard", InsertionScreenCopy.DisplayNameOrFallback("  ", "depot-yard"));
+            Assert.Equal("Depot Yard", InsertionScreenCopy.DisplayNameOrFallback("  ", "depot-yard"));
             Assert.Equal("OPERATION", InsertionScreenCopy.DisplayNameOrFallback(null, ""));
         }
 
         [Fact]
         public void Boot_copy_has_no_cancel_or_percentage_claims()
         {
-            Assert.Contains("Binding packaged content", InsertionScreenCopy.BootPhase);
+            Assert.Contains("Loading your arsenal", InsertionScreenCopy.BootPhase);
             Assert.DoesNotContain("%", InsertionScreenCopy.BootPhase);
             Assert.DoesNotContain("%", InsertionScreenCopy.MatchTitle);
-            Assert.Equal(InsertionScreenCopy.BindingPresentation, "Binding presentation…");
+            Assert.Equal("Linking the battlefield…", InsertionScreenCopy.BindingPresentation);
+            Assert.Equal("Standing by", InsertionScreenCopy.BootHeader);
+            Assert.Equal("SOLO OPS  ·  NO NETWORK", InsertionScreenCopy.BootFooter);
         }
     }
 }
