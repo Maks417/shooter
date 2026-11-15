@@ -471,3 +471,13 @@ Decision: Mono never generates map content. `Compile-GameContent.ps1 -Native` fi
 Guard: the wrapper requires each native package to equal its pure .NET counterpart byte-for-byte except `navigation-gameplay.bin` and the navigation hash/dependency entries in `package.json`, requires the native nav hash to differ from the software grid, and requires stage collision SHA and editor identity to match. Release checks start a real match on both maps against native content before packaging.
 
 Validation: all `skeleton-soldier.bin` copies identical to the pure cache; native nav hashes unchanged (compound `07560a8d…`, depot `802dcfbb…`); diagnostic 5v5 matches started on both maps from native content; Generation 329, Maps 29, EditMode/PlayMode and provenance PASS. No lock, schema or format version changed.
+
+## ADR-044 — Accepted: compact TDM arena layouts for catalog maps (T076)
+
+Date 2026-11-15. Owner assignment: redesign maps for 5v5/6v6.
+
+Context: both catalog maps used the full 256 × 256 m frame (Compound: 12 identical shells and 120 1 m cubes on a grid; Depot: six bays and perimeter fences). Spawn-to-spawn distance exceeded 200 m with no lane structure, which is far too sparse for 10–12 players.
+
+Decision: catalog gameplay comes from new arena planners (`CompoundArenaPlanner`, `DepotArenaPlanner`) through `ProductMapPlanner`. Each map is a mirror-symmetric (z = 0) three-lane arena of 88 × 104 m and 80 × 112 m inside a closed 5 m perimeter, with walled staging, three gates and baffles. `ArenaRules` enforces the numeric rules in [compact TDM map layouts](features/tdm-map-layouts.md); `MapPackageBuilder`, `ReleaseCatalogDocument` and `CompoundCatalogFactory` throw when rules or `MapTopologyValidation` fail. Gameplay collision/nav hashes come from the actual box list. Map ids, display names, seeds, the recipe/package/metadata schemas, `MapRecipe.GeneratorVersion` 1.0.0, SGAF Collision v1, nav settings, the 256 m world/32 m chunk frame and every lock are unchanged; arena planner hash versions are 2.0.0. The legacy W01 `CompoundPlanner`, `DepotPlanner` and their goldens stay for historical evidence only.
+
+Consequences: all map package identities (collision, navigation, metadata, package roots) change and must be republished with `Compile-GameContent.ps1 -Native`; earlier packaged installers carry the old layouts. Rule validation proves geometry constraints only; route feel, spawn pressure under `SpawnSafetyPolicy` and bot behaviour on the new layouts are Pending manual playtest. Rollback: revert the T076 merge and republish.

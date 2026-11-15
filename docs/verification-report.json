@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "root": "C:\\Job\\shooter\\docs",
-  "markdownFiles": 126,
-  "wordCount": 122515,
-  "relativeLinksChecked": 1193,
-  "integrityFiles": 175,
+  "root": "C:\\Job\\shooter\\.local\\worktrees\\maps-tdm\\docs",
+  "markdownFiles": 127,
+  "wordCount": 124343,
+  "relativeLinksChecked": 1197,
+  "integrityFiles": 176,
   "errors": [],
   "result": "PASS",
   "scope": "Documentation existence, index coverage, local links/anchors, fences and hashes including fixtures/scripts. No game implementation or runtime tests."
