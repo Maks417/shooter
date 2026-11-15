@@ -1,5 +1,16 @@
 # M11 — Playable build and acceptance — handoff and gate record
 
+## T090 — Bot tactics (cover peek, wall hearing, ledge strafe, route spread) — 2026-11-15
+
+Owner: approved Phase 1 bot-AI improvement plan. [ADR-070](../../decisions.md#adr-070--accepted-bot-tactics-tranche-cover-peek-wall-hearing-ledge-strafe-route-spread-t090); [task](../../task-supplement.md#t090--bot-tactics-cover-peek-wall-hearing-ledge-strafe-route-spread-2026-11-15); [ai.md](../../features/ai.md#bot-tactics-cover-peek-wall-hearing-ledge-strafe-route-spread-t090-2026-11-15).
+
+**Implemented (software):**
+- `CoverFinder`: prefer peekable cover (side peek ray) over first-hidden; blind fallback when candidates exhaust.
+- `CombatAiDirector`: gunfire/footstep wall occlusion; strafe footing probes; route-corridor spread penalties; `AiRaysUsedThisTick`.
+- Tuning/counters in `AiTuning` / `AiCounters`; pure `BotTacticsT090Tests` (5).
+
+**Checks:** `Test-Simulation.ps1` **290/290** PASS (includes new `BotTacticsT090Tests`); docs/fixtures/manifest PASS. Owner feel review, `SHOOTER_AI_SUMMARY` on product maps, AI CPU 1.5 ms, Unity EditMode/PlayMode, Client/Server/package/installer remain Pending. Does not close FIX/SET/REL/P05/VD exits. T085 lethality envelope unchanged.
+
 ## ADR-067 — Soldier pose + motor corner launch fixes — 2026-11-15
 
 Owner: player/bot models flicky; sprint feet poor; slide animation missing; sprint near wall/floor seam launches into the sky. [ADR-067](../../decisions.md#adr-067--accepted-soldier-motionv5-slide-pose-gait-stability-and-motor-corner-anti-launch).

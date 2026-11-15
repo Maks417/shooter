@@ -1,5 +1,7 @@
 # Next playable build — finish playtest and native navigation
 
+**T090 bot tactics — 2026-11-15 (source):** cover peeks, wall-aware hearing, ledge-safe strafe and route-corridor spread inside unchanged 16-ray/2-path budgets ([ADR-070](decisions.md#adr-070--accepted-bot-tactics-tranche-cover-peek-wall-hearing-ledge-strafe-route-spread-t090)). Pure AI suites 54/54 PASS; owner feel / installer Pending. [Handoff](milestones/m11-playable-release/handoff.md#t090--bot-tactics-cover-peek-wall-hearing-ledge-strafe-route-spread--2026-11-15).
+
 **Weapon visual preview — 2026-11-15:** installer **0.3.14** at `Artifacts/deliveries/Shooter-Setup-0.3.14.exe`, clean binary/content source `b8235a3`. Improves rifle, pistol, knife and grenade geometry and spatial PBR finishes; Contracts 76, Generation 402, Unity EditMode 57 / PlayMode 21, native publication, clean Client, smoke, package and installer builders PASS. Installation/upgrade, first-person/world visual review, reference performance and acceptance remain Pending. [Exact evidence and limitations](milestones/m11-playable-release/handoff.md#arsenal-delivery-0314).
 
 **ADR-066 UI copy + Barlow Condensed fonts — 2026-11-15 (source):** OFL typeface bank in `Presentation/Fonts/Resources`, `UiFonts`/`TacticalUi` wiring, player-facing `ShellUiCopy`/`InsertionScreenCopy` rewrite, provenance `namedFontSources`, closure `ui-typeface-bank-v1`; pure tests Pending named 720p readability/installer. [Handoff](milestones/m11-playable-release/handoff.md#adr-066--ui-copy--barlow-condensed-typeface-bank--2026-11-15).

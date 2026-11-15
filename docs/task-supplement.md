@@ -222,6 +222,21 @@ Deliver: stereo product bank path; footsteps hard-culled beyond 18 m; gunfire re
 
 Rollback: revert T089; prior T086 mono/soft-distance path.
 
+## T090 — Bot tactics: cover peek, wall hearing, ledge strafe, route spread (2026-11-15)
+
+Owner approved the bot-AI improvement plan Phase 1. Sole integrator. Decision: [ADR-070](decisions.md#adr-070--accepted-bot-tactics-tranche-cover-peek-wall-hearing-ledge-strafe-route-spread-t090).
+
+Scope:
+- `Simulation/AI/**` (`CoverFinder`, `CombatAiDirector`, `AiTuning`, `AiTypes`).
+- Pure `Tools/Simulation.Tests/AI/**` (new `BotTacticsT090Tests` plus budget assertion update).
+- Docs: [features/ai.md](features/ai.md), ADR-070, M11 handoff, this card.
+
+Frozen: C0/Game-v1, ≤16 AI rays / ≤2 new paths per tick, weapon damage/rate, T085 lethality envelope, no difficulty selector, no map cover-proxy bake, toolchain.
+
+Deliver: peek-preferring cover probes with blind fallback; wall-aware gunfire/footstep hearing; ledge-safe strafe ground probes; route-corridor spread penalties; counters; pure tests. Owner feel / installer / `SHOOTER_AI_SUMMARY` remain Pending.
+
+Rollback: revert T090; restore T082/T085 AI behaviour.
+
 ## T088 — Full weapon visual overhaul (VD3 slice+) and fire FX
 
 Owner-authorized 2026-11-15. Sole integrator. Decision: [ADR-061](decisions.md#adr-061--accepted-geometryweapon-102-mechanical-parts-and-denser-fire-fx-t088).

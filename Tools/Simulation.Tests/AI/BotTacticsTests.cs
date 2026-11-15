@@ -306,10 +306,10 @@ namespace Shooter.Simulation.Tests.AI
                     var b = ai.GetBoard(i);
                     if (!b.CoverProbeActive) CoverFinder.Start(b, new Float3(b.Feet.X, 1.3f, 20));
                 }
-                int before = world.Rays;
                 ai.PlanEnemies(t, enemies, enemies.Length, cmds, 0);
                 Assert.True(ai.Counters.VisionRaysThisTick <= PerceptionSystem.MaxVisionRaysPerTick);
-                Assert.True(world.Rays - before <= PerceptionSystem.MaxVisionRaysPerTick);
+                // T090: strafe footing uses unbudgeted ground probes; the AI vision/cover/hearing budget is separate.
+                Assert.True(ai.AiRaysUsedThisTick <= PerceptionSystem.MaxVisionRaysPerTick);
                 for (int i = 0; i < 11; i++)
                     Assert.True(t - ai.GetBoard(i).LastSenseOpportunityTick < 12);
             }

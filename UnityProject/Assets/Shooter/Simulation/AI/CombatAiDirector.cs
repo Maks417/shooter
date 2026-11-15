@@ -19,9 +19,9 @@ namespace Shooter.Simulation.AI
     }
 
     /// <summary>
-    /// Team AI: ≤16 AI rays (vision + T082 cover probes) and ≤2 new paths per tick; cover/reload/stuck through
-    /// normal commands. Capacity 11 for 6v6. T082 adds bounded-rate seeded aim, burst discipline, strafing,
-    /// sticky threat-aware targeting, hearing/damage stimuli, low-health retreat, runtime cover and callouts.
+    /// Team AI: ≤16 AI rays (vision + T082 cover probes + T090 peeks/hearing) and ≤2 new paths per tick;
+    /// cover/reload/stuck through normal commands. Capacity 11 for 6v6. T082/T085/T090 add aim, fire,
+    /// strafing with ledge probes, sticky targeting, wall-aware hearing, spread, cover peeks and callouts.
     /// </summary>
     public sealed class CombatAiDirector
     {
@@ -63,6 +63,8 @@ namespace Shooter.Simulation.AI
         public const float SprintMinForward = 0.5f;
 
         private readonly AiBlackboard[] boards = new AiBlackboard[MaxBots];
+        private readonly IWorldQueries world;
+        private readonly uint visionMask;
         private readonly PerceptionSystem perception;
         private readonly CoverReservationBoard covers = new CoverReservationBoard();
         private readonly INavigation navigation;
@@ -89,6 +91,8 @@ namespace Shooter.Simulation.AI
         private uint navRevision = 1;
 
         public AiCounters Counters => counters;
+        /// <summary>Vision + cover/peek + budgeted hearing rays consumed this plan tick (≤16). Ground/strafe probes are separate.</summary>
+        public int AiRaysUsedThisTick => perception.RaysUsedThisTick;
 
         /// <summary>True when the command built for the bot this tick requests a slide.</summary>
         public bool WantsSlide(EntityId id)
@@ -104,6 +108,8 @@ namespace Shooter.Simulation.AI
 
         public CombatAiDirector(IWorldQueries world, INavigation navigation, uint visionMask, uint navRevision = 1)
         {
+            this.world = world ?? throw new ArgumentNullException(nameof(world));
+            this.visionMask = visionMask;
             perception = new PerceptionSystem(world, visionMask);
             this.navigation = navigation ?? throw new ArgumentNullException(nameof(navigation));
             this.navRevision = navRevision == 0 ? throw new ArgumentOutOfRangeException(nameof(navRevision)) : navRevision;
@@ -211,7 +217,8 @@ namespace Shooter.Simulation.AI
 
         /// <summary>
         /// A shot fired at <paramref name="origin"/> (tick t). Calm bots within hearing radius investigate a
-        /// distance-attenuated estimate of the position. No rays are spent on hearing.
+        /// distance-attenuated estimate of the position. T090: a direct occlusion sample (not the vision budget)
+        /// drops gunfire that is fully blocked by geometry; presence-range always passes.
         /// </summary>
         public void ObserveGunfire(EntityId shooter, Float3 origin)
         {
@@ -243,6 +250,11 @@ namespace Shooter.Simulation.AI
                     // Recent stimulus: only a clearly closer source replaces it.
                     float hx = board.LastHeard.Value.X - board.Feet.X, hz = board.LastHeard.Value.Z - board.Feet.Z;
                     if (dSq >= (hx * hx + hz * hz) * 0.5f) continue;
+                }
+                if (!SoundReaches(board, source, useBudget: false))
+                {
+                    counters.HearingOccluded++;
+                    continue;
                 }
                 float noise = MathF.Sqrt(dSq) * AiTuning.GunfireNoisePerMeter;
                 board.LastHeard = new Float3(
@@ -412,6 +424,11 @@ namespace Shooter.Simulation.AI
             board.CoverProbeFailed = false;
             board.CoverProbeIndex = 0;
             board.CoverPoint = null;
+            board.CoverProbeHasFallback = false;
+            board.CoverProbeFallbackPoint = default;
+            board.CoverProbeFallbackId = 0;
+            board.LastHearOcclusionTick = 0;
+            board.HearOcclusionClear = true;
             board.InCover = false;
             board.InCoverSinceTick = 0;
             board.UnseenAttacker = null;
@@ -526,11 +543,12 @@ namespace Shooter.Simulation.AI
         }
 
         /// <summary>
-        /// Footsteps (T085): an enemy moving fast enough within its audible radius, or anyone within arm reach,
-        /// is heard from any direction. The bot turns toward the noise and, if calm, checks it out. No rays.
+        /// Footsteps (T085/T090): an enemy moving fast enough within its audible radius, or anyone within arm reach,
+        /// is heard from any direction. T090 occludes beyond presence with leftover AI rays (fail-open when deferred).
         /// </summary>
         private void HearFootsteps(AiBlackboard board, SenseTarget[] enemies, int enemyCount)
         {
+            // Rank audible candidates by distance; skip occluded ones beyond presence.
             int best = -1;
             float bestSq = float.MaxValue;
             for (int k = 0; k < enemyCount; k++)
@@ -545,6 +563,12 @@ namespace Shooter.Simulation.AI
                 float dx = e.Point.X - board.Feet.X, dz = e.Point.Z - board.Feet.Z;
                 float dSq = dx * dx + dz * dz;
                 if (dSq > radius * radius || dSq >= bestSq) continue;
+                if (dSq > AiTuning.PresenceRadius * AiTuning.PresenceRadius &&
+                    !SoundReaches(board, e.Point, useBudget: true))
+                {
+                    counters.HearingOccluded++;
+                    continue;
+                }
                 best = k;
                 bestSq = dSq;
             }
@@ -563,6 +587,42 @@ namespace Shooter.Simulation.AI
             if (fresh) counters.FootstepsHeard++;
             if (board.State == AiState.Patrol || board.State == AiState.Idle || board.State == AiState.Search)
                 EnterInvestigateUnlessCrowded(board);
+        }
+
+        /// <summary>
+        /// T090: true when sound from <paramref name="source"/> reaches the bot. Presence always passes.
+        /// Budgeted samples use leftover AI rays (fail-open when exhausted); gunfire uses a direct collision ray.
+        /// </summary>
+        private bool SoundReaches(AiBlackboard board, Float3 source, bool useBudget)
+        {
+            float dx = source.X - board.Feet.X, dy = source.Y - (board.Feet.Y + EyeHeight(board)), dz = source.Z - board.Feet.Z;
+            float dSq = dx * dx + dz * dz;
+            if (dSq <= AiTuning.PresenceRadius * AiTuning.PresenceRadius) return true;
+            float len = MathF.Sqrt(dx * dx + dy * dy + dz * dz);
+            if (len < 0.5f) return true;
+            var ear = new Float3(board.Feet.X, board.Feet.Y + EyeHeight(board), board.Feet.Z);
+            var dir = new Float3(dx / len, dy / len, dz / len);
+            RayHit hit;
+            if (useBudget)
+            {
+                if (board.LastHearOcclusionTick != 0 &&
+                    unchecked(tick - board.LastHearOcclusionTick) < AiTuning.HearOcclusionIntervalTicks)
+                    return board.HearOcclusionClear;
+                board.LastHearOcclusionTick = tick;
+                if (!perception.TryBudgetedRay(ear, dir, len, board.Self, out hit))
+                {
+                    board.HearOcclusionClear = true; // fail-open when the vision/cover budget is exhausted
+                    return true;
+                }
+            }
+            else
+            {
+                hit = world.Raycast(ear, dir, len, new QueryFilter(visionMask, board.Self, false));
+            }
+            counters.HearingOcclusionRays++;
+            bool blocked = hit.Status == QueryStatus.Hit && hit.Hit.DistanceMeters < len - 0.3f;
+            if (useBudget) board.HearOcclusionClear = !blocked;
+            return !blocked;
         }
 
         private void Sense(AiBlackboard board, SenseTarget[] enemies, int enemyCount)
@@ -862,10 +922,9 @@ namespace Shooter.Simulation.AI
         }
 
         /// <summary>
-        /// T085 team spread: score every destination by how far it is from allies' goals and positions, by a
-        /// preferred leg length, and by a seeded per-bot preference; never repeat the last two picks. Teammates
-        /// therefore fan out across the map instead of walking the same ordered route one behind another.
-        /// Deterministic; runs only when a bot needs a new destination.
+        /// T085/T090 team spread: score every destination by how far it is from allies' goals, positions and
+        /// active path corners (shared corridors), by a preferred leg length, and by a seeded per-bot preference;
+        /// never repeat the last two picks. Deterministic; runs only when a bot needs a new destination.
         /// </summary>
         private int ChooseSpreadDestination(AiBlackboard board, List<Float3> points, int last, int previous)
         {
@@ -890,6 +949,15 @@ namespace Shooter.Simulation.AI
                     var goal = other.State == AiState.Patrol && other.PatrolGoal.HasValue ? other.PatrolGoal : other.PathGoal;
                     if (goal.HasValue && Within(goal.Value, c, AiTuning.SpreadMeters)) score -= 2f;
                     if (Within(other.Feet, c, AiTuning.SpreadMeters * 0.5f)) score -= 0.5f;
+                    // T090: penalize destinations that sit on an ally's current path corridor.
+                    int corners = other.PathCornerCount;
+                    for (int p = other.PathCornerIndex; p < corners; p++)
+                    {
+                        if (!Within(other.PathCorners[p], c, AiTuning.RouteCorridorMeters)) continue;
+                        score -= AiTuning.RouteCorridorPenalty;
+                        counters.RouteCorridorPenalties++;
+                        break;
+                    }
                 }
                 if (score > bestScore) { bestScore = score; best = k; }
             }
@@ -1490,8 +1558,8 @@ namespace Shooter.Simulation.AI
 
         /// <summary>
         /// Strafe across the line of fire around the nav point where the fight started (bounded offset keeps the
-        /// bot near walkable ground), reversing on a seeded timer, at the leash, or when blocked; back off when
-        /// the enemy is too close.
+        /// bot near walkable ground), reversing on a seeded timer, at the leash, when blocked, or when the next
+        /// strafe step lacks footing (T090 ledge probe); back off when the enemy is too close.
         /// </summary>
         private void EngageMove(AiBlackboard board, out float wx, out float wz)
         {
@@ -1520,10 +1588,25 @@ namespace Shooter.Simulation.AI
             }
             float offset = (board.Feet.X - board.StrafeCenter.X) * rx + (board.Feet.Z - board.StrafeCenter.Z) * rz;
             if (offset * board.StrafeDir > AiTuning.StrafeMaxOffset) flip = true;
+            if (!StrafeFootingSafe(board, rx, rz, board.StrafeDir))
+            {
+                flip = true;
+                counters.StrafeLedgeFlips++;
+            }
             if (flip)
             {
                 board.StrafeDir = -board.StrafeDir;
                 board.StrafeFlipTick = tick + NextStrafeInterval(board);
+                // If the other side is also unsafe, cancel lateral strafe this tick (back-off may still apply).
+                if (!StrafeFootingSafe(board, rx, rz, board.StrafeDir))
+                {
+                    wx = 0; wz = 0;
+                    if (board.TargetDistance < AiTuning.BackOffRange)
+                    {
+                        wx = -tx; wz = -tz;
+                    }
+                    return;
+                }
             }
             wx = rx * board.StrafeDir;
             wz = rz * board.StrafeDir;
@@ -1533,6 +1616,37 @@ namespace Shooter.Simulation.AI
                 float len = MathF.Sqrt(wx * wx + wz * wz);
                 wx /= len; wz /= len;
             }
+        }
+
+        /// <summary>
+        /// T090: sample ground under the next strafe step with a downward collision ray (not the vision budget).
+        /// Open/diagnostic worlds with no ground under the bot or the probe fail-open as safe.
+        /// </summary>
+        private bool StrafeFootingSafe(AiBlackboard board, float rx, float rz, int dir)
+        {
+            float step = AiTuning.StrafeProbeMeters;
+            var here = board.Feet;
+            var probe = new Float3(here.X + rx * dir * step, here.Y, here.Z + rz * dir * step);
+            bool hereHit = TryGroundY(here, board.Self, out float hereY);
+            bool probeHit = TryGroundY(probe, board.Self, out float probeY);
+            if (!hereHit && !probeHit) return true;
+            if (!probeHit) return false;
+            if (!hereHit) return probeY >= here.Y - AiTuning.StrafeMaxDropMeters;
+            return hereY - probeY <= AiTuning.StrafeMaxDropMeters;
+        }
+
+        private bool TryGroundY(Float3 feet, EntityId self, out float groundY)
+        {
+            var origin = new Float3(feet.X, feet.Y + AiTuning.StrafeGroundLiftMeters, feet.Z);
+            float max = AiTuning.StrafeMaxDropMeters + AiTuning.StrafeGroundLiftMeters + 0.5f;
+            var hit = world.Raycast(origin, new Float3(0f, -1f, 0f), max, new QueryFilter(visionMask, self, false));
+            if (hit.Status != QueryStatus.Hit)
+            {
+                groundY = feet.Y;
+                return false;
+            }
+            groundY = hit.Hit.Point.Y;
+            return true;
         }
 
         private uint NextStrafeInterval(AiBlackboard board) =>

@@ -3,7 +3,7 @@
 namespace Shooter.Simulation.AI
 {
     /// <summary>
-    /// T082 combat-behaviour tuning (docs/features/ai.md): one data set for every quality profile.
+    /// T082/T085/T090 combat-behaviour tuning (docs/features/ai.md): one data set for every quality profile.
     /// Ticks are 60 Hz simulation ticks; angles are radians unless the name says otherwise.
     /// </summary>
     public static class AiTuning
@@ -75,6 +75,12 @@ namespace Shooter.Simulation.AI
         public const float StrafeBlockedMeters = 0.15f;
         /// <summary>Entity ids with (id % CrouchShooterModulo) == 0 crouch-burst at mid range instead of strafing.</summary>
         public const ulong CrouchShooterModulo = 3;
+        /// <summary>T090: horizontal look-ahead along the strafe axis before committing the step (meters).</summary>
+        public const float StrafeProbeMeters = 0.75f;
+        /// <summary>T090: max allowed ground drop from current feet to the probe; larger drops flip the strafe.</summary>
+        public const float StrafeMaxDropMeters = 0.55f;
+        /// <summary>T090: cast starts this far above the foot plane when sampling ground under a strafe probe.</summary>
+        public const float StrafeGroundLiftMeters = 0.6f;
 
         // Hearing and damage stimuli (no rays; distance-attenuated).
         public const float GunfireHearingRadius = 45f;
@@ -109,6 +115,10 @@ namespace Shooter.Simulation.AI
         /// <summary>At most this many allies investigate the same stimulus; the rest hold and watch it.</summary>
         public const int InvestigateCrowdLimit = 2;
         public const float InvestigateCrowdMeters = 10f;
+        /// <summary>T090: destinations near an ally's active path corners are penalized (shared corridors).</summary>
+        public const float RouteCorridorMeters = 9f;
+        /// <summary>T090: score penalty per ally path corner within <see cref="RouteCorridorMeters"/> of a candidate.</summary>
+        public const float RouteCorridorPenalty = 1.0f;
 
         // Health, ammo and cover.
         public const ushort LowHealth = 35;
@@ -126,8 +136,16 @@ namespace Shooter.Simulation.AI
         public const int MaxCoverProbeRaysPerTick = 4;
         public const float CoverChestHeight = 0.75f;      // crouched chest: cover must hide a crouched bot
         public const float ThreatEyeLift = 0.35f;         // threat sense point is the chest; its eye is above
+        /// <summary>T090: side offset from a cover point used as a peek sample toward the threat.</summary>
+        public const float CoverPeekSideMeters = 0.65f;
+        /// <summary>T090: eye height at the peek sample (standing upper chest).</summary>
+        public const float CoverPeekEyeHeight = 1.35f;
         /// <summary>Cover probe candidates relative to "away from threat": (degrees, meters), nearest first.</summary>
         public static readonly float[] CoverProbeAngles = { 0f, 40f, -40f, 80f, -80f, 0f, 30f, -30f };
         public static readonly float[] CoverProbeRadii = { 4f, 4f, 4f, 4.5f, 4.5f, 7f, 7f, 7f };
+
+        // T090 wall-aware hearing (occlusion samples; footsteps use leftover AI ray budget when available).
+        /// <summary>Minimum ticks between footstep occlusion samples for one bot.</summary>
+        public const uint HearOcclusionIntervalTicks = 12;
     }
 }

@@ -117,6 +117,14 @@ namespace Shooter.Simulation.AI
         public Float3? CoverPoint { get; set; }
         public uint InCoverSinceTick { get; set; }
         public bool InCover { get; set; }
+        /// <summary>T090: first hidden (possibly blind) cover candidate kept while searching for a peekable one.</summary>
+        public bool CoverProbeHasFallback { get; set; }
+        public Float3 CoverProbeFallbackPoint { get; set; }
+        public ulong CoverProbeFallbackId { get; set; }
+        /// <summary>T090: last tick a footstep hearing-occlusion ray was attempted for this bot.</summary>
+        public uint LastHearOcclusionTick { get; set; }
+        /// <summary>T090: result of the last footstep occlusion sample (rate-limited reuse).</summary>
+        public bool HearOcclusionClear { get; set; } = true;
 
         // T085 awareness and team spread.
         /// <summary>Unseen attacker currently hurting the bot while it fights someone else.</summary>
@@ -166,5 +174,12 @@ namespace Shooter.Simulation.AI
         public int ThreatTurns;
         public int CrowdedStimuliHeld;
         public int AllyGunfireIgnored;
+        // T090
+        public int CoverPeekRays;
+        public int CoverPeekAccepted;
+        public int HearingOcclusionRays;
+        public int HearingOccluded;
+        public int StrafeLedgeFlips;
+        public int RouteCorridorPenalties;
     }
 }

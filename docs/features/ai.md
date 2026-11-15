@@ -53,13 +53,13 @@ Queue path requests with priority, max two new path solves/tick initially; poll 
   - An empty magazine mid-fight starts a reload together with a cover search.
   - A tactical reload happens below 12 rounds once there has been no contact for 2 s.
   - In cover, the bot crouches facing the threat, reloads, holds for 2 s, then repositions.
-  - Cover points come from runtime probes: up to 8 candidates 4–7 m away from the threat. A candidate qualifies when a ray from the threat's eye to a crouched chest at the point is blocked. Probes use leftover rays from the shared budget, at most 4 per tick.
+  - Cover points come from runtime probes: up to 8 candidates 4–7 m away from the threat. A candidate qualifies when a ray from the threat's eye to a crouched chest at the point is blocked. T090 prefers a clear left/right peek toward the threat before claiming; blind-but-hidden points are fallback. Probes (including peeks) use leftover rays from the shared budget, at most 4 per tick.
   - Claims use stable quantized ids in `CoverReservationBoard` and are released on leaving cover, on path failure, on death and on cancel. Legacy `CoverSite` lists still work where a map provides them.
 - **Planner lifetime.** A respawn now rebinds only the replaced bot through `TryReplaceLife`. Previously `RebuildBotPlanner` wiped every bot's targets, paths and cover several times a minute; it is now only a fallback.
 
 New counters on `AiCounters`: `CoverProbeRays`, `CoverProbesFailed`, `BurstsStarted`, `StimuliHeard`, `DamageReactions`, `Callouts`, `Retreats`, `TacticalReloads`, `TargetSwitches`. `VisionRaysThisTick` includes cover-probe rays.
 
-Known limits: strafing has no ledge query. The ±2 m leash around a navmesh point limits the risk of walking off edges but does not remove it. Probe points are checked for reachability only through the normal path request. Real-player feel is Pending; see the [M11 handoff](../milestones/m11-playable-release/handoff.md#t082--solid-fps-bot-combat-behaviour).
+Known limits (narrowed by [T090](#bot-tactics-cover-peek-wall-hearing-ledge-strafe-route-spread-t090-2026-11-15)): probe reachability is still only via the normal path request. Real-player feel is Pending; see the [M11 handoff](../milestones/m11-playable-release/handoff.md#t082--solid-fps-bot-combat-behaviour).
 
 ## Awareness, team spread and lethality (T085, 2026-11-15)
 
@@ -68,7 +68,7 @@ Known limits: strafing has no ledge query. The ±2 m leash around a navmesh poin
 - **Following each other (root cause).** Product patrol destinations are the map's ordered route corners. Each bot took `destinations[(id + cursor) % n]`, so teammates with consecutive ids walked the same route one corner apart, in a line. `ChooseSpreadDestination` now scores every destination: about 35 m legs preferred, −2 for each ally already heading within 12 m of it, −0.5 for each ally standing near it, a seeded per-bot preference, and never the last two picks. The goal is chosen once per arrival, not every tick. Combat destinations use the same scorer.
 - **Ally noise.** Teammate gunfire used to send listeners to the teammate's own position. It now points at that teammate's last-seen enemy, or is ignored when it has none (a human teammate's shots are ignored). Gunfire, callouts and footsteps send at most 2 allies to one noise (within 10 m); the rest keep their route and face it.
 - **Behind the back.**
-  - Footsteps: every tick the planner derives each enemy's horizontal speed from its position. An enemy is audible from any direction within 24 m when sprinting (≥5 m/s), 13 m when running (≥2.6 m/s) and 5 m when walking, and always within 2.5 m. The heard point has 5% distance noise. A bot without a visible target turns toward it; a patrolling or searching bot investigates it. No rays are used.
+  - Footsteps: every tick the planner derives each enemy's horizontal speed from its position. An enemy is audible from any direction within 24 m when sprinting (≥5 m/s), 13 m when running (≥2.6 m/s) and 5 m when walking, and always within 2.5 m. The heard point has 5% distance noise. A bot without a visible target turns toward it; a patrolling or searching bot investigates it. T090 adds wall occlusion beyond presence (see below).
   - A fresh footstep or damage stimulus newer than the last sighting wins the look over the older last-seen point.
   - An engaged bot hit twice within 1.5 s by an enemy it is not fighting (or once when below 50 health) breaks off for up to 0.75 s and turns on the attacker. Attacker priority in sensing then acquires it.
   - The vision cone widens from 90° to 120°.
@@ -80,7 +80,20 @@ Known limits: strafing has no ledge query. The ±2 m leash around a navmesh poin
 
 New counters: `FootstepsHeard`, `ThreatTurns`, `CrowdedStimuliHeld`, `AllyGunfireIgnored`.
 
-Known limits: hearing ignores walls (distance only, like gunfire). Footstep speed comes from planner positions, so a teleport or respawn counts as one fast step and is heard at most once. Spread scoring only knows allies' goals and positions, not which routes they take. Real-player feel is Pending.
+Known limits (narrowed by T090): footstep speed still comes from planner positions, so a teleport or respawn counts as one fast step and is heard at most once. Real-player feel is Pending.
+
+## Bot tactics: cover peek, wall hearing, ledge strafe, route spread (T090, 2026-11-15)
+
+[T090](../task-supplement.md#t090--bot-tactics-cover-peek-wall-hearing-ledge-strafe-route-spread-2026-11-15) closes the documented T082/T085 tactics gaps inside unchanged budgets ([ADR-070](../decisions.md#adr-070--accepted-bot-tactics-tranche-cover-peek-wall-hearing-ledge-strafe-route-spread-t090)).
+
+- **Cover peek.** After a candidate hides a crouched chest from the threat, a leftover probe ray samples a left/right peek eye toward the threat. Peekable sites are claimed immediately; the first blind-but-hidden candidate is kept as fallback when the list ends. Peek rays share the ≤4/tick probe cap and the global 16-ray budget.
+- **Wall-aware hearing.** Gunfire occlusion is a direct ear→source collision ray (not charged to the 16 AI rays) so stimulus handling stays synchronous. Footsteps beyond 2.5 m use leftover budgeted AI rays at most once per bot every 12 ticks (fail-open when deferred; last clear/blocked result reused while rate-limited). Presence always passes.
+- **Ledge-safe strafe.** Before applying the strafe step, a downward ground probe at ±0.75 m along the strafe axis flips or cancels when the drop exceeds ~0.55 m or the probe has no footing while the bot still does. Open worlds with no ground under either sample fail-open. These probes are not vision rays (`AiRaysUsedThisTick` stays the budget meter).
+- **Route-aware spread.** Destinations within ~9 m of an ally's remaining path corners take an extra −1 score (corners already on the blackboard; no new path solves). Goal/position penalties from T085 remain.
+
+New counters: `CoverPeekRays`, `CoverPeekAccepted`, `HearingOcclusionRays`, `HearingOccluded`, `StrafeLedgeFlips`, `RouteCorridorPenalties`.
+
+Known residuals: cover still has no authored map proxies; peek is a single side sample without exposure scoring over time; hearing occlusion uses the vision layer mask; footstep teleport spike remains; AI CPU 1.5 ms mean and owner feel review remain Pending.
 
 ## Knife and grenade loadout (T087, 2026-11-15)
 
