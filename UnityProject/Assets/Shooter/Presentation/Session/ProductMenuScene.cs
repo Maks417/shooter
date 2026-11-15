@@ -23,6 +23,8 @@ namespace Shooter.Presentation.Session
         public const int StageLayer = 12;
         private readonly List<UnityEngine.Object> owned = new List<UnityEngine.Object>();
         private readonly Dictionary<string, RenderTexture> mapCards = new Dictionary<string, RenderTexture>();
+        private readonly List<Camera> pendingCardCameras = new List<Camera>();
+        private int cardWarmupFrames;
         private Task<PackagedVisualPayloads[]>? load;
         private Camera? stageCamera;
         private ProductActorPresentation? actors;
@@ -95,6 +97,7 @@ namespace Shooter.Presentation.Session
                 frame = null;
                 box = null;
                 mapCards.Clear();
+                pendingCardCameras.Clear();
                 motes.Clear();
                 built = false;
                 failed = true;
@@ -259,11 +262,9 @@ namespace Shooter.Presentation.Session
         private void BuildMapCard(PackagedVisualPayloads visuals, Shader shader, int index)
         {
             float offset = 1000 + index * 1000;
-            // The overview renders immediately below, before the final recursive stage setup.
             var root = new GameObject("Verified map card " + visuals.MapId) { layer = StageLayer };
             root.transform.SetParent(transform, false);
             root.transform.position = new Vector3(offset, 0, 0);
-            root.layer = StageLayer;
             root.AddComponent<MeshFilter>().sharedMesh = Upload(MapVisualClosure.DecodeMapMesh(visuals, MapVisualClosure.MapSolidsMeshPath), "Map card " + visuals.MapId);
             root.AddComponent<MeshRenderer>().sharedMaterial = PackagedMaterial(
                 visuals, shader, MapVisualClosure.MapMaterialPaths[0], "Packaged card " + visuals.MapId, .5f);
@@ -286,15 +287,16 @@ namespace Shooter.Presentation.Session
             camera.backgroundColor = new Color(.08f, .13f, .15f);
             camera.clearFlags = CameraClearFlags.SolidColor;
             camera.enabled = false;
+            camera.allowHDR = false;
+            camera.allowMSAA = false;
             var target = Own(new RenderTexture(384, 216, 16, RenderTextureFormat.ARGB32) { name = "Verified " + visuals.MapId + " overview" });
             target.Create();
             camera.targetTexture = target;
-            bool fog = RenderSettings.fog;
-            RenderTexture previous = RenderTexture.active;
-            try { RenderSettings.fog = false; camera.Render(); }
-            finally { RenderSettings.fog = fog; RenderTexture.active = previous; }
             mapCards.Add(visuals.MapId, target);
-            if (Application.isPlaying) Destroy(camera.gameObject); else DestroyImmediate(camera.gameObject);
+            // A camera rendered and destroyed during initial package binding can leave an empty
+            // target in the player before URP's first frame. Keep it through pipeline startup.
+            pendingCardCameras.Add(camera);
+            cardWarmupFrames = 1;
             // Retain the tiny static card mesh inside this bounded scene until destruction.
         }
 
@@ -328,6 +330,8 @@ namespace Shooter.Presentation.Session
 
         private void LateUpdate()
         {
+            if (built && pendingCardCameras.Count > 0 && cardWarmupFrames-- <= 0)
+                CaptureMapCards();
             if (!built || Time.unscaledTime < nextRender) return;
             nextRender = Time.unscaledTime + 1f / 30;
             float dt = reducedMotion ? 0 : Mathf.Min(Time.unscaledDeltaTime, .05f);
@@ -340,6 +344,28 @@ namespace Shooter.Presentation.Session
                 motes[i].localPosition = p;
             }
             RenderStage();
+        }
+
+        private void CaptureMapCards()
+        {
+            bool fog = RenderSettings.fog;
+            RenderTexture previous = RenderTexture.active;
+            try
+            {
+                RenderSettings.fog = false;
+                foreach (var camera in pendingCardCameras) camera.Render();
+            }
+            finally
+            {
+                RenderSettings.fog = fog;
+                RenderTexture.active = previous;
+                foreach (var camera in pendingCardCameras)
+                {
+                    camera.targetTexture = null;
+                    DestroyObject(camera.gameObject);
+                }
+                pendingCardCameras.Clear();
+            }
         }
 
         private void RenderStage()
@@ -443,6 +469,9 @@ namespace Shooter.Presentation.Session
         private void ReleaseOwned()
         {
             if (stageCamera != null) stageCamera.targetTexture = null;
+            foreach (var camera in pendingCardCameras)
+                if (camera != null) camera.targetTexture = null;
+            pendingCardCameras.Clear();
             for (int i = 0; i < owned.Count; i++)
             {
                 if (owned[i] is RenderTexture rt) rt.Release();

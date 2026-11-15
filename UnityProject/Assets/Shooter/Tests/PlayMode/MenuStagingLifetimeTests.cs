@@ -29,6 +29,23 @@ namespace Shooter.Tests
                 var scene = root.AddComponent<ProductMenuScene>();
                 scene.BindVerified(visuals);
                 yield return null; // Activate the real MonoBehaviour lifecycle before suspension.
+                yield return null;
+                yield return null; // Static overview capture follows URP startup.
+                foreach (string map in new[] { "training-compound", "depot-yard" })
+                {
+                    var target = (RenderTexture)scene.MapCard(map)!;
+                    var previous = RenderTexture.active;
+                    var pixels = new Texture2D(target.width, target.height, TextureFormat.RGBA32, false);
+                    try
+                    {
+                        RenderTexture.active = target;
+                        pixels.ReadPixels(new Rect(0, 0, target.width, target.height), 0, 0);
+                        pixels.Apply();
+                        Assert.That(pixels.GetPixels32().Select(p => (p.r / 8, p.g / 8, p.b / 8)).Distinct().Count(),
+                            Is.GreaterThan(4), "The " + map + " card must contain a rendered scene, not only a clear color.");
+                    }
+                    finally { RenderTexture.active = previous; Object.Destroy(pixels); }
+                }
                 var materials = root.GetComponentsInChildren<Renderer>(true)
                     .SelectMany(r => r.sharedMaterials).Where(m => m != null).Distinct().ToArray();
                 var resources = materials.Cast<Object>().ToList();
