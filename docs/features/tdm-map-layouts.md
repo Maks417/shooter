@@ -1,80 +1,118 @@
-# Feature: compact TDM map layouts (T076)
+# Feature: compact TDM map layouts (T076, ADR-074)
 
-Owner assignment 2026-11-15: redesign catalog maps as compact Team Deathmatch arenas sized for 5v5 and 6v6. ADR-045 covered `training-compound` and `depot-yard`; ADR-071 adds `oil-depot` with limited elevated routes. Map ids, display names, seeds, recipe/package/metadata schemas, SGAF Collision v1, nav settings and the 256 m world/32 m chunk frame stay on the existing package format; generated gameplay topology (and therefore package identities) changes per map. The legacy W01 `CompoundPlanner` and its canonical-seed goldens stay untouched for historical M1–M3 evidence; the catalog uses arena planners.
+Owner assignment 2026-11-15: redesign catalog maps as compact Team Deathmatch arenas sized for 5v5 and 6v6. ADR-045 covered `training-compound` and `depot-yard`; ADR-071 added `oil-depot` with limited elevated routes. ADR-074 (owner request 2026-11-15) shrinks all three maps to 64 × 80 m, because play showed every fight collapsing into the middle while the spawn-side halves stayed empty. It also replaces the shared "box building in the middle, free-standing walls around it" template with a layout grammar per map. Map ids, display names, seeds, recipe/package/metadata schemas, SGAF Collision v1, nav settings and the 256 m world/32 m chunk frame stay on the existing package format; generated gameplay topology (and therefore package identities) changes per map. The legacy W01 `CompoundPlanner` and its canonical-seed goldens (B02/B03) stay untouched for historical M1–M3 evidence; the catalog uses arena planners.
 
 ## Design principles applied
 
 Sources: Valve Developer Community *Deathmatch Map Design Theory* and *Multi-Player Mapping Tips*; Epic *Gears of War Multiplayer Map Theory*; The Level Design Book (circulation, typology, combat balance); TF2 map theory (spawn exits: main choke + major/minor flank); Call of Duty three-lane practice as reported by GamesRadar.
 
-1. **Three lanes, connected.** Each map has a left, middle and right lane running spawn-to-spawn, linked by at least two cross connectors so players can rotate without returning to spawn. Lanes have different characters (long sightline / close quarters / mixed) so loadout and playstyle choices matter.
-2. **Size for player count.** 10–12 players need contact within ~8 s of spawning but room to flank. With sprint 5.5 m/s the spawn-to-centre path is 38–55 m and the playable area is at most 100 × 120 m (target ~85 × 105 m) — roughly a quarter of the old 256 m area.
-3. **Symmetry for fairness.** Gameplay collision is mirror-symmetric across `z = 0` (team 1 stages at −Z, team 2 at +Z). Visual-only variation is allowed later; gameplay boxes must mirror exactly.
-4. **Protected spawns with multiple exits.** Each staging zone sits behind a spawn wall with three exits (one per lane), no line of sight from mid or from the enemy staging zone, and no sharp U-turn on leaving.
-5. **Controlled sightlines.** Long sightlines exist only in the designated long lane and are capped at 60 m; mid and the CQB lane break sight every ≤ 25 m. No spawn-to-spawn and no centre-to-spawn eye line.
-6. **Cover rhythm.** Every open walkable point outside staging has cover within 8 m (≈1.5 s sprint). Half cover (1.1 m) hides a crouched eye (1.05 m) but not a standing one (1.65 m); full cover is ≥ 2.0 m. With jump apex ≈0.63 m and step 0.25 m, half cover is not climbable, so lanes cannot be shortcut by vaulting.
-7. **Readable chokepoints, no dead ends.** Doors ≥ 2.0 m clear, corridors ≥ 3.0 m, lanes 6–12 m. Every enclosed room has ≥ 2 exits.
-8. **Map control in the middle.** A central structure is the strongest position but is reachable from all three lanes, so holding it is contestable.
+1. **Three routes, each with its own character.** Every map has a left, middle and right route from spawn to spawn. Players rotate between them without going back to spawn. The routes differ (interior/CQB, open street or yard, elevated or long), so loadout and playstyle choices matter.
+2. **Size for player count.** 10–12 players should meet within ~5–7 s of spawning. With sprint 5.5 m/s the grid path from spawn to centre is 26–44 m (grid paths overstate walked distance), and the playable area is 64 × 80 m, roughly half the ADR-045 area.
+3. **Symmetry for fairness, not sameness.** Team 2's half is an exact image of team 1's: a z-mirror (Depot Yard, Oil Depot) or a 180° rotation about the centre (Training Compound). Rotation turns the compound's corner buildings into a pinwheel: each team's left route goes through a different building than its right route.
+4. **Protected spawns with multiple exits.** Each staging zone sits behind parked vehicles or a building, with three exits. There is no line of sight from the centre or from the enemy staging zone. From the doorway of any exit at most four own slots are visible within 40 m: gate chutes are formed by parked trailers, and staging dividers have offset openings.
+5. **Controlled sightlines.** The longest clear eye line is 48 m. There are no spawn-to-spawn or centre-to-spawn eye lines.
+6. **Cover rhythm.** Every open walkable point outside staging has cover within 8 m (≈1.5 s sprint). Half cover (1.1 m) hides a crouched eye (1.05 m) but not a standing one (1.65 m); full cover is ≥ 2.0 m. With jump apex ≈0.63 m and step 0.25 m, half cover is not climbable, so routes cannot be shortcut by vaulting.
+7. **Readable objects, no strange walls.** Every blocking box is a nameable object: a building wall, parked vehicle, boxcar, container, sandbag wall, tank, pipe rack or booth. Free-standing separator walls, U-pockets and spawn baffle walls are gone (validated by `ArenaRulesTests.No_free_standing_thin_walls`). Vehicles, rolling stock, sandbags and fences carry an `ArenaFeature` descriptor that the mesh-only dressing draws as the real object.
+8. **Readable chokepoints, no dead ends.** Doors ≥ 2.0 m clear, corridors ≥ 3.0 m. Every enclosed room has ≥ 2 exits.
+9. **A different centre per map.** Training Compound's centre is an open parade square, Depot Yard's is a train with a crossing, and Oil Depot's is a pump house. Holding the centre is reachable from all three routes and contestable.
 
 ## Numeric rules (enforced by `ArenaRules` validation)
 
 | Rule | Threshold |
 |---|---|
-| Playable rectangle (inside perimeter walls) | 70–100 m along X, 90–120 m along Z |
+| Playable rectangle (inside perimeter walls) | 56–72 m along X, 72–88 m along Z |
 | Perimeter wall height | ≥ 4.0 m, closed except none (no gaps) |
-| Team anchor separation along Z | 80–110 m |
-| Nav path anchor → map centre (1 m grid, capsule clearance) | 38–55 m each team |
-| Nav path anchor → enemy anchor | 85–140 m |
+| Team anchor separation along Z | 60–76 m |
+| Nav path anchor → map centre (1 m grid, capsule clearance) | 26–44 m each team |
+| Nav path anchor → enemy anchor | 60–100 m |
 | Staging exits per team | ≥ 3, pairwise ≥ 8 m apart, each reaches the centre |
 | Distinct routes (existing similarity rule, via points = lane anchors) | ≥ 3, ≥ 1 covered |
 | Spawn LOS | none between any T1 and T2 slot; none from centre eye (0, 1.65, 0) to any slot |
-| Longest clear eye-height sightline (4 m sample grid × 16 directions, inside playable) | ≤ 60 m |
+| Longest clear eye-height sightline (4 m sample grid × 16 directions, inside playable) | ≤ 48 m |
 | Cover within 8 m of every open sample outside staging | 100 % of samples; cover = gameplay box with height ≥ 1.0 m |
-| Gameplay mirror symmetry across z = 0 | every box has a mirror twin (tolerance 1 mm) or lies on z = 0 symmetric |
+| Gameplay symmetry (`ArenaLayout.Symmetry`) | every box has its `MirrorZ` or `Rotate180` twin (tolerance 1 mm) or is its own image |
 | Ceilings | ≤ 400 gameplay boxes, ≤ 64 cover proxies |
 | Spawn slots | 12 per team, inside own staging rectangle, ≥ 2 m spacing |
 
-Ground is flat (`y = 0`, 2×2 zero height grid) for Compound and Depot. ADR-071 adds limited walkable elevation on Oil Depot only: thin gameplay slabs (≤0.40 m) for stairs/catwalks, Y-aware occupancy (pass-under), and layered climb when a path endpoint is elevated. Roofs stay non-gameplay.
+Measured at ADR-074 (pure `ArenaRules`, seeds unchanged):
 
-## Map A — Training Compound (`training-compound`, mirror across z = 0)
+| Map | Size | Anchor sep. | Path → centre | Path → enemy | Longest sightline | Worst cover gap | Boxes / covers |
+|---|---|---|---|---|---|---|---|
+| Training Compound | 64 × 80 | 68 | 40 | 84 | 46.5 | 5.05 | 113 / 59 |
+| Depot Yard | 64 × 80 | 68 | 42 | 80 | 47.25 | 5.37 | 81 / 50 |
+| Oil Depot | 64 × 80 | 68 | 40 | 88 | 46.0 | 5.7 | 120 / 36 |
 
-Playable rectangle x ∈ [−44, 44], z ∈ [−52, 52] (88 × 104 m). Team 1 anchor (0, 0, −46), team 2 anchor (0, 0, 46).
+Ground is flat (`y = 0`, 2×2 zero height grid). ADR-071 limited walkable elevation applies only on Oil Depot: thin gameplay slabs (≤0.40 m) for stairs/catwalks, Y-aware occupancy (pass-under), and layered climb when a path endpoint is elevated. Roofs stay non-gameplay.
 
-- **Staging** z ∈ [−52, −38] (team 1). Spawn wall at z = −37 (3 m tall, 0.4 m thick) across x ∈ [−44, 44] with three 4 m gates centred at x = −30, 0, +30. Two 1.1 m half-cover crates in front of each gate.
-- **Left lane — Range (long sightline)** x ∈ [−44, −24]: open firing range with staggered 1.1 m sandbag rows every ~10 m, alternating sides, and two 2.4 m concrete blocks at z = ±14 to cap the lane sightline at ≤ 60 m.
-- **Middle — HQ building** centred (0, 0), shell 16 × 12 m (walls 3.5 m high, roof), doors 2.4 m wide on all four sides (N, S, E, W) plus two interior pillars; outdoor plaza around it with 1.1 m planters. HQ blocks spawn-to-spawn and centre-to-spawn sight.
-- **Right lane — Barracks (close quarters, covered route)** x ∈ [24, 44]: two barracks buildings 12 × 22 m spanning z ∈ [−30, −8] and its mirror z ∈ [8, 30], each with doors at both short ends and one side door toward mid; interior partition walls create 2–3 rooms; gap z ∈ [−8, 8] is a small courtyard with full cover.
-- **Lane separators** at x = ±18: low 2.4 m walls/sheds broken by cross connectors at z = ±18 and z = 0 (3 m openings), so the three lanes are distinct but rotations are short.
+## Map A — Training Compound "garrison square" (`training-compound`, `Rotate180`)
 
-## Map B — Depot Yard (`depot-yard`, mirror across z = 0)
+Playable rectangle x ∈ [−32, 32], z ∈ [−40, 40]. Team 1 anchor (0, 0, −34), team 2 anchor (0, 0, 34). Team 2's half is team 1's half rotated 180° about the origin. Planner `environment.compound.arena` 3.0.0.
 
-Playable rectangle x ∈ [−40, 40], z ∈ [−56, 56] (80 × 112 m). Team 1 anchor (0, 0, −50), team 2 anchor (0, 0, 50). Distinct grammar from the compound: industrial, linear, container-driven.
+- **Staging (motor pool)** z ∈ [−40, −30]:
+  - A 14 × 7 m drive-through garage at (0, −27) has offset south/north doors and a tall parts rack between them. Two jeeps parked nose-in either side of the south door form a short chute.
+  - Four parked trucks along z = −29 leave a 7 m exit on each side.
+  - Parked trailers split the staging strip, with openings at the back (west) and in the middle (east).
+- **Centre: parade square** (no building). A low flag plinth (1.0 m, flagpole dressing) stands on the origin, with planters and sandbags as half cover. A trailer and a booth on the square's edges break east–west eye lines.
+- **Middle route:** through the garage, then through the offset guard-hut arch at z = −15. One hut stands on the garage-door column, and its rotated twin closes the other half.
+- **Left route (interior):** a 12 × 14 m two-room barracks at (−21, −15) with doors to the spawn, the square and the west alley. A sandbag wall and a parked trailer cap the alley.
+- **Right route (open street):** staggered parked trucks and sandbag walls, past a 9 × 10 m HQ office at (15.5, −14) that opens onto the square. After rotation, team 1's barracks route faces team 2's truck street, and vice versa.
 
-- **Staging** z ∈ [−56, −42]; gatehouse wall at z = −41 (3 m) with three gates at x = −28, 0, +26.
-- **Left lane — Rail siding (long sightline)** x ∈ [−40, −20]: one track bed with three boxcars (3.0 × 3.2 × 12 m, long axis Z) staggered between x = −34 and x = −26 at z = −22, 0 (centred, symmetric) and +22, plus 1.1 m rail buffers; sightline capped ≤ 60 m.
-- **Middle — Central warehouse** 22 × 26 m centred (0, 0), walls 5 m high with roof, two 3 m loading doors on each short end (N/S) and one 2.4 m door on each long side; interior shelving rows (2.2 m high, 1.2 m deep) running X with 3 m aisles; 1.2 m loading-dock lip outside each N/S door.
-- **Right lane — Container stacks (CQB maze, covered route)** x ∈ [18, 40]: shipping containers 2.5 × 2.6 × 6 m in staggered rows forming two parallel twisting alleys (≥ 3 m wide) with short sightlines (≤ 20 m); a few double-stacked 5.2 m-tall containers as hard sight breaks.
-- **Cross connectors** at z = ±30 (yard aprons between staging and warehouse) and z = 0 through the warehouse side doors.
+## Map B — Depot Yard "rail crossing" (`depot-yard`, `MirrorZ`)
 
-## Map C — Oil Depot (`oil-depot`, mirror across z = 0) — ADR-071
+Playable rectangle x ∈ [−32, 32], z ∈ [−40, 40]. Team 1 anchor (0, 0, −34), team 2 anchor (0, 0, 34). Planner `environment.depot.arena` 3.0.0. Industrial, linear and container-driven; there is no central warehouse.
 
-Playable rectangle x ∈ [−42, 42], z ∈ [−54, 54] (84 × 108 m). Team 1 anchor (0, 0, −48), team 2 anchor (0, 0, 48). Petroleum grammar distinct from Compound and Depot Yard.
+- **Staging** z ∈ [−40, −30]:
+  - Four semi-trailers are parked nose to tail along z = −29.
+  - A gate booth wider than the 5 m centre gate stands at z = −25.3. Inside the centre gate, two trailers form a chute.
+  - Pallet stacks split the strip, with offset openings.
+- **Centre: the train** on z = 0 (self-mirrored). Two strings of coupled cars run along the track: three 3.4 m boxcars plus one 1.2 m flatcar. You can shoot over the flatcar but not climb it, and a tarped load stands on its east end.
+- **Crossings:** three, at x ∈ [−32, −28], [−3, 3] and [28, 32]. A signal box and a relay cabinet beside the centre crossing stop the eye line along the train and diagonals through the crossing.
+- **Left route:** a container stack yard with staggered 6 m containers, two of them double-stacked, and aisles open at both ends. A relay cabinet against a stack caps the wall alley.
+- **Middle route:** the open yard from the gate booth to the centre crossing, with a fuel truck, a signal box and pallets.
+- **Right route (covered):** a 14 × 14 m loading shed at (20, −15), 4.5 m walls, four doors, shelving and a dock lip. East of it is an alley with a parked trailer and sandbags.
 
-- **Staging** z ∈ [−54, −40]; gatehouse wall at z = −39 (2 m deep) with three gates at x = −28, 0, +28 and baffle chutes.
-- **Left lane — Tank farm** x ∈ [−42, −18]: octagonal/drum tanks, pipe cover, sight chicanes; keep lane via (−28, 0) open.
-- **Middle — Pump house** 16 × 14 m centred (0, 0), doors on all four sides, interior pillars, outdoor apron cover and axis sight blocks.
-- **Right lane — Container / shed CQB** with a clear strip for the elevated flank.
-- **Elevated flank** at x ≈ 32: walkable catwalk deck top 2.25 m (underpass), stair runs ≤0.25 m risers at both ends, mirrored across z = 0; half-cover rails.
-- **Cross connectors** at z ≈ ±28 through separator gaps and pump-house side doors.
-- **Visual dressing (mesh-only)** — `Generation/Core/Environment/OilDepotDressing.cs`, appended by `MapSolidsMesh.Build(plan, "oil-depot")`: round 32-sided white tank shells that enclose the square drum collision (the drum/buttress boxes are not drawn), strake bands, cone roofs, yellow roof rails and caged ladders; wall-mounted pipe racks on all four perimeter walls; two overhead pipe bridges (y ≈ 6 m) from the tank farm to the pump-house roof on columns that stand only on gameplay solids; pump-house roof plant; a yellow loading gantry standing on the row-zero containers (canopy 5.5 m, filler arms ≥ 3.6 m); and an out-of-bounds skyline of large tanks plus a banded flare stack. Two accent roles `TankWhite` (6) and `SafetyYellow` (7) were added to `MapSolidsMaterialRole` and `ProductSurfaceMaterial.ArchitecturalAccents`. Collision boxes, collision/nav hashes and routes are unchanged. The design is original and does not reproduce any commercial map. Known limitation: near the tank cardinal faces the visual shell sits up to ≈ 0.35 r − 0.35 m (≤ 0.85 m) outside the authoritative buttress collision.
+## Map C — Oil Depot (`oil-depot`, `MirrorZ`) — ADR-071, compacted by ADR-074
+
+Playable rectangle x ∈ [−32, 32], z ∈ [−40, 40]. Team 1 anchor (0, 0, −34), team 2 anchor (0, 0, 34). Planner `environment.oil.arena` 2.0.0. ADR-074 keeps the map's distinctive parts (tank farm, pump house, catwalk) and drops the container lane and the thin separator walls.
+
+- **Staging (loading rack)** z ∈ [−40, −30]:
+  - Tanker trucks are parked along z = −29.
+  - A pump island wider than the centre gate stands at z = −25.3. Inside the centre gate, two tankers form a chute.
+  - Drum stacks split the strip, with offset openings.
+- **Left route — tank farm:** drum tanks at (−22, ±19) r 3.4 and (−27.5, ±8) r 3.0, with pipe stands and valve pits. A 10.5 m pipe rack at x = −14 west of the pump house catches the diagonal eye lines across the apron. The lane via (−26, 0) stays open.
+- **Middle — pump house** 14 × 12 m centred (0, 0): doors on all four sides, interior pillars and a console. The apron has valve manifolds, and valve towers stand against its east wall.
+- **Right route — catwalk:** one continuous walkable deck (top 2.25 m, 3.4 m wide, z ∈ [−6, 6]) at x = 22, spanning z = 0, with half-cover rails. A 9-tread stair runs at each end. Both teams contest the same high ground, and there is an underpass beneath it.
+  - East of the catwalk is a tanker on a siding with a tall pipe stand.
+  - West of the catwalk is a pipe-rack stub and valve cover.
+- **Visual dressing (mesh-only):**
+  - `OilDepotDressing.cs` covers the round 32-sided white tank shells that enclose the square drum collision (the drum/buttress boxes are not drawn), strake bands, cone roofs, yellow roof rails and caged ladders.
+  - It also draws wall-mounted pipe racks on all four perimeter walls, two overhead pipe bridges (y = 6.4 m) from the outer tanks to the pump-house roof on columns standing on the tank roofs and the x = −14 pipe rack, the pump-house roof plant, and an out-of-bounds skyline of large tanks plus a banded flare stack.
+  - The ADR-071 loading gantry was removed together with its containers.
+  - The accent roles `TankWhite` (6) and `SafetyYellow` (7) remain oil-only.
+  - Known limitation: near the tank cardinal faces the visual shell sits up to ≈ 0.35 r − 0.35 m (≤ 0.85 m) outside the authoritative buttress collision.
+
+## Feature dressing (ADR-074)
+
+`ArenaBoxBuilder.AddVehicle`, `AddSandbagWall`, `AddFenceRun` and `RecordFeature` record an `ArenaFeature` (kind, envelope, facing) next to the collision box; `CompoundPlan.Features` carries them. `ArenaFeatureDressing` (appended by `MapSolidsMesh.Build`) draws:
+
+- trucks, tankers, semi-trailers, boxcars, flatcars, tarped loads, sandbag walls and tarp fences instead of their envelope box. Each stays inside the envelope, and dark skirts close any gap under a chassis, so nothing visible opens where collision blocks;
+- booths, the flag plinth and pipe racks, which keep their box and gain a roof, windows, flag or pipes.
+
+Training Compound and Depot Yard use only roles 0–5. Collision, navigation and package identity never depend on dressing.
 
 ## Implementation boundary
 
-- Pure files under `UnityProject/Assets/Shooter/Generation/Core/Environment/`: `ArenaLayout.cs`, `ArenaRules.cs`, `ArenaGeometry.cs` (including stair/catwalk helpers), `CompoundArenaPlanner.cs`, `DepotArenaPlanner.cs`, `OilArenaPlanner.cs`, `ProductMapPlanner.cs`. Each new `.cs` needs a committed `.meta` with a fresh GUID.
-- `CompoundPlan` gains an optional `ArenaLayout? Arena` (null keeps legacy behaviour). `MapSpawnLayout` and `MapTopologyValidation` use the arena when present. `MapPackageBuilder`, `ReleaseCatalogDocument` and `CompoundCatalogFactory` dispatch through `ProductMapPlanner`.
-- Collision/nav hashes are derived from the actual box list (not seed-only). Stable IDs: compound 10000+, depot 20000+.
-- Must stay C# 9 / .NET Standard 2.1, Unity-free (linked by `Tools/Generation`, `Tools/Foundation` and test projects).
-- Presentation (`ProductMapView`, leased to T075/surfaces) is not edited; it renders from the package as before.
+- Pure files under `UnityProject/Assets/Shooter/Generation/Core/Environment/`:
+  - `ArenaLayout.cs` (including `ArenaSymmetry`), `ArenaRules.cs`, `ArenaGeometry.cs` (including stair/catwalk helpers, feature helpers and `ArenaFeature`), `ArenaFeatureDressing.cs`, `ArenaVisualDetail.cs`;
+  - `CompoundArenaPlanner.cs`, `DepotArenaPlanner.cs`, `OilArenaPlanner.cs`, `OilDepotDressing.cs`, `ProductMapPlanner.cs`.
+  - Each new `.cs` needs a committed `.meta` with a fresh GUID.
+- `CompoundPlan` carries an optional `ArenaLayout? Arena` (null keeps legacy behaviour) and `Features` (empty for legacy plans). `MapSpawnLayout` and `MapTopologyValidation` use the arena when present. `MapPackageBuilder`, `ReleaseCatalogDocument` and `CompoundCatalogFactory` dispatch through `ProductMapPlanner`.
+- Collision/nav hashes are derived from the actual box list (not seed-only). Stable IDs: compound 10000+, depot 20000+, oil 30000+; visual detail 50000+/60000+/70000+.
+- Code must stay C# 9 / .NET Standard 2.1 and Unity-free (it is linked by `Tools/Generation`, `Tools/Foundation` and test projects).
+- Presentation (`ProductMapView`) is not edited; it renders from the package as before.
 
 ## Validation and evidence
 
-Pure: `Tools/Test-Generation.ps1`, `Tools/Test-Maps.ps1`, `Tools/Test-Simulation.ps1`, `Tools/Test-Game.ps1`, `Tools/Test-Contracts.ps1`, source provenance, docs/fixtures checks. Content: regenerate packages with `Tools/Compile-GameContent.ps1` (native nav with the locked editor where available) and record old/new package identities in the M11 handoff. Rule validation proves geometry constraints only; enjoyable flow, spawn pressure and bot behaviour on the new layouts remain Pending manual playtest of both maps at 5v5 and 6v6.
+- **Pure checks:** `Tools/Test-Generation.ps1`, `Tools/Test-Maps.ps1`, `Tools/Test-Simulation.ps1`, `Tools/Test-Game.ps1`, `Tools/Test-Contracts.ps1`, source provenance, docs/fixtures checks.
+- **Content:** regenerate packages with `Tools/Compile-GameContent.ps1` (native nav with the locked editor where available) and record old/new package identities in the M11 handoff.
+- **Not covered:** rule validation proves geometry constraints only. Enjoyable flow, time to first contact, spawn pressure and bot behaviour on the compact layouts remain Pending a manual playtest of all three maps at 5v5 and 6v6.

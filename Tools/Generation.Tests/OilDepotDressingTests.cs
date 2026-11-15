@@ -71,8 +71,8 @@ namespace Shooter.Generation.Tests
                 }
                 Assert.True(enclosed, "tank collision box " + box.StableId + " pokes outside its round shell");
             }
-            // Five drums × (drum + up to four buttresses).
-            Assert.InRange(replacedGameplay, 20, 25);
+            // ADR-074: four drums (two per half) x (drum + four buttresses).
+            Assert.Equal(20, replacedGameplay);
         }
 
         [Fact]

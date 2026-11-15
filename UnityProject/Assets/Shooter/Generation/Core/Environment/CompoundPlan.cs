@@ -110,6 +110,8 @@ namespace Shooter.Generation.Environment
         public int HeightResolution { get; }
         /// <summary>Compact TDM arena descriptor; null for legacy W01/depot plans.</summary>
         public ArenaLayout? Arena { get; }
+        /// <summary>Semantic objects (vehicles, sandbags, fences) for mesh-only dressing; empty for legacy plans.</summary>
+        public IReadOnlyList<ArenaFeature> Features { get; }
 
         public CompoundPlan(
             ulong seed,
@@ -127,7 +129,8 @@ namespace Shooter.Generation.Environment
             IReadOnlyList<CollisionBox> collisionBoxes,
             IReadOnlyList<Float3> routeCorners,
             float[,] heightSamples,
-            ArenaLayout? arena = null)
+            ArenaLayout? arena = null,
+            IReadOnlyList<ArenaFeature>? features = null)
         {
             if (botSpawns == null || buildings == null || props == null || covers == null || collisionBoxes == null || routeCorners == null || heightSamples == null)
                 throw new ArgumentNullException(nameof(botSpawns));
@@ -140,6 +143,7 @@ namespace Shooter.Generation.Environment
             CollisionBoxes = collisionBoxes; RouteCorners = routeCorners; HeightSamples = heightSamples;
             HeightResolution = heightSamples.GetLength(0);
             Arena = arena;
+            Features = features ?? Array.Empty<ArenaFeature>();
         }
 
         public static ChunkCoord ChunkAt(float x, float z)

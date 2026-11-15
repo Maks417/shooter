@@ -33,6 +33,53 @@ namespace Shooter.Generation.Environment
         }
     }
 
+    /// <summary>Readable real-world object kinds that replace free-standing blockout walls (ADR-074).</summary>
+    public enum ArenaFeatureKind
+    {
+        Truck = 1,
+        Trailer = 2,
+        Boxcar = 3,
+        Flatcar = 4,
+        Sandbags = 5,
+        TarpFence = 6,
+        Booth = 7,
+        Flagpole = 8,
+        Tank = 9,
+        /// <summary>Tarped load standing on a flatcar (envelope does not touch the ground).</summary>
+        Cargo = 10,
+        /// <summary>Elevated pipe rack on bents (envelope reaches the ground through its columns).</summary>
+        PipeRack = 11,
+        /// <summary>Fuel tanker truck (barrel body instead of a canvas bed).</summary>
+        Tanker = 12
+    }
+
+    /// <summary>
+    /// Semantic descriptor of one gameplay object (ground footprint centre, envelope size, long axis). Feature
+    /// dressing draws the object inside this envelope instead of the raw collision box; collision is unchanged.
+    /// </summary>
+    public readonly struct ArenaFeature
+    {
+        public ArenaFeatureKind Kind { get; }
+        public Float3 Center { get; }
+        public Float3 Size { get; }
+        /// <summary>+1/-1: which end of the long axis is the "front" (cab end for vehicles).</summary>
+        public float Facing { get; }
+        public ArenaFeature(ArenaFeatureKind kind, Float3 center, Float3 size, float facing)
+        {
+            if (size.X <= 0f || size.Y <= 0f || size.Z <= 0f) throw new ArgumentOutOfRangeException(nameof(size));
+            Kind = kind; Center = center; Size = size; Facing = facing >= 0f ? 1f : -1f;
+        }
+        public bool AlongX => Size.X >= Size.Z;
+        public float Length => AlongX ? Size.X : Size.Z;
+        public float Width => AlongX ? Size.Z : Size.X;
+
+        /// <summary>True when <paramref name="box"/> is exactly this feature's envelope.</summary>
+        public bool Matches(CollisionBox box)
+            => Math.Abs(box.Center.X - Center.X) < 0.001f && Math.Abs(box.Center.Y - Center.Y) < 0.001f &&
+               Math.Abs(box.Center.Z - Center.Z) < 0.001f && Math.Abs(box.Size.X - Size.X) < 0.001f &&
+               Math.Abs(box.Size.Y - Size.Y) < 0.001f && Math.Abs(box.Size.Z - Size.Z) < 0.001f;
+    }
+
     /// <summary>
     /// Deterministic box/cover list builder for arena planners. Stable ids are assigned sequentially from a
     /// base so planners never hand-pick ids; optional z-mirror twins are emitted directly after the original.
@@ -46,16 +93,28 @@ namespace Shooter.Generation.Environment
 
         private readonly List<CollisionBox> boxes = new List<CollisionBox>();
         private readonly List<CoverProxy> covers = new List<CoverProxy>();
+        private readonly List<ArenaFeature> features = new List<ArenaFeature>();
         private ulong nextId;
 
-        public ArenaBoxBuilder(ulong idBase)
+        public ArenaBoxBuilder(ulong idBase, ArenaSymmetry symmetry = ArenaSymmetry.MirrorZ)
         {
             if (idBase == 0) throw new ArgumentOutOfRangeException(nameof(idBase));
             nextId = idBase;
+            Symmetry = symmetry;
         }
+
+        /// <summary>Symmetry used for the optional twin of every added box/cover (ADR-074).</summary>
+        public ArenaSymmetry Symmetry { get; }
+
+        /// <summary>True when the twin of a point at (x, z) is the point itself (no second copy is emitted).</summary>
+        private bool SelfTwin(float x, float z)
+            => Symmetry == ArenaSymmetry.Rotate180
+                ? Math.Abs(x) <= 0.0005f && Math.Abs(z) <= 0.0005f
+                : Math.Abs(z) <= 0.0005f;
 
         public IReadOnlyList<CollisionBox> Boxes => boxes;
         public IReadOnlyList<CoverProxy> Covers => covers;
+        public IReadOnlyList<ArenaFeature> Features => features;
         public ulong NextId => nextId;
 
         /// <summary>
@@ -68,12 +127,12 @@ namespace Shooter.Generation.Environment
             nextId = id;
         }
 
-        /// <summary>Adds one box (centre/size) and, when <paramref name="mirror"/> is set and the centre is off z = 0, its z-mirror twin.</summary>
+        /// <summary>Adds one box (centre/size) and, when <paramref name="mirror"/> is set and the box is not its own image, its symmetry twin.</summary>
         public void Add(Float3 center, Float3 size, ushort tag = TagSolid, bool mirror = true, bool gameplay = true)
         {
             AddOne(center, size, tag, gameplay);
-            if (mirror && Math.Abs(center.Z) > 0.0005f)
-                AddOne(ArenaLayout.MirrorZ(center), size, tag, gameplay);
+            if (mirror && !SelfTwin(center.X, center.Z))
+                AddOne(ArenaLayout.Twin(Symmetry, center), size, tag, gameplay);
         }
 
         /// <summary>Adds a ground-standing box described by its XZ footprint centre and height.</summary>
@@ -98,7 +157,7 @@ namespace Shooter.Generation.Environment
         public void Perimeter(ArenaLayout layout, float height = 5f, float thickness = 1f)
         {
             float hx = layout.HalfExtentX, hz = layout.HalfExtentZ;
-            // North/south walls (mirror twins) span the full width including the corners.
+            // North/south walls (symmetry twins) span the full width including the corners.
             AddGrounded(0f, hz + thickness * 0.5f, (hx + thickness) * 2f, thickness, height, TagSolid, true);
             // East/west walls are centred on z = 0.
             AddGrounded(hx + thickness * 0.5f, 0f, thickness, hz * 2f, height, TagSolid, false);
@@ -194,14 +253,60 @@ namespace Shooter.Generation.Environment
         }
 
         /// <summary>
+        /// Parked vehicle / rolling stock (truck, trailer, boxcar, flatcar, booth): one solid envelope box plus a
+        /// cover proxy, recorded as a feature so dressing draws the real object. <paramref name="facing"/> picks the cab end.
+        /// </summary>
+        public void AddVehicle(ArenaFeatureKind kind, float x, float z, float length, float width, float height, bool alongX, Float3 threat, float facing = 1f, bool mirror = true)
+        {
+            float sx = alongX ? length : width, sz = alongX ? width : length;
+            AddCover(x, z, sx, height, sz, threat, mirror, height >= 2f ? TagSolid : TagCover);
+            RecordFeature(kind, x, z, sx, height, sz, facing, mirror);
+        }
+
+        /// <summary>Sandbag wall (1.1 m half cover, 0.9 m deep) of the given run length.</summary>
+        public void AddSandbagWall(float x, float z, float length, bool alongX, Float3 threat, bool mirror = true, float height = 1.1f)
+        {
+            float sx = alongX ? length : 0.9f, sz = alongX ? 0.9f : length;
+            AddCover(x, z, sx, height, sz, threat, mirror);
+            RecordFeature(ArenaFeatureKind.Sandbags, x, z, sx, height, sz, 1f, mirror);
+        }
+
+        /// <summary>Tarp-covered construction fence (posts + opaque tarp), 2.2 m tall, used as a sight screen.</summary>
+        public void AddFenceRun(float x, float z, float length, bool alongX, bool mirror = true, float height = 2.2f)
+        {
+            float sx = alongX ? length : 0.3f, sz = alongX ? 0.3f : length;
+            AddGrounded(x, z, sx, sz, height, TagSolid, mirror);
+            RecordFeature(ArenaFeatureKind.TarpFence, x, z, sx, height, sz, 1f, mirror);
+        }
+
+        /// <summary>Records a dressing-only feature (and its symmetry twin) for an envelope already added.</summary>
+        public void RecordFeature(ArenaFeatureKind kind, float x, float z, float sizeX, float sizeY, float sizeZ, float facing, bool mirror = true, float baseY = 0f)
+        {
+            var size = new Float3(sizeX, sizeY, sizeZ);
+            float cy = baseY + sizeY * 0.5f;
+            features.Add(new ArenaFeature(kind, new Float3(x, cy, z), size, facing));
+            if (mirror && !SelfTwin(x, z))
+            {
+                var t = ArenaLayout.Twin(Symmetry, new Float3(x, cy, z));
+                // Rotation flips the cab end of a vehicle; a z-mirror flips it only for vehicles along Z.
+                bool alongX = sizeX >= sizeZ;
+                float twinFacing = Symmetry == ArenaSymmetry.Rotate180 || !alongX ? -facing : facing;
+                features.Add(new ArenaFeature(kind, t, size, twinFacing));
+            }
+        }
+
+        /// <summary>
         /// Adds a cover box (gameplay) plus its <see cref="CoverProxy"/>. Peek points are on the side facing away
         /// from <paramref name="threat"/> (where a defender stands behind the cover): standing eye 1.65 m, crouch eye 1.05 m.
         /// </summary>
         public void AddCover(float x, float z, float sizeX, float sizeY, float sizeZ, Float3 threat, bool mirror = true, ushort tag = TagCover)
         {
             AddCoverOne(x, z, sizeX, sizeY, sizeZ, threat, tag);
-            if (mirror && Math.Abs(z) > 0.0005f)
-                AddCoverOne(x, -z, sizeX, sizeY, sizeZ, ArenaLayout.MirrorZ(threat), tag);
+            if (mirror && !SelfTwin(x, z))
+            {
+                var t = ArenaLayout.Twin(Symmetry, new Float3(x, 0f, z));
+                AddCoverOne(t.X, t.Z, sizeX, sizeY, sizeZ, ArenaLayout.Twin(Symmetry, threat), tag);
+            }
         }
 
         private void AddCoverOne(float x, float z, float sizeX, float sizeY, float sizeZ, Float3 threat, ushort tag)
@@ -310,7 +415,7 @@ namespace Shooter.Generation.Environment
                 seed, 1, 1, collisionHash, navHash,
                 layout.Team1Anchor, layout.Team2Anchor, 8f, bots,
                 Array.Empty<BuildingFootprint>(), Array.Empty<PropPlacement>(), covers, boxes, route,
-                new float[2, 2], layout);
+                new float[2, 2], layout, new List<ArenaFeature>(builder.Features));
         }
     }
 }

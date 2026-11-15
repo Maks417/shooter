@@ -6,168 +6,145 @@ using Shooter.Contracts;
 namespace Shooter.Generation.Environment
 {
     /// <summary>
-    /// T076 compact TDM arena for <c>training-compound</c> (docs/features/tdm-map-layouts.md, Map A).
-    /// Team 1 plays from -Z, team 2 is the exact mirror image across z = 0. Left lane = firing range (long, capped
-    /// sightline), middle = HQ building with plaza, right lane = barracks (close quarters, covered route).
-    /// All gameplay boxes are emitted for z &lt; 0 (or symmetric about z = 0) and mirrored by the builder.
+    /// ADR-074 compact TDM arena for <c>training-compound</c> ("garrison square", docs/features/tdm-map-layouts.md Map A).
+    /// Point-symmetric (<see cref="ArenaSymmetry.Rotate180"/>): team 1 plays from -Z and team 2 is the 180° rotation.
+    /// The centre is an open parade square with a low flag plinth, not a building. Four corner blocks form a pinwheel
+    /// around it: for each team the left route runs through a barracks interior, the right route down a truck-lined
+    /// street, and the middle route through the motor-pool garage and the guard-hut arch. Every blocking box is a
+    /// readable object (building wall, vehicle, sandbags, tarp fence); there are no free-standing separator walls.
     /// </summary>
     public static class CompoundArenaPlanner
     {
         public const string GeneratorId = "environment.compound.arena";
-        public const string GeneratorVersion = "2.0.0";
+        public const string GeneratorVersion = "3.0.0";
         public const ulong StableIdBase = 10000;
 
         private const float Thin = 0.4f;
-        private const float WallFull = 3.0f;       // spawn wall, gate baffles
-        private const float WallLane = 2.4f;       // lane separators, sheds, blocks
-        private const float HalfCover = 1.1f;      // sandbags, planters, crates
-        private const float GateX = 30f;
-        private const float GateWidth = 4f;
-        private const float SpawnWallZ = -37f;
-        private const float InnerWallZ = -40.6f;
+        private const float BuildingWall = 3.5f;
+        private const float TruckHeight = 3.0f, TruckWidth = 2.5f, TruckLength = 7f;
 
         public static readonly ArenaLayout Layout = new ArenaLayout(
-            halfExtentX: 44f, halfExtentZ: 52f,
-            stagingMinX: -44f, stagingMaxX: 44f, stagingMinZ: -52f, stagingMaxZ: -38f,
-            team1Anchor: new Float3(0f, 0f, -46f),
-            team1Exits: new[] { new Float3(-GateX, 0f, SpawnWallZ), new Float3(0f, 0f, SpawnWallZ), new Float3(GateX, 0f, SpawnWallZ) },
-            lanePoints: new[] { new Float3(-GateX, 0f, 0f), new Float3(0f, 0f, 0f), new Float3(GateX, 0f, 0f) });
+            halfExtentX: 32f, halfExtentZ: 40f,
+            stagingMinX: -32f, stagingMaxX: 32f, stagingMinZ: -40f, stagingMaxZ: -30f,
+            team1Anchor: new Float3(0f, 0f, -34f),
+            team1Exits: new[] { new Float3(-20f, 0f, -29f), new Float3(1.5f, 0f, -22.5f), new Float3(20f, 0f, -29f) },
+            lanePoints: new[] { new Float3(-26f, 0f, 0f), new Float3(0f, 0f, 0f), new Float3(26f, 0f, 0f) },
+            symmetry: ArenaSymmetry.Rotate180);
 
         public static CompoundPlan Generate(ulong seed)
         {
-            var b = new ArenaBoxBuilder(StableIdBase);
+            var b = new ArenaBoxBuilder(StableIdBase, ArenaSymmetry.Rotate180);
             b.Perimeter(Layout, height: 5f, thickness: 1f);
-            BuildStaging(b);
-            BuildGates(b);
-            BuildHeadquarters(b);
-            BuildMidLane(b);
-            BuildRangeLane(b);
-            BuildSeparators(b);
+            BuildMotorPool(b);
+            BuildParadeSquare(b);
+            BuildArch(b);
             BuildBarracks(b);
+            BuildOffice(b);
+            BuildTruckStreet(b);
             ArenaVisualDetail.AppendCompound(b, Layout);
             return ArenaGeometry.CreatePlan(GeneratorId, GeneratorVersion, seed, Layout, b);
         }
 
-        /// <summary>Threat point for cover on the team-1 half: straight toward the map centre line (peek points land on the own side).</summary>
+        /// <summary>Threat for cover on the team-1 half: toward the parade square.</summary>
         private static Float3 Toward(float x) => new Float3(x, 0f, 0f);
 
-        private static void BuildStaging(ArenaBoxBuilder b)
+        /// <summary>Spawn yard: drive-through garage in the middle, parked trucks either side, jeep bays splitting the strip.</summary>
+        private static void BuildMotorPool(ArenaBoxBuilder b)
         {
-            // Spawn wall with one 4 m gate per lane.
-            var gates = new[] { new ArenaGap(-GateX, GateWidth), new ArenaGap(0f, GateWidth), new ArenaGap(GateX, GateWidth) };
-            b.WallAlongX(SpawnWallZ, -44f, 44f, Thin, WallFull, gates);
+            // Garage 14 x 7 with offset drive-through doors (no straight north-south eye line through both).
+            var doors = new[] { new ArenaDoor(ArenaSide.South, -1.5f, 3f), new ArenaDoor(ArenaSide.North, 1.5f, 3f) };
+            b.Shell(0f, -27f, 14f, 7f, Thin, 4f, doors, roof: true);
+            b.AddCover(-5f, -25.5f, 2f, 1.1f, 1.2f, Toward(-5f));
+            // Two jeeps parked nose-in either side of the garage's south door form a short chute: from inside the
+            // garage only the chute shows, not the spawn pocket.
+            b.AddVehicle(ArenaFeatureKind.Truck, -4.3f, -32f, 3f, 2.4f, 2.4f, alongX: false, Toward(-4.3f), facing: 1f);
+            b.AddVehicle(ArenaFeatureKind.Truck, 1.3f, -32f, 3f, 2.4f, 2.4f, alongX: false, Toward(1.3f), facing: 1f);
+            // Tall parts rack between the doors stops diagonal eye lines through both openings.
+            b.AddCover(0f, -27f, 1.4f, 2.4f, 1.4f, Toward(0f));
 
-            // Dividers split the 88 m staging strip into three pockets (no long eye line along it). The passage
-            // sits at the back wall so players leaving through a side gate are not in view of the centre pocket.
-            var rear = new[] { new ArenaGap(-50f, 3f) };
-            b.WallAlongZ(-15f, -52f, SpawnWallZ + 0.2f, Thin, WallLane, rear);
-            // Right divider passage is offset from the left one so no eye line runs the whole strip.
-            b.WallAlongZ(15f, -52f, SpawnWallZ + 0.2f, Thin, WallLane, new[] { new ArenaGap(-44.5f, 3f) });
+            // Parked trucks in front of the staging strip, leaving a 7 m exit on each side.
+            b.AddVehicle(ArenaFeatureKind.Truck, -28f, -29f, TruckLength, TruckWidth, TruckHeight, alongX: true, Toward(-28f), facing: 1f);
+            b.AddVehicle(ArenaFeatureKind.Truck, -13f, -29f, 8f, TruckWidth, TruckHeight, alongX: true, Toward(-13f), facing: -1f);
+            b.AddVehicle(ArenaFeatureKind.Truck, 13f, -29f, 8f, TruckWidth, TruckHeight, alongX: true, Toward(13f), facing: 1f);
+            b.AddVehicle(ArenaFeatureKind.Truck, 28f, -29f, TruckLength, TruckWidth, TruckHeight, alongX: true, Toward(28f), facing: -1f);
 
-            // Baffle wall 3.6 m behind the spawn wall: a 3 m corridor runs along the inside of the gates and the
-            // team enters it only through passages offset from each gate. A player in or outside a gate sees a solid
-            // 3 m wall, not the slots; only a narrow slanted fan reaches the staging floor.
-            var inner = new[] { new ArenaGap(-26.5f, 3f), new ArenaGap(3.5f, 3f), new ArenaGap(26.5f, 3f) };
-            b.WallAlongX(InnerWallZ, -44f, 44f, Thin, WallFull, inner);
+            // Parked trailers reach the truck row and split the staging strip, so a player in a side exit cannot
+            // see into the centre pocket. The west pocket connects behind its trailer, the east pocket through a gap
+            // between two trailers; the offset openings leave no eye line along the strip.
+            b.AddVehicle(ArenaFeatureKind.Trailer, -17f, -34.3f, 7.4f, 2.6f, 2.6f, alongX: false, Toward(-17f));
+            b.AddVehicle(ArenaFeatureKind.Trailer, 17f, -38f, 4f, 2.6f, 2.6f, alongX: false, Toward(17f));
+            b.AddVehicle(ArenaFeatureKind.Trailer, 17f, -32.05f, 2.9f, 2.6f, 2.6f, alongX: false, Toward(17f));
         }
 
-        private static void BuildGates(ArenaBoxBuilder b)
+        /// <summary>Open parade square: low flag plinth on the origin, planters, memorial benches.</summary>
+        private static void BuildParadeSquare(ArenaBoxBuilder b)
         {
-            float[] gateXs = { -GateX, 0f, GateX };
-            for (int i = 0; i < gateXs.Length; i++)
-            {
-                float g = gateXs[i];
-                // Two half-cover crates in front of each gate.
-                b.AddCover(g - 7f, -32.5f, 2.5f, HalfCover, 1.0f, Toward(g - 7f));
-                b.AddCover(g + 7f, -32.5f, 2.5f, HalfCover, 1.0f, Toward(g + 7f));
-            }
+            b.AddCover(0f, 0f, 2.6f, 1.0f, 2.6f, new Float3(0f, 0f, -10f));
+            b.RecordFeature(ArenaFeatureKind.Flagpole, 0f, 0f, 2.6f, 1.0f, 2.6f, 1f, mirror: false);
+            b.AddCover(-7f, -5f, 4f, 1.1f, 1.2f, Toward(-7f));
+            b.AddCover(7f, -5f, 4f, 1.1f, 1.2f, Toward(7f));
+            b.AddSandbagWall(-10f, 4f, 3.5f, alongX: false, Toward(-10f));
+            b.AddSandbagWall(10f, 3f, 3.5f, alongX: false, Toward(10f));
+            // Tall square-edge objects break the east-west eye lines across the open square.
+            b.AddVehicle(ArenaFeatureKind.Trailer, -16f, -2f, 5f, 2.4f, 2.6f, alongX: false, Toward(-16f));
+            b.AddVehicle(ArenaFeatureKind.Booth, 13f, -4.5f, 4f, 2.2f, 2.6f, alongX: false, Toward(13f));
         }
 
-        private static void BuildHeadquarters(ArenaBoxBuilder b)
+        /// <summary>Guard huts framing the middle approach (a visual arch spans them).</summary>
+        private static void BuildArch(ArenaBoxBuilder b)
         {
-            // 16 x 12 shell, 3.5 m walls, four 2.4 m doors (N, S, E, W). The roof is non-gameplay.
-            var doors = new[]
-            {
-                new ArenaDoor(ArenaSide.North, 0f, 2.4f), new ArenaDoor(ArenaSide.South, 0f, 2.4f),
-                new ArenaDoor(ArenaSide.East, 0f, 2.4f), new ArenaDoor(ArenaSide.West, 0f, 2.4f)
-            };
-            b.Shell(0f, 0f, 16f, 12f, Thin, 3.5f, doors, roof: true, mirror: false);
-            // Two pillars on the E-W axis keep the centre (0,0) open but break the east-west eye line through the doors.
-            b.AddGrounded(-3.5f, 0f, 1.2f, 1.2f, 3.5f, ArenaBoxBuilder.TagSolid, mirror: false);
-            b.AddGrounded(3.5f, 0f, 1.2f, 1.2f, 3.5f, ArenaBoxBuilder.TagSolid, mirror: false);
+            // Huts are offset so one stands on the garage-door column; its 180° twin closes the other half of
+            // the middle column, so no straight eye line runs garage to garage.
+            b.AddGrounded(-5f, -15f, 3f, 3f, 3f);
+            b.AddGrounded(1.5f, -15f, 3f, 3f, 3f);
+            b.Add(new Float3(-1.75f, 4.1f, -15f), new Float3(9.5f, 0.6f, 3f), ArenaBoxBuilder.TagSolid, mirror: true, gameplay: false);
+            // Notice-board sheds cap the long north-south columns either side of the arch.
+            b.AddVehicle(ArenaFeatureKind.Booth, -11.5f, -19.5f, 4f, 2f, 2.6f, alongX: true, Toward(-11.5f));
+            b.AddVehicle(ArenaFeatureKind.Booth, 9.5f, -21f, 3f, 2f, 2.6f, alongX: true, Toward(9.5f));
         }
 
-        private static void BuildMidLane(ArenaBoxBuilder b)
-        {
-            // Sheds break the north-south eye lines on the plaza flanks of the HQ.
-            b.AddGrounded(-11.5f, -18f, 6f, 3f, WallLane);
-            b.AddGrounded(11.5f, -18f, 6f, 3f, WallLane);
-            // Axis block caps the N-S eye line through the HQ doors (path passes beside it).
-            b.AddGrounded(0f, -21f, 3f, 1.5f, WallLane);
-            // Plaza planters (half cover).
-            b.AddCover(-12.5f, -9f, 4f, HalfCover, 1.2f, Toward(-12.5f));
-            b.AddCover(12.5f, -9f, 4f, HalfCover, 1.2f, Toward(12.5f));
-            b.AddCover(-6.5f, -25f, 4f, HalfCover, 1.2f, Toward(-6.5f));
-            b.AddCover(6.5f, -25f, 4f, HalfCover, 1.2f, Toward(6.5f));
-        }
-
-        private static void BuildRangeLane(ArenaBoxBuilder b)
-        {
-            // Concrete blocks stagger across the lane so every column is capped within 60 m: B1 covers the outer
-            // columns, B2 the inner ones, leaving 3+ m passages on alternating sides (a chicane).
-            b.AddGrounded(-37.5f, -20f, 13f, 1.5f, WallLane);
-            b.AddGrounded(-27.5f, -6.75f, 13f, 1.5f, WallLane);
-            // Staggered sandbag rows roughly every 10 m, alternating sides.
-            float[][] bags =
-            {
-                new[] { -39.5f, -30f }, new[] { -24.5f, -29f }, new[] { -27f, -24f },
-                new[] { -39f, -13.5f }, new[] { -27f, -13.5f }, new[] { -38f, -3.5f }, new[] { -24f, -2.5f }
-            };
-            for (int i = 0; i < bags.Length; i++)
-                b.AddCover(bags[i][0], bags[i][1], 5f, HalfCover, 0.8f, Toward(bags[i][0]));
-        }
-
-        private static void BuildSeparators(ArenaBoxBuilder b)
-        {
-            // Lane separators at x = +-18. One sally port per half at z = -18 (mirrored to +18). A U-shaped pocket on
-            // the lane side is open only away from the centre, so crossing needs a detour: the nav grid cannot
-            // collapse the three lane routes through the connectors, while players still rotate in a few steps.
-            var port = new[] { new ArenaGap(-18f, 3f) };
-            for (int s = -1; s <= 1; s += 2)
-            {
-                float x = s * 18f;
-                b.WallAlongZ(x, SpawnWallZ + 0.2f, 0f, Thin, WallLane, port);
-                float endX = s * 22f;
-                b.WallAlongX(-16.3f, Math.Min(x, endX), Math.Max(x, endX), Thin, WallLane);
-                b.WallAlongZ(endX, -21.5f, -16.1f, Thin, WallLane);
-            }
-        }
-
+        /// <summary>Left route: two-room barracks with doors to the spawn, the square and the west alley.</summary>
         private static void BuildBarracks(ArenaBoxBuilder b)
         {
-            // Two 12 x 22 buildings (z -30..-8 and the mirror). South end door x=29, north end door x=35, side door
-            // toward mid at z=-19; partitions at z=-23.5 (door x=35) and z=-14.5 (door x=29) make a zig-zag of three
-            // rooms, each with at least two exits.
+            const float cx = -21f, cz = -15f;
             var doors = new[]
             {
-                new ArenaDoor(ArenaSide.South, -3f, 2.4f),
+                new ArenaDoor(ArenaSide.South, 0f, 2.4f),
                 new ArenaDoor(ArenaSide.North, 3f, 2.4f),
-                new ArenaDoor(ArenaSide.West, 0f, 2.4f)
+                new ArenaDoor(ArenaSide.East, 4f, 2.4f),
+                new ArenaDoor(ArenaSide.West, -4f, 2.4f)
             };
-            b.Shell(32.2f, -19f, 12f, 22f, Thin, 3.5f, doors, roof: true);
-            b.WallAlongX(-23.5f, 26.4f, 38.0f, 0.3f, 3.0f, new[] { new ArenaGap(35.2f, 2.4f) });
-            b.WallAlongX(-14.5f, 26.4f, 38.0f, 0.3f, 3.0f, new[] { new ArenaGap(29.2f, 2.4f) });
-            // Interior furniture (low cover) in the long middle room.
-            b.AddCover(32.2f, -19f, 4f, HalfCover, 1.0f, Toward(32.2f));
+            b.Shell(cx, cz, 12f, 14f, Thin, BuildingWall, doors, roof: true);
+            b.WallAlongX(cz, cx - 6f + Thin, cx + 6f - Thin, 0.3f, 3.0f, new[] { new ArenaGap(cx - 3f, 2.4f) });
+            b.AddCover(cx + 1f, cz - 3.5f, 3f, 1.0f, 1.0f, Toward(cx + 1f));
+            b.AddCover(cx - 1f, cz + 3.5f, 3f, 1.0f, 1.0f, Toward(cx - 1f));
+            // West alley: sandbags and a parked trailer cap the alley eye line.
+            b.AddSandbagWall(-29.5f, -22f, 3f, alongX: true, Toward(-29.5f));
+            b.AddVehicle(ArenaFeatureKind.Trailer, -29.5f, -9f, 5f, 2.4f, 2.6f, alongX: false, Toward(-29.5f));
+            b.AddSandbagWall(-17f, -4f, 4f, alongX: true, Toward(-17f));
+        }
 
-            // Courtyard: full cover plus half cover.
-            b.AddCover(35.5f, -4.5f, 3f, 2.4f, 1.5f, Toward(35.5f));
-            b.AddCover(29f, -3.5f, 3f, HalfCover, 1.0f, Toward(29f));
-            // Alley sight breakers at the courtyard (lane stays >= 3 m wide beside them).
-            b.AddGrounded(23.7f, 0f, 4.6f, 4f, WallLane, ArenaBoxBuilder.TagSolid, mirror: false);
-            b.AddGrounded(42.75f, 0f, 2.5f, 4f, WallLane, ArenaBoxBuilder.TagSolid, mirror: false);
-            // East alley half cover.
-            b.AddCover(41.5f, -13f, 2.5f, HalfCover, 1.0f, Toward(41.5f));
+        /// <summary>Square-side HQ office between the arch and the truck street.</summary>
+        private static void BuildOffice(ArenaBoxBuilder b)
+        {
+            const float cx = 15.5f, cz = -14f;
+            var doors = new[]
+            {
+                new ArenaDoor(ArenaSide.West, 0f, 2.4f),
+                new ArenaDoor(ArenaSide.East, -2.5f, 2.4f),
+                new ArenaDoor(ArenaSide.North, -1f, 2.4f)
+            };
+            b.Shell(cx, cz, 9f, 10f, Thin, BuildingWall, doors, roof: true);
+            b.AddCover(cx, cz, 2.4f, 1.0f, 1.2f, Toward(cx));
+        }
+
+        /// <summary>Right route: an outdoor street of staggered parked trucks and sandbag walls.</summary>
+        private static void BuildTruckStreet(ArenaBoxBuilder b)
+        {
+            b.AddVehicle(ArenaFeatureKind.Truck, 24f, -20f, TruckLength, TruckWidth, TruckHeight, alongX: false, Toward(24f), facing: 1f);
+            b.AddVehicle(ArenaFeatureKind.Truck, 29.5f, -9f, TruckLength, TruckWidth, TruckHeight, alongX: false, Toward(29.5f), facing: -1f);
+            b.AddSandbagWall(28.5f, -23f, 3f, alongX: true, Toward(28.5f));
+            b.AddSandbagWall(23f, -6f, 3.5f, alongX: true, Toward(23f));
         }
     }
 }

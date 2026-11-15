@@ -169,7 +169,7 @@ namespace Shooter.Game.Contracts.Tests
             {
                 byte team = i < request.TeamSize ? (byte)1 : (byte)2;
                 var participant = new ParticipantId((uint)(i + 1));
-                var entity = lifecycle.SpawnLife(participant, new LifeId(1), new Float3(i * 4, 0, 0), 0, team); // >40 m from both compact-arena staging zones
+                var entity = lifecycle.SpawnLife(participant, new LifeId(1), new Float3(60 + i * 4, 0, 0), 0, team); // ADR-074: duel lane outside the 64 x 80 m arena, >40 m from every staging slot
                 allEntityIds.Add(entity.Value);
                 roster.Add(new ParticipantState(participant, "P" + (i + 1), team, i == 0, entity, new LifeId(1), true, 0, 0, 0));
             }
@@ -186,8 +186,8 @@ namespace Shooter.Game.Contracts.Tests
                 var before = match.AcquireSnapshot(sessionId, simulationTick);
                 var victim = before.Participants[replacement % before.Participants.Count];
                 ParticipantState killer = FindAliveOnOtherTeam(before, victim.Team);
-                lifecycle.ResetLife(killer.EntityId, new Float3(0, 0, 0), 0);
-                lifecycle.ResetLife(victim.EntityId, new Float3(0, 0, 5), 0);
+                lifecycle.ResetLife(killer.EntityId, new Float3(60, 0, 0), 0);
+                lifecycle.ResetLife(victim.EntityId, new Float3(60, 0, 5), 0);
 
                 bool killed = false;
                 for (uint fireTick = 0; fireTick < 120 && !killed; fireTick++)

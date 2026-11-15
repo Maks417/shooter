@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using Shooter.Contracts;
 using Shooter.Generation.Environment;
 using Xunit;
@@ -85,25 +86,26 @@ namespace Shooter.Generation.Tests
 
         [Theory]
         [MemberData(nameof(ProductMaps))]
-        public void Gameplay_boxes_are_mirror_symmetric_across_z0(string mapId)
+        public void Gameplay_boxes_have_symmetry_twins(string mapId)
         {
             var plan = ProductMapPlanner.Generate(mapId);
+            var arena = plan.Arena!;
             foreach (var a in plan.CollisionBoxes)
             {
                 if (!a.Gameplay) continue;
+                var t = arena.Twin(a.Center);
                 bool twin = false;
                 foreach (var b in plan.CollisionBoxes)
                 {
                     if (!b.Gameplay) continue;
-                    if (Math.Abs(a.Center.X - b.Center.X) < 0.001f && Math.Abs(a.Center.Y - b.Center.Y) < 0.001f &&
-                        Math.Abs(a.Center.Z + b.Center.Z) < 0.001f && Math.Abs(a.Size.X - b.Size.X) < 0.001f &&
+                    if (Math.Abs(t.X - b.Center.X) < 0.001f && Math.Abs(t.Y - b.Center.Y) < 0.001f &&
+                        Math.Abs(t.Z - b.Center.Z) < 0.001f && Math.Abs(a.Size.X - b.Size.X) < 0.001f &&
                         Math.Abs(a.Size.Z - b.Size.Z) < 0.001f && Math.Abs(a.Size.Y - b.Size.Y) < 0.001f)
                     { twin = true; break; }
                 }
-                Assert.True(twin, "no mirror twin for box " + a.StableId);
+                Assert.True(twin, "no " + arena.Symmetry + " twin for box " + a.StableId);
             }
-            Assert.Equal(plan.PlayerSpawn.Z, -plan.ObjectiveCenter.Z);
-            Assert.Equal(plan.PlayerSpawn.X, plan.ObjectiveCenter.X);
+            Assert.Equal(arena.Twin(plan.PlayerSpawn), plan.ObjectiveCenter);
         }
 
         [Theory]
@@ -131,16 +133,53 @@ namespace Shooter.Generation.Tests
             Assert.Equal(arena.Team2Anchor, plan.ObjectiveCenter);
         }
 
+        /// <summary>
+        /// ADR-074 "no strange walls": every thin (&lt; 1 m), tall (&gt;= 2 m), long (&gt;= 2 m) gameplay box is part of a
+        /// structure, i.e. it touches another tall gameplay box (building corners, partitions) or is a feature object.
+        /// Free-standing separator walls, baffles and U-pockets are gone.
+        /// </summary>
+        [Theory]
+        [MemberData(nameof(ProductMaps))]
+        public void No_free_standing_thin_walls(string mapId)
+        {
+            var plan = ProductMapPlanner.Generate(mapId);
+            var arena = plan.Arena!;
+            var tall = plan.CollisionBoxes.Where(b => b.Gameplay && b.Center.Y - b.Size.Y * 0.5f < 0.1f && b.Size.Y >= 2f).ToList();
+            int freeStanding = 0;
+            foreach (var a in tall)
+            {
+                if (ArenaRules.IsPerimeterBox(a, arena)) continue;
+                float thin = Math.Min(a.Size.X, a.Size.Z), length = Math.Max(a.Size.X, a.Size.Z);
+                if (thin >= 1f || length < 2f) continue;
+                if (plan.Features.Any(f => f.Matches(a))) continue;
+                bool touches = tall.Any(b => b.StableId != a.StableId &&
+                    Math.Abs(a.Center.X - b.Center.X) <= (a.Size.X + b.Size.X) * 0.5f + 0.05f &&
+                    Math.Abs(a.Center.Z - b.Center.Z) <= (a.Size.Z + b.Size.Z) * 0.5f + 0.05f);
+                if (!touches)
+                {
+                    freeStanding++;
+                    output.WriteLine(mapId + " free-standing wall " + a.StableId + " at (" + a.Center.X + "," + a.Center.Z + ") size " + a.Size.X + "x" + a.Size.Z);
+                }
+            }
+            Assert.Equal(0, freeStanding);
+        }
+
         [Fact]
         public void Layout_helpers_mirror_and_contain()
         {
             var layout = CompoundArenaPlanner.Layout;
             Assert.Equal(new Float3(1f, 2f, 3f), ArenaLayout.MirrorZ(new Float3(1f, 2f, -3f)));
-            Assert.True(layout.StagingContains(1, 0f, -46f));
-            Assert.False(layout.StagingContains(1, 0f, 46f));
-            Assert.True(layout.StagingContains(2, 0f, 46f));
+            Assert.Equal(new Float3(-1f, 2f, 3f), ArenaLayout.Rotate180(new Float3(1f, 2f, -3f)));
+            Assert.True(layout.StagingContains(1, 0f, -35f));
+            Assert.False(layout.StagingContains(1, 0f, 35f));
+            Assert.True(layout.StagingContains(2, 0f, 35f));
             Assert.Equal(3, layout.Team2Exits.Count);
             Assert.Equal(-layout.Team1Exits[0].Z, layout.Team2Exits[0].Z);
+            // Training Compound is point-symmetric: team 2's exits are the 180-degree images of team 1's.
+            Assert.Equal(ArenaSymmetry.Rotate180, layout.Symmetry);
+            Assert.Equal(-layout.Team1Exits[0].X, layout.Team2Exits[0].X);
+            Assert.Equal(ArenaSymmetry.MirrorZ, DepotArenaPlanner.Layout.Symmetry);
+            Assert.Equal(DepotArenaPlanner.Layout.Team1Exits[0].X, DepotArenaPlanner.Layout.Team2Exits[0].X);
         }
 
         [Fact]

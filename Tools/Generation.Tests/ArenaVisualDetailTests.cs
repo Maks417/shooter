@@ -17,13 +17,14 @@ namespace Shooter.Generation.Tests
         private readonly ITestOutputHelper output;
         public ArenaVisualDetailTests(ITestOutputHelper output) { this.output = output; }
 
-        // Captured from planners at base 3c6f640 before ArenaVisualDetail append (gameplay-only fingerprint).
-        private const string CompoundGameplayFingerprint = "d02fd17e2b98461c0c9446ff67e7368b4648565335d6cd2e115ce45ac470d533";
-        private const string DepotGameplayFingerprint = "7a722f67180a2bb51e0fc927749345b719d180f058afa43ee9919377af76090a";
-        private const string CompoundCollisionHash = "8860d3e60dab3c25fd8182a1b12cba0eef414e6e9e50c06a54b96f2a96f817ca";
-        private const string DepotCollisionHash = "bc408febb8b18dc4434c5af5904537e79f580297e00ad669973436d054089acf";
-        private const int CompoundGameplayCount = 130;
-        private const int DepotGameplayCount = 116;
+        // Refrozen for ADR-074 compact layouts (compound arena 3.0.0, depot arena 3.0.0) from the planners'
+        // gameplay boxes; visual detail must never change these.
+        private const string CompoundGameplayFingerprint = "3157c05b0e7820e397cf28876a3ada73b3e23b2947c53dd4a34bf8df844510cf";
+        private const string DepotGameplayFingerprint = "83b8251d96a9a246f2bac7a9c4ce9fa8ab4cc67b1c9a8a22cb3fd4c83c938ca5";
+        private const string CompoundCollisionHash = "0acdcbcc9c56dd9297a3cf27e1c822fed158412cd012290718df1843f1220cb9";
+        private const string DepotCollisionHash = "ee0a4cae11f63649f645278b07af6ad4b3c262ab370cf2e5aeab91780f77dea0";
+        private const int CompoundGameplayCount = 113;
+        private const int DepotGameplayCount = 81;
 
         [Theory]
         [InlineData("training-compound")]
@@ -69,22 +70,25 @@ namespace Shooter.Generation.Tests
         [Theory]
         [InlineData("training-compound")]
         [InlineData("depot-yard")]
-        public void Visual_boxes_off_z0_have_mirror_twins(string mapId)
+        [InlineData("oil-depot")]
+        public void Visual_boxes_off_z0_have_symmetry_twins(string mapId)
         {
             var plan = ProductMapPlanner.Generate(mapId);
+            var arena = plan.Arena!;
             int checkedOffAxis = 0;
             foreach (var a in plan.CollisionBoxes)
             {
                 if (a.Gameplay) continue;
-                if (Math.Abs(a.Center.Z) <= 0.0005f) continue;
+                var t = arena.Twin(a.Center);
+                if (Math.Abs(t.X - a.Center.X) <= 0.0005f && Math.Abs(t.Z - a.Center.Z) <= 0.0005f) continue;
                 checkedOffAxis++;
                 bool twin = false;
                 foreach (var b in plan.CollisionBoxes)
                 {
                     if (b.Gameplay) continue;
-                    if (Math.Abs(a.Center.X - b.Center.X) < 0.001f &&
-                        Math.Abs(a.Center.Y - b.Center.Y) < 0.001f &&
-                        Math.Abs(a.Center.Z + b.Center.Z) < 0.001f &&
+                    if (Math.Abs(t.X - b.Center.X) < 0.001f &&
+                        Math.Abs(t.Y - b.Center.Y) < 0.001f &&
+                        Math.Abs(t.Z - b.Center.Z) < 0.001f &&
                         Math.Abs(a.Size.X - b.Size.X) < 0.001f &&
                         Math.Abs(a.Size.Y - b.Size.Y) < 0.001f &&
                         Math.Abs(a.Size.Z - b.Size.Z) < 0.001f)
@@ -93,7 +97,7 @@ namespace Shooter.Generation.Tests
                         break;
                     }
                 }
-                Assert.True(twin, "visual box " + a.StableId + " at z=" + a.Center.Z + " lacks mirror twin");
+                Assert.True(twin, "visual box " + a.StableId + " at (" + a.Center.X + "," + a.Center.Z + ") lacks its " + arena.Symmetry + " twin");
             }
             Assert.True(checkedOffAxis > 0, "expected off-axis visual boxes");
             output.WriteLine(mapId + " off-axis visual boxes checked=" + checkedOffAxis);
@@ -101,7 +105,7 @@ namespace Shooter.Generation.Tests
 
         [Theory]
         [InlineData("training-compound", 3.5f)]
-        [InlineData("depot-yard", 5.0f)]
+        [InlineData("depot-yard", 4.5f)]
         public void Solids_mesh_includes_non_gameplay_roof_above_building_height(string mapId, float buildingHeight)
         {
             var plan = ProductMapPlanner.Generate(mapId);

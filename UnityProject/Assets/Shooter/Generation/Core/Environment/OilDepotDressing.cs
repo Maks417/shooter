@@ -14,13 +14,23 @@ namespace Shooter.Generation.Environment
     {
         public const string MapId = "oil-depot";
 
-        /// <summary>Gameplay tank drums from <see cref="OilArenaPlanner"/> (centre x/z, planner radius, height).</summary>
-        private static readonly float[,] Tanks =
+        /// <summary>Gameplay tank drums from <see cref="OilArenaPlanner.Tanks"/> and their z-mirror twins (centre x/z, planner radius, height).</summary>
+        private static readonly float[,] Tanks = BuildTankTable();
+
+        private static float[,] BuildTankTable()
         {
-            { -32f, -22f, 3.4f, 5.5f }, { -32f, 22f, 3.4f, 5.5f },
-            { -36f, -8f, 3.0f, 5f }, { -36f, 8f, 3.0f, 5f },
-            { -34f, 0f, 3.2f, 5.5f }
-        };
+            int n = OilArenaPlanner.Tanks.GetLength(0);
+            var t = new float[n * 2, 4];
+            for (int i = 0; i < n; i++)
+            for (int m = 0; m < 2; m++)
+            {
+                t[i * 2 + m, 0] = OilArenaPlanner.Tanks[i, 0];
+                t[i * 2 + m, 1] = m == 0 ? OilArenaPlanner.Tanks[i, 1] : -OilArenaPlanner.Tanks[i, 1];
+                t[i * 2 + m, 2] = OilArenaPlanner.Tanks[i, 2];
+                t[i * 2 + m, 3] = OilArenaPlanner.Tanks[i, 3];
+            }
+            return t;
+        }
 
         /// <summary>Visual shell radius encloses the square drum corners (0.85 r × √2).</summary>
         public const float ShellRadiusFactor = 1.21f;
@@ -66,10 +76,9 @@ namespace Shooter.Generation.Environment
                 AddStorageTank(mesh, Tanks[i, 0], Tanks[i, 1], TankRadius(i), Tanks[i, 3], ladderTowardNegativeX: true);
             AddTankHeaders(mesh, layout);
             AddWallPipeRacks(mesh, layout);
-            AddPipeBridge(mesh, -7f);
-            AddPipeBridge(mesh, 7f);
+            AddPipeBridge(mesh, -1f);
+            AddPipeBridge(mesh, 1f);
             AddPumpHouseRoofPlant(mesh);
-            AddLoadingGantry(mesh);
             AddSkyline(mesh, layout);
         }
 
@@ -174,25 +183,23 @@ namespace Shooter.Generation.Environment
         }
 
         /// <summary>
-        /// Overhead pipe bridge from the mid tank row to the pump-house roof at y ≈ 6 m. Columns stand only on
-        /// gameplay solids (tank roofs, the x = −28 chicane, the x = −15 sight block).
+        /// Overhead pipe bridge (y = 6.4 m, clear of the tank roof rails) from the outer tank on side <paramref name="side"/> to the pump-house roof.
+        /// Columns stand only on gameplay solids: the tank roof and the x = -14 pipe rack.
         /// </summary>
-        private static void AddPipeBridge(MeshAssembly mesh, float z)
+        private static void AddPipeBridge(MeshAssembly mesh, float side)
         {
-            const float deck = 6.0f;
-            float sz = Math.Sign(z);
-            PipeX(mesh, -36f, -5f, deck + 0.18f, z - 0.25f, 0.17f, MapSolidsMaterialRole.TankWhite);
-            PipeX(mesh, -36f, -5f, deck + 0.18f, z + 0.25f, 0.13f, MapSolidsMaterialRole.OxidePaint);
-            PipeX(mesh, -36f, -5f, deck + 0.5f, z, 0.1f, MapSolidsMaterialRole.SafetyYellow);
-            // Truss stringers.
-            Box(mesh, new Float3(-20.5f, deck - 0.05f, z), new Float3(31f, 0.1f, 0.9f), MapSolidsMaterialRole.MetalCover);
-            // Columns: tank roof (-36, ±8), chicane (-28, ±6), sight block (-15, ±7.6).
-            AddBent(mesh, -35f, 5.6f, deck, z);
-            AddBent(mesh, -28f, 3.2f, deck, sz * 6.2f, z);
-            AddBent(mesh, -15f, 3.2f, deck, sz * 7.6f, z);
+            const float deck = 6.4f;
+            const float tankX = -27.5f, tankZ = 8f, rackX = -14f, roofX = -5f;
+            float z = side * 5f;
+            PipeX(mesh, tankX, roofX, deck + 0.18f, z - 0.25f, 0.17f, MapSolidsMaterialRole.TankWhite);
+            PipeX(mesh, tankX, roofX, deck + 0.18f, z + 0.25f, 0.13f, MapSolidsMaterialRole.OxidePaint);
+            PipeX(mesh, tankX, roofX, deck + 0.5f, z, 0.1f, MapSolidsMaterialRole.SafetyYellow);
+            Box(mesh, new Float3((tankX + roofX) * 0.5f, deck - 0.05f, z), new Float3(roofX - tankX, 0.1f, 0.9f), MapSolidsMaterialRole.MetalCover);
+            AddBent(mesh, tankX, 5f, deck, side * tankZ, z);
+            AddBent(mesh, rackX, 3f, deck, z);
             // Drop onto the pump-house roof.
-            Vertical(mesh, -5f, 4.25f, deck + 0.18f, z - 0.25f, 0.17f, 10, MapSolidsMaterialRole.TankWhite);
-            Vertical(mesh, -5f, 4.25f, deck + 0.18f, z + 0.25f, 0.13f, 10, MapSolidsMaterialRole.OxidePaint);
+            Vertical(mesh, roofX, 4.25f, deck + 0.18f, z - 0.25f, 0.17f, 10, MapSolidsMaterialRole.TankWhite);
+            Vertical(mesh, roofX, 4.25f, deck + 0.18f, z + 0.25f, 0.13f, 10, MapSolidsMaterialRole.OxidePaint);
         }
 
         private static void AddBent(MeshAssembly mesh, float x, float baseY, float deck, float z)
@@ -211,8 +218,8 @@ namespace Shooter.Generation.Environment
         private static void AddPumpHouseRoofPlant(MeshAssembly mesh)
         {
             const float roof = 4.2f;
-            PipeZ(mesh, -5f, roof + 0.35f, -7f, 7f, 0.22f, MapSolidsMaterialRole.TankWhite);
-            PipeZ(mesh, -4.3f, roof + 0.3f, -7f, 7f, 0.15f, MapSolidsMaterialRole.OxidePaint);
+            PipeZ(mesh, -5f, roof + 0.35f, -5.8f, 5.8f, 0.22f, MapSolidsMaterialRole.TankWhite);
+            PipeZ(mesh, -4.3f, roof + 0.3f, -5.8f, 5.8f, 0.15f, MapSolidsMaterialRole.OxidePaint);
             for (float z = -5f; z <= 5f; z += 2.5f)
                 Box(mesh, new Float3(-4.65f, roof + 0.12f, z), new Float3(1.2f, 0.24f, 0.2f), MapSolidsMaterialRole.Foundation);
             Box(mesh, new Float3(3f, roof + 0.7f, 2.5f), new Float3(3.2f, 1.4f, 2.2f), MapSolidsMaterialRole.MetalCover);
@@ -222,34 +229,6 @@ namespace Shooter.Generation.Environment
                 Vertical(mesh, vx, roof, roof + 2.6f, -3.5f, 0.18f, 12, MapSolidsMaterialRole.MetalCover);
                 mesh.Add(PrimitiveGeometry.Cone(0.32f, 0.05f, 0.3f, 12), new Float3(vx, roof + 2.75f, -3.5f), YUp,
                     (ushort)MapSolidsMaterialRole.MetalCover);
-            }
-        }
-
-        /// <summary>
-        /// Truck loading gantry over the container lane: legs stand on the two row-zero containers
-        /// (x 23.5 / 36, top 2.6 m); canopy and filler arms stay above 3.5 m.
-        /// </summary>
-        private static void AddLoadingGantry(MeshAssembly mesh)
-        {
-            const float containerTop = 2.6f, canopy = 5.5f;
-            float[] legXs = { 21.2f, 25.8f, 33.7f, 38.3f };
-            foreach (float x in legXs)
-                foreach (float z in new[] { -0.95f, 0.95f })
-                    Box(mesh, new Float3(x, (containerTop + canopy) * 0.5f, z), new Float3(0.24f, canopy - containerTop, 0.24f),
-                        MapSolidsMaterialRole.SafetyYellow);
-            Box(mesh, new Float3(29.75f, canopy + 0.08f, 0f), new Float3(19f, 0.16f, 6.4f), MapSolidsMaterialRole.MetalCover);
-            Box(mesh, new Float3(29.75f, canopy + 0.3f, -3.15f), new Float3(19f, 0.45f, 0.1f), MapSolidsMaterialRole.SafetyYellow);
-            Box(mesh, new Float3(29.75f, canopy + 0.3f, 3.15f), new Float3(19f, 0.45f, 0.1f), MapSolidsMaterialRole.SafetyYellow);
-            foreach (float x in new[] { 21.2f, 38.3f })
-                Box(mesh, new Float3(x, canopy - 0.2f, 0f), new Float3(0.3f, 0.3f, 2.2f), MapSolidsMaterialRole.Foundation);
-            PipeX(mesh, 21.2f, 38.3f, canopy - 0.35f, -0.5f, 0.12f, MapSolidsMaterialRole.OxidePaint);
-            PipeX(mesh, 21.2f, 38.3f, canopy - 0.35f, 0.5f, 0.12f, MapSolidsMaterialRole.TankWhite);
-            foreach (float x in new[] { 28f, 31f })
-            {
-                Vertical(mesh, x, 3.7f, canopy - 0.35f, -0.5f, 0.08f, 8, MapSolidsMaterialRole.OxidePaint);
-                Box(mesh, new Float3(x, 3.68f, -0.5f), new Float3(0.3f, 0.12f, 0.3f), MapSolidsMaterialRole.Foundation);
-                Vertical(mesh, x, 3.7f, canopy - 0.35f, 0.5f, 0.08f, 8, MapSolidsMaterialRole.TankWhite);
-                Box(mesh, new Float3(x, 3.68f, 0.5f), new Float3(0.3f, 0.12f, 0.3f), MapSolidsMaterialRole.Foundation);
             }
         }
 

@@ -10,6 +10,7 @@ using Xunit.Abstractions;
 
 namespace Shooter.Generation.Tests
 {
+    /// <summary>ADR-074 garrison-square layout for <c>training-compound</c> (64 x 80 m, point-symmetric).</summary>
     public sealed class CompoundArenaLayoutTests
     {
         private readonly ITestOutputHelper output;
@@ -59,8 +60,8 @@ namespace Shooter.Generation.Tests
             for (int team = 1; team <= 2; team++)
             {
                 var own = slots.FindAll(s => s.Team == team);
-                for (float z = -51f; z <= 51f; z += 2f)
-                for (float x = -43f; x <= 43f; x += 2f)
+                for (float z = -39f; z <= 39f; z += 2f)
+                for (float x = -31f; x <= 31f; x += 2f)
                 {
                     if (arena.StagingContains(team, x, z)) continue;
                     if (CompoundConnectivity.IsBlocked(plan.CollisionBoxes, x, z, clearance)) continue;
@@ -89,7 +90,9 @@ namespace Shooter.Generation.Tests
             Assert.True(report.Passed, report.ToText());
             Assert.True(report.GameplayBoxCount <= 250);
             Assert.True(report.CoverProxyCount <= 64);
-            Assert.InRange(report.PathAnchorToCenterTeam1, 38f, 55f);
+            Assert.InRange(report.PathAnchorToCenterTeam1, ArenaRules.MinPathToCenter, ArenaRules.MaxPathToCenter);
+            Assert.Equal(64f, report.PlayableSizeX);
+            Assert.Equal(80f, report.PlayableSizeZ);
             var topology = MapTopologyValidation.Validate("training-compound", plan);
             Assert.True(topology.Passed, topology.Diagnostic);
         }
@@ -98,16 +101,57 @@ namespace Shooter.Generation.Tests
             => CompoundConnectivity.TryFindPath(plan.CollisionBoxes, a, b, new List<Float3>(), CompoundConnectivity.RequiredClearance);
 
         [Fact]
-        public void Hq_interior_is_open_and_reachable_through_all_four_doors()
+        public void Parade_square_centre_has_no_building_and_is_reachable_from_every_entrance()
         {
             var plan = Plan();
-            var centre = new Float3(0f, 0f, 0f);
-            Assert.False(CompoundConnectivity.IsBlocked(plan.CollisionBoxes, 0f, 0f, CompoundConnectivity.RequiredClearance));
-            var outside = new[] { new Float3(0f, 0f, -9f), new Float3(0f, 0f, 9f), new Float3(11f, 0f, 0f), new Float3(-11f, 0f, 0f) };
-            foreach (var o in outside) Assert.True(Reachable(plan, o, centre), "door at " + o.X + "," + o.Z);
-            var doorways = new[] { new Float3(0f, 0f, -5.8f), new Float3(0f, 0f, 5.8f), new Float3(7.8f, 0f, 0f), new Float3(-7.8f, 0f, 0f) };
-            foreach (var d in doorways) Assert.False(CompoundConnectivity.IsBlocked(plan.CollisionBoxes, d.X, d.Z, CompoundConnectivity.RequiredClearance));
-            Assert.True(Solid(plan, 3f, -5.8f) && Solid(plan, -3f, 5.8f) && Solid(plan, 7.8f, 3f) && Solid(plan, -7.8f, -3f));
+            // No wall or building inside the square: every tall box there must be a feature object (trailer/booth).
+            foreach (var b in plan.CollisionBoxes)
+            {
+                if (!b.Gameplay || b.Center.Y + b.Size.Y * 0.5f < 2f) continue;
+                if (Math.Abs(b.Center.X) > 9f || Math.Abs(b.Center.Z) > 8f) continue;
+                Assert.Fail("tall box " + b.StableId + " inside the parade square at (" + b.Center.X + "," + b.Center.Z + ")");
+            }
+            // The plinth is low (half cover) and centred on the origin; a flag feature stands on it.
+            Assert.Contains(plan.Features, f => f.Kind == ArenaFeatureKind.Flagpole && f.Center.X == 0f && f.Center.Z == 0f);
+            var square = new Float3(0f, 0f, -4f);
+            var entrances = new[]
+            {
+                new Float3(-1.75f, 0f, -15f),          // arch between the guard huts
+                new Float3(-12f, 0f, -11f),            // barracks east door
+                new Float3(15.5f, 0f, -7.5f),          // office north door
+                new Float3(-26f, 0f, 0f), new Float3(26f, 0f, 0f) // both lane points
+            };
+            foreach (var e in entrances)
+            {
+                Assert.True(Reachable(plan, e, square), "entrance " + e.X + "," + e.Z);
+                var twin = CompoundArenaPlanner.Layout.Twin(e);
+                Assert.True(Reachable(plan, twin, ArenaLayout.Rotate180(square)), "rotated entrance " + twin.X + "," + twin.Z);
+            }
+        }
+
+        [Fact]
+        public void Layout_is_point_symmetric_not_mirrored()
+        {
+            var plan = Plan();
+            Assert.Equal(ArenaSymmetry.Rotate180, plan.Arena!.Symmetry);
+            Assert.Equal(new Float3(0f, 0f, 34f), plan.Arena.Team2Anchor);
+            int mirrorMisses = 0;
+            foreach (var a in plan.CollisionBoxes)
+            {
+                if (!a.Gameplay) continue;
+                bool rot = false, mir = false;
+                foreach (var b in plan.CollisionBoxes)
+                {
+                    if (!b.Gameplay || Math.Abs(a.Size.X - b.Size.X) > 0.001f || Math.Abs(a.Size.Y - b.Size.Y) > 0.001f ||
+                        Math.Abs(a.Size.Z - b.Size.Z) > 0.001f || Math.Abs(a.Center.Y - b.Center.Y) > 0.001f) continue;
+                    if (Math.Abs(a.Center.X + b.Center.X) < 0.001f && Math.Abs(a.Center.Z + b.Center.Z) < 0.001f) rot = true;
+                    if (Math.Abs(a.Center.X - b.Center.X) < 0.001f && Math.Abs(a.Center.Z + b.Center.Z) < 0.001f) mir = true;
+                }
+                Assert.True(rot, "no 180-degree twin for box " + a.StableId);
+                if (!mir) mirrorMisses++;
+            }
+            // The pinwheel is genuinely not a z-mirror: many boxes have no mirror image.
+            Assert.True(mirrorMisses > 20, "only " + mirrorMisses + " boxes lack a z-mirror twin");
         }
 
         private static bool Solid(CompoundPlan plan, float x, float z)
@@ -144,25 +188,42 @@ namespace Shooter.Generation.Tests
         }
 
         [Fact]
-        public void Every_barracks_room_has_at_least_two_exits_and_doors_are_wide_enough()
+        public void Every_room_has_at_least_two_exits_and_doors_are_wide_enough()
         {
             var plan = Plan();
+            // Team-1 rooms (x0, x1, z0, z1): barracks south/north rooms, HQ office, motor-pool garage.
             float[][] rooms =
             {
-                new[] { 26f, 38f, -30f, -23.5f }, new[] { 26f, 38f, -23.5f, -14.5f }, new[] { 26f, 38f, -14.5f, -8f }
+                new[] { -27f, -15f, -22f, -15f }, new[] { -27f, -15f, -15f, -8f },
+                new[] { 11f, 20f, -19f, -9f }, new[] { -7f, 7f, -30.3f, -23.7f }
             };
             foreach (int sign in new[] { 1, -1 })
             foreach (var r in rooms)
             {
-                float z0 = sign < 0 ? r[2] : -r[3], z1 = sign < 0 ? r[3] : -r[2];
-                int exits = CountExits(plan, r[0] + 0.3f, r[1] - 0.3f, z0, z1, out float narrow);
-                output.WriteLine("room x[" + r[0] + "," + r[1] + "] z[" + z0 + "," + z1 + "] exits=" + exits + " narrowest=" + narrow);
-                Assert.True(exits >= 2, "room z[" + z0 + "," + z1 + "] has " + exits + " exits");
+                // Rotated twin: (x, z) -> (-x, -z).
+                float x0 = sign > 0 ? r[0] : -r[1], x1 = sign > 0 ? r[1] : -r[0];
+                float z0 = sign > 0 ? r[2] : -r[3], z1 = sign > 0 ? r[3] : -r[2];
+                int exits = CountExits(plan, x0 + 0.3f, x1 - 0.3f, z0, z1, out float narrow);
+                output.WriteLine("room x[" + x0 + "," + x1 + "] z[" + z0 + "," + z1 + "] exits=" + exits + " narrowest=" + narrow);
+                Assert.True(exits >= 2, "room x[" + x0 + "," + x1 + "] z[" + z0 + "," + z1 + "] has " + exits + " exits");
                 Assert.True(narrow >= 2.2f, "door narrower than 2 m: " + narrow);
             }
         }
 
         private static float Dist(Float3 a, Float3 b) { float dx = a.X - b.X, dz = a.Z - b.Z; return MathF.Sqrt(dx * dx + dz * dz); }
+
+        private static Float3 NearestOpen(IReadOnlyList<CollisionBox> boxes, Float3 p, float clr)
+        {
+            if (!CompoundConnectivity.IsBlocked(boxes, p.X, p.Z, clr)) return p;
+            for (int r = 1; r <= 6; r++)
+            for (int a = 0; a < 16; a++)
+            {
+                double ang = a * Math.PI / 8;
+                var q = new Float3(p.X + (float)Math.Cos(ang) * r, 0f, p.Z + (float)Math.Sin(ang) * r);
+                if (!CompoundConnectivity.IsBlocked(boxes, q.X, q.Z, clr)) return q;
+            }
+            return p;
+        }
 
         private static Float3 Sample(List<Float3> path, float t)
         {
@@ -203,9 +264,11 @@ namespace Shooter.Generation.Tests
             var boxes = plan.CollisionBoxes;
             float clr = CompoundConnectivity.RequiredClearance;
             var routes = new List<List<Float3>>();
-            foreach (var via in arena.LanePoints)
+            foreach (var lane in arena.LanePoints)
             {
-                Assert.False(CompoundConnectivity.IsBlocked(boxes, via.X, via.Z, clr), "lane point blocked " + via.X);
+                // The centre lane point sits on the flag plinth; use the nearest open cell like MapTopologyValidation.
+                var via = NearestOpen(boxes, lane, clr);
+                Assert.True(Dist(via, lane) <= 3f, "lane point " + lane.X + " has no open cell nearby");
                 var a = new List<Float3>(); var c = new List<Float3>();
                 Assert.True(CompoundConnectivity.TryFindPath(boxes, arena.Team1Anchor, via, a, clr));
                 Assert.True(CompoundConnectivity.TryFindPath(boxes, via, arena.Team2Anchor, c, clr));
@@ -277,13 +340,13 @@ namespace Shooter.Generation.Tests
             var arena = plan.Arena!;
             var slots = MapSpawnLayout.BuildBothTeams(plan);
             var sb = new StringBuilder();
-            sb.AppendLine("training-compound top-down, x -44..44 left to right, z +52 (team 2) at top to -52 (team 1) at bottom, 1 char = 2 m");
-            for (int row = 0; row < 52; row++)
+            sb.AppendLine("training-compound top-down, x -32..32 left to right, z +40 (team 2) at top to -40 (team 1) at bottom, 1 char = 2 m");
+            for (int row = 0; row < 40; row++)
             {
-                float z1 = 52f - row * 2f, z0 = z1 - 2f;
-                for (int col = 0; col < 44; col++)
+                float z1 = 40f - row * 2f, z0 = z1 - 2f;
+                for (int col = 0; col < 32; col++)
                 {
-                    float x0 = -44f + col * 2f, x1 = x0 + 2f;
+                    float x0 = -32f + col * 2f, x1 = x0 + 2f;
                     char c = arena.StagingContains(1, (x0 + x1) / 2, (z0 + z1) / 2) || arena.StagingContains(2, (x0 + x1) / 2, (z0 + z1) / 2) ? ',' : '.';
                     float tallest = 0f;
                     foreach (var box in plan.CollisionBoxes)

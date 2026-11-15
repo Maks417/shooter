@@ -857,3 +857,26 @@ Decision:
 
 Validation: pure `ScoreBadgeVisual` / local award shaping tests; Game and Simulation wrappers as needed; docs/manifest. Named 720p badge readability remains Pending. Rollback removes streak/headshot award fields and restores binary Kill/Assist labels.
 
+## ADR-074 — Accepted: compact 64 × 80 m arenas with distinct per-map layouts
+
+Date 2026-11-15. The owner reported that all catalog maps were too big: every fight happened in the middle, and the spawn-side halves stayed empty. The owner also reported that the maps looked alike, always a box building in the middle with odd free-standing walls around it. The owner approved shrinking all three maps (Oil Depot keeping its most interesting parts) and giving Training Compound and Depot Yard new layouts. The sole integrator owns the bounded arena planners, rules, dressing, tests and docs.
+
+Decision:
+- **Size.** Every arena is 64 × 80 m with anchors at z = ±34. `ArenaRules` thresholds change:
+  - playable X from 70–100 to 56–72 and Z from 90–120 to 72–88;
+  - anchor separation from 80–110 to 60–76;
+  - spawn → centre grid path from 38–55 to 26–44;
+  - spawn → enemy path from 85–140 to 60–100;
+  - longest sightline from 60 to 48 m.
+  - Cover, exits, routes, spawn LOS, ceilings and spawn-slot rules are unchanged.
+- **Symmetry.** `ArenaLayout` gains `ArenaSymmetry` (`MirrorZ` default, or `Rotate180`); `ArenaBoxBuilder`, the mirror-symmetry rule and team-2 anchors/exits use it. Training Compound becomes point-symmetric (a "garrison square" with an open parade square in the middle and a pinwheel of barracks, office, garage and truck street around it). Depot Yard becomes a "rail crossing" (a train across z = 0 with three crossings, stack yard, loading shed, no warehouse). Oil Depot keeps the tank farm, the pump house and the catwalk, now one deck spanning z = 0. Its container lane and separator walls are removed.
+- **No strange walls.** Blocking geometry must be readable objects. Free-standing thin separator walls, U-pockets and spawn baffle walls are retired. Spawns are protected by parked vehicles and buildings, with gate chutes and offset staging openings. `ArenaFeature` descriptors (vehicles, rolling stock, sandbags, fences, booths, flag, tanks, pipe racks) travel on `CompoundPlan.Features`, and `ArenaFeatureDressing` draws them mesh-only inside their collision envelopes. Petroleum accent roles stay oil-only.
+- Planner versions: `environment.compound.arena` 3.0.0, `environment.depot.arena` 3.0.0, `environment.oil.arena` 2.0.0. Map ids, display names, seeds, recipes, package/metadata schemas, SGAF Collision v1, nav settings and the 256 m / 32 m chunk frame are unchanged.
+
+Consequences:
+- Gameplay collision, nav hashes, route corners, spawn slots and all three maps' package identities change. Software packages must be recompiled, and native nav republished with the locked editor.
+- The ArenaVisualDetail gameplay fingerprints are refrozen from the new planners.
+- The legacy W01 compound (B02/B03 freeze) is untouched.
+- Rule validation proves geometry only. Time to first contact, spawn pressure, bot routing on the new topologies and the named 5v5/6v6 playtest of all three maps remain Pending.
+
+Rollback: revert the ADR-074 merge and republish the ADR-071 packages.

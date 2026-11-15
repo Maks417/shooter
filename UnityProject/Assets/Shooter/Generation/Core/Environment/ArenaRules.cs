@@ -127,13 +127,19 @@ namespace Shooter.Generation.Environment
         public const float SightlineSampleMeters = 4f;
         public const int SightlineDirections = 16;
         public const float SightlineRayStepMeters = 0.25f;
-        public const float MaxSightlineMeters = 60f;
+        public const float MaxSightlineMeters = 48f;
         public const float MaxCoverDistanceMeters = 8f;
         public const float CoverMinTopMeters = 1.0f;
         public const float MirrorToleranceMeters = 0.001f;
         public const int MaxGameplayBoxes = 400;
         public const int MaxCoverProxies = 64;
         public const float MinPerimeterHeightMeters = 4f;
+        // ADR-074 compact sizing (supersedes the ADR-045/071 70-100 x 90-120 m table).
+        public const float MinPlayableX = 56f, MaxPlayableX = 72f;
+        public const float MinPlayableZ = 72f, MaxPlayableZ = 88f;
+        public const float MinAnchorSeparation = 60f, MaxAnchorSeparation = 76f;
+        public const float MinPathToCenter = 26f, MaxPathToCenter = 44f;
+        public const float MinPathToEnemy = 60f, MaxPathToEnemy = 100f;
 
         public static ArenaRulesReport Validate(CompoundPlan plan)
         {
@@ -152,8 +158,8 @@ namespace Shooter.Generation.Environment
 
             // 1. Playable rectangle.
             float sizeX = arena.HalfExtentX * 2f, sizeZ = arena.HalfExtentZ * 2f;
-            rules.Add(new ArenaRuleResult(RulePlayable, sizeX >= 70f && sizeX <= 100f && sizeZ >= 90f && sizeZ <= 120f,
-                F(sizeX) + "x" + F(sizeZ), "X 70-100, Z 90-120"));
+            rules.Add(new ArenaRuleResult(RulePlayable, sizeX >= MinPlayableX && sizeX <= MaxPlayableX && sizeZ >= MinPlayableZ && sizeZ <= MaxPlayableZ,
+                F(sizeX) + "x" + F(sizeZ), "X 56-72, Z 72-88"));
 
             // 2. Perimeter walls: >= 4 m tall, closed ring just outside the playable rectangle.
             MeasurePerimeter(boxes, arena, out float minHeight, out bool closed);
@@ -162,7 +168,7 @@ namespace Shooter.Generation.Environment
 
             // 3. Anchor separation along Z.
             float separation = Math.Abs(arena.Team2Anchor.Z - arena.Team1Anchor.Z);
-            rules.Add(new ArenaRuleResult(RuleAnchorSeparation, separation >= 80f && separation <= 110f, F(separation), "80-110"));
+            rules.Add(new ArenaRuleResult(RuleAnchorSeparation, separation >= MinAnchorSeparation && separation <= MaxAnchorSeparation, F(separation), "60-76"));
 
             // 4/5. Nav path lengths (1 m grid, capsule clearance, sum of corner distances).
             var centre = ResolveOpenCenter(boxes, arena.Center, clearance, arena.Team1Anchor);
@@ -171,9 +177,9 @@ namespace Shooter.Generation.Environment
             float c1 = PathLength(boxes, arena.Team1Anchor, centre, path, clearance);
             float c2 = PathLength(boxes, arena.Team2Anchor, centre2, path, clearance);
             float enemy = PathLength(boxes, arena.Team1Anchor, arena.Team2Anchor, path, clearance);
-            rules.Add(new ArenaRuleResult(RulePathCenter, InRange(c1, 38f, 55f) && InRange(c2, 38f, 55f),
-                "t1=" + F(c1) + " t2=" + F(c2), "38-55 each"));
-            rules.Add(new ArenaRuleResult(RulePathEnemy, InRange(enemy, 85f, 140f), F(enemy), "85-140"));
+            rules.Add(new ArenaRuleResult(RulePathCenter, InRange(c1, MinPathToCenter, MaxPathToCenter) && InRange(c2, MinPathToCenter, MaxPathToCenter),
+                "t1=" + F(c1) + " t2=" + F(c2), "26-44 each"));
+            rules.Add(new ArenaRuleResult(RulePathEnemy, InRange(enemy, MinPathToEnemy, MaxPathToEnemy), F(enemy), "60-100"));
 
             // 6. Staging exits.
             int exits1 = CountReachingExits(boxes, arena, 1, centre, clearance);
@@ -217,7 +223,7 @@ namespace Shooter.Generation.Environment
             // 9. Longest eye-height sightline.
             float longest = LongestSightline(boxes, arena, clearance, out float lox, out float loz, out int ldir);
             rules.Add(new ArenaRuleResult(RuleSightline, longest <= MaxSightlineMeters,
-                F(longest) + " from (" + F(lox) + "," + F(loz) + ") dir " + F(ldir * 360f / SightlineDirections) + "deg", "<= 60"));
+                F(longest) + " from (" + F(lox) + "," + F(loz) + ") dir " + F(ldir * 360f / SightlineDirections) + "deg", "<= 48"));
 
             // 10. Cover coverage.
             MeasureCover(boxes, arena, clearance, out float worst, out int uncovered, out int samples, out float wx, out float wz);
@@ -225,8 +231,8 @@ namespace Shooter.Generation.Environment
                 "worst=" + F(worst) + " at (" + F(wx) + "," + F(wz) + ") uncovered=" + uncovered + "/" + samples, "every open sample within 8 m of cover (height >= 1.0)"));
 
             // 11. Mirror symmetry.
-            int mismatches = CountMirrorMismatches(boxes);
-            rules.Add(new ArenaRuleResult(RuleMirror, mismatches == 0, "unmatched=" + mismatches, "0 (1 mm)"));
+            int mismatches = CountMirrorMismatches(boxes, arena.Symmetry);
+            rules.Add(new ArenaRuleResult(RuleMirror, mismatches == 0, arena.Symmetry + " unmatched=" + mismatches, "0 (1 mm)"));
 
             // 12. Ceilings.
             int gameplay = 0;
@@ -454,21 +460,22 @@ namespace Shooter.Generation.Environment
             }
         }
 
-        private static int CountMirrorMismatches(IReadOnlyList<CollisionBox> boxes)
+        private static int CountMirrorMismatches(IReadOnlyList<CollisionBox> boxes, ArenaSymmetry symmetry)
         {
             int bad = 0;
             for (int i = 0; i < boxes.Count; i++)
             {
                 var a = boxes[i];
                 if (!a.Gameplay) continue;
+                var t = ArenaLayout.Twin(symmetry, a.Center);
                 bool found = false;
                 for (int j = 0; j < boxes.Count && !found; j++)
                 {
                     var b = boxes[j];
                     if (!b.Gameplay) continue;
-                    found = Math.Abs(a.Center.X - b.Center.X) <= MirrorToleranceMeters &&
-                            Math.Abs(a.Center.Y - b.Center.Y) <= MirrorToleranceMeters &&
-                            Math.Abs(a.Center.Z + b.Center.Z) <= MirrorToleranceMeters &&
+                    found = Math.Abs(t.X - b.Center.X) <= MirrorToleranceMeters &&
+                            Math.Abs(t.Y - b.Center.Y) <= MirrorToleranceMeters &&
+                            Math.Abs(t.Z - b.Center.Z) <= MirrorToleranceMeters &&
                             Math.Abs(a.Size.X - b.Size.X) <= MirrorToleranceMeters &&
                             Math.Abs(a.Size.Y - b.Size.Y) <= MirrorToleranceMeters &&
                             Math.Abs(a.Size.Z - b.Size.Z) <= MirrorToleranceMeters;

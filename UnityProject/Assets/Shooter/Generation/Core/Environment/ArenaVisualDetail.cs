@@ -47,61 +47,46 @@ namespace Shooter.Generation.Environment
             b.JumpIdsTo(CompoundVisualIdBase);
             int start = b.Boxes.Count;
 
-            var hqDoors = new[]
-            {
-                new ArenaDoor(ArenaSide.North, 0f, 2.4f), new ArenaDoor(ArenaSide.South, 0f, 2.4f),
-                new ArenaDoor(ArenaSide.East, 0f, 2.4f), new ArenaDoor(ArenaSide.West, 0f, 2.4f)
-            };
-            DetailShell(b, 0f, 0f, 16f, 12f, 0.4f, 3.5f, hqDoors, mirror: false, longWallWindows: true);
+            // Motor-pool garage (drive-through doors), barracks and HQ office around the parade square.
+            var garageDoors = new[] { new ArenaDoor(ArenaSide.South, -1.5f, 3f), new ArenaDoor(ArenaSide.North, 1.5f, 3f) };
+            DetailShell(b, 0f, -27f, 14f, 7f, 0.4f, 4f, garageDoors, mirror: true, longWallWindows: true);
+            AddRidgeCap(b, 0f, -27f, 14f, alongX: true, wallHeight: 4f, mirror: true);
+            AddCornerPosts(b, 0f, -27f, 14f, 7f, 4.1f, mirror: true);
 
             var barracksDoors = new[]
             {
-                new ArenaDoor(ArenaSide.South, -3f, 2.4f),
-                new ArenaDoor(ArenaSide.North, 3f, 2.4f),
-                new ArenaDoor(ArenaSide.West, 0f, 2.4f)
+                new ArenaDoor(ArenaSide.South, 0f, 2.4f), new ArenaDoor(ArenaSide.North, 3f, 2.4f),
+                new ArenaDoor(ArenaSide.East, 4f, 2.4f), new ArenaDoor(ArenaSide.West, -4f, 2.4f)
             };
-            DetailShell(b, 32.2f, -19f, 12f, 22f, 0.4f, 3.5f, barracksDoors, mirror: true, longWallWindows: true);
+            DetailShell(b, -21f, -15f, 12f, 14f, 0.4f, 3.5f, barracksDoors, mirror: true, longWallWindows: true);
+            AddRidgeCap(b, -21f, -15f, 14f, alongX: false, wallHeight: 3.5f, mirror: true);
+            AddPorchStep(b, -21f, -22.45f, 1.8f, 0.9f, 0.14f, mirror: true);
 
-            // Barracks porch steps (visual only ≤ 0.15 m) at the west (mid-facing) door.
-            AddPorchStep(b, 32.2f - 6f - 0.45f, -19f, 0.9f, 1.8f, 0.14f, mirror: true);
+            var officeDoors = new[]
+            {
+                new ArenaDoor(ArenaSide.West, 0f, 2.4f), new ArenaDoor(ArenaSide.East, -2.5f, 2.4f),
+                new ArenaDoor(ArenaSide.North, -1f, 2.4f)
+            };
+            DetailShell(b, 15.5f, -14f, 9f, 10f, 0.4f, 3.5f, officeDoors, mirror: true, longWallWindows: true);
+            AddRidgeCap(b, 15.5f, -14f, 9f, alongX: true, wallHeight: 3.5f, mirror: true);
+            AddCornerPosts(b, 15.5f, -14f, 9f, 10f, 3.6f, mirror: true);
 
-            // HQ plaza edge trim (inner ring around the 16×12 shell).
-            AddPlazaEdge(b, 0f, 0f, 18f, 14f, 0.2f, mirror: false);
+            // Parade-square kerb ring (self-symmetric about the origin).
+            AddPlazaEdge(b, 0f, 0f, 22f, 18f, 0.2f, mirror: false);
 
-            // Range berm lips along the staggered concrete blocks (team-1 half + mirror).
-            AddBermLip(b, -37.5f, -20f, 13f, 1.5f);
-            AddBermLip(b, -27.5f, -6.75f, 13f, 1.5f);
+            // Yard lights at the square corners and the motor pool (180-degree twins via the builder).
+            AddLampPost(b, -11.5f, -9.5f, mirror: true);
+            AddLampPost(b, 11.5f, -9.5f, mirror: true);
+            AddLampPost(b, -22f, -36f, mirror: true);
+            AddLampPost(b, 22f, -36f, mirror: true);
+            AddLampPost(b, -8f, -32f, mirror: true);
+            AddLampPost(b, 28f, -4f, mirror: true);
 
-            // Staging apron / lane curbs: low strips inside the spawn wall, gaps at the three gates.
-            AddStagingCurbs(b, layout, gateXs: new[] { -30f, 0f, 30f }, gateWidth: 4f, wallZ: -37f);
-
-            // Lane separator curb lips at x = ±18 (team-1 half + mirror via builder).
-            AddLaneCurbAlongZ(b, 18f, -36f, -2f);
-            AddLaneCurbAlongZ(b, -18f, -36f, -2f);
-
-            // Gate lamp posts + short fence stubs along the staging apron (team-1 + mirror).
-            AddGateLamps(b, gateXs: new[] { -30f, 0f, 30f }, wallZ: -37f, gateWidth: 4f);
-            AddFenceStubs(b, layout, wallZ: -37f, spacing: 8f);
-
-            // Roof ridge caps on HQ / barracks shells.
-
-            // Ridge caps along HQ / barracks roof spines.
-            AddRidgeCap(b, 0f, 0f, 16f, alongX: true, wallHeight: 3.5f, mirror: false);
-            AddRidgeCap(b, 32.2f, -19f, 22f, alongX: false, wallHeight: 3.5f, mirror: true);
-
-            // Lamp posts at plaza / staging / range approaches (mirrored across z = 0).
-            AddLampPost(b, -10f, -8f, mirror: true);
-            AddLampPost(b, 10f, -8f, mirror: true);
-            AddLampPost(b, -22f, -34f, mirror: true);
-            AddLampPost(b, 22f, -34f, mirror: true);
-            AddLampPost(b, 0f, -34f, mirror: true);
-            AddLampPost(b, 28f, -12f, mirror: true);
-
-            // Fence posts just outside the staging wall, gaps preserved at the three gates.
-            AddFencePostRow(b, -37.55f, -42f, -32f, spacing: 4f, mirror: true);
-            AddFencePostRow(b, -37.55f, -28f, -2f, spacing: 4.5f, mirror: true);
-            AddFencePostRow(b, -37.55f, 2f, 28f, spacing: 4.5f, mirror: true);
-            AddFencePostRow(b, -37.55f, 32f, 42f, spacing: 4f, mirror: true);
+            // Low kerbs along the staging strip, open at the three exits.
+            AddGappedCurbAlongX(b, -31.2f, -31f, 31f,
+                new[] { new ArenaGap(-20.75f, 8.5f), new ArenaGap(0f, 15f), new ArenaGap(20.75f, 8.5f) }, mirror: true);
+            AddFencePostRow(b, -39.4f, -30f, -19f, spacing: 3.5f, mirror: true);
+            AddFencePostRow(b, -39.4f, 19f, 30f, spacing: 3.5f, mirror: true);
 
             EnsureBudget(b.Boxes.Count - start);
         }
@@ -114,59 +99,44 @@ namespace Shooter.Generation.Environment
             b.JumpIdsTo(DepotVisualIdBase);
             int start = b.Boxes.Count;
 
-            var warehouseDoors = new[]
+            // Loading shed trim.
+            var shedDoors = new[]
             {
-                new ArenaDoor(ArenaSide.North, -3f, 3f), new ArenaDoor(ArenaSide.North, 3f, 3f),
-                new ArenaDoor(ArenaSide.South, -3f, 3f), new ArenaDoor(ArenaSide.South, 3f, 3f),
-                new ArenaDoor(ArenaSide.East, 0f, 2.4f), new ArenaDoor(ArenaSide.West, 0f, 2.4f)
+                new ArenaDoor(ArenaSide.South, -2f, 3f), new ArenaDoor(ArenaSide.North, 2f, 3f),
+                new ArenaDoor(ArenaSide.West, -1f, 2.4f), new ArenaDoor(ArenaSide.East, -2f, 2.4f)
             };
-            DetailShell(b, 0f, 0f, 22f, 26f, 0.5f, 5f, warehouseDoors, mirror: false, longWallWindows: true);
+            DetailShell(b, 20f, -15f, 14f, 14f, 0.5f, 4.5f, shedDoors, mirror: true, longWallWindows: true);
+            AddRidgeCap(b, 20f, -15f, 14f, alongX: false, wallHeight: 4.5f, mirror: true);
+            AddCornerPosts(b, 20f, -15f, 14f, 14f, 4.6f, mirror: true);
+            // Loading canopy over the shed's yard-side door (above head height, visual only).
+            b.Add(new Float3(12.4f, 3.3f, -16f), new Float3(1.6f, 0.15f, 5f), ArenaBoxBuilder.TagSolid, mirror: true, gameplay: false);
 
-            // Loading canopy lips outside N/S warehouse faces (above dock height, visual only).
-            b.Add(new Float3(0f, 3.2f, -13.9f), new Float3(14f, 0.15f, 1.2f), ArenaBoxBuilder.TagSolid, mirror: true, gameplay: false);
-            // Corner posts at warehouse outer corners.
-            AddCornerPosts(b, 0f, 0f, 22f, 26f, 5.1f, mirror: false);
+            // Track bed across the yard: ballast strip, two rails and sleepers (all below step height, visual only).
+            b.Add(new Float3(0f, 0.04f, 0f), new Float3(64f, 0.08f, 3.6f), ArenaBoxBuilder.TagSolid, mirror: false, gameplay: false);
+            b.Add(new Float3(0f, 0.16f, 0.72f), new Float3(64f, 0.12f, 0.08f), ArenaBoxBuilder.TagCover, mirror: true, gameplay: false);
+            for (float x = -31.4f; x <= 31.5f; x += 1.4f)
+                b.Add(new Float3(x, 0.1f, 0f), new Float3(0.24f, 0.08f, 2.6f), ArenaBoxBuilder.TagSolid, mirror: false, gameplay: false);
 
-            // Container edge rails on a few maze stacks (thin top lips).
-            AddContainerRail(b, 23.25f, 0f, 6f, 2.5f, 2.6f, mirror: false);
-            AddContainerRail(b, 33.25f, 0f, 6f, 2.5f, 5.2f, mirror: false);
-            AddContainerRail(b, 27.5f, -6.5f, 6f, 2.5f, 2.6f, mirror: true);
-            AddContainerRail(b, 37f, -13f, 6f, 2.5f, 5.2f, mirror: true);
-            AddContainerRail(b, -9f, -30f, 6f, 2.5f, 5.2f, mirror: true);
-            AddContainerRail(b, 9f, -30f, 6f, 2.5f, 5.2f, mirror: true);
+            // Container rails / corner castings on the stack yard.
+            float[,] stacks = { { -25f, -6f, 2.6f }, { -15.5f, -6f, 2.6f }, { -20.5f, -12f, 5.2f }, { -25f, -18f, 2.6f }, { -15.5f, -18f, 5.2f }, { -20.5f, -24f, 2.6f } };
+            for (int i = 0; i < stacks.GetLength(0); i++)
+            {
+                AddContainerRail(b, stacks[i, 0], stacks[i, 1], 6f, 2.5f, stacks[i, 2], mirror: true);
+                AddContainerCorners(b, stacks[i, 0], stacks[i, 1], 6f, 2.5f, stacks[i, 2], mirror: true);
+            }
 
-            // Staging apron curbs inside the gatehouse, gaps at funnelled gates.
-            AddStagingCurbs(b, layout, gateXs: new[] { -28f, 0f, 26f }, gateWidth: 4f, wallZ: -42f);
+            // Yard lights.
+            AddLampPost(b, -12f, -24f, mirror: true);
+            AddLampPost(b, 10f, -10f, mirror: true);
+            AddLampPost(b, 0f, -38.5f, mirror: true);
+            AddLampPost(b, -24f, -37f, mirror: true);
+            AddLampPost(b, 24f, -37f, mirror: true);
+            AddLampPost(b, 30.5f, -2.5f, mirror: true);
 
-            // Lane separator curb lips at x = ±20.
-            AddLaneCurbAlongZ(b, 20f, -40f, -2f, mirror: false);
-            AddLaneCurbAlongZ(b, -20f, -40f, -2f, mirror: false);
-            // Mirror the curb on the +Z half explicitly (separators span full Z with mirror:false).
-            AddLaneCurbAlongZ(b, 20f, 2f, 40f, mirror: false);
-            AddLaneCurbAlongZ(b, -20f, 2f, 40f, mirror: false);
-
-            AddGateLamps(b, gateXs: new[] { -28f, 0f, 26f }, wallZ: -42f, gateWidth: 4f);
-            AddFenceStubs(b, layout, wallZ: -42f, spacing: 9f);
-            // Container corner castings on a subset of maze stacks (metal-prop heuristic).
-            AddContainerCorners(b, 23.25f, 0f, 6f, 2.5f, 2.6f, mirror: false);
-            AddContainerCorners(b, 33.25f, 0f, 6f, 2.5f, 5.2f, mirror: false);
-            AddContainerCorners(b, 27.5f, -6.5f, 6f, 2.5f, 2.6f, mirror: true);
-            AddContainerCorners(b, -9f, -30f, 6f, 2.5f, 5.2f, mirror: true);
-
-            // Warehouse roof ridge + lamp posts on loading apron / maze approaches.
-            AddRidgeCap(b, 0f, 0f, 26f, alongX: false, wallHeight: 5f, mirror: false);
-            AddLampPost(b, -14f, -16f, mirror: true);
-            AddLampPost(b, 14f, -16f, mirror: true);
-            AddLampPost(b, -30f, -38f, mirror: true);
-            AddLampPost(b, 24f, -38f, mirror: true);
-            AddLampPost(b, 0f, -38f, mirror: true);
-            AddLampPost(b, 30f, -8f, mirror: true);
-
-            // Fence posts just outside the gatehouse apron between funnelled gates.
-            AddFencePostRow(b, -42.55f, -40f, -30f, spacing: 3.5f, mirror: true);
-            AddFencePostRow(b, -42.55f, -26f, -2f, spacing: 4f, mirror: true);
-            AddFencePostRow(b, -42.55f, 2f, 24f, spacing: 4f, mirror: true);
-            AddFencePostRow(b, -42.55f, 28f, 40f, spacing: 3.5f, mirror: true);
+            AddGappedCurbAlongX(b, -31.2f, -31f, 31f,
+                new[] { new ArenaGap(-19.5f, 8f), new ArenaGap(0f, 6f), new ArenaGap(19.5f, 8f) }, mirror: true);
+            AddFencePostRow(b, -39.4f, -30f, -19f, spacing: 3.5f, mirror: true);
+            AddFencePostRow(b, -39.4f, 19f, 30f, spacing: 3.5f, mirror: true);
 
             EnsureBudget(b.Boxes.Count - start);
         }
@@ -184,37 +154,23 @@ namespace Shooter.Generation.Environment
                 new ArenaDoor(ArenaSide.North, 0f, 2.4f), new ArenaDoor(ArenaSide.South, 0f, 2.4f),
                 new ArenaDoor(ArenaSide.East, 0f, 2.4f), new ArenaDoor(ArenaSide.West, 0f, 2.4f)
             };
-            DetailShell(b, 0f, 0f, 16f, 14f, 0.45f, 4f, pumpDoors, mirror: false, longWallWindows: true);
-            AddRidgeCap(b, 0f, 0f, 14f, alongX: false, wallHeight: 4f, mirror: false);
-            AddCornerPosts(b, 0f, 0f, 16f, 14f, 4.1f, mirror: false);
+            DetailShell(b, 0f, 0f, 14f, 12f, 0.45f, 4f, pumpDoors, mirror: false, longWallWindows: true);
+            AddRidgeCap(b, 0f, 0f, 12f, alongX: false, wallHeight: 4f, mirror: false);
+            AddCornerPosts(b, 0f, 0f, 14f, 12f, 4.1f, mirror: false);
 
-            AddStagingCurbs(b, layout, gateXs: new[] { -28f, 0f, 28f }, gateWidth: 4f, wallZ: -40f);
-            AddLaneCurbAlongZ(b, 18f, -38f, -2f, mirror: false);
-            AddLaneCurbAlongZ(b, -18f, -38f, -2f, mirror: false);
-            AddLaneCurbAlongZ(b, 18f, 2f, 38f, mirror: false);
-            AddLaneCurbAlongZ(b, -18f, 2f, 38f, mirror: false);
+            // Tank crown lips (visual rings; OilDepotDressing replaces them with round crowns).
+            for (int i = 0; i < OilArenaPlanner.Tanks.GetLength(0); i++)
+                AddTankCrown(b, OilArenaPlanner.Tanks[i, 0], OilArenaPlanner.Tanks[i, 1], OilArenaPlanner.Tanks[i, 2] + 0.4f, OilArenaPlanner.Tanks[i, 3], mirror: true);
 
-            AddGateLamps(b, gateXs: new[] { -28f, 0f, 28f }, wallZ: -40f, gateWidth: 4f);
-            AddFenceStubs(b, layout, wallZ: -40f, spacing: 9f);
-            AddLampPost(b, -30f, -36f, mirror: true);
-            AddLampPost(b, 28f, -36f, mirror: true);
-            AddLampPost(b, 0f, -36f, mirror: true);
-            AddLampPost(b, -28f, -12f, mirror: true);
-            AddLampPost(b, 32f, -4f, mirror: true);
-
-            // Tank crown lips (visual rings on the larger drums).
-            AddTankCrown(b, -30f, -22f, 3.8f, 5.5f, mirror: true);
-            AddTankCrown(b, -34f, -8f, 3.4f, 5f, mirror: true);
-            AddTankCrown(b, -26f, 0f, 3.6f, 5.5f, mirror: false);
-
-            AddContainerRail(b, 26f, 0f, 6f, 2.5f, 2.6f, mirror: false);
-            AddContainerRail(b, 36f, 0f, 6f, 2.5f, 2.6f, mirror: false);
-            AddContainerCorners(b, 26f, 0f, 6f, 2.5f, 2.6f, mirror: false);
-
-            AddFencePostRow(b, -44.55f, -42f, -30f, spacing: 3.5f, mirror: true);
-            AddFencePostRow(b, -44.55f, -26f, -2f, spacing: 4f, mirror: true);
-            AddFencePostRow(b, -44.55f, 2f, 24f, spacing: 4f, mirror: true);
-            AddFencePostRow(b, -44.55f, 28f, 42f, spacing: 3.5f, mirror: true);
+            AddGappedCurbAlongX(b, -31.2f, -31f, 31f,
+                new[] { new ArenaGap(-19.5f, 8f), new ArenaGap(0f, 6f), new ArenaGap(19.5f, 8f) }, mirror: true);
+            AddLampPost(b, -24f, -37f, mirror: true);
+            AddLampPost(b, 24f, -37f, mirror: true);
+            AddLampPost(b, 0f, -38.5f, mirror: true);
+            AddLampPost(b, -18f, -27f, mirror: true);
+            AddLampPost(b, 30.5f, -2.5f, mirror: true);
+            AddFencePostRow(b, -39.4f, -30f, -19f, spacing: 3.5f, mirror: true);
+            AddFencePostRow(b, -39.4f, 19f, 30f, spacing: 3.5f, mirror: true);
 
             EnsureBudget(b.Boxes.Count - start);
         }
@@ -236,39 +192,6 @@ namespace Shooter.Generation.Environment
                 AddDoorFrame(b, cx, cz, sizeX, sizeZ, thickness, height, doors[i], mirror);
             if (longWallWindows)
                 AddWindowFrames(b, cx, cz, sizeX, sizeZ, thickness, height, doors, mirror);
-        }
-
-        private static void AddGateLamps(ArenaBoxBuilder b, float[] gateXs, float wallZ, float gateWidth)
-        {
-            const float postH = 3.2f;
-            const float post = 0.18f;
-            const float head = 0.28f;
-            float z = wallZ + (wallZ < 0f ? 0.9f : -0.9f);
-            float y = postH * 0.5f;
-            for (int i = 0; i < gateXs.Length; i++)
-            {
-                float half = gateWidth * 0.5f + 0.55f;
-                // Stem + small head box; stem hits metal-prop heuristic.
-                b.Add(new Float3(gateXs[i] - half, y, z), new Float3(post, postH, post), ArenaBoxBuilder.TagSolid, true, false);
-                b.Add(new Float3(gateXs[i] - half, postH + head * 0.5f, z), new Float3(head, head, head), ArenaBoxBuilder.TagSolid, true, false);
-                b.Add(new Float3(gateXs[i] + half, y, z), new Float3(post, postH, post), ArenaBoxBuilder.TagSolid, true, false);
-                b.Add(new Float3(gateXs[i] + half, postH + head * 0.5f, z), new Float3(head, head, head), ArenaBoxBuilder.TagSolid, true, false);
-            }
-        }
-
-        private static void AddFenceStubs(ArenaBoxBuilder b, ArenaLayout layout, float wallZ, float spacing)
-        {
-            float z = wallZ + (wallZ < 0f ? 1.4f : -1.4f);
-            float x0 = layout.StagingMinX + 2f;
-            float x1 = layout.StagingMaxX - 2f;
-            for (float x = x0; x <= x1 + 0.01f; x += spacing)
-            {
-                // Skip near gate centers (±2 m around typical mid-map gates).
-                if (Math.Abs(x) < 3f || Math.Abs(x - 28f) < 3f || Math.Abs(x + 28f) < 3f ||
-                    Math.Abs(x - 30f) < 3f || Math.Abs(x + 30f) < 3f || Math.Abs(x - 26f) < 3f)
-                    continue;
-                b.Add(new Float3(x, 0.55f, z), new Float3(0.12f, 1.1f, 0.12f), ArenaBoxBuilder.TagSolid, true, false);
-            }
         }
 
         private static void AddContainerCorners(ArenaBoxBuilder b, float x, float z, float sizeX, float sizeZ, float height, bool mirror)
@@ -456,26 +379,6 @@ namespace Shooter.Generation.Environment
             b.Add(new Float3(cx - sizeX * 0.5f, y, cz), new Float3(strip, CurbHeight, sizeZ - strip * 2f), ArenaBoxBuilder.TagSolid, mirror, false);
         }
 
-        private static void AddBermLip(ArenaBoxBuilder b, float x, float z, float sizeX, float sizeZ)
-        {
-            // Thin raised lip on the top outer edge of a range block (team-1 + mirror).
-            float top = 2.4f;
-            b.Add(new Float3(x, top + 0.08f, z), new Float3(sizeX + 0.2f, 0.16f, sizeZ + 0.2f), ArenaBoxBuilder.TagSolid, true, false);
-        }
-
-        private static void AddStagingCurbs(ArenaBoxBuilder b, ArenaLayout layout, float[] gateXs, float gateWidth, float wallZ)
-        {
-            // Low curb just inside the spawn/gate wall on the playable side, with gaps at gates.
-            float z = wallZ + (wallZ < 0f ? 0.55f : -0.55f);
-            float x0 = layout.StagingMinX + 1f;
-            float x1 = layout.StagingMaxX - 1f;
-            var gaps = new ArenaGap[gateXs.Length];
-            for (int i = 0; i < gateXs.Length; i++)
-                gaps[i] = new ArenaGap(gateXs[i], gateWidth + 1.5f);
-            // Manual segmented curb (cannot use WallAlongX — that emits gameplay boxes).
-            AddGappedCurbAlongX(b, z, x0, x1, gaps, mirror: true);
-        }
-
         private static void AddGappedCurbAlongX(ArenaBoxBuilder b, float z, float x0, float x1, ArenaGap[] gaps, bool mirror)
         {
             var sorted = new List<ArenaGap>(gaps);
@@ -498,16 +401,6 @@ namespace Shooter.Generation.Environment
                 float mid = (cursor + x1) * 0.5f;
                 b.Add(new Float3(mid, CurbHeight * 0.5f, z), new Float3(x1 - cursor, CurbHeight, CurbWidth), ArenaBoxBuilder.TagSolid, mirror, false);
             }
-        }
-
-        private static void AddLaneCurbAlongZ(ArenaBoxBuilder b, float x, float z0, float z1, bool mirror = true)
-        {
-            if (z1 <= z0) return;
-            float mid = (z0 + z1) * 0.5f;
-            float len = z1 - z0;
-            // Offset slightly toward lane centre so the separator wall remains the gameplay blocker.
-            float curbX = x + (x >= 0f ? -0.45f : 0.45f);
-            b.Add(new Float3(curbX, CurbHeight * 0.5f, mid), new Float3(CurbWidth, CurbHeight, len), ArenaBoxBuilder.TagSolid, mirror, false);
         }
 
         private static void AddCornerPosts(ArenaBoxBuilder b, float cx, float cz, float sizeX, float sizeZ, float height, bool mirror)

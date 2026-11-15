@@ -100,8 +100,9 @@ namespace Shooter.Generation.Environment
         public static MeshData Build(CompoundPlan plan) => Build(plan, null);
 
         /// <summary>
-        /// Map-aware overload: <c>oil-depot</c> replaces its square tank drums with round shells and appends
-        /// <see cref="OilDepotDressing"/>. Collision boxes are never changed.
+        /// Map-aware overload: arena features (vehicles, rolling stock, sandbags, fences) are drawn by
+        /// <see cref="ArenaFeatureDressing"/> instead of their envelope box; <c>oil-depot</c> also replaces its square
+        /// tank drums with round shells and appends <see cref="OilDepotDressing"/>. Collision boxes are never changed.
         /// </summary>
         public static MeshData Build(CompoundPlan plan, string? mapId)
         {
@@ -116,6 +117,7 @@ namespace Shooter.Generation.Environment
             {
                 CollisionBox box = plan.CollisionBoxes[i];
                 if (oil && OilDepotDressing.ReplacedByDressing(box)) continue;
+                if (ArenaFeatureDressing.ReplacedByDressing(box, plan.Features)) continue;
                 ushort slot = Classify(box, coverIds);
                 // Small physical edge radii catch directional light instead of a razor-sharp blockout edge.
                 float minimum = Math.Min(box.Size.X, Math.Min(box.Size.Y, box.Size.Z));
@@ -127,6 +129,7 @@ namespace Shooter.Generation.Environment
                     Math.Min(box.Size.X, box.Size.Z) <= 2.01f && Math.Max(box.Size.X, box.Size.Z) >= 3f)
                     AddWallDetails(assembly, box);
             }
+            ArenaFeatureDressing.Append(assembly, plan.Features);
             if (oil) OilDepotDressing.Append(assembly, plan.Arena!);
             if (assembly.VertexCount > MaxVisualVertices)
                 throw new InvalidOperationException("Architectural mesh exceeds the reviewed visual vertex budget.");

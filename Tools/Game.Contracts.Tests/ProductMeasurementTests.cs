@@ -270,7 +270,9 @@ namespace Shooter.Game.Contracts.Tests
             Assert.True(catalog.TryGetGameplay(WellKnownMaps.TrainingCompound, out var gameplay));
             Assert.True(gameplay.PatrolDestinations.Count > 0);
             var nav = new RecordingNav();
-            using var session = new OfflineGameSession(catalog, (_, __) => new FakeMapRuntime(new NoWorld(), nav), allowFakeMapRuntime: true);
+            // Vision rays are occluded (as walls and vehicles do on the real map): ADR-074 spawns are 68 m apart, inside
+            // bot vision range, so an occlusion-free fake world would make bots advance on visible enemies at once.
+            using var session = new OfflineGameSession(catalog, (_, __) => new FakeMapRuntime(new BlindWorld(), nav), allowFakeMapRuntime: true);
             var request = new SessionRequest(WellKnownMaps.TrainingCompound, WellKnownModes.TeamDeathmatch, 5, 460072030UL);
             Assert.True((await session.BeginLoadAsync(request, CancellationToken.None)).Succeeded);
             Assert.True(session.Start().Succeeded);
@@ -282,7 +284,7 @@ namespace Shooter.Game.Contracts.Tests
                 bool packaged = false;
                 for (int i = 0; i < gameplay.PatrolDestinations.Count; i++)
                     packaged |= gameplay.PatrolDestinations[i].Equals(destination);
-                Assert.True(packaged, "bot path goal is not a packaged patrol destination: " + destination);
+                Assert.True(packaged, "bot path goal is not a packaged patrol destination: (" + destination.X + "," + destination.Y + "," + destination.Z + ")");
             }
         }
 
@@ -312,6 +314,15 @@ namespace Shooter.Game.Contracts.Tests
         {
             public SweepHit SweepCapsule(Capsule capsule, Float3 displacement, QueryFilter filter) => new SweepHit(QueryStatus.NoHit);
             public RayHit Raycast(Float3 origin, Float3 unitDirection, float maxMeters, QueryFilter filter) => new RayHit(QueryStatus.NoHit);
+            public OverlapResult Overlap(Capsule capsule, QueryFilter filter, HitBuffer callerOwned) => new OverlapResult(QueryStatus.NoHit, 0, 0);
+        }
+
+        /// <summary>Open for movement, but every ray is occluded after 1 m.</summary>
+        private sealed class BlindWorld : IWorldQueries
+        {
+            public SweepHit SweepCapsule(Capsule capsule, Float3 displacement, QueryFilter filter) => new SweepHit(QueryStatus.NoHit);
+            public RayHit Raycast(Float3 origin, Float3 unitDirection, float maxMeters, QueryFilter filter)
+                => new RayHit(QueryStatus.Hit, new QueryHit(System.Math.Min(maxMeters, 1f), origin, new Float3(0f, 1f, 0f), default, new SurfaceId(1), 1, 1, 1));
             public OverlapResult Overlap(Capsule capsule, QueryFilter filter, HitBuffer callerOwned) => new OverlapResult(QueryStatus.NoHit, 0, 0);
         }
 

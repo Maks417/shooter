@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using Shooter.Contracts;
 using Shooter.Generation.Environment;
@@ -10,7 +11,7 @@ using Xunit.Abstractions;
 
 namespace Shooter.Generation.Tests
 {
-    /// <summary>T076 Depot Yard layout: rule table, spawn protection, lanes, warehouse, container maze, determinism.</summary>
+    /// <summary>ADR-074 Depot Yard "rail crossing": rule table, spawn protection, train crossings, stack yard, loading shed, determinism.</summary>
     public sealed class DepotArenaLayoutTests
     {
         private readonly ITestOutputHelper output;
@@ -27,8 +28,10 @@ namespace Shooter.Generation.Tests
             var report = ArenaRules.Validate(plan);
             output.WriteLine(report.ToText());
             Assert.True(report.Passed, report.ToText());
-            Assert.True(report.PathAnchorToCenterTeam1 >= 38f && report.PathAnchorToCenterTeam1 <= 55f);
-            Assert.True(report.LongestSightline <= 60f);
+            Assert.InRange(report.PathAnchorToCenterTeam1, ArenaRules.MinPathToCenter, ArenaRules.MaxPathToCenter);
+            Assert.True(report.LongestSightline <= ArenaRules.MaxSightlineMeters);
+            Assert.Equal(64f, report.PlayableSizeX);
+            Assert.Equal(80f, report.PlayableSizeZ);
             Assert.True(report.GameplayBoxCount <= 250, "gameplay boxes " + report.GameplayBoxCount);
             Assert.True(report.CoverProxyCount <= 64);
             Assert.True(report.DistinctRoutes >= 3 && report.HasCoveredRoute);
@@ -49,18 +52,18 @@ namespace Shooter.Generation.Tests
                 if (bx.Gameplay && bx.Center.Y + bx.Size.Y * 0.5f >= MapSpawnLayout.EyeHeightMeters && bx.Center.Y - bx.Size.Y * 0.5f <= MapSpawnLayout.EyeHeightMeters) tall.Add(bx);
 
             int worst = 0; float wx = 0, wz = 0, step = 2f;
-            for (float z = -56f; z <= 0f; z += step)
-            for (float x = -40f; x <= 40f; x += step)
+            for (float z = -40f; z <= 0f; z += step)
+            for (float x = -32f; x <= 32f; x += step)
             {
                 if (arena.StagingContains(1, x, z) || !Open(plan, x, z)) continue;
                 int seen = Visible(tall, own, x, z);
                 if (seen > worst) { worst = seen; wx = x; wz = z; }
             }
             // Denser sweep right outside the gates.
-            for (float z = -40f; z <= -30f; z += 0.5f)
-            for (float x = -34f; x <= 34f; x += 0.5f)
+            for (float z = -29f; z <= -22f; z += 0.5f)
+            for (float x = -31.5f; x <= 31.5f; x += 0.5f)
             {
-                if (!Open(plan, x, z)) continue;
+                if (arena.StagingContains(1, x, z) || !Open(plan, x, z)) continue;
                 int seen = Visible(tall, own, x, z);
                 if (seen > worst) { worst = seen; wx = x; wz = z; }
             }
@@ -81,40 +84,54 @@ namespace Shooter.Generation.Tests
         }
 
         [Fact]
-        public void Warehouse_centre_is_open_and_reachable_through_every_door()
+        public void Train_closes_the_middle_except_three_crossings()
         {
             var plan = Plan();
-            Assert.True(Open(plan, 0f, 0f));
-            var doors = new[]
-            {
-                new Float3(-3f, 0f, -13.5f), new Float3(3f, 0f, -13.5f), new Float3(-3f, 0f, 13.5f), new Float3(3f, 0f, 13.5f),
-                new Float3(-11.5f, 0f, 0f), new Float3(11.5f, 0f, 0f)
-            };
+            // Walk the track line: only the two wall crossings and the centre crossing are passable.
+            var open = new List<float>();
+            for (float x = -31.5f; x <= 31.5f; x += 0.5f) if (Open(plan, x, 0f)) open.Add(x);
+            output.WriteLine("open track cells: " + string.Join(",", open));
+            Assert.NotEmpty(open);
+            foreach (float x in open)
+                Assert.True(x <= -28f || Math.Abs(x) <= 3f || x >= 28f, "unexpected crossing at x=" + x);
+            Assert.Contains(open, x => x <= -28f);
+            Assert.Contains(open, x => Math.Abs(x) <= 1f);
+            Assert.Contains(open, x => x >= 28f);
+            // Each crossing joins the two halves.
             var path = new List<Float3>();
-            foreach (var d in doors)
-            {
-                Assert.True(Open(plan, d.X, d.Z), "door approach blocked " + d.X + "," + d.Z);
-                Assert.True(CompoundConnectivity.TryFindPath(plan.CollisionBoxes, d, new Float3(0f, 0f, 0f), path, Clear), "no path from door " + d.X + "," + d.Z);
-                // Path to the centre must pass through the door line (interior reachable only via doors).
-                Assert.True(path.Count > 2);
-            }
-            // The shell is closed apart from the six doors: sample the south wall line.
-            int openCells = 0;
-            for (float x = -10f; x <= 10f; x += 1f) if (Open(plan, x, -12.75f)) openCells++;
-            Assert.True(openCells >= 4 && openCells <= 8, "south wall open cells " + openCells);
+            foreach (float x in new[] { -30f, 0f, 30f })
+                Assert.True(CompoundConnectivity.TryFindPath(plan.CollisionBoxes, new Float3(x, 0f, -5f), new Float3(x, 0f, 5f), path, Clear), "crossing x=" + x);
+            // The flatcar is low cover you can shoot over (not climb) except where the tarped load stands.
+            Assert.Contains(plan.Features, f => f.Kind == ArenaFeatureKind.Flatcar && f.Size.Y < 1.65f);
+            Assert.Contains(plan.Features, f => f.Kind == ArenaFeatureKind.Cargo && f.Center.Y - f.Size.Y * 0.5f > 1f);
+            Assert.Equal(3, plan.Features.Count(f => f.Kind == ArenaFeatureKind.Boxcar));
         }
 
         [Fact]
-        public void Container_lane_alleys_have_no_dead_ends_and_short_sightlines()
+        public void Loading_shed_is_reachable_through_every_door()
         {
             var plan = Plan();
-            const float x0 = 20.25f, x1 = 40f, z0 = -40f, z1 = 40f;
-            // The maze proper excludes the 6 m deep arrival yard behind the gate (z beyond -34 / +34).
-            const float mz = 34f;
-            // Core cells: every 8-neighbour open, i.e. at least 3 m wide. Leaf-prune the whole-map core graph; no lane cell may be pruned.
+            var inside = new Float3(20f, 0f, -15f);
+            Assert.True(Open(plan, inside.X, inside.Z));
+            // Approaches outside the south, north, west and east doors.
+            var outside = new[] { new Float3(18f, 0f, -24f), new Float3(22f, 0f, -6f), new Float3(11f, 0f, -16f), new Float3(28.5f, 0f, -17f) };
+            var path = new List<Float3>();
+            foreach (var o in outside)
+            {
+                Assert.True(Open(plan, o.X, o.Z), "door approach blocked " + o.X + "," + o.Z);
+                Assert.True(CompoundConnectivity.TryFindPath(plan.CollisionBoxes, o, inside, path, Clear), "no path from " + o.X + "," + o.Z);
+            }
+        }
+
+        [Fact]
+        public void Stack_yard_alleys_have_no_dead_ends_and_short_sightlines()
+        {
+            var plan = Plan();
+            const float x0 = -32f, x1 = -12f, z0 = -27f, z1 = -2f;
+            // Core cells: every 8-neighbour open (>= 3 m wide). Leaf-prune the whole-map core graph; no yard cell may be pruned.
             var core = new HashSet<(int, int)>();
-            for (int x = -40; x <= 40; x++)
-            for (int z = -56; z <= 56; z++)
+            for (int x = -32; x <= 32; x++)
+            for (int z = -40; z <= 40; z++)
             {
                 bool ok = true;
                 for (int dx = -1; dx <= 1 && ok; dx++)
@@ -135,23 +152,23 @@ namespace Shooter.Generation.Tests
                     core.Remove(c); pruned.Add(c); changed = true;
                 }
             }
-            var laneDead = pruned.FindAll(c => c.Item1 > x0 && c.Item1 < x1 && c.Item2 > z0 && c.Item2 < z1);
-            output.WriteLine("lane dead-end core cells: " + laneDead.Count);
-            Assert.Empty(laneDead);
+            var yardDead = pruned.FindAll(c => c.Item1 > x0 && c.Item1 < x1 && c.Item2 > z0 && c.Item2 < z1);
+            output.WriteLine("stack yard dead-end core cells: " + yardDead.Count + " " + string.Join(" ", yardDead));
+            Assert.Empty(yardDead);
 
-            // Every open lane cell reaches both the gate end and the centre end of the lane, so there is no sealed pocket.
-            var gate = new Float3(26f, 0f, -39f);
+            // Every open yard cell reaches the side gate, so there is no sealed pocket.
+            var gate = new Float3(-19.5f, 0f, -29f);
             var path = new List<Float3>();
-            for (int x = 21; x < 40; x++)
-            for (int z = -39; z <= 0; z++)
+            for (int x = -31; x < -12; x++)
+            for (int z = -27; z <= -2; z++)
             {
                 if (!Open(plan, x, z)) continue;
-                Assert.True(CompoundConnectivity.TryFindPath(plan.CollisionBoxes, new Float3(x, 0f, z), gate, path, Clear), "unreachable lane cell " + x + "," + z);
+                Assert.True(CompoundConnectivity.TryFindPath(plan.CollisionBoxes, new Float3(x, 0f, z), gate, path, Clear), "unreachable yard cell " + x + "," + z);
             }
 
-            // Eye-height sightlines inside the lane box (rays clipped at the lane boundary).
+            // Eye-height sightlines inside the yard box (rays clipped at the yard boundary).
             float longest = 0f; (float, float, int) lo = (0, 0, 0);
-            for (float sz = -mz + 0.5f; sz < 0f; sz += 1f)
+            for (float sz = z0 + 0.5f; sz < z1; sz += 1f)
             for (float sx = x0 + 0.5f; sx < x1; sx += 1f)
             {
                 if (!Open(plan, sx, sz)) continue;
@@ -164,13 +181,13 @@ namespace Shooter.Generation.Tests
                     {
                         t += 0.25f;
                         float x = sx + dx * t, z = sz + dz * t;
-                        if (x < x0 || x > x1 || z < -mz || z > mz) break;
+                        if (x < x0 || x > x1 || z < z0 || z > z1) break;
                         if (EyeBlocked(plan, x, z)) break;
                     }
                     if (t > longest) { longest = t; lo = (sx, sz, d); }
                 }
             }
-            output.WriteLine("container lane longest sightline = " + longest + " from " + lo);
+            output.WriteLine("stack yard longest sightline = " + longest + " from " + lo);
             Assert.True(longest <= 30f, "longest " + longest + " from " + lo);
         }
 
@@ -195,18 +212,11 @@ namespace Shooter.Generation.Tests
             Assert.True(topology.Passed, topology.Diagnostic);
             Assert.True(topology.DistinctRoutes >= 3 && topology.HasCoveredRoute);
 
+            // Lane-to-lane rotation on the own half stays short (no detour through staging).
             var path = new List<Float3>();
-            // Cross connectors at z = -30 / +30 join left lane, yard and right lane.
-            foreach (float z in new[] { -30f, 30f })
-            {
-                Assert.True(CompoundConnectivity.TryFindPath(plan.CollisionBoxes, new Float3(-30f, 0f, z), new Float3(-18f, 0f, z), path, Clear), "left connector z=" + z);
-                Assert.True(CompoundConnectivity.TryFindPath(plan.CollisionBoxes, new Float3(18f, 0f, z), new Float3(26f, 0f, z < 0 ? -38f : 38f), path, Clear), "right connector z=" + z);
-            }
-            // Warehouse side door route joins the west and east strips through the interior.
-            Assert.True(CompoundConnectivity.TryFindPath(plan.CollisionBoxes, new Float3(-15f, 0f, 0f), new Float3(15f, 0f, 0f), path, Clear));
-            // Lane-to-lane route stays shorter than going back through staging.
-            Assert.True(CompoundConnectivity.TryFindPath(plan.CollisionBoxes, new Float3(-28f, 0f, -23f), new Float3(28f, 0f, -23f), path, Clear));
-            Assert.True(path.Count < 130, "lane to lane path " + path.Count);
+            Assert.True(CompoundConnectivity.TryFindPath(plan.CollisionBoxes, new Float3(-28f, 0f, -10f), new Float3(28f, 0f, -10f), path, Clear));
+            output.WriteLine("lane to lane path corners=" + path.Count);
+            Assert.True(path.Count < 110, "lane to lane path " + path.Count);
         }
 
         [Fact]
@@ -224,23 +234,25 @@ namespace Shooter.Generation.Tests
             }
             var compound = ProductMapPlanner.Generate("training-compound");
             Assert.NotEqual(compound.CollisionHash, a.CollisionHash);
-            Assert.NotEqual(compound.Arena!.HalfExtentX, a.Arena!.HalfExtentX);
+            Assert.NotEqual(compound.Arena!.Symmetry, a.Arena!.Symmetry);
 
-            // Depot-specific features: 12 m boxcars, 6 m containers (single and double stacked), a 5 m high 22 x 26 warehouse shell.
-            int boxcars = 0, containers = 0, doubles = 0, warehouseWalls = 0;
+            // Depot-specific features: boxcars on the z = 0 track, 6 m containers (single and double stacked), a 4.5 m loading shed.
+            int boxcars = 0, containers = 0, doubles = 0, shedWalls = 0;
             foreach (var bx in a.CollisionBoxes)
             {
                 if (!bx.Gameplay) continue;
-                if (Near(bx.Size.X, 3f) && Near(bx.Size.Z, 12f) && Near(bx.Size.Y, 3.2f)) boxcars++;
+                if (Near(bx.Size.Z, 3f) && Near(bx.Size.Y, 3.4f) && Near(bx.Center.Z, 0f)) boxcars++;
                 if (Near(bx.Size.X, 6f) && Near(bx.Size.Z, 2.5f) && Near(bx.Size.Y, 2.6f)) containers++;
                 if (Near(bx.Size.X, 6f) && Near(bx.Size.Z, 2.5f) && Near(bx.Size.Y, 5.2f)) doubles++;
-                if (Near(bx.Size.Y, 5f) && Math.Abs(bx.Center.X) <= 11f && Math.Abs(bx.Center.Z) <= 13f) warehouseWalls++;
+                if (Near(bx.Size.Y, 4.5f) && bx.Center.X >= 12f && bx.Center.X <= 28f) shedWalls++;
             }
             Assert.Equal(3, boxcars);
-            Assert.True(containers >= 12 && doubles >= 4, containers + "/" + doubles);
-            Assert.True(warehouseWalls >= 10);
+            Assert.True(containers >= 8 && doubles >= 4, containers + "/" + doubles);
+            Assert.True(shedWalls >= 10, "shed walls " + shedWalls);
+            // No central warehouse: nothing stands on the centre crossing.
+            Assert.DoesNotContain(a.CollisionBoxes, bx => bx.Gameplay && Math.Abs(bx.Center.X) < 3f && Math.Abs(bx.Center.Z) < 3f);
             // Roof is emitted as a non-gameplay box.
-            Assert.Contains(a.CollisionBoxes, bx => !bx.Gameplay && Near(bx.Size.X, 22f) && Near(bx.Size.Z, 26f));
+            Assert.Contains(a.CollisionBoxes, bx => !bx.Gameplay && Near(bx.Size.X, 14f) && Near(bx.Size.Z, 14f));
         }
 
         private static bool Near(float a, float b) => Math.Abs(a - b) < 0.01f;
@@ -250,24 +262,15 @@ namespace Shooter.Generation.Tests
         {
             var plan = Plan();
             var sb = new StringBuilder();
-            sb.AppendLine("Depot Yard top-down (1 char = 2 m, x -40..40 left to right, z +56 top to -56 bottom; # solid >=1.65, + cover 1.0-1.65, . open, S slot t1, s slot t2)");
+            sb.AppendLine("Depot Yard top-down (1 char = 2 m, x -32..32 left to right, z +40 top to -40 bottom; # solid >=1.65, + cover 1.0-1.65, . open, S slot t1, s slot t2)");
             var slots = MapSpawnLayout.BuildBothTeams(plan);
-            for (float z = 55f; z > -56f; z -= 2f)
+            for (float z = 39f; z > -40f; z -= 2f)
             {
-                for (float x = -39f; x < 40f; x += 2f)
+                for (float x = -31f; x < 32f; x += 2f)
                 {
                     char c = '.';
                     foreach (var s in slots)
                         if (Math.Abs(s.Position.X - x) < 1.5f && Math.Abs(s.Position.Z - z) < 1.5f) c = s.Team == 1 ? 'S' : 's';
-                    float top = 0f;
-                    foreach (var bx in plan.CollisionBoxes)
-                    {
-                        if (!bx.Gameplay) continue;
-                        if (Math.Abs(x - bx.Center.X) <= bx.Size.X * 0.5f + 0.9f && Math.Abs(z - bx.Center.Z) <= bx.Size.Z * 0.5f + 0.9f
-                            && (Math.Abs(x - bx.Center.X) <= bx.Size.X * 0.5f || Math.Abs(z - bx.Center.Z) <= bx.Size.Z * 0.5f || true))
-                            top = Math.Max(top, bx.Center.Y + bx.Size.Y * 0.5f);
-                    }
-                    // Only mark when the cell centre is really inside a box (exact), otherwise fall back to nearest within 1 m footprint.
                     float exact = 0f;
                     foreach (var bx in plan.CollisionBoxes)
                     {
