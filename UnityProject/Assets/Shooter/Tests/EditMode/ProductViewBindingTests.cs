@@ -146,6 +146,20 @@ namespace Shooter.Tests
                 }
                 Assert.That(sawHeldShadowsOnly, Is.True, "Local human world weapon must also be ShadowsOnly.");
 
+                // T077 presentation kit: Team1 olive/slate (not flat blue); FP metal/polymer contrast.
+                var team1Mats = localBody[0].sharedMaterials;
+                Assert.That(team1Mats.Length, Is.GreaterThanOrEqualTo(1));
+                Color uniform = team1Mats[0].GetColor("_BaseColor");
+                Assert.That(uniform.g, Is.GreaterThan(uniform.b - 0.02f),
+                    "Ally uniform must read olive/slate, not solid flat blue.");
+                Assert.That(uniform.b, Is.LessThan(0.40f));
+                var fpWeapon = camera.transform.Find("Local FP rifle").GetComponent<MeshRenderer>();
+                Assert.That(fpWeapon.sharedMaterials.Length, Is.GreaterThanOrEqualTo(2));
+                Assert.That(fpWeapon.sharedMaterials[0].GetFloat("_Metallic"), Is.GreaterThan(0.7f));
+                Assert.That(fpWeapon.sharedMaterials[0].GetFloat("_Smoothness"), Is.GreaterThan(0.5f));
+                Assert.That(fpWeapon.sharedMaterials[1].GetFloat("_Metallic"), Is.LessThan(0.1f));
+                Assert.That(fpWeapon.sharedMaterials[1].GetFloat("_Smoothness"), Is.LessThan(0.25f));
+
                 lifecycle.Set(new ActorLifecycleState(human, 1, true, 100, new Float3(0, 0, 0), 0, 0, 0, 29, 90));
                 presentation.Sync(snap, lifecycle, null, 0, human, false, 1f / 60f, System.Array.Empty<CombatEvent>(), 11);
                 Assert.That(presentation.Actions.IsReloading(human), Is.False);

@@ -46,10 +46,17 @@ namespace Shooter.Simulation.Tests.Fx
             float muzzleStart = AnalyticFxPool.EvaluateScale(FxKind.MuzzleFlash, 0f, AnalyticFxPool.MuzzleFlashLifetime);
             float muzzleEnd = AnalyticFxPool.EvaluateScale(FxKind.MuzzleFlash, AnalyticFxPool.MuzzleFlashLifetime, AnalyticFxPool.MuzzleFlashLifetime);
             Assert.True(muzzleStart > muzzleEnd);
+            // T077: readable flash cone start scale without exceeding short lifetime budget.
+            Assert.True(muzzleStart > 0.30f);
+            Assert.True(AnalyticFxPool.MuzzleFlashLifetime <= 0.12f);
+
+            float sparkStart = AnalyticFxPool.EvaluateScale(FxKind.ImpactSpark, 0f, AnalyticFxPool.ImpactSparkLifetime);
+            Assert.True(sparkStart > 0.20f);
 
             float smokeStart = AnalyticFxPool.EvaluateScale(FxKind.SmokeProxy, 0f, AnalyticFxPool.SmokeProxyLifetime);
             float smokeEnd = AnalyticFxPool.EvaluateScale(FxKind.SmokeProxy, AnalyticFxPool.SmokeProxyLifetime, AnalyticFxPool.SmokeProxyLifetime);
             Assert.True(smokeEnd > smokeStart);
+            Assert.True(smokeEnd > 1.2f);
 
             float smokeOpacity = AnalyticFxPool.EvaluateOpacity(FxKind.SmokeProxy, 0f, AnalyticFxPool.SmokeProxyLifetime);
             Assert.True(smokeOpacity < 0.5f);

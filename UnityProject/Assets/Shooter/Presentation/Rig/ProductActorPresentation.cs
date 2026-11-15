@@ -736,35 +736,47 @@ namespace Shooter.Presentation.Rig
         }
 
         /// <summary>
-        /// Presentation-only kit accents after packaged load. Ally cyan-lean vs warm opposing coral;
-        /// skin stays believable. Does not change mesh topology, sockets, or generator recipes.
+        /// Presentation-only kit accents after packaged load. Ally cyan-leaning olive/slate vs
+        /// enemy coral-leaning desert/ochre; skin stays believable. Not solid flat blue.
+        /// Does not change mesh topology, sockets, or generator recipes.
         /// </summary>
         private static void ApplyPresentationSoldierPalette(Material[] palette, bool team1)
         {
             if (palette == null || palette.Length < 4) return;
             if (team1)
             {
-                SetLit(palette[0], new Color(0.17f, 0.34f, 0.36f), 0.04f, 0.30f); // uniform teal-cyan
-                SetLit(palette[1], new Color(0.09f, 0.16f, 0.18f), 0.22f, 0.42f); // gear / straps
-                SetLit(palette[2], new Color(0.50f, 0.36f, 0.27f), 0f, 0.38f);    // skin
-                SetLit(palette[3], new Color(0.06f, 0.20f, 0.24f), 0.55f, 0.78f); // goggles
+                // Olive/slate field kit with a cool cyan lean — readable allies without monochrome blue.
+                SetLit(palette[0], new Color(0.22f, 0.30f, 0.27f), 0.05f, 0.28f); // uniform
+                SetLit(palette[1], new Color(0.10f, 0.14f, 0.15f), 0.28f, 0.40f); // gear / straps
+                SetLit(palette[2], new Color(0.52f, 0.38f, 0.28f), 0f, 0.36f);    // skin
+                SetLit(palette[3], new Color(0.08f, 0.18f, 0.20f), 0.58f, 0.76f); // goggles
             }
             else
             {
-                SetLit(palette[0], new Color(0.46f, 0.24f, 0.18f), 0.04f, 0.28f); // uniform coral-warm
-                SetLit(palette[1], new Color(0.18f, 0.10f, 0.08f), 0.20f, 0.36f); // gear
-                SetLit(palette[2], new Color(0.48f, 0.34f, 0.26f), 0f, 0.36f);    // skin
-                SetLit(palette[3], new Color(0.22f, 0.08f, 0.06f), 0.50f, 0.72f); // goggles
+                // Desert/ochre opposing kit with coral warmth — readable enemies in sun and shade.
+                SetLit(palette[0], new Color(0.50f, 0.34f, 0.22f), 0.05f, 0.26f); // uniform
+                SetLit(palette[1], new Color(0.16f, 0.10f, 0.07f), 0.24f, 0.34f); // gear
+                SetLit(palette[2], new Color(0.50f, 0.36f, 0.26f), 0f, 0.34f);    // skin
+                SetLit(palette[3], new Color(0.20f, 0.09f, 0.06f), 0.52f, 0.70f); // goggles
             }
         }
 
-        /// <summary>Dark gun-metal + matte polymer so FP viewmodel is not flat grey plastic.</summary>
+        /// <summary>
+        /// Keep packaged weapon albedo; raise metal vs polymer metallic/smoothness so LOD0 FP
+        /// rifle reads as gun-metal and grip polymer instead of chalky grey plastic.
+        /// </summary>
         private static void ApplyPresentationWeaponMaterials(Material? metal, Material? polymer)
         {
             if (metal != null)
-                SetLit(metal, new Color(0.11f, 0.12f, 0.13f), 0.86f, 0.74f);
+            {
+                metal.SetFloat("_Metallic", 0.88f);
+                metal.SetFloat("_Smoothness", 0.72f);
+            }
             if (polymer != null)
-                SetLit(polymer, new Color(0.05f, 0.055f, 0.05f), 0.02f, 0.10f);
+            {
+                polymer.SetFloat("_Metallic", 0.02f);
+                polymer.SetFloat("_Smoothness", 0.12f);
+            }
         }
 
         private static void SetLit(Material material, Color baseColor, float metallic, float smoothness)
