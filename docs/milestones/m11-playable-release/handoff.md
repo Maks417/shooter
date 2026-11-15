@@ -32,11 +32,11 @@ Previous constants, for rollback by tuning only: reaction 15 + 0..15 ticks; acqu
 | Test-Contracts / Test-Generation | PASS 76 / 392 |
 | Test-SourceProvenance | PASS (no new assets) |
 | Fixtures, C0 lock, Game-v1 lock | PASS (35 fixture assertions) |
+| Unity EditMode / PlayMode on merged `main` `80ee5a4` (clean, includes concurrent T084) | PASS 53 / 21; this compiles the Unity-only `ProductSessionView` marker drawing, and PlayMode `ProductBotNavigationTests` on the real product map Passed. Reports: `Artifacts/m0-foundation/80ee5a4f7548a7756fa5a87f894da7b867f40ebc/tests-editmode-20261115T144218037Z-52a3e3b8/` and `tests-playmode-20261115T144333177Z-c6200d2a/` |
 
-Reports were copied to `Artifacts/m0-foundation/`, `m1-procedural-feasibility/`, `m2-combat-harness/` and `m8-runtime-composition/` under `ef96e4593494e538c7c071727656eac03aa5c033/`.
+Reports were copied to `Artifacts/m0-foundation/`, `m1-procedural-feasibility/`, `m2-combat-harness/` and `m8-runtime-composition/` under `ef96e4593494e538c7c071727656eac03aa5c033/`. The merged tree also passes Simulation 240 (pure, iteration run without a report).
 
 **Pending** (not run; never PASS without evidence):
-- Unity EditMode/PlayMode on the merged `main`, which also compiles the Unity-only `ProductSessionView` marker drawing.
 - Client and server builds, a smoke test and an installer.
 - A `SHOOTER_AI_SUMMARY` capture on real maps, including the new counters.
 - The owner's feel review: spread, rear awareness, time-to-kill, and whether the hit markers read well.
