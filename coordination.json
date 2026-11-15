@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
-  "updatedDate": "2026-11-13",
-  "integrator": "Cursor M8-M11 integrator (bc-c6e6a4b4)",
+  "updatedDate": "2026-11-15",
+  "integrator": "Codex visual implementation integrator",
   "branch": "main",
-  "baseCommit": "5fb3e30dbac31d4d587a81d4105717984eb88a83",
+  "baseCommit": "4e71bea",
   "contractVersion": "C0-v1",
-  "readyForParallelIntegration": false,
+  "readyForParallelIntegration": true,
   "packages": [
     {
       "packageId": "WP-00",
@@ -998,6 +998,60 @@
       ],
       "status": "Integrated; CLOSED_WITH_USER_WAIVER under ADR-031",
       "contractVersion": "C0-v1"
+    },
+    {
+      "packageId": "T075/surfaces",
+      "owner": "/root/surfaces",
+      "branch": "codex/vd-surfaces",
+      "baseCommit": "4e71bea",
+      "paths": [
+        "UnityProject/Assets/Shooter/Presentation/Rendering/ProductMapView.cs",
+        "UnityProject/Assets/Shooter/Presentation/Rendering/ProductSurface*",
+        "UnityProject/Assets/Shooter/Tests/EditMode/ProductSurface*"
+      ],
+      "dependencies": [
+        "T035",
+        "T074"
+      ],
+      "contractVersion": "C0-v1 / Game-v1 / SGAF-v1 unchanged",
+      "status": "Active; owner authorized implementation and agents 2026-11-15. Presentation-only, no P05 search. Integrator runs Unity after merge.",
+      "leaseExpiry": "2026-11-16T00:00:00Z"
+    },
+    {
+      "packageId": "T075/handling",
+      "owner": "/root/handling",
+      "branch": "codex/vd-handling",
+      "baseCommit": "4e71bea",
+      "paths": [
+        "UnityProject/Assets/Shooter/Presentation/Rig/ProductActorPresentation.cs",
+        "UnityProject/Assets/Shooter/Presentation/View/ProceduralViewModel.cs",
+        "UnityProject/Assets/Shooter/Presentation/View/FirstPerson*",
+        "UnityProject/Assets/Shooter/Tests/EditMode/FirstPersonHandling*"
+      ],
+      "dependencies": [
+        "T035",
+        "T074"
+      ],
+      "contractVersion": "C0-v1 / Game-v1 / SGAF-v1 unchanged",
+      "status": "Active; owner authorized implementation and agents 2026-11-15. Presentation-only, no P05 search. Integrator runs Unity after merge.",
+      "leaseExpiry": "2026-11-16T00:00:00Z"
+    },
+    {
+      "packageId": "T075/menu",
+      "owner": "/root/menu",
+      "branch": "codex/vd-menu",
+      "baseCommit": "4e71bea",
+      "paths": [
+        "UnityProject/Assets/Shooter/Presentation/Session/ProductMenuScene.cs",
+        "UnityProject/Assets/Shooter/Tests/EditMode/MenuStaging*"
+      ],
+      "dependencies": [
+        "T035",
+        "T074"
+      ],
+      "contractVersion": "C0-v1 / Game-v1 / SGAF-v1 unchanged",
+      "status": "Active; owner authorized implementation and agents 2026-11-15. Presentation-only, no P05 search. Integrator runs Unity after merge.",
+      "leaseExpiry": "2026-11-16T00:00:00Z"
     }
   ],
   "validationWave": {
