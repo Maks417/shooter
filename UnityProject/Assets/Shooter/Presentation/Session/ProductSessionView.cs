@@ -110,14 +110,14 @@ namespace Shooter.Presentation.Session
             var sun = new GameObject("Product sun").AddComponent<Light>();
             sun.transform.SetParent(transform, false);
             sun.type = LightType.Directional;
-            // Slightly lower elevation + more lateral azimuth: longer readable hard shadows on Low.
-            sun.transform.rotation = Quaternion.Euler(46f, 52f, 0f);
-            sun.color = new Color(1f, 0.93f, 0.82f, 1f);
-            sun.intensity = 1.28f;
+            // Warm key, mid elevation + lateral azimuth: longer readable hard shadows on Low (URP Hard on).
+            // Do not force Flat ambient — ProductMapView/GeneratedSky Trilight owns outdoor fill after install.
+            sun.transform.rotation = Quaternion.Euler(44f, -32f, 0f);
+            sun.color = new Color(1f, 0.94f, 0.84f, 1f);
+            sun.intensity = 1.32f;
             sun.shadows = LightShadows.Hard;
+            sun.shadowStrength = 0.85f;
             sun.cullingMask &= ~(1 << ProductMenuScene.StageLayer);
-            RenderSettings.ambientMode = AmbientMode.Flat;
-            RenderSettings.ambientLight = new Color(0.30f, 0.29f, 0.26f, 1f);
             QualitySettings.vSyncCount = 0;
             Application.targetFrameRate = -1;
             int profile = QualitySettings.GetQualityLevel();

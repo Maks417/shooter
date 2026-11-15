@@ -94,6 +94,29 @@ public sealed class GeneratedSkyTests
         Assert.True(dEnd > dStart);
         Assert.NotEqual(compoundZ.B, depotZ.B);
         Assert.True(depotH.R >= compoundH.R);
+        // Cooler compound vs warmer depot: zenith leans blue on compound, horizon leans amber on depot.
+        Assert.True(compoundZ.B > compoundZ.R);
+        Assert.True(depotH.R > depotH.B);
+        Assert.True(compoundZ.B > depotZ.B);
+        // Linear fog: mid-range Bodycam haze (~40–100 m) keeps 5v5/6v6 readable at ~50 m.
+        Assert.InRange(cStart, 30f, 45f);
+        Assert.InRange(cEnd, 90f, 110f);
+        Assert.InRange(dStart, 30f, 45f);
+        Assert.InRange(dEnd, 85f, 105f);
+        Assert.InRange(LinearFogFactor(50f, cStart, cEnd), 0.05f, 0.40f);
+        Assert.InRange(LinearFogFactor(50f, dStart, dEnd), 0.10f, 0.45f);
+        Assert.InRange(LinearFogFactor(50f, GeneratedSkyMath.DefaultFogStartMeters, GeneratedSkyMath.DefaultFogEndMeters), 0.10f, 0.40f);
+        Assert.True(GeneratedSkyMath.DefaultFogDensity >= .0065f);
+        Assert.True(dDensity >= cDensity);
+    }
+
+    private static float LinearFogFactor(float distanceMeters, float fogStartMeters, float fogEndMeters)
+    {
+        Assert.True(fogEndMeters > fogStartMeters);
+        float t = (distanceMeters - fogStartMeters) / (fogEndMeters - fogStartMeters);
+        if (t < 0f) return 0f;
+        if (t > 1f) return 1f;
+        return t;
     }
 
     private static void AssertFiniteColor(GeneratedSkyMath.Rgb color)
@@ -121,12 +144,12 @@ internal static class GeneratedSkyMath
         public Rgb(float r, float g, float b) { R = r; G = g; B = b; }
     }
 
-    public static readonly Rgb DefaultZenith = new Rgb(.26f, .42f, .58f);
-    public static readonly Rgb DefaultHorizon = new Rgb(.62f, .66f, .68f);
-    public static readonly Rgb DefaultGround = new Rgb(.28f, .25f, .20f);
-    public const float DefaultFogStartMeters = 38f;
-    public const float DefaultFogEndMeters = 120f;
-    public const float DefaultFogDensity = .0065f;
+    public static readonly Rgb DefaultZenith = new Rgb(.24f, .36f, .52f);
+    public static readonly Rgb DefaultHorizon = new Rgb(.64f, .66f, .68f);
+    public static readonly Rgb DefaultGround = new Rgb(.22f, .20f, .16f);
+    public const float DefaultFogStartMeters = 40f;
+    public const float DefaultFogEndMeters = 100f;
+    public const float DefaultFogDensity = .007f;
 
     public static void ResolveProductPalette(
         string mapId,
@@ -142,22 +165,22 @@ internal static class GeneratedSkyMath
         fogDensity = DefaultFogDensity;
         if (string.Equals(mapId, "training-compound", StringComparison.Ordinal))
         {
-            zenith = new Rgb(.24f, .40f, .56f);
-            horizon = new Rgb(.58f, .64f, .68f);
-            ground = new Rgb(.22f, .24f, .22f);
-            fogStartMeters = 36f;
-            fogEndMeters = 115f;
+            zenith = new Rgb(.20f, .34f, .50f);
+            horizon = new Rgb(.58f, .64f, .70f);
+            ground = new Rgb(.18f, .20f, .17f);
+            fogStartMeters = 40f;
+            fogEndMeters = 100f;
             fogDensity = .0068f;
             return;
         }
         if (string.Equals(mapId, "depot-yard", StringComparison.Ordinal))
         {
-            zenith = new Rgb(.32f, .42f, .50f);
-            horizon = new Rgb(.68f, .62f, .54f);
-            ground = new Rgb(.32f, .26f, .18f);
-            fogStartMeters = 30f;
-            fogEndMeters = 100f;
-            fogDensity = .0078f;
+            zenith = new Rgb(.30f, .38f, .44f);
+            horizon = new Rgb(.72f, .62f, .50f);
+            ground = new Rgb(.34f, .26f, .16f);
+            fogStartMeters = 36f;
+            fogEndMeters = 92f;
+            fogDensity = .008f;
             return;
         }
         zenith = DefaultZenith;
@@ -210,7 +233,7 @@ internal static class GeneratedReflectionProbeMath
     public const float DefaultIntensity = 1f;
     public const int DefaultResolution = 128;
     public const float ProductMapBoxSizeMeters = 48f;
-    public const float ProductMapIntensity = 1.18f;
+    public const float ProductMapIntensity = 1.12f;
 
     public static void Validate(float boxSizeMeters, float intensity, int resolution)
     {

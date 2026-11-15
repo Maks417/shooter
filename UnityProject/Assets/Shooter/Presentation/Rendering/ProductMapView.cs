@@ -76,6 +76,9 @@ namespace Shooter.Presentation.Rendering
             Place("Product ground", new Vector3(0f, -0.05f, 0f), new Vector3(half * 2f, 0.1f, half * 2f), groundSurface, unitBox!);
 
             // Packaged combined solids mesh already encodes gameplay boxes; one renderer, identity transform.
+            // Limitation (VD5/T076): single concrete material for the whole combined mesh — cover volumes
+            // baked into solids cannot get distinct metal without mesh/material splits. Presentation-only
+            // metal unit boxes from cover metadata/heuristics overlay those volumes so steel props still read.
             var solidsGo = new GameObject("Product map solids") { layer = 11 };
             solidsGo.transform.SetParent(transform, false);
             solidsGo.AddComponent<MeshFilter>().sharedMesh = mapSolids;
@@ -88,8 +91,11 @@ namespace Shooter.Presentation.Rendering
                     coverCount++;
             }
 
+            // Place discrete metal cover props; skip set tracks overlays already placed (not coverIds).
+            var placedMetalCovers = new HashSet<ulong>();
             if (metadataBytes != null && metadataBytes.Length > 0)
-                PlaceMetadataCovers(metadataBytes, coverIds);
+                PlaceMetadataCovers(metadataBytes, coverIds, placedMetalCovers);
+            PlaceCoverOverlaysFromBoxes(boxes, coverIds, placedMetalCovers);
 
             // Atmosphere after materials/meshes so Trilight + one-shot probe sample the installed surfaces.
             GeneratedSkyMath.ResolveProductPalette(mapId, out var zenith, out var horizon, out var groundRgb, out float fogStart, out float fogEnd, out float fogDensity);
@@ -116,9 +122,9 @@ namespace Shooter.Presentation.Rendering
                 unitBox = Own(UploadMesh(MapVisualClosure.DecodeMapMesh(visuals, MapVisualClosure.UnitBoxMeshPath), "Product unit box"));
                 // Combined map solids retain metric UVs, so .5 repeats/m matches the two-metre recipe.
                 // The scaled unit-box ground uses 0..1 face UVs: 128 repeats across 256 metres.
-                // Scalar metallic/smoothness only apply when packaged mask planes are absent; keep recipe identity unchanged.
-                concrete = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[0], "Numeric concrete", 0.02f, 0.22f, .5f);
-                cover = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[1], "Numeric cover", 0.08f, 0.36f, 4f);
+                // Scalar metallic/smoothness only apply when packaged mask planes are absent; T075 masks own response.
+                concrete = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[0], "Numeric concrete", 0.02f, 0.20f, .5f);
+                cover = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[1], "Numeric cover", 0.55f, 0.42f, 4f);
                 ground = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[2], "Numeric soil ground", 0f, 0.06f, CompoundPlan.MapHalfExtent);
                 asphalt = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[3], "Numeric asphalt", 0.04f, 0.14f, CompoundPlan.MapHalfExtent);
                 visualsBound = true;
@@ -145,7 +151,7 @@ namespace Shooter.Presentation.Rendering
             ReleaseBoundVisuals();
         }
 
-        private void PlaceMetadataCovers(byte[] metadataBytes, HashSet<ulong> already)
+        private void PlaceMetadataCovers(byte[] metadataBytes, HashSet<ulong> countedCoverIds, HashSet<ulong> alreadyPlaced)
         {
             try
             {
@@ -156,7 +162,7 @@ namespace Shooter.Presentation.Rendering
                 {
                     var c = covers[i].Object;
                     ulong id = ulong.Parse(c["stableId"].String, CultureInfo.InvariantCulture);
-                    if (already.Contains(id)) continue;
+                    if (alreadyPlaced.Contains(id)) continue;
                     var center = c["centerMeters"].Array;
                     var size = c["sizeMeters"].Array;
                     Place(
@@ -165,13 +171,35 @@ namespace Shooter.Presentation.Rendering
                         new Vector3((float)size[0].Number, (float)size[1].Number, (float)size[2].Number),
                         cover!,
                         unitBox!);
-                    solidCount++;
-                    coverCount++;
+                    alreadyPlaced.Add(id);
+                    // Overlays do not change SolidCount. CoverCount for ids already tallied from boxes stays put.
+                    if (!countedCoverIds.Contains(id))
+                        coverCount++;
                 }
             }
             catch (Exception error)
             {
                 throw new InvalidOperationException("Map cover metadata unreadable for product visuals: " + error.Message);
+            }
+        }
+
+        private void PlaceCoverOverlaysFromBoxes(
+            IReadOnlyList<CollisionBox> boxes,
+            HashSet<ulong> coverIds,
+            HashSet<ulong> alreadyPlaced)
+        {
+            for (int i = 0; i < boxes.Count; i++)
+            {
+                CollisionBox box = boxes[i];
+                if (!(coverIds.Contains(box.StableId) || LooksLikeCover(box))) continue;
+                if (alreadyPlaced.Contains(box.StableId)) continue;
+                Place(
+                    "Product cover " + box.StableId.ToString(CultureInfo.InvariantCulture),
+                    new Vector3(box.Center.X, box.Center.Y, box.Center.Z),
+                    new Vector3(box.Size.X, box.Size.Y, box.Size.Z),
+                    cover!,
+                    unitBox!);
+                alreadyPlaced.Add(box.StableId);
             }
         }
 

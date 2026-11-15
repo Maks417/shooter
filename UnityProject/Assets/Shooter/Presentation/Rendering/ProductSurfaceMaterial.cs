@@ -29,7 +29,7 @@ namespace Shooter.Presentation.Rendering
                 // The frozen normal plane is XYZ with A=255. URP's desktop RGorAG decoder
                 // reads X=R*A and Y=G, so preserve XYZ and opaque alpha (also valid for RGB decoding).
                 material.SetTexture("_BumpMap", Upload(normal, label + " normal", false, own, true));
-                material.SetFloat("_BumpScale", 1f);
+                material.SetFloat("_BumpScale", 1.05f);
                 material.EnableKeyword("_NORMALMAP");
             }
             if (mask != null)
@@ -37,10 +37,11 @@ namespace Shooter.Presentation.Rendering
                 Texture2D texture = Upload(mask, label + " metallic smoothness occlusion", true, own);
                 // Lit samples metallic from R, smoothness from A, and occlusion from G.
                 // Both properties share one linear upload; every mip retains spatial detail.
+                // Slight under-unity smoothness keeps packaged response grounded under stronger daylight.
                 material.SetTexture("_MetallicGlossMap", texture);
                 material.SetTexture("_OcclusionMap", texture);
                 material.SetFloat("_Metallic", 1f);
-                material.SetFloat("_Smoothness", 1f);
+                material.SetFloat("_Smoothness", 0.88f);
                 material.SetFloat("_OcclusionStrength", 1f);
                 material.EnableKeyword("_METALLICSPECGLOSSMAP");
                 material.EnableKeyword("_OCCLUSIONMAP");
