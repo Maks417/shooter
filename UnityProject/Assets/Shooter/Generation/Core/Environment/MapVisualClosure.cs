@@ -107,7 +107,7 @@ namespace Shooter.Generation.Environment
 
         public static IReadOnlyList<string> RequiredPaths(string profile)
         {
-            var list = new List<string>(32)
+            var list = new List<string>(48)
             {
                 MapSolidsMeshPath,
                 UnitBoxMeshPath,

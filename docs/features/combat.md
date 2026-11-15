@@ -6,11 +6,11 @@ Owner WP-05, paths `Simulation/Motor`, `Simulation/Combat`, with presentation ad
 
 ## Player flow and fixed-tick rules
 
-Spawn only after world/collision ready → look/move/stance → equip rifle or pistol → aim/fire/reload → impacts/damage/death → objective complete or restart. Mouse look samples frame input, commands carry aim at tick. Raw mouse delta, sensitivity, invert Y, rebindable controls and pause are baseline. Prevent double button edges when multiple simulation ticks consume one display sample.
+Spawn only after world/collision ready → look/move/stance → equip rifle, pistol, knife or grenade → aim/fire/reload (or cook/throw) → impacts/damage/death → objective complete or restart. Mouse look samples frame input, commands carry aim at tick. Raw mouse delta, sensitivity, invert Y, rebindable controls and pause are baseline. Prevent double button edges when multiple simulation ticks consume one display sample.
 
 Kinematic capsule sweeps resolve horizontal movement then gravity/grounding with bounded iterative sliding (max four iterations), slope limit 45 degrees, step 0.25 m initial tuning. Check ceiling before uncrouching; crouch preserves feet. Jump only on grounded accepted edge; no stamina or prone until base movement is stable. Do not use visual head bob as physical eye height. Capsule resize checks overlaps. Ground platform support is limited to static world in slice.
 
-Default tuning is data, not real weapon ballistics: rifle 600 rounds/min, 30-round magazine, 90 reserve, 2.4 s reload; pistol 360 rounds/min semi-auto, 15-round magazine, 45 reserve, 1.8 s reload. 60 Hz tick maps rifle interval to 6 ticks, pistol to 10. Durations round up to ticks. Reload transfers ammunition at completion; switching/canceling before completion transfers none. No fire while reloading/equipping/dead. Trigger held repeats only for automatic mode; semi-auto requires distinct press edge.
+Default tuning is data, not real weapon ballistics: rifle 600 rounds/min, 30-round magazine, 90 reserve, 2.4 s reload; pistol 360 rounds/min semi-auto, 15-round magazine, 45 reserve, 1.8 s reload; knife melee 1.8 m / 55 damage / 24-tick interval (no ammo); one grenade per life with 120-tick fuse cook/throw and 5 m blast falloff (ADR-057). 60 Hz tick maps rifle interval to 6 ticks, pistol to 10. Durations round up to ticks. Reload transfers ammunition at completion; switching/canceling before completion transfers none (cook cancel restores the unthrown grenade). No fire while reloading/equipping/dead. Trigger held repeats only for automatic mode; semi-auto and knife require distinct press edges; grenade cooks while held and throws on release.
 
 Baseline uses authoritative hitscan to 300 m. Seeded spread samples a specified disk/cone distribution using shot-index stream, bounded recoil updates authoritative aim offset, while view kick is separate. Eye ray selects aim point; muzzle ray to that point determines obstruction and actual hit. If muzzle starts inside geometry, reject/block rather than firing through a wall. Third-person weapon sockets are visual; canonical muzzle is computed from gameplay pose and weapon dimensions. No client-supplied impact location accepted as truth.
 
@@ -18,7 +18,7 @@ Surface ray hits stop at nearest valid collider; hit-region capsule query checks
 
 ## Ballistics later phase
 
-Projectile interface supports origin, velocity, gravity, drag ID, spawn tick and seed. After hitscan gate, add swept-segment projectiles with bounded substeps and lifetime; no tunneling via transform movement. Server resolves final hits. Penetration needs canonical thickness/material data and energy loss tests; do not approximate from texture roughness. Grenades, explosions and suppression are later features with capped overlap queries and damage falloff tests.
+Projectile interface supports origin, velocity, gravity, drag ID, spawn tick and seed. After hitscan gate, add swept-segment projectiles with bounded substeps and lifetime; no tunneling via transform movement. Server resolves final hits. Penetration needs canonical thickness/material data and energy loss tests; do not approximate from texture roughness. One cook/throw frag grenade per life is authoritative (ProjectileSpawned + fuse blast, friendly damage still zero). Extra throwable types, penetration and suppression remain later features.
 
 ## Feedback
 

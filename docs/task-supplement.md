@@ -189,3 +189,19 @@ Frozen: C0/Game-v1 contracts and fixtures, weapon damage/rate, map packages, too
 Deliver: deterministic layered cue bank (rifle/pistol shot, impact, damage-taken, footstep, reload start/complete, death, UI, ambient loop); sample mixer with distance atten, stereo pan, HF rolloff; router mapping for reload/death/damage and weapon id; pure tests; FIX10 named device hearing remains Pending.
 
 Rollback: revert T086. Analytic-only mixer is the prior baseline.
+
+## T087 — Knife (slot 3) and grenade (slot 4) (2026-11-15)
+
+Owner-directed combat expansion so humans and bots can still fight when rifle/pistol ammo is empty. Sole integrator. Decision: [ADR-057](decisions.md#adr-057--accepted-knife-and-grenade-loadout-slots-t087).
+
+Scope:
+- C0 prediction schema 2 / `Require.Slot` 0..3 / `WeaponAction.Cooking`, fixtures + `contract-lock.json`.
+- `Simulation/Combat` knife melee + cook/throw grenade projectile/blast; four-slot loadout in the combat harness.
+- Game-v1 additive `Slot3`/`Slot4` bindings; local input / HUD / presentation; AI empty-ammo knife + single grenade.
+- Procedural knife/grenade meshes packaged in map visuals (`LoadoutPropGeometry`); package identities change → native republish for player review.
+
+Frozen otherwise: toolchain, Game-v1 settings schema 2 layout, rifle/pistol `geometry.weapon` 1.0.1 recipes, friendly-damage policy, online wire migration (deferred).
+
+Validation: Contracts/Simulation/Game/Generation/Maps pure suites, Unity EditMode where touched, provenance, docs/fixtures/manifest. Manual gameplay and native republish evidence remain Pending in the M11 handoff.
+
+Rollback: restore prior contract-lock/fixture/prediction-schema-1 pair and two-slot combat kit together.

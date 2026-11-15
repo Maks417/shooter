@@ -1351,25 +1351,77 @@ namespace Shooter.Simulation.AI
                 || board.State == AiState.Reposition || board.State == AiState.SeekCover || board.State == AiState.Reload;
             bool sprint = travelState && !visible && !threatLook.HasValue && moving && my >= SprintMinForward;
 
-            // 4. Trigger discipline: bursts only when aligned, never while sprinting or reloading.
-            bool canFire = visible && board.MagAmmo > 0 && tick >= board.ReactionReadyTick &&
-                board.State != AiState.Reload && !sprint;
+            // 4. Loadout: keep guns when they still have ammo; otherwise knife / one grenade (T087).
+            UpdateLoadout(board, visible);
+            byte slot = board.DesiredSlot;
+
+            // 5. Trigger discipline: bursts only when aligned, never while sprinting or reloading.
+            bool canFire = visible && tick >= board.ReactionReadyTick && board.State != AiState.Reload && !sprint;
             bool fire = false;
-            if (canFire)
+            if (slot == 3)
+            {
+                // Cook briefly then release; one grenade per life.
+                if (board.GrenadeRemaining > 0 && board.MagAmmo > 0 && visible
+                    && board.TargetDistance >= AiTuning.GrenadeMinMeters
+                    && board.TargetDistance <= AiTuning.GrenadeMaxMeters)
+                {
+                    if (!board.CookingGrenade)
+                    {
+                        board.CookingGrenade = true;
+                        board.GrenadeCookStartTick = tick;
+                        buttons |= InputButtons.FirePressed | InputButtons.FireHeld;
+                        fire = true;
+                    }
+                    else if (unchecked(tick - board.GrenadeCookStartTick) < AiTuning.GrenadeCookTicks)
+                    {
+                        buttons |= InputButtons.FireHeld;
+                        fire = true;
+                    }
+                    else
+                    {
+                        // Release this tick to throw; mark spent so we don't re-cook an empty slot.
+                        board.CookingGrenade = false;
+                        board.GrenadeRemaining = 0;
+                        fire = true;
+                    }
+                }
+                else
+                {
+                    board.CookingGrenade = false;
+                    FireDiscipline.Cease(board, tick);
+                }
+            }
+            else if (slot == 2)
+            {
+                // Knife: press-fire when inside melee range (ammo never depletes).
+                if (canFire && board.TargetDistance <= AiTuning.KnifeEngageMeters)
+                {
+                    float tol = AimController.FireTolerance(board.TargetDistance);
+                    fire = board.AimOffsetRadians <= tol * 2f;
+                    if (fire)
+                    {
+                        buttons |= InputButtons.FirePressed | InputButtons.FireHeld;
+                        counters.ShotsRequested++;
+                    }
+                }
+                else FireDiscipline.Cease(board, tick);
+            }
+            else if (canFire && board.MagAmmo > 0)
             {
                 float tol = AimController.FireTolerance(board.TargetDistance);
                 fire = FireDiscipline.Update(board, tick, board.TargetDistance,
                     board.AimOffsetRadians <= tol, board.AimOffsetRadians <= tol * 2.5f);
                 if (fire && board.BurstStartTick == tick) counters.BurstsStarted++;
+                if (fire)
+                {
+                    buttons |= InputButtons.FireHeld | InputButtons.FirePressed;
+                    counters.ShotsRequested++;
+                }
             }
             else FireDiscipline.Cease(board, tick);
-            if (fire)
-            {
-                buttons |= InputButtons.FireHeld | InputButtons.FirePressed;
-                counters.ShotsRequested++;
-            }
-            if (board.State == AiState.Reload) buttons |= InputButtons.ReloadPressed;
-            if (engaging && holdStill && range == EngageRange.Long) buttons |= InputButtons.AimHeld;
+
+            if (board.State == AiState.Reload && slot < 2) buttons |= InputButtons.ReloadPressed;
+            if (engaging && holdStill && range == EngageRange.Long && slot < 2) buttons |= InputButtons.AimHeld;
 
             board.SlideIntent = false;
             if (sprint)
@@ -1381,7 +1433,7 @@ namespace Shooter.Simulation.AI
 
             if (crouch) buttons |= InputButtons.CrouchHeld;
 
-            // 5. Jump (edge) when stuck: only on the tick UpdateStuck scheduled it.
+            // 6. Jump (edge) when stuck: only on the tick UpdateStuck scheduled it.
             bool firingOrReloading = (buttons & (InputButtons.FireHeld | InputButtons.FirePressed | InputButtons.ReloadPressed)) != 0;
             if (board.JumpPending)
             {
@@ -1389,7 +1441,7 @@ namespace Shooter.Simulation.AI
                 board.JumpPending = false;
             }
 
-            // 6. Occasional slide when sprinting toward cover / repositioning with a long straight leg left.
+            // 7. Occasional slide when sprinting toward cover / repositioning with a long straight leg left.
             if (sprint && (buttons & InputButtons.JumpPressed) == 0
                 && (board.State == AiState.SeekCover || board.State == AiState.Reposition)
                 && board.SprintTicks >= SlideMinSprintTicks
@@ -1400,7 +1452,40 @@ namespace Shooter.Simulation.AI
                 board.SlideIntent = true;
                 board.NextSlideTick = tick + SlideBotCooldownBaseTicks + (uint)(board.Self.Value % 5) * SlideBotCooldownSpreadTicks;
             }
-            return new InputCommand(board.Self, simulationTick, sequence, mx, my, board.Yaw, board.Pitch, buttons, 0);
+            return new InputCommand(board.Self, simulationTick, sequence, mx, my, board.Yaw, board.Pitch, buttons, slot);
+        }
+
+        private static void UpdateLoadout(AiBlackboard board, bool visible)
+        {
+            if (board.DesiredSlot == 0 && board.MagAmmo <= 0 && board.ReserveAmmo <= 0)
+                board.RifleEmpty = true;
+            if (board.DesiredSlot == 1 && board.MagAmmo <= 0 && board.ReserveAmmo <= 0)
+                board.PistolEmpty = true;
+
+            bool gunsDry = board.RifleEmpty && board.PistolEmpty;
+            if (!gunsDry)
+            {
+                if (board.DesiredSlot == 0 && board.RifleEmpty) board.DesiredSlot = 1;
+                else if (board.DesiredSlot > 1) board.DesiredSlot = board.RifleEmpty ? (byte)1 : (byte)0;
+                return;
+            }
+
+            // Guns empty: knife up close, otherwise spend the single grenade once if the geometry is right.
+            if (visible && board.TargetDistance <= AiTuning.KnifeEngageMeters)
+            {
+                board.DesiredSlot = 2;
+                board.CookingGrenade = false;
+                return;
+            }
+            if (board.GrenadeRemaining > 0 && visible
+                && board.TargetDistance >= AiTuning.GrenadeMinMeters
+                && board.TargetDistance <= AiTuning.GrenadeMaxMeters)
+            {
+                board.DesiredSlot = 3;
+                return;
+            }
+            board.DesiredSlot = 2;
+            board.CookingGrenade = false;
         }
 
         /// <summary>

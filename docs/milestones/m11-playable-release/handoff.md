@@ -1,5 +1,16 @@
 # M11 — Playable build and acceptance — handoff and gate record
 
+## T087 — Knife (slot 3) and grenade (slot 4) (ADR-057)
+
+2026-11-15. Owner asked for knife on Digit3 and grenade on Digit4 so players (and bots) can fight when guns are dry; one grenade per life until respawn; full cook/throw arc.
+
+**Implemented (software):**
+- [ADR-057](../../decisions.md#adr-057--accepted-knife-and-grenade-loadout-slots-t087): C0 `PredictionSchema` 2, `Require.Slot` 0..3, `WeaponAction.Cooking`, four `WeaponState` records; fixtures + `contract-lock.json` refreshed.
+- Knife melee (1.8 m / 55 / sprint 24 / sprint fire) and cook/throw grenade (fuse 120, blast 5 m, self-damage yes, friendly 0) in `WeaponSimulator` / `GrenadeSimulator` / combat harness.
+- Game-v1 additive `Slot3`/`Slot4`; local input + HUD; AI empty-ammo knife / single grenade; procedural `LoadoutPropGeometry` packaged in map visuals.
+
+**Pending:** native republish (package identities change), clean Client/Server/installer identity, Unity EditMode/PlayMode on the locked editor, interactive two-map playtest. Does not close FIX/SET/REL/P05.
+
 ## ADR-058 — Minimap self marker and temporary gunfire reveal
 
 2026-11-15. Owner playtest: minimap did not show the local player; enemies who are shooting should appear briefly. [ADR-058](../../decisions.md#adr-058--accepted-minimap-self-marker-and-temporary-gunfire-reveal).

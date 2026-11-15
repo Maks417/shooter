@@ -20,7 +20,9 @@ Scope update 2026-11-13: this page and its frozen fixtures retain the historical
 | Hip/ADS vertical FOV | 80/60 deg; user hip70–100; ADS keeps ratio60/80; blend0.15s |
 | Rifle fire/reload/equip | auto interval6 ticks, reload144 ticks, equip24 ticks;30mag+90reserve |
 | Pistol fire/reload/equip | semi interval10 ticks, reload108 ticks, equip18 ticks;15mag+45reserve |
-| Health / damage |100; rifle30/pistol25; head×2,torso×1,limbs×0.75 |
+| Knife (slot 2 / Digit3) | melee interval24 ticks, equip12; no ammo consume; range1.8 m; damage55; sprint fire allowed (ADR-057) |
+| Grenade (slot 3 / Digit4) | one per life (1/0); cook on FirePressed, throw on release; fuse120 ticks; throw18 m/s; blast5 m max100; self-damage yes, friendly0 (ADR-057) |
+| Health / damage |100; rifle30/pistol25/knife55/grenade blast; head×2,torso×1,limbs×0.75 |
 | Damage rounding | floor(base×multiplier+0.5), clamp remaining health≥0 |
 | Spread cone half-angle hip/ADS | rifle1.0/0.15 deg; pistol1.5/0.3 deg |
 | Authoritative recoil impulse | rifle pitch+0.35 deg,yaw uniform±0.1 deg; pistol+0.55 deg,yaw±0.15 deg |
@@ -29,7 +31,7 @@ Scope update 2026-11-13: this page and its frozen fixtures retain the historical
 
 Recoil angular velocities in full prediction state are zero in v1, reserved for a future versioned spring model. Visual kick may use springs, but does not alter these offsets. Raw input yaw/pitch plus decayed authoritative offset defines aim; apply spread once. Uniform solid-angle cone: u,v from independent RNG samples in [0,1), cosθ=1−u(1−cosα), φ=2πv, construct basis from aim/up with a deterministic alternate axis near vertical. Spread/recoil use named shot substreams, not shared global RNG. No movement spread/bloom in v1.
 
-Gameplay muzzle default is eye-relative (x=+0.18,y=−0.15,z=+0.45)m in yaw/pitch aim frame. It is independent of optional visual handedness, FOV and body LOD. Canonical weapon definition refines muzzle/socket transforms only through a versioned test update. Eye ray picks target to300m; muzzle→target ray cannot pass through static cover. Enemy/friendly bodies block bullets; friendly damage is zero. Melee, armor, penetration and grenades deferred.
+Gameplay muzzle default is eye-relative (x=+0.18,y=−0.15,z=+0.45)m in yaw/pitch aim frame. It is independent of optional visual handedness, FOV and body LOD. Canonical weapon definition refines muzzle/socket transforms only through a versioned test update. Eye ray picks target to300m; muzzle→target ray cannot pass through static cover. Enemy/friendly bodies block bullets; friendly damage is zero. Knife melee and one cook/throw grenade per life are in the four-slot loadout (ADR-057). Armor, penetration and extra throwable types remain deferred.
 
 ## Mode: Compound Clear v1
 
