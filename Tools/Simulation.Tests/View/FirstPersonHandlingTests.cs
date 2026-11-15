@@ -76,12 +76,43 @@ namespace Shooter.Simulation.Tests.View
             Assert.Equal(0f, handling.PositionOffset(1, -1, false).X);
             Assert.True(handling.PositionOffset(0, .5f, true).Y < -.05f);
             Assert.InRange(Math.Abs(handling.PositionOffset(0, 1, true).Y), 0f, 1e-7f);
+            // Slot change starts a holster of the visible rifle — mesh must not swap yet.
             handling.Step(default, 1, 0f, false);
-            Assert.True(handling.PositionOffset(0, -1, true).Y < -.1f);
-            handling.Step(default, 1, 0f, false);
+            Assert.Equal(0, handling.VisibleWeaponSlot);
+            Assert.Equal(1, handling.DesiredWeaponSlot);
+            Assert.True(handling.IsSwitching);
+            handling.Step(default, 1, FirstPersonHandling.HolsterSeconds, false);
+            Assert.Equal(1, handling.VisibleWeaponSlot);
             Assert.Equal(0f, handling.EquipBlend);
-            handling.Step(default, 1, .22f, false);
+            Assert.True(handling.PositionOffset(0, -1, false).Y < -.1f);
+            handling.Step(default, 1, FirstPersonHandling.DrawSeconds + 0.02f, false);
+            Assert.Equal(1f, handling.EquipBlend);
             Assert.Equal(0f, handling.PositionOffset(0, -1, true).Y);
+            Assert.False(handling.IsSwitching);
+        }
+
+        [Fact]
+        public void WeaponSwitchHolstersThenDrawsAndGatesAdsBlend()
+        {
+            var handling = new FirstPersonHandling();
+            handling.Reset(0);
+            Assert.Equal(1f, FirstPersonHandling.AdsPresentationBlend(1f, 1f));
+            Assert.Equal(0f, FirstPersonHandling.AdsPresentationBlend(1f, 0f));
+            handling.Step(default, 1, FirstPersonHandling.HolsterSeconds * 0.5f, false);
+            Assert.Equal(0, handling.VisibleWeaponSlot);
+            Assert.True(handling.EquipBlend > 0f && handling.EquipBlend < 1f);
+            Assert.True(handling.RotationDegrees(0, -1, false).X > 5f);
+            handling.Step(default, 1, FirstPersonHandling.HolsterSeconds, false);
+            Assert.Equal(1, handling.VisibleWeaponSlot);
+            // Partial draw so the next switch must holster a raised pistol before swapping.
+            handling.Step(default, 1, FirstPersonHandling.DrawSeconds * 0.55f, false);
+            Assert.True(handling.EquipBlend > 0.4f);
+            handling.Step(default, 2, FirstPersonHandling.HolsterSeconds * 0.4f, false);
+            Assert.Equal(1, handling.VisibleWeaponSlot);
+            Assert.Equal(2, handling.DesiredWeaponSlot);
+            handling.Step(default, 2, FirstPersonHandling.HolsterSeconds + FirstPersonHandling.DrawSeconds, false);
+            Assert.Equal(2, handling.VisibleWeaponSlot);
+            Assert.Equal(1f, handling.EquipBlend);
         }
 
         [Fact]
@@ -232,6 +263,26 @@ namespace Shooter.Simulation.Tests.View
                         FirstPersonHitFeedback.DamageFlashStrength(FirstPersonHitFeedback.DamageFlashSeconds, true));
             Assert.Equal(0f, FirstPersonHitFeedback.DamageShakeMeters(0.2f, reducedMotion: true, reducedFlash: false));
             Assert.True(FirstPersonHitFeedback.DamageShakeMeters(0.2f, false, false) > 0f);
+        }
+
+        [Fact]
+        public void AdsOpticScopesRifleHidesHipReticleAndBlendsFov()
+        {
+            Assert.True(AdsOpticVisual.UsesScopedOptic(ProductAuthorityActionView.RifleSlot));
+            Assert.True(AdsOpticVisual.UsesIronSightOptic(ProductAuthorityActionView.PistolSlot));
+            Assert.False(AdsOpticVisual.UsesScopedOptic(ProductAuthorityActionView.PistolSlot));
+            Assert.False(AdsOpticVisual.HideHipReticle(0f));
+            Assert.True(AdsOpticVisual.HideHipReticle(1f));
+            Assert.Equal(0f, AdsOpticVisual.ScopeMaskOpacity(0f));
+            Assert.True(AdsOpticVisual.ScopeMaskOpacity(1f) > 0.95f);
+            Assert.True(AdsOpticVisual.HideRifleViewModel(ProductAuthorityActionView.RifleSlot, 1f));
+            Assert.False(AdsOpticVisual.HideRifleViewModel(ProductAuthorityActionView.PistolSlot, 1f));
+            Assert.True(AdsOpticVisual.AdsFieldOfViewDegrees(80f, ProductAuthorityActionView.RifleSlot) <
+                        AdsOpticVisual.AdsFieldOfViewDegrees(80f, ProductAuthorityActionView.PistolSlot));
+            Assert.Equal(80f, AdsOpticVisual.BlendedFieldOfViewDegrees(80f, 42f, 0f));
+            Assert.Equal(42f, AdsOpticVisual.BlendedFieldOfViewDegrees(80f, 42f, 1f));
+            Assert.InRange(AdsOpticVisual.LensRadiusPixels(1280f, 720f), 200f, 400f);
+            Assert.True(AdsOpticVisual.MilDotCount(300f) >= 2);
         }
     }
 }

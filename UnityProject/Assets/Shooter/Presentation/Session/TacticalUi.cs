@@ -238,6 +238,109 @@ namespace Shooter.Presentation.Session
             }
         }
 
+        private static Texture2D? scopeMaskTexture;
+
+        /// <summary>
+        /// Rifle ADS optic: circular lens hole, soft black housing, mil-dot reticle.
+        /// Procedural texture + fills only — no imported sprites.
+        /// </summary>
+        public static void AdsScope(float width, float height, float opacity)
+        {
+            if (opacity <= 0.01f || Event.current.type != EventType.Repaint) return;
+            float a = Mathf.Clamp01(opacity);
+            float cx = width * 0.5f, cy = height * 0.5f;
+            float radius = View.AdsOpticVisual.LensRadiusPixels(width, height);
+            Texture2D mask = EnsureScopeMask();
+            Color prior = GUI.color;
+            // Stretch mask so the clear lens sits at screen center with a thick housing ring.
+            float pad = radius * 1.55f;
+            GUI.color = new Color(1f, 1f, 1f, a);
+            GUI.DrawTexture(new Rect(cx - pad, cy - pad, pad * 2f, pad * 2f), mask, ScaleMode.StretchToFill);
+            // Cover the corners outside the stretched mask square.
+            float left = cx - pad, right = cx + pad, top = cy - pad, bottom = cy + pad;
+            Color black = new Color(0.01f, 0.012f, 0.015f, a);
+            if (left > 0f) Fill(new Rect(0, 0, left, height), black);
+            if (right < width) Fill(new Rect(right, 0, width - right, height), black);
+            if (top > 0f) Fill(new Rect(left, 0, pad * 2f, top), black);
+            if (bottom < height) Fill(new Rect(left, bottom, pad * 2f, height - bottom), black);
+            GUI.color = prior;
+            DrawMilDotReticle(cx, cy, radius, a);
+        }
+
+        /// <summary>Pistol ADS: soft edge vignette only so iron sights stay readable.</summary>
+        public static void AdsIronVignette(float width, float height, float opacity)
+        {
+            if (opacity <= 0.01f) return;
+            EdgeVignette(width, height, opacity, new Color(0.02f, 0.025f, 0.03f, 1f));
+        }
+
+        private static void DrawMilDotReticle(float cx, float cy, float radius, float opacity)
+        {
+            float spacing = View.AdsOpticVisual.MilDotSpacingPixels(radius);
+            int dots = View.AdsOpticVisual.MilDotCount(radius);
+            float arm = spacing * dots + 2f;
+            float gap = 3.5f;
+            Color ink = new Color(0.04f, 0.045f, 0.05f, 0.92f * opacity);
+            Color soft = new Color(0.02f, 0.025f, 0.03f, 0.55f * opacity);
+            // Cross arms with center gap (scope picture stays clear at the aim point).
+            Fill(new Rect(cx - arm, cy - 0.6f, arm - gap, 1.2f), ink);
+            Fill(new Rect(cx + gap, cy - 0.6f, arm - gap, 1.2f), ink);
+            Fill(new Rect(cx - 0.6f, cy - arm, 1.2f, arm - gap), ink);
+            Fill(new Rect(cx - 0.6f, cy + gap, 1.2f, arm - gap), ink);
+            // Tiny center pip.
+            Fill(new Rect(cx - 1.1f, cy - 1.1f, 2.2f, 2.2f), ink);
+            for (int i = 1; i <= dots; i++)
+            {
+                float d = i * spacing;
+                float s = i == dots ? 2.4f : 1.7f;
+                Fill(new Rect(cx - d - s * 0.5f, cy - s * 0.5f, s, s), soft);
+                Fill(new Rect(cx + d - s * 0.5f, cy - s * 0.5f, s, s), soft);
+                Fill(new Rect(cx - s * 0.5f, cy - d - s * 0.5f, s, s), soft);
+                Fill(new Rect(cx - s * 0.5f, cy + d - s * 0.5f, s, s), soft);
+            }
+        }
+
+        private static Texture2D EnsureScopeMask()
+        {
+            if (scopeMaskTexture != null) return scopeMaskTexture;
+            const int size = 256;
+            var tex = new Texture2D(size, size, TextureFormat.RGBA32, false, true)
+            {
+                name = "AdsScopeMask",
+                wrapMode = TextureWrapMode.Clamp,
+                filterMode = FilterMode.Bilinear,
+                hideFlags = HideFlags.HideAndDontSave
+            };
+            var pixels = new Color32[size * size];
+            float mid = (size - 1) * 0.5f;
+            // Clear lens inside ~0.62R; soft black housing to the square edge.
+            float clearR = mid * 0.62f;
+            float softStart = mid * 0.58f;
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float dx = x - mid, dy = y - mid;
+                    float r = Mathf.Sqrt(dx * dx + dy * dy);
+                    byte a;
+                    if (r <= softStart) a = 0;
+                    else if (r >= mid) a = 255;
+                    else
+                    {
+                        float u = (r - softStart) / (mid - softStart);
+                        a = (byte)Mathf.Clamp(Mathf.RoundToInt(u * u * 255f), 0, 255);
+                    }
+                    // Slight warmth on the housing rim so the tube does not read as flat GUI black.
+                    byte v = r > clearR ? (byte)8 : (byte)0;
+                    pixels[y * size + x] = new Color32(v, v, (byte)(v + 2), a);
+                }
+            }
+            tex.SetPixels32(pixels);
+            tex.Apply(false, true);
+            scopeMaskTexture = tex;
+            return tex;
+        }
+
         public void Section(Rect r, string title)
         {
             Label(r, title, 12, Accent);

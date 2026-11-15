@@ -123,7 +123,8 @@ namespace Shooter.Presentation.Session
             camera = new GameObject("Product camera").AddComponent<Camera>();
             camera.transform.SetParent(transform, false);
             camera.fieldOfView = hud.Settings.HipFov;
-            adsFovDegrees = hud.Settings.HipFov * (60f / 80f);
+            adsFovDegrees = AdsOpticVisual.AdsFieldOfViewDegrees(
+                hud.Settings.HipFov, ProductAuthorityActionView.RifleSlot);
             camera.nearClipPlane = 0.05f;
             camera.farClipPlane = 400f;
             camera.clearFlags = CameraClearFlags.SolidColor;
@@ -218,7 +219,8 @@ namespace Shooter.Presentation.Session
                 qualityName,
                 settings.ReducedCameraMotion,
                 settings.Contrast));
-            adsFovDegrees = settings.HipFovDegrees * (60f / 80f);
+            adsFovDegrees = AdsOpticVisual.AdsFieldOfViewDegrees(
+                settings.HipFovDegrees, ProductAuthorityActionView.RifleSlot);
             input.Sensitivity = settings.MouseSensitivity;
             input.InvertY = settings.InvertY;
             input.ApplyBindings(settings.Bindings);
@@ -240,6 +242,20 @@ namespace Shooter.Presentation.Session
         }
 
         private bool IsAiming() => input.AimHeld && cursorLocked;
+
+        private void ApplyPresentationFov(float adsPresentationBlend, byte weaponSlot)
+        {
+            if (camera == null) return;
+            float hip = hud.Settings.HipFov;
+            if (reducedCameraMotion)
+            {
+                camera.fieldOfView = hip;
+                return;
+            }
+            float ads = AdsOpticVisual.AdsFieldOfViewDegrees(hip, weaponSlot);
+            adsFovDegrees = ads;
+            camera.fieldOfView = AdsOpticVisual.BlendedFieldOfViewDegrees(hip, ads, adsPresentationBlend);
+        }
 
         /// <summary>
         /// Bind verified packaged solids/cover metadata and actor visual payloads into MeshRenderers.
@@ -376,7 +392,8 @@ namespace Shooter.Presentation.Session
                     else if (!human.Alive)
                         cameraBob.Reset();
 
-                    float adsBlend = aimHeld ? 1f : 0f;
+                    // Prefer last Sync's equip-gated ADS so FOV/bob track the optic raise, not a binary click.
+                    float adsBlend = actors != null ? actors.LocalAdsPresentationBlend : (aimHeld ? 1f : 0f);
                     Float3 bobLocal = cameraBob.LocalOffsetMeters(adsBlend, reducedCameraMotion, human.Alive);
                     float roll = cameraBob.RollDegrees(adsBlend, reducedCameraMotion, human.Alive);
                     float shake = FirstPersonHitFeedback.DamageShakeMeters(
@@ -393,11 +410,7 @@ namespace Shooter.Presentation.Session
                     camera.transform.rotation = rotation;
                     var basePos = new Vector3(human.Feet.X, human.Feet.Y + eye, human.Feet.Z);
                     camera.transform.position = basePos + rotation * new Vector3(bobLocal.X, bobLocal.Y, bobLocal.Z);
-                    float hip = hud.Settings.HipFov;
-                    float ads = adsFovDegrees;
-                    // Reduced camera motion: keep hip FOV (cosmetic ADS zoom only when preference is off).
-                    float targetFov = (!reducedCameraMotion && aimHeld) ? ads : hip;
-                    camera.fieldOfView = targetFov;
+                    ApplyPresentationFov(adsBlend, actors != null ? actors.LocalVisibleWeaponSlot : human.ActiveWeaponSlot);
                 }
             }
             else input.CaptureFrame(false);
@@ -432,6 +445,10 @@ namespace Shooter.Presentation.Session
                         movementReader,
                         reducedMotion: reducedCameraMotion);
                     visualReview?.SetContext(boundMapId, QualitySettings.names[QualitySettings.GetQualityLevel()], session.CompletedTick);
+                    // Refresh FOV after Sync so this frame's optic raise matches the viewmodel blend.
+                    if (camera != null && session.Lifecycle != null
+                        && session.Lifecycle.TryGetActorState(session.HumanEntityId, out var fovHuman) && fovHuman.Alive)
+                        ApplyPresentationFov(actors.LocalAdsPresentationBlend, actors.LocalVisibleWeaponSlot);
                 }
 
                 PumpProductAudio(hasListener ? listenerFeet : default, combatEvents);
@@ -809,8 +826,14 @@ namespace Shooter.Presentation.Session
                 DrawScoreFeed(a);
                 DrawScoreRibbon(a);
                 float cx = combatUi.Width * .5f, cy = combatUi.Height * .5f;
-                // Analytic center reticle with a small center gap. ADS uses the weapon sight instead.
-                if (!input.AimHeld)
+                float adsPresent = actors != null ? actors.LocalAdsPresentationBlend : (input.AimHeld ? 1f : 0f);
+                byte opticSlot = actors != null ? actors.LocalVisibleWeaponSlot : human.ActiveWeaponSlot;
+                if (AdsOpticVisual.UsesScopedOptic(opticSlot))
+                    TacticalUi.AdsScope(combatUi.Width, combatUi.Height, AdsOpticVisual.ScopeMaskOpacity(adsPresent));
+                else if (AdsOpticVisual.UsesIronSightOptic(opticSlot))
+                    TacticalUi.AdsIronVignette(combatUi.Width, combatUi.Height, AdsOpticVisual.IronVignetteOpacity(adsPresent));
+                // Hip reticle yields once the optic/irons take the aim picture.
+                if (!AdsOpticVisual.HideHipReticle(adsPresent))
                 {
                     const float arm = 5f, gap = 3.5f;
                     TacticalUi.ReticleArm(new Rect(cx - gap - arm, cy - 0.5f, arm, 1));

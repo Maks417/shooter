@@ -9,7 +9,19 @@
 - FP/world bind of body/mag/cycle; mag remove/seat from reload phase; cycle open on `ShotAccepted` (~90 ms close); reduced-motion scales.
 - Analytic FX: denser muzzle (dual lobe), `ShellCasing`, `Tracer`; `ReducedFlash` hides muzzle+tracer.
 
-**Pending:** native republish (weapon visual package identities change), clean Client/Server/installer identity, Unity EditMode/PlayMode on the locked editor, named player visual review. Does not close FIX/SET/REL/P05/VD exits.
+**Checks (software):** Generation 398/398, Simulation 263/263, Maps 56/56, feature-content-lock / docs / fixtures PASS on the working tree. Incidental `SoldierMotion` death-collapse local `right` shadowing rename (compile fix) included so Generation rebuilds cleanly.
+
+**Native content:** `Compile-GameContent.ps1 -Native` PASS — eight packages; training-compound / depot-yard roots updated with magazine/cycle meshes; nativeUnityNavBake PASS. Evidence under `Artifacts/m8-runtime-composition/.../compile-gamecontent-...`.
+
+**Builds:** Client PASS `Artifacts/m0-foundation/be6293b5c82041bdd397b6533c28af7b04a02493/build-client-20261115T162134243Z-c53f2c95`; Server PASS `.../build-server-20261115T162539462Z-5db920b3`. Package-Release with `-RequireNativeNav` **rejected dirty workspace** (`sourceDirty=true`) — needs a clean committed HEAD before ZIP/installer. Unity EditMode/PlayMode and named player visual review remain Pending. Does not close FIX/SET/REL/P05/VD exits.
+
+### T088 follow-up — weapon switch holster/draw
+
+Cosmetic FP switch is two-phase: holster the visible mesh (~0.14 s), swap at the tuck, draw the incoming weapon (~0.20 s). Mid-switch keeps the outgoing gun on screen with an outward hip arc (position + pitch/yaw/roll); `AdvanceEquip` consumes leftover dt across holster→draw in one Step so hitch/test frames finish ready. ADS presentation blend gates with equip so the tucked gun cannot snap onto the sight ray. Reduced-motion shortens both phases and scales the arc. Pure `FirstPersonHandling` tests cover holster→draw, mid-draw re-switch, and ADS gating.
+
+### T088 follow-up — ADS optic presentation
+
+Rifle ADS now raises a procedural circular scope mask (soft housing + mil-dot reticle) with tighter blended FOV; the near-field rifle mesh hides at full optic so the lens stays clean. Pistol ADS keeps iron sights with a soft edge vignette and milder zoom. Hip reticle yields once optic strength passes the hide threshold. `AdsOpticVisual` pure tests cover mask/FOV/slot gating. Sight-socket alignment and combat aim rules unchanged. Named player optic review remains Pending.
 
 ## ADR-060 — Local tightness (stamina)
 

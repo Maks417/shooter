@@ -48,11 +48,14 @@ namespace Shooter.Tests
             Assert.That(handling.PositionOffset(0, .5f, true).Y, Is.LessThan(-.05f));
             Assert.That(handling.PositionOffset(0, 1, true).Y, Is.EqualTo(0f).Within(1e-7f));
             handling.Step(default, 1, 0f, false);
-            Assert.That(handling.PositionOffset(0, -1, true).Y, Is.LessThan(-.1f));
-            handling.Step(default, 1, 0f, false);
+            Assert.That(handling.VisibleWeaponSlot, Is.EqualTo(0));
+            handling.Step(default, 1, FirstPersonHandling.HolsterSeconds, false);
+            Assert.That(handling.VisibleWeaponSlot, Is.EqualTo(1));
             Assert.That(handling.EquipBlend, Is.EqualTo(0f));
-            handling.Step(default, 1, .22f, false);
+            Assert.That(handling.PositionOffset(0, -1, true).Y, Is.LessThan(-.1f));
+            handling.Step(default, 1, FirstPersonHandling.DrawSeconds + 0.02f, false);
             Assert.That(handling.PositionOffset(0, -1, true).Y, Is.EqualTo(0f));
+            Assert.That(handling.EquipBlend, Is.EqualTo(1f));
         }
 
         [Test]

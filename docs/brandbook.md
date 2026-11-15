@@ -4,7 +4,7 @@
 
 Replace the flat weapon/glove/sleeve surfaces with original numeric coated-metal, stippled-polymer, woven-cloth and glove-grain PBR triplets at a 100 mm tile scale. Keep the coated metal restrained, cloth/gloves rough, and polymer distinct from both. Sleeve taper gains shallow folds and a slight bend. Hip-held equipment uses a modest cant toward the center of the view, fading fully out for accurate ADS. No new camera shake, weapon mechanics or third-person anatomy is introduced. [ADR-053](decisions.md#adr-053--accepted-procedural-near-field-finish-triplets-and-hip-composition-t084), [evidence](milestones/m11-playable-release/handoff.md). Named visual acceptance and reference-machine cost remain separate Pending checks.
 
-**T088 update — 2026-11-15:** `geometry.weapon` 1.0.2 adds richer rifle/pistol silhouette detail, detachable magazine and bolt/slide cycle meshes driven from authority reload/shot events, plus denser analytic muzzle/casing/tracer FX ([ADR-061](decisions.md#adr-061--accepted-geometryweapon-102-mechanical-parts-and-denser-fire-fx-t088)). Articulated fingers and named VD3 acceptance remain open.
+**T088 update — 2026-11-15:** `geometry.weapon` 1.0.2 adds richer rifle/pistol silhouette detail, detachable magazine and bolt/slide cycle meshes driven from authority reload/shot events, plus denser analytic muzzle/casing/tracer FX ([ADR-061](decisions.md#adr-061--accepted-geometryweapon-102-mechanical-parts-and-denser-fire-fx-t088)). Rifle ADS uses a procedural circular scope mask with mil-dot reticle and blended FOV; pistol ADS keeps iron sights with a soft vignette. Articulated fingers and named VD3 acceptance remain open.
 
 ## T083 — First-person presence
 
