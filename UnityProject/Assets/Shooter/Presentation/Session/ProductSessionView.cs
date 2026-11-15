@@ -315,6 +315,7 @@ namespace Shooter.Presentation.Session
                 }
                 acceptsGameplayInput = session.Phase == GameMatchPhase.Playing
                     && session.PauseState == SessionPauseState.Running
+                    && session.PreMatchTicksRemaining <= 0 // pre-match countdown: no movement/fire/look
                     && human.Alive
                     && cursorLocked
                     && Application.isFocused;

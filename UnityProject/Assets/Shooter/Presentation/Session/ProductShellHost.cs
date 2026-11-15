@@ -323,6 +323,7 @@ namespace Shooter.Presentation.Session
                 return;
             }
 
+            session.PreMatchCountdownTicks = SessionDefaults.PreMatchCountdownTicks;
             var started = session.Start();
             if (!started.Succeeded)
             {
@@ -848,6 +849,19 @@ namespace Shooter.Presentation.Session
             float enemyBar = (w * .5f - 6) * Mathf.Clamp01(snap.Team2Kills / 150f);
             TacticalUi.Fill(new Rect(mid - allyBar, y + h - 2, allyBar, 1), TacticalUi.Ally);
             TacticalUi.Fill(new Rect(mid, y + h - 2, enemyBar, 1), TacticalUi.Enemy);
+
+            // Pre-match freeze banner, then FIGHT! for the first second of the live clock.
+            int remaining = session != null ? session.PreMatchTicksRemaining : 0;
+            string? banner = null;
+            if (remaining > 0)
+                banner = "MATCH STARTS IN " + ((remaining + 59) / 60).ToString();
+            else if (session != null && session.PreMatchCountdownTicks > 0 && snap.ActiveTicksElapsed < 60)
+                banner = "FIGHT!";
+            if (banner != null)
+            {
+                float bw = 640, bh = 84;
+                ui.Label(new Rect((ui.Width - bw) * .5f, ui.Height * .30f, bw, bh), banner, 56, remaining > 0 ? TacticalUi.Text : TacticalUi.Accent, TextAnchor.MiddleCenter);
+            }
         }
 
         private void DrawResults(float s)
