@@ -143,6 +143,87 @@ namespace Shooter.Simulation.Tests.Motor
             return state;
         }
 
+        private static MotorBodyState WithTightness(MotorBodyState state, float tightness) => new MotorBodyState(
+            state.Feet, state.Velocity, state.AimYaw, state.AimPitch, state.Stance, state.CapsuleHeight,
+            state.Grounded, state.GroundSurfaceId, state.GroundNormal, state.LastGroundedTick,
+            state.JumpConsumedSequence, state.LocomotionDistanceMeters, state.SprintActive,
+            state.SlideTicksRemaining, state.SlideCooldownTicksRemaining, state.OverlapUnresolved, tightness);
+
+        [Fact]
+        public void SpawnStartsAtFullTightness()
+        {
+            Assert.Equal(MotorConfig.TightnessMax, Spawn().Tightness, 5);
+        }
+
+        [Fact]
+        public void ContinuousSprintEmptiesTightnessInEightSeconds()
+        {
+            var motor = new KinematicMotor();
+            var world = new StaticPlaneWorld();
+            var state = Spawn();
+            // 480 drains of TickSeconds/8 empty the bar; the 480th tick still sprints then clamps to 0.
+            for (uint t = 1; t <= 480; t++)
+            {
+                state = motor.Step(state, Cmd(t, my: 1, buttons: InputButtons.SprintHeld), t, world);
+                Assert.True(state.SprintActive, $"expected sprint at tick {t}, tightness={state.Tightness}");
+            }
+            Assert.Equal(0f, state.Tightness, 3);
+            state = motor.Step(state, Cmd(481, my: 1, buttons: InputButtons.SprintHeld), 481, world);
+            Assert.False(state.SprintActive);
+            Assert.Equal(0f, state.Tightness, 3); // holding Sprint while empty does not regen
+            // Release Sprint and walk: regen + decel to walk speed.
+            for (uint t = 482; t <= 520; t++)
+                state = motor.Step(state, Cmd(t, my: 1), t, world);
+            Assert.False(state.SprintActive);
+            Assert.True(state.Tightness > 0f);
+            Assert.InRange(MotorMath.Length(MotorMath.Horizontal(state.Velocity)), motor.Config.WalkSpeed - 0.05f, motor.Config.WalkSpeed + 0.05f);
+        }
+
+        [Fact]
+        public void WalkRegenFillsTightnessInFiveSecondsFromEmpty()
+        {
+            var motor = new KinematicMotor();
+            var world = new StaticPlaneWorld();
+            var state = WithTightness(Spawn(), 0f);
+            for (uint t = 1; t <= 300; t++)
+                state = motor.Step(state, Cmd(t, my: 1), t, world);
+            Assert.Equal(MotorConfig.TightnessMax, state.Tightness, 3);
+        }
+
+        [Fact]
+        public void JumpCostsTightnessAndRefusesWhenInsufficient()
+        {
+            var motor = new KinematicMotor();
+            var world = new StaticPlaneWorld();
+            var state = motor.Step(Spawn(), Cmd(1, buttons: InputButtons.JumpPressed), 1, world);
+            Assert.True(state.Velocity.Y > 0f);
+            Assert.Equal(MotorConfig.TightnessMax - MotorConfig.TightnessJumpCost, state.Tightness, 4);
+
+            // Land, then try jump with too little tightness (walk regen still applies on the refused tick).
+            state = WithTightness(Spawn(), MotorConfig.TightnessJumpCost - 0.01f);
+            var refused = motor.Step(state, Cmd(2, buttons: InputButtons.JumpPressed), 2, world);
+            Assert.True(refused.Velocity.Y <= 0f);
+            Assert.InRange(refused.Tightness, state.Tightness, state.Tightness + MotorConfig.TightnessRegenPerTick + 1e-4f);
+        }
+
+        [Fact]
+        public void SlideCostsTightnessAndRefusesWhenInsufficient()
+        {
+            var motor = new KinematicMotor();
+            var world = new StaticPlaneWorld();
+            var sprint = Sprint(motor, world);
+            float before = sprint.Tightness;
+            var slid = motor.Step(sprint, Cmd(21, my: 1, buttons: InputButtons.SprintHeld), 21, world, slidePressed: true);
+            Assert.True(slid.SlideActive);
+            Assert.Equal(before - MotorConfig.TightnessSlideCost, slid.Tightness, 4);
+
+            sprint = WithTightness(Sprint(motor, world), MotorConfig.TightnessSlideCost - 0.01f);
+            var refused = motor.Step(sprint, Cmd(21, my: 1, buttons: InputButtons.SprintHeld), 21, world, slidePressed: true);
+            Assert.False(refused.SlideActive);
+            // Refused slide still sprints, so tightness drains by the sprint tick cost only.
+            Assert.Equal(sprint.Tightness - MotorConfig.TightnessSprintDrainPerTick, refused.Tightness, 4);
+        }
+
         [Fact]
         public void SlideRequiresSprintMomentumAndDecaysWithoutSteeringOrRepeatBoost()
         {

@@ -22,6 +22,8 @@ namespace Shooter.Simulation.Motor
         public uint SlideTicksRemaining { get; }
         public uint SlideCooldownTicksRemaining { get; }
         public bool SlideActive => SlideTicksRemaining > 0;
+        /// <summary>Authoritative 0..1 tightness (ADR-060). Spawn/respawn starts at <see cref="MotorConfig.TightnessMax"/>.</summary>
+        public float Tightness { get; }
         /// <summary>True when overlap recovery could not resolve a penetration (invalid spawn); the motor held its previous feet with zero velocity.</summary>
         public bool OverlapUnresolved { get; }
 
@@ -29,13 +31,15 @@ namespace Shooter.Simulation.Motor
             Float3 feet, Float3 velocity, float aimYaw, float aimPitch, Stance stance, float capsuleHeight,
             bool grounded, SurfaceId groundSurfaceId, Float3 groundNormal, uint lastGroundedTick,
             uint jumpConsumedSequence, float locomotionDistanceMeters, bool sprintActive,
-            uint slideTicksRemaining = 0, uint slideCooldownTicksRemaining = 0, bool overlapUnresolved = false)
+            uint slideTicksRemaining = 0, uint slideCooldownTicksRemaining = 0, bool overlapUnresolved = false,
+            float tightness = MotorConfig.TightnessMax)
         {
             Feet = feet; Velocity = velocity; AimYaw = aimYaw; AimPitch = aimPitch; Stance = stance; CapsuleHeight = capsuleHeight;
             Grounded = grounded; GroundSurfaceId = groundSurfaceId; GroundNormal = groundNormal; LastGroundedTick = lastGroundedTick;
             JumpConsumedSequence = jumpConsumedSequence; LocomotionDistanceMeters = locomotionDistanceMeters; SprintActive = sprintActive;
             SlideTicksRemaining = slideTicksRemaining; SlideCooldownTicksRemaining = slideCooldownTicksRemaining;
             OverlapUnresolved = overlapUnresolved;
+            Tightness = tightness < 0f ? 0f : tightness > MotorConfig.TightnessMax ? MotorConfig.TightnessMax : tightness;
         }
     }
 
@@ -63,14 +67,18 @@ namespace Shooter.Simulation.Motor
                 return new MotorBodyState(
                     previous.Feet, default, command.AimYaw, command.AimPitch, previous.Stance, previous.CapsuleHeight,
                     previous.Grounded, previous.GroundSurfaceId, previous.GroundNormal, previous.LastGroundedTick,
-                    previous.JumpConsumedSequence, previous.LocomotionDistanceMeters, false, 0, previous.SlideCooldownTicksRemaining, true);
+                    previous.JumpConsumedSequence, previous.LocomotionDistanceMeters, false, 0, previous.SlideCooldownTicksRemaining, true,
+                    previous.Tightness);
             }
             if (recoveredFeet.X != previous.Feet.X || recoveredFeet.Y != previous.Feet.Y || recoveredFeet.Z != previous.Feet.Z)
                 previous = new MotorBodyState(
                     recoveredFeet, recoveredVelocity, previous.AimYaw, previous.AimPitch, previous.Stance, previous.CapsuleHeight,
                     previous.Grounded, previous.GroundSurfaceId, previous.GroundNormal, previous.LastGroundedTick,
                     previous.JumpConsumedSequence, previous.LocomotionDistanceMeters, previous.SprintActive,
-                    previous.SlideTicksRemaining, previous.SlideCooldownTicksRemaining);
+                    previous.SlideTicksRemaining, previous.SlideCooldownTicksRemaining, previous.OverlapUnresolved,
+                    previous.Tightness);
+
+            float tightness = previous.Tightness;
 
             bool wantCrouch = (command.Buttons & InputButtons.CrouchHeld) != 0;
             bool wantAim = (command.Buttons & InputButtons.AimHeld) != 0;
@@ -85,11 +93,13 @@ namespace Shooter.Simulation.Motor
             bool startSlide = slidePressed && previous.SlideCooldownTicksRemaining == 0
                 && slideTicks == 0 && previous.Grounded && previous.SprintActive && wantSprint
                 && !wantsJump && command.MoveY > 0f
+                && tightness >= MotorConfig.TightnessSlideCost
                 && MotorMath.Length(MotorMath.Horizontal(previous.Velocity)) >= MotorConfig.SlideMinEntrySpeed;
             if (startSlide)
             {
                 slideTicks = MotorConfig.SlideDurationTicks;
                 cooldown = MotorConfig.SlideCooldownTicks;
+                tightness -= MotorConfig.TightnessSlideCost;
             }
             bool sliding = slideTicks > 0;
             if (sliding) wantCrouch = true;
@@ -110,14 +120,18 @@ namespace Shooter.Simulation.Motor
             uint jumpConsumed = previous.JumpConsumedSequence;
             bool jumpEdge = (command.Buttons & InputButtons.JumpPressed) != 0
                 && previous.Grounded
-                && command.Sequence != previous.JumpConsumedSequence;
+                && command.Sequence != previous.JumpConsumedSequence
+                && tightness >= MotorConfig.TightnessJumpCost;
             if (jumpEdge)
             {
                 velocity = new Float3(velocity.X, config.JumpSpeed, velocity.Z);
                 jumpConsumed = command.Sequence;
+                tightness -= MotorConfig.TightnessJumpCost;
             }
 
-            float speed = stance == Stance.Crouching ? config.CrouchSpeed : wantSprint ? config.SprintSpeed : config.WalkSpeed;
+            // Sprint only while tightness remains after this tick's jump/slide costs.
+            bool canSprint = wantSprint && tightness > 0f;
+            float speed = stance == Stance.Crouching ? config.CrouchSpeed : canSprint ? config.SprintSpeed : config.WalkSpeed;
             if (wantAim) speed *= config.AdsSpeedMultiplier;
 
             Float3 wish = MotorMath.Add(
@@ -194,11 +208,20 @@ namespace Shooter.Simulation.Motor
                 if (!grounded || MotorMath.Length(MotorMath.Horizontal(velocity)) < 0.1f) slideTicks = 0;
             }
 
+            bool sprintApplied = canSprint && !sliding && stance == Stance.Standing && grounded;
+            if (sprintApplied)
+                tightness -= MotorConfig.TightnessSprintDrainPerTick;
+            // Regen only while not holding Sprint (owner: restore by walking). Exhausted Shift stays empty until release.
+            else if (grounded && !sliding && !wantSprint)
+                tightness += MotorConfig.TightnessRegenPerTick;
+            if (tightness < 0f) tightness = 0f;
+            else if (tightness > MotorConfig.TightnessMax) tightness = MotorConfig.TightnessMax;
+
             float moved = MotorMath.Length(MotorMath.Horizontal(MotorMath.Sub(feet, previous.Feet)));
             return new MotorBodyState(
                 feet, velocity, yaw, pitch, stance, height, grounded, groundId, groundNormal,
                 lastGrounded, jumpConsumed, previous.LocomotionDistanceMeters + moved,
-                wantSprint && !sliding && stance == Stance.Standing && grounded, slideTicks, cooldown);
+                sprintApplied, slideTicks, cooldown, false, tightness);
         }
 
         /// <summary>

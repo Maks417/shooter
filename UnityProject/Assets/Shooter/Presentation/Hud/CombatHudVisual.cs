@@ -16,6 +16,9 @@ namespace Shooter.Presentation.Hud
         public const float MaxHealth = 100f;
         public const float HealthBarHeight = 5f;
         public const int HealthSegments = 5;
+        /// <summary>ADR-060 tightness bar drawn above the health track.</summary>
+        public const float TightnessBarHeight = 3f;
+        public const float TightnessBarGap = 3f;
         public const string KillFeedSeparator = "  >  ";
         /// <summary>T085 incoming-damage direction marker: hold time, ring slots and radius around the reticle.</summary>
         public const float DamageIndicatorSeconds = 1.4f;
@@ -121,6 +124,14 @@ namespace Shooter.Presentation.Hud
             if (health <= 0) return 0f;
             if (health >= MaxHealth) return 1f;
             return health / MaxHealth;
+        }
+
+        /// <summary>Clamped tightness fill width for a continuous bar of <paramref name="barWidth"/>.</summary>
+        public static float TightnessFillWidth(float tightness01, float barWidth)
+        {
+            if (barWidth <= 0f || tightness01 <= 0f) return 0f;
+            if (tightness01 >= 1f) return barWidth;
+            return barWidth * tightness01;
         }
 
         /// <summary>Filled width for health segment index (0..HealthSegments-1), left-to-right.</summary>

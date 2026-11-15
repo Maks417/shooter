@@ -10,6 +10,14 @@ namespace Shooter.Simulation.Motor
         public const float SlideEntrySpeed = 6.5f;
         public const float SlideMinEntrySpeed = 4.5f;
         public const float SlideDeceleration = 4f;
+        // ADR-060 local tightness (stamina); C0 gameplay.v1 defaults stay frozen.
+        public const float TightnessMax = 1f;
+        public const float TightnessSprintSeconds = 8f;
+        public const float TightnessRegenSeconds = 5f;
+        public const float TightnessJumpCost = 0.25f;
+        public const float TightnessSlideCost = 0.40f;
+        public static float TightnessSprintDrainPerTick => MotorMath.TickSeconds / TightnessSprintSeconds;
+        public static float TightnessRegenPerTick => MotorMath.TickSeconds / TightnessRegenSeconds;
         public float StandingHeight { get; }
         public float CrouchHeight { get; }
         public float Radius { get; }

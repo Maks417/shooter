@@ -14,6 +14,7 @@ Scope update 2026-11-13: this page and its frozen fixtures retain the historical
 | Walk/sprint/crouch speed | 3.5/5.5/2.0 m/s; ADS speed multiplier0.65 |
 | Ground accel/decel; air accel | 20/25m/s²; 5m/s² |
 | Jump initial upward velocity | 5 m/s, grounded edge only; no coyote/buffer grace in slice |
+| Tightness (stamina, ADR-060) | pool 0..1; sprint empty in 8 s; walk regen full in 5 s when Sprint not held; jump −0.25; slide entry −0.40; empty = walk only |
 | Slope/step/skin/ground snap | 45 deg /0.25m /0.02m /0.08m; snap only falling/grounded, never jump ascent |
 | Slide iterations / overlap recovery | max 4 /max 4; unresolved overlap stops and reports invalid spawn |
 | Crouch physical transition | immediate validated resize at tick; eye/view blend0.12s cosmetic |

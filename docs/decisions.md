@@ -669,3 +669,18 @@ Decision:
 - Scoreboard/results sort: Score desc → Kills desc → Deaths asc → ParticipantId asc.
 
 Validation: `game-contract-lock.json` refreeze; `Tools/Test-Game.ps1`; Simulation HUD/scoreboard tests; docs/manifest. Interactive badge readability remains Pending. Rollback restores the prior Game-v1 lock/fixture pair and prior K/D-only UI.
+
+## ADR-060 — Accepted: local authoritative tightness (stamina)
+
+Date 2026-11-15; owner reported infinite sprint on held Shift and asked for a tightness scale that gates run, slide and jump, restoring fully in 5 s while walking. Sole integrator owns bounded motor / local movement view / HUD / tests / docs. No C0/N1/Game-v1 freeze, online prediction, settings binding or acceptance waiver.
+
+Context: `docs/features/combat.md` deferred stamina until movement was stable. ADR-039 slide already proved the offline pattern: authority state on the motor, readout on `LocalMovementView`, C0 snapshots unchanged. Sprint remained uncapped.
+
+Decision:
+- Add authoritative `MotorBodyState.Tightness` in `[0, 1]` (spawn/respawn = 1). Recipe constants on `MotorConfig` (ADR-039 style): continuous sprint empties in **8 s**; walk regen fills in **5 s**; jump costs **0.25**; slide entry costs **0.40**. Slide cooldown from ADR-039 stays independent.
+- Gate in `KinematicMotor.Step`: sprint speed/`SprintActive` only while tightness &gt; 0 after this tick’s jump/slide costs; jump and slide entry require their flat costs; empty pool → walk only.
+- Regen when grounded, not sliding, and Sprint is not held (walk/idle/crouch-walk). Holding exhausted Shift stays at empty until release. No regen mid-air or during an active slide.
+- Expose `LocalMovementView.Tightness01` for a compact combat HUD bar. Do not extend `EntitySnapshot` / `InputCommand` / settings schema.
+- Bots share the motor gate automatically; no AI blackboard change required for correctness.
+
+Validation: pure motor drain/regen/cost/exhaust cases in `Tools/Test-Simulation.ps1`; docs/manifest. Interactive feel and installer identity remain Pending. Rollback removes the motor field/gates and HUD bar.

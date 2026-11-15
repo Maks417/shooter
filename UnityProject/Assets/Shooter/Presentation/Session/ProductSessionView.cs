@@ -969,6 +969,21 @@ namespace Shooter.Presentation.Session
                 if (fill > 1.5f)
                     TacticalUi.Fill(new Rect(sx, barY, Mathf.Min(1.5f, fill), barH), new Color(1f, 1f, 1f, .16f * pulse));
             }
+
+            // ADR-060 tightness bar above HP; authority fraction via LocalMovementView (C0 unchanged).
+            float tightness01 = 1f;
+            if (session != null && session.TryGetMovementView(session.HumanEntityId, out var movement))
+                tightness01 = movement.Tightness01;
+            float tightH = CombatHudVisual.TightnessBarHeight;
+            float tightY = barY - CombatHudVisual.TightnessBarGap - tightH;
+            TacticalUi.Fill(new Rect(hx, tightY, barW, tightH), new Color(.05f, .07f, .08f, .7f));
+            float tightFill = CombatHudVisual.TightnessFillWidth(tightness01, barW);
+            if (tightFill > 0f)
+            {
+                var tightInk = tightness01 <= 0.25f ? TacticalUi.Accent : TacticalUi.Ally;
+                TacticalUi.Fill(new Rect(hx, tightY, tightFill, tightH), tightInk);
+            }
+            combatUi.Label(new Rect(hx + barW + 4, tightY - 2, 28, 10), "STA", 8, TacticalUi.Muted, TextAnchor.MiddleLeft);
         }
 
         private static void DrawAllyMarker(float px, float py, float aimYaw)
