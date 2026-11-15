@@ -52,6 +52,24 @@ namespace Shooter.Tests
                 {
                     var card = root.transform.Find("Verified map card " + map);
                     Assert.That(card.GetComponent<MeshRenderer>().sharedMaterial.GetTexture("_BaseMap"), Is.Not.Null);
+                    var mesh = card.GetComponent<MeshFilter>().sharedMesh;
+                    Assert.That(card.GetComponent<MeshRenderer>().sharedMaterials.Length, Is.EqualTo(mesh.subMeshCount),
+                        "Every packaged material role must survive into the operation overview.");
+                    var camera = root.GetComponentsInChildren<Camera>().Single(c => c.targetTexture == scene.MapCard(map));
+                    Bounds bounds = mesh.bounds;
+                    float occupancy = 0f;
+                    for (int x = -1; x <= 1; x += 2)
+                        for (int y = -1; y <= 1; y += 2)
+                            for (int z = -1; z <= 1; z += 2)
+                            {
+                                Vector3 corner = card.TransformPoint(bounds.center + Vector3.Scale(bounds.extents, new Vector3(x, y, z)));
+                                Vector3 screen = camera.WorldToViewportPoint(corner);
+                                Assert.That(screen.x, Is.InRange(.04f, .96f));
+                                Assert.That(screen.y, Is.InRange(.04f, .96f));
+                                Assert.That(screen.z, Is.InRange(camera.nearClipPlane, camera.farClipPlane));
+                                occupancy = Mathf.Max(occupancy, Mathf.Abs(screen.x - .5f), Mathf.Abs(screen.y - .5f));
+                            }
+                    Assert.That(occupancy, Is.GreaterThan(.40f), "Compact maps must fill the card, not disappear on a historical-size plate.");
                     Assert.That(root.transform.Find("Map card ground " + map), Is.Not.Null);
                     Assert.That(root.transform.Find("Map card plate " + map), Is.Not.Null);
                     Assert.That(root.transform.Find("Map card rim N " + map), Is.Not.Null);

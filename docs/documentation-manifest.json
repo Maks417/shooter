@@ -7,7 +7,7 @@
     "backlog.md": "efb80b5d11a962a92931f690c4fadeb6b82dbe756a511e944b475830ddc53851",
     "benchmark-fixtures.md": "9621b2604c5341d2c96817ae9b4873f8936556bcf5a1cee256d6a3ecefe90cff",
     "bootstrap-runbook.md": "8a39acb447988a238e7861507d39642d798fae229fc92b7d33190a9d5afacab7",
-    "brandbook.md": "8c77846672fd4f4a2720271000649695da61d8e67b322cf154b9b0d89df18ad6",
+    "brandbook.md": "138c4e6f25db16a413efcec542300e63017ce9c346301711416f0e56a35e47ba",
     "build-ci.md": "2420f46a603224cd40dfd5608c02c0fa2e8e1ef98d8911b1d86e8248a28ed04a",
     "content-format.md": "02d2250a5993df1646b8262318cb535fe8d1f7f075bb65aef0fb4f899ec87561",
     "content-schemas/box-collision.schema.json": "17277a6adf06647ded09757975b580646a4eab572c754c148c0142e8f803d5d6",
@@ -103,7 +103,7 @@
     "milestones/m10-maps-shell/validation-acceptance.md": "f59ee4e95e39af44a274700951d39dc61da91b06052a7fabe894edc44e21f6d3",
     "milestones/m11-playable-release/agent-assignments.md": "fcd6a3e9bdf5b669f012363d3976a06aec86e0d0262b706e2b3a9963796c3285",
     "milestones/m11-playable-release/contracts-integration.md": "3fdcc05ea9c42a86de5ba1f272acd7eff6a6bde8ab390730e02a5874534382d6",
-    "milestones/m11-playable-release/handoff.md": "909d7e360ff5ee3e3a01e671b0160c12c8539a1b8b78699759c96b2242359478",
+    "milestones/m11-playable-release/handoff.md": "9d72fcfabfd51f3ff2e64cf5cc23aa3375b7bac79eb7acb45c690c5ea0906398",
     "milestones/m11-playable-release/implementation.md": "f3101f38b36698f09db1790bbd211ffb2d7dd21041b750db9bd525a8774a045b",
     "milestones/m11-playable-release/index.md": "b99b363158f50c06ce3b687f888b72f9042f8e70583d85891200c3f10f064041",
     "milestones/m11-playable-release/validation-acceptance.md": "0a8e37914940aba53d295d7cc59dcab41c1b54a50b9c8663b299a56710c26e37",
@@ -171,12 +171,12 @@
     "risks.md": "8b097b845902c3b5392877d358b8f89858bcdb2931337e31509f668a6f02aa3e",
     "simulation-protocol.md": "59b1d9ae63c7ae0aeca57c6fc55b00103362249c0af8aa8d38feaeeb2a8ad1f8",
     "soldier-baseline.md": "27f73bd9f55ed551fb811aa62b798a25cdb547e7f85552b50dafdf29c1546477",
-    "task-supplement.md": "e213d81d3646adcb380eab983ef8640a4c2d98a4c86d4b39dca754cbc6473740",
+    "task-supplement.md": "9d7e727da3d726c5798402a58d2dd92995adc01fa601be82b7793ca223e2132a",
     "validation.md": "941b350833f3d19cfb430d2c997acd6c470ec0dc6518c428fca63bd6c291010f",
     "verify_docs.py": "b213b88e001c2fba0ab82d1d400c0b4903716a9a6ae3496c7bcc0540c34bda97",
     "vision.md": "47df36e3f613e6dd1982389a16a6d931bd30fae4aa19e767bf69faa93cbe4fa8",
-    "visual-art-brief.md": "f37f59b789ebe41ac39e26bd8b8efd64d601c4c77379178ef8664b6cfa1c5972",
-    "visual-defect-inventory.md": "421e99d4e0258aacaea52ebdbf2334537ca87156f735ef3e0d72e2cb8b53b06e",
+    "visual-art-brief.md": "f1c77cb33731d23545f9d492210abf415da1c75903f14b8e310006145ad11333",
+    "visual-defect-inventory.md": "a383e138eace749d4dfb4960eabdc2f782575a74279509a662f7236381c23848",
     "weapon-recipe-baseline.md": "0e560943c4386152e3febf98038a91325b08233694a8bf2f39e004ffb68b07ee"
   }
 }

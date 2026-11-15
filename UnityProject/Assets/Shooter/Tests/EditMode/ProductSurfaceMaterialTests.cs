@@ -14,6 +14,29 @@ namespace Shooter.Tests
     public sealed class ProductSurfaceMaterialTests
     {
         [Test]
+        public void NonuniformBoxRetainsTwoMetreTexelScaleOnEveryFaceWithoutChangingSource()
+        {
+            var source = new Mesh();
+            Mesh? result = null;
+            try
+            {
+                // One UV edge on each of the XY, XZ and YZ faces.
+                source.vertices = new Vector3[6];
+                source.normals = new[] { Vector3.forward, Vector3.forward, Vector3.up, Vector3.up, Vector3.right, Vector3.right };
+                source.tangents = new[] { new Vector4(1,0,0,1), new Vector4(1,0,0,1), new Vector4(1,0,0,-1), new Vector4(1,0,0,-1), new Vector4(0,1,0,1), new Vector4(0,1,0,1) };
+                source.uv = new[] { Vector2.zero, Vector2.one, Vector2.zero, Vector2.one, Vector2.zero, Vector2.one };
+                result = ProductSurfaceMaterial.MetricBoxUv(source, new Vector3(12, 3, 8), _ => { });
+                Assert.That(result.uv[1], Is.EqualTo(new Vector2(12, 3)));
+                Assert.That(result.uv[3], Is.EqualTo(new Vector2(12, 8)));
+                Assert.That(result.uv[5], Is.EqualTo(new Vector2(3, 8)));
+                Assert.That(source.uv[1], Is.EqualTo(Vector2.one));
+                Assert.That(result.vertices, Is.EqualTo(source.vertices));
+                Assert.That(result.tangents, Is.EqualTo(source.tangents));
+            }
+            finally { Object.DestroyImmediate(result); Object.DestroyImmediate(source); }
+        }
+
+        [Test]
         public void MaskConversionPreservesSpatialMetallicAndOcclusionAndInvertsRoughness()
         {
             byte[] source = { 7, 231, 0, 255, 204, 36, 255, 255, 60, 128, 90, 255 };

@@ -126,18 +126,18 @@ namespace Shooter.Presentation.Session
             var shader = Shader.Find("Universal Render Pipeline/Lit");
             if (shader == null || !shader.isSupported) throw new InvalidOperationException("Locked URP Lit is required.");
             for (int i = 0; i < visuals.Length; i++) ValidateShader(visuals[i]);
-            box = Upload(MapVisualClosure.DecodeMapMesh(visuals[0], MapVisualClosure.UnitBoxMeshPath), "Verified menu unit box");
+            box = Upload(MapVisualClosure.DecodeMapMesh(visuals[0], MapVisualClosure.UnitBoxMeshPath), "Verified menu unit box", true);
 
             // Packaged surface families only. Variants share uploaded planes; numeric tints add no art bytes.
-            Material concrete = PackagedMaterial(visuals[0], shader, MapVisualClosure.MapMaterialPaths[0], "Stage concrete", 4f);
+            Material concrete = PackagedMaterial(visuals[0], shader, MapVisualClosure.MapMaterialPaths[0], "Stage concrete", .5f);
             Material concreteWarm = Variant(concrete, "Stage concrete warm", new Color(1f, .93f, .82f));
             Material concreteCool = Variant(concrete, "Stage concrete cool", new Color(.78f, .84f, .86f));
-            Material cover = PackagedMaterial(visuals[0], shader, MapVisualClosure.MapMaterialPaths[1], "Stage cover", 3f);
+            Material cover = PackagedMaterial(visuals[0], shader, MapVisualClosure.MapMaterialPaths[1], "Stage cover", .5f);
             Material steel = Variant(cover, "Stage steel", new Color(.56f, .68f, .73f));
             Material steelMatte = Variant(cover, "Stage steel matte", new Color(.72f, .83f, .86f));
             steelMatte.SetFloat("_Smoothness", .42f);
-            Material soil = PackagedMaterial(visuals[0], shader, MapVisualClosure.MapMaterialPaths[2], "Stage soil", 18f);
-            Material asphalt = PackagedMaterial(visuals[1], shader, MapVisualClosure.MapMaterialPaths[3], "Stage asphalt", 24f);
+            Material soil = PackagedMaterial(visuals[0], shader, MapVisualClosure.MapMaterialPaths[2], "Stage soil", .5f);
+            Material asphalt = PackagedMaterial(visuals[1], shader, MapVisualClosure.MapMaterialPaths[3], "Stage asphalt", .5f);
             Material apron = Variant(asphalt, "Stage apron", new Color(.62f, .64f, .60f));
             Material apronWarm = Variant(asphalt, "Stage apron warm", new Color(.70f, .66f, .58f));
             Material contact = Material(shader, "Stage contact", new Color(.03f, .035f, .04f), .05f);
@@ -308,32 +308,31 @@ namespace Shooter.Presentation.Session
             var root = new GameObject("Verified map card " + visuals.MapId) { layer = StageLayer };
             root.transform.SetParent(transform, false);
             root.transform.position = new Vector3(offset, 0, 0);
-            root.AddComponent<MeshFilter>().sharedMesh = Upload(MapVisualClosure.DecodeMapMesh(visuals, MapVisualClosure.MapSolidsMeshPath), "Map card " + visuals.MapId);
-            root.AddComponent<MeshRenderer>().sharedMaterial = PackagedMaterial(
-                visuals, shader, MapVisualClosure.MapMaterialPaths[0], "Packaged card " + visuals.MapId, .5f);
-            // Actual packaged solids above their matching material-family ground plane. No map
-            // generator, collision or navigation is installed for these static overview renders.
+            var meshData = MapVisualClosure.DecodeMapMesh(visuals, MapVisualClosure.MapSolidsMeshPath);
+            Mesh mesh = Upload(meshData, "Map card " + visuals.MapId);
+            root.AddComponent<MeshFilter>().sharedMesh = mesh;
+            Material structure = PackagedMaterial(visuals, shader, MapVisualClosure.MapMaterialPaths[0], "Card concrete " + visuals.MapId, .5f);
+            Material metal = PackagedMaterial(visuals, shader, MapVisualClosure.MapMaterialPaths[1], "Card metal " + visuals.MapId, .5f);
+            Material trim = Variant(structure, "Card plaster " + visuals.MapId, ProductSurfaceResponse.TrimPlaster.BaseColor);
+            ProductMapView.AssignSolidsMaterials(root.AddComponent<MeshRenderer>(), meshData, structure, metal, trim);
+            // Fit actual packaged bounds: compact arenas no longer occupy a tiny old 256m plate.
+            Bounds bounds = mesh.bounds;
+            Vector3 center = bounds.center + new Vector3(offset, 0, 0);
+            float width = bounds.size.x + 8f, depth = bounds.size.z + 8f;
             int groundFamily = visuals.MapId == "depot-yard" ? 3 : 2;
             Material ground = PackagedMaterial(visuals, shader, MapVisualClosure.MapMaterialPaths[groundFamily],
-                "Map card ground " + visuals.MapId, 128f);
-            Place("Map card ground " + visuals.MapId, new Vector3(offset, -.05f, 0), new Vector3(256f, .1f, 256f), ground);
-            // Dark under-plate + thin rim so the overview reads as an operation tile when cropped.
+                "Map card ground " + visuals.MapId, .5f);
+            Place("Map card ground " + visuals.MapId, new Vector3(center.x, -.05f, center.z), new Vector3(width, .1f, depth), ground);
             Material plate = Material(shader, "Map card plate " + visuals.MapId, new Color(.035f, .045f, .05f), .08f);
-            Place("Map card plate " + visuals.MapId, new Vector3(offset, -.18f, 0), new Vector3(290f, .06f, 290f), plate);
+            Place("Map card plate " + visuals.MapId, new Vector3(center.x, -.18f, center.z), new Vector3(width + 2f, .06f, depth + 2f), plate);
             Material rim = Variant(ground, "Map card rim " + visuals.MapId, new Color(.18f, .22f, .24f));
-            Place("Map card rim N " + visuals.MapId, new Vector3(offset, .02f, 148f), new Vector3(296f, .08f, 2.4f), rim);
-            Place("Map card rim S " + visuals.MapId, new Vector3(offset, .02f, -148f), new Vector3(296f, .08f, 2.4f), rim);
-            Place("Map card rim E " + visuals.MapId, new Vector3(offset + 148f, .02f, 0), new Vector3(2.4f, .08f, 296f), rim);
-            Place("Map card rim W " + visuals.MapId, new Vector3(offset - 148f, .02f, 0), new Vector3(2.4f, .08f, 296f), rim);
+            Place("Map card rim N " + visuals.MapId, new Vector3(center.x, .02f, center.z + depth * .5f), new Vector3(width, .08f, .3f), rim);
+            Place("Map card rim S " + visuals.MapId, new Vector3(center.x, .02f, center.z - depth * .5f), new Vector3(width, .08f, .3f), rim);
+            Place("Map card rim E " + visuals.MapId, new Vector3(center.x + width * .5f, .02f, center.z), new Vector3(.3f, .08f, depth), rim);
+            Place("Map card rim W " + visuals.MapId, new Vector3(center.x - width * .5f, .02f, center.z), new Vector3(.3f, .08f, depth), rim);
             var camera = new GameObject("Map card camera").AddComponent<Camera>();
             camera.transform.SetParent(transform, false);
-            Vector3 camOffset = MenuStagingComposition.MapCardCameraOffset;
-            camera.transform.position = new Vector3(offset + camOffset.x, camOffset.y, camOffset.z);
-            camera.transform.LookAt(new Vector3(offset, 0, 0));
-            camera.orthographic = true;
-            camera.orthographicSize = MenuStagingComposition.MapCardOrthoSize;
-            camera.nearClipPlane = .1f;
-            camera.farClipPlane = 600;
+            MenuStagingComposition.FrameOverview(camera, new Bounds(center, bounds.size));
             camera.cullingMask = 1 << StageLayer;
             camera.backgroundColor = MenuStagingComposition.MapCardClear;
             camera.clearFlags = CameraClearFlags.SolidColor;
@@ -404,15 +403,27 @@ namespace Shooter.Presentation.Session
         private void CaptureMapCards()
         {
             bool fog = RenderSettings.fog;
+            AmbientMode mode = RenderSettings.ambientMode;
+            Color sky = RenderSettings.ambientSkyColor;
+            Color equator = RenderSettings.ambientEquatorColor;
+            Color ground = RenderSettings.ambientGroundColor;
             RenderTexture previous = RenderTexture.active;
             try
             {
                 RenderSettings.fog = false;
+                RenderSettings.ambientMode = AmbientMode.Trilight;
+                RenderSettings.ambientSkyColor = MenuStagingComposition.AmbientSky;
+                RenderSettings.ambientEquatorColor = MenuStagingComposition.AmbientEquator;
+                RenderSettings.ambientGroundColor = MenuStagingComposition.AmbientGround;
                 foreach (var camera in pendingCardCameras) camera.Render();
             }
             finally
             {
                 RenderSettings.fog = fog;
+                RenderSettings.ambientMode = mode;
+                RenderSettings.ambientSkyColor = sky;
+                RenderSettings.ambientEquatorColor = equator;
+                RenderSettings.ambientGroundColor = ground;
                 RenderTexture.active = previous;
                 foreach (var camera in pendingCardCameras)
                 {
@@ -469,7 +480,7 @@ namespace Shooter.Presentation.Session
             go.transform.SetParent(transform, false);
             go.transform.localPosition = position;
             go.transform.localScale = size;
-            go.AddComponent<MeshFilter>().sharedMesh = box;
+            go.AddComponent<MeshFilter>().sharedMesh = ProductSurfaceMaterial.MetricBoxUv(box!, size, value => owned.Add(value));
             var renderer = go.AddComponent<MeshRenderer>();
             renderer.sharedMaterial = material;
             renderer.shadowCastingMode = castShadows ? ShadowCastingMode.On : ShadowCastingMode.Off;
@@ -486,16 +497,21 @@ namespace Shooter.Presentation.Session
             return light;
         }
 
-        private Mesh Upload(MeshData data, string name)
+        private Mesh Upload(MeshData data, string name, bool keepReadable = false)
         {
             var mesh = Own(new Mesh { name = name, indexFormat = IndexFormat.UInt32 });
             mesh.vertices = data.Positions.Select(v => new Vector3(v.X, v.Y, v.Z)).ToArray();
             mesh.normals = data.Normals.Select(v => new Vector3(v.X, v.Y, v.Z)).ToArray();
             mesh.tangents = data.Tangents.Select(v => new Vector4(v.X, v.Y, v.Z, v.W)).ToArray();
             mesh.uv = data.Uv.Select(v => new Vector2(v.X, v.Y)).ToArray();
-            mesh.triangles = data.Indices.Select(v => (int)v).ToArray();
+            mesh.subMeshCount = data.Submeshes.Count;
+            for (int i = 0; i < data.Submeshes.Count; i++)
+            {
+                var submesh = data.Submeshes[i];
+                mesh.SetTriangles(data.Indices.Skip((int)submesh.FirstIndex).Take((int)submesh.IndexCount).Select(v => (int)v).ToArray(), i);
+            }
             mesh.RecalculateBounds();
-            mesh.UploadMeshData(true);
+            mesh.UploadMeshData(!keepReadable);
             return mesh;
         }
 

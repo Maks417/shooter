@@ -1,5 +1,17 @@
 # M11 — Playable build and acceptance — handoff and gate record
 
+## T080 — Visual review and material-scale correction
+
+2026-11-15 owner-authorized visual review and implementation, base `7b05e9e`; sole integrator, no temporary branches/worktrees. Scope and rollback: [task card](../../task-supplement.md#t080--visual-review-and-material-scale-correction-2026-11-15).
+
+Implemented: metric face UVs for scaled verified boxes; shared two-metre texture scale across map and menu; actual-bounds operation-card framing with preserved concrete/metal/plaster roles; scoped ambient card lighting. The menu uploader previously flattened all submeshes; corrected to preserve the packaged ranges. Small unit-box CPU buffers stay readable for loading-time UV clones; large map meshes still release CPU buffers. Clones follow existing resource ownership. Cached content, gameplay/nav/hit volumes, weapon/soldier/P05 identities, locks/settings/toolchain and installer identity remain unchanged.
+
+Review: current T079 source plus retained T075 player/staging images. Computer Use observed the already-installed Shooter menu; its binary identity was not established, so this is not claimed as a 0.3.8 capture. It shows prominent mannequin soldiers, repetitive box structures and tiny pale map previews. This implementation still needs source-matched player review.
+
+Failures retained under `Artifacts/m0-foundation/7b05e9e9f36863414171a06316cae5e4288deb78/`: sandbox Unity `tests-editmode-20261115T131127202Z-13e333a0` exited before tests with licensing/WMI access failure; sandbox Contracts restore failed before tests. Permitted EditMode rerun `tests-editmode-20261115T131251011Z-3281048f` found the discarded-submesh defect (three materials on one submesh); source upload was fixed, not the assertion weakened.
+
+Pre-build checks: Contracts 76, Generation 387 and Unity EditMode 55 PASS on the dirty T080 working source (reports remain under base `7b05e9e`; not relabelled clean-source runs). Source provenance 736 entries / 368 GUIDs, fixture 35 assertions / 17 JSON files and docs checks PASS. Final clean-source PlayMode/build/package/installer verification follows below. P05 FAIL, named comparison, full gameplay, installed upgrade, GPU/thermal/reference proofs and VD/REL acceptance remain open. This is a bounded material/composition correction, not AAA visual acceptance.
+
 **Latest preview — 2026-11-15:** T079 installer **0.3.8**, binary source `07c5db7` (env/menu/combat design wave). [Delivery evidence](#t079--design-wave-installer-038). Prior installer **0.3.7** at `e251702` remains a valid rollback pair. VD/REL acceptance remains open and P05 FAIL is unchanged.
 
 ## T079 — Material-split maps, menu staging, combat presence

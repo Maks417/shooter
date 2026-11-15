@@ -135,9 +135,9 @@ namespace Shooter.Presentation.Rendering
 
                 solidsMeshData = MapVisualClosure.DecodeMapMesh(visuals, MapVisualClosure.MapSolidsMeshPath);
                 mapSolids = Own(UploadMesh(solidsMeshData, "Product map solids"));
-                unitBox = Own(UploadMesh(MapVisualClosure.DecodeMapMesh(visuals, MapVisualClosure.UnitBoxMeshPath), "Product unit box"));
+                unitBox = Own(UploadMesh(MapVisualClosure.DecodeMapMesh(visuals, MapVisualClosure.UnitBoxMeshPath), "Product unit box", true));
                 // Combined map solids retain metric UVs, so .5 repeats/m matches the two-metre recipe.
-                // The scaled unit-box ground uses 0..1 face UVs: 128 repeats across 256 metres.
+                // Scaled unit boxes receive metric UVs too: all families repeat every two metres.
                 // Scalar metallic/smoothness only apply when packaged mask planes are absent; T075 masks own response.
                 concrete = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[0], "Numeric concrete",
                     ProductSurfaceResponse.Concrete, .5f);
@@ -145,14 +145,14 @@ namespace Shooter.Presentation.Rendering
                 trim = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[0], "Numeric trim plaster",
                     ProductSurfaceResponse.TrimPlaster, .5f);
                 cover = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[1], "Numeric cover",
-                    ProductSurfaceResponse.CoverMetal, 4f);
+                    ProductSurfaceResponse.CoverMetal, .5f);
                 ground = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[2], "Numeric soil ground",
-                    ProductSurfaceResponse.Soil, CompoundPlan.MapHalfExtent);
+                    ProductSurfaceResponse.Soil, .5f);
                 asphalt = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[3], "Numeric asphalt",
-                    ProductSurfaceResponse.Asphalt, CompoundPlan.MapHalfExtent);
+                    ProductSurfaceResponse.Asphalt, .5f);
                 // Apron reuses asphalt albedo/normal/mask planes with a darker BaseColor response.
                 apron = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[3], "Numeric apron asphalt",
-                    ProductSurfaceResponse.Apron, CompoundPlan.MapHalfExtent);
+                    ProductSurfaceResponse.Apron, .5f);
                 visualsBound = true;
             }
             catch (Exception error)
@@ -261,7 +261,7 @@ namespace Shooter.Presentation.Rendering
         /// Maps each Unity submesh to concrete / metal / plaster using MeshData MaterialSlot roles.
         /// Submesh array order follows MeshAssembly's ascending slot sort; empty roles are omitted.
         /// </summary>
-        private static void AssignSolidsMaterials(
+        public static void AssignSolidsMaterials(
             MeshRenderer renderer, MeshData meshData, Material concreteMaterial, Material coverMaterial, Material trimMaterial)
         {
             if (meshData.Submeshes.Count <= 1)
@@ -289,7 +289,7 @@ namespace Shooter.Presentation.Rendering
             item.transform.SetParent(transform, false);
             item.transform.position = center;
             item.transform.localScale = size;
-            item.AddComponent<MeshFilter>().sharedMesh = mesh;
+            item.AddComponent<MeshFilter>().sharedMesh = ProductSurfaceMaterial.MetricBoxUv(mesh, size, value => owned.Add(value));
             item.AddComponent<MeshRenderer>().sharedMaterial = material;
             solids.Add(item);
         }
@@ -327,7 +327,7 @@ namespace Shooter.Presentation.Rendering
             return albedoPath + "-" + plane;
         }
 
-        private Mesh UploadMesh(MeshData data, string label)
+        private Mesh UploadMesh(MeshData data, string label, bool keepReadable = false)
         {
             var mesh = new Mesh
             {
@@ -348,7 +348,7 @@ namespace Shooter.Presentation.Rendering
                     i);
             }
             mesh.RecalculateBounds();
-            mesh.UploadMeshData(true);
+            mesh.UploadMeshData(!keepReadable);
             return mesh;
         }
 

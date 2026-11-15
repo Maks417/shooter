@@ -31,9 +31,29 @@ namespace Shooter.Presentation.Session
         public const float CameraFieldOfView = 34f;
 
         /// <summary>Orthographic overview framing so map solids sit inside a readable plate.</summary>
-        public const float MapCardOrthoSize = 152f;
         public static readonly Vector3 MapCardCameraOffset = new Vector3(138f, 168f, -142f);
         public static readonly Color MapCardClear = new Color(.045f, .07f, .085f);
+
+        /// <summary>Frame the verified mesh, including height, rather than a historical map size.</summary>
+        public static void FrameOverview(Camera camera, Bounds bounds)
+        {
+            camera.transform.position = bounds.center + MapCardCameraOffset.normalized * (bounds.size.magnitude + 20f);
+            camera.transform.LookAt(bounds.center);
+            camera.orthographic = true;
+            camera.aspect = 16f / 9f;
+            float extent = 0f;
+            for (int x = -1; x <= 1; x += 2)
+                for (int y = -1; y <= 1; y += 2)
+                    for (int z = -1; z <= 1; z += 2)
+                    {
+                        Vector3 corner = bounds.center + Vector3.Scale(bounds.extents, new Vector3(x, y, z));
+                        Vector3 projected = camera.transform.InverseTransformPoint(corner);
+                        extent = Mathf.Max(extent, Mathf.Abs(projected.y), Mathf.Abs(projected.x) / camera.aspect);
+                    }
+            camera.orthographicSize = Mathf.Max(1f, extent * 1.10f);
+            camera.nearClipPlane = .1f;
+            camera.farClipPlane = bounds.size.magnitude * 3f + 50f;
+        }
 
         public readonly struct KeyLight
         {

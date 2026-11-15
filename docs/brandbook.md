@@ -1,5 +1,13 @@
 # Visual direction and UI design system
 
+## T080 review — quality priorities (2026-11-15)
+
+The source baseline is T079 / installer 0.3.8 at `07c5db7`; older top-level delivery notes below are historical. This review found four concrete source defects: inconsistent physical material scale on scaled boxes; cover textures eight times denser than architectural solids; overview cameras still sized for old 256 m maps; and card renderers losing metal/trim submesh materials. T080 corrects those presentation paths; [delivery and verification](milestones/m11-playable-release/handoff.md#t080--visual-review-and-material-scale-correction) records actual results.
+
+Design direction: make Compound read as pale weathered plaster/concrete with dark structural metal and earth; make Depot read as steel logistics architecture on asphalt. Hold surface texture scale at one repeat per two metres in the world and menu. Operation cards must fill their frame with the actual arena and retain material separation; ornamental plates must remain subordinate. Keep architectural mass and combat silhouettes readable before adding surface noise or more props.
+
+The largest remaining visual deficits are soldier anatomy/uniform construction, hands and weapon-action continuity, repetitive rectangular architecture, and insufficient environmental storytelling. A material/framing fix cannot establish BFV parity. The representative-slice review must include near-field soldier/weapon footage, a doorway-to-yard transition, both sun and shade, and a normal combat view at native 720p Low. Evaluate proportion, material scale, action continuity and silhouette first, then compare the named reference frames. P05 work remains subject to its existing explicit bounded assignment; no clearance search or acceptance waiver is created here.
+
 **T075 implementation update — 2026-11-15:** source `7407bc4` / installer 0.3.4 extends the earlier T074 baseline with real procedural surface triplets, scene material reuse, working map overviews and near-field weapon handling. Player captures still show blockout environments/soldiers. All VD exits, exact comparison approval and P05 disposition remain unchanged. [Implementation/evidence](milestones/m11-playable-release/handoff.md#t075--procedural-presentation-preview-034).
 
 T074 stage 1 implements the shell/HUD direction below in `Presentation/Session/TacticalUi.cs`, `Presentation/Session/ProductShellHost.cs` and `ProductSessionView.cs`. The environment, equipment and motion direction remains staged work. See [vision](vision.md), [shell](features/game-shell.md) and [rendering](features/materials-rendering.md). Implementation is separate from named visual acceptance.

@@ -9,6 +9,31 @@ namespace Shooter.Presentation.Rendering
     /// <summary>Loading-time adaptation of verified SGAF planes to the locked URP Lit channel layout.</summary>
     public static class ProductSurfaceMaterial
     {
+        /// <summary>Retains verified box geometry; adapts face UVs to metres after nonuniform scaling.</summary>
+        public static Mesh MetricBoxUv(Mesh source, Vector3 size, Action<UnityEngine.Object> own)
+        {
+            if (source == null) throw new ArgumentNullException(nameof(source));
+            if (own == null) throw new ArgumentNullException(nameof(own));
+            if (!Finite(size.x) || !Finite(size.y) || !Finite(size.z) || size.x <= 0 || size.y <= 0 || size.z <= 0)
+                throw new ArgumentOutOfRangeException(nameof(size));
+            var uv = source.uv;
+            var normals = source.normals;
+            var tangents = source.tangents;
+            if (uv.Length != source.vertexCount || normals.Length != uv.Length || tangents.Length != uv.Length)
+                throw new InvalidOperationException("Verified box requires complete UV and tangent frames.");
+            for (int i = 0; i < uv.Length; i++)
+            {
+                var u = new Vector3(tangents[i].x, tangents[i].y, tangents[i].z);
+                var v = Vector3.Cross(normals[i], u);
+                uv[i] = Vector2.Scale(uv[i], new Vector2(Vector3.Scale(u, size).magnitude, Vector3.Scale(v, size).magnitude));
+            }
+            var mesh = UnityEngine.Object.Instantiate(source);
+            own(mesh);
+            mesh.name = source.name + " metric UV";
+            mesh.uv = uv;
+            return mesh;
+        }
+
         public static Material Create(Shader shader, MaterialData albedo, MaterialData? normal, MaterialData? mask,
             string label, float tileRepeats, Action<UnityEngine.Object> own, float metallic = 0f, float smoothness = .2f)
         {
