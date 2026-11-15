@@ -105,7 +105,8 @@ namespace Shooter.Simulation.Session
             if (!states.TryGetValue(entity.Value, out var prev) || !prev.Alive) return false;
             if (!harness.RelocateActor(entity, feet, yaw)) return false;
             states[entity.Value] = new ActorLifecycleState(
-                entity, prev.Team, true, prev.Health, feet, yaw, prev.AimPitch, prev.ActiveWeaponSlot, prev.Magazine, prev.Reserve);
+                entity, prev.Team, true, prev.Health, feet, yaw, prev.AimPitch, prev.ActiveWeaponSlot, prev.Magazine, prev.Reserve,
+                prev.WeaponAction);
             stances[entity.Value] = Stance.Standing;
             return true;
         }
@@ -151,7 +152,8 @@ namespace Shooter.Simulation.Session
                     entity.AimPitch,
                     entity.ActiveSlot,
                     entity.Weapon.AmmoInMagazine,
-                    entity.Weapon.Reserve);
+                    entity.Weapon.Reserve,
+                    entity.Weapon.Action);
             }
         }
     }

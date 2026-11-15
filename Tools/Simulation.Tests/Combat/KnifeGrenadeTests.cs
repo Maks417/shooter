@@ -93,5 +93,52 @@ namespace Shooter.Simulation.Tests.Combat
             Assert.Equal((ushort)0, GrenadeSimulator.BlastDamage(def, 5f));
             Assert.Equal((ushort)0, GrenadeSimulator.BlastDamage(def, 6f));
         }
+
+        [Fact]
+        public void GrenadeHoldThroughEquipStartsCookThenThrowsOnRelease()
+        {
+            var sim = new WeaponSimulator();
+            var slots = WeaponSimulator.CreateDefaultLoadout();
+            byte active = 0, desired = 0;
+            var shots = new List<AcceptedShot>();
+            var grenades = new List<AcceptedGrenade>();
+            var events = new List<CombatEvent>();
+            var next = new EventId(1, 0, new EntityId(1), 0);
+            // Switch to grenade while fire is already held (no FirePressed on later ticks).
+            Step(sim, slots, ref active, ref desired, 0, InputButtons.FireHeld, 3, shots, grenades, events, ref next);
+            Assert.Equal((byte)3, active);
+            Assert.Equal(WeaponAction.Equipping, slots[3].Action);
+            for (uint t = 1; t < 18; t++)
+                Step(sim, slots, ref active, ref desired, t, InputButtons.FireHeld, 3, shots, grenades, events, ref next);
+            Step(sim, slots, ref active, ref desired, 18, InputButtons.FireHeld, 3, shots, grenades, events, ref next);
+            Assert.Equal(WeaponAction.Cooking, slots[3].Action);
+            Step(sim, slots, ref active, ref desired, 40, InputButtons.None, 3, shots, grenades, events, ref next);
+            Assert.Single(grenades);
+            Assert.False(grenades[0].DetonateInHand);
+            Assert.Equal((ushort)0, slots[3].AmmoInMagazine);
+        }
+
+        [Fact]
+        public void KnifeHoldThroughEquipFiresOnceOnRisingEdge()
+        {
+            var sim = new WeaponSimulator();
+            var slots = WeaponSimulator.CreateDefaultLoadout();
+            byte active = 0, desired = 0;
+            var shots = new List<AcceptedShot>();
+            var grenades = new List<AcceptedGrenade>();
+            var events = new List<CombatEvent>();
+            var next = new EventId(1, 0, new EntityId(1), 0);
+            Step(sim, slots, ref active, ref desired, 0, InputButtons.FireHeld, 2, shots, grenades, events, ref next);
+            for (uint t = 1; t < 12; t++)
+                Step(sim, slots, ref active, ref desired, t, InputButtons.FireHeld, 2, shots, grenades, events, ref next);
+            shots.Clear();
+            Step(sim, slots, ref active, ref desired, 12, InputButtons.FireHeld, 2, shots, grenades, events, ref next);
+            Assert.Single(shots);
+            Assert.Equal(FireMode.Melee, shots[0].Definition.FireMode);
+            shots.Clear();
+            // Held fire must not auto-repeat melee without a new edge.
+            Step(sim, slots, ref active, ref desired, 40, InputButtons.FireHeld, 2, shots, grenades, events, ref next);
+            Assert.Empty(shots);
+        }
     }
 }

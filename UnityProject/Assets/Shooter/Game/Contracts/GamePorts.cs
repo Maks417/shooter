@@ -45,6 +45,8 @@ namespace Shooter.Game.Contracts
         public byte ActiveWeaponSlot { get; }
         public ushort Magazine { get; }
         public ushort Reserve { get; }
+        /// <summary>Active-slot authority action (Ready/Cooking/…); presentation cook/throw poses read this.</summary>
+        public WeaponAction WeaponAction { get; }
 
         public ActorLifecycleState(
             EntityId entityId,
@@ -56,7 +58,8 @@ namespace Shooter.Game.Contracts
             float aimPitch,
             byte activeWeaponSlot,
             ushort magazine,
-            ushort reserve)
+            ushort reserve,
+            WeaponAction weaponAction = WeaponAction.Ready)
         {
             EntityId = entityId;
             Team = team;
@@ -68,6 +71,7 @@ namespace Shooter.Game.Contracts
             ActiveWeaponSlot = activeWeaponSlot;
             Magazine = magazine;
             Reserve = reserve;
+            WeaponAction = weaponAction;
         }
     }
 

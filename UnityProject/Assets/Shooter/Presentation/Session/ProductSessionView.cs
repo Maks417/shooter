@@ -30,7 +30,9 @@ namespace Shooter.Presentation.Session
         private SynthAudioMixer? mixer;
         private ProductAudioEventRouter? audio;
         private readonly AnalyticFxPool analyticFxPool = new AnalyticFxPool();
+        private readonly CosmeticGrenadeFlight grenadeFlight = new CosmeticGrenadeFlight();
         private readonly FirstPersonCameraBob cameraBob = new FirstPersonCameraBob();
+        private CosmeticGrenadePresenter? grenadePresenter;
         private readonly List<ActorLifecycleState> footstepScratch = new List<ActorLifecycleState>(GameContractVersion.MaxParticipants);
         private readonly HashSet<string> accessibilityCueKeys = new HashSet<string>(System.StringComparer.Ordinal);
         private UnitySynthAudioOutput? audioOutput;
@@ -184,6 +186,7 @@ namespace Shooter.Presentation.Session
             mapView = ProductMapView.Create(transform);
             actors = ProductActorPresentation.Create(transform, camera);
             analyticFxPresenter = AnalyticFxPresenter.Create(transform, analyticFxPool);
+            grenadePresenter = CosmeticGrenadePresenter.Create(transform, grenadeFlight);
             var audioPair = EnsureAudio();
             audioOutput = UnitySynthAudioOutput.Attach(gameObject, audioPair.mixer);
             UserSettingsAudioBinding.ApplyGains(UserSettings.Defaults, audioPair.mixer);
@@ -316,7 +319,9 @@ namespace Shooter.Presentation.Session
         {
             DetachAudioSession();
             analyticFxPool.Clear();
+            grenadeFlight.Clear();
             analyticFxPresenter?.ClearVisuals();
+            grenadePresenter?.ClearVisuals();
             mapView?.ClearVisuals();
             actors?.ClearAll();
             boundMapId = "";
@@ -506,18 +511,26 @@ namespace Shooter.Presentation.Session
                 }
             }
             analyticFxPool.Tick(dt);
+            grenadeFlight.Tick(dt);
             analyticFxPresenter?.Sync(suppressMuzzleFlash: reducedFlash);
+            grenadePresenter?.Sync();
         }
 
         private void NotifyAccessibilityCue(CombatEvent ev)
         {
             EntityId local = session != null && session.HumanEntityId.IsValid ? session.HumanEntityId : default;
-            if (FirstPersonHitFeedback.IsLocalShot(ev.Kind, ev.Instigator, local))
+            if (FirstPersonHitFeedback.IsLocalShot(ev.Kind, ev.Instigator, local)
+                && !IsKnifeWeapon(ev))
             {
                 // Cosmetic local view flash only; bot/remote ShotAccepted must not flash the screen.
                 // ReducedFlash suppresses the overlay while preserving shot audio and world muzzle proxies.
+                // Knife melee must not flash as a gunshot.
                 if (!reducedFlash) muzzleFlashRemaining = 0.09f;
                 if (subtitlesEnabled) ShowSubtitle("Shot");
+            }
+            else if (FirstPersonHitFeedback.IsLocalShot(ev.Kind, ev.Instigator, local) && IsKnifeWeapon(ev))
+            {
+                if (subtitlesEnabled) ShowSubtitle("Melee");
             }
             else if (ev.Kind == CombatEventKind.Impact || ev.Kind == CombatEventKind.DamageApplied)
             {
@@ -535,8 +548,16 @@ namespace Shooter.Presentation.Session
         /// </summary>
         private void ObserveCombatFx(CombatEvent ev)
         {
+            if (ev.Kind == CombatEventKind.ProjectileSpawned && ev.Payload is ProjectilePayload projectile)
+            {
+                grenadeFlight.TrySpawn(projectile.ProjectileId, projectile.Origin, projectile.Velocity);
+                return;
+            }
+
             if (ev.Kind == CombatEventKind.ShotAccepted && ev.Payload is ShotPayload shot)
             {
+                // Knife melee: no muzzle flash / tracer / casing — slash is the FP viewmodel.
+                if (IsKnifeDefinition(shot.WeaponId)) return;
                 // Accessibility: reducedFlash suppresses world muzzle proxies and the IMGUI overlay.
                 if (reducedFlash) return;
                 Float3 dir = shot.UnitDirection;
@@ -551,6 +572,7 @@ namespace Shooter.Presentation.Session
 
             if (ev.Kind == CombatEventKind.Impact && ev.Payload is ImpactPayload impact)
             {
+                grenadeFlight.ObserveImpact(impact.Position);
                 analyticFxPool.TrySpawn(FxKind.ImpactSpark, impact.Position, impact.Normal);
                 // Body-region impacts get a denser second spark (Warface readable hit feedback).
                 if (impact.RegionId >= 1)
@@ -560,6 +582,12 @@ namespace Shooter.Presentation.Session
                     analyticFxPool.TrySpawn(FxKind.SmokeProxy, impact.Position, impact.Normal);
             }
         }
+
+        private static bool IsKnifeWeapon(CombatEvent ev) =>
+            ev.Kind == CombatEventKind.ShotAccepted && ev.Payload is ShotPayload shot && IsKnifeDefinition(shot.WeaponId);
+
+        private static bool IsKnifeDefinition(DefinitionId weaponId) =>
+            string.Equals(weaponId.ToString(), "weapons/knife", System.StringComparison.Ordinal);
 
         /// <summary>Authority-only damage feedback for local player (taken/dealt). No invented hits.</summary>
         private void ObserveHitFeedback(CombatEvent ev)
@@ -604,6 +632,8 @@ namespace Shooter.Presentation.Session
         private void ObserveGunfireReveal(CombatEvent ev)
         {
             if (ev.Kind != CombatEventKind.ShotAccepted || ev.Payload is not ShotPayload shot) return;
+            // Melee is not gunfire; keep the map reveal for firearms only.
+            if (IsKnifeDefinition(shot.WeaponId)) return;
             if (session == null || !session.HumanEntityId.IsValid || session.Lifecycle == null) return;
             if (!ev.Instigator.IsValid) return;
             bool isLocal = ev.Instigator == session.HumanEntityId;

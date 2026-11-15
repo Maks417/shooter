@@ -162,5 +162,19 @@ namespace Shooter.Simulation.Tests.Fx
             Assert.Equal(1, pool.ActiveCount);
             Assert.True(pool.Get(0).Active);
         }
+
+        [Fact]
+        public void Cosmetic_grenade_flight_arcs_and_despawns_on_nearby_impact()
+        {
+            var flight = new CosmeticGrenadeFlight();
+            var id = new EntityId(11);
+            Assert.True(flight.TrySpawn(id, new Float3(0, 1, 0), new Float3(0, 4, 8)));
+            Assert.Equal(1, flight.ActiveCount);
+            flight.Tick(0.1f);
+            Assert.True(flight[0].Position.Z > 0f);
+            Assert.True(flight[0].Velocity.Y < 4f); // gravity
+            flight.ObserveImpact(flight[0].Position);
+            Assert.Equal(0, flight.ActiveCount);
+        }
     }
 }

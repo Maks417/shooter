@@ -530,12 +530,14 @@ namespace Shooter.Presentation.Rig
                 }
                 actions.SyncLifecycle(human.EntityId, slot, true);
                 localView.SetActiveWeaponSlot(slot);
+                localView.SetCooking(human.WeaponAction == WeaponAction.Cooking);
                 if (combatEvents != null)
                     localView.ConsumeEvents(combatEvents, human.EntityId, aimHeld, dtSeconds);
                 else
                     localView.TickAim(aimHeld, dtSeconds);
                 // Authority wins over an older action event on a switch/cancel frame.
                 localView.SetActiveWeaponSlot(slot);
+                localView.SetCooking(human.WeaponAction == WeaponAction.Cooking);
                 var pose = localView.Pose;
                 var movement = movementView?.Invoke(human.EntityId);
                 localHandling.Step(human.Feet, slot, dtSeconds, movement.HasValue && movement.Value.Sliding, reducedMotion);
@@ -550,6 +552,8 @@ namespace Shooter.Presentation.Rig
                 localAdsPresentation = adsPresent;
                 var offset = localHandling.PositionOffset(adsPresent, reload, reducedMotion, recoilEnergy, magazineEmpty);
                 var rotation = localHandling.RotationDegrees(adsPresent, reload, reducedMotion, recoilEnergy);
+                var specialPos = localView.SpecialActionPosition(reducedMotion);
+                var specialRot = localView.SpecialActionRotation(reducedMotion);
                 var kick = localView.EquipmentKickMeters(reducedMotion);
                 Float3 sight = ProductAuthorityActionView.IsRifleSlot(shown) ? rifleSightSocketLocal
                     : shown == ProductAuthorityActionView.PistolSlot ? pistolSightSocketLocal : default;
@@ -563,18 +567,20 @@ namespace Shooter.Presentation.Rig
                 // Scale the sight socket with near-field mass so TransformPoint still lands on the camera ray.
                 Vector3 aligned = new Vector3(-sight.X * scale, -sight.Y * scale, hip.z);
                 localWeapon.localScale = new Vector3(scale, scale, scale);
-                localWeapon.localPosition = Vector3.Lerp(hip, aligned, adsPresent) + V(offset) + V(kick);
+                localWeapon.localPosition = Vector3.Lerp(hip, aligned, adsPresent) + V(offset) + V(kick) + V(specialPos);
                 float rotKick = FirstPersonHandling.RecoilRotationScale(adsPresent, reducedMotion);
                 var composition = FirstPersonHandling.HipRotationDegrees(shown, adsPresent);
                 localWeapon.localRotation = Quaternion.Euler(
-                    rotation.X + composition.X + pose.RecoilPitch * Mathf.Rad2Deg * rotKick,
-                    rotation.Y + composition.Y + pose.RecoilYaw * Mathf.Rad2Deg * rotKick,
-                    rotation.Z + composition.Z);
+                    rotation.X + composition.X + specialRot.X + pose.RecoilPitch * Mathf.Rad2Deg * rotKick,
+                    rotation.Y + composition.Y + specialRot.Y + pose.RecoilYaw * Mathf.Rad2Deg * rotKick,
+                    rotation.Z + composition.Z + specialRot.Z);
                 if (supportHand != null)
                     supportHand.transform.localPosition = V(FirstPersonHandling.SupportHandOffset(shown, reload, reducedMotion));
                 PoseLocalMechanicalParts(shown, reload, magazineEmpty, localView.CycleOpen01, reducedMotion);
                 // Full rifle ADS uses the analytic scope overlay — hide the near-field mesh so the lens stays clean.
-                if (AdsOpticVisual.HideRifleViewModel(shown, adsPresent))
+                // Empty/thrown grenade hides the held prop so the throw reads clearly.
+                if (AdsOpticVisual.HideRifleViewModel(shown, adsPresent)
+                    || localView.HideHeldGrenade(human.Magazine))
                     localWeapon.gameObject.SetActive(false);
             }
             else if (localViewHuman.IsValid)

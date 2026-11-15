@@ -22,6 +22,7 @@ namespace Shooter.Presentation.View
     /// Procedural first-person arms/ADS/recoil/reload driven only from snapshot+event leases.
     /// Does not apply damage or authoritative recoil twice; visual springs are cosmetic.
     /// Reload duration comes from ActionPayload start/end ticks, never from ammo drop.
+    /// Knife slash/stab and grenade throw phases are presentation-only.
     /// </summary>
     public sealed class ProceduralViewModel
     {
@@ -35,6 +36,10 @@ namespace Shooter.Presentation.View
         private float reloadPhase;
         private float reloadDurationSeconds = 2.4f;
         private float cycleOpen;
+        private float meleePhase;
+        private bool meleeStab;
+        private float throwPhase;
+        private bool cooking;
         private byte activeSlot;
         private Float3 leftGrip = new Float3(-0.12f, -0.08f, 0.35f);
         private Float3 rightGrip = new Float3(0.08f, -0.10f, 0.40f);
@@ -44,6 +49,12 @@ namespace Shooter.Presentation.View
         /// <summary>0 = bolt/slide closed, 1 = fully open after a shot impulse.</summary>
         public float CycleOpen01 => cycleOpen;
         public byte ActiveWeaponSlot => activeSlot;
+        /// <summary>0 idle; (0,1] active knife melee cosmetic phase.</summary>
+        public float MeleePhase01 => meleePhase > 0f ? meleePhase : 0f;
+        public bool MeleeIsStab => meleeStab;
+        /// <summary>0 idle; (0,1] active grenade throw release cosmetic phase.</summary>
+        public float ThrowPhase01 => throwPhase > 0f ? throwPhase : 0f;
+        public bool Cooking => cooking;
 
         public void ResetForLife(byte weaponSlot = ProductAuthorityActionView.RifleSlot)
         {
@@ -52,6 +63,10 @@ namespace Shooter.Presentation.View
             activeSlot = weaponSlot;
             reloadPhase = 0f;
             cycleOpen = 0f;
+            meleePhase = 0f;
+            meleeStab = false;
+            throwPhase = 0f;
+            cooking = false;
             recoilPitch = recoilYaw = recoilPitchVel = recoilYawVel = 0f;
             ads = 0f;
             consumedEvents.Clear();
@@ -67,10 +82,23 @@ namespace Shooter.Presentation.View
                 activeSlot = weaponSlot;
                 reloadPhase = 0f;
                 cycleOpen = 0f;
+                meleePhase = 0f;
+                meleeStab = false;
+                throwPhase = 0f;
+                cooking = false;
                 recoilPitch = recoilYaw = recoilPitchVel = recoilYawVel = 0f;
                 ads = 0f;
                 ApplyGripPose();
             }
+        }
+
+        /// <summary>Mirror authority Cooking for grenade raise pose (ActorLifecycleState.WeaponAction).</summary>
+        public void SetCooking(bool isCooking)
+        {
+            cooking = isCooking && ProductAuthorityActionView.IsGrenadeSlot(activeSlot);
+            if (!cooking) return;
+            // Cook cancels an unfinished throw pose if authority restarted a cook (should not happen mid-flight).
+            if (throwPhase > 0f && throwPhase < 1f) throwPhase = 0f;
         }
 
         /// <summary>Cosmetic ADS/spring only when combat event leases are unavailable on the product path.</summary>
@@ -83,6 +111,8 @@ namespace Shooter.Presentation.View
             IntegrateSpring(ref recoilYaw, ref recoilYawVel, dtSeconds);
             AdvanceCycle(dtSeconds);
             AdvanceReload(dtSeconds);
+            AdvanceMelee(dtSeconds);
+            AdvanceThrow(dtSeconds);
             ApplyGripPose();
         }
 
@@ -120,6 +150,17 @@ namespace Shooter.Presentation.View
                             (activeSlot == ProductAuthorityActionView.PistolSlot ? 0.85f : 0.6f);
                         cycleOpen = Math.Max(cycleOpen, FirstPersonWeaponMechanics.CycleImpulse);
                     }
+                    else if (ProductAuthorityActionView.IsKnifeSlot(activeSlot))
+                    {
+                        meleePhase = 0.01f;
+                        meleeStab = HasMeleeHit(events, ev.Instigator, ev.Id.Tick);
+                    }
+                }
+                else if (ev.Kind == CombatEventKind.ProjectileSpawned
+                    && ProductAuthorityActionView.IsGrenadeSlot(activeSlot))
+                {
+                    throwPhase = 0.01f;
+                    cooking = false;
                 }
                 else if (ev.Kind == CombatEventKind.ReloadStarted && ev.Payload is ActionPayload started)
                 {
@@ -139,6 +180,8 @@ namespace Shooter.Presentation.View
             IntegrateSpring(ref recoilYaw, ref recoilYawVel, dtSeconds);
             AdvanceCycle(dtSeconds);
             AdvanceReload(dtSeconds);
+            AdvanceMelee(dtSeconds);
+            AdvanceThrow(dtSeconds);
             ApplyGripPose();
         }
 
@@ -147,6 +190,39 @@ namespace Shooter.Presentation.View
             && Distance(rightGrip, weaponRightSocket) <= GripToleranceMeters;
 
         public int ConsumedEventCount => consumedEvents.Count;
+
+        /// <summary>Combined equipment offset for knife/grenade special actions (meters).</summary>
+        public Float3 SpecialActionPosition(bool reducedMotion)
+        {
+            if (ProductAuthorityActionView.IsKnifeSlot(activeSlot) && meleePhase > 0f)
+                return FirstPersonSpecialActions.MeleePositionOffset(meleePhase, meleeStab, reducedMotion);
+            if (ProductAuthorityActionView.IsGrenadeSlot(activeSlot))
+            {
+                if (throwPhase > 0f)
+                    return FirstPersonSpecialActions.GrenadeThrowPosition(throwPhase, reducedMotion);
+                if (cooking)
+                    return FirstPersonSpecialActions.GrenadeCookPosition(true, reducedMotion);
+            }
+            return default;
+        }
+
+        public Float3 SpecialActionRotation(bool reducedMotion)
+        {
+            if (ProductAuthorityActionView.IsKnifeSlot(activeSlot) && meleePhase > 0f)
+                return FirstPersonSpecialActions.MeleeRotationDegrees(meleePhase, meleeStab, reducedMotion);
+            if (ProductAuthorityActionView.IsGrenadeSlot(activeSlot))
+            {
+                if (throwPhase > 0f)
+                    return FirstPersonSpecialActions.GrenadeThrowRotation(throwPhase, reducedMotion);
+                if (cooking)
+                    return FirstPersonSpecialActions.GrenadeCookRotation(true, reducedMotion);
+            }
+            return default;
+        }
+
+        /// <summary>True once a throw phase has started or magazine is empty on grenade (hide held prop).</summary>
+        public bool HideHeldGrenade(ushort magazine) =>
+            ProductAuthorityActionView.IsGrenadeSlot(activeSlot) && (magazine == 0 || throwPhase > 0.35f);
 
         private void AdvanceReload(float dtSeconds)
         {
@@ -161,6 +237,38 @@ namespace Shooter.Presentation.View
             if (cycleOpen <= 0f) { cycleOpen = 0f; return; }
             // Bolt/slide closes in ~90 ms after the impulse peak.
             cycleOpen = MoveTowards(cycleOpen, 0f, dtSeconds / 0.09f);
+        }
+
+        private void AdvanceMelee(float dtSeconds)
+        {
+            if (meleePhase <= 0f) return;
+            float duration = FirstPersonSpecialActions.MeleeDurationSeconds;
+            meleePhase = Math.Min(1f, meleePhase + (duration > 1e-4f ? dtSeconds / duration : 1f));
+            if (meleePhase >= 1f)
+            {
+                meleePhase = 0f;
+                meleeStab = false;
+            }
+        }
+
+        private void AdvanceThrow(float dtSeconds)
+        {
+            if (throwPhase <= 0f) return;
+            float duration = FirstPersonSpecialActions.ThrowDurationSeconds;
+            throwPhase = Math.Min(1f, throwPhase + (duration > 1e-4f ? dtSeconds / duration : 1f));
+            if (throwPhase >= 1f) throwPhase = 0f;
+        }
+
+        private static bool HasMeleeHit(IReadOnlyList<CombatEvent> events, EntityId instigator, uint tick)
+        {
+            for (int i = 0; i < events.Count; i++)
+            {
+                var ev = events[i];
+                if (ev.Id.Tick != tick || !ev.Instigator.Equals(instigator)) continue;
+                if (ev.Kind == CombatEventKind.DamageApplied && ev.Target.IsValid) return true;
+                if (ev.Kind == CombatEventKind.Impact && ev.Target.IsValid) return true;
+            }
+            return false;
         }
 
         private void ApplyGripPose()

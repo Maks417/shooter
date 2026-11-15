@@ -91,7 +91,11 @@ namespace Shooter.Simulation.Combat
                     nextEventId = nextEventId.NextOrdinal();
                 }
                 else
-                    w = Ready(w, tick);
+                {
+                    // Equip complete clears PreviousFireHeld so a hold started mid-draw can rising-edge fire/cook.
+                    bool clearHeld = w.Action == WeaponAction.Equipping;
+                    w = Ready(w, tick, clearHeld);
+                }
                 slots[i] = w;
             }
 
@@ -108,9 +112,9 @@ namespace Shooter.Simulation.Combat
                 return;
             }
 
-            bool rising = firePressed && !active.PreviousFireHeld;
+            bool rising = fireHeld && !active.PreviousFireHeld;
             bool wantsFire = activeDef.FireMode == FireMode.Automatic ? (fireHeld || rising)
-                : activeDef.FireMode == FireMode.Melee ? firePressed
+                : activeDef.FireMode == FireMode.Melee ? (firePressed || rising)
                 : firePressed;
             if (sprinting && !activeDef.AllowsSprintFire) wantsFire = false;
 
@@ -175,7 +179,8 @@ namespace Shooter.Simulation.Combat
                 return;
             }
 
-            if (firePressed && active.Action == WeaponAction.Ready && active.AmmoInMagazine > 0)
+            bool rising = fireHeld && !active.PreviousFireHeld;
+            if ((firePressed || rising) && active.Action == WeaponAction.Ready && active.AmmoInMagazine > 0)
             {
                 active = new WeaponState(active.DefinitionId, WeaponAction.Cooking, active.AmmoInMagazine, active.Reserve,
                     active.NextAllowedFireTick, tick, unchecked(tick + def.FuseTicks), active.ShotIndex, fireHeld);
@@ -198,8 +203,9 @@ namespace Shooter.Simulation.Combat
             CreateLoaded(WeaponDefinition.Grenade)
         };
 
-        private static WeaponState Ready(WeaponState w, uint tick) =>
-            new WeaponState(w.DefinitionId, WeaponAction.Ready, w.AmmoInMagazine, w.Reserve, w.NextAllowedFireTick, tick, tick, w.ShotIndex, w.PreviousFireHeld);
+        private static WeaponState Ready(WeaponState w, uint tick, bool clearPreviousFireHeld = false) =>
+            new WeaponState(w.DefinitionId, WeaponAction.Ready, w.AmmoInMagazine, w.Reserve, w.NextAllowedFireTick, tick, tick, w.ShotIndex,
+                clearPreviousFireHeld ? false : w.PreviousFireHeld);
 
         private static WeaponState Disable(WeaponState w, uint tick) =>
             new WeaponState(w.DefinitionId, WeaponAction.Disabled, w.AmmoInMagazine, w.Reserve, w.NextAllowedFireTick, tick, tick, w.ShotIndex, false);

@@ -284,5 +284,59 @@ namespace Shooter.Simulation.Tests.View
             Assert.InRange(AdsOpticVisual.LensRadiusPixels(1280f, 720f), 200f, 400f);
             Assert.True(AdsOpticVisual.MilDotCount(300f) >= 2);
         }
+
+        [Fact]
+        public void KnifeShotStartsSlashAndUpgradesToStabOnHit()
+        {
+            var id = new EntityId(1);
+            var slash = new ProceduralViewModel();
+            slash.ResetForLife(ProductAuthorityActionView.KnifeSlot);
+            var miss = new CombatEvent(
+                new EventId(1, 1, id, 1), CombatEventKind.ShotAccepted, id, default,
+                new ShotPayload(new DefinitionId("weapons/knife"), 1, default, new Float3(0, 0, 1), 1, 1));
+            slash.ConsumeEvents(new[] { miss }, id, false, 0f);
+            Assert.True(slash.MeleePhase01 > 0f);
+            Assert.False(slash.MeleeIsStab);
+            // Advance to mid-swing so envelopes are readable.
+            slash.TickAim(false, FirstPersonSpecialActions.MeleeDurationSeconds * 0.5f);
+            Assert.False(slash.MeleeIsStab);
+            Assert.True(Math.Abs(slash.SpecialActionRotation(false).Z) > 10f);
+
+            var stab = new ProceduralViewModel();
+            stab.ResetForLife(ProductAuthorityActionView.KnifeSlot);
+            var hit = new CombatEvent(
+                new EventId(1, 2, id, 1), CombatEventKind.ShotAccepted, id, default,
+                new ShotPayload(new DefinitionId("weapons/knife"), 2, default, new Float3(0, 0, 1), 1, 1));
+            var dmg = new CombatEvent(
+                new EventId(1, 2, id, 2), CombatEventKind.DamageApplied, id, new EntityId(9),
+                new DamagePayload(55, 45, 2));
+            stab.ConsumeEvents(new[] { hit, dmg }, id, false, 0f);
+            Assert.True(stab.MeleeIsStab);
+            stab.TickAim(false, FirstPersonSpecialActions.MeleeDurationSeconds * 0.5f);
+            Assert.True(stab.SpecialActionPosition(false).Z > slash.SpecialActionPosition(false).Z);
+        }
+
+        [Fact]
+        public void GrenadeCookAndThrowDriveDistinctPosesAndHideHeldProp()
+        {
+            var id = new EntityId(1);
+            var view = new ProceduralViewModel();
+            view.ResetForLife(ProductAuthorityActionView.GrenadeSlot);
+            view.SetCooking(true);
+            Assert.True(view.Cooking);
+            var cookPos = view.SpecialActionPosition(false);
+            Assert.True(cookPos.Y > 0f);
+
+            var spawn = new CombatEvent(
+                new EventId(1, 5, id, 1), CombatEventKind.ProjectileSpawned, id, default,
+                new ProjectilePayload(new EntityId(40), new Float3(0, 1, 0), new Float3(0, 2, 10), new DefinitionId("weapons/grenade")));
+            view.ConsumeEvents(new[] { spawn }, id, false, 0f);
+            Assert.False(view.Cooking);
+            Assert.True(view.ThrowPhase01 > 0f);
+            Assert.True(view.HideHeldGrenade(0));
+            // Advance past release threshold so hide stays true even if mag were non-zero mid-anim.
+            for (int i = 0; i < 20; i++) view.TickAim(false, 0.02f);
+            Assert.True(view.HideHeldGrenade(0));
+        }
     }
 }

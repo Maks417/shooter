@@ -63,9 +63,14 @@ Rifle ADS now raises a procedural circular scope mask (soft housing + mil-dot re
 - Knife melee (1.8 m / 55 / interval 24 / sprint fire) and cook/throw grenade (fuse 120, blast 5 m, self-damage yes, friendly 0) in `WeaponSimulator` / `GrenadeSimulator` / combat harness.
 - Game-v1 additive `Slot3`/`Slot4`; local input + HUD; AI empty-ammo knife / single grenade; procedural `LoadoutPropGeometry` packaged in map visuals.
 
-**Checks (software):** Contracts 76/76, Simulation 251/251 (incl. KnifeGrenadeTests), Game 74/74, Generation 394/394, docs/fixtures + C0/Game-v1 locks PASS on the working tree.
+**T087 follow-up (ADR-064, 2026-11-15):** owner playtest — knife/grenade reused gun animations and throws had no visible projectile.
+- Rising-edge cook/melee after equip; `ActorLifecycleState.WeaponAction` + Game-v1 lock refresh.
+- FP slash vs close-range stab; grenade cook/throw poses; hide held grenade when empty/thrown; `CosmeticGrenadeFlight` + presenter.
+- Knife skips muzzle/overlay/rifle audio/gunfire reveal.
 
-**Pending:** native republish (package identities change with knife/grenade meshes), clean Client/Server/installer identity, Unity EditMode/PlayMode on the locked editor, interactive two-map playtest. Does not close FIX/SET/REL/P05.
+**Checks (follow-up software):** Simulation 277/277, Game 79/79, docs/fixtures + Game-v1 lock PASS on the working tree.
+
+**Pending:** clean Client/Server/installer identity, Unity EditMode/PlayMode on the locked editor, interactive two-map playtest of knife stab-in-range and grenade throw/blast. Does not close FIX/SET/REL/P05.
 
 ## ADR-058 — Minimap self marker and temporary gunfire reveal
 
@@ -112,6 +117,8 @@ Rifle ADS now raises a procedural circular scope mask (soft housing + mil-dot re
 - Pure Simulation audio tests PASS (cull, found-bank load, hash-mismatch fallback).
 
 **Pending (not PASS):** FIX10 / SET02 named device hearing; package/installer identity that includes this bank. Does not close REL/P05.
+
+**Shot sample refresh (same task):** rifle/pistol cues replaced with OpenGameArt CC0 real target-shooting recordings (Tabasco SKS/Mosin + CZ-52; kurt 22 Pistol/Magnum), sliced to 48 kHz stereo one-shots via `Tools/import_real_gunshots.py`. Manifest source notes updated. Named hearing still Pending.
 
 ## ADR-056 — Last weapon (Q) and local-only muzzle overlay
 

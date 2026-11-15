@@ -19,6 +19,8 @@ namespace Shooter.Presentation.Audio
         public const ushort HeadRegionId = 1;
         public const string RifleWeaponId = "weapons/rifle";
         public const string PistolWeaponId = "weapons/pistol";
+        public const string KnifeWeaponId = "weapons/knife";
+        public const string GrenadeWeaponId = "weapons/grenade";
 
         private readonly SynthAudioMixer mixer;
         private readonly HashSet<string> consumed = new HashSet<string>(StringComparer.Ordinal);
@@ -139,6 +141,10 @@ namespace Shooter.Presentation.Audio
                 case CombatEventKind.ShotAccepted:
                     voice = MapShotVoice(ev);
                     return true;
+                case CombatEventKind.ProjectileSpawned:
+                    // Soft pin/throw cue; Impact covers the blast.
+                    voice = SynthVoiceKind.Ui;
+                    return true;
                 case CombatEventKind.Impact:
                     voice = IsHeadRegion(ev) ? SynthVoiceKind.Headshot : SynthVoiceKind.Impact;
                     return true;
@@ -169,6 +175,10 @@ namespace Shooter.Presentation.Audio
                 string id = shot.WeaponId.ToString();
                 if (string.Equals(id, PistolWeaponId, StringComparison.Ordinal))
                     return SynthVoiceKind.PistolShot;
+                if (string.Equals(id, KnifeWeaponId, StringComparison.Ordinal))
+                    return SynthVoiceKind.Impact;
+                if (string.Equals(id, GrenadeWeaponId, StringComparison.Ordinal))
+                    return SynthVoiceKind.Impact;
             }
             return SynthVoiceKind.RifleShot;
         }
@@ -183,6 +193,7 @@ namespace Shooter.Presentation.Audio
         private Float3 EventPosition(CombatEvent ev, Float3 fallback)
         {
             if (ev.Payload is ShotPayload shot) return shot.Origin;
+            if (ev.Payload is ProjectilePayload projectile) return projectile.Origin;
             if (ev.Payload is ImpactPayload impact) return impact.Position;
             if (ev.Kind == CombatEventKind.ReloadStarted || ev.Kind == CombatEventKind.ReloadCompleted)
             {
