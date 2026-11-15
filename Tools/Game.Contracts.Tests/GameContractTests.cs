@@ -169,7 +169,7 @@ namespace Shooter.Game.Contracts.Tests
             {
                 byte team = i < request.TeamSize ? (byte)1 : (byte)2;
                 var participant = new ParticipantId((uint)(i + 1));
-                var entity = lifecycle.SpawnLife(participant, new LifeId(1), new Float3(i * 4, 0, -20), 0, team);
+                var entity = lifecycle.SpawnLife(participant, new LifeId(1), new Float3(i * 4, 0, 0), 0, team); // >40 m from both compact-arena staging zones
                 allEntityIds.Add(entity.Value);
                 roster.Add(new ParticipantState(participant, "P" + (i + 1), team, i == 0, entity, new LifeId(1), true, 0, 0, 0));
             }

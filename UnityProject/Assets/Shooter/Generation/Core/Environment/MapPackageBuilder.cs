@@ -81,12 +81,8 @@ namespace Shooter.Generation.Environment
             if (visualProfile != "gameplay" && visualProfile != "low" && visualProfile != "balanced" && visualProfile != "high")
                 throw new ArgumentOutOfRangeException(nameof(visualProfile));
             ulong seed = MapRecipe.ApprovedSeed(mapId);
-            var plan = mapId == "depot-yard" ? DepotPlanner.Generate(seed) : CompoundPlanner.Generate(seed);
-            if (mapId != "depot-yard")
-            {
-                var report = CompoundValidation.Validate(plan);
-                if (!report.Passed) throw new InvalidOperationException(report.Diagnostic);
-            }
+            var plan = ProductMapPlanner.Generate(mapId);
+            ProductMapPlanner.ValidateOrThrow(mapId, plan);
 
             var collision = ToCollisionData(plan);
             byte[] collisionBody = GeometryCodec.EncodeCollision(collision);

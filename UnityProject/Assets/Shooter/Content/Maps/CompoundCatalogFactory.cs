@@ -12,16 +12,9 @@ namespace Shooter.Content.Maps
     {
         public static MapGameplayDefinition BuildGameplay(MapId mapId, ulong seed)
         {
-            var plan = mapId.Value == "depot-yard" ? DepotPlanner.Generate(seed) : CompoundPlanner.Generate(seed);
-            if (mapId.Value != "depot-yard")
-            {
-                var report = CompoundValidation.Validate(plan);
-                if (!report.Passed) throw new InvalidOperationException(report.Diagnostic);
-            }
-
-            var topology = MapTopologyValidation.Validate(mapId.Value, plan);
-            if (!topology.Passed)
-                throw new InvalidOperationException("Map topology failed FIX07 checks: " + topology.Diagnostic);
+            // Catalog maps always use the approved recipe seed (ProductMapPlanner); the legacy seed parameter is retained for callers.
+            var plan = ProductMapPlanner.Generate(mapId.Value);
+            ProductMapPlanner.ValidateOrThrow(mapId.Value, plan);
 
             var bounds = new Aabb(
                 new Float3(-CompoundPlan.MapHalfExtent, -2f, -CompoundPlan.MapHalfExtent),
@@ -38,15 +31,9 @@ namespace Shooter.Content.Maps
             var patrol = Subsample(plan.RouteCorners, 64);
             if (patrol.Count == 0) patrol.Add(Feet(plan.PlayerSpawn));
             // Combat destinations include flank/covered-route anchors for T057 consumers.
-            var combat = new List<Float3>
-            {
-                Feet(plan.ObjectiveCenter),
-                Feet(plan.PlayerSpawn),
-                Feet(new Float3(0f, 0f, 0f)),
-                Feet(new Float3(-96f, 0f, 0f)),
-                Feet(new Float3(96f, 0f, 0f)),
-                Feet(new Float3(112f, 0f, 0f))
-            };
+            var combat = new List<Float3>();
+            var destinations = ProductMapPlanner.CombatDestinations(plan);
+            for (int i = 0; i < destinations.Count; i++) combat.Add(Feet(destinations[i]));
 
             return new MapGameplayDefinition(
                 mapId,

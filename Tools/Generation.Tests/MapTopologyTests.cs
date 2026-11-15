@@ -8,11 +8,12 @@ namespace Shooter.Generation.Tests
     public sealed class MapTopologyTests
     {
         [Theory]
-        [InlineData("training-compound", 460072030UL, false)]
-        [InlineData("depot-yard", 460072031UL, true)]
-        public void Approved_maps_satisfy_FIX07_spawn_route_topology(string mapId, ulong seed, bool depot)
+        [InlineData("training-compound", 460072030UL)]
+        [InlineData("depot-yard", 460072031UL)]
+        public void Approved_maps_satisfy_FIX07_spawn_route_topology(string mapId, ulong seed)
         {
-            var plan = depot ? DepotPlanner.Generate(seed) : CompoundPlanner.Generate(seed);
+            Assert.Equal(seed, MapRecipe.ApprovedSeed(mapId));
+            var plan = ProductMapPlanner.Generate(mapId);
             var report = MapTopologyValidation.Validate(mapId, plan);
             Assert.True(report.Passed, report.Diagnostic);
             Assert.True(report.Team1Slots >= 12);
@@ -20,8 +21,8 @@ namespace Shooter.Generation.Tests
             Assert.True(report.UniqueSlots);
             Assert.True(report.StandingClearance);
             Assert.True(report.InitialSpawnLosBlocked);
-            Assert.True(report.Team1StagingExits >= 2);
-            Assert.True(report.Team2StagingExits >= 2);
+            Assert.True(report.Team1StagingExits >= 3);
+            Assert.True(report.Team2StagingExits >= 3);
             Assert.True(report.DistinctRoutes >= 3);
             Assert.True(report.HasCoveredRoute);
         }
@@ -29,20 +30,22 @@ namespace Shooter.Generation.Tests
         [Fact]
         public void Depot_topology_differs_from_compound_and_keeps_approved_seed()
         {
-            var depot = DepotPlanner.Generate(460072031UL);
-            var compound = CompoundPlanner.Generate(460072030UL);
+            var depot = ProductMapPlanner.Generate("depot-yard");
+            var compound = ProductMapPlanner.Generate("training-compound");
             Assert.Equal(460072031UL, MapRecipe.ApprovedSeed("depot-yard"));
             Assert.NotEqual(42UL, MapRecipe.ApprovedSeed("depot-yard"));
             Assert.NotEqual(depot.CollisionHash, compound.CollisionHash);
             Assert.True(depot.CollisionBoxes.Count != compound.CollisionBoxes.Count);
+            Assert.NotNull(depot.Arena);
+            Assert.NotNull(compound.Arena);
             Assert.Empty(depot.Buildings);
-            Assert.Equal(12, compound.Buildings.Count);
+            Assert.Empty(compound.Buildings);
         }
 
         [Fact]
         public void Spawn_layout_emits_unique_ids_and_team_balance()
         {
-            var plan = CompoundPlanner.Generate(460072030UL);
+            var plan = CompoundPlanner.Generate(460072030UL); // legacy ring layout stays covered
             var slots = MapSpawnLayout.BuildBothTeams(plan);
             Assert.Equal(24, slots.Count);
             Assert.True(MapSpawnLayout.PositionsUnique(slots));

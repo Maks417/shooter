@@ -155,15 +155,8 @@ namespace Shooter.Generation.Environment
 
         private static Dictionary<string, object?> BuildGameplaySidecar(string mapId, ulong seed)
         {
-            var plan = mapId == "depot-yard" ? DepotPlanner.Generate(seed) : CompoundPlanner.Generate(seed);
-            if (mapId != "depot-yard")
-            {
-                var report = CompoundValidation.Validate(plan);
-                if (!report.Passed) throw new InvalidOperationException(report.Diagnostic);
-            }
-            var topology = MapTopologyValidation.Validate(mapId, plan);
-            if (!topology.Passed)
-                throw new InvalidOperationException("Map topology failed FIX07 checks: " + topology.Diagnostic);
+            var plan = ProductMapPlanner.Generate(mapId);
+            ProductMapPlanner.ValidateOrThrow(mapId, plan);
 
             var candidates = MapSpawnLayout.BuildBothTeams(plan);
             var spawns = new List<object?>(candidates.Count);
@@ -181,15 +174,9 @@ namespace Shooter.Generation.Environment
 
             var patrol = Subsample(plan.RouteCorners, 64);
             if (patrol.Count == 0) patrol.Add(Vec(Feet(plan.PlayerSpawn)));
-            var combat = new List<object?>
-            {
-                Vec(Feet(plan.ObjectiveCenter)),
-                Vec(Feet(plan.PlayerSpawn)),
-                Vec(Feet(new Float3(0f, 0f, 0f))),
-                Vec(Feet(new Float3(-96f, 0f, 0f))),
-                Vec(Feet(new Float3(96f, 0f, 0f))),
-                Vec(Feet(new Float3(112f, 0f, 0f)))
-            };
+            var combat = new List<object?>();
+            var destinations = ProductMapPlanner.CombatDestinations(plan);
+            for (int i = 0; i < destinations.Count; i++) combat.Add(Vec(Feet(destinations[i])));
 
             return new Dictionary<string, object?>
             {

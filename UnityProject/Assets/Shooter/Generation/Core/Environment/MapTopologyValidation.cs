@@ -96,8 +96,9 @@ namespace Shooter.Generation.Environment
                 }
             }
 
-            int exits1 = CountStagingExits(plan, plan.PlayerSpawn);
-            int exits2 = CountStagingExits(plan, plan.ObjectiveCenter);
+            int exits1 = plan.Arena != null ? CountArenaExits(plan, plan.Arena, 1) : CountStagingExits(plan, plan.PlayerSpawn);
+            int exits2 = plan.Arena != null ? CountArenaExits(plan, plan.Arena, 2) : CountStagingExits(plan, plan.ObjectiveCenter);
+            int requiredExits = plan.Arena != null ? 3 : 2;
             var routes = BuildDistinctRoutes(plan);
             bool covered = false;
             for (int i = 0; i < routes.Count; i++)
@@ -115,8 +116,8 @@ namespace Shooter.Generation.Environment
                 unique &&
                 clearance &&
                 losBlocked &&
-                exits1 >= 2 &&
-                exits2 >= 2 &&
+                exits1 >= requiredExits &&
+                exits2 >= requiredExits &&
                 routes.Count >= 3 &&
                 covered;
 
@@ -145,6 +146,26 @@ namespace Shooter.Generation.Environment
                 routes.Count,
                 covered,
                 diag);
+        }
+
+        /// <summary>Arena plans: an exit counts when the anchor reaches the exit point and the exit reaches the (open) map centre.</summary>
+        private static int CountArenaExits(CompoundPlan plan, ArenaLayout arena, int team)
+        {
+            float clearance = CompoundConnectivity.RequiredClearance;
+            var anchor = arena.Anchor(team);
+            var combat = ResolveOpen(plan.CollisionBoxes, arena.Center, clearance);
+            var exits = arena.Exits(team);
+            int count = 0;
+            var path = new List<Float3>();
+            for (int i = 0; i < exits.Count; i++)
+            {
+                var gate = exits[i];
+                if (CompoundConnectivity.IsBlocked(plan.CollisionBoxes, gate.X, gate.Z, clearance)) continue;
+                if (!CompoundConnectivity.TryFindPath(plan.CollisionBoxes, anchor, gate, path, clearance)) continue;
+                if (!CompoundConnectivity.TryFindPath(plan.CollisionBoxes, gate, combat, path, clearance)) continue;
+                count++;
+            }
+            return count;
         }
 
         private static int CountStagingExits(CompoundPlan plan, Float3 stagingCenter)
@@ -188,6 +209,13 @@ namespace Shooter.Generation.Environment
                 new Float3(-80f, 0f, 80f),
                 new Float3(80f, 0f, -80f)
             };
+
+            if (plan.Arena != null)
+            {
+                var lanes = plan.Arena.LanePoints;
+                via = new Float3[lanes.Count];
+                for (int i = 0; i < lanes.Count; i++) via[i] = lanes[i];
+            }
 
             var routes = new List<List<Float3>>();
             var scratchA = new List<Float3>();

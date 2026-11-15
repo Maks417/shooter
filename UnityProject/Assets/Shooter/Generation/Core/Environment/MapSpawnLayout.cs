@@ -19,6 +19,12 @@ namespace Shooter.Generation.Environment
         {
             if (plan == null) throw new ArgumentNullException(nameof(plan));
             var slots = new List<SpawnCandidate>(SlotsPerTeam * 2);
+            if (plan.Arena != null)
+            {
+                AddTeamInArena(slots, plan, plan.Arena, team: 1, idBase: 100);
+                AddTeamInArena(slots, plan, plan.Arena, team: 2, idBase: 200);
+                return slots;
+            }
             AddTeam(slots, plan, team: 1, plan.PlayerSpawn, plan.ObjectiveCenter, idBase: 100);
             AddTeam(slots, plan, team: 2, plan.ObjectiveCenter, plan.PlayerSpawn, idBase: 200);
             return slots;
@@ -89,6 +95,45 @@ namespace Shooter.Generation.Environment
 
             if (added < SlotsPerTeam)
                 throw new InvalidOperationException("Unable to place " + SlotsPerTeam + " unique team-" + team + " spawn slots.");
+        }
+
+        /// <summary>Arena plans: slots live inside the plan's own staging rectangle, nearest the anchor first, facing the enemy anchor.</summary>
+        private static void AddTeamInArena(List<SpawnCandidate> slots, CompoundPlan plan, ArenaLayout arena, byte team, uint idBase)
+        {
+            const float pitch = 3f, inset = 1.5f;
+            float clearance = CompoundConnectivity.RequiredClearance;
+            var anchor = arena.Anchor(team);
+            var enemy = arena.Anchor(team == 1 ? 2 : 1);
+            var rect = arena.StagingRect(team);
+            var candidates = new List<(float d2, float x, float z)>();
+            for (int i = -40; i <= 40; i++)
+            for (int j = -10; j <= 10; j++)
+            {
+                float x = anchor.X + i * pitch;
+                float z = anchor.Z + j * pitch;
+                if (x < rect.minX + inset || x > rect.maxX - inset || z < rect.minZ + inset || z > rect.maxZ - inset) continue;
+                float dx = x - anchor.X, dz = z - anchor.Z;
+                candidates.Add((dx * dx + dz * dz, x, z));
+            }
+            candidates.Sort((a, b) =>
+            {
+                int c = a.d2.CompareTo(b.d2);
+                if (c != 0) return c;
+                c = a.x.CompareTo(b.x);
+                return c != 0 ? c : a.z.CompareTo(b.z);
+            });
+            int added = 0;
+            for (int k = 0; k < candidates.Count && added < SlotsPerTeam; k++)
+            {
+                float x = candidates[k].x, z = candidates[k].z;
+                if (CompoundConnectivity.IsBlocked(plan.CollisionBoxes, x, z, clearance)) continue;
+                var feet = new Float3(x, 0f, z);
+                if (!SpacingOk(slots, team, feet, MinSlotSpacingMeters)) continue;
+                slots.Add(new SpawnCandidate(idBase + (uint)added, team, feet, YawToward(feet, enemy)));
+                added++;
+            }
+            if (added < SlotsPerTeam)
+                throw new InvalidOperationException("Unable to place " + SlotsPerTeam + " team-" + team + " spawn slots inside the staging rectangle.");
         }
 
         private static bool SpacingOk(List<SpawnCandidate> slots, byte team, Float3 feet, float minSpacing)

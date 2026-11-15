@@ -20,9 +20,7 @@ public sealed class NavBakeStageTests
 
     private static IReadOnlyList<CollisionBox> GameplayBoxes(string mapId)
     {
-        ulong seed = MapRecipe.ApprovedSeed(mapId);
-        var plan = mapId == "depot-yard" ? DepotPlanner.Generate(seed) : CompoundPlanner.Generate(seed);
-        return plan.CollisionBoxes;
+        return ProductMapPlanner.Generate(mapId).CollisionBoxes;
     }
 
     private const float R = 0.32f, H = 1.8f, Step = 0.25f, Slope = 45f, Margin = 0.05f;
