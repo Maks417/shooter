@@ -11,8 +11,8 @@ public sealed class WeaponTests
 {
     private readonly ITestOutputHelper output;
     public WeaponTests(ITestOutputHelper output) { this.output = output; }
-    private static byte[] Source(string kind = "rifle", string seed = "460072030", string deps = "[]") => Encoding.UTF8.GetBytes(
-        "{\"recipeId\":\"weapons/" + kind + "\",\"schemaId\":\"shooter.recipe.weapon.v1\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.0.4\",\"seed\":\"" + seed + "\",\"parameters\":{\"kind\":\"" + kind + "\"},\"dependencies\":" + deps + "}");
+    private static byte[] Source(string kind = "rifle", string seed = "460072030", string deps = "[]", string silhouette = "standard") => Encoding.UTF8.GetBytes(
+        "{\"recipeId\":\"weapons/" + kind + "\",\"schemaId\":\"shooter.recipe.weapon.v1\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.0.5\",\"seed\":\"" + seed + "\",\"parameters\":{\"kind\":\"" + kind + "\",\"silhouette\":\"" + silhouette + "\"},\"dependencies\":" + deps + "}");
     private static GenerationRequest Request(WeaponRecipe recipe, string profile) => new GenerationRequest(recipe.Document, "windows64", profile, new ContentId(new string('1', 64)));
     [Theory]
     [InlineData("rifle")][InlineData("pistol")]
@@ -141,7 +141,7 @@ public sealed class WeaponTests
             source.Replace("\"kind\":\"rifle\"", "\"kind\":\"rifle\",\"vertices\":[[0,0,0]]"),
             source.Replace("\"seed\":\"460072030\"", "\"seed\":\"01\""),
             source.Replace("\"seed\":\"460072030\"", "\"seed\":\"18446744073709551616\""),
-            source.Replace("\"generatorVersion\":\"1.0.4\"", "\"generatorVersion\":\"2.0.0\""),
+            source.Replace("\"generatorVersion\":\"1.0.5\"", "\"generatorVersion\":\"2.0.0\""),
             source.Replace("\"dependencies\":[]", "\"dependencies\":[],\"unexpected\":0"),
             source.Replace("\"kind\":\"rifle\"", "\"kind\":\"rifle\",\"kind\":\"pistol\"") })
             Assert.Throws<FormatException>(() => WeaponRecipe.Parse(Encoding.UTF8.GetBytes(bad)));
@@ -170,15 +170,27 @@ public sealed class WeaponTests
     [Fact]
     public void OldGeneratorVersionRejectsInsteadOfReinterpretingExistingContent()
     {
-        foreach (string legacy in new[] { "1.0.0", "1.0.1", "1.0.2", "1.0.3" })
+        foreach (string legacy in new[] { "1.0.0", "1.0.1", "1.0.2", "1.0.3", "1.0.4" })
         {
-            var source = Encoding.UTF8.GetString(Source()).Replace("\"generatorVersion\":\"1.0.4\"", "\"generatorVersion\":\"" + legacy + "\"");
+            var source = Encoding.UTF8.GetString(Source()).Replace("\"generatorVersion\":\"1.0.5\"", "\"generatorVersion\":\"" + legacy + "\"");
             Assert.Throws<FormatException>(() => WeaponRecipe.Parse(Encoding.UTF8.GetBytes(source)));
             var current = WeaponRecipe.Parse(Source());
             var old = new RecipeDocument(current.Document.RecipeId, WeaponRecipe.Schema, WeaponRecipe.GeneratorId, legacy, current.Document.Seed, current.Document.Parameters, Array.Empty<ContentId>());
             Assert.False(new WeaponRecipeValidator().Validate(old).Valid);
             Assert.Equal(ErrorCode.UnsupportedVersion, new WeaponAssetGenerator().Generate(new GenerationRequest(old, "windows64", "gameplay", new ContentId(new string('1',64))), CancellationToken.None).Error);
         }
+    }
+    [Fact]
+    public void CarbineSilhouetteBuildsDistinctPrimaryInsideSharedEnvelope()
+    {
+        var standard = WeaponGeometry.Build(WeaponRecipe.Parse(Source("rifle", silhouette: "standard")));
+        var carbine = WeaponGeometry.Build(WeaponRecipe.Parse(Source("rifle", silhouette: "carbine")));
+        Assert.Equal(standard.Bounds.Min.X, carbine.Bounds.Min.X);
+        Assert.Equal(standard.Bounds.Max.Z, carbine.Bounds.Max.Z);
+        Assert.Equal(standard.Sockets.Count, carbine.Sockets.Count);
+        Assert.NotEqual(
+            ContentIdentity.Hash(GeometryCodec.EncodeMesh(standard.Lods[0])),
+            ContentIdentity.Hash(GeometryCodec.EncodeMesh(carbine.Lods[0])));
     }
     [Fact]
     public void RifleMagazineVisualAndProxyJoinTheReceiverAndMagazineWell()

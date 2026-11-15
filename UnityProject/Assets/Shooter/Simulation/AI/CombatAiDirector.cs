@@ -340,8 +340,9 @@ namespace Shooter.Simulation.AI
             board.Alive = true;
             board.State = AiState.Patrol;
             board.Health = 100;
-            board.MagAmmo = AiTuning.MagazineSize;
-            board.ReserveAmmo = 90;
+            var primary = Combat.WeaponCatalog.RequireDefinition(Combat.WeaponLoadoutPolicy.DefaultPrimaryId);
+            board.MagAmmo = primary.MagazineSize;
+            board.ReserveAmmo = primary.ReserveCapacity;
             board.DesiredSlot = 0;
             board.GrenadeRemaining = 1;
             board.RifleEmpty = false;
@@ -784,7 +785,8 @@ namespace Shooter.Simulation.AI
             if (board.State == AiState.Reload)
             {
                 // Authority owns reload timing and ammunition; leave only once the magazine actually grew.
-                if (board.MagAmmo > board.ReloadStartMag || board.MagAmmo >= AiTuning.MagazineSize)
+                int magSize = PrimaryMagazineSize();
+                if (board.MagAmmo > board.ReloadStartMag || board.MagAmmo >= magSize)
                     Enter(board, board.HasVisibleTarget ? AiState.Engage
                         : board.CoverPoint.HasValue || board.CoverReservation.HasValue ? AiState.SeekCover : AiState.Search);
             }
@@ -796,7 +798,7 @@ namespace Shooter.Simulation.AI
                     !board.CoverPoint.HasValue && !board.CoverProbeActive)
                     CoverFinder.Start(board, board.LastSeenEnemy.Value);
             }
-            else if (board.MagAmmo < AiTuning.TacticalReloadBelow && board.ReserveAmmo > 0 && !board.HasVisibleTarget &&
+            else if (board.MagAmmo < TacticalReloadThreshold() && board.ReserveAmmo > 0 && !board.HasVisibleTarget &&
                      (board.LastSeenTick == 0 || unchecked(tick - board.LastSeenTick) > AiTuning.CombatMemoryTicks) &&
                      (IsCalm(board.State) || board.InCover))
             {
@@ -805,7 +807,7 @@ namespace Shooter.Simulation.AI
                 Enter(board, AiState.Reload);
             }
             else if (board.InCover && board.State == AiState.SeekCover && !board.HasVisibleTarget &&
-                     board.MagAmmo < AiTuning.MagazineSize && board.ReserveAmmo > 0)
+                     board.MagAmmo < PrimaryMagazineSize() && board.ReserveAmmo > 0)
             {
                 board.ReloadStartMag = board.MagAmmo;
                 Enter(board, AiState.Reload);
@@ -1520,8 +1522,9 @@ namespace Shooter.Simulation.AI
             else if (canFire && board.MagAmmo > 0)
             {
                 float tol = AimController.FireTolerance(board.TargetDistance);
+                uint interval = ActiveGunFireInterval(board);
                 fire = FireDiscipline.Update(board, tick, board.TargetDistance,
-                    board.AimOffsetRadians <= tol, board.AimOffsetRadians <= tol * 2.5f);
+                    board.AimOffsetRadians <= tol, board.AimOffsetRadians <= tol * 2.5f, interval);
                 if (fire && board.BurstStartTick == tick) counters.BurstsStarted++;
                 if (fire)
                 {
@@ -1564,6 +1567,21 @@ namespace Shooter.Simulation.AI
                 board.NextSlideTick = tick + SlideBotCooldownBaseTicks + (uint)(board.Self.Value % 5) * SlideBotCooldownSpreadTicks;
             }
             return new InputCommand(board.Self, simulationTick, sequence, mx, my, board.Yaw, board.Pitch, buttons, slot);
+        }
+
+        private static int PrimaryMagazineSize() =>
+            Combat.WeaponCatalog.RequireDefinition(Combat.WeaponLoadoutPolicy.DefaultPrimaryId).MagazineSize;
+
+        private static int TacticalReloadThreshold() =>
+            Math.Max(1, PrimaryMagazineSize() * 2 / 5);
+
+        private static uint ActiveGunFireInterval(AiBlackboard board)
+        {
+            var id = board.DesiredSlot == 1
+                ? Combat.WeaponLoadoutPolicy.PistolId
+                : Combat.WeaponLoadoutPolicy.DefaultPrimaryId;
+            uint interval = Combat.WeaponCatalog.RequireDefinition(id).FireIntervalTicks;
+            return interval == 0 ? 1u : interval;
         }
 
         private static void UpdateLoadout(AiBlackboard board, bool visible)

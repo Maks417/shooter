@@ -28,6 +28,7 @@ namespace Shooter.Presentation.Rig
             public byte Team;
             public bool Corpse;
             public byte WeaponSlot;
+            public DefinitionId WeaponDefinition;
             public Transform Root = null!;
             public Transform Weapon = null!;
             public Transform[] Bones = null!;
@@ -99,6 +100,12 @@ namespace Shooter.Presentation.Rig
         private Mesh? firstPersonPistolMagazineMesh;
         private Mesh? firstPersonRifleCycleMesh;
         private Mesh? firstPersonPistolCycleMesh;
+        private Mesh? rifleCarbineMesh;
+        private Mesh? rifleCarbineMagazineMesh;
+        private Mesh? rifleCarbineCycleMesh;
+        private Mesh? firstPersonRifleCarbineMesh;
+        private Mesh? firstPersonRifleCarbineMagazineMesh;
+        private Mesh? firstPersonRifleCarbineCycleMesh;
         private Material[]? team1Palette;
         private Material[]? team2Palette;
         private Material? rifleMetal;
@@ -106,7 +113,11 @@ namespace Shooter.Presentation.Rig
         private Material[] weaponMaterials = Array.Empty<Material>();
         private readonly Dictionary<Mesh, Material[]> weaponPalettes = new Dictionary<Mesh, Material[]>();
         private WeaponRecipe? rifleRecipe;
+        private WeaponRecipe? rifleCarbineRecipe;
         private WeaponRecipe? pistolRecipe;
+        private Float3 rifleCarbineSightSocketLocal;
+        private DefinitionId localVisibleWeaponId;
+        private DefinitionId localPrimaryWeaponId = new DefinitionId("weapons/rifle");
         private EntityId localHuman;
         private Camera? fpsCamera;
         private Transform? localWeapon;
@@ -156,6 +167,8 @@ namespace Shooter.Presentation.Rig
         public float LocalAdsPresentationBlend => localAdsPresentation;
         /// <summary>Mesh slot currently shown for the local FP weapon (lags desired mid-switch).</summary>
         public byte LocalVisibleWeaponSlot => localVisibleWeaponSlot;
+        /// <summary>DefinitionId for the mesh currently shown (ADR-072).</summary>
+        public DefinitionId LocalVisibleWeaponId => localVisibleWeaponId;
 
         public int CorpseAvatarCount
         {
@@ -188,11 +201,13 @@ namespace Shooter.Presentation.Rig
             if (shader == null || !shader.isSupported)
                 throw new InvalidOperationException("Required locked URP Lit shader missing; no art fallback.");
 
-            // Recipes for motion/sockets only â€” no SoldierGeometry/WeaponGeometry mesh generation on the product path.
+            // Recipes for motion/sockets only — no SoldierGeometry/WeaponGeometry mesh generation on the product path.
             rifleRecipe = WeaponRecipe.Parse(Encoding.ASCII.GetBytes(
-                "{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/rifle\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.0.4\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"rifle\"},\"dependencies\":[]}"));
+                "{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/rifle\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.0.5\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"rifle\",\"silhouette\":\"standard\"},\"dependencies\":[]}"));
+            rifleCarbineRecipe = WeaponRecipe.Parse(Encoding.ASCII.GetBytes(
+                "{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/rifle-carbine\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.0.5\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"rifle\",\"silhouette\":\"carbine\"},\"dependencies\":[]}"));
             pistolRecipe = WeaponRecipe.Parse(Encoding.ASCII.GetBytes(
-                "{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/pistol\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.0.4\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"pistol\"},\"dependencies\":[]}"));
+                "{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/pistol\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.0.5\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"pistol\",\"silhouette\":\"standard\"},\"dependencies\":[]}"));
 
             localWeapon = new GameObject("Local FP weapon").transform;
             localWeapon.SetParent(fpsCamera!.transform, false);
@@ -259,22 +274,28 @@ namespace Shooter.Presentation.Rig
                 int weaponLod = showcase ? 0 : MapVisualClosure.WeaponLodIndex(visuals.Profile);
                 bodyMesh = Own(Upload(MapVisualClosure.DecodeSoldierLod(visuals, soldierLod), true));
                 rifleMesh = Own(Upload(MapVisualClosure.DecodeRifleLod(visuals, weaponLod), false));
+                rifleCarbineMesh = Own(Upload(MapVisualClosure.DecodeRifleCarbineLod(visuals, weaponLod), false));
                 pistolMesh = Own(Upload(MapVisualClosure.DecodePistolLod(visuals, weaponLod), false));
                 knifeMesh = Own(Upload(MapVisualClosure.DecodeKnifeLod(visuals, weaponLod), false));
                 grenadeMesh = Own(Upload(MapVisualClosure.DecodeGrenadeLod(visuals, weaponLod), false));
                 rifleMagazineMesh = Own(Upload(MapVisualClosure.DecodeRifleMagazine(visuals), false));
+                rifleCarbineMagazineMesh = Own(Upload(MapVisualClosure.DecodeRifleCarbineMagazine(visuals), false));
                 pistolMagazineMesh = Own(Upload(MapVisualClosure.DecodePistolMagazine(visuals), false));
                 rifleCycleMesh = Own(Upload(MapVisualClosure.DecodeRifleCycle(visuals), false));
+                rifleCarbineCycleMesh = Own(Upload(MapVisualClosure.DecodeRifleCarbineCycle(visuals), false));
                 pistolCycleMesh = Own(Upload(MapVisualClosure.DecodePistolCycle(visuals), false));
                 // The camera sees equipment at arm's length even on Low. Keep world LOD
                 // scalability without replacing the player's sights/grips with distant proxies.
                 firstPersonRifleMesh = weaponLod == 0 ? rifleMesh : Own(Upload(MapVisualClosure.DecodeRifleLod(visuals, 0), false));
+                firstPersonRifleCarbineMesh = weaponLod == 0 ? rifleCarbineMesh : Own(Upload(MapVisualClosure.DecodeRifleCarbineLod(visuals, 0), false));
                 firstPersonPistolMesh = weaponLod == 0 ? pistolMesh : Own(Upload(MapVisualClosure.DecodePistolLod(visuals, 0), false));
                 firstPersonKnifeMesh = weaponLod == 0 ? knifeMesh : Own(Upload(MapVisualClosure.DecodeKnifeLod(visuals, 0), false));
                 firstPersonGrenadeMesh = weaponLod == 0 ? grenadeMesh : Own(Upload(MapVisualClosure.DecodeGrenadeLod(visuals, 0), false));
                 firstPersonRifleMagazineMesh = rifleMagazineMesh;
+                firstPersonRifleCarbineMagazineMesh = rifleCarbineMagazineMesh;
                 firstPersonPistolMagazineMesh = pistolMagazineMesh;
                 firstPersonRifleCycleMesh = rifleCycleMesh;
+                firstPersonRifleCarbineCycleMesh = rifleCarbineCycleMesh;
                 firstPersonPistolCycleMesh = pistolCycleMesh;
                 for (byte slot = 0; slot < 4; slot++)
                     for (int hand = 0; hand < 2; hand++)
@@ -285,6 +306,7 @@ namespace Shooter.Presentation.Rig
                     }
 
                 rifleSightSocketLocal = FindSocket(WeaponGeometry.Sockets(rifleRecipe!), "sight-eye");
+                rifleCarbineSightSocketLocal = FindSocket(WeaponGeometry.Sockets(rifleCarbineRecipe!), "sight-eye");
                 pistolSightSocketLocal = FindSocket(WeaponGeometry.Sockets(pistolRecipe!), "sight-eye");
 
                 team1Palette = new[]
@@ -322,7 +344,7 @@ namespace Shooter.Presentation.Rig
                 firstPersonHandMaterials = new[] { sleeve, glove, riflePolymer };
 
                 visualsBound = true;
-                ApplyLocalWeaponVisual(ProductAuthorityActionView.RifleSlot);
+                ApplyLocalWeaponVisual(WeaponVisualProfiles.DefaultIdForSlot(ProductAuthorityActionView.RifleSlot), ProductAuthorityActionView.RifleSlot);
                 Debug.Log("SHOOTER_PRODUCT_ACTOR_VIEW packaged visuals ready profile=" + visuals.Profile +
                           " soldierLod=" + soldierLod + " weaponLod=" + weaponLod);
             }
@@ -546,11 +568,18 @@ namespace Shooter.Presentation.Rig
             if (showLocalWeapon)
             {
                 byte slot = human.ActiveWeaponSlot;
+                DefinitionId weaponId = human.ActiveWeaponDefinition.IsValid
+                    ? human.ActiveWeaponDefinition
+                    : WeaponVisualProfiles.DefaultIdForSlot(slot);
+                if (slot == ProductAuthorityActionView.RifleSlot && weaponId.IsValid)
+                    localPrimaryWeaponId = weaponId;
                 if (!localViewHuman.Equals(human.EntityId))
                 {
                     localView.ResetForLife(slot);
                     localHandling.Reset(slot);
                     localViewHuman = human.EntityId;
+                    if (slot == ProductAuthorityActionView.RifleSlot && weaponId.IsValid)
+                        localPrimaryWeaponId = weaponId;
                 }
                 actions.SyncLifecycle(human.EntityId, slot, true);
                 localView.SetActiveWeaponSlot(slot);
@@ -567,8 +596,16 @@ namespace Shooter.Presentation.Rig
                 localHandling.Step(human.Feet, slot, dtSeconds, movement.HasValue && movement.Value.Sliding, reducedMotion);
                 // Mesh follows the holster→draw visible slot so the outgoing gun finishes tucking first.
                 byte shown = localHandling.VisibleWeaponSlot;
+                // Mid-switch keeps the outgoing slot's last known id (primary may be carbine).
+                DefinitionId shownId = shown == slot
+                    ? weaponId
+                    : (shown == ProductAuthorityActionView.RifleSlot
+                        ? localPrimaryWeaponId
+                        : WeaponVisualProfiles.DefaultIdForSlot(shown));
                 localVisibleWeaponSlot = shown;
-                ApplyLocalWeaponVisual(shown);
+                localVisibleWeaponId = shownId;
+                var profile = WeaponVisualProfiles.Resolve(shownId, shown);
+                ApplyLocalWeaponVisual(shownId, shown);
                 float reload = localHandling.IsSwitching ? -1f : actions.ReloadPhaseAtTick(human.EntityId, completedTick);
                 float recoilEnergy = Math.Abs(pose.RecoilPitch) + Math.Abs(pose.RecoilYaw);
                 bool magazineEmpty = human.Magazine == 0;
@@ -579,10 +616,9 @@ namespace Shooter.Presentation.Rig
                 var specialPos = localView.SpecialActionPosition(reducedMotion);
                 var specialRot = localView.SpecialActionRotation(reducedMotion);
                 var kick = localView.EquipmentKickMeters(reducedMotion);
-                Float3 sight = ProductAuthorityActionView.IsRifleSlot(shown) ? rifleSightSocketLocal
-                    : shown == ProductAuthorityActionView.PistolSlot ? pistolSightSocketLocal : default;
-                float scale = FirstPersonHandling.NearFieldScale(shown);
-                Float3 hipBias = FirstPersonHandling.NearFieldHipBias(shown);
+                Float3 sight = SightSocketForProfile(profile);
+                float scale = FirstPersonHandling.NearFieldScale(profile);
+                Float3 hipBias = FirstPersonHandling.NearFieldHipBias(profile);
                 Vector3 hip = new Vector3(pose.RightHand.X, pose.RightHand.Y, pose.RightHand.Z);
                 // Keep the stock behind the receiver clear of the camera near plane. These
                 // camera-local offsets affect presentation only; ballistic origin stays authoritative.
@@ -593,16 +629,16 @@ namespace Shooter.Presentation.Rig
                 localWeapon.localScale = new Vector3(scale, scale, scale);
                 localWeapon.localPosition = Vector3.Lerp(hip, aligned, adsPresent) + V(offset) + V(kick) + V(specialPos);
                 float rotKick = FirstPersonHandling.RecoilRotationScale(adsPresent, reducedMotion);
-                var composition = FirstPersonHandling.HipRotationDegrees(shown, adsPresent);
+                var composition = FirstPersonHandling.HipRotationDegrees(profile, adsPresent);
                 localWeapon.localRotation = Quaternion.Euler(
                     rotation.X + composition.X + specialRot.X + pose.RecoilPitch * Mathf.Rad2Deg * rotKick,
                     rotation.Y + composition.Y + specialRot.Y + pose.RecoilYaw * Mathf.Rad2Deg * rotKick,
                     rotation.Z + composition.Z + specialRot.Z);
                 PoseLocalHands(shown,reload,localView.CycleOpen01,reducedMotion,magazineEmpty);
-                PoseLocalMechanicalParts(shown, reload, magazineEmpty, localView.CycleOpen01, reducedMotion);
-                // Full rifle ADS uses the analytic scope overlay — hide the near-field mesh so the lens stays clean.
+                PoseLocalMechanicalParts(profile, shown, reload, magazineEmpty, localView.CycleOpen01, reducedMotion);
+                // Full scoped ADS uses the analytic scope overlay — hide the near-field mesh so the lens stays clean.
                 // Empty/thrown grenade hides the held prop so the throw reads clearly.
-                if (AdsOpticVisual.HideRifleViewModel(shown, adsPresent)
+                if (AdsOpticVisual.HideRifleViewModel(profile, adsPresent)
                     || localView.HideHeldGrenade(human.Magazine))
                     localWeapon.gameObject.SetActive(false);
             }
@@ -687,7 +723,11 @@ namespace Shooter.Presentation.Rig
             avatar.MagazineRenderer = avatar.MagazinePart!.GetComponent<MeshRenderer>();
             avatar.CycleFilter = CreateWeaponChild(avatar.Weapon, "Held cycle", out avatar.CyclePart);
             avatar.CycleRenderer = avatar.CyclePart!.GetComponent<MeshRenderer>();
-            ApplyHeldWeaponVisual(avatar, slot);
+            DefinitionId createId = state.ActiveWeaponDefinition.IsValid
+                ? state.ActiveWeaponDefinition
+                : WeaponVisualProfiles.DefaultIdForSlot(slot);
+            avatar.WeaponDefinition = createId;
+            ApplyHeldWeaponVisual(avatar, createId, slot);
             ApplyLocalHumanShadowMode(avatar, state.EntityId.Equals(localHuman) && !corpse && state.Alive);
 
             avatars[state.EntityId.Value] = avatar;
@@ -720,11 +760,16 @@ namespace Shooter.Presentation.Rig
             }
 
             byte slot = state.ActiveWeaponSlot;
+            DefinitionId weaponId = state.ActiveWeaponDefinition.IsValid
+                ? state.ActiveWeaponDefinition
+                : WeaponVisualProfiles.DefaultIdForSlot(slot);
+            var heldProfile = WeaponVisualProfiles.Resolve(weaponId, slot);
             actions.SyncLifecycle(state.EntityId, slot, state.Alive && !avatar.Corpse);
-            if (slot != avatar.WeaponSlot)
+            if (slot != avatar.WeaponSlot || !avatar.WeaponDefinition.Equals(weaponId))
             {
                 avatar.WeaponSlot = slot;
-                ApplyHeldWeaponVisual(avatar, slot);
+                avatar.WeaponDefinition = weaponId;
+                ApplyHeldWeaponVisual(avatar, weaponId, slot);
             }
 
             // Authority ReloadStarted/Completed only — never magazine decrease.
@@ -736,7 +781,7 @@ namespace Shooter.Presentation.Rig
                 actions.SyncLifecycle(state.EntityId, slot, false);
             }
             // World cycle follows the same cosmetic close rate as the local FP spring.
-            if (!avatar.Corpse && state.Alive && FirstPersonWeaponMechanics.HasCyclePart(slot))
+            if (!avatar.Corpse && state.Alive && FirstPersonWeaponMechanics.HasCyclePart(heldProfile))
                 avatar.CycleOpen = Mathf.MoveTowards(avatar.CycleOpen, 0f, dtSeconds / 0.09f);
             else
                 avatar.CycleOpen = 0f;
@@ -795,16 +840,16 @@ namespace Shooter.Presentation.Rig
 
             Float3 weaponPosition = pose.WeaponPosition;
             Quat weaponRotation = pose.WeaponRotation;
-            if (!ProductAuthorityActionView.IsRifleSlot(slot) && !avatar.Corpse && state.Alive)
+            if (heldProfile.Family != WeaponVisualFamily.PrimaryGun && !avatar.Corpse && state.Alive)
                 weaponPosition = pose.WorldPositions[RightHandJoint];
 
             avatar.Weapon.SetPositionAndRotation(V(weaponPosition), Q(weaponRotation));
             avatar.Weapon.gameObject.SetActive(!avatar.Corpse && state.Alive);
-            PoseHeldMechanicalParts(avatar, slot, state.Magazine == 0);
+            PoseHeldMechanicalParts(avatar, heldProfile, state.Magazine == 0);
             // Re-assert each pose so respawn / corpse flip keeps local FP body+weapon ShadowsOnly.
             ApplyLocalHumanShadowMode(avatar, state.EntityId.Equals(localHuman) && !avatar.Corpse && state.Alive);
 
-            Float3 sightLocal = ProductAuthorityActionView.IsRifleSlot(slot) ? rifleSightSocketLocal : pistolSightSocketLocal;
+            Float3 sightLocal = SightSocketForProfile(heldProfile);
             avatar.LastArmBodyClearance = pose.ArmBodyClearanceMeters;
             avatar.LastEyeSightLineError = pose.EyeSightLineErrorMeters;
             avatar.LastLeftGripError = pose.LeftGripError;
@@ -826,15 +871,16 @@ namespace Shooter.Presentation.Rig
                 avatar.Body.sharedMaterials = state.Team == 1 ? team1Palette : team2Palette;
         }
 
-        private void ApplyHeldWeaponVisual(Avatar avatar, byte slot)
+        private void ApplyHeldWeaponVisual(Avatar avatar, DefinitionId weaponId, byte slot)
         {
-            avatar.Weapon.name = SlotWeaponName(slot, false);
-            avatar.WeaponFilter.sharedMesh = HeldMeshForSlot(slot);
+            var profile = WeaponVisualProfiles.Resolve(weaponId, slot);
+            avatar.Weapon.name = WeaponDisplayName(profile, false);
+            avatar.WeaponFilter.sharedMesh = HeldMeshForProfile(profile);
             avatar.WeaponRenderer.sharedMaterials = WeaponPalette(avatar.WeaponFilter.sharedMesh);
-            bool guns = FirstPersonWeaponMechanics.HasMagazinePart(slot);
+            bool guns = FirstPersonWeaponMechanics.HasMagazinePart(profile);
             if (avatar.MagazineFilter != null && avatar.MagazinePart != null)
             {
-                avatar.MagazineFilter.sharedMesh = guns ? HeldMagazineForSlot(slot) : null;
+                avatar.MagazineFilter.sharedMesh = guns ? HeldMagazineForProfile(profile) : null;
                 if (avatar.MagazineRenderer != null)
                     avatar.MagazineRenderer.sharedMaterials = WeaponPalette(avatar.MagazineFilter.sharedMesh);
                 avatar.MagazinePart.gameObject.SetActive(guns);
@@ -842,7 +888,7 @@ namespace Shooter.Presentation.Rig
             }
             if (avatar.CycleFilter != null && avatar.CyclePart != null)
             {
-                avatar.CycleFilter.sharedMesh = guns ? HeldCycleForSlot(slot) : null;
+                avatar.CycleFilter.sharedMesh = guns ? HeldCycleForProfile(profile) : null;
                 if (avatar.CycleRenderer != null)
                     avatar.CycleRenderer.sharedMaterials = WeaponPalette(avatar.CycleFilter.sharedMesh);
                 avatar.CyclePart.gameObject.SetActive(guns);
@@ -851,23 +897,24 @@ namespace Shooter.Presentation.Rig
             avatar.CycleOpen = 0f;
         }
 
-        private void ApplyLocalWeaponVisual(byte slot)
+        private void ApplyLocalWeaponVisual(DefinitionId weaponId, byte slot)
         {
             if (localWeapon == null || !visualsBound) return;
-            localWeapon.name = SlotWeaponName(slot, true);
-            localWeapon.GetComponent<MeshFilter>().sharedMesh = LocalMeshForSlot(slot);
+            var profile = WeaponVisualProfiles.Resolve(weaponId, slot);
+            localWeapon.name = WeaponDisplayName(profile, true);
+            localWeapon.GetComponent<MeshFilter>().sharedMesh = LocalMeshForProfile(profile);
             localWeapon.GetComponent<MeshRenderer>().sharedMaterials = WeaponPalette(localWeapon.GetComponent<MeshFilter>().sharedMesh);
-            bool guns = FirstPersonWeaponMechanics.HasMagazinePart(slot);
+            bool guns = FirstPersonWeaponMechanics.HasMagazinePart(profile);
             if (localMagazineFilter != null && localMagazine != null)
             {
-                localMagazineFilter.sharedMesh = guns ? LocalMagazineForSlot(slot) : null;
+                localMagazineFilter.sharedMesh = guns ? LocalMagazineForProfile(profile) : null;
                 localMagazine.GetComponent<MeshRenderer>().sharedMaterials = WeaponPalette(localMagazineFilter!.sharedMesh);
                 localMagazine.gameObject.SetActive(guns);
                 localMagazine.localPosition = Vector3.zero;
             }
             if (localCycleFilter != null && localCycle != null)
             {
-                localCycleFilter.sharedMesh = guns ? LocalCycleForSlot(slot) : null;
+                localCycleFilter.sharedMesh = guns ? LocalCycleForProfile(profile) : null;
                 localCycle.GetComponent<MeshRenderer>().sharedMaterials = WeaponPalette(localCycleFilter!.sharedMesh);
                 localCycle.gameObject.SetActive(guns);
                 localCycle.localPosition = Vector3.zero;
@@ -914,78 +961,99 @@ namespace Shooter.Presentation.Rig
             }
         }
 
-        private void PoseLocalMechanicalParts(byte slot, float reload, bool magazineEmpty, float cycleOpen, bool reducedMotion)
+        private void PoseLocalMechanicalParts(in WeaponVisualProfile profile, byte slot, float reload, bool magazineEmpty, float cycleOpen, bool reducedMotion)
         {
             if (localMagazine != null)
             {
-                bool show = FirstPersonWeaponMechanics.HasMagazinePart(slot);
+                bool show = FirstPersonWeaponMechanics.HasMagazinePart(profile);
                 localMagazine.gameObject.SetActive(show);
                 if (show)
                     localMagazine.localPosition = V(FirstPersonWeaponMechanics.MagazineOffset(reload, magazineEmpty, reducedMotion));
             }
             if (localCycle != null)
             {
-                bool show = FirstPersonWeaponMechanics.HasCyclePart(slot);
+                bool show = FirstPersonWeaponMechanics.HasCyclePart(profile);
                 localCycle.gameObject.SetActive(show);
                 if (show)
-                    localCycle.localPosition = V(FirstPersonWeaponMechanics.CycleOffset(slot, cycleOpen, reducedMotion));
+                    localCycle.localPosition = V(FirstPersonWeaponMechanics.CycleOffset(profile, cycleOpen, reducedMotion));
             }
         }
 
-        private void PoseHeldMechanicalParts(Avatar avatar, byte slot, bool magazineEmpty)
+        private void PoseHeldMechanicalParts(Avatar avatar, in WeaponVisualProfile profile, bool magazineEmpty)
         {
             float reload = avatar.ReloadPhase > 0f ? avatar.ReloadPhase : 0f;
             if (avatar.MagazinePart != null)
             {
-                bool show = FirstPersonWeaponMechanics.HasMagazinePart(slot) && !avatar.Corpse;
+                bool show = FirstPersonWeaponMechanics.HasMagazinePart(profile) && !avatar.Corpse;
                 avatar.MagazinePart.gameObject.SetActive(show);
                 if (show)
                     avatar.MagazinePart.localPosition = V(FirstPersonWeaponMechanics.MagazineOffset(reload, magazineEmpty, false));
             }
             if (avatar.CyclePart != null)
             {
-                bool show = FirstPersonWeaponMechanics.HasCyclePart(slot) && !avatar.Corpse;
+                bool show = FirstPersonWeaponMechanics.HasCyclePart(profile) && !avatar.Corpse;
                 avatar.CyclePart.gameObject.SetActive(show);
                 if (show)
-                    avatar.CyclePart.localPosition = V(FirstPersonWeaponMechanics.CycleOffset(slot, avatar.CycleOpen, false));
+                    avatar.CyclePart.localPosition = V(FirstPersonWeaponMechanics.CycleOffset(profile, avatar.CycleOpen, false));
             }
         }
 
-        private static string SlotWeaponName(byte slot, bool local) => slot switch
+        private static string WeaponDisplayName(in WeaponVisualProfile profile, bool local) =>
+            (local ? "Local FP " : "Held ") + (string.IsNullOrEmpty(profile.DisplayLabel) ? profile.MeshAssetKey : profile.DisplayLabel);
+
+        private Float3 SightSocketForProfile(in WeaponVisualProfile profile) => profile.MeshAssetKey switch
         {
-            1 => local ? "Local FP pistol" : "Held pistol",
-            2 => local ? "Local FP knife" : "Held knife",
-            3 => local ? "Local FP grenade" : "Held grenade",
-            _ => local ? "Local FP rifle" : "Held rifle"
+            WeaponVisualProfiles.MeshKeyRifleCarbine => rifleCarbineSightSocketLocal,
+            WeaponVisualProfiles.MeshKeyPistol => pistolSightSocketLocal,
+            WeaponVisualProfiles.MeshKeyRifle => rifleSightSocketLocal,
+            _ => default
         };
 
-        private Mesh? HeldMeshForSlot(byte slot) => slot switch
+        private Mesh? HeldMeshForProfile(in WeaponVisualProfile profile) => profile.MeshAssetKey switch
         {
-            1 => pistolMesh,
-            2 => knifeMesh,
-            3 => grenadeMesh,
+            WeaponVisualProfiles.MeshKeyRifleCarbine => rifleCarbineMesh,
+            WeaponVisualProfiles.MeshKeyPistol => pistolMesh,
+            WeaponVisualProfiles.MeshKeyKnife => knifeMesh,
+            WeaponVisualProfiles.MeshKeyGrenade => grenadeMesh,
             _ => rifleMesh
         };
 
-        private Mesh? LocalMeshForSlot(byte slot) => slot switch
+        private Mesh? LocalMeshForProfile(in WeaponVisualProfile profile) => profile.MeshAssetKey switch
         {
-            1 => firstPersonPistolMesh,
-            2 => firstPersonKnifeMesh,
-            3 => firstPersonGrenadeMesh,
+            WeaponVisualProfiles.MeshKeyRifleCarbine => firstPersonRifleCarbineMesh,
+            WeaponVisualProfiles.MeshKeyPistol => firstPersonPistolMesh,
+            WeaponVisualProfiles.MeshKeyKnife => firstPersonKnifeMesh,
+            WeaponVisualProfiles.MeshKeyGrenade => firstPersonGrenadeMesh,
             _ => firstPersonRifleMesh
         };
 
-        private Mesh? HeldMagazineForSlot(byte slot) =>
-            slot == ProductAuthorityActionView.PistolSlot ? pistolMagazineMesh : rifleMagazineMesh;
+        private Mesh? HeldMagazineForProfile(in WeaponVisualProfile profile) => profile.MeshAssetKey switch
+        {
+            WeaponVisualProfiles.MeshKeyRifleCarbine => rifleCarbineMagazineMesh,
+            WeaponVisualProfiles.MeshKeyPistol => pistolMagazineMesh,
+            _ => rifleMagazineMesh
+        };
 
-        private Mesh? LocalMagazineForSlot(byte slot) =>
-            slot == ProductAuthorityActionView.PistolSlot ? firstPersonPistolMagazineMesh : firstPersonRifleMagazineMesh;
+        private Mesh? LocalMagazineForProfile(in WeaponVisualProfile profile) => profile.MeshAssetKey switch
+        {
+            WeaponVisualProfiles.MeshKeyRifleCarbine => firstPersonRifleCarbineMagazineMesh,
+            WeaponVisualProfiles.MeshKeyPistol => firstPersonPistolMagazineMesh,
+            _ => firstPersonRifleMagazineMesh
+        };
 
-        private Mesh? HeldCycleForSlot(byte slot) =>
-            slot == ProductAuthorityActionView.PistolSlot ? pistolCycleMesh : rifleCycleMesh;
+        private Mesh? HeldCycleForProfile(in WeaponVisualProfile profile) => profile.MeshAssetKey switch
+        {
+            WeaponVisualProfiles.MeshKeyRifleCarbine => rifleCarbineCycleMesh,
+            WeaponVisualProfiles.MeshKeyPistol => pistolCycleMesh,
+            _ => rifleCycleMesh
+        };
 
-        private Mesh? LocalCycleForSlot(byte slot) =>
-            slot == ProductAuthorityActionView.PistolSlot ? firstPersonPistolCycleMesh : firstPersonRifleCycleMesh;
+        private Mesh? LocalCycleForProfile(in WeaponVisualProfile profile) => profile.MeshAssetKey switch
+        {
+            WeaponVisualProfiles.MeshKeyRifleCarbine => firstPersonRifleCarbineCycleMesh,
+            WeaponVisualProfiles.MeshKeyPistol => firstPersonPistolCycleMesh,
+            _ => firstPersonRifleCycleMesh
+        };
 
         private static MeshFilter CreateWeaponChild(Transform parent, string name, out Transform child)
         {

@@ -62,7 +62,8 @@ namespace Shooter.Simulation.AI
         public const float LongRange = 30f;
         public const float AdvanceRange = 55f;
         public const float BackOffRange = 4f;
-        public const uint WeaponIntervalTicks = 6;       // rifle cadence (WeaponDefinition.Rifle)
+        /// <summary>Legacy default primary cadence; prefer <see cref="Combat.WeaponCatalog"/> / equipped definition.</summary>
+        public const uint WeaponIntervalTicks = 6;
         public const uint CloseBurstMinTicks = 60, CloseBurstSpreadTicks = 30, ClosePauseMinTicks = 4, ClosePauseSpreadTicks = 6;
         public const uint MidBurstMinRounds = 3, MidBurstSpreadRounds = 4, MidPauseMinTicks = 10, MidPauseSpreadTicks = 11;
         public const uint LongBurstMinRounds = 1, LongBurstSpreadRounds = 2, LongPauseMinTicks = 16, LongPauseSpreadTicks = 13;
@@ -124,8 +125,10 @@ namespace Shooter.Simulation.AI
         public const ushort LowHealth = 35;
         public const ushort LosingTradeMargin = 10;
         public const uint RetreatCooldownTicks = 600;
+        /// <summary>Legacy default primary magazine; prefer equipped <see cref="Combat.WeaponDefinition.MagazineSize"/>.</summary>
         public const int MagazineSize = 30;
-        public const int TacticalReloadBelow = 12;       // 40 % of the rifle magazine
+        /// <summary>Legacy 40% of default rifle mag; prefer fraction of equipped magazine size.</summary>
+        public const int TacticalReloadBelow = 12;
         public const uint CoverHoldTicks = 120;
         // T087 knife / one grenade per life.
         public const float KnifeEngageMeters = 2.5f;

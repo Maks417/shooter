@@ -13,6 +13,20 @@ Owner: replace synthetic `BotN` roster labels with readable short first names.
 
 **Pending:** named player/installer review of scoreboard and kill-feed readability. No Game-v1 / contract-lock change.
 
+## ADR-072 — weapon profiles
+
+2026-11-15. Owner: make adding a new rifle a catalog/recipe row instead of slot-0 forks. [ADR-072](../../decisions.md#adr-072--accepted-definitionid-weapon-profiles-catalog--visual-bind).
+
+**Implemented (software):**
+- Simulation `WeaponCatalog` + `WeaponLoadoutPolicy` (default primary still `weapons/rifle`; proof primary `weapons/rifle-carbine`).
+- Presentation `WeaponVisualProfiles` drive optic/handling/audio/mesh keys by DefinitionId; `ActorLifecycleState.ActiveWeaponDefinition` mirrors authority.
+- `geometry.weapon` **1.0.5** required `silhouette`; map packages publish carbine LOD/mag/cycle paths; presentation binds by profile asset key.
+- AI fire interval / magazine thresholds read equipped catalog definitions.
+
+**Checks (software):** Simulation **314/314** PASS; Generation **431/431** PASS; Game **88/88** PASS; feature-content-lock / Game-v1 lock / docs verify PASS.
+
+**Pending:** content republish with 1.0.5 packages (carbine meshes in map visual closure), named player/installer review. C0 PredictionSchema unchanged.
+
 ## Combat feel — auto-reload, empty grenade, M67 grenade mesh, bot stuck rescue — 2026-11-15
 
 Owner playtest fixes (no C0 / Game-v1 wire freeze).

@@ -144,32 +144,35 @@ namespace Shooter.Presentation.View
         }
 
         /// <summary>Camera-local hip bias layered on the procedural right-hand grip (meters).</summary>
-        public static Float3 NearFieldHipBias(byte weaponSlot)
-        {
-            if (ProductAuthorityActionView.IsRifleSlot(weaponSlot))
-                return new Float3(0.08f, 0.02f, -0.10f);
-            if (weaponSlot == ProductAuthorityActionView.PistolSlot)
-                return new Float3(0.08f, -0.085f, 0.11f);
-            if (weaponSlot == ProductAuthorityActionView.KnifeSlot)
-                return new Float3(0.10f, -0.10f, 0.16f);
-            return new Float3(0.09f, -0.09f, 0.14f);
-        }
+        public static Float3 NearFieldHipBias(in WeaponVisualProfile profile) => profile.NearFieldHipBias;
 
-        public static float NearFieldScale(byte weaponSlot)
-        {
-            if (ProductAuthorityActionView.IsRifleSlot(weaponSlot)) return RifleNearFieldScale;
-            if (weaponSlot == ProductAuthorityActionView.PistolSlot) return PistolNearFieldScale;
-            return 1.08f;
-        }
+        public static Float3 NearFieldHipBias(DefinitionId weaponId, byte weaponSlot) =>
+            NearFieldHipBias(WeaponVisualProfiles.Resolve(weaponId, weaponSlot));
+
+        public static Float3 NearFieldHipBias(byte weaponSlot) =>
+            NearFieldHipBias(WeaponVisualProfiles.Resolve(default, weaponSlot));
+
+        public static float NearFieldScale(in WeaponVisualProfile profile) => profile.NearFieldScale;
+
+        public static float NearFieldScale(DefinitionId weaponId, byte weaponSlot) =>
+            NearFieldScale(WeaponVisualProfiles.Resolve(weaponId, weaponSlot));
+
+        public static float NearFieldScale(byte weaponSlot) =>
+            NearFieldScale(WeaponVisualProfiles.Resolve(default, weaponSlot));
 
         /// <summary>Static hip composition; fade fully to identity for the verified ADS sight ray.</summary>
+        public static Float3 HipRotationDegrees(in WeaponVisualProfile profile, float ads)
+        {
+            if (!float.IsFinite(ads)) throw new ArgumentOutOfRangeException(nameof(ads));
+            float hip = 1f - Math.Clamp(ads, 0f, 1f);
+            var baseRot = profile.HipRotationDegrees;
+            return new Float3(baseRot.X * hip, baseRot.Y * hip, baseRot.Z * hip);
+        }
+
         public static Float3 HipRotationDegrees(byte slot, float ads)
         {
-            if (slot > ProductAuthorityActionView.MaxSlot || !float.IsFinite(ads)) throw new ArgumentOutOfRangeException(nameof(slot));
-            float hip = 1f - Math.Clamp(ads, 0f, 1f);
-            return ProductAuthorityActionView.IsRifleSlot(slot)
-                ? new Float3(0, -18f * hip, -5f * hip)
-                : new Float3(0, -3f * hip, -2f * hip);
+            if (slot > ProductAuthorityActionView.MaxSlot) throw new ArgumentOutOfRangeException(nameof(slot));
+            return HipRotationDegrees(WeaponVisualProfiles.Resolve(default, slot), ads);
         }
 
         /// <summary>ADS blend gated by equip so switches cannot pull the tucked gun onto the sight ray.</summary>

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Shooter.Contracts;
 using Shooter.Game.Contracts;
 using Shooter.Simulation.AI;
+using Shooter.Simulation.Combat;
 
 namespace Shooter.Simulation.Session
 {
@@ -43,7 +44,9 @@ namespace Shooter.Simulation.Session
             if (states.Count >= GameContractVersion.MaxActiveActors)
                 throw new InvalidOperationException("actor capacity");
             var id = harness.SpawnActor(feet, yaw, team);
-            var state = new ActorLifecycleState(id, team, true, 100, feet, yaw, 0, 0, 30, 90);
+            var primary = WeaponCatalog.RequireDefinition(WeaponLoadoutPolicy.DefaultPrimaryId);
+            var state = new ActorLifecycleState(id, team, true, 100, feet, yaw, 0, 0, primary.MagazineSize, primary.ReserveCapacity,
+                WeaponAction.Ready, primary.Id);
             states[id.Value] = state;
             lives[id.Value] = (participant, life);
             return id;
@@ -92,7 +95,9 @@ namespace Shooter.Simulation.Session
         {
             if (!states.TryGetValue(entity.Value, out var prev)) throw new InvalidOperationException("unknown entity");
             if (!harness.ResetActor(entity, feet, yaw)) throw new InvalidOperationException("authority entity missing");
-            states[entity.Value] = new ActorLifecycleState(entity, prev.Team, true, 100, feet, yaw, 0, 0, 30, 90);
+            var primary = WeaponCatalog.RequireDefinition(WeaponLoadoutPolicy.DefaultPrimaryId);
+            states[entity.Value] = new ActorLifecycleState(entity, prev.Team, true, 100, feet, yaw, 0, 0,
+                primary.MagazineSize, primary.ReserveCapacity, WeaponAction.Ready, primary.Id);
             stances[entity.Value] = Stance.Standing;
         }
 
@@ -106,7 +111,7 @@ namespace Shooter.Simulation.Session
             if (!harness.RelocateActor(entity, feet, yaw)) return false;
             states[entity.Value] = new ActorLifecycleState(
                 entity, prev.Team, true, prev.Health, feet, yaw, prev.AimPitch, prev.ActiveWeaponSlot, prev.Magazine, prev.Reserve,
-                prev.WeaponAction);
+                prev.WeaponAction, prev.ActiveWeaponDefinition);
             stances[entity.Value] = Stance.Standing;
             return true;
         }
@@ -153,7 +158,8 @@ namespace Shooter.Simulation.Session
                     entity.ActiveSlot,
                     entity.Weapon.AmmoInMagazine,
                     entity.Weapon.Reserve,
-                    entity.Weapon.Action);
+                    entity.Weapon.Action,
+                    entity.Weapon.DefinitionId);
             }
         }
     }

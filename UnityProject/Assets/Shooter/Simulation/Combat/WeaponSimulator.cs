@@ -221,13 +221,9 @@ namespace Shooter.Simulation.Combat
         public static WeaponState CreateLoaded(WeaponDefinition def) =>
             new WeaponState(def.Id, WeaponAction.Ready, def.MagazineSize, def.ReserveCapacity, 0, 0, 0, 0, false);
 
-        public static WeaponState[] CreateDefaultLoadout() => new[]
-        {
-            CreateLoaded(WeaponDefinition.Rifle),
-            CreateLoaded(WeaponDefinition.Pistol),
-            CreateLoaded(WeaponDefinition.Knife),
-            CreateLoaded(WeaponDefinition.Grenade)
-        };
+        public static WeaponState[] CreateDefaultLoadout() => WeaponLoadoutPolicy.CreateDefaultLoadout();
+
+        public static WeaponState[] CreateLoadout(DefinitionId primaryId) => WeaponLoadoutPolicy.CreateLoadout(primaryId);
 
         private static WeaponState Ready(WeaponState w, uint tick, bool clearPreviousFireHeld = false) =>
             new WeaponState(w.DefinitionId, WeaponAction.Ready, w.AmmoInMagazine, w.Reserve, w.NextAllowedFireTick, tick, tick, w.ShotIndex,

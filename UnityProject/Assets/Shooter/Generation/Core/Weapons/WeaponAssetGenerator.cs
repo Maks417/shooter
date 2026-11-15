@@ -18,7 +18,13 @@ namespace Shooter.Generation
                 return Fail(ErrorCode.InvalidInput, "Unknown weapon visual profile.");
             if (request.Recipe.Dependencies.Count != 0) return Fail(ErrorCode.InvalidInput, "Initial numeric weapon generator has no dependency inputs.");
             string kind;
-            try { kind = WeaponRecipe.Validate(request.Recipe); }
+            string silhouette;
+            try
+            {
+                var parsed = WeaponRecipe.Validate(request.Recipe);
+                kind = parsed.kind;
+                silhouette = parsed.silhouette;
+            }
             catch (Exception error) when (error is FormatException || error is ArgumentException) { return Fail(ErrorCode.InvalidInput, error.Message); }
             var artifacts = new List<GeneratedArtifact>();
             ContentId generator = GeneratorFingerprint.Compute(WeaponRecipe.GeneratorId, WeaponRecipe.GeneratorVersion);
@@ -31,7 +37,7 @@ namespace Shooter.Generation
             if (request.VisualProfile == "gameplay") Add(ContentKind.Collision, "main", GeometryCodec.EncodeCollision(WeaponGeometry.BuildCollision(kind)));
             else
             {
-                string source = "{\"schemaId\":\"" + WeaponRecipe.Schema + "\",\"recipeId\":\"" + request.Recipe.RecipeId + "\",\"generatorId\":\"" + WeaponRecipe.GeneratorId + "\",\"generatorVersion\":\"" + WeaponRecipe.GeneratorVersion + "\",\"seed\":\"" + request.Recipe.Seed + "\",\"parameters\":{\"kind\":\"" + kind + "\"},\"dependencies\":[]}";
+                string source = "{\"schemaId\":\"" + WeaponRecipe.Schema + "\",\"recipeId\":\"" + request.Recipe.RecipeId + "\",\"generatorId\":\"" + WeaponRecipe.GeneratorId + "\",\"generatorVersion\":\"" + WeaponRecipe.GeneratorVersion + "\",\"seed\":\"" + request.Recipe.Seed + "\",\"parameters\":{\"kind\":\"" + kind + "\",\"silhouette\":\"" + silhouette + "\"},\"dependencies\":[]}";
                 var build = WeaponGeometry.Build(WeaponRecipe.Parse(System.Text.Encoding.UTF8.GetBytes(source)));
                 for (int i = 0; i < build.Lods.Count; i++)
                 {

@@ -43,7 +43,7 @@ namespace Shooter.Generation
         {
             if (recipe == null) throw new ArgumentNullException(nameof(recipe));
             var lods = new MeshData[4];
-            for (int i = 0; i < 4; i++) lods[i] = BuildLod(recipe.Kind, i);
+            for (int i = 0; i < 4; i++) lods[i] = BuildLod(recipe.Kind, recipe.Silhouette, i);
             var magazine = BuildMagazine(recipe.Kind, 0);
             var cycle = BuildCyclePart(recipe.Kind, 0);
             var collision = BuildCollision(recipe.Kind);
@@ -73,11 +73,14 @@ namespace Shooter.Generation
                 if (p.X < bounds.Min.X || p.X > bounds.Max.X || p.Y < bounds.Min.Y || p.Y > bounds.Max.Y || p.Z < bounds.Min.Z || p.Z > bounds.Max.Z)
                     throw new InvalidOperationException("Weapon construction escaped its declared envelope.");
         }
-        private static MeshData BuildLod(string kind, int lod)
+        private static MeshData BuildLod(string kind, string silhouette, int lod)
         {
             var assembly = new MeshAssembly();
             int radial = new[] { 28, 14, 10, 6 }[lod];
             float bevel = lod == 0 ? .003f : lod == 1 ? .0015f : 0;
+            bool carbine = kind == "rifle" && silhouette == "carbine";
+            float handguardFront = carbine ? .38f : .485f;
+            float barrelFront = carbine ? .52f : .64f;
             void Box(float x, float y, float z, float sx, float sy, float sz, ushort material = 0, float pitch = 0)
             {
                 float b = Math.Min(bevel, Math.Min(sx, Math.Min(sy, sz)) * .2f);
@@ -103,29 +106,35 @@ namespace Shooter.Generation
                     Box(-.027f, .065f, .02f, .006f, .055f, .08f);
                     Box(.027f, .065f, .02f, .006f, .055f, .08f);
                 }
-                assembly.Add(WeaponProfiles.Loft(new[] { .205f, .22f, .455f, .485f },
+                assembly.Add(WeaponProfiles.Loft(new[] { .205f, .22f, handguardFront - .03f, handguardFront },
                     new[] { .025f, .030f, .028f, .023f }, new[] { .027f, .033f, .029f, .023f }, 8),
                     new Float3(0, .08f, 0), Quat.Identity, 0);
+                float handguardMid = (0.205f + handguardFront) * 0.5f;
+                float handguardLen = Math.Max(0.12f, handguardFront - 0.225f);
                 if (lod < 2)
                 {
-                    Box(0, .105f, .345f, .042f, .012f, .26f, 1);
-                    Box(0, .055f, .345f, .048f, .014f, .26f, 1);
+                    Box(0, .105f, handguardMid, .042f, .012f, handguardLen, 1);
+                    Box(0, .055f, handguardMid, .048f, .014f, handguardLen, 1);
                     for (int side = -1; side <= 1; side += 2)
                     {
-                        Box(side * .030f, .099f, .345f, .004f, .010f, .244f);
-                        Box(side * .030f, .061f, .345f, .004f, .010f, .244f);
-                        for (int i = 0; i < (lod == 0 ? 7 : 4); i++)
+                        Box(side * .030f, .099f, handguardMid, .004f, .010f, handguardLen - .016f);
+                        Box(side * .030f, .061f, handguardMid, .004f, .010f, handguardLen - .016f);
+                        int railCount = carbine ? (lod == 0 ? 5 : 3) : (lod == 0 ? 7 : 4);
+                        for (int i = 0; i < railCount; i++)
                         {
                             float z = .23f + i * (lod == 0 ? .036f : .068f);
+                            if (z > handguardFront - .02f) break;
                             Box(side * .030f, .080f, z, .004f, .030f, .008f);
                             Box(side * .0285f, .080f, z + .018f, .001f, .014f, .023f, 3);
                         }
                     }
                     if (lod == 0)
                     {
-                        for (int i = 0; i < 5; i++)
+                        int underCount = carbine ? 3 : 5;
+                        for (int i = 0; i < underCount; i++)
                         {
                             float z = .26f + i * .04f;
+                            if (z > handguardFront - .02f) break;
                             Box(0, .052f, z, .030f, .006f, .014f, 1);
                         }
                     }
@@ -150,7 +159,7 @@ namespace Shooter.Generation
                         Box(.019f, y, -.015f, .004f, .018f, .045f, 1);
                     }
                 }
-                Barrel(.08f, .21f, .64f, .009f);
+                Barrel(.08f, .21f, barrelFront, .009f);
                 if (lod < 2)
                 {
                     // Compact optic with a bounded dark bore; existing sight socket stays authoritative.
@@ -160,23 +169,25 @@ namespace Shooter.Generation
                     assembly.Add(PrimitiveGeometry.Cylinder(.0105f, .001f, radial),
                         new Float3(0, .139f, .067f), Quat.Identity, 3);
                     // Barrel shoulder, muzzle collar and rail teeth catch grazing light.
-                    assembly.Add(PrimitiveGeometry.Cylinder(.013f, .025f, radial), new Float3(0, .08f, .604f), Quat.Identity, 2);
-                    for (int i = 0; i < (lod == 0 ? 15 : 8); i++)
+                    assembly.Add(PrimitiveGeometry.Cylinder(.013f, .025f, radial), new Float3(0, .08f, barrelFront - .036f), Quat.Identity, 2);
+                    int railTeeth = carbine ? (lod == 0 ? 10 : 5) : (lod == 0 ? 15 : 8);
+                    for (int i = 0; i < railTeeth; i++)
                         Box(0, .123f, .02f + i * (lod == 0 ? .028f : .056f), .041f, .006f, .010f);
                     Box(.030f, .075f, .13f, .002f, .029f, .091f, 3);
                     Box(-.031f, .037f, .055f, .003f, .025f, .070f);
                     for (int side = -1; side <= 1; side += 2)
-                        foreach (float z in new[] { -.012f, .16f, .222f, .46f })
+                        foreach (float z in (carbine ? new[] { -.012f, .16f, .222f } : new[] { -.012f, .16f, .222f, .46f }))
                             WeaponProfiles.Fastener(assembly, side * .033f, .080f, z, lod);
                     Box(0, .06f, -.323f, .056f, .104f, .010f, 3);
                     Box(-.029f, .105f, -.025f, .004f, .016f, .016f, 2);
                 }
                 if (lod < 2)
                 {
-                    Box(0, .08f, .48f, .022f, .022f, .04f);
-                    Box(0, .095f, .48f, .010f, .018f, .018f);
-                    assembly.Add(PrimitiveGeometry.Cylinder(.006f, .12f, Math.Max(6, radial / 2)),
-                        new Float3(0, .095f, .40f), Quat.Identity, 0);
+                    float gasZ = carbine ? .36f : .48f;
+                    Box(0, .08f, gasZ, .022f, .022f, .04f);
+                    Box(0, .095f, gasZ, .010f, .018f, .018f);
+                    assembly.Add(PrimitiveGeometry.Cylinder(.006f, carbine ? .08f : .12f, Math.Max(6, radial / 2)),
+                        new Float3(0, .095f, carbine ? .30f : .40f), Quat.Identity, 0);
                 }
                 Box(0, -.041f, .055f, .014f, .010f, .085f);
                 Box(0, -.017f, .095f, .014f, .055f, .010f);
@@ -185,7 +196,7 @@ namespace Shooter.Generation
                 Box(.018f, .114f, .22f, .008f, .012f, .24f);
                 Box(-.008f, .115f, -.01f, .006f, .016f, .015f);
                 Box(.008f, .115f, -.01f, .006f, .016f, .015f);
-                Box(0, .107f, .53f, .008f, .016f, .018f);
+                Box(0, .107f, carbine ? .40f : .53f, .008f, .016f, .018f);
                 if (lod < 2)
                 {
                     Box(0, .003f, .053f, .008f, .050f, .009f, 0, -15);

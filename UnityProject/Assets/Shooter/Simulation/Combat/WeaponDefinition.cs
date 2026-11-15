@@ -42,32 +42,12 @@ namespace Shooter.Simulation.Combat
             ConsumesAmmo = consumesAmmo; AllowsSprintFire = allowsSprintFire;
         }
 
-        public static WeaponDefinition Rifle { get; } = new WeaponDefinition(
-            new DefinitionId("weapons/rifle"), FireMode.Automatic, 6, 144, 24, 30, 90, 30,
-            Deg(1.0f), Deg(0.15f), Deg(0.35f), Deg(0.1f));
+        public static WeaponDefinition Rifle => WeaponCatalog.RequireDefinition(WeaponLoadoutPolicy.DefaultPrimaryId);
+        public static WeaponDefinition RifleCarbine => WeaponCatalog.RequireDefinition(WeaponLoadoutPolicy.CarbinePrimaryId);
+        public static WeaponDefinition Pistol => WeaponCatalog.RequireDefinition(WeaponLoadoutPolicy.PistolId);
+        public static WeaponDefinition Knife => WeaponCatalog.RequireDefinition(WeaponLoadoutPolicy.KnifeId);
+        public static WeaponDefinition Grenade => WeaponCatalog.RequireDefinition(WeaponLoadoutPolicy.GrenadeId);
 
-        public static WeaponDefinition Pistol { get; } = new WeaponDefinition(
-            new DefinitionId("weapons/pistol"), FireMode.SemiAutomatic, 10, 108, 18, 15, 45, 25,
-            Deg(1.5f), Deg(0.3f), Deg(0.55f), Deg(0.15f));
-
-        public static WeaponDefinition Knife { get; } = new WeaponDefinition(
-            new DefinitionId("weapons/knife"), FireMode.Melee, 24, 0, 12, 1, 0, 55,
-            0f, 0f, 0f, 0f, maxRangeMeters: 1.8f, consumesAmmo: false, allowsSprintFire: true);
-
-        public static WeaponDefinition Grenade { get; } = new WeaponDefinition(
-            new DefinitionId("weapons/grenade"), FireMode.Throwable, 0, 0, 18, 1, 0, 100,
-            0f, 0f, 0f, 0f, maxRangeMeters: 0f, fuseTicks: 120, throwSpeedMetersPerSecond: 18f,
-            blastRadiusMeters: 5f, consumesAmmo: true, allowsSprintFire: false);
-
-        public static WeaponDefinition FromId(DefinitionId id)
-        {
-            if (id.Equals(Rifle.Id)) return Rifle;
-            if (id.Equals(Pistol.Id)) return Pistol;
-            if (id.Equals(Knife.Id)) return Knife;
-            if (id.Equals(Grenade.Id)) return Grenade;
-            throw new System.ArgumentException("Unknown weapon definition", nameof(id));
-        }
-
-        private static float Deg(float degrees) => degrees * (float)System.Math.PI / 180f;
+        public static WeaponDefinition FromId(DefinitionId id) => WeaponCatalog.RequireDefinition(id);
     }
 }

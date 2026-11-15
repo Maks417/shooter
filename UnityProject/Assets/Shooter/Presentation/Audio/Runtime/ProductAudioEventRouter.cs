@@ -201,13 +201,22 @@ namespace Shooter.Presentation.Audio
         {
             if (ev.Payload is ShotPayload shot)
             {
+                if (Shooter.Presentation.View.WeaponVisualProfiles.TryGet(shot.WeaponId, out var profile))
+                {
+                    if (profile.Family == Shooter.Presentation.View.WeaponVisualFamily.Sidearm)
+                        return SynthVoiceKind.PistolShot;
+                    if (profile.Family == Shooter.Presentation.View.WeaponVisualFamily.Melee)
+                        return SynthVoiceKind.KnifeSwing;
+                    if (profile.Family == Shooter.Presentation.View.WeaponVisualFamily.Throwable)
+                        return SynthVoiceKind.GrenadeThrow;
+                    return SynthVoiceKind.RifleShot;
+                }
                 string id = shot.WeaponId.ToString();
                 if (string.Equals(id, PistolWeaponId, StringComparison.Ordinal))
                     return SynthVoiceKind.PistolShot;
                 if (string.Equals(id, KnifeWeaponId, StringComparison.Ordinal))
                     return SynthVoiceKind.KnifeSwing;
                 if (string.Equals(id, GrenadeWeaponId, StringComparison.Ordinal))
-                    // Cooked in-hand boom is emitted as Impact/GrenadeExplode; ShotAccepted for grenade is unused.
                     return SynthVoiceKind.GrenadeThrow;
             }
             return SynthVoiceKind.RifleShot;

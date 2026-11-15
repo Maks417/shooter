@@ -28,24 +28,32 @@ namespace Shooter.Presentation.View
         /// Weapon-local offset for bolt (rifle) or slide (pistol).
         /// <paramref name="cycle01"/> is 0 = closed, 1 = fully open.
         /// </summary>
-        public static Float3 CycleOffset(byte slot, float cycle01, bool reducedMotion)
+        public static Float3 CycleOffset(in WeaponVisualProfile profile, float cycle01, bool reducedMotion)
         {
             float t = Math.Clamp(cycle01, 0f, 1f);
-            if (t <= 0f) return default;
+            if (t <= 0f || !profile.HasMagazineCycle || profile.CycleTravelMeters <= 0f) return default;
             float amp = reducedMotion ? 0.45f : 1f;
-            if (ProductAuthorityActionView.IsRifleSlot(slot))
-                return new Float3(0.006f * t * amp, 0f, -RifleBoltTravel * t * amp);
-            if (slot == ProductAuthorityActionView.PistolSlot)
-                return new Float3(0f, 0.002f * t * amp, -PistolSlideTravel * t * amp);
+            float travel = profile.CycleTravelMeters;
+            if (profile.Family == WeaponVisualFamily.PrimaryGun)
+                return new Float3(0.006f * t * amp, 0f, -travel * t * amp);
+            if (profile.Family == WeaponVisualFamily.Sidearm)
+                return new Float3(0f, 0.002f * t * amp, -travel * t * amp);
             return default;
         }
 
-        /// <summary>True when the active slot has a packaged cycle part (rifle bolt / pistol slide).</summary>
-        public static bool HasCyclePart(byte slot) =>
-            ProductAuthorityActionView.IsRifleSlot(slot) || slot == ProductAuthorityActionView.PistolSlot;
+        public static Float3 CycleOffset(byte slot, float cycle01, bool reducedMotion) =>
+            CycleOffset(WeaponVisualProfiles.Resolve(default, slot), cycle01, reducedMotion);
 
-        /// <summary>True when the active slot has a packaged detachable magazine.</summary>
+        /// <summary>True when the active profile has a packaged cycle part (bolt / slide).</summary>
+        public static bool HasCyclePart(in WeaponVisualProfile profile) => profile.HasMagazineCycle;
+
+        public static bool HasCyclePart(byte slot) =>
+            HasCyclePart(WeaponVisualProfiles.Resolve(default, slot));
+
+        /// <summary>True when the active profile has a packaged detachable magazine.</summary>
+        public static bool HasMagazinePart(in WeaponVisualProfile profile) => profile.HasMagazineCycle;
+
         public static bool HasMagazinePart(byte slot) =>
-            ProductAuthorityActionView.IsRifleSlot(slot) || slot == ProductAuthorityActionView.PistolSlot;
+            HasMagazinePart(WeaponVisualProfiles.Resolve(default, slot));
     }
 }

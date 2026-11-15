@@ -285,26 +285,27 @@ namespace Shooter.Presentation.Session
 
         private bool IsAiming() => input.AimHeld && cursorLocked;
 
-        private void ApplyPresentationFov(float adsPresentationBlend, byte weaponSlot)
+        private void ApplyPresentationFov(float adsPresentationBlend, byte weaponSlot, DefinitionId weaponId = default)
         {
             if (camera == null) return;
+            var profile = WeaponVisualProfiles.Resolve(weaponId, weaponSlot);
             float hip = hud.Settings.HipFov;
-            float ads = AdsOpticVisual.AdsFieldOfViewDegrees(hip, weaponSlot);
+            float ads = AdsOpticVisual.AdsFieldOfViewDegrees(hip, profile);
             adsFovDegrees = ads;
-            // Rifle PiP keeps hip FOV; digital zoom lives in AdsScopePipPresenter.
+            // Scoped PiP keeps hip FOV; digital zoom lives in AdsScopePipPresenter.
             // Reduced camera motion keeps hip FOV for every weapon.
-            if (reducedCameraMotion || AdsOpticVisual.KeepsHipCameraFov(weaponSlot))
+            if (reducedCameraMotion || AdsOpticVisual.KeepsHipCameraFov(profile))
                 camera.fieldOfView = hip;
             else
                 camera.fieldOfView = AdsOpticVisual.BlendedFieldOfViewDegrees(hip, ads, adsPresentationBlend);
-            ApplyScopePip(adsPresentationBlend, weaponSlot);
+            ApplyScopePip(adsPresentationBlend, profile);
         }
 
-        private void ApplyScopePip(float adsPresentationBlend, byte weaponSlot)
+        private void ApplyScopePip(float adsPresentationBlend, in WeaponVisualProfile profile)
         {
             if (scopePip == null) return;
             float hip = hud.Settings.HipFov;
-            if (!AdsOpticVisual.UsesScopedOptic(weaponSlot))
+            if (!AdsOpticVisual.UsesScopedOptic(profile))
             {
                 scopePip.Configure(0f, 1f, AdsOpticVisual.LensRadiusFraction);
                 return;
@@ -312,7 +313,7 @@ namespace Shooter.Presentation.Session
             float strength = AdsOpticVisual.PipStrength(adsPresentationBlend, reducedCameraMotion);
             float zoom = reducedCameraMotion
                 ? 1f
-                : AdsOpticVisual.LensUvZoom(hip, weaponSlot, adsPresentationBlend);
+                : AdsOpticVisual.LensUvZoom(hip, profile, adsPresentationBlend);
             scopePip.Configure(strength, zoom, AdsOpticVisual.LensRadiusFraction);
         }
 
@@ -471,7 +472,10 @@ namespace Shooter.Presentation.Session
                     camera.transform.rotation = rotation;
                     var basePos = new Vector3(human.Feet.X, human.Feet.Y + eye, human.Feet.Z);
                     camera.transform.position = basePos + rotation * new Vector3(bobLocal.X, bobLocal.Y, bobLocal.Z);
-                    ApplyPresentationFov(adsBlend, actors != null ? actors.LocalVisibleWeaponSlot : human.ActiveWeaponSlot);
+                    ApplyPresentationFov(
+                        adsBlend,
+                        actors != null ? actors.LocalVisibleWeaponSlot : human.ActiveWeaponSlot,
+                        actors != null ? actors.LocalVisibleWeaponId : human.ActiveWeaponDefinition);
                 }
             }
             else input.CaptureFrame(false);
@@ -509,7 +513,7 @@ namespace Shooter.Presentation.Session
                     // Refresh FOV after Sync so this frame's optic raise matches the viewmodel blend.
                     if (camera != null && session.Lifecycle != null
                         && session.Lifecycle.TryGetActorState(session.HumanEntityId, out var fovHuman) && fovHuman.Alive)
-                        ApplyPresentationFov(actors.LocalAdsPresentationBlend, actors.LocalVisibleWeaponSlot);
+                        ApplyPresentationFov(actors.LocalAdsPresentationBlend, actors.LocalVisibleWeaponSlot, actors.LocalVisibleWeaponId);
                 }
 
                 PumpProductAudio(hasListener ? listenerFeet : default, combatEvents);
@@ -970,9 +974,11 @@ namespace Shooter.Presentation.Session
                 float cx = combatUi.Width * .5f, cy = combatUi.Height * .5f;
                 float adsPresent = actors != null ? actors.LocalAdsPresentationBlend : (input.AimHeld ? 1f : 0f);
                 byte opticSlot = actors != null ? actors.LocalVisibleWeaponSlot : human.ActiveWeaponSlot;
-                if (AdsOpticVisual.UsesScopedOptic(opticSlot))
+                DefinitionId opticId = actors != null ? actors.LocalVisibleWeaponId : human.ActiveWeaponDefinition;
+                var opticProfile = WeaponVisualProfiles.Resolve(opticId, opticSlot);
+                if (AdsOpticVisual.UsesScopedOptic(opticProfile))
                     TacticalUi.AdsScope(combatUi.Width, combatUi.Height, AdsOpticVisual.ScopeMaskOpacity(adsPresent));
-                else if (AdsOpticVisual.UsesIronSightOptic(opticSlot))
+                else if (AdsOpticVisual.UsesIronSightOptic(opticProfile))
                     TacticalUi.AdsIronVignette(combatUi.Width, combatUi.Height, AdsOpticVisual.IronVignetteOpacity(adsPresent));
                 // Hip reticle yields once the optic/irons take the aim picture.
                 if (!AdsOpticVisual.HideHipReticle(adsPresent))

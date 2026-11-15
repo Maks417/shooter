@@ -102,7 +102,7 @@ namespace Shooter.Presentation
                 Solid("Numeric covered skin",new Color(.48f,.32f,.22f)), Solid("Numeric opaque goggles",new Color(.035f,.06f,.07f),.3f,.55f) };
             var metal = Solid("Numeric rifle metal", new Color(.08f,.09f,.10f), .15f);
             var polymer = Solid("Numeric rifle polymer", new Color(.05f,.055f,.045f));
-            var recipe = WeaponRecipe.Parse(Encoding.ASCII.GetBytes("{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/rifle\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.0.4\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"rifle\"},\"dependencies\":[]}"));
+            var recipe = WeaponRecipe.Parse(Encoding.ASCII.GetBytes("{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/rifle\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.0.5\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"rifle\",\"silhouette\":\"standard\"},\"dependencies\":[]}"));
             var weaponPalette = Shooter.Presentation.Rendering.ProductSurfaceMaterial.WeaponFinishes(metal, polymer,
                 Solid("Numeric steel", new Color(.35f,.38f,.41f), .9f, .6f),
                 Solid("Numeric recess", new Color(.01f,.012f,.013f)),

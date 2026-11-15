@@ -47,6 +47,8 @@ namespace Shooter.Game.Contracts
         public ushort Reserve { get; }
         /// <summary>Active-slot authority action (Ready/Cooking/…); presentation cook/throw poses read this.</summary>
         public WeaponAction WeaponAction { get; }
+        /// <summary>Active-slot weapon DefinitionId (ADR-072); presentation binds visuals by id, not slot alone.</summary>
+        public DefinitionId ActiveWeaponDefinition { get; }
 
         public ActorLifecycleState(
             EntityId entityId,
@@ -59,7 +61,8 @@ namespace Shooter.Game.Contracts
             byte activeWeaponSlot,
             ushort magazine,
             ushort reserve,
-            WeaponAction weaponAction = WeaponAction.Ready)
+            WeaponAction weaponAction = WeaponAction.Ready,
+            DefinitionId activeWeaponDefinition = default)
         {
             EntityId = entityId;
             Team = team;
@@ -72,6 +75,7 @@ namespace Shooter.Game.Contracts
             Magazine = magazine;
             Reserve = reserve;
             WeaponAction = weaponAction;
+            ActiveWeaponDefinition = activeWeaponDefinition;
         }
     }
 

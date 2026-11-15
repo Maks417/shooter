@@ -191,10 +191,13 @@ namespace Shooter.Generation.Environment
 
             ContentId weaponFp = MapVisualClosure.WeaponFingerprint;
             var rifleRecipe = WeaponRecipe.Parse(Encoding.ASCII.GetBytes(
-                "{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/rifle\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.0.4\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"rifle\"},\"dependencies\":[]}"));
+                "{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/rifle\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.0.5\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"rifle\",\"silhouette\":\"standard\"},\"dependencies\":[]}"));
+            var carbineRecipe = WeaponRecipe.Parse(Encoding.ASCII.GetBytes(
+                "{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/rifle-carbine\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.0.5\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"rifle\",\"silhouette\":\"carbine\"},\"dependencies\":[]}"));
             var pistolRecipe = WeaponRecipe.Parse(Encoding.ASCII.GetBytes(
-                "{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/pistol\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.0.4\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"pistol\"},\"dependencies\":[]}"));
+                "{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/pistol\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.0.5\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"pistol\",\"silhouette\":\"standard\"},\"dependencies\":[]}"));
             var rifleBuild = WeaponGeometry.Build(rifleRecipe);
+            var carbineBuild = WeaponGeometry.Build(carbineRecipe);
             var pistolBuild = WeaponGeometry.Build(pistolRecipe);
             for (int lod = 0; lod < MapVisualClosure.RifleLodPaths.Length; lod++)
                 AddSgaf(dependencies, "mesh", MapVisualClosure.RifleLodPaths[lod], ContentKind.Mesh,
@@ -203,6 +206,13 @@ namespace Shooter.Generation.Environment
                 GeometryCodec.EncodeMesh(rifleBuild.Magazine), weaponFp, toolchainHash);
             AddSgaf(dependencies, "mesh", MapVisualClosure.RifleCyclePath, ContentKind.Mesh,
                 GeometryCodec.EncodeMesh(rifleBuild.CyclePart), weaponFp, toolchainHash);
+            for (int lod = 0; lod < MapVisualClosure.RifleCarbineLodPaths.Length; lod++)
+                AddSgaf(dependencies, "mesh", MapVisualClosure.RifleCarbineLodPaths[lod], ContentKind.Mesh,
+                    GeometryCodec.EncodeMesh(carbineBuild.Lods[lod]), weaponFp, toolchainHash);
+            AddSgaf(dependencies, "mesh", MapVisualClosure.RifleCarbineMagazinePath, ContentKind.Mesh,
+                GeometryCodec.EncodeMesh(carbineBuild.Magazine), weaponFp, toolchainHash);
+            AddSgaf(dependencies, "mesh", MapVisualClosure.RifleCarbineCyclePath, ContentKind.Mesh,
+                GeometryCodec.EncodeMesh(carbineBuild.CyclePart), weaponFp, toolchainHash);
             for (int lod = 0; lod < MapVisualClosure.PistolLodPaths.Length; lod++)
                 AddSgaf(dependencies, "mesh", MapVisualClosure.PistolLodPaths[lod], ContentKind.Mesh,
                     GeometryCodec.EncodeMesh(pistolBuild.Lods[lod]), weaponFp, toolchainHash);
@@ -367,6 +377,10 @@ namespace Shooter.Generation.Environment
                 RequireMesh(MapVisualClosure.RifleLodPaths[i], weaponFingerprint);
             RequireMesh(MapVisualClosure.RifleMagazinePath, weaponFingerprint);
             RequireMesh(MapVisualClosure.RifleCyclePath, weaponFingerprint);
+            for (int i = 0; i < MapVisualClosure.RifleCarbineLodPaths.Length; i++)
+                RequireMesh(MapVisualClosure.RifleCarbineLodPaths[i], weaponFingerprint);
+            RequireMesh(MapVisualClosure.RifleCarbineMagazinePath, weaponFingerprint);
+            RequireMesh(MapVisualClosure.RifleCarbineCyclePath, weaponFingerprint);
             for (int i = 0; i < MapVisualClosure.PistolLodPaths.Length; i++)
                 RequireMesh(MapVisualClosure.PistolLodPaths[i], weaponFingerprint);
             RequireMesh(MapVisualClosure.PistolMagazinePath, weaponFingerprint);

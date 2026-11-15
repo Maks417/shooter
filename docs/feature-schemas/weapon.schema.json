@@ -14,7 +14,7 @@
       "const": "geometry.weapon"
     },
     "generatorVersion": {
-      "const": "1.0.4"
+      "const": "1.0.5"
     },
     "seed": {
       "type": "string",
@@ -29,10 +29,17 @@
             "rifle",
             "pistol"
           ]
+        },
+        "silhouette": {
+          "enum": [
+            "standard",
+            "carbine"
+          ]
         }
       },
       "required": [
-        "kind"
+        "kind",
+        "silhouette"
       ]
     },
     "dependencies": {

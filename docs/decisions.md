@@ -826,3 +826,19 @@ Consequences: content-format and game-contract locks refresh; packages scale to 
 
 Addendum 2026-11-15 (B02 route refreeze): the canonical compound (seed `460072030`) carries six 0.30 m gameplay roof slabs at 6 m. Under Y-aware occupancy they now count as walkable surfaces whose underside clears agent height, so they no longer seal the building interiors from ground XZ A*. The B02/B03 compound route therefore changes; collision hash, nav hash, nav-settings hash, shell/prop/bot counts and `environment.compound` 1.0.0 are unchanged. Owner approved refreezing only `routeHash` in `Benchmarks/b02-b03-m3-freeze.json` from `eb135d38…ab6` to `2a378cb0…bf05` (value computed by `B02B03ManifestTests.HashRoute`). Compound packaged patrol routes derived from `RouteCorners` change with it and are republished in installer 0.3.15. Rollback restores the prior hash together with the ADR-071 revert.
 
+## ADR-072 — Accepted: DefinitionId weapon profiles (catalog + visual bind)
+
+Date 2026-11-15; owner requested architecture so a new rifle model is a catalog/recipe row instead of forking slot-0 switches across Simulation, Generation and Presentation.
+
+Context: combat used a closed `WeaponDefinition.FromId` whitelist; presentation/optics/handling/audio treated loadout **slot** as weapon identity; `geometry.weapon` only knew `kind ∈ {rifle,pistol}`. Contracts already carry `WeaponState.DefinitionId` / `ShotPayload.WeaponId`. C0 `PredictionSchema` 2 and the four loadout slots stay frozen.
+
+Decision:
+- **Slot ≠ identity.** Slots 0..3 remain primary / sidearm / melee / throwable loadout indices. Behavior and look resolve from `DefinitionId` via a frozen in-process **WeaponCatalog** (Simulation) and parallel **WeaponVisualProfiles** (Presentation).
+- **Combat catalog.** `WeaponCatalog` owns combat defs + family + visual-profile key. `WeaponDefinition.FromId` delegates to the catalog. AI cadence/mag reads the equipped definition (no mirrored rifle constants). Geometry recipes still cannot override damage/ROF/mag.
+- **Loadout policy.** `WeaponLoadoutPolicy` builds the four `WeaponState` records; default primary remains `weapons/rifle`. Alternate primaries (proof: `weapons/rifle-carbine`) occupy slot 0 when selected — not a fifth slot.
+- **Game-v1 mirror.** `ActorLifecycleState` adds optional `ActiveWeaponDefinition` so presentation can bind meshes/optics without inferring from slot alone. PredictionSchema unchanged.
+- **geometry.weapon 1.0.5.** Recipes gain required `parameters.silhouette` (`standard` | `carbine`; carbine only with `kind=rifle`). Sockets and collision mechanical dimensions stay on the numeric baseline. Map visual closure publishes profile asset keys (including carbine LOD/mag/cycle) and presentation binds by profile, not `IsRifleSlot`.
+- **Non-goals (v1):** fifth slot, runtime JSON combat tables, world weapon pickups, per-gun simulator subclasses.
+
+Validation: pure Simulation catalog/loadout/AI tests; Generation recipe/silhouette + package path tests; Presentation profile/optic resolution tests; Game-v1 and feature-content locks refreshed. Named player/installer review Pending. Rollback: revert ADR-072 merge and republish prior generator version / packages.
+

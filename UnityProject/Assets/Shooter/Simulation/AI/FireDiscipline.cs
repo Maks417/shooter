@@ -28,8 +28,9 @@ namespace Shooter.Simulation.AI
         /// Returns true when the trigger is down this tick. <paramref name="alignedTight"/> gates starting
         /// a burst; <paramref name="alignedLoose"/> keeps a burst going.
         /// </summary>
-        public static bool Update(AiBlackboard board, uint tick, float distance, bool alignedTight, bool alignedLoose)
+        public static bool Update(AiBlackboard board, uint tick, float distance, bool alignedTight, bool alignedLoose, uint fireIntervalTicks)
         {
+            if (fireIntervalTicks == 0) fireIntervalTicks = 1;
             if (InBurst(board, tick)) return alignedLoose;
             if (InPause(board, tick) || !alignedTight) return false;
 
@@ -43,11 +44,11 @@ namespace Shooter.Simulation.AI
                     pause = AiTuning.ClosePauseMinTicks + AiNoise.Range(self, n, AiNoise.SaltPause, AiTuning.ClosePauseSpreadTicks);
                     break;
                 case EngageRange.Mid:
-                    length = (AiTuning.MidBurstMinRounds + AiNoise.Range(self, n, AiNoise.SaltBurst, AiTuning.MidBurstSpreadRounds)) * AiTuning.WeaponIntervalTicks;
+                    length = (AiTuning.MidBurstMinRounds + AiNoise.Range(self, n, AiNoise.SaltBurst, AiTuning.MidBurstSpreadRounds)) * fireIntervalTicks;
                     pause = AiTuning.MidPauseMinTicks + AiNoise.Range(self, n, AiNoise.SaltPause, AiTuning.MidPauseSpreadTicks);
                     break;
                 default:
-                    length = (AiTuning.LongBurstMinRounds + AiNoise.Range(self, n, AiNoise.SaltBurst, AiTuning.LongBurstSpreadRounds)) * AiTuning.WeaponIntervalTicks;
+                    length = (AiTuning.LongBurstMinRounds + AiNoise.Range(self, n, AiNoise.SaltBurst, AiTuning.LongBurstSpreadRounds)) * fireIntervalTicks;
                     pause = AiTuning.LongPauseMinTicks + AiNoise.Range(self, n, AiNoise.SaltPause, AiTuning.LongPauseSpreadTicks);
                     break;
             }

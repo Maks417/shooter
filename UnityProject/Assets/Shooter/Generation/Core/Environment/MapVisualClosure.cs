@@ -39,6 +39,14 @@ namespace Shooter.Generation.Environment
         public const string RifleMagazinePath = "mesh-rifle-magazine.bin";
         public const string RifleCyclePath = "mesh-rifle-cycle.bin";
 
+        public static readonly string[] RifleCarbineLodPaths =
+        {
+            "mesh-rifle-carbine-lod0.bin", "mesh-rifle-carbine-lod1.bin", "mesh-rifle-carbine-lod2.bin", "mesh-rifle-carbine-lod3.bin"
+        };
+
+        public const string RifleCarbineMagazinePath = "mesh-rifle-carbine-magazine.bin";
+        public const string RifleCarbineCyclePath = "mesh-rifle-carbine-cycle.bin";
+
         public static readonly string[] PistolLodPaths =
         {
             "mesh-pistol-lod0.bin", "mesh-pistol-lod1.bin", "mesh-pistol-lod2.bin", "mesh-pistol-lod3.bin"
@@ -46,6 +54,33 @@ namespace Shooter.Generation.Environment
 
         public const string PistolMagazinePath = "mesh-pistol-magazine.bin";
         public const string PistolCyclePath = "mesh-pistol-cycle.bin";
+
+        /// <summary>Packaged mesh asset key for a weapon visual profile (ADR-072).</summary>
+        public static string[] LodPathsForMeshKey(string meshAssetKey) => meshAssetKey switch
+        {
+            "rifle" => RifleLodPaths,
+            "rifle-carbine" => RifleCarbineLodPaths,
+            "pistol" => PistolLodPaths,
+            "knife" => KnifeLodPaths,
+            "grenade" => GrenadeLodPaths,
+            _ => throw new ArgumentOutOfRangeException(nameof(meshAssetKey), meshAssetKey, "Unknown weapon mesh asset key.")
+        };
+
+        public static string? MagazinePathForMeshKey(string meshAssetKey) => meshAssetKey switch
+        {
+            "rifle" => RifleMagazinePath,
+            "rifle-carbine" => RifleCarbineMagazinePath,
+            "pistol" => PistolMagazinePath,
+            _ => null
+        };
+
+        public static string? CyclePathForMeshKey(string meshAssetKey) => meshAssetKey switch
+        {
+            "rifle" => RifleCyclePath,
+            "rifle-carbine" => RifleCarbineCyclePath,
+            "pistol" => PistolCyclePath,
+            _ => null
+        };
 
         public static readonly string[] KnifeLodPaths =
         {
@@ -131,6 +166,9 @@ namespace Shooter.Generation.Environment
             list.AddRange(RifleLodPaths);
             list.Add(RifleMagazinePath);
             list.Add(RifleCyclePath);
+            list.AddRange(RifleCarbineLodPaths);
+            list.Add(RifleCarbineMagazinePath);
+            list.Add(RifleCarbineCyclePath);
             list.AddRange(PistolLodPaths);
             list.Add(PistolMagazinePath);
             list.Add(PistolCyclePath);
@@ -289,10 +327,28 @@ namespace Shooter.Generation.Environment
             return GeometryCodec.DecodeMesh(body);
         }
 
+        public static MeshData DecodeRifleCarbineLod(PackagedVisualPayloads payloads, int lod)
+        {
+            if (lod < 0 || lod >= RifleCarbineLodPaths.Length) throw new ArgumentOutOfRangeException(nameof(lod));
+            byte[] body = ArtifactCodec.Decode(payloads.Bytes(RifleCarbineLodPaths[lod]), ContentKind.Mesh, WeaponFingerprint, payloads.ToolchainHash);
+            return GeometryCodec.DecodeMesh(body);
+        }
+
         public static MeshData DecodePistolLod(PackagedVisualPayloads payloads, int lod)
         {
             if (lod < 0 || lod >= PistolLodPaths.Length) throw new ArgumentOutOfRangeException(nameof(lod));
             byte[] body = ArtifactCodec.Decode(payloads.Bytes(PistolLodPaths[lod]), ContentKind.Mesh, WeaponFingerprint, payloads.ToolchainHash);
+            return GeometryCodec.DecodeMesh(body);
+        }
+
+        public static MeshData DecodeWeaponLod(PackagedVisualPayloads payloads, string meshAssetKey, int lod)
+        {
+            string[] paths = LodPathsForMeshKey(meshAssetKey);
+            if (lod < 0 || lod >= paths.Length) throw new ArgumentOutOfRangeException(nameof(lod));
+            ContentId fingerprint = meshAssetKey == "knife" || meshAssetKey == "grenade"
+                ? MapFingerprint(payloads.MapId)
+                : WeaponFingerprint;
+            byte[] body = ArtifactCodec.Decode(payloads.Bytes(paths[lod]), ContentKind.Mesh, fingerprint, payloads.ToolchainHash);
             return GeometryCodec.DecodeMesh(body);
         }
 
@@ -302,11 +358,31 @@ namespace Shooter.Generation.Environment
         public static MeshData DecodeRifleCycle(PackagedVisualPayloads payloads) =>
             GeometryCodec.DecodeMesh(ArtifactCodec.Decode(payloads.Bytes(RifleCyclePath), ContentKind.Mesh, WeaponFingerprint, payloads.ToolchainHash));
 
+        public static MeshData DecodeRifleCarbineMagazine(PackagedVisualPayloads payloads) =>
+            GeometryCodec.DecodeMesh(ArtifactCodec.Decode(payloads.Bytes(RifleCarbineMagazinePath), ContentKind.Mesh, WeaponFingerprint, payloads.ToolchainHash));
+
+        public static MeshData DecodeRifleCarbineCycle(PackagedVisualPayloads payloads) =>
+            GeometryCodec.DecodeMesh(ArtifactCodec.Decode(payloads.Bytes(RifleCarbineCyclePath), ContentKind.Mesh, WeaponFingerprint, payloads.ToolchainHash));
+
         public static MeshData DecodePistolMagazine(PackagedVisualPayloads payloads) =>
             GeometryCodec.DecodeMesh(ArtifactCodec.Decode(payloads.Bytes(PistolMagazinePath), ContentKind.Mesh, WeaponFingerprint, payloads.ToolchainHash));
 
         public static MeshData DecodePistolCycle(PackagedVisualPayloads payloads) =>
             GeometryCodec.DecodeMesh(ArtifactCodec.Decode(payloads.Bytes(PistolCyclePath), ContentKind.Mesh, WeaponFingerprint, payloads.ToolchainHash));
+
+        public static MeshData? DecodeWeaponMagazine(PackagedVisualPayloads payloads, string meshAssetKey)
+        {
+            string? path = MagazinePathForMeshKey(meshAssetKey);
+            if (path == null) return null;
+            return GeometryCodec.DecodeMesh(ArtifactCodec.Decode(payloads.Bytes(path), ContentKind.Mesh, WeaponFingerprint, payloads.ToolchainHash));
+        }
+
+        public static MeshData? DecodeWeaponCycle(PackagedVisualPayloads payloads, string meshAssetKey)
+        {
+            string? path = CyclePathForMeshKey(meshAssetKey);
+            if (path == null) return null;
+            return GeometryCodec.DecodeMesh(ArtifactCodec.Decode(payloads.Bytes(path), ContentKind.Mesh, WeaponFingerprint, payloads.ToolchainHash));
+        }
 
         public static MeshData DecodeKnifeLod(PackagedVisualPayloads payloads, int lod)
         {
