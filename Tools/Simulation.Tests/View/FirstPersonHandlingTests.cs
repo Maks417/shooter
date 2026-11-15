@@ -1,0 +1,83 @@
+#nullable enable
+using System;
+using Xunit;
+using Shooter.Contracts;
+using Shooter.Presentation.View;
+using EntityId = Shooter.Contracts.EntityId;
+
+namespace Shooter.Simulation.Tests.View
+{
+    public sealed class FirstPersonHandlingTests
+    {
+        private static CombatEvent Shot(EntityId entity) => new CombatEvent(
+            new EventId(1, 1, entity, 1), CombatEventKind.ShotAccepted, entity, default,
+            new ShotPayload(new DefinitionId("weapons/rifle"), 1, default, new Float3(0, 0, 1), 1, 1));
+
+        [Fact]
+        public void RecoilDecayIsFrameRateIndependentAndPauseDoesNotChangeVelocity()
+        {
+            var fine = new ProceduralViewModel();
+            var coarse = new ProceduralViewModel();
+            var id = new EntityId(1);
+            fine.ConsumeEvents(new[] { Shot(id) }, id, false, 0f);
+            coarse.ConsumeEvents(new[] { Shot(id) }, id, false, 0f);
+            for (int i = 0; i < 40; i++) fine.TickAim(false, 0f);
+            for (int i = 0; i < 60; i++) fine.TickAim(false, 1f / 60f);
+            coarse.TickAim(false, 1f);
+            Assert.InRange(Math.Abs(fine.Pose.RecoilPitch - coarse.Pose.RecoilPitch), 0f, 1e-6f);
+            coarse.TickAim(false, 30f);
+            Assert.True(Math.Abs(coarse.Pose.RecoilPitch) < 1e-5f);
+        }
+
+        [Fact]
+        public void ReloadAndEquipReturnToRestAndReducedMotionSuppressesGait()
+        {
+            var handling = new FirstPersonHandling();
+            handling.Reset(0);
+            handling.Step(default, 0, 1f / 60f, false);
+            for (int i = 1; i < 10; i++) handling.Step(new Float3(i * .05f, 0, 0), 0, 1f / 60f, false);
+            Assert.NotEqual(0f, handling.PositionOffset(0, -1, false).X);
+            Assert.Equal(0f, handling.PositionOffset(0, -1, true).X);
+            Assert.Equal(0f, handling.PositionOffset(1, -1, false).X);
+            Assert.True(handling.PositionOffset(0, .5f, true).Y < -.05f);
+            Assert.InRange(Math.Abs(handling.PositionOffset(0, 1, true).Y), 0f, 1e-7f);
+            handling.Step(default, 1, 0f, false);
+            Assert.True(handling.PositionOffset(0, -1, true).Y < -.1f);
+            handling.Step(default, 1, 0f, false);
+            Assert.Equal(0f, handling.EquipBlend);
+            handling.Step(default, 1, .22f, false);
+            Assert.Equal(0f, handling.PositionOffset(0, -1, true).Y);
+        }
+
+        [Fact]
+        public void TeleportAndSlideAreNotFootstepsAndResetRemovesMotionHistory()
+        {
+            var handling = new FirstPersonHandling();
+            handling.Reset(0);
+            handling.Step(default, 0, .016f, false);
+            handling.Step(new Float3(20, 0, 0), 0, .016f, false);
+            Assert.Equal(0f, handling.PositionOffset(0, -1, false).X);
+            handling.Step(new Float3(20.1f, 0, 0), 0, .016f, true);
+            Assert.Equal(0f, handling.PositionOffset(0, -1, false).X);
+            handling.Step(new Float3(20.2f, 0, 0), 0, .016f, false);
+            handling.Reset(0);
+            Assert.Equal(0f, handling.PositionOffset(0, -1, false).Y);
+        }
+
+        [Fact]
+        public void SwitchCancelsOldReloadAndResetRemovesShotResidue()
+        {
+            var view = new ProceduralViewModel();
+            var id = new EntityId(1);
+            view.ConsumeEvents(new[] { new CombatEvent(new EventId(1, 0, id, 0),
+                CombatEventKind.ReloadStarted, id, default, new ActionPayload(0, 0, 144)) }, id, false, .5f);
+            view.SetActiveWeaponSlot(1);
+            Assert.Equal(0f, view.ReloadPhase);
+            view.ConsumeEvents(new[] { Shot(id) }, id, false, .016f);
+            view.ResetForLife(1);
+            Assert.Equal(0f, view.Pose.RecoilPitch);
+            Assert.Equal(0, view.ConsumedEventCount);
+        }
+
+    }
+}

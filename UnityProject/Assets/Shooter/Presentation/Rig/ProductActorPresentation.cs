@@ -84,6 +84,8 @@ namespace Shooter.Presentation.Rig
         private Camera? fpsCamera;
         private Transform? localWeapon;
         private readonly ProceduralViewModel localView = new ProceduralViewModel();
+        private readonly FirstPersonHandling localHandling = new FirstPersonHandling();
+        private EntityId localViewHuman;
         private Float3 rifleSightSocketLocal;
         private Float3 pistolSightSocketLocal;
         private bool ready;
@@ -235,6 +237,8 @@ namespace Shooter.Presentation.Rig
             binder.Clear();
             actions.Clear();
             localView.ResetForLife();
+            localHandling.Reset(ProductAuthorityActionView.RifleSlot);
+            localViewHuman = default;
             foreach (var pair in avatars)
                 if (pair.Value.Root != null) DestroyObject(pair.Value.Root.gameObject);
             avatars.Clear();
@@ -323,7 +327,8 @@ namespace Shooter.Presentation.Rig
             float dtSeconds,
             IReadOnlyList<CombatEvent>? combatEvents = null,
             uint completedTick = 0,
-            Func<EntityId, LocalMovementView?>? movementView = null)
+            Func<EntityId, LocalMovementView?>? movementView = null,
+            bool reducedMotion = false)
         {
             if (!ready || !visualsBound) return;
             localHuman = humanEntity;
@@ -411,6 +416,12 @@ namespace Shooter.Presentation.Rig
             if (showLocalWeapon)
             {
                 byte slot = human.ActiveWeaponSlot;
+                if (!localViewHuman.Equals(human.EntityId))
+                {
+                    localView.ResetForLife(slot);
+                    localHandling.Reset(slot);
+                    localViewHuman = human.EntityId;
+                }
                 actions.SyncLifecycle(human.EntityId, slot, true);
                 localView.SetActiveWeaponSlot(slot);
                 ApplyLocalWeaponVisual(slot);
@@ -418,9 +429,29 @@ namespace Shooter.Presentation.Rig
                     localView.ConsumeEvents(combatEvents, human.EntityId, aimHeld, dtSeconds);
                 else
                     localView.TickAim(aimHeld, dtSeconds);
+                // Authority wins over an older action event on a switch/cancel frame.
+                localView.SetActiveWeaponSlot(slot);
                 var pose = localView.Pose;
-                localWeapon.localPosition = new Vector3(pose.RightHand.X, pose.RightHand.Y, pose.RightHand.Z);
-                localWeapon.localRotation = Quaternion.Euler(pose.RecoilPitch * Mathf.Rad2Deg, pose.RecoilYaw * Mathf.Rad2Deg, 0f);
+                var movement = movementView?.Invoke(human.EntityId);
+                localHandling.Step(human.Feet, slot, dtSeconds, movement.HasValue && movement.Value.Sliding);
+                float reload = actions.ReloadPhaseAtTick(human.EntityId, completedTick);
+                var offset = localHandling.PositionOffset(pose.AdsBlend, reload, reducedMotion);
+                var rotation = localHandling.RotationDegrees(pose.AdsBlend, reload, reducedMotion);
+                Float3 sight = ProductAuthorityActionView.IsPistolSlot(slot) ? pistolSightSocketLocal : rifleSightSocketLocal;
+                Vector3 hip = new Vector3(pose.RightHand.X, pose.RightHand.Y, pose.RightHand.Z);
+                // The verified +Z sight line lies on the camera ray at full ADS.
+                // Keep physical depth; do not move the eye socket onto/behind the near plane.
+                Vector3 aligned = new Vector3(-sight.X, -sight.Y, hip.z);
+                localWeapon.localPosition = Vector3.Lerp(hip, aligned, pose.AdsBlend) + V(offset);
+                localWeapon.localRotation = Quaternion.Euler(
+                    rotation.X + (reducedMotion ? 0f : pose.RecoilPitch * Mathf.Rad2Deg),
+                    rotation.Y + (reducedMotion ? 0f : pose.RecoilYaw * Mathf.Rad2Deg), rotation.Z);
+            }
+            else if (localViewHuman.IsValid)
+            {
+                localView.ResetForLife();
+                localHandling.Reset(ProductAuthorityActionView.RifleSlot);
+                localViewHuman = default;
             }
 
             RefreshReviewAggregates();
