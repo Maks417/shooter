@@ -178,6 +178,60 @@ public static class ShooterFeatureBuild
         finally { foreach (var value in owned) if (value != null) UnityEngine.Object.DestroyImmediate(value); }
     });
 
+    // Editor-only data fixture: no authority/fake adapter can ship from this assembly.
+    private sealed class HandCaptureLifecycle : Shooter.Game.Contracts.IActorLifecycle
+    {
+        public Shooter.Game.Contracts.ActorLifecycleState State;
+        public int ActiveActorCount=>1;
+        public EntityId SpawnLife(Shooter.Game.Contracts.ParticipantId p,Shooter.Game.Contracts.LifeId l,Float3 f,float y,byte t)=>default;
+        public void DespawnLife(EntityId e) { }
+        public void ResetLife(EntityId e,Float3 f,float y) { }
+        public bool TryGetActorState(EntityId e,out Shooter.Game.Contracts.ActorLifecycleState state) { state=State;return e.Equals(State.EntityId); }
+    }
+    public static void CaptureHandling() => Guard(() =>
+    {
+        ShooterBuild.CheckToolchain();
+        string output=Path.GetFullPath(ShooterBuild.Argument("-shooterCaptureRoot")); RequireArtifacts(output); Directory.CreateDirectory(output);
+        EditorSceneManager.NewScene(NewSceneSetup.EmptyScene,NewSceneMode.Single); QualitySettings.SetQualityLevel(0,true);
+        var root=new GameObject("Handling source diagnostic");
+        GeneratedSky sky=null;
+        try
+        {
+            var camera=new GameObject("Diagnostic camera").AddComponent<Camera>(); camera.transform.SetParent(root.transform,false);
+            camera.fieldOfView=65; camera.nearClipPlane=.005f; camera.farClipPlane=10;
+            camera.clearFlags=CameraClearFlags.SolidColor; camera.backgroundColor=new Color(.16f,.20f,.25f);
+            var key=new GameObject("Diagnostic sun").AddComponent<Light>(); key.transform.SetParent(root.transform,false);
+            key.type=LightType.Directional;key.intensity=1.5f;key.color=new Color(1,.94f,.84f);key.transform.rotation=Quaternion.Euler(44,-32,0);
+            sky=GeneratedSky.Apply(root.transform,false);
+            var hash=new ContentId(ShooterBuild.HashFile(ShooterBuild.LockPath));
+            var payloads=Shooter.Generation.Environment.PackagedVisualPayloads.FromBuild(Shooter.Generation.Environment.MapPackageBuilder.Build("training-compound","low",hash));
+            var presentation=Shooter.Presentation.Rig.ProductActorPresentation.Create(root.transform,camera); presentation.BindPackagedVisuals(payloads);
+            var lifecycle=new HandCaptureLifecycle();
+            for(byte slot=0;slot<4;slot++)
+            {
+                var id=new EntityId((ulong)slot+1);
+                lifecycle.State=new Shooter.Game.Contracts.ActorLifecycleState(id,1,true,100,default,0,0,slot,30,90);
+                var snapshot=new Shooter.Game.Contracts.MatchViewSnapshot(1,10,10,53990,Shooter.Game.Contracts.GameMatchPhase.Playing,
+                    Shooter.Game.Contracts.MatchOutcome.None,Shooter.Game.Contracts.FinishReason.None,0,0,
+                    new[]{new Shooter.Game.Contracts.ParticipantState(new Shooter.Game.Contracts.ParticipantId(1),"Diagnostic",1,true,id,new Shooter.Game.Contracts.LifeId((uint)slot+1),true,0,0,0)},0);
+                presentation.Sync(snapshot,lifecycle,null,0,id,true,0,Array.Empty<CombatEvent>(),10);
+                string name=new[]{"rifle","pistol","knife","grenade"}[slot];
+                Render(camera,Path.Combine(output,name+"-ready.png"));
+                if(slot<2)
+                {
+                    var reload=new CombatEvent(new EventId(1,10,id,1),CombatEventKind.ReloadStarted,id,default,new ActionPayload(slot,10,110));
+                    presentation.Sync(snapshot,lifecycle,null,0,id,true,0,new[]{reload},24); Render(camera,Path.Combine(output,name+"-reach.png"));
+                    presentation.Sync(snapshot,lifecycle,null,0,id,true,0,Array.Empty<CombatEvent>(),52); Render(camera,Path.Combine(output,name+"-extract.png"));
+                    presentation.Sync(snapshot,lifecycle,null,0,id,true,0,Array.Empty<CombatEvent>(),86); Render(camera,Path.Combine(output,name+"-seat.png"));
+                    presentation.Sync(snapshot,lifecycle,null,0,id,true,0,Array.Empty<CombatEvent>(),110);
+                }
+            }
+            File.WriteAllText(Path.Combine(output,"scope.txt"),"Editor packaged Low visual diagnostic; fixed camera and copied authority/action fixtures, no gameplay acceptance. fp.hand.v2 / geometry.weapon " + WeaponRecipe.GeneratorVersion);
+            Debug.Log("SHOOTER_HANDLING_CAPTURE files=10");
+        }
+        finally { sky?.Dispose(); UnityEngine.Object.DestroyImmediate(root); }
+    });
+
     internal static void Render(Camera camera, string path)
     {
         var target = new RenderTexture(1280, 720, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB); target.Create();

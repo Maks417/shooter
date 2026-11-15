@@ -132,7 +132,7 @@ namespace Shooter.Tests
                 presentation.Sync(snap, lifecycle, null, 0, human, false, 1f / 60f, null, 10);
                 Assert.That(presentation.LiveAvatarCount, Is.EqualTo(1));
                 Assert.That(presentation.Actions.IsRifle(human), Is.True);
-                var localBody = root.GetComponentsInChildren<SkinnedMeshRenderer>(true);
+                var localBody = System.Array.FindAll(root.GetComponentsInChildren<SkinnedMeshRenderer>(true),r=>r.gameObject.name.StartsWith("Actor "));
                 Assert.That(localBody.Length, Is.GreaterThan(0));
                 Assert.That(localBody[0].shadowCastingMode, Is.EqualTo(UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly),
                     "Local human world body must cast ShadowsOnly while the FP viewmodel is shown.");

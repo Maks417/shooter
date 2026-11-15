@@ -76,12 +76,12 @@ namespace Shooter.Generation
         private static MeshData BuildLod(string kind, int lod)
         {
             var assembly = new MeshAssembly();
-            int radial = new[] { 20, 14, 10, 6 }[lod];
+            int radial = new[] { 28, 14, 10, 6 }[lod];
             float bevel = lod == 0 ? .003f : lod == 1 ? .0015f : 0;
             void Box(float x, float y, float z, float sx, float sy, float sz, ushort material = 0, float pitch = 0)
             {
                 float b = Math.Min(bevel, Math.Min(sx, Math.Min(sy, sz)) * .2f);
-                assembly.Add(PrimitiveGeometry.Box(new Float3(sx, sy, sz), b, 1), new Float3(x, y, z), Pitch(pitch), material);
+                assembly.Add(PrimitiveGeometry.Box(new Float3(sx, sy, sz), b, lod == 0 && sx >= .030f && sy >= .030f && sz >= .045f ? 2 : 1), new Float3(x, y, z), Pitch(pitch), material);
             }
             void Barrel(float y, float rear, float front, float radius)
             {
@@ -247,7 +247,7 @@ namespace Shooter.Generation
             void Box(float x, float y, float z, float sx, float sy, float sz, ushort material = 0, float pitch = 0)
             {
                 float b = Math.Min(bevel, Math.Min(sx, Math.Min(sy, sz)) * .2f);
-                assembly.Add(PrimitiveGeometry.Box(new Float3(sx, sy, sz), b, 1), new Float3(x, y, z), Pitch(pitch), material);
+                assembly.Add(PrimitiveGeometry.Box(new Float3(sx, sy, sz), b, lod == 0 && sx >= .030f && sy >= .030f && sz >= .045f ? 2 : 1), new Float3(x, y, z), Pitch(pitch), material);
             }
             if (kind == "rifle")
             {
@@ -294,7 +294,7 @@ namespace Shooter.Generation
             void Box(float x, float y, float z, float sx, float sy, float sz, ushort material = 0, float pitch = 0)
             {
                 float b = Math.Min(bevel, Math.Min(sx, Math.Min(sy, sz)) * .2f);
-                assembly.Add(PrimitiveGeometry.Box(new Float3(sx, sy, sz), b, 1), new Float3(x, y, z), Pitch(pitch), material);
+                assembly.Add(PrimitiveGeometry.Box(new Float3(sx, sy, sz), b, lod == 0 && sx >= .030f && sy >= .030f && sz >= .045f ? 2 : 1), new Float3(x, y, z), Pitch(pitch), material);
             }
             if (kind == "rifle")
             {

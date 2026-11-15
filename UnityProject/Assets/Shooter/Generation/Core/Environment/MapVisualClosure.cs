@@ -17,8 +17,11 @@ namespace Shooter.Generation.Environment
         public static readonly string[] FirstPersonHandPaths =
         {
             "mesh-fp-rifle-trigger-hand.bin", "mesh-fp-rifle-support-hand.bin",
-            "mesh-fp-pistol-trigger-hand.bin", "mesh-fp-pistol-support-hand.bin"
+            "mesh-fp-pistol-trigger-hand.bin", "mesh-fp-pistol-support-hand.bin",
+            "mesh-fp-knife-trigger-hand.bin", "mesh-fp-knife-support-hand.bin",
+            "mesh-fp-grenade-trigger-hand.bin", "mesh-fp-grenade-support-hand.bin"
         };
+        public static string FirstPersonHandSkeletonPath(int index) => FirstPersonHandPaths[index].Replace("mesh-", "skeleton-");
         public const string SoldierSkeletonPath = "skeleton-soldier.bin";
         public const string ShaderPathPrefix = "shader-";
         public const string FontPath = "font-exception.json";
@@ -124,6 +127,7 @@ namespace Shooter.Generation.Environment
             };
             list.AddRange(SoldierLodPaths);
             list.AddRange(FirstPersonHandPaths);
+            for (int hand = 0; hand < FirstPersonHandPaths.Length; hand++) list.Add(FirstPersonHandSkeletonPath(hand));
             list.AddRange(RifleLodPaths);
             list.Add(RifleMagazinePath);
             list.Add(RifleCyclePath);
@@ -320,11 +324,17 @@ namespace Shooter.Generation.Environment
 
         public static MeshData DecodeFirstPersonHand(PackagedVisualPayloads payloads, byte slot, bool support)
         {
-            // Knife/grenade reuse the pistol glove pair (slot 1).
-            byte handSlot = slot > 1 ? (byte)1 : slot;
-            int index = handSlot * 2 + (support ? 1 : 0);
+            if (slot > 3) throw new ArgumentOutOfRangeException(nameof(slot));
+            int index = slot * 2 + (support ? 1 : 0);
             return GeometryCodec.DecodeMesh(ArtifactCodec.Decode(payloads.Bytes(FirstPersonHandPaths[index]),
                 ContentKind.Mesh, MapFingerprint(payloads.MapId), payloads.ToolchainHash));
+        }
+
+        public static SkeletonData DecodeFirstPersonHandSkeleton(PackagedVisualPayloads payloads, byte slot, bool support)
+        {
+            if (slot > 3) throw new ArgumentOutOfRangeException(nameof(slot));
+            return GeometryCodec.DecodeSkeleton(ArtifactCodec.Decode(payloads.Bytes(FirstPersonHandSkeletonPath(slot*2+(support?1:0))),
+                ContentKind.Skeleton, MapFingerprint(payloads.MapId), payloads.ToolchainHash));
         }
 
         public static SkeletonData DecodeSoldierSkeleton(PackagedVisualPayloads payloads)

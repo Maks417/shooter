@@ -28,7 +28,8 @@ namespace Shooter.Tests
                 presentation.BindPackagedVisuals(visuals);
                 yield return null; // Exercise the actual MonoBehaviour destruction lifecycle.
                 var weapon = camera.transform.GetChild(0);
-                var meshes = weapon.GetComponentsInChildren<MeshFilter>(true).Select(f => f.sharedMesh).ToArray();
+                var meshes = weapon.GetComponentsInChildren<MeshFilter>(true).Select(f => f.sharedMesh)
+                    .Concat(weapon.GetComponentsInChildren<SkinnedMeshRenderer>(true).Select(r=>r.sharedMesh)).ToArray();
                 Assert.That(meshes.Length, Is.EqualTo(5), "Weapon, magazine, cycle and both packaged hands must be present.");
                 Object.Destroy(presentation.gameObject);
                 yield return null;

@@ -172,8 +172,12 @@ namespace Shooter.Generation.Environment
             AddSgaf(dependencies, "mesh", MapVisualClosure.UnitBoxMeshPath, ContentKind.Mesh,
                 GeometryCodec.EncodeMesh(PrimitiveGeometry.Box(new Float3(1f, 1f, 1f), 0f, 1)), mapFingerprint, toolchainHash);
             for (int hand = 0; hand < MapVisualClosure.FirstPersonHandPaths.Length; hand++)
+            {
                 AddSgaf(dependencies, "mesh", MapVisualClosure.FirstPersonHandPaths[hand], ContentKind.Mesh,
-                    GeometryCodec.EncodeMesh(FirstPersonHandGeometry.Build(hand >= 2, hand % 2 == 1)), mapFingerprint, toolchainHash);
+                    GeometryCodec.EncodeMesh(FirstPersonHandGeometry.Build((byte)(hand / 2), hand % 2 == 1)), mapFingerprint, toolchainHash);
+                AddSgaf(dependencies, "skeleton", MapVisualClosure.FirstPersonHandSkeletonPath(hand), ContentKind.Skeleton,
+                    GeometryCodec.EncodeSkeleton(new FirstPersonHandRig((byte)(hand/2),hand%2==1).Skeleton), mapFingerprint, toolchainHash);
+            }
 
             ContentId soldierFp = MapVisualClosure.SoldierFingerprint;
             AddSgaf(dependencies, "skeleton", MapVisualClosure.SoldierSkeletonPath, ContentKind.Skeleton,
@@ -187,9 +191,9 @@ namespace Shooter.Generation.Environment
 
             ContentId weaponFp = MapVisualClosure.WeaponFingerprint;
             var rifleRecipe = WeaponRecipe.Parse(Encoding.ASCII.GetBytes(
-                "{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/rifle\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.0.3\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"rifle\"},\"dependencies\":[]}"));
+                "{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/rifle\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.0.4\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"rifle\"},\"dependencies\":[]}"));
             var pistolRecipe = WeaponRecipe.Parse(Encoding.ASCII.GetBytes(
-                "{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/pistol\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.0.3\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"pistol\"},\"dependencies\":[]}"));
+                "{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/pistol\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.0.4\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"pistol\"},\"dependencies\":[]}"));
             var rifleBuild = WeaponGeometry.Build(rifleRecipe);
             var pistolBuild = WeaponGeometry.Build(pistolRecipe);
             for (int lod = 0; lod < MapVisualClosure.RifleLodPaths.Length; lod++)
@@ -345,7 +349,18 @@ namespace Shooter.Generation.Environment
             }
             RequireMesh(MapVisualClosure.MapSolidsMeshPath, mapFingerprint);
             RequireMesh(MapVisualClosure.UnitBoxMeshPath, mapFingerprint);
-            foreach (string path in MapVisualClosure.FirstPersonHandPaths) RequireMesh(path, mapFingerprint);
+            for (int hand = 0; hand < MapVisualClosure.FirstPersonHandPaths.Length; hand++)
+            {
+                byte slot = (byte)(hand/2); bool support = hand%2==1;
+                var mesh = MapVisualClosure.DecodeFirstPersonHand(payloads,slot,support);
+                var handSkeleton = MapVisualClosure.DecodeFirstPersonHandSkeleton(payloads,slot,support);
+                var expected = GeometryCodec.EncodeSkeleton(new FirstPersonHandRig(slot,support).Skeleton);
+                if (mesh.Joints == null || mesh.Weights == null || ContentIdentity.Hash(expected) != ContentIdentity.Hash(GeometryCodec.EncodeSkeleton(handSkeleton)))
+                    throw new InvalidOperationException("First-person articulated hand identity mismatch.");
+                foreach (var joints in mesh.Joints)
+                    if (joints.X >= FirstPersonHandRig.JointCount || joints.Y >= FirstPersonHandRig.JointCount || joints.Z >= FirstPersonHandRig.JointCount || joints.W >= FirstPersonHandRig.JointCount)
+                        throw new InvalidOperationException("First-person hand skin index outside its camera-only skeleton.");
+            }
             for (int i = 0; i < MapVisualClosure.SoldierLodPaths.Length; i++)
                 RequireMesh(MapVisualClosure.SoldierLodPaths[i], soldierFingerprint);
             for (int i = 0; i < MapVisualClosure.RifleLodPaths.Length; i++)

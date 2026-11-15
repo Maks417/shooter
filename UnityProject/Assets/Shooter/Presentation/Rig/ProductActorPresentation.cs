@@ -114,10 +114,12 @@ namespace Shooter.Presentation.Rig
         private MeshFilter? localMagazineFilter;
         private Transform? localCycle;
         private MeshFilter? localCycleFilter;
-        private MeshFilter? triggerHand;
-        private MeshFilter? supportHand;
-        private readonly Mesh?[] firstPersonHandMeshes = new Mesh?[4];
+        private SkinnedMeshRenderer? triggerHand;
+        private SkinnedMeshRenderer? supportHand;
+        private readonly Mesh?[] firstPersonHandMeshes = new Mesh?[8];
         private Material[]? firstPersonHandMaterials;
+        private readonly SkeletonData?[] handSkeletons = new SkeletonData?[8];
+        private readonly Transform[][] handBones = { new Transform[FirstPersonHandRig.JointCount], new Transform[FirstPersonHandRig.JointCount] };
         private readonly ProceduralViewModel localView = new ProceduralViewModel();
         private readonly FirstPersonHandling localHandling = new FirstPersonHandling();
         private float localAdsPresentation;
@@ -188,9 +190,9 @@ namespace Shooter.Presentation.Rig
 
             // Recipes for motion/sockets only â€” no SoldierGeometry/WeaponGeometry mesh generation on the product path.
             rifleRecipe = WeaponRecipe.Parse(Encoding.ASCII.GetBytes(
-                "{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/rifle\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.0.3\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"rifle\"},\"dependencies\":[]}"));
+                "{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/rifle\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.0.4\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"rifle\"},\"dependencies\":[]}"));
             pistolRecipe = WeaponRecipe.Parse(Encoding.ASCII.GetBytes(
-                "{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/pistol\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.0.3\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"pistol\"},\"dependencies\":[]}"));
+                "{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/pistol\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.0.4\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"pistol\"},\"dependencies\":[]}"));
 
             localWeapon = new GameObject("Local FP weapon").transform;
             localWeapon.SetParent(fpsCamera!.transform, false);
@@ -198,16 +200,25 @@ namespace Shooter.Presentation.Rig
             localWeapon.gameObject.AddComponent<MeshRenderer>();
             localMagazineFilter = CreateWeaponChild(localWeapon, "FP magazine", out localMagazine);
             localCycleFilter = CreateWeaponChild(localWeapon, "FP cycle", out localCycle);
-            MeshFilter CreateHand(string name)
+            SkinnedMeshRenderer CreateHand(string name, int handIndex)
             {
                 var hand = new GameObject(name);
                 hand.transform.SetParent(localWeapon, false);
-                var renderer = hand.AddComponent<MeshRenderer>();
+                var renderer = hand.AddComponent<SkinnedMeshRenderer>();
                 renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                return hand.AddComponent<MeshFilter>();
+                renderer.quality = SkinQuality.Bone2;
+                renderer.updateWhenOffscreen = true;
+                renderer.localBounds = new Bounds(new Vector3(0,-.1f,.1f),Vector3.one*1.2f);
+                for (int j=0;j<FirstPersonHandRig.JointCount;j++)
+                {
+                    var bone = new GameObject("FP joint " + j).transform;
+                    bone.SetParent(hand.transform,false); handBones[handIndex][j]=bone;
+                }
+                renderer.bones = handBones[handIndex]; renderer.rootBone=handBones[handIndex][0];
+                return renderer;
             }
-            triggerHand = CreateHand("FP trigger glove and sleeve");
-            supportHand = CreateHand("FP support glove and sleeve");
+            triggerHand = CreateHand("FP trigger glove and sleeve",0);
+            supportHand = CreateHand("FP support glove and sleeve",1);
             localWeapon.localPosition = new Vector3(0.08f, -0.10f, 0.40f);
             localWeapon.localRotation = Quaternion.identity;
             localWeapon.gameObject.SetActive(false);
@@ -265,9 +276,13 @@ namespace Shooter.Presentation.Rig
                 firstPersonPistolMagazineMesh = pistolMagazineMesh;
                 firstPersonRifleCycleMesh = rifleCycleMesh;
                 firstPersonPistolCycleMesh = pistolCycleMesh;
-                for (byte slot = 0; slot < 2; slot++)
+                for (byte slot = 0; slot < 4; slot++)
                     for (int hand = 0; hand < 2; hand++)
-                        firstPersonHandMeshes[slot * 2 + hand] = Own(Upload(MapVisualClosure.DecodeFirstPersonHand(visuals, slot, hand == 1), false));
+                    {
+                        var cameraSkeleton = MapVisualClosure.DecodeFirstPersonHandSkeleton(visuals,slot,hand==1);
+                        handSkeletons[slot*2+hand]=cameraSkeleton;
+                        firstPersonHandMeshes[slot*2+hand]=Own(Upload(MapVisualClosure.DecodeFirstPersonHand(visuals,slot,hand==1),false,cameraSkeleton));
+                    }
 
                 rifleSightSocketLocal = FindSocket(WeaponGeometry.Sockets(rifleRecipe!), "sight-eye");
                 pistolSightSocketLocal = FindSocket(WeaponGeometry.Sockets(pistolRecipe!), "sight-eye");
@@ -583,8 +598,7 @@ namespace Shooter.Presentation.Rig
                     rotation.X + composition.X + specialRot.X + pose.RecoilPitch * Mathf.Rad2Deg * rotKick,
                     rotation.Y + composition.Y + specialRot.Y + pose.RecoilYaw * Mathf.Rad2Deg * rotKick,
                     rotation.Z + composition.Z + specialRot.Z);
-                if (supportHand != null)
-                    supportHand.transform.localPosition = V(FirstPersonHandling.SupportHandOffset(shown, reload, reducedMotion));
+                PoseLocalHands(shown,reload,localView.CycleOpen01,reducedMotion,magazineEmpty);
                 PoseLocalMechanicalParts(shown, reload, magazineEmpty, localView.CycleOpen01, reducedMotion);
                 // Full rifle ADS uses the analytic scope overlay — hide the near-field mesh so the lens stays clean.
                 // Empty/thrown grenade hides the held prop so the throw reads clearly.
@@ -860,14 +874,42 @@ namespace Shooter.Presentation.Rig
             }
             if (triggerHand != null && supportHand != null)
             {
-                int index = (slot > 1 ? 1 : slot) * 2;
+                int index = slot * 2;
                 if (triggerHand.sharedMesh != firstPersonHandMeshes[index])
                 {
                     triggerHand.sharedMesh = firstPersonHandMeshes[index];
                     supportHand.sharedMesh = firstPersonHandMeshes[index + 1];
-                    triggerHand.GetComponent<MeshRenderer>().sharedMaterials = firstPersonHandMaterials;
-                    supportHand.GetComponent<MeshRenderer>().sharedMaterials = firstPersonHandMaterials;
+                    triggerHand.sharedMaterials = firstPersonHandMaterials;
+                    supportHand.sharedMaterials = firstPersonHandMaterials;
                     supportHand.transform.localPosition = Vector3.zero;
+                    for (int hand=0;hand<2;hand++)
+                    {
+                        var skeleton=handSkeletons[index+hand]!;
+                        for(int j=0;j<FirstPersonHandRig.JointCount;j++)
+                        {
+                            var definition=skeleton.Joints[j]; var bone=handBones[hand][j];
+                            bone.SetParent(definition.ParentId==ushort.MaxValue ? (hand==0?triggerHand.transform:supportHand.transform) : handBones[hand][definition.ParentId],false);
+                            bone.localPosition=V(definition.LocalBindPosition); bone.localRotation=Q(definition.LocalBindRotation);
+                        }
+                    }
+                }
+            }
+        }
+
+        private void PoseLocalHands(byte slot,float reload,float cycle,bool reducedMotion,bool magazineEmpty)
+        {
+            if(triggerHand==null || supportHand==null) return;
+            bool gun=FirstPersonWeaponMechanics.HasMagazinePart(slot);
+            for(int hand=0;hand<2;hand++)
+            {
+                var skeleton=handSkeletons[slot*2+hand]!;
+                float open=hand==1 && gun ? FirstPersonHandRig.OpenForReload(reload) : 0;
+                var reach=hand==1 ? FirstPersonHandling.SupportHandOffset(slot,reload,reducedMotion,magazineEmpty) : default;
+                for(int j=0;j<FirstPersonHandRig.JointCount;j++)
+                {
+                    var bone=handBones[hand][j];
+                    bone.localPosition=V(skeleton.Joints[j].LocalBindPosition)+(j==2?V(reach):Vector3.zero);
+                    bone.localRotation=Q(FirstPersonHandRig.FingerRotation(j,hand==1,open,gun && reload<=0?cycle:0));
                 }
             }
         }
@@ -993,7 +1035,7 @@ namespace Shooter.Presentation.Rig
             return palette;
         }
 
-        private Mesh Upload(MeshData data, bool skin)
+        private Mesh Upload(MeshData data, bool skin, SkeletonData? handSkeleton = null)
         {
             var mesh = Own(new Mesh { name = skin ? "Product soldier" : "Product weapon" });
             mesh.vertices = data.Positions.Select(V).ToArray();
@@ -1009,7 +1051,7 @@ namespace Shooter.Presentation.Rig
                     MeshTopology.Triangles,
                     sub.MaterialSlot);
             }
-            if (skin)
+            if (skin || handSkeleton != null)
             {
                 if (data.Joints == null || data.Weights == null)
                     throw new InvalidOperationException("Soldier mesh missing skin weights.");
@@ -1025,7 +1067,14 @@ namespace Shooter.Presentation.Rig
                     };
                 }
                 mesh.boneWeights = weights;
-                mesh.bindposes = Enumerable.Range(0, SoldierSkeleton.JointCount)
+                if(handSkeleton!=null)
+                {
+                    var positions=new Vector3[handSkeleton.Joints.Count];
+                    for(int j=0;j<positions.Length;j++)
+                    { var definition=handSkeleton.Joints[j]; positions[j]=V(definition.LocalBindPosition)+(definition.ParentId==ushort.MaxValue?Vector3.zero:positions[definition.ParentId]); }
+                    mesh.bindposes=positions.Select(position=>Matrix4x4.TRS(position,Quaternion.identity,Vector3.one).inverse).ToArray();
+                }
+                else mesh.bindposes = Enumerable.Range(0, SoldierSkeleton.JointCount)
                     .Select(j => Matrix4x4.TRS(V(SoldierSkeleton.BindPositions[j]), Quaternion.identity, Vector3.one).inverse)
                     .ToArray();
             }

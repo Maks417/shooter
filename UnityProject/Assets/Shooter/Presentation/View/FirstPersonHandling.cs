@@ -177,19 +177,18 @@ namespace Shooter.Presentation.View
             Math.Clamp(ads, 0f, 1f) * Smooth(Math.Clamp(equipBlend, 0f, 1f));
 
         /// <summary>Camera-only support-hand reach toward the magazine; returns to its packaged grip at both endpoints.</summary>
-        public static Float3 SupportHandOffset(byte slot, float reloadPhase, bool reducedMotion)
+        public static Float3 SupportHandOffset(byte slot, float reloadPhase, bool reducedMotion, bool magazineEmpty = false)
         {
             if (slot > ProductAuthorityActionView.MaxSlot) throw new ArgumentOutOfRangeException(nameof(slot));
             if (!float.IsFinite(reloadPhase)) throw new ArgumentOutOfRangeException(nameof(reloadPhase));
             if (!ProductAuthorityActionView.IsGunSlot(slot)) return default;
             float phase = Math.Clamp(reloadPhase, 0f, 1f);
-            float reach = (float)Math.Sin(Math.PI * phase);
-            reach *= reach;
-            float amplitude = reducedMotion ? .55f : 1f;
-            var travel = FirstPersonMagazineTravel.Offset(phase, false, reducedMotion);
-            return new Float3(.018f * reach * amplitude,
-                -.085f * reach * amplitude + travel.Y * .5f,
-                (slot == 0 ? -.275f : -.025f) * reach * amplitude + travel.Z * .5f);
+            float Ramp(float start,float end) { float t=Math.Clamp((phase-start)/(end-start),0,1);return t*t*(3-2*t); }
+            float reach=Ramp(.04f,.20f)*(1-Ramp(.84f,.98f));
+            var travel=FirstPersonMagazineTravel.Offset(phase,magazineEmpty,reducedMotion);
+            return new Float3(.018f*reach+travel.X,
+                (slot==0?-.087f:-.044f)*reach+travel.Y,
+                (slot==0?-.262f:-.017f)*reach+travel.Z);
         }
 
         /// <summary>
@@ -233,16 +232,16 @@ namespace Shooter.Presentation.View
             float gait = reducedMotion ? 0f : movement * hip * Smooth(equip);
             double phase = travel * (Math.PI * 2d / 1.4d);
 
-            Float3 mag = FirstPersonMagazineTravel.Offset(reloadPhase, magazineEmpty, reducedMotion);
+
             Float3 sway = IdleSway(ads, reloadPhase, reducedMotion, recoilEnergy);
 
             // Holster: down/back + outward hip swing; draw reverses with the same arc.
             return new Float3(
-                (float)Math.Sin(phase) * .005f * gait + .018f * reload + mag.X + sway.X
+                (float)Math.Sin(phase) * .005f * gait + .018f * reload + sway.X
                     + (0.055f * tuck + 0.04f * swing) * switchAmp,
-                -(float)Math.Cos(phase * 2d) * .004f * gait - .055f * reload + mag.Y + sway.Y
+                -(float)Math.Cos(phase * 2d) * .004f * gait - .055f * reload + sway.Y
                     - (0.185f * tuck + 0.02f * swing) * switchAmp,
-                -.028f * reload + mag.Z + sway.Z
+                -.028f * reload + sway.Z
                     - (0.125f * tuck + 0.035f * swing) * switchAmp);
         }
 

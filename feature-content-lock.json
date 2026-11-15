@@ -11,12 +11,13 @@
     "ADR-023",
     "ADR-061",
     "ADR-067",
-    "ADR-068"
+    "ADR-068",
+    "ADR-069"
   ],
   "generators": [
     {
       "id": "geometry.weapon",
-      "version": "1.0.3",
+      "version": "1.0.4",
       "schema": "shooter.recipe.weapon.v1"
     },
     {
@@ -37,12 +38,13 @@
     "docs/feature-fixtures/rifle-1.0.1.json": "4f84ccdc1466105eb7864a7214553555c0080aa68b1b0124d5b50e299957a340",
     "docs/feature-fixtures/rifle-1.0.2.json": "3e44bccb88bf9ecf567fa011e1527dc97fcd273b1d08ff9147d2c9047060c156",
     "docs/feature-fixtures/rifle-1.0.3.json": "3ba8a98fabca9eada96a9220b06d7963357c9c25eff85a931f7fdb8e863d5f69",
+    "docs/feature-fixtures/rifle-1.0.4.json": "02ec046fe18a7c3f3236ca478e6bbc76ededce14f971f01c3a665e16665b7346",
     "docs/feature-fixtures/soldier-1.0.0.json": "e0ff283e23e829171d940c0b3f91c5117bdbe51451c05e3ae68bc004cd964314",
     "docs/feature-fixtures/soldier-1.0.1.json": "d451390ecad776e4b676929e121baab2e227dfdc02bbdddf9640f6b1a8ffccb4",
     "docs/feature-fixtures/soldier-1.0.2.json": "e0f291b94e52bb25148091e102ec2cdc8586e70179d7a5cd6d612c409e1b85cd",
     "docs/feature-schemas/material.schema.json": "206c101fbd49720e2ab60e0819806c3beaba8e91335de469f2b066f8c769e6c6",
     "docs/feature-schemas/soldier.schema.json": "122520ca7030949ce90e73e815317f5f65412ba8390f87bc049b995f2c3cbe9d",
-    "docs/feature-schemas/weapon.schema.json": "85f676b5c6fda83558e7ef3d0519bd55c918c7201cf3118a20c201c8abd6d4c0",
+    "docs/feature-schemas/weapon.schema.json": "6e58e0afa5117558095201cb165c44cc2fa4a48dd460ef9390e33b635a734f83",
     "docs/soldier-baseline.md": "27f73bd9f55ed551fb811aa62b798a25cdb547e7f85552b50dafdf29c1546477",
     "docs/weapon-recipe-baseline.md": "0e560943c4386152e3febf98038a91325b08233694a8bf2f39e004ffb68b07ee",
     "UnityProject/Assets/Shooter/Generation/Core/Compilation/ValidatedRecipe.cs": "9fd953887e489ddcb8946318243e154671ac95e088d9a6c6a9fd1516cacdc019",
@@ -63,16 +65,16 @@
     "UnityProject/Assets/Shooter/Generation/Core/Weapons/BoredMuzzle.cs": "d8b74b0b987f197f1f240459fc3c38af983defb22c654d0fda0fe27784614c12",
     "UnityProject/Assets/Shooter/Generation/Core/Weapons/LoadoutPropGeometry.cs": "069bbd41e141be5d54f70e89164e9dd0aaeb74e9e08866037e17a91de96bffbb",
     "UnityProject/Assets/Shooter/Generation/Core/Weapons/WeaponAssetGenerator.cs": "d9d070a39f3fbbcc7b378de2bcafdb8ebc0ab096f0c6f5400efa7627686a3563",
-    "UnityProject/Assets/Shooter/Generation/Core/Weapons/WeaponGeometry.cs": "f8ef285bdad2cfb53127c1905344f7028ec5676494ff5e455ecff4bf841605fc",
-    "UnityProject/Assets/Shooter/Generation/Core/Weapons/WeaponRecipe.cs": "b4f0e7802a45a821ccc964a12cf242a2b10ff95353dabfd33cf8970c6542d076",
+    "UnityProject/Assets/Shooter/Generation/Core/Weapons/WeaponGeometry.cs": "cfc01a8bbc51b40cf16408df03dcd17371ab9cc5079801bb295e512a4eeb20c6",
+    "UnityProject/Assets/Shooter/Generation/Core/Weapons/WeaponRecipe.cs": "90f3a762419901d03ab5ce4aadd62a232767c877fd58b9defdde0d36d5ce523e",
     "UnityProject/Assets/Shooter/Generation/FeatureRecipes/asphalt.json": "f21e74aab471c4eedd83fb31d8faa7713c7aeaa98327fac1a393d54f9993d967",
     "UnityProject/Assets/Shooter/Generation/FeatureRecipes/concrete.json": "2fbfa8e87cbc2571dcdfa653287d61602f4ad1e614a6d76913b8162e130112fd",
     "UnityProject/Assets/Shooter/Generation/FeatureRecipes/fabric.json": "b80ff9f4abcc15643bf5faaa7d98892422eb2617631e7e1d66cbdf95e4794404",
     "UnityProject/Assets/Shooter/Generation/FeatureRecipes/metal.json": "24abac9b9122c4790a84892ad5d2c07948a2261f6de575a995395c6f9a331b54",
-    "UnityProject/Assets/Shooter/Generation/FeatureRecipes/pistol.json": "42f59a667aa9744630e482ec21b771a7ab2b26063b74899b210c1ff8088fefe0",
+    "UnityProject/Assets/Shooter/Generation/FeatureRecipes/pistol.json": "1dfc17eff19ee181695b134ce9f32dbc3baa98391249a85b1aa55ec6505b490d",
     "UnityProject/Assets/Shooter/Generation/FeatureRecipes/plaster.json": "7bef8f007c976ff6f6641b56dd688994251035226cdb30e5f39ae8c023c18168",
     "UnityProject/Assets/Shooter/Generation/FeatureRecipes/polymer.json": "99e7c3c913254759f99d1f4ed8fec0eda72e094a518f7ac730639f5c7b808f67",
-    "UnityProject/Assets/Shooter/Generation/FeatureRecipes/rifle.json": "3ba8a98fabca9eada96a9220b06d7963357c9c25eff85a931f7fdb8e863d5f69",
+    "UnityProject/Assets/Shooter/Generation/FeatureRecipes/rifle.json": "02ec046fe18a7c3f3236ca478e6bbc76ededce14f971f01c3a665e16665b7346",
     "UnityProject/Assets/Shooter/Generation/FeatureRecipes/soil.json": "cc2ebc90846af67d3fad0333f0702b0f27142060a62ed7eb87d49cbe0270f79a",
     "UnityProject/Assets/Shooter/Generation/FeatureRecipes/soldier.json": "e0f291b94e52bb25148091e102ec2cdc8586e70179d7a5cd6d612c409e1b85cd"
   },

@@ -12,7 +12,7 @@ public sealed class WeaponTests
     private readonly ITestOutputHelper output;
     public WeaponTests(ITestOutputHelper output) { this.output = output; }
     private static byte[] Source(string kind = "rifle", string seed = "460072030", string deps = "[]") => Encoding.UTF8.GetBytes(
-        "{\"recipeId\":\"weapons/" + kind + "\",\"schemaId\":\"shooter.recipe.weapon.v1\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.0.3\",\"seed\":\"" + seed + "\",\"parameters\":{\"kind\":\"" + kind + "\"},\"dependencies\":" + deps + "}");
+        "{\"recipeId\":\"weapons/" + kind + "\",\"schemaId\":\"shooter.recipe.weapon.v1\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.0.4\",\"seed\":\"" + seed + "\",\"parameters\":{\"kind\":\"" + kind + "\"},\"dependencies\":" + deps + "}");
     private static GenerationRequest Request(WeaponRecipe recipe, string profile) => new GenerationRequest(recipe.Document, "windows64", profile, new ContentId(new string('1', 64)));
     [Theory]
     [InlineData("rifle")][InlineData("pistol")]
@@ -141,7 +141,7 @@ public sealed class WeaponTests
             source.Replace("\"kind\":\"rifle\"", "\"kind\":\"rifle\",\"vertices\":[[0,0,0]]"),
             source.Replace("\"seed\":\"460072030\"", "\"seed\":\"01\""),
             source.Replace("\"seed\":\"460072030\"", "\"seed\":\"18446744073709551616\""),
-            source.Replace("\"generatorVersion\":\"1.0.3\"", "\"generatorVersion\":\"2.0.0\""),
+            source.Replace("\"generatorVersion\":\"1.0.4\"", "\"generatorVersion\":\"2.0.0\""),
             source.Replace("\"dependencies\":[]", "\"dependencies\":[],\"unexpected\":0"),
             source.Replace("\"kind\":\"rifle\"", "\"kind\":\"rifle\",\"kind\":\"pistol\"") })
             Assert.Throws<FormatException>(() => WeaponRecipe.Parse(Encoding.UTF8.GetBytes(bad)));
@@ -170,9 +170,9 @@ public sealed class WeaponTests
     [Fact]
     public void OldGeneratorVersionRejectsInsteadOfReinterpretingExistingContent()
     {
-        foreach (string legacy in new[] { "1.0.0", "1.0.1", "1.0.2" })
+        foreach (string legacy in new[] { "1.0.0", "1.0.1", "1.0.2", "1.0.3" })
         {
-            var source = Encoding.UTF8.GetString(Source()).Replace("\"generatorVersion\":\"1.0.3\"", "\"generatorVersion\":\"" + legacy + "\"");
+            var source = Encoding.UTF8.GetString(Source()).Replace("\"generatorVersion\":\"1.0.4\"", "\"generatorVersion\":\"" + legacy + "\"");
             Assert.Throws<FormatException>(() => WeaponRecipe.Parse(Encoding.UTF8.GetBytes(source)));
             var current = WeaponRecipe.Parse(Source());
             var old = new RecipeDocument(current.Document.RecipeId, WeaponRecipe.Schema, WeaponRecipe.GeneratorId, legacy, current.Document.Seed, current.Document.Parameters, Array.Empty<ContentId>());

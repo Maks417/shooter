@@ -9,44 +9,55 @@ namespace Shooter.Generation.Environment
     {
         public const int MaxVerticesPerHand = 6000;
 
-        public static MeshData Build(bool pistol, bool support)
+        public static MeshData Build(bool pistol, bool support) => Build(pistol ? (byte)1 : (byte)0, support);
+        public static MeshData Build(byte slot, bool support)
         {
+            var rig = new FirstPersonHandRig(slot, support);
             var mesh = new MeshAssembly();
-            float side = support ? -1f : 1f;
-            float z = support && !pistol ? .34f : -.015f;
-            float palmY = support && !pistol ? .012f : -.026f;
-            var palm = new Float3(side * .039f, palmY, z - .013f);
-            var wrist = new Float3(side * .052f, palmY - .065f, z - .04f);
-            var elbow = new Float3(side * (support ? .24f : .18f), -.24f, -.29f);
-            float sleeveLength;
-            Quat sleeveRotation = Align(elbow, wrist, out sleeveLength);
-            mesh.Add(BuildSleeve(sleeveLength), new Float3((elbow.X + wrist.X) * .5f,
-                (elbow.Y + wrist.Y) * .5f, (elbow.Z + wrist.Z) * .5f), sleeveRotation, 0);
-            Segment(mesh, new Float3(wrist.X, wrist.Y - .018f, wrist.Z - .012f), wrist, .036f, .035f, 2);
-            Box(mesh, palm, new Float3(.039f, .085f, .062f), .012f, 1);
-            Box(mesh, new Float3(side * .062f, palmY + .012f, z - .012f), new Float3(.009f, .036f, .042f), .003f, 2);
-            // Individual curved fingers wrap the grip. Index rests alongside the trigger guard.
+            var skin = new System.Collections.Generic.List<UInt16x4>();
+            var weights = new System.Collections.Generic.List<Float4>();
+            void Bind(int first, ushort joint)
+            {
+                for (int i = first; i < mesh.VertexCount; i++)
+                { skin.Add(new UInt16x4(joint,0,0,0)); weights.Add(new Float4(1,0,0,0)); }
+            }
+            float side = support ? -1 : 1;
+            var palm = rig.Palm; var wrist = rig.Wrist; var elbow = rig.Elbow;
+            float length; Quat rotation = Align(elbow, wrist, out length);
+            var sleeve = BuildSleeve(length);
+            mesh.Add(sleeve, new Float3((elbow.X+wrist.X)*.5f,(elbow.Y+wrist.Y)*.5f,(elbow.Z+wrist.Z)*.5f), rotation, 0);
+            // Elbow stays planted; wrist translation stretches the continuous forearm loft.
+            for (int i = 0; i < sleeve.Positions.Count; i++)
+            {
+                float t = Math.Clamp((sleeve.Positions[i].Z + length*.5f)/length,0,1);
+                skin.Add(new UInt16x4(1,2,0,0)); weights.Add(new Float4(1-t,t,0,0));
+            }
+            int first = mesh.VertexCount;
+            Segment(mesh, new Float3(wrist.X,wrist.Y-.018f,wrist.Z-.012f), wrist,.036f,.035f,2);
+            Box(mesh,palm,new Float3(.039f,.085f,.062f),.012f,1);
+            Box(mesh,new Float3(side*.062f,palm.Y+.012f,palm.Z+.001f),new Float3(.009f,.036f,.042f),.003f,2);
+            Bind(first,2);
             for (int finger = 0; finger < 4; finger++)
             {
-                float y = palmY + .029f - finger * .019f;
-                var a = new Float3(side * .047f, y, z + .005f);
-                var b = new Float3(side * .022f, y + .002f, z + .035f);
-                var c = new Float3(-side * .006f, y + .004f, z + .020f);
-                if (!support && finger == 0)
+                int j = 3 + finger*3;
+                for (int segment = 0; segment < 3; segment++)
                 {
-                    b = new Float3(side * .037f, y, z + .052f);
-                    c = new Float3(side * .030f, y, z + .092f);
+                    first = mesh.VertexCount;
+                    var a = rig.BindPositions[j+segment];
+                    var b = segment == 2 ? rig.FingerTip(finger,support,slot) : rig.BindPositions[j+segment+1];
+                    Segment(mesh,a,b,.009f-segment*.001f,.008f-segment*.001f,1);
+                    // Small overlapping knuckle volumes keep articulation from opening visible gaps.
+                    Box(mesh,a,new Float3(.016f-segment*.002f,.014f-segment*.002f,.016f-segment*.002f),.003f,2);
+                    Bind(first,(ushort)(j+segment));
                 }
-                Segment(mesh, a, b, .010f, .009f, 1);
-                Segment(mesh, b, c, .009f, .0075f, 1);
-                Box(mesh, a, new Float3(.018f, .012f, .017f), .004f, 2);
             }
-            var thumb = new Float3(side * .046f, palmY + .034f, z - .035f);
-            var thumbJoint = new Float3(side * .016f, palmY + .058f, z - .020f);
-            Segment(mesh, thumb, thumbJoint, .012f, .010f, 1);
-            Segment(mesh, thumbJoint, new Float3(-side * .008f, palmY + .053f, z + .008f), .010f, .008f, 1);
-            if (mesh.VertexCount > MaxVerticesPerHand) throw new InvalidOperationException("First-person hand vertex budget exceeded.");
-            return mesh.Build();
+            first=mesh.VertexCount;
+            Segment(mesh,rig.BindPositions[15],rig.BindPositions[16],.012f,.010f,1); Bind(first,15);
+            first=mesh.VertexCount;
+            Segment(mesh,rig.BindPositions[16],new Float3(-side*.008f,palm.Y+.053f,palm.Z+.021f),.010f,.008f,1); Bind(first,16);
+            if(mesh.VertexCount>MaxVerticesPerHand) throw new InvalidOperationException("First-person hand vertex budget exceeded.");
+            var data=mesh.Build();
+            return new MeshData(data.Positions,data.Normals,data.Tangents,data.Uv,data.Indices,data.Submeshes,skin,weights);
         }
 
         private static void Box(MeshAssembly mesh, Float3 position, Float3 size, float bevel, ushort slot)

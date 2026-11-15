@@ -25,7 +25,7 @@ namespace Shooter.Presentation
 
         /// <summary>
         /// Map-id atmosphere variants (presentation only). Does not change collision, nav, or authority.
-        /// training-compound: cooler plaster/concrete air; depot-yard: warmer dusty yard haze.
+        /// training-compound: cooler plaster/concrete air; depot-yard: warmer dusty yard haze; oil-depot: petroleum haze.
         /// </summary>
         public static void ResolveProductPalette(
             string mapId,
@@ -59,6 +59,17 @@ namespace Shooter.Presentation
                 fogStartMeters = 36f;
                 fogEndMeters = 92f;
                 fogDensity = .008f;
+                return;
+            }
+            if (string.Equals(mapId, "oil-depot", StringComparison.Ordinal))
+            {
+                // Petroleum yard: cooler industrial zenith, oily amber horizon, denser mid fog.
+                zenith = new Rgb(.22f, .30f, .36f);
+                horizon = new Rgb(.64f, .54f, .42f);
+                ground = new Rgb(.28f, .22f, .14f);
+                fogStartMeters = 34f;
+                fogEndMeters = 88f;
+                fogDensity = .0085f;
                 return;
             }
             zenith = DefaultZenith;
@@ -110,10 +121,14 @@ namespace Shooter.Presentation
         private GameObject? root;
         private Material? skybox;
         private Texture2D? gradient;
+        private Cubemap? environment;
+        private Texture? priorReflection;
+        private DefaultReflectionMode priorReflectionMode;
+        public Cubemap? EnvironmentReflection => environment;
         private bool disposed;
 
         /// <summary>Product maps: slightly deeper ambient so hard shadows and metal/concrete contrast hold on Low720.</summary>
-        public const float ProductAmbientIntensity = 0.80f;
+        public const float ProductAmbientIntensity = 0.88f;
         public const float DefaultAmbientIntensity = 0.88f;
 
         public Color Zenith { get; private set; }
@@ -207,6 +222,13 @@ namespace Shooter.Presentation
                 RenderSettings.skybox = skybox;
             }
 
+            // Global fallback covers the entire 256 m arena, including positions outside the local probe.
+            // Generated from the same analytic sky; 64 px faces with mips, no per-frame capture.
+            priorReflection = RenderSettings.customReflectionTexture;
+            priorReflectionMode = RenderSettings.defaultReflectionMode;
+            environment = BuildEnvironment(zenith,horizon,ground);
+            RenderSettings.customReflectionTexture = environment;
+            RenderSettings.defaultReflectionMode = DefaultReflectionMode.Custom;
             RenderSettings.fog = enableFog;
             if (enableFog)
             {
@@ -229,12 +251,41 @@ namespace Shooter.Presentation
             if (RenderSettings.skybox == skybox) RenderSettings.skybox = null;
             RenderSettings.fog = false;
             RenderSettings.ambientIntensity = 1f;
+            if (RenderSettings.customReflectionTexture == environment)
+            {
+                RenderSettings.customReflectionTexture = priorReflection;
+                RenderSettings.defaultReflectionMode = priorReflectionMode;
+            }
+            DestroyOwned(environment); environment=null;
             DestroyOwned(skybox);
             DestroyOwned(gradient);
             DestroyOwned(root);
             skybox = null;
             gradient = null;
             root = null;
+        }
+
+        private static Cubemap BuildEnvironment(GeneratedSkyMath.Rgb zenith,GeneratedSkyMath.Rgb horizon,GeneratedSkyMath.Rgb ground)
+        {
+            const int size=64;
+            var cube=new Cubemap(size,TextureFormat.RGBAHalf,true) { name="Procedural arena reflection",filterMode=FilterMode.Trilinear,wrapMode=TextureWrapMode.Clamp };
+            Vector3 sun=(Quaternion.Euler(44,-32,0)*Vector3.back).normalized;
+            for(int face=0;face<6;face++)
+            {
+                var pixels=new Color[size*size];
+                for(int y=0;y<size;y++) for(int x=0;x<size;x++)
+                {
+                    float u=2*(x+.5f)/size-1, v=2*(y+.5f)/size-1;
+                    Vector3 direction=face switch { 0=>new Vector3(1,-v,-u),1=>new Vector3(-1,-v,u),2=>new Vector3(u,1,v),3=>new Vector3(u,-1,-v),4=>new Vector3(u,-v,1),_=>new Vector3(-u,-v,-1) };
+                    direction.Normalize();
+                    var rgb=GeneratedSkyMath.SampleGradient(zenith,horizon,ground,direction.y);
+                    float lobe=Mathf.Pow(Mathf.Max(0,Vector3.Dot(direction,sun)),256)*1.5f;
+                    pixels[y*size+x]=new Color(rgb.R+lobe,rgb.G+lobe*.94f,rgb.B+lobe*.84f,1);
+                }
+                cube.SetPixels(pixels,(CubemapFace)face);
+            }
+            cube.Apply(true,false);
+            return cube;
         }
 
         private static Texture2D BuildGradientTexture(GeneratedSkyMath.Rgb zenith, GeneratedSkyMath.Rgb horizon, GeneratedSkyMath.Rgb ground)

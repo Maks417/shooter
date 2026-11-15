@@ -9,6 +9,42 @@ using Xunit;
 [Collection("NativeNavProvider")]
 public sealed class MapVisualClosureTests : IDisposable
 {
+    [Theory]
+    [InlineData((byte)0,false)] [InlineData((byte)0,true)]
+    [InlineData((byte)1,false)] [InlineData((byte)1,true)]
+    [InlineData((byte)2,false)] [InlineData((byte)2,true)]
+    [InlineData((byte)3,false)] [InlineData((byte)3,true)]
+    public void ArticulatedHandsAreDeterministicAndKeepElbowAndWristSkinEndpoints(byte slot,bool support)
+    {
+        var rig=new FirstPersonHandRig(slot,support);
+        var mesh=FirstPersonHandGeometry.Build(slot,support);
+        Assert.Equal(FirstPersonHandRig.JointCount,rig.Skeleton.Joints.Count);
+        Assert.Equal(GeometryCodec.EncodeMesh(mesh),GeometryCodec.EncodeMesh(FirstPersonHandGeometry.Build(slot,support)));
+        Assert.Equal(GeometryCodec.EncodeSkeleton(rig.Skeleton),GeometryCodec.EncodeSkeleton(new FirstPersonHandRig(slot,support).Skeleton));
+        MeshValidation.Check(mesh,false);
+        Assert.NotNull(mesh.Joints); Assert.NotNull(mesh.Weights);
+        Assert.Equal((ushort)1,mesh.Joints![0].X);
+        Assert.Equal(1,mesh.Weights![0].X);
+        Assert.Contains(mesh.Joints,j=>j.X==16);
+        Assert.All(mesh.Weights,w=>Assert.InRange(w.X+w.Y+w.Z+w.W,.99999f,1.00001f));
+        Assert.All(mesh.Joints,j=>Assert.InRange(j.X,(ushort)0,(ushort)16));
+        Assert.All(mesh.Positions,p=>Assert.True(float.IsFinite(p.X)&&float.IsFinite(p.Y)&&float.IsFinite(p.Z)));
+    }
+    [Fact]
+    public void ReloadFingerReleaseHasContinuousReachAndReseatWindows()
+    {
+        Assert.Equal(0,FirstPersonHandRig.OpenForReload(-1));
+        Assert.Equal(0,FirstPersonHandRig.OpenForReload(0));
+        Assert.Equal(0,FirstPersonHandRig.OpenForReload(1));
+        Assert.True(FirstPersonHandRig.OpenForReload(.14f)>.9f);
+        Assert.Equal(0,FirstPersonHandRig.OpenForReload(.5f));
+        Assert.True(FirstPersonHandRig.OpenForReload(.86f)>.9f);
+        float previous=0;
+        for(int i=0;i<=1000;i++)
+        { float next=FirstPersonHandRig.OpenForReload(i/1000f); Assert.InRange(next,0,1); Assert.InRange(Math.Abs(next-previous),0,.03f); previous=next; }
+        Assert.Throws<ArgumentOutOfRangeException>(()=>new FirstPersonHandRig(4,false));
+        Assert.Throws<ArgumentOutOfRangeException>(()=>FirstPersonHandRig.OpenForReload(float.NaN));
+    }
     [Fact]
     public void FoldedSleeveIsAClosedSurfaceWithoutInternalCapEdges()
     {
@@ -79,20 +115,23 @@ public sealed class MapVisualClosureTests : IDisposable
         Assert.True(MapVisualClosure.DecodeRifleCycle(payloads).Positions.Count > 0);
         Assert.True(MapVisualClosure.DecodePistolMagazine(payloads).Positions.Count > 0);
         Assert.True(MapVisualClosure.DecodePistolCycle(payloads).Positions.Count > 0);
-        for (byte slot = 0; slot < 2; slot++)
+        for (byte slot = 0; slot < 4; slot++)
             foreach (bool support in new[] { false, true })
             {
                 var hand = MapVisualClosure.DecodeFirstPersonHand(payloads, slot, support);
                 Assert.InRange(hand.Positions.Count, 100, FirstPersonHandGeometry.MaxVerticesPerHand);
                 Assert.Equal(3, hand.Submeshes.Count);
-                Assert.Null(hand.Joints); // Camera props cannot inherit or modify authoritative soldier skin/hit poses.
+                Assert.NotNull(hand.Joints); // Independent camera rig; authoritative soldier anatomy is unchanged.
+                var handSkeleton=MapVisualClosure.DecodeFirstPersonHandSkeleton(payloads,slot,support);
+                Assert.Equal(FirstPersonHandRig.JointCount,handSkeleton.Joints.Count);
+                Assert.All(hand.Joints!,j=>Assert.InRange(j.X,(ushort)0,(ushort)(FirstPersonHandRig.JointCount-1)));
                 Assert.All(hand.Positions, p =>
                 {
                     Assert.InRange(p.X, -.31f, .31f);
                     Assert.InRange(p.Y, -.31f, .095f); // Sight-eye is .100m pistol / .115m rifle.
                     Assert.InRange(p.Z, -.36f, .42f);
                 });
-                Assert.Equal(GeometryCodec.EncodeMesh(hand), GeometryCodec.EncodeMesh(FirstPersonHandGeometry.Build(slot == 1, support)));
+                Assert.Equal(GeometryCodec.EncodeMesh(hand), GeometryCodec.EncodeMesh(FirstPersonHandGeometry.Build(slot, support)));
             }
 
         var shader = MapJsonValue.Parse(payloads.Bytes(MapVisualClosure.ShaderPath("low"))).Object;

@@ -162,6 +162,41 @@ namespace Shooter.Tests
         }
 
         [Test]
+        public void ReloadArticulatesFingersAndStretchesSleeveWithoutMovingElbow()
+        {
+            var root=new GameObject("Articulated reload test");
+            var before=new Mesh(); var after=new Mesh();
+            try
+            {
+                var camera=new GameObject("Camera").AddComponent<Camera>(); camera.transform.SetParent(root.transform);
+                var presentation=ProductActorPresentation.Create(root.transform,camera);
+                var visuals=PackagedVisualPayloads.FromBuild(MapPackageBuilder.Build("training-compound","low",
+                    ContentIdentity.Hash(System.Text.Encoding.ASCII.GetBytes("hand-motion"))));
+                presentation.BindPackagedVisuals(visuals);
+                var id=new EntityId(1);
+                var lifecycle=new Lifecycle { State=new ActorLifecycleState(id,1,true,100,default,0,0,0,30,90) };
+                var snapshot=new MatchViewSnapshot(1,10,10,53990,GameMatchPhase.Playing,MatchOutcome.None,FinishReason.None,0,0,
+                    new[]{new ParticipantState(new ParticipantId(1),"Human",1,true,id,new LifeId(1),true,0,0,0)},0);
+                presentation.Sync(snapshot,lifecycle,null,0,id,false,.016f,Array.Empty<CombatEvent>(),10);
+                var hand=camera.transform.Find("Local FP rifle/FP support glove and sleeve").GetComponent<SkinnedMeshRenderer>();
+                var elbow=hand.bones[1].localPosition; var wrist=hand.bones[2].localPosition;
+                hand.BakeMesh(before);
+                var reload=new CombatEvent(new EventId(1,10,id,1),CombatEventKind.ReloadStarted,id,default,new ActionPayload(0,10,110));
+                presentation.Sync(snapshot,lifecycle,null,0,id,false,.016f,new[]{reload},24);
+                hand.BakeMesh(after);
+                Assert.That(hand.bones[1].localPosition,Is.EqualTo(elbow));
+                Assert.That(Vector3.Distance(hand.bones[2].localPosition,wrist),Is.GreaterThan(.02f));
+                Assert.That(Quaternion.Angle(hand.bones[3].localRotation,Quaternion.identity),Is.GreaterThan(20));
+                Assert.That(Vector3.Distance(before.vertices[0],after.vertices[0]),Is.LessThan(.0001f),"Elbow cuff must stay anchored as the wrist reaches.");
+                Assert.That(hand.transform.localPosition,Is.EqualTo(Vector3.zero),"The entire forearm must not be translated.");
+                presentation.Sync(snapshot,lifecycle,null,0,id,false,.016f,Array.Empty<CombatEvent>(),110);
+                Assert.That(hand.bones[2].localPosition,Is.EqualTo(wrist));
+                Assert.That(Quaternion.Angle(hand.bones[3].localRotation,Quaternion.identity),Is.LessThan(.001f));
+            }
+            finally { UnityEngine.Object.DestroyImmediate(root); UnityEngine.Object.DestroyImmediate(before); UnityEngine.Object.DestroyImmediate(after); }
+        }
+
+        [Test]
         public void EveryLoadoutSlotKeepsSemanticMaterialsAndHidesAbsentMovingParts()
         {
             var root = new GameObject("Arsenal slot test");
@@ -234,10 +269,10 @@ namespace Shooter.Tests
                     {
                         var hand = weapon.Find(support ? "FP support glove and sleeve" : "FP trigger glove and sleeve");
                         Assert.That(hand, Is.Not.Null);
-                        Assert.That(hand.GetComponent<MeshFilter>().sharedMesh.vertexCount,
+                        Assert.That(hand.GetComponent<SkinnedMeshRenderer>().sharedMesh.vertexCount,
                             Is.EqualTo(MapVisualClosure.DecodeFirstPersonHand(visuals, slot, support).Positions.Count));
-                        Assert.That(hand.GetComponent<MeshRenderer>().sharedMaterials.Length, Is.EqualTo(3));
-                        Assert.That(hand.GetComponent<MeshRenderer>().shadowCastingMode,
+                        Assert.That(hand.GetComponent<SkinnedMeshRenderer>().sharedMaterials.Length, Is.EqualTo(3));
+                        Assert.That(hand.GetComponent<SkinnedMeshRenderer>().shadowCastingMode,
                             Is.EqualTo(UnityEngine.Rendering.ShadowCastingMode.Off));
                         Assert.That(hand.localPosition, Is.EqualTo(Vector3.zero), "New lives/weapon slots start at the packaged grip.");
                     }

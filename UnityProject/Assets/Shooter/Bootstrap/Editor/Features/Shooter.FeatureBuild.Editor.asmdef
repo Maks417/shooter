@@ -7,7 +7,8 @@
     "Shooter.AssetCompiler.Editor",
     "Shooter.Content.Runtime",
     "Shooter.Presentation",
-    "Unity.RenderPipelines.Universal.Runtime"
+    "Unity.RenderPipelines.Universal.Runtime",
+    "Shooter.Game.Contracts"
   ],
   "includePlatforms": [
     "Editor"

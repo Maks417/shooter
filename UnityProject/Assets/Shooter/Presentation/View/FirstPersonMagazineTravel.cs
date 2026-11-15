@@ -24,10 +24,12 @@ namespace Shooter.Presentation.View
             float amp = reducedMotion ? 0.55f : 1f;
             float empty = magazineEmpty ? 1.35f : 1f;
 
+            // Let fingers reach and close before removal; finish seating before they return to the fore-end.
+            if (t <= .22f || t >= .78f) return default;
             if (t <= RemoveEnd)
             {
                 // Pull mag down and out of the well (readable remove).
-                float u = t / RemoveEnd;
+                float u = (t-.22f) / (RemoveEnd-.22f);
                 float ease = u * u * (3f - 2f * u);
                 return new Float3(
                     0.028f * ease * amp,
@@ -36,7 +38,7 @@ namespace Shooter.Presentation.View
             }
 
             // Seat a fresh mag: rise into the well then settle.
-            float v = (t - InsertStart) / (1f - InsertStart);
+            float v = (t - InsertStart) / (.78f - InsertStart);
             float settle = 1f - v * v * (3f - 2f * v);
             return new Float3(
                 0.028f * settle * amp,

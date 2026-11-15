@@ -788,6 +788,17 @@ Decision: geometry.weapon advances 1.0.2 → 1.0.3. Retain old fixtures and reje
 
 Sockets, collision dimensions, seeds, C0/Game-v1/SGAF and four LOD ceilings stay fixed. Validate topology, winding, tangent frames, deterministic bytes, migration, detached-part totals and package round trips. Named first-person/world visual review and reference performance remain Pending; this is an incremental procedural improvement, not a claim of Battlefield V equivalence. Rollback requires restoring 1.0.2 source/recipes, old palette and matching packages together.
 
+
+## ADR-069 — Accepted: articulated near-field hands and global analytic reflections
+
+Date 2026-11-15; owner authorized the next visual pass: hands/handling and lighting, then weapon shape refinement, and subsequently requested a combined next installer with the concurrent map/AI work. Sole integrator owns this bounded camera-hand/weapon/lighting slice. Soldier anatomy, P05 stop, hit shapes, authority, settings, editor/packages and acceptance remain unchanged.
+
+`fp.hand.v2` adds independent 17-joint camera-only glove/sleeve rigs for all four slots. Existing SGAF v1 skin/skeleton codecs carry eight hand meshes and eight skeletons in the verified map visual closure; old rigid packages fail required closure/skin validation. Fingers release/regrip through continuous reload windows and the trigger finger follows accepted-shot cycle. Wrist reach deforms the sleeve while its elbow remains anchored. Two skinned hand renderers replace two rigid ones. Magazine motion waits until the support hand reaches the well, seats before the fingers return, and no longer translates the entire weapon along the magazine path. Special slots have their own numeric grips. Slot/life reset restores bind transforms. No runtime mesh generation, imported clips, new soldier joints or gameplay hit data.
+
+`geometry.weapon` advances 1.0.3 → 1.0.4 for selective two-segment grip/frame/magazine bevels and a rounder near-field barrel. Preserve 1.0.3 fixture bytes and reject old recipes; sockets, collision dimensions and combat rules stay fixed.
+
+One generated 64² RGBAHalf cubemap with a full mip chain is the global reflection fallback. Analytic sky/ground and a bounded sun lobe cover positions outside the existing 48 m local probe, without per-frame capture or an additional light. This approximate mip-filtered environment is not a GGX prefilter, baked GI or screen-space reflection. Disposal restores the previous reflection owner/mode. Outdoor fill/key balance and bounded shadow bias improve material and ground-contact readability. Validate deterministic skin/package bytes, actual hand deformation and resource lifetime, reflection lifecycle, full Unity lanes and a clean combined installer. Reference performance, named visual review and all release/P05 acceptance remain Pending.
+
 ## ADR-070 — Accepted: bot tactics tranche (cover peek, wall hearing, ledge strafe, route spread) (T090)
 
 Date 2026-11-15; owner approved the bot-AI improvement plan (Phase 1 tactics). Sole integrator owns `Simulation/AI/**`, pure AI tests and AI/docs handoff. No C0/Game-v1 freeze change, no ray/path budget raise, no difficulty selector, no weapon damage/rate change, no map cover-proxy bake (deferred).
@@ -802,3 +813,4 @@ Decision:
 - **Budgets / contracts.** Global ≤16 AI rays / ≤2 new paths per tick, `AiNoise` determinism, Game-v1 `ITeamBotPlanner`, and T085 lethality envelope stay unchanged.
 
 Validation: new `BotTacticsT090Tests` plus existing AI suites; `AiRaysUsedThisTick` ≤16. Named player feel, `SHOOTER_AI_SUMMARY` on product maps, AI CPU 1.5 ms and installer remain Pending. Rollback: revert T090; prior T082/T085 behaviour.
+

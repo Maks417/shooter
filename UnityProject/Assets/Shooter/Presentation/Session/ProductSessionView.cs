@@ -172,9 +172,11 @@ namespace Shooter.Presentation.Session
             // Do not force Flat ambient — ProductMapView/GeneratedSky Trilight owns outdoor fill after install.
             sun.transform.rotation = Quaternion.Euler(44f, -32f, 0f);
             sun.color = new Color(1f, 0.94f, 0.84f, 1f);
-            sun.intensity = 1.32f;
+            sun.intensity = 1.50f;
             sun.shadows = LightShadows.Hard;
             sun.shadowStrength = 0.85f;
+            sun.shadowBias = .035f;
+            sun.shadowNormalBias = .18f;
             sun.cullingMask &= ~(1 << ProductMenuScene.StageLayer);
             QualitySettings.vSyncCount = 0;
             Application.targetFrameRate = -1;
