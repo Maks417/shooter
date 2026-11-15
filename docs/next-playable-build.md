@@ -1,5 +1,7 @@
 # Next playable build — finish playtest and native navigation
 
+**Kill-feed weapon/headshot icons — 2026-11-15 (source):** elimination rows replace the arrow with procedural Fill weapon silhouettes plus a headshot mark, correlated from same-tick `ShotAccepted`/`DamageApplied` (C0 DeathPayload unchanged). Pure Hud tests in this change set; named 720p review Pending. [Handoff](milestones/m11-playable-release/handoff.md#kill-feed-weapon-and-headshot-icons--2026-11-15).
+
 **ADR-072 weapon profiles — 2026-11-15 (source):** DefinitionId-keyed combat catalog + visual profiles; `geometry.weapon` 1.0.5 silhouette (`standard`/`carbine`); proof primary `weapons/rifle-carbine` packaged beside classic rifle; default loadout still rifle. C0 PredictionSchema unchanged. Pure catalog/visual/generation tests in this change set; content republish / named playtest Pending. [Handoff](milestones/m11-playable-release/handoff.md#adr-072--weapon-profiles).
 
 **Combat feel — 2026-11-15 (source):** auto-reload on empty mag + louder reload soft cues; refuse/leave empty grenade slot; M67-style procedural grenade; bot hard-stuck spawn relocation. Simulation 308 / Generation 430 PASS; software + native content republish PASS; installer / named playtest Pending. [Handoff](milestones/m11-playable-release/handoff.md#combat-feel--auto-reload-empty-grenade-m67-grenade-mesh-bot-stuck-rescue--2026-11-15).

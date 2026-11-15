@@ -67,7 +67,7 @@ namespace Shooter.Presentation.Session
         private IReadOnlyList<CollisionBox> hudBoxes = System.Array.Empty<CollisionBox>();
         private readonly EventId[] recentDeathIds = new EventId[32];
         private int deathIdCursor;
-        private readonly string[] killFeed = new string[4];
+        private readonly KillFeedEntry[] killFeed = new KillFeedEntry[4];
         private readonly float[] killFeedUntil = new float[4];
         private readonly string[] scoreFeedLabels = new string[ScoreBadgeVisual.MaxFeedRows];
         private readonly uint[] scoreFeedPoints = new uint[ScoreBadgeVisual.MaxFeedRows];
@@ -1348,11 +1348,12 @@ namespace Shooter.Presentation.Session
                 for (int j = 0; j < snapshot.Participants.Count; j++)
                 {
                     var p = snapshot.Participants[j];
-                    if (ev.Instigator.IsValid && p.EntityId.Equals(ev.Instigator)) killer = p.IsHuman ? "YOU" : p.DisplayName;
-                    if (p.EntityId.Equals(ev.Target)) victim = p.IsHuman ? "YOU" : p.DisplayName;
+                    if (ev.Instigator.IsValid && p.EntityId.Equals(ev.Instigator)) killer = p.IsHuman ? KillFeedText.LocalOperator : p.DisplayName;
+                    if (p.EntityId.Equals(ev.Target)) victim = p.IsHuman ? KillFeedText.LocalOperator : p.DisplayName;
                 }
+                KillFeedCause.Resolve(events, i, out KillFeedWeapon weapon, out bool headshot);
                 for (int j = killFeed.Length - 1; j > 0; j--) { killFeed[j] = killFeed[j - 1]; killFeedUntil[j] = killFeedUntil[j - 1]; }
-                killFeed[0] = KillFeedText.Format(killer, victim);
+                killFeed[0] = KillFeedText.Create(killer, victim, weapon, headshot);
                 killFeedUntil[0] = Time.unscaledTime + CombatHudVisual.KillFeedHoldSeconds;
             }
         }
@@ -1360,44 +1361,67 @@ namespace Shooter.Presentation.Session
         private void DrawKillFeed(Rect safe)
         {
             float now = Time.unscaledTime;
-            const float rowH = 16f;
+            float rowH = CombatHudVisual.KillFeedRowHeight;
             const float gap = 2f;
+            float rowW = CombatHudVisual.KillFeedRowWidth;
             for (int i = 0; i < killFeed.Length; i++)
             {
                 float remaining = killFeedUntil[i] - now;
                 float alpha = CombatHudVisual.KillFeedAlpha(remaining);
                 if (alpha <= 0.02f) continue;
-                string line = killFeed[i];
-                Rect r = new Rect(safe.xMax - 216, safe.y + 62 + i * (rowH + gap), 216, rowH);
+                KillFeedEntry entry = killFeed[i];
+                if (string.IsNullOrEmpty(entry.Victim) && !entry.HasKiller) continue;
+                Rect r = new Rect(safe.xMax - rowW, safe.y + 62 + i * (rowH + gap), rowW, rowH);
                 Color plate = TacticalUi.HudPlate;
                 plate.a *= alpha * 0.8f;
                 TacticalUi.Fill(r, plate);
-                bool localKiller = KillFeedText.IsLocalKiller(line);
-                bool localVictim = KillFeedText.IsLocalVictim(line);
+                bool localKiller = KillFeedText.IsLocalKiller(entry);
+                bool localVictim = KillFeedText.IsLocalVictim(entry);
                 Color rail = localKiller ? TacticalUi.Ally : (localVictim ? TacticalUi.Enemy : TacticalUi.HudEdge);
                 rail.a *= alpha;
                 TacticalUi.AccentBar(new Rect(r.x, r.y + 2, 2, r.height - 4), rail);
-                if (CombatHudVisual.TrySplitKillFeed(line, out string left, out string right))
+
+                string left = entry.LeftLabel;
+                string right = entry.RightLabel;
+                bool env = !entry.HasKiller;
+                Color leftInk = localKiller ? TacticalUi.Ally : TacticalUi.Text;
+                Color rightInk = localVictim ? TacticalUi.Enemy : TacticalUi.Muted;
+                leftInk.a = alpha;
+                rightInk.a = alpha;
+                Color iconInk = TacticalUi.Muted;
+                iconInk.a = alpha * 0.92f;
+
+                float nameW = CombatHudVisual.KillFeedNameWidth;
+                float iconX = r.x + 8f + nameW + 4f;
+                combatUi.Label(new Rect(r.x + 8, r.y, nameW, r.height), left, 11, leftInk, TextAnchor.MiddleRight);
+
+                if (entry.Weapon != KillFeedWeapon.None)
                 {
-                    bool env = string.Equals(right, "ENVIRONMENT", System.StringComparison.Ordinal);
-                    Color leftInk = localKiller ? TacticalUi.Ally
-                        : env ? TacticalUi.Text : TacticalUi.Text;
-                    Color rightInk = localVictim ? TacticalUi.Enemy
-                        : env ? TacticalUi.Muted : TacticalUi.Muted;
-                    leftInk.a = alpha;
-                    rightInk.a = alpha;
-                    Color sep = TacticalUi.Muted;
-                    sep.a = alpha * 0.85f;
-                    combatUi.Label(new Rect(r.x + 8, r.y, 82, r.height), left, 11, leftInk, TextAnchor.MiddleRight);
-                    combatUi.Label(new Rect(r.x + 92, r.y, 16, r.height), "›", 11, sep, TextAnchor.MiddleCenter);
-                    combatUi.Label(new Rect(r.x + 110, r.y, 100, r.height), right, 11, rightInk, TextAnchor.MiddleLeft);
+                    float wIcon = CombatHudVisual.KillFeedWeaponIconWidth;
+                    TacticalUi.KillFeedWeaponIcon(new Rect(iconX, r.y + 2f, wIcon, r.height - 4f), entry.Weapon, iconInk);
+                    iconX += wIcon + CombatHudVisual.KillFeedIconGap;
+                    if (entry.Headshot)
+                    {
+                        float hIcon = CombatHudVisual.KillFeedHeadshotIconWidth;
+                        Color hs = localKiller ? TacticalUi.Ally : TacticalUi.Accent;
+                        hs.a = alpha;
+                        TacticalUi.KillFeedHeadshotIcon(new Rect(iconX, r.y + 2f, hIcon, r.height - 4f), hs);
+                        iconX += hIcon + CombatHudVisual.KillFeedIconGap;
+                    }
                 }
-                else
+                else if (env)
                 {
-                    Color ink = localKiller ? TacticalUi.Ally : (localVictim ? TacticalUi.Enemy : TacticalUi.Text);
-                    ink.a = alpha;
-                    combatUi.Label(new Rect(r.x + 8, r.y, r.width - 14, r.height), line, 11, ink, TextAnchor.MiddleRight);
+                    // No weapon for environment deaths; small muted dash keeps spacing readable.
+                    Color dash = TacticalUi.Muted;
+                    dash.a = alpha * 0.7f;
+                    TacticalUi.Fill(new Rect(iconX + 4f, r.y + r.height * 0.45f, 10f, 1.5f), dash);
+                    iconX += 18f;
                 }
+
+                float rightX = iconX;
+                float rightW = r.xMax - 6f - rightX;
+                if (rightW < 40f) rightW = 40f;
+                combatUi.Label(new Rect(rightX, r.y, rightW, r.height), right, 11, rightInk, TextAnchor.MiddleLeft);
             }
         }
 

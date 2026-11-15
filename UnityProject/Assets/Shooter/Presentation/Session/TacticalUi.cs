@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using Shooter.Presentation.Hud;
 using Shooter.Presentation.Menus;
 using UnityEngine;
 
@@ -102,6 +103,64 @@ namespace Shooter.Presentation.Session
             GUI.color = color;
             GUI.DrawTexture(r, Texture2D.whiteTexture);
             GUI.color = prior;
+        }
+
+        /// <summary>Procedural kill-feed weapon silhouette (fills only; no sprites).</summary>
+        public static void KillFeedWeaponIcon(Rect r, KillFeedWeapon weapon, Color color)
+        {
+            if (weapon == KillFeedWeapon.None || r.width <= 1f || r.height <= 1f) return;
+            if (Event.current.type != EventType.Repaint) return;
+            float x = r.x, y = r.y, w = r.width, h = r.height;
+            switch (weapon)
+            {
+                case KillFeedWeapon.Rifle:
+                    // Stock + receiver + long barrel.
+                    Fill(new Rect(x, y + h * 0.28f, w * 0.22f, h * 0.44f), color);
+                    Fill(new Rect(x + w * 0.18f, y + h * 0.22f, w * 0.38f, h * 0.40f), color);
+                    Fill(new Rect(x + w * 0.52f, y + h * 0.36f, w * 0.46f, h * 0.16f), color);
+                    Fill(new Rect(x + w * 0.28f, y + h * 0.58f, w * 0.10f, h * 0.28f), color);
+                    break;
+                case KillFeedWeapon.Carbine:
+                    Fill(new Rect(x, y + h * 0.30f, w * 0.20f, h * 0.40f), color);
+                    Fill(new Rect(x + w * 0.16f, y + h * 0.24f, w * 0.42f, h * 0.38f), color);
+                    Fill(new Rect(x + w * 0.54f, y + h * 0.36f, w * 0.34f, h * 0.16f), color);
+                    Fill(new Rect(x + w * 0.30f, y + h * 0.58f, w * 0.10f, h * 0.26f), color);
+                    break;
+                case KillFeedWeapon.Pistol:
+                    Fill(new Rect(x + w * 0.08f, y + h * 0.22f, w * 0.62f, h * 0.28f), color);
+                    Fill(new Rect(x + w * 0.18f, y + h * 0.48f, w * 0.22f, h * 0.40f), color);
+                    Fill(new Rect(x + w * 0.66f, y + h * 0.30f, w * 0.22f, h * 0.14f), color);
+                    break;
+                case KillFeedWeapon.Knife:
+                    Fill(new Rect(x + w * 0.08f, y + h * 0.38f, w * 0.28f, h * 0.24f), color);
+                    Fill(new Rect(x + w * 0.32f, y + h * 0.42f, w * 0.58f, h * 0.14f), color);
+                    Fill(new Rect(x + w * 0.86f, y + h * 0.34f, w * 0.08f, h * 0.30f), color);
+                    break;
+                case KillFeedWeapon.Grenade:
+                    Fill(new Rect(x + w * 0.22f, y + h * 0.22f, w * 0.52f, h * 0.62f), color);
+                    Fill(new Rect(x + w * 0.36f, y + h * 0.08f, w * 0.24f, h * 0.18f), color);
+                    Fill(new Rect(x + w * 0.58f, y + h * 0.04f, w * 0.14f, h * 0.12f), color);
+                    break;
+            }
+        }
+
+        /// <summary>AAA-style headshot mark: circle with cross, fills only.</summary>
+        public static void KillFeedHeadshotIcon(Rect r, Color color)
+        {
+            if (r.width <= 1f || r.height <= 1f) return;
+            if (Event.current.type != EventType.Repaint) return;
+            float cx = r.x + r.width * 0.5f;
+            float cy = r.y + r.height * 0.5f;
+            float rad = Mathf.Min(r.width, r.height) * 0.42f;
+            // Approximate circle with a cross of fills (readable at ~12 px).
+            float t = Mathf.Max(1.2f, rad * 0.28f);
+            Fill(new Rect(cx - rad, cy - t * 0.5f, rad * 2f, t), color);
+            Fill(new Rect(cx - t * 0.5f, cy - rad, t, rad * 2f), color);
+            float ring = Mathf.Max(1f, t * 0.55f);
+            Fill(new Rect(cx - rad, cy - rad, rad * 2f, ring), color);
+            Fill(new Rect(cx - rad, cy + rad - ring, rad * 2f, ring), color);
+            Fill(new Rect(cx - rad, cy - rad, ring, rad * 2f), color);
+            Fill(new Rect(cx + rad - ring, cy - rad, ring, rad * 2f), color);
         }
 
         public static void Line(Vector2 a, Vector2 b, Color color, float thickness = 1)

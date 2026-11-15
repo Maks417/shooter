@@ -20,6 +20,13 @@ namespace Shooter.Presentation.Hud
         public const float TightnessBarHeight = 3f;
         public const float TightnessBarGap = 3f;
         public const string KillFeedSeparator = "  >  ";
+        /// <summary>Elimination-row plate and icon band (720p tactical HUD).</summary>
+        public const float KillFeedRowWidth = 248f;
+        public const float KillFeedRowHeight = 16f;
+        public const float KillFeedNameWidth = 82f;
+        public const float KillFeedWeaponIconWidth = 26f;
+        public const float KillFeedHeadshotIconWidth = 12f;
+        public const float KillFeedIconGap = 3f;
         /// <summary>T085 incoming-damage direction marker: hold time, ring slots and radius around the reticle.</summary>
         public const float DamageIndicatorSeconds = 1.4f;
         public const int MaxDamageIndicators = 4;

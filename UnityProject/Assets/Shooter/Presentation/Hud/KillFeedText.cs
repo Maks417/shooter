@@ -3,6 +3,39 @@ using System;
 
 namespace Shooter.Presentation.Hud
 {
+    /// <summary>Weapon silhouette drawn between killer and victim names in the elimination feed.</summary>
+    public enum KillFeedWeapon : byte
+    {
+        None = 0,
+        Rifle = 1,
+        Carbine = 2,
+        Pistol = 3,
+        Knife = 4,
+        Grenade = 5
+    }
+
+    /// <summary>One expiring kill-feed row: names plus correlated weapon/headshot cues.</summary>
+    public readonly struct KillFeedEntry
+    {
+        public string? Killer { get; }
+        public string Victim { get; }
+        public KillFeedWeapon Weapon { get; }
+        public bool Headshot { get; }
+
+        public bool HasKiller => !string.IsNullOrEmpty(Killer);
+
+        public KillFeedEntry(string? killer, string victim, KillFeedWeapon weapon, bool headshot)
+        {
+            Killer = killer;
+            Victim = victim ?? "";
+            Weapon = weapon;
+            Headshot = headshot;
+        }
+
+        public string LeftLabel => HasKiller ? Killer! : Victim;
+        public string RightLabel => HasKiller ? Victim : KillFeedText.EnvironmentLabel;
+    }
+
     public static class KillFeedText
     {
         public const string Separator = "  >  ";
@@ -19,6 +52,18 @@ namespace Shooter.Presentation.Hud
             if (!string.IsNullOrEmpty(killer)) return killer + Separator + victim;
             return victim + Separator + EnvironmentLabel;
         }
+
+        public static KillFeedEntry Create(string? killer, string victim, KillFeedWeapon weapon, bool headshot)
+            => new KillFeedEntry(killer, victim, weapon, headshot);
+
+        /// <summary>True when the local operator is the attributed killer (ally cyan tint).</summary>
+        public static bool IsLocalKiller(KillFeedEntry entry)
+            => entry.HasKiller
+               && string.Equals(entry.Killer, LocalOperator, StringComparison.Ordinal);
+
+        /// <summary>True when the local operator is the victim (danger coral tint).</summary>
+        public static bool IsLocalVictim(KillFeedEntry entry)
+            => string.Equals(entry.Victim, LocalOperator, StringComparison.Ordinal);
 
         /// <summary>True when the local operator is the attributed killer (ally cyan tint).</summary>
         public static bool IsLocalKiller(string line)

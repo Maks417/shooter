@@ -1,5 +1,16 @@
 # M11 — Playable build and acceptance — handoff and gate record
 
+## Kill-feed weapon and headshot icons — 2026-11-15
+
+Owner: replace the elimination-row arrow with the kill weapon icon and a headshot mark (AAA FPS layout).
+
+**Implemented (software):**
+- `KillFeedEntry` / `KillFeedWeapon` plus `KillFeedCause.Resolve` correlate same-batch `ShotAccepted.WeaponId` and fatal `DamageApplied.RegionId` (head = 1); grenade kills use Damage-without-Shot; environment deaths stay icon-less.
+- `ProductSessionView.DrawKillFeed` draws procedural Fill silhouettes (`TacticalUi.KillFeedWeaponIcon` / `KillFeedHeadshotIcon`) between names; no sprites; C0 `DeathPayload` unchanged.
+- Pure tests: `KillFeedCauseTests`, extended `KillFeedTextTests`.
+
+**Pending:** named 720p player/installer readability review. No contract-lock change.
+
 ## Bot short first-name display names — 2026-11-15
 
 Owner: replace synthetic `BotN` roster labels with readable short first names.

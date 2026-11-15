@@ -36,5 +36,24 @@ namespace Shooter.Simulation.Tests.Hud
             Assert.False(KillFeedText.IsLocalKiller("Bot 1  >  Bot 2"));
             Assert.False(KillFeedText.IsLocalVictim("Bot 1  >  Bot 2"));
         }
+
+        [Fact]
+        public void Entry_roles_and_labels_match_AAA_feed_layout()
+        {
+            var kill = KillFeedText.Create("YOU", "Bot 3", KillFeedWeapon.Rifle, headshot: true);
+            Assert.True(KillFeedText.IsLocalKiller(kill));
+            Assert.False(KillFeedText.IsLocalVictim(kill));
+            Assert.Equal("YOU", kill.LeftLabel);
+            Assert.Equal("Bot 3", kill.RightLabel);
+            Assert.True(kill.Headshot);
+            Assert.Equal(KillFeedWeapon.Rifle, kill.Weapon);
+
+            var env = KillFeedText.Create(null, "YOU", KillFeedWeapon.None, headshot: false);
+            Assert.False(KillFeedText.IsLocalKiller(env));
+            Assert.True(KillFeedText.IsLocalVictim(env));
+            Assert.Equal("YOU", env.LeftLabel);
+            Assert.Equal(KillFeedText.EnvironmentLabel, env.RightLabel);
+            Assert.Equal(KillFeedWeapon.None, env.Weapon);
+        }
     }
 }
