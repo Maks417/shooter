@@ -126,27 +126,36 @@ namespace Shooter.Generation.Environment
             int cells = (int)MathF.Floor((halfExtent * 2f) / cellSize);
             if (cells < 2) cells = 2;
             float origin = -halfExtent;
+            var heights = new List<float>(8);
+            float yMin = 0f, yMax = 4f;
             for (int z = 0; z < cells; z++)
             {
                 for (int x = 0; x < cells; x++)
                 {
                     float cx = origin + (x + 0.5f) * cellSize;
                     float cz = origin + (z + 0.5f) * cellSize;
-                    if (CompoundConnectivity.IsBlocked(boxes, cx, cz, clearance)) continue;
-                    float y = 0f;
+                    CompoundConnectivity.CollectStandHeights(boxes, cx, cz, clearance, heights);
                     float x0 = origin + x * cellSize, x1 = x0 + cellSize;
                     float z0 = origin + z * cellSize, z1 = z0 + cellSize;
-                    uint baseIndex = (uint)vertices.Count;
-                    vertices.Add(new Float3(x0, y, z0));
-                    vertices.Add(new Float3(x1, y, z0));
-                    vertices.Add(new Float3(x1, y, z1));
-                    vertices.Add(new Float3(x0, y, z1));
-                    polys.Add(new Polygon(new[] { baseIndex, baseIndex + 1, baseIndex + 2, baseIndex + 3 }, 1, 0));
+                    for (int h = 0; h < heights.Count; h++)
+                    {
+                        float y = heights[h];
+                        if (CompoundConnectivity.IsBlockedAt(boxes, cx, cz, clearance, y, CompoundConnectivity.AgentHeightMeters))
+                            continue;
+                        uint baseIndex = (uint)vertices.Count;
+                        vertices.Add(new Float3(x0, y, z0));
+                        vertices.Add(new Float3(x1, y, z0));
+                        vertices.Add(new Float3(x1, y, z1));
+                        vertices.Add(new Float3(x0, y, z1));
+                        polys.Add(new Polygon(new[] { baseIndex, baseIndex + 1, baseIndex + 2, baseIndex + 3 }, 1, 0));
+                        if (y < yMin) yMin = y;
+                        if (y > yMax) yMax = y;
+                    }
                 }
             }
             if (vertices.Count == 0) throw new InvalidOperationException("No walkable cells for nav bake.");
-            var min = new Float3(-halfExtent, -1f, -halfExtent);
-            var max = new Float3(halfExtent, 4f, halfExtent);
+            var min = new Float3(-halfExtent, Math.Min(-1f, yMin - 1f), -halfExtent);
+            var max = new Float3(halfExtent, Math.Max(4f, yMax + 1f), halfExtent);
             return new Bake(vertices, polys, min, max);
         }
 

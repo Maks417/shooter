@@ -58,7 +58,7 @@ Use the [remaining T067/T071 work](next-playable-build.md): play the existing ar
 | [Feature: FPS movement and combat](features/combat.md) | Feature implementation, edge cases and acceptance |
 | [Feature: combat AI](features/ai.md) | Feature implementation, edge cases and acceptance |
 | [Feature: Team Deathmatch](features/team-deathmatch.md) | Rosters, scoring, timer, respawn, team AI and results |
-| [Feature: two playable maps](features/playable-maps.md) | Approved map catalog, procedural layouts, packaging and safety |
+| [Feature: playable maps](features/playable-maps.md) | Approved map catalog, procedural layouts, packaging and safety |
 | [Feature: compact TDM map layouts](features/tdm-map-layouts.md) | T076 three-lane 5v5/6v6 arena design rules and per-map layouts |
 | [Feature: game shell and settings](features/game-shell.md) | Menu flows, interactive tables, persistence, audio/video/controls |
 | [Feature: combat audio (sample bank)](features/audio.md) | ADR-062 stereo WAV bank + per-kind distance (extends ADR-055); FIX10 device hearing Pending |

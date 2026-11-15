@@ -15,7 +15,7 @@ namespace Shooter.Generation.Environment
     {
         public const string Schema = "shooter.release-catalog.v1";
         public const string FileName = "catalog.json";
-        public static readonly string[] RequiredMaps = { "training-compound", "depot-yard" };
+        public static readonly string[] RequiredMaps = { "training-compound", "depot-yard", "oil-depot" };
         public static readonly string[] RequiredProfiles = { "gameplay", "low", "balanced", "high" };
 
         public static string CatalogPath(string cacheRoot) =>
@@ -29,7 +29,7 @@ namespace Shooter.Generation.Environment
             for (int i = 0; i < maps.Count; i++)
             {
                 string mapId = maps[i];
-                if (mapId != "training-compound" && mapId != "depot-yard")
+                if (!MapRecipe.IsApprovedMapId(mapId))
                     throw new ArgumentOutOfRangeException(nameof(mapIds), "unknown-map:" + mapId);
                 ulong seed = MapRecipe.ApprovedSeed(mapId);
                 var gameplay = BuildGameplaySidecar(mapId, seed);
@@ -43,10 +43,8 @@ namespace Shooter.Generation.Environment
                 mapEntries.Add(new Dictionary<string, object?>
                 {
                     ["mapId"] = mapId,
-                    ["displayName"] = mapId == "depot-yard" ? "Depot Yard" : "Training Compound",
-                    ["description"] = mapId == "depot-yard"
-                        ? "Steel yards, cargo lanes, and hard cover for local TDM."
-                        : "Tight courtyards and training lanes for local TDM.",
+                    ["displayName"] = MapRecipe.DisplayName(mapId),
+                    ["description"] = MapRecipe.Description(mapId),
                     ["supportedModes"] = new List<object?> { "team-deathmatch" },
                     ["supportedTeamSizes"] = new List<object?> { 5, 6 },
                     ["recipeSeed"] = seed.ToString(CultureInfo.InvariantCulture),
@@ -132,7 +130,7 @@ namespace Shooter.Generation.Environment
                 {
                     var map = maps[i].Object;
                     string mapId = map["mapId"].String;
-                    if (mapId != "training-compound" && mapId != "depot-yard")
+                    if (!MapRecipe.IsApprovedMapId(mapId))
                     {
                         diagnostic = "unknown-map:" + mapId;
                         return false;

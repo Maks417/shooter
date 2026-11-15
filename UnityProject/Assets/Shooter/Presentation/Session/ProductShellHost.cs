@@ -480,21 +480,14 @@ namespace Shooter.Presentation.Session
             }
             float cardsX = a.x + navWidth + 28;
             float cardsWidth = a.xMax - cardsX;
-            float cardWidth = (cardsWidth - 14) * .5f;
+            float cardGap = 10f;
+            float cardWidth = (cardsWidth - cardGap * 2f) / 3f;
             float cardHeight = Mathf.Min(198, a.height * .38f);
             float cardsY = a.yMax - cardHeight - 22;
             ui.Section(new Rect(cardsX, cardsY - 22, cardsWidth, 16), ShellUiCopy.MainBattles);
-            bool compound = setup!.SelectedMapId.Equals(WellKnownMaps.TrainingCompound);
-            if (ui.MapCard(new Rect(cardsX, cardsY, cardWidth, cardHeight), "main.compound", menuScene?.MapCard("training-compound"), ShellUiCopy.MapCompound, ShellUiCopy.MainCardSubtitle, compound))
-            {
-                if (!compound) setup.CycleMap(1);
-                navigation.OpenSetup();
-            }
-            if (ui.MapCard(new Rect(cardsX + cardWidth + 14, cardsY, cardWidth, cardHeight), "main.depot", menuScene?.MapCard("depot-yard"), ShellUiCopy.MapDepot, ShellUiCopy.MainCardSubtitle, !compound))
-            {
-                if (compound) setup.CycleMap(1);
-                navigation.OpenSetup();
-            }
+            DrawMainMapCard(new Rect(cardsX, cardsY, cardWidth, cardHeight), "main.compound", WellKnownMaps.TrainingCompound, ShellUiCopy.MapCompound);
+            DrawMainMapCard(new Rect(cardsX + cardWidth + cardGap, cardsY, cardWidth, cardHeight), "main.depot", WellKnownMaps.DepotYard, ShellUiCopy.MapDepot);
+            DrawMainMapCard(new Rect(cardsX + (cardWidth + cardGap) * 2f, cardsY, cardWidth, cardHeight), "main.oil", WellKnownMaps.OilDepot, ShellUiCopy.MapOil);
             string status = !string.IsNullOrEmpty(navigation.StatusMessage) ? navigation.StatusMessage : menuScene?.Status ?? "";
             DrawFooter(string.IsNullOrEmpty(status) ? ShellUiCopy.MainNavigate : status);
         }
@@ -509,11 +502,11 @@ namespace Shooter.Presentation.Session
             float rx = a.x + left + 20;
             float rw = a.width - left - 20;
             ui.Section(new Rect(a.x, y, left, 18), ShellUiCopy.SetupSelectArea);
-            bool compound = setup!.SelectedMapId.Equals(WellKnownMaps.TrainingCompound);
-            if (ui.Button(new Rect(a.x, y + 24, left, 40), "setup.compound", ShellUiCopy.SetupCompound, selected: compound) && !compound) setup.CycleMap(1);
-            if (ui.Button(new Rect(a.x, y + 70, left, 40), "setup.depot", ShellUiCopy.SetupDepot, selected: !compound) && compound) setup.CycleMap(1);
+            DrawSetupMapButton(new Rect(a.x, y + 24, left, 36), "setup.compound", WellKnownMaps.TrainingCompound, ShellUiCopy.SetupCompound);
+            DrawSetupMapButton(new Rect(a.x, y + 64, left, 36), "setup.depot", WellKnownMaps.DepotYard, ShellUiCopy.SetupDepot);
+            DrawSetupMapButton(new Rect(a.x, y + 104, left, 36), "setup.oil", WellKnownMaps.OilDepot, ShellUiCopy.SetupOil);
             float previewH = Mathf.Min(118, a.height * .22f);
-            Rect preview = new Rect(a.x, y + 120, left, previewH);
+            Rect preview = new Rect(a.x, y + 150, left, previewH);
             ui.Panel(preview, rail: true);
             Texture? card = menuScene?.MapCard(setup.SelectedMapId.Value);
             if (card != null && Event.current.type == EventType.Repaint)
@@ -593,6 +586,23 @@ namespace Shooter.Presentation.Session
             // Safe choice receives initial keyboard focus.
             if (ui.Button(new Rect(x + 22, y + 124, bw, 40), "confirm.cancel", ShellUiCopy.ConfirmCancel)) cancel();
             if (ui.Button(new Rect(x + 34 + bw, y + 124, bw, 40), "confirm.accept", ShellUiCopy.ConfirmAccept, primary: true)) confirm();
+        }
+
+        private void DrawMainMapCard(Rect rect, string id, MapId mapId, string title)
+        {
+            bool selected = setup!.SelectedMapId.Equals(mapId);
+            if (ui.MapCard(rect, id, menuScene?.MapCard(mapId.Value), title, ShellUiCopy.MainCardSubtitle, selected))
+            {
+                setup.SelectMap(mapId);
+                navigation.OpenSetup();
+            }
+        }
+
+        private void DrawSetupMapButton(Rect rect, string id, MapId mapId, string label)
+        {
+            bool selected = setup!.SelectedMapId.Equals(mapId);
+            if (ui.Button(rect, id, label, selected: selected) && !selected)
+                setup.SelectMap(mapId);
         }
 
         private void DrawFooter(string text)

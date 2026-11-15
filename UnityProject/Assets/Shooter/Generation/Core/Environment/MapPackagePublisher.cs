@@ -49,7 +49,7 @@ namespace Shooter.Generation.Environment
                 bool allReused = true;
                 foreach (string mapId in mapIds)
                 {
-                    if (mapId != "training-compound" && mapId != "depot-yard")
+                    if (!MapRecipe.IsApprovedMapId(mapId))
                         return MapPackagePublishResult.Fail(ErrorCode.InvalidInput, "unknown-map:" + mapId);
                     foreach (string profile in profiles)
                     {

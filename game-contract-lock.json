@@ -13,7 +13,7 @@
   "sources": {
     "UnityProject/Assets/Shooter/Game/Contracts/GameData.cs": "9e0e2c6fb7a6ac1429c3308ef50ae63c1d48b9c2d655856b988860fad8847fe6",
     "UnityProject/Assets/Shooter/Game/Contracts/GameData.cs.meta": "da2d99bee98c3ea0a1088ded28a27e5b7e7a7da3e5df1edff7afd0239ae0d61b",
-    "UnityProject/Assets/Shooter/Game/Contracts/GameIds.cs": "04e4a4f76caa560278808ee9e9207f3756c1eb8d7124ea738ea8b5ec990e3c07",
+    "UnityProject/Assets/Shooter/Game/Contracts/GameIds.cs": "de861bb538da5d52da4f1136dcc64991503238ce32dce51ea1cddf300c05ba03",
     "UnityProject/Assets/Shooter/Game/Contracts/GameIds.cs.meta": "c2c91bdde4ddf87b4f89e13fdf43a704bab107522a63128711ae6d8c09dee498",
     "UnityProject/Assets/Shooter/Game/Contracts/GamePorts.cs": "fa29aff29aebdf802aa80a7f94da4ea55698a1e4af6000881124fb3e4a4323e0",
     "UnityProject/Assets/Shooter/Game/Contracts/GamePorts.cs.meta": "ae392a4c3e1eefdb2079e82679c2d4cd7218bc703e4e5a526c83db7b07308273",
@@ -27,7 +27,7 @@
   "fixtures": {
     "docs/game-fixtures/session-request.invalid-size.json": "9429ca8c81ea95c7c88a01c7ac073b12688986a25381851436e909aaf4d01ae1",
     "docs/game-fixtures/session-request.valid.json": "02cbb1ccedcf45912c91ff669d815f3ee5fa12bb214e808604cbd6d8f6245669",
-    "docs/game-fixtures/tdm-workloads.json": "eaf98274b800d01ed9469cacbc053d0f6888e5f95e4ee1072931222eefea8df3",
+    "docs/game-fixtures/tdm-workloads.json": "00c2ef1b4470e690efa3b06e8eade076cb6dea485b7fd63e1a2a64e89e446038",
     "docs/game-fixtures/user-settings-last-weapon.valid.json": "b8976f3f5f1fdd2348c8b98c916c56ad3b8b58cf6e3aeecfdfe1dc4dc7c98328",
     "docs/game-fixtures/user-settings-slide.valid.json": "4a3d69069a7c212e9679d0b194c13cd6a560c6c32772753479a07bc104611f6a",
     "docs/game-fixtures/user-settings.schema.json": "a67004574cb2223024d3b2b0242290baea10c1bc0d7918ce11f0cf673beadb6a",

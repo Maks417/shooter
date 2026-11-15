@@ -45,6 +45,8 @@ namespace Shooter.Presentation.Menus
                 return "Training Compound";
             if (string.Equals(mapId, "depot-yard", StringComparison.OrdinalIgnoreCase))
                 return "Depot Yard";
+            if (string.Equals(mapId, "oil-depot", StringComparison.OrdinalIgnoreCase))
+                return "Oil Depot";
             return mapId;
         }
     }

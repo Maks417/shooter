@@ -328,7 +328,8 @@ namespace Shooter.Tests
             var visuals = new[]
             {
                 PackagedVisualPayloads.FromBuild(MapPackageBuilder.Build("training-compound", "low", hash)),
-                PackagedVisualPayloads.FromBuild(MapPackageBuilder.Build("depot-yard", "low", hash))
+                PackagedVisualPayloads.FromBuild(MapPackageBuilder.Build("depot-yard", "low", hash)),
+                PackagedVisualPayloads.FromBuild(MapPackageBuilder.Build("oil-depot", "low", hash))
             };
             var root = new GameObject("MenuStageReview");
             var previous = RenderTexture.active;
@@ -341,6 +342,7 @@ namespace Shooter.Tests
                 Assert.That(scene.ShowcaseActorCount, Is.EqualTo(3));
                 Assert.That(scene.MapCard("training-compound"), Is.Not.Null);
                 Assert.That(scene.MapCard("depot-yard"), Is.Not.Null);
+                Assert.That(scene.MapCard("oil-depot"), Is.Not.Null);
                 Assert.That(root.GetComponentsInChildren<Collider>().Length, Is.Zero);
                 Assert.That(root.GetComponentsInChildren<Rigidbody>().Length, Is.Zero);
                 string directory = System.IO.Path.GetFullPath(System.IO.Path.Combine(Application.dataPath,

@@ -16,12 +16,12 @@ Lock/fixtures: `game-contract-lock.json`, `docs/game-fixtures/`. Verify with `py
 
 | Value / record | Required semantics and bounds |
 |---|---|
-| MapId / ModeId | ASCII lower-case identifiers, 1–64 bytes; fixed initial maps `training-compound`, `depot-yard`; mode `team-deathmatch`; unknown IDs reject before load |
+| MapId / ModeId | ASCII lower-case identifiers, 1–64 bytes; fixed initial maps `training-compound`, `depot-yard`, `oil-depot`; mode `team-deathmatch`; unknown IDs reject before load |
 | ParticipantId / LifeId | ParticipantId uint32 nonzero, stable for a match; LifeId uint32 nonzero, increasing per participant; each life maps to a fresh C0 EntityId, never reused within the authority session |
 | GameMatchPhase | Explicit byte values Loading=0, Ready=1, Playing=2, Finished=3, Stopped=4; pause is a local session service state, not a C0 MatchState enum addition |
 | MatchOutcome / FinishReason | Outcome None=0, Team1=1, Team2=2, Draw=3; reason None=0, ScoreLimit=1, TimeLimit=2, Aborted=3; aborted sessions do not produce a victory |
 | SessionRequest | MapId, ModeId, teamSize (5 or 6), seed uint64, ruleVersion=1; limits fixed 150 kills / 54000 active ticks; one local participant on Team 1; cannot carry user paths or arbitrary recipes |
-| MapCatalogEntry | MapId, display name ≤64 characters, short description ≤256, supported ModeIds, supported team sizes, fixed recipe seed/version, gameplay root hash, per-profile visual roots; ≤16 maps, ≤8 modes/map; release requires exactly the two approved entries |
+| MapCatalogEntry | MapId, display name ≤64 characters, short description ≤256, supported ModeIds, supported team sizes, fixed recipe seed/version, gameplay root hash, per-profile visual roots; ≤16 maps, ≤8 modes/map; release requires exactly the three approved entries |
 | MapGameplayDefinition | MapId, collision/nav revision+hash, bounds, team-tagged spawn slots and patrol/combat destinations; ≤128 spawn slots, stable nonzero IDs; all coordinates finite and in map bounds; nav encoding is versioned, verified content |
 | ParticipantState | ParticipantId, display name ≤32 characters, Team byte 1/2, isHuman, current EntityId/LifeId, alive, kills/deaths uint32, personal Score uint32 (ADR-059; kill=100 / assist=HP; not team win), respawnDueActiveTick; bounded ≤12 participants |
 | MatchViewSnapshot | AuthoritySessionId, completed simulation tick, activeTicksElapsed, remaining ticks, phase/outcome/reason, two team kill counts, immutable participant rows, pending respawns; view reads one coherent publication |

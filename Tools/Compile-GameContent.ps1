@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [ValidateSet('compound','depot','all')][string]$Map = 'all',
+    [ValidateSet('compound','depot','oil','all')][string]$Map = 'all',
     [ValidateSet('all','gameplay','server','low','balanced','high')][string]$Profile = 'all',
     [string]$CacheRoot = '',
     [switch]$Force,
@@ -206,7 +206,7 @@ try {
     if ($LASTEXITCODE -ne 0) { throw "map package generation validation failed ($LASTEXITCODE)" }
 
     $report.packageCount = [int]$proof.packages.Count
-    $report.seeds = @(460072030, 460072031)
+    $report.seeds = @(460072030, 460072031, 460072032)
     $report.navBakeProvenance = @($proof.packages | ForEach-Object { [ordered]@{ mapId = $_.mapId; visualProfile = $_.visualProfile; navBakeProvenance = $_.navBakeProvenance } })
     $report.navigationSource = $(if ($Native) { 'unity-native-navmesh' } else { 'software-walkable-grid' })
     # PASS only when the editor native provider produced and re-verified every package; pure tooling is always Pending.

@@ -15,6 +15,7 @@ namespace Shooter.Generation.Environment
     {
         public const ulong CompoundVisualIdBase = 50000;
         public const ulong DepotVisualIdBase = 60000;
+        public const ulong OilVisualIdBase = 70000;
         public const int MaxVisualExtras = 800;
 
         private const float FrameDepth = 0.12f;
@@ -168,6 +169,60 @@ namespace Shooter.Generation.Environment
             AddFencePostRow(b, -42.55f, 28f, 40f, spacing: 3.5f, mirror: true);
 
             EnsureBudget(b.Boxes.Count - start);
+        }
+
+        /// <summary>Appends oil-depot visual-only boxes. Call after all gameplay geometry.</summary>
+        public static void AppendOil(ArenaBoxBuilder b, ArenaLayout layout)
+        {
+            if (b == null) throw new ArgumentNullException(nameof(b));
+            if (layout == null) throw new ArgumentNullException(nameof(layout));
+            b.JumpIdsTo(OilVisualIdBase);
+            int start = b.Boxes.Count;
+
+            var pumpDoors = new[]
+            {
+                new ArenaDoor(ArenaSide.North, 0f, 2.4f), new ArenaDoor(ArenaSide.South, 0f, 2.4f),
+                new ArenaDoor(ArenaSide.East, 0f, 2.4f), new ArenaDoor(ArenaSide.West, 0f, 2.4f)
+            };
+            DetailShell(b, 0f, 0f, 16f, 14f, 0.45f, 4f, pumpDoors, mirror: false, longWallWindows: true);
+            AddRidgeCap(b, 0f, 0f, 14f, alongX: false, wallHeight: 4f, mirror: false);
+            AddCornerPosts(b, 0f, 0f, 16f, 14f, 4.1f, mirror: false);
+
+            AddStagingCurbs(b, layout, gateXs: new[] { -28f, 0f, 28f }, gateWidth: 4f, wallZ: -40f);
+            AddLaneCurbAlongZ(b, 18f, -38f, -2f, mirror: false);
+            AddLaneCurbAlongZ(b, -18f, -38f, -2f, mirror: false);
+            AddLaneCurbAlongZ(b, 18f, 2f, 38f, mirror: false);
+            AddLaneCurbAlongZ(b, -18f, 2f, 38f, mirror: false);
+
+            AddGateLamps(b, gateXs: new[] { -28f, 0f, 28f }, wallZ: -40f, gateWidth: 4f);
+            AddFenceStubs(b, layout, wallZ: -40f, spacing: 9f);
+            AddLampPost(b, -30f, -36f, mirror: true);
+            AddLampPost(b, 28f, -36f, mirror: true);
+            AddLampPost(b, 0f, -36f, mirror: true);
+            AddLampPost(b, -28f, -12f, mirror: true);
+            AddLampPost(b, 32f, -4f, mirror: true);
+
+            // Tank crown lips (visual rings on the larger drums).
+            AddTankCrown(b, -30f, -22f, 3.8f, 5.5f, mirror: true);
+            AddTankCrown(b, -34f, -8f, 3.4f, 5f, mirror: true);
+            AddTankCrown(b, -26f, 0f, 3.6f, 5.5f, mirror: false);
+
+            AddContainerRail(b, 26f, 0f, 6f, 2.5f, 2.6f, mirror: false);
+            AddContainerRail(b, 36f, 0f, 6f, 2.5f, 2.6f, mirror: false);
+            AddContainerCorners(b, 26f, 0f, 6f, 2.5f, 2.6f, mirror: false);
+
+            AddFencePostRow(b, -44.55f, -42f, -30f, spacing: 3.5f, mirror: true);
+            AddFencePostRow(b, -44.55f, -26f, -2f, spacing: 4f, mirror: true);
+            AddFencePostRow(b, -44.55f, 2f, 24f, spacing: 4f, mirror: true);
+            AddFencePostRow(b, -44.55f, 28f, 42f, spacing: 3.5f, mirror: true);
+
+            EnsureBudget(b.Boxes.Count - start);
+        }
+
+        private static void AddTankCrown(ArenaBoxBuilder b, float cx, float cz, float radius, float wallHeight, bool mirror)
+        {
+            b.Add(new Float3(cx, wallHeight + 0.08f, cz), new Float3(radius * 2.05f, 0.12f, radius * 2.05f),
+                ArenaBoxBuilder.TagSolid, mirror, gameplay: false);
         }
 
         private static void DetailShell(

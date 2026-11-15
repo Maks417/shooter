@@ -48,7 +48,7 @@ namespace Shooter.Presentation.Session
             scene.transform.SetParent(parent, false);
             scene.load = Task.Run(() =>
             {
-                var maps = new[] { WellKnownMaps.TrainingCompound, WellKnownMaps.DepotYard };
+                var maps = new[] { WellKnownMaps.TrainingCompound, WellKnownMaps.DepotYard, WellKnownMaps.OilDepot };
                 var result = new PackagedVisualPayloads[maps.Length];
                 for (int i = 0; i < maps.Length; i++)
                 {
@@ -121,8 +121,11 @@ namespace Shooter.Presentation.Session
 
         private void BuildVerified(PackagedVisualPayloads[] visuals)
         {
-            if (visuals == null || visuals.Length != 2 || visuals[0].MapId != "training-compound" || visuals[1].MapId != "depot-yard")
-                throw new InvalidOperationException("Both approved menu visual packages are required.");
+            if (visuals == null || visuals.Length != 3
+                || visuals[0].MapId != "training-compound"
+                || visuals[1].MapId != "depot-yard"
+                || visuals[2].MapId != "oil-depot")
+                throw new InvalidOperationException("All three approved menu visual packages are required.");
             var shader = Shader.Find("Universal Render Pipeline/Lit");
             if (shader == null || !shader.isSupported) throw new InvalidOperationException("Locked URP Lit is required.");
             for (int i = 0; i < visuals.Length; i++) ValidateShader(visuals[i]);
@@ -329,7 +332,7 @@ namespace Shooter.Presentation.Session
             Bounds bounds = mesh.bounds;
             Vector3 center = bounds.center + new Vector3(offset, 0, 0);
             float width = bounds.size.x + 8f, depth = bounds.size.z + 8f;
-            int groundFamily = visuals.MapId == "depot-yard" ? 3 : 2;
+            int groundFamily = visuals.MapId == "depot-yard" || visuals.MapId == "oil-depot" ? 3 : 2;
             Material ground = PackagedMaterial(visuals, shader, MapVisualClosure.MapMaterialPaths[groundFamily],
                 "Map card ground " + visuals.MapId, .5f);
             Place("Map card ground " + visuals.MapId, new Vector3(center.x, -.05f, center.z), new Vector3(width, .1f, depth), ground);

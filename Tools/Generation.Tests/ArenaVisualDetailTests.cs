@@ -28,6 +28,7 @@ namespace Shooter.Generation.Tests
         [Theory]
         [InlineData("training-compound")]
         [InlineData("depot-yard")]
+        [InlineData("oil-depot")]
         public void Arena_rules_still_pass_after_visual_detail(string mapId)
         {
             var plan = ProductMapPlanner.Generate(mapId);

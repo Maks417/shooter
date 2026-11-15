@@ -48,7 +48,7 @@ namespace Shooter.Game.Contracts.Tests
         public void Catalog_Rejects_Unknown_And_Bad_Size()
         {
             var catalog = StaticMapCatalog.CreateReleaseSeed();
-            Assert.Equal(2, catalog.Count);
+            Assert.Equal(3, catalog.Count);
             Assert.False(catalog.RejectUnknown(new MapId("missing-map"), WellKnownModes.TeamDeathmatch, 5).Succeeded);
             Assert.False(catalog.RejectUnknown(WellKnownMaps.TrainingCompound, new ModeId("deathmatch"), 5).Succeeded);
             Assert.False(catalog.RejectUnknown(WellKnownMaps.TrainingCompound, WellKnownModes.TeamDeathmatch, 4).Succeeded);

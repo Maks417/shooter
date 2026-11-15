@@ -33,7 +33,7 @@ namespace Shooter.Generation.Environment
 
             public Entry(string mapId, string inputKey, ContentId collisionSha256, string provenance, string toolIdentity, bool repeatIdentical, byte[] bakeBytes)
             {
-                if (mapId != "training-compound" && mapId != "depot-yard") throw new FormatException("stage-unknown-map");
+                if (!MapRecipe.IsApprovedMapId(mapId)) throw new FormatException("stage-unknown-map");
                 if (!IsHex64(inputKey)) throw new FormatException("stage-input-key-invalid");
                 if (!NavBakePublication.IsNativeProvenance(provenance)) throw new FormatException("stage-provenance-not-native");
                 if (string.IsNullOrWhiteSpace(toolIdentity)) throw new FormatException("stage-tool-identity-missing");

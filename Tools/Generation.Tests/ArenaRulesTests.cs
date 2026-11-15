@@ -18,6 +18,7 @@ namespace Shooter.Generation.Tests
         {
             yield return new object[] { "training-compound" };
             yield return new object[] { "depot-yard" };
+            yield return new object[] { "oil-depot" };
         }
 
         [Theory]
@@ -262,6 +263,35 @@ namespace Shooter.Generation.Tests
             Assert.False(CompoundConnectivity.IsBlocked(b.Boxes, 0f, 14.2f, 0.37f));
             Assert.True(CompoundConnectivity.IsBlocked(b.Boxes, 5f, 14.2f, 0.37f));
             Assert.Contains(b.Boxes, x => !x.Gameplay); // roof
+        }
+
+        [Fact]
+        public void Elevated_catwalk_allows_pass_under_and_climb_on()
+        {
+            var b = new ArenaBoxBuilder(8000);
+            const float deckTop = 2.25f;
+            const float tread = CompoundConnectivity.CellSize;
+            int steps = (int)Math.Ceiling(deckTop / CompoundConnectivity.MaxStepMeters - 1e-4f);
+            float stairSpan = steps * tread;
+            // Deck sits on +Z; stairs climb from the −Z side onto the deck edge.
+            b.AddCatwalkDeck(0f, stairSpan + 2f, 4f, 6f, deckTop, rails: false, mirror: false);
+            b.AddStairRun(0f, 0f, 4f, deckTop, tread, ascendingPositiveZ: true, mirror: false);
+            float clearance = CompoundConnectivity.RequiredClearance;
+            float deckZ = stairSpan + 2f;
+            Assert.False(CompoundConnectivity.IsBlocked(b.Boxes, 0f, deckZ, clearance), "underpass must stay free");
+            var path = new List<Float3>();
+            Assert.True(CompoundConnectivity.TryFindPath(
+                b.Boxes, new Float3(0f, 0f, -1f), new Float3(0f, deckTop, deckZ), path, clearance),
+                "must climb stairs onto the deck");
+            Assert.Contains(path, p => p.Y > 1f);
+        }
+
+        [Fact]
+        public void Oil_depot_exposes_walkable_surfaces()
+        {
+            var plan = OilArenaPlanner.Generate(MapRecipe.ApprovedSeed("oil-depot"));
+            Assert.True(CompoundConnectivity.HasWalkableSurfaces(plan.CollisionBoxes));
+            Assert.Contains(plan.CollisionBoxes, x => x.Gameplay && CompoundConnectivity.IsWalkableSurface(x));
         }
     }
 }

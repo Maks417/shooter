@@ -6,7 +6,8 @@
   "corruptContentRecoveryMessage": "Selected map content is missing or corrupt. Repair or reinstall the verified package; no silent map substitution.",
   "requiredMaps": [
     "training-compound",
-    "depot-yard"
+    "depot-yard",
+    "oil-depot"
   ],
   "requiredVisualProfiles": [
     "gameplay",

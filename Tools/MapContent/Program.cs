@@ -17,7 +17,7 @@ internal static class Program
         try
         {
             if (args.Length < 6)
-                throw new ArgumentException("Expected repository, cacheRoot, reportPath, sourceCommit, map(all|compound|depot), force(true|false) [, profiles [, navStageDir]].");
+                throw new ArgumentException("Expected repository, cacheRoot, reportPath, sourceCommit, map(all|compound|depot|oil), force(true|false) [, profiles [, navStageDir]].");
             string root = Path.GetFullPath(args[0]);
             string cache = Path.GetFullPath(args[1]);
             string report = Path.GetFullPath(args[2]);
@@ -204,9 +204,10 @@ internal static class Program
 
     private static List<string> SelectMaps(string map) => map switch
     {
-        "all" => new List<string> { "training-compound", "depot-yard" },
+        "all" => new List<string> { "training-compound", "depot-yard", "oil-depot" },
         "compound" => new List<string> { "training-compound" },
         "depot" => new List<string> { "depot-yard" },
+        "oil" => new List<string> { "oil-depot" },
         _ => throw new ArgumentException("Unknown map selection: " + map)
     };
 

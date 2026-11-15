@@ -22,11 +22,13 @@ namespace Shooter.Presentation.Menus
         public const string MainNavigate = "TAB / ARROWS  Navigate     ENTER  Select";
         public const string MapCompound = "TRAINING COMPOUND";
         public const string MapDepot = "DEPOT YARD";
+        public const string MapOil = "OIL DEPOT";
 
         public const string SetupTitle = "Choose your fight";
         public const string SetupSelectArea = "SELECT OPERATION AREA";
         public const string SetupCompound = "01   TRAINING COMPOUND";
         public const string SetupDepot = "02   DEPOT YARD";
+        public const string SetupOil = "03   OIL DEPOT";
         public const string SetupMode = "TEAM DEATHMATCH";
         public const string SetupRules = "RULES";
         public const string SetupRulesBody = "150 kills to win\n15 minute time limit";

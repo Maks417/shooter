@@ -10,7 +10,8 @@
       "type": "string",
       "enum": [
         "training-compound",
-        "depot-yard"
+        "depot-yard",
+        "oil-depot"
       ]
     },
     "collisionArtifactSha256": {

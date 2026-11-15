@@ -1,5 +1,16 @@
 # M11 — Playable build and acceptance — handoff and gate record
 
+## ADR-071 — Oil Depot third map + elevated routes — 2026-11-15
+
+Owner: Warface Oil Depot–inspired third catalog map with walkable stairs/catwalk. [ADR-071](../../decisions.md#adr-071--accepted-oil-depot-third-map-and-limited-elevated-routes); layouts in [tdm-map-layouts.md](../../features/tdm-map-layouts.md); catalog in [playable-maps.md](../../features/playable-maps.md).
+
+**Implemented (software):**
+- Y-aware `CompoundConnectivity` (pass-under thin decks; layered climb ≤0.25 m steps); `ArenaGeometry` stair/ramp/catwalk helpers; software/native nav bake walkable slabs.
+- `OilArenaPlanner` / `map.oil` / seed `460072032` / gameplay ids `30000+`; ArenaRules + elevated unit tests.
+- Release catalog/UI/shell/workloads unlock three MapIds (`training-compound`, `depot-yard`, `oil-depot`); packages scale to 12 (3×4); content-format + game-contract locks refreshed.
+
+**Checks (software):** ArenaRulesTests **27/27** PASS (incl. oil + elevated climb); MapPackageTests+NavBakeStage **16/16** PASS; Game catalog/workload filter **10/10** PASS; docs/fixtures/manifest PASS; content-format + game-contract locks PASS. Software `Compile-GameContent.ps1 -Force` **PASS** — **12 packages** (3 maps × 4 profiles), oil gameplay root `8e36c567…`, software-grid NVB1, `sourceDirty=true` working tree, evidence `Artifacts/m8-runtime-composition/b7cc5aba…/compile-gamecontent-20261115T194305487Z-1a59462b/`. Full wrapper lanes (`Test-Generation`/`Test-Maps`/`Test-Game`), Unity EditMode/PlayMode, Client/Server, native `-Native` publication and named Oil Depot playtest remain Pending. Does not close FIX/SET/REL/P05/VD exits. Compound and Depot Yard gameplay layouts are unchanged.
+
 ## Audio spatial and mix refinement — 2026-11-15
 
 Owner assigned the reviewed first audio improvement pass as a T089 / ADR-062 follow-up. Base `077b77f`; sole audio integrator worked in an isolated checkout after unrelated active geometry work was observed in the shared checkout. Scope: `Presentation/Audio/Runtime`, the audio pump/acoustic probes in `ProductSessionView`, pure audio tests, a real-collision Unity integration test and affected docs. Existing CC0 bank and all authority/contracts/settings/content identities are preserved.
@@ -1077,3 +1088,20 @@ Durable evidence root: **`Artifacts/weapon-visuals-evidence/b8235a3/`**, contain
 Failure history retained: first native build exhausted disk while copying `GameAssembly.pdb`; incremental retry compiled successfully but had the test-created empty Resources metadata (`sourceDirty=true`). Removing only this task's failed player output and empty test folder allowed the final clean build above. The task's generated Unity Library cache was removed after builds/captures to recover disk space; no installed package, curated source or generated payload was edited to bypass provenance. All failure reports remain. The preview contains the weapon assignment; concurrent uncommitted soldier/motor work is not relabelled as part of this binary.
 
 Package ZIP SHA256 `923d2614f6820e42fa85eea4130ac27f638f64846b3602a4ae10a7cc740cd0b5`; source hash `0de06fdd6f6a802aed8a12a28169aaa59bc49595c859b8497109a5db50456893`; content closure `6e24f0c55221a1ece738544777bf57cf5b275ef50ed876bd223c66e96dcb774d`; index `b92af46fa08e0b6767765f774b9c54e0269e615ef410ddac0d400c3fd07929ba`. No Battlefield V parity or release/visual/performance acceptance is claimed.
+
+## Workspace cleanup evidence loss — 2026-11-15
+
+A manual disk cleanup deleted 40 ignored per-commit run folders under `Artifacts/m0-foundation/` and `Artifacts/m11-playable-release/` (≈5.5 GB). Its reference check matched only full 40-character hashes, so runs cited in docs by 7-character short hash were deleted too. The deletion bypassed the Recycle Bin; the raw files are **unrecoverable** and can only be rebuilt from their source commits. The recorded results, hashes and run IDs in the handoffs stand as written, but their raw files no longer exist:
+
+| Short hash | Deleted roots | Cited for |
+|---|---|---|
+| `7d0f9e6` | m0-foundation, m11-playable-release | Retained intermediate 0.3.3 installer/package and its build runs (this handoff). `Artifacts/visual-design/7d0f9e6/player-review/` is intact. |
+| `075c548` | m0-foundation, m11-playable-release | Package/installer whose native identity check aborted all captures (ADR-043 context). `Artifacts/map-packages-native-mono-defect-075c548/` is intact. |
+| `0aa57aa`, `3d67279` | m0-foundation | Game/Simulation pure runs and scene compile evidence "under 9f2219f / 0aa57aa / 3d67279 artifact roots"; the `9f2219f` root is intact. |
+| `a190fc5`, `cbd359b`, `4e71bea` | m0-foundation | Generation/Game/Maps, Simulation and base-commit pure-test reports. |
+| `585dbcd` | m0-foundation | T068 presentation test runs (product-state audit). |
+| `eb81151` | m0-foundation | Test/build runs at the T078 merge commit. |
+| `28df022`, `9f73624` | m0-foundation | Rejected prescribed attempt and failed sandbox restore (see M0 handoff). |
+| `2cbed1a` | m0-foundation | Runs at the B01-materials collection commit (see M1 handoff); the summary in `Artifacts/m1-continuation/` is intact. |
+
+No PASS/FAIL/Pending status changes because of this loss; any claim that depended on re-inspecting these raw files must be re-produced, not assumed. Future cleanup must use `Tools/Clean-Artifacts.ps1` ([runbook](../../bootstrap-runbook.md#reclaiming-disk-after-an-installermilestone-build)), which keeps runs cited by full or short hash. Its first dry run after the loss reported only empty leftover folders and kept 24 GB of cited/recent evidence.

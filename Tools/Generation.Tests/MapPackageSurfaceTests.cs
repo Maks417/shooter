@@ -55,7 +55,8 @@ public sealed class MapPackageSurfaceTests : IDisposable
     [Theory]
     [InlineData("training-compound")]
     [InlineData("depot-yard")]
-    public void MapSurfaceTripletsContainSpatialDataAndCompleteMips(string mapId)
+    [InlineData("oil-depot")]
+        public void MapSurfaceTripletsContainSpatialDataAndCompleteMips(string mapId)
     {
         var package = MapPackageBuilder.Build(mapId, "low", toolchain);
         var payloads = PackagedVisualPayloads.FromBuild(package);
@@ -134,7 +135,8 @@ public sealed class MapPackageSurfaceTests : IDisposable
     [Theory]
     [InlineData("training-compound")]
     [InlineData("depot-yard")]
-    public void NewSurfacePublicationPreservesGameplayBytesAcrossQualityTiers(string mapId)
+    [InlineData("oil-depot")]
+        public void NewSurfacePublicationPreservesGameplayBytesAcrossQualityTiers(string mapId)
     {
         var gameplay = MapPackageBuilder.Build(mapId, "gameplay", toolchain);
         var fingerprint = MapVisualClosure.MapFingerprint(mapId);
@@ -169,7 +171,8 @@ public sealed class MapPackageSurfaceTests : IDisposable
     [Theory]
     [InlineData("training-compound")]
     [InlineData("depot-yard")]
-    public void PackagedSolidsMeshExposesMaterialRoleSubmeshes(string mapId)
+    [InlineData("oil-depot")]
+        public void PackagedSolidsMeshExposesMaterialRoleSubmeshes(string mapId)
     {
         var package = MapPackageBuilder.Build(mapId, "low", toolchain);
         var payloads = PackagedVisualPayloads.FromBuild(package);

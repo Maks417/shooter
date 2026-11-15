@@ -16,6 +16,7 @@ namespace Shooter.Generation.Environment
             {
                 case "training-compound": return CompoundArenaPlanner.Generate(seed);
                 case "depot-yard": return DepotArenaPlanner.Generate(seed);
+                case "oil-depot": return OilArenaPlanner.Generate(seed);
                 default: throw new ArgumentOutOfRangeException(nameof(mapId));
             }
         }

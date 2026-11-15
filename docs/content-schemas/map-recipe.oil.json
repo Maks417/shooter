@@ -1,0 +1,15 @@
+{
+  "schemaId": "shooter.recipe.map-oil.v1",
+  "recipeId": "oil-depot",
+  "generatorId": "map.oil",
+  "generatorVersion": "1.0.1",
+  "seed": "460072032",
+  "parameters": {
+    "mapId": "oil-depot",
+    "halfExtentMeters": 128,
+    "chunkSizeMeters": 32,
+    "navAdapterFormat": "unity.navmesh.bake.v1",
+    "navAdapterVersion": 1
+  },
+  "dependencies": []
+}

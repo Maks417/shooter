@@ -61,6 +61,21 @@ namespace Shooter.Build
             {
                 var box = boxes[i];
                 if (!box.Gameplay) continue;
+                // Thin stair/catwalk slabs are walkable Box sources; tall solids remain Not-Walkable modifiers.
+                if (CompoundConnectivity.IsWalkableSurface(box))
+                {
+                    sources.Add(new NavMeshBuildSource
+                    {
+                        shape = NavMeshBuildSourceShape.Box,
+                        size = new Vector3(box.Size.X, Math.Max(box.Size.Y, 0.05f), box.Size.Z),
+                        area = 0,
+                        transform = Matrix4x4.TRS(
+                            new Vector3(box.Center.X, box.Center.Y, box.Center.Z),
+                            Quaternion.identity,
+                            Vector3.one)
+                    });
+                    continue;
+                }
                 sources.Add(new NavMeshBuildSource
                 {
                     shape = NavMeshBuildSourceShape.ModifierBox,

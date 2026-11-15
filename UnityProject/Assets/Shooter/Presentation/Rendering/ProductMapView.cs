@@ -315,7 +315,8 @@ namespace Shooter.Presentation.Rendering
         }
 
         private static bool PreferDepotYardAsphalt(string installedMapId) =>
-            string.Equals(installedMapId, "depot-yard", StringComparison.Ordinal);
+            string.Equals(installedMapId, "depot-yard", StringComparison.Ordinal)
+            || string.Equals(installedMapId, "oil-depot", StringComparison.Ordinal);
 
         private static MaterialData? DecodeCompanionPlane(PackagedVisualPayloads visuals, string albedoPath, string plane)
         {

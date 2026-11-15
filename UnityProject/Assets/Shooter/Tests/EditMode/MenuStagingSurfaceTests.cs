@@ -22,7 +22,8 @@ namespace Shooter.Tests
             visuals = new[]
             {
                 PackagedVisualPayloads.FromBuild(MapPackageBuilder.Build("training-compound", "low", hash)),
-                PackagedVisualPayloads.FromBuild(MapPackageBuilder.Build("depot-yard", "low", hash))
+                PackagedVisualPayloads.FromBuild(MapPackageBuilder.Build("depot-yard", "low", hash)),
+                PackagedVisualPayloads.FromBuild(MapPackageBuilder.Build("oil-depot", "low", hash))
             };
         }
 
@@ -48,7 +49,7 @@ namespace Shooter.Tests
                 Assert.That(asphalt.GetTexture("_BaseMap"), Is.Not.Null);
                 Assert.That(apronTint.GetTexture("_BaseMap"), Is.SameAs(asphalt.GetTexture("_BaseMap")),
                     "Apron variants reuse packaged asphalt planes.");
-                foreach (string map in new[] { "training-compound", "depot-yard" })
+                foreach (string map in new[] { "training-compound", "depot-yard", "oil-depot" })
                 {
                     var card = root.transform.Find("Verified map card " + map);
                     Assert.That(card.GetComponent<MeshRenderer>().sharedMaterial.GetTexture("_BaseMap"), Is.Not.Null);

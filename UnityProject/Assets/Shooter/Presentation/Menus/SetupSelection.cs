@@ -10,7 +10,8 @@ namespace Shooter.Presentation.Menus
         private static readonly MapId[] DefaultMaps =
         {
             WellKnownMaps.TrainingCompound,
-            WellKnownMaps.DepotYard
+            WellKnownMaps.DepotYard,
+            WellKnownMaps.OilDepot
         };
 
         private static readonly byte[] TeamSizes = { 5, 6 };
@@ -64,6 +65,16 @@ namespace Shooter.Presentation.Menus
         {
             if (maps.Length == 0) return;
             mapIndex = Mod(mapIndex + delta, maps.Length);
+        }
+
+        public void SelectMap(MapId mapId)
+        {
+            for (int i = 0; i < maps.Length; i++)
+            {
+                if (!maps[i].Equals(mapId)) continue;
+                mapIndex = i;
+                return;
+            }
         }
 
         public void CycleTeamSize(int delta) => teamSizeIndex = Mod(teamSizeIndex + delta, TeamSizes.Length);

@@ -814,3 +814,13 @@ Decision:
 
 Validation: new `BotTacticsT090Tests` plus existing AI suites; `AiRaysUsedThisTick` ≤16. Named player feel, `SHOOTER_AI_SUMMARY` on product maps, AI CPU 1.5 ms and installer remain Pending. Rollback: revert T090; prior T082/T085 behaviour.
 
+## ADR-071 — Accepted: Oil Depot third map and limited elevated routes
+
+Date 2026-11-15; owner requested a Warface Oil Depot–inspired third catalog map with walkable elevated routes. Sole integrator owns the bounded map recipe/planner, Y-aware connectivity/nav bake, catalog/UI/workload unlock, locks, tests and docs. No imported art; Compound and Depot Yard layouts stay unchanged.
+
+Decision: release catalog expands from two to three approved MapIds — keep `training-compound` / `depot-yard`, add `oil-depot` (display Oil Depot), generator `map.oil` / `shooter.recipe.map-oil.v1`, seed `460072032`, planner `environment.oil.arena` 1.0.0. Game-v1 DTO shape is unchanged (`MapId` remains a string); `WellKnownMaps.OilDepot` and oil TDM workload rows are registered. Product shell shows three map cards.
+
+Limited verticality: thin gameplay slabs (≤0.40 m) are walkable stair/catwalk surfaces; `CompoundConnectivity` occupancy is Y-aware so decks do not seal underpasses; ground-to-ground paths stay XZ A*; climb uses layered pathfinding when an endpoint is elevated. Native/software nav bake emit walkable sources for those slabs. Roofs remain non-gameplay (ADR-049). Motor StepHeight 0.25 m / MaxSlope 45° unchanged. ArenaRules still apply; oil layout is an 84×108 m three-lane petroleum arena with a mirrored catwalk flank.
+
+Consequences: content-format and game-contract locks refresh; packages scale to three maps × four profiles; prior two-map installers remain valid rollback pairs. Named playtest, native publication of oil packages and reference soaks remain Pending. Rollback: revert ADR-071 merge and republish the two-map catalog.
+

@@ -47,7 +47,8 @@ namespace Shooter.Tests
             var visuals = new[]
             {
                 PackagedVisualPayloads.FromBuild(MapPackageBuilder.Build("training-compound", "low", hash)),
-                PackagedVisualPayloads.FromBuild(MapPackageBuilder.Build("depot-yard", "low", hash))
+                PackagedVisualPayloads.FromBuild(MapPackageBuilder.Build("depot-yard", "low", hash)),
+                PackagedVisualPayloads.FromBuild(MapPackageBuilder.Build("oil-depot", "low", hash))
             };
             var root = new GameObject("Menu staging runtime lifetime");
             try
@@ -57,7 +58,7 @@ namespace Shooter.Tests
                 yield return null; // Activate the real MonoBehaviour lifecycle before suspension.
                 yield return null;
                 yield return null; // Static overview capture follows URP startup.
-                foreach (string map in new[] { "training-compound", "depot-yard" })
+                foreach (string map in new[] { "training-compound", "depot-yard", "oil-depot" })
                 {
                     var target = (RenderTexture)scene.MapCard(map)!;
                     var previous = RenderTexture.active;
@@ -84,6 +85,7 @@ namespace Shooter.Tests
                 resources.Add((RenderTexture)scene.Frame!);
                 resources.Add((RenderTexture)scene.MapCard("training-compound")!);
                 resources.Add((RenderTexture)scene.MapCard("depot-yard")!);
+                resources.Add((RenderTexture)scene.MapCard("oil-depot")!);
                 root.SetActive(false); // Same shell transition as starting a match.
                 Object.Destroy(root);
                 yield return null;

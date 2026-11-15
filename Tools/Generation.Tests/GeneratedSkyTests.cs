@@ -183,6 +183,16 @@ internal static class GeneratedSkyMath
             fogDensity = .008f;
             return;
         }
+        if (string.Equals(mapId, "oil-depot", StringComparison.Ordinal))
+        {
+            zenith = new Rgb(.22f, .30f, .36f);
+            horizon = new Rgb(.64f, .54f, .42f);
+            ground = new Rgb(.28f, .22f, .14f);
+            fogStartMeters = 34f;
+            fogEndMeters = 88f;
+            fogDensity = .0085f;
+            return;
+        }
         zenith = DefaultZenith;
         horizon = DefaultHorizon;
         ground = DefaultGround;

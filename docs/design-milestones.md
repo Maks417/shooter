@@ -22,7 +22,7 @@ The existing [vision](vision.md), [art boundary](vision.md#art-boundary), [perfo
 
 - Unity 6 URP / C# / HLSL and the locked editor/packages. Geometry, surfaces, rigs, motion and effects come from code/numeric recipes; generated caches retain provenance. Engine font exception remains narrow.
 - Native 1280×720 Low30 on Ryzen 5 4600H integrated Radeon / 16 GB DDR4-3200 / NVMe. Existing frame, CPU/GPU, allocation, residency, load and soak budgets apply. 60 FPS stays a separate stretch gate.
-- One human plus local allied/enemy bots, two approved maps and both 5v5/6v6 rosters. Graphics quality cannot alter collision, navigation, visibility rules, hit volumes or weapon mechanics.
+- One human plus local allied/enemy bots, three approved maps and both 5v5/6v6 rosters. Graphics quality cannot alter collision, navigation, visibility rules, hit volumes or weapon mechanics.
 - No automatic import of photographic/scanned/AI textures, external character packs, authored skeletal clips or new online service. Bodycam-like camera effects must preserve aim truth and the reduced-motion/flash preferences.
 - P05 FAIL under [ADR-024](decisions.md#adr-024--accepted-p05-soldier-visual-scope-stop-after-exhausted-clearance-iterations) remains. A future bounded owner assignment is required before another soldier-generator/clearance search. Planning that work here is not that assignment.
 

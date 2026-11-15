@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "root": "C:\\Job\\shooter\\Artifacts\\audio-refinement\\integration-20261115T202855\\committed-docs\\docs",
+  "root": "C:\\Job\\shooter\\docs",
   "markdownFiles": 128,
-  "wordCount": 152951,
-  "relativeLinksChecked": 1376,
-  "integrityFiles": 181,
+  "wordCount": 154049,
+  "relativeLinksChecked": 1382,
+  "integrityFiles": 182,
   "errors": [],
   "result": "PASS",
   "scope": "Documentation existence, index coverage, local links/anchors, fences and hashes including fixtures/scripts. No game implementation or runtime tests."

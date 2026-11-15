@@ -63,6 +63,15 @@ Release content uses Unity's own NavMesh bake (T067 C01), published by the locke
 
 `-Native` first publishes pure .NET content, then `ShooterBuild.CompileNativeGameContent` bakes only navigation from that .NET collision and .NET republishes with the staged native bakes ([ADR-043](decisions.md#adr-043--accepted-two-stage-native-navigation-publication)); it writes `nav-provenance.json` (schema `shooter.nav-bake-provenance.v1`) beside `index.json`/`catalog.json`, and reports `nativeUnityNavBake=PASS` only after re-verifying every package's native provenance and nav hash. Without `-Native`, pure tooling keeps the labelled `software-walkable-grid` diagnostic bake. `-RequireNativeNav` makes packaging refuse any software navigation. Installer technology and identity are in [ADR-041](decisions.md#adr-041--accepted-inno-setup-per-user-installer-and-in-place-upgrade-t073); `Tools/test_build_installer.ps1` and `Tools/test_package_release.ps1` are the synthetic regressions. Do not run two SDK wrappers concurrently in one checkout: `Compile-GameContent` builds `Generation.Tests` too and collides with `Test-Maps`/`Test-Generation`.
 
+### Reclaiming disk after an installer/milestone build
+
+```powershell
+./Tools/Clean-Artifacts.ps1                 # dry run: lists what would be deleted
+./Tools/Clean-Artifacts.ps1 -Apply [-IncludeBuildCaches] [-KeepRecentHours 6] [-KeepNewestPerArea 1]
+```
+
+Scope is only per-commit run folders `Artifacts/<area>/<40-hex commit>/`. A run is kept when its full **or 7-character short** hash appears in any file tracked at HEAD (handoffs, audit, `coordination.json`, locks), when it is HEAD's run, the newest run of its area, written within `-KeepRecentHours`, or holds the newest `installer-report.json` (needed for `Build-Installer -PreviousInstallerReport`). `.local` (pinned editor, venvs, worktrees), `UnityProject/Library` and non-commit Artifacts folders are never touched. `-IncludeBuildCaches` also removes regenerable `Tools/*/bin`, `obj` and `__pycache__`; do not use it while another SDK wrapper runs in the checkout. Every run writes `Artifacts/workspace-cleanup/<utc-run-id>/cleanup-report.json`. Cite evidence by commit hash in a tracked doc before cleaning, or it is treated as unreferenced.
+
 ## Fresh checkout and locked editor
 
 Select/install exactly the editor and Windows IL2CPP/Dedicated Server modules recorded in root `toolchain-lock.json`. An appropriate Unity license must be active on each build machine; the local development account activated Unity Personal through the official CLI/browser flow. CI uses a prelicensed Windows runner; no account credentials, serials or license files belong in this repository.

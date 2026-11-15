@@ -15,7 +15,7 @@ namespace Shooter.Bootstrap.Release
         public const string CorruptContentRecoveryMessage =
             "Selected map content is missing or corrupt. Repair or reinstall the verified package; no silent map substitution.";
 
-        public static readonly string[] RequiredMaps = { "training-compound", "depot-yard" };
+        public static readonly string[] RequiredMaps = { "training-compound", "depot-yard", "oil-depot" };
         public static readonly string[] RequiredVisualProfiles = { "gameplay", "low", "balanced", "high" };
 
         public static readonly string[] ExcludeDirectoryNames =

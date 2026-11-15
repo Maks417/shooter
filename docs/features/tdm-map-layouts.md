@@ -1,6 +1,6 @@
 # Feature: compact TDM map layouts (T076)
 
-Owner assignment 2026-11-15: redesign both catalog maps (`training-compound`, `depot-yard`) as compact Team Deathmatch arenas sized for 5v5 and 6v6. Map ids, display names, seeds, recipe/package/metadata schemas, SGAF Collision v1, nav settings and the 256 m world/32 m chunk frame stay unchanged; only generated gameplay topology (and therefore package identities) changes. The legacy W01 `CompoundPlanner` and its canonical-seed goldens stay untouched for historical M1–M3 evidence; the catalog uses new arena planners.
+Owner assignment 2026-11-15: redesign catalog maps as compact Team Deathmatch arenas sized for 5v5 and 6v6. ADR-045 covered `training-compound` and `depot-yard`; ADR-071 adds `oil-depot` with limited elevated routes. Map ids, display names, seeds, recipe/package/metadata schemas, SGAF Collision v1, nav settings and the 256 m world/32 m chunk frame stay on the existing package format; generated gameplay topology (and therefore package identities) changes per map. The legacy W01 `CompoundPlanner` and its canonical-seed goldens stay untouched for historical M1–M3 evidence; the catalog uses arena planners.
 
 ## Design principles applied
 
@@ -33,7 +33,7 @@ Sources: Valve Developer Community *Deathmatch Map Design Theory* and *Multi-Pla
 | Ceilings | ≤ 400 gameplay boxes, ≤ 64 cover proxies |
 | Spawn slots | 12 per team, inside own staging rectangle, ≥ 2 m spacing |
 
-Ground is flat (`y = 0`, 2×2 zero height grid as Depot already uses). No stacked/walkable upper floors in this revision because the pure validator is 2D; verticality via 0.25 m stair steps is a follow-up.
+Ground is flat (`y = 0`, 2×2 zero height grid) for Compound and Depot. ADR-071 adds limited walkable elevation on Oil Depot only: thin gameplay slabs (≤0.40 m) for stairs/catwalks, Y-aware occupancy (pass-under), and layered climb when a path endpoint is elevated. Roofs stay non-gameplay.
 
 ## Map A — Training Compound (`training-compound`, mirror across z = 0)
 
@@ -55,9 +55,20 @@ Playable rectangle x ∈ [−40, 40], z ∈ [−56, 56] (80 × 112 m). Team 1 an
 - **Right lane — Container stacks (CQB maze, covered route)** x ∈ [18, 40]: shipping containers 2.5 × 2.6 × 6 m in staggered rows forming two parallel twisting alleys (≥ 3 m wide) with short sightlines (≤ 20 m); a few double-stacked 5.2 m-tall containers as hard sight breaks.
 - **Cross connectors** at z = ±30 (yard aprons between staging and warehouse) and z = 0 through the warehouse side doors.
 
+## Map C — Oil Depot (`oil-depot`, mirror across z = 0) — ADR-071
+
+Playable rectangle x ∈ [−42, 42], z ∈ [−54, 54] (84 × 108 m). Team 1 anchor (0, 0, −48), team 2 anchor (0, 0, 48). Petroleum grammar distinct from Compound and Depot Yard.
+
+- **Staging** z ∈ [−54, −40]; gatehouse wall at z = −39 (2 m deep) with three gates at x = −28, 0, +28 and baffle chutes.
+- **Left lane — Tank farm** x ∈ [−42, −18]: octagonal/drum tanks, pipe cover, sight chicanes; keep lane via (−28, 0) open.
+- **Middle — Pump house** 16 × 14 m centred (0, 0), doors on all four sides, interior pillars, outdoor apron cover and axis sight blocks.
+- **Right lane — Container / shed CQB** with a clear strip for the elevated flank.
+- **Elevated flank** at x ≈ 32: walkable catwalk deck top 2.25 m (underpass), stair runs ≤0.25 m risers at both ends, mirrored across z = 0; half-cover rails.
+- **Cross connectors** at z ≈ ±28 through separator gaps and pump-house side doors.
+
 ## Implementation boundary
 
-- New pure files under `UnityProject/Assets/Shooter/Generation/Core/Environment/`: `ArenaLayout.cs` (bounds, staging rects, exits, lane via points), `ArenaRules.cs` (validator above), `ArenaGeometry.cs` (shared mirror/box/cover/hash helpers), `CompoundArenaPlanner.cs`, `DepotArenaPlanner.cs`, `ProductMapPlanner.cs` (dispatch by map id). Each new `.cs` needs a committed `.meta` with a fresh GUID.
+- Pure files under `UnityProject/Assets/Shooter/Generation/Core/Environment/`: `ArenaLayout.cs`, `ArenaRules.cs`, `ArenaGeometry.cs` (including stair/catwalk helpers), `CompoundArenaPlanner.cs`, `DepotArenaPlanner.cs`, `OilArenaPlanner.cs`, `ProductMapPlanner.cs`. Each new `.cs` needs a committed `.meta` with a fresh GUID.
 - `CompoundPlan` gains an optional `ArenaLayout? Arena` (null keeps legacy behaviour). `MapSpawnLayout` and `MapTopologyValidation` use the arena when present. `MapPackageBuilder`, `ReleaseCatalogDocument` and `CompoundCatalogFactory` dispatch through `ProductMapPlanner`.
 - Collision/nav hashes are derived from the actual box list (not seed-only). Stable IDs: compound 10000+, depot 20000+.
 - Must stay C# 9 / .NET Standard 2.1, Unity-free (linked by `Tools/Generation`, `Tools/Foundation` and test projects).

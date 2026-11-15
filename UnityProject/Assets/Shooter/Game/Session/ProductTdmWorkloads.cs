@@ -14,8 +14,11 @@ namespace Shooter.Game.Session
         public const string Compound6v6 = "TDM-6v6-v1";
         public const string Depot5v5 = "TDM-5v5-depot-v1";
         public const string Depot6v6 = "TDM-6v6-depot-v1";
+        public const string Oil5v5 = "TDM-5v5-oil-v1";
+        public const string Oil6v6 = "TDM-6v6-oil-v1";
         public const string SoakCompound6v6 = "TDM-soak-6v6-compound-v1";
         public const string SoakDepot6v6 = "TDM-soak-6v6-depot-v1";
+        public const string SoakOil6v6 = "TDM-soak-6v6-oil-v1";
 
         public readonly struct Definition
         {
@@ -70,8 +73,11 @@ namespace Shooter.Game.Session
             new Definition(Compound6v6, WellKnownMaps.TrainingCompound, 6, 1, 11, 12, 460072030UL, 3600, 10800, false, MeasurementCounters),
             new Definition(Depot5v5, WellKnownMaps.DepotYard, 5, 1, 9, 10, 460072031UL, 3600, 10800, false, MeasurementCounters),
             new Definition(Depot6v6, WellKnownMaps.DepotYard, 6, 1, 11, 12, 460072031UL, 3600, 10800, false, MeasurementCounters),
+            new Definition(Oil5v5, WellKnownMaps.OilDepot, 5, 1, 9, 10, 460072032UL, 3600, 10800, false, MeasurementCounters),
+            new Definition(Oil6v6, WellKnownMaps.OilDepot, 6, 1, 11, 12, 460072032UL, 3600, 10800, false, MeasurementCounters),
             new Definition(SoakCompound6v6, WellKnownMaps.TrainingCompound, 6, 1, 11, 12, 460072030UL, 0, 108000, true, MeasurementCounters),
-            new Definition(SoakDepot6v6, WellKnownMaps.DepotYard, 6, 1, 11, 12, 460072031UL, 0, 108000, true, MeasurementCounters)
+            new Definition(SoakDepot6v6, WellKnownMaps.DepotYard, 6, 1, 11, 12, 460072031UL, 0, 108000, true, MeasurementCounters),
+            new Definition(SoakOil6v6, WellKnownMaps.OilDepot, 6, 1, 11, 12, 460072032UL, 0, 108000, true, MeasurementCounters)
         };
 
         public static bool IsProductWorkload(string? workloadId)

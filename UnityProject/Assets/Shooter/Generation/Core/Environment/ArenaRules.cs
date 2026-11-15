@@ -277,8 +277,10 @@ namespace Shooter.Generation.Environment
             float sum = 0f;
             for (int i = 1; i < scratch.Count; i++)
             {
-                float dx = scratch[i].X - scratch[i - 1].X, dz = scratch[i].Z - scratch[i - 1].Z;
-                sum += MathF.Sqrt(dx * dx + dz * dz);
+                float dx = scratch[i].X - scratch[i - 1].X;
+                float dy = scratch[i].Y - scratch[i - 1].Y;
+                float dz = scratch[i].Z - scratch[i - 1].Z;
+                sum += MathF.Sqrt(dx * dx + dy * dy + dz * dz);
             }
             return sum;
         }

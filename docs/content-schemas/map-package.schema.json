@@ -10,7 +10,8 @@
       "type": "string",
       "enum": [
         "training-compound",
-        "depot-yard"
+        "depot-yard",
+        "oil-depot"
       ]
     },
     "displayName": {
@@ -27,7 +28,8 @@
       "type": "string",
       "enum": [
         "map.compound",
-        "map.depot"
+        "map.depot",
+        "map.oil"
       ]
     },
     "generatorVersion": {

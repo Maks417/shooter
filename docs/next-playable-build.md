@@ -1,5 +1,7 @@
 # Next playable build — finish playtest and native navigation
 
+**ADR-071 Oil Depot + elevated routes — 2026-11-15 (source):** third catalog map `oil-depot` (seed `460072032`) with Y-aware connectivity, walkable stairs/catwalk, shell/workloads unlock; packages become 12 (3×4). Pure ArenaRules/oil tests and catalog/workload assertions in this change set; software/native republish and named playtest Pending. [Handoff](milestones/m11-playable-release/handoff.md#adr-071--oil-depot-third-map--elevated-routes--2026-11-15).
+
 **T090 bot tactics — 2026-11-15 (source):** cover peeks, wall-aware hearing, ledge-safe strafe and route-corridor spread inside unchanged 16-ray/2-path budgets ([ADR-070](decisions.md#adr-070--accepted-bot-tactics-tranche-cover-peek-wall-hearing-ledge-strafe-route-spread-t090)). Pure AI suites 54/54 PASS; owner feel / installer Pending. [Handoff](milestones/m11-playable-release/handoff.md#t090--bot-tactics-cover-peek-wall-hearing-ledge-strafe-route-spread--2026-11-15).
 
 **Weapon visual preview — 2026-11-15:** installer **0.3.14** at `Artifacts/deliveries/Shooter-Setup-0.3.14.exe`, clean binary/content source `b8235a3`. Improves rifle, pistol, knife and grenade geometry and spatial PBR finishes; Contracts 76, Generation 402, Unity EditMode 57 / PlayMode 21, native publication, clean Client, smoke, package and installer builders PASS. Installation/upgrade, first-person/world visual review, reference performance and acceptance remain Pending. [Exact evidence and limitations](milestones/m11-playable-release/handoff.md#arsenal-delivery-0314).

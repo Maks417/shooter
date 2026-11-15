@@ -67,6 +67,7 @@ namespace Shooter.Game.Contracts
     {
         public static MapId TrainingCompound { get; } = new MapId("training-compound");
         public static MapId DepotYard { get; } = new MapId("depot-yard");
+        public static MapId OilDepot { get; } = new MapId("oil-depot");
     }
 
     public static class WellKnownModes

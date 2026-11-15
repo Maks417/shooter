@@ -11,6 +11,8 @@ namespace Shooter.Game.Contracts.Tests
         [InlineData(ProductTdmWorkloads.Compound6v6, "training-compound", 6, 12UL, 460072030UL)]
         [InlineData(ProductTdmWorkloads.Depot5v5, "depot-yard", 5, 10UL, 460072031UL)]
         [InlineData(ProductTdmWorkloads.Depot6v6, "depot-yard", 6, 12UL, 460072031UL)]
+        [InlineData(ProductTdmWorkloads.Oil5v5, "oil-depot", 5, 10UL, 460072032UL)]
+        [InlineData(ProductTdmWorkloads.Oil6v6, "oil-depot", 6, 12UL, 460072032UL)]
         public void Measurement_identities_keep_distinct_map_seeds(string id, string map, byte teamSize, ulong actors, ulong seed)
         {
             Assert.True(ProductTdmWorkloads.TryGet(id, out var workload));
@@ -30,6 +32,17 @@ namespace Shooter.Game.Contracts.Tests
             Assert.Equal(WellKnownMaps.TrainingCompound, compound.MapId);
             Assert.Equal(WellKnownMaps.DepotYard, depot.MapId);
             Assert.NotEqual(compound.Seed, depot.Seed);
+        }
+
+        [Fact]
+        public void Oil_is_not_implied_by_compound_or_depot_workload_ids()
+        {
+            var compound = ProductTdmWorkloads.Require(ProductTdmWorkloads.Compound5v5);
+            var depot = ProductTdmWorkloads.Require(ProductTdmWorkloads.Depot5v5);
+            var oil = ProductTdmWorkloads.Require(ProductTdmWorkloads.Oil5v5);
+            Assert.Equal(WellKnownMaps.OilDepot, oil.MapId);
+            Assert.NotEqual(compound.Seed, oil.Seed);
+            Assert.NotEqual(depot.Seed, oil.Seed);
         }
 
         [Fact]

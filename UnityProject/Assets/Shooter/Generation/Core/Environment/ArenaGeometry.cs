@@ -107,7 +107,7 @@ namespace Shooter.Generation.Environment
 
         /// <summary>
         /// Rectangular shell centred at (cx, cz) with door openings on chosen sides. A roof is emitted as a
-        /// non-gameplay box (the pure 2D nav grid ignores box height, so a gameplay roof would seal the interior).
+        /// non-gameplay box (ADR-049 visual roof; walkable decks use <see cref="AddCatwalkDeck"/> instead).
         /// With <paramref name="mirror"/> the whole shell is also emitted at -cz.
         /// </summary>
         public void Shell(float cx, float cz, float sizeX, float sizeZ, float thickness, float height, IReadOnlyList<ArenaDoor>? doors, bool roof = false, bool mirror = true)
@@ -120,6 +120,77 @@ namespace Shooter.Generation.Environment
             WallAlongZ(x0 + thickness * 0.5f, z0 + thickness, z1 - thickness, thickness, height, SideGaps(doors, ArenaSide.West, cz), TagSolid, mirror);
             if (roof)
                 Add(new Float3(cx, height + 0.15f, cz), new Float3(sizeX, 0.3f, sizeZ), TagSolid, mirror, gameplay: false);
+        }
+
+        /// <summary>
+        /// Stair of thin walkable treads (≤ <see cref="CompoundConnectivity.MaxStepMeters"/> risers) climbing along +Z
+        /// from <paramref name="baseZ"/> toward higher Z. Deck top of the last tread equals <paramref name="deckTopY"/>.
+        /// </summary>
+        public void AddStairRun(
+            float x,
+            float baseZ,
+            float widthX,
+            float deckTopY,
+            float treadDepthZ,
+            bool ascendingPositiveZ = true,
+            bool mirror = true,
+            float riser = CompoundConnectivity.MaxStepMeters,
+            float treadThickness = 0.2f)
+        {
+            if (deckTopY <= 0f) throw new ArgumentOutOfRangeException(nameof(deckTopY));
+            if (treadDepthZ < CompoundConnectivity.CellSize - 1e-3f)
+                throw new ArgumentOutOfRangeException(nameof(treadDepthZ), "Tread depth must be ≥ path cell size so climb steps align to the grid.");
+            if (riser <= 0f || riser > CompoundConnectivity.MaxStepMeters + 1e-3f)
+                throw new ArgumentOutOfRangeException(nameof(riser));
+            if (treadThickness <= 0f || treadThickness > CompoundConnectivity.WalkableSurfaceMaxThickness)
+                throw new ArgumentOutOfRangeException(nameof(treadThickness));
+            int steps = Math.Max(1, (int)Math.Ceiling(deckTopY / riser - 1e-4f));
+            float stepRiser = deckTopY / steps;
+            float dir = ascendingPositiveZ ? 1f : -1f;
+            for (int i = 0; i < steps; i++)
+            {
+                float top = stepRiser * (i + 1);
+                float cz = baseZ + dir * (treadDepthZ * (i + 0.5f));
+                Add(new Float3(x, top - treadThickness * 0.5f, cz), new Float3(widthX, treadThickness, treadDepthZ), TagSolid, mirror);
+            }
+        }
+
+        /// <summary>
+        /// Thin walkable catwalk deck (pass-under when deck underside ≥ agent height) with optional 1.1 m rail cover
+        /// on both long edges. Stairs are added separately via <see cref="AddStairRun"/>.
+        /// </summary>
+        public void AddCatwalkDeck(
+            float cx,
+            float cz,
+            float sizeX,
+            float sizeZ,
+            float deckTopY,
+            bool rails = true,
+            bool mirror = true,
+            float deckThickness = 0.25f)
+        {
+            if (deckTopY < CompoundConnectivity.AgentHeightMeters)
+                throw new ArgumentOutOfRangeException(nameof(deckTopY), "Deck must clear agent height for underpass.");
+            if (deckThickness <= 0f || deckThickness > CompoundConnectivity.WalkableSurfaceMaxThickness)
+                throw new ArgumentOutOfRangeException(nameof(deckThickness));
+            if (sizeX < 3f || sizeZ < 3f) throw new ArgumentOutOfRangeException(nameof(sizeX), "Catwalk corridor ≥ 3 m.");
+            Add(new Float3(cx, deckTopY - deckThickness * 0.5f, cz), new Float3(sizeX, deckThickness, sizeZ), TagSolid, mirror);
+            if (!rails) return;
+            const float railH = 1.1f;
+            float railY = deckTopY + railH * 0.5f;
+            // Rails along the long Z edges when sizeZ >= sizeX, otherwise along X.
+            if (sizeZ >= sizeX)
+            {
+                float halfX = sizeX * 0.5f;
+                Add(new Float3(cx - halfX + 0.1f, railY, cz), new Float3(0.2f, railH, sizeZ), TagCover, mirror);
+                Add(new Float3(cx + halfX - 0.1f, railY, cz), new Float3(0.2f, railH, sizeZ), TagCover, mirror);
+            }
+            else
+            {
+                float halfZ = sizeZ * 0.5f;
+                Add(new Float3(cx, railY, cz - halfZ + 0.1f), new Float3(sizeX, railH, 0.2f), TagCover, mirror);
+                Add(new Float3(cx, railY, cz + halfZ - 0.1f), new Float3(sizeX, railH, 0.2f), TagCover, mirror);
+            }
         }
 
         /// <summary>

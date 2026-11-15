@@ -40,7 +40,7 @@ function New-CaseRoot([string]$Name) {
     Write-TestFile (Join-Path $caseRoot 'content-format-lock.json') '{"schemaVersion":1,"contractVersion":"C0-v1","syntheticTestOnly":true}'
     $toolchainHash = (Get-FileHash -LiteralPath (Join-Path $caseRoot 'toolchain-lock.json') -Algorithm SHA256).Hash.ToLowerInvariant()
     $packages = [Collections.Generic.List[object]]::new()
-    foreach ($map in @('training-compound', 'depot-yard')) {
+    foreach ($map in @('training-compound', 'depot-yard', 'oil-depot')) {
         foreach ($profile in @('gameplay', 'low', 'balanced', 'high')) {
             $packages.Add((New-SyntheticPackageRoot $caseRoot $map $profile $toolchainHash)) | Out-Null
         }

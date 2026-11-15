@@ -6,7 +6,8 @@
     "schemaId": {
       "enum": [
         "shooter.recipe.map-compound.v1",
-        "shooter.recipe.map-depot.v1"
+        "shooter.recipe.map-depot.v1",
+        "shooter.recipe.map-oil.v1"
       ]
     },
     "recipeId": {
@@ -17,7 +18,8 @@
     "generatorId": {
       "enum": [
         "map.compound",
-        "map.depot"
+        "map.depot",
+        "map.oil"
       ]
     },
     "generatorVersion": {
@@ -35,7 +37,8 @@
           "type": "string",
           "enum": [
             "training-compound",
-            "depot-yard"
+            "depot-yard",
+            "oil-depot"
           ]
         },
         "halfExtentMeters": {
@@ -121,6 +124,29 @@
             "properties": {
               "mapId": {
                 "const": "depot-yard"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "generatorId": {
+            "const": "map.oil"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "schemaId": {
+            "const": "shooter.recipe.map-oil.v1"
+          },
+          "parameters": {
+            "properties": {
+              "mapId": {
+                "const": "oil-depot"
               }
             }
           }
