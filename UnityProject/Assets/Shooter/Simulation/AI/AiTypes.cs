@@ -109,9 +109,22 @@ namespace Shooter.Simulation.AI
         public Float3? CoverPoint { get; set; }
         public uint InCoverSinceTick { get; set; }
         public bool InCover { get; set; }
+
+        // T084 awareness and team spread.
+        /// <summary>Unseen attacker currently hurting the bot while it fights someone else.</summary>
+        public EntityId? UnseenAttacker { get; set; }
+        public int UnseenHits { get; set; }
+        public uint UnseenHitTick { get; set; }
+        /// <summary>While tick is below this, the bot turns toward <see cref="LastHeard"/> even with a visible target.</summary>
+        public uint TurnToThreatUntilTick { get; set; }
+        /// <summary>Patrol goal chosen for <see cref="PatrolGoalCursor"/>; re-chosen when the cursor moves.</summary>
+        public Float3? PatrolGoal { get; set; }
+        public int PatrolGoalCursor { get; set; } = -1;
+        public int PreviousPatrolIndex { get; set; } = -1;
+        public int PatrolIndex { get; set; } = -1;
     }
 
-    public enum HeardClass : byte { None = 0, Gunfire = 1, Damage = 2, Callout = 3 }
+    public enum HeardClass : byte { None = 0, Gunfire = 1, Damage = 2, Callout = 3, Footsteps = 4 }
 
     public sealed class AiCounters
     {
@@ -140,5 +153,10 @@ namespace Shooter.Simulation.AI
         public int Retreats;
         public int TacticalReloads;
         public int TargetSwitches;
+        // T084
+        public int FootstepsHeard;
+        public int ThreatTurns;
+        public int CrowdedStimuliHeld;
+        public int AllyGunfireIgnored;
     }
 }

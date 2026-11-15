@@ -62,6 +62,12 @@ namespace Shooter.Presentation.Session
         private float damagePulseUntil;
         private float hitMarkerUntil;
         private float damageFlashUntil;
+        // T084 incoming-damage direction markers: attacker position at the hit, held in world space so the
+        // marker swings as the player turns toward it.
+        private readonly ulong[] damageSourceIds = new ulong[CombatHudVisual.MaxDamageIndicators];
+        private readonly float[] damageSourceX = new float[CombatHudVisual.MaxDamageIndicators];
+        private readonly float[] damageSourceZ = new float[CombatHudVisual.MaxDamageIndicators];
+        private readonly float[] damageSourceUntil = new float[CombatHudVisual.MaxDamageIndicators];
         private EntityId cameraBobLife;
 
         public ProductMapView? MapView => mapView;
@@ -265,6 +271,7 @@ namespace Shooter.Presentation.Session
             hitMarkerUntil = 0f;
             damageFlashUntil = 0f;
             damagePulseUntil = 0f;
+            for (int i = 0; i < damageSourceUntil.Length; i++) damageSourceUntil[i] = 0f;
             cameraBobLife = default;
             deathIdCursor = 0;
             if (camera != null)
@@ -502,10 +509,49 @@ namespace Shooter.Presentation.Session
                 damageFlashUntil = now + FirstPersonHitFeedback.DamageFlashSeconds;
                 if (ev.Payload is DamagePayload dmg)
                     lastSeenHealth = dmg.RemainingHealth;
+                RecordDamageSource(ev.Instigator, now);
             }
             else if (FirstPersonHitFeedback.IsDamageDealt(ev.Kind, ev.Instigator, local))
             {
                 hitMarkerUntil = Time.unscaledTime + FirstPersonHitFeedback.HitMarkerSeconds;
+            }
+        }
+
+        private void RecordDamageSource(EntityId instigator, float now)
+        {
+            if (!instigator.IsValid || session?.Lifecycle == null) return;
+            if (!session.Lifecycle.TryGetActorState(instigator, out var attacker)) return;
+            int slot = 0;
+            for (int i = 0; i < damageSourceIds.Length; i++)
+            {
+                if (damageSourceIds[i] == instigator.Value && damageSourceUntil[i] > now) { slot = i; break; }
+                if (damageSourceUntil[i] < damageSourceUntil[slot]) slot = i;
+            }
+            damageSourceIds[slot] = instigator.Value;
+            damageSourceX[slot] = attacker.Feet.X;
+            damageSourceZ[slot] = attacker.Feet.Z;
+            damageSourceUntil[slot] = now + CombatHudVisual.DamageIndicatorSeconds;
+        }
+
+        /// <summary>Red arc segments around the reticle pointing at whoever just hit the local player.</summary>
+        private void DrawDamageIndicators(ActorLifecycleState human)
+        {
+            float now = Time.unscaledTime;
+            float cx = combatUi.Width * .5f, cy = combatUi.Height * .5f;
+            for (int i = 0; i < damageSourceUntil.Length; i++)
+            {
+                float alpha = CombatHudVisual.DamageIndicatorAlpha(damageSourceUntil[i] - now);
+                if (alpha <= 0.02f) continue;
+                float angle = CombatHudVisual.DamageIndicatorAngle(human.AimYaw, human.Feet.X, human.Feet.Z, damageSourceX[i], damageSourceZ[i]);
+                var dir = new Vector2(Mathf.Sin(angle), -Mathf.Cos(angle));
+                var tangent = new Vector2(-dir.y, dir.x);
+                var c = new Vector2(cx, cy) + dir * CombatHudVisual.DamageIndicatorRadius;
+                float half = CombatHudVisual.DamageIndicatorLength * .5f;
+                var color = new Color(TacticalUi.Enemy.r, TacticalUi.Enemy.g, TacticalUi.Enemy.b, alpha);
+                // Slightly curved: two chords meeting at the outer middle read as an arc pointing outward.
+                var outer = c + dir * 4f;
+                TacticalUi.Line(c - tangent * half - dir * 2f, outer, color, 5f);
+                TacticalUi.Line(outer, c + tangent * half - dir * 2f, color, 5f);
             }
         }
 
@@ -694,6 +740,7 @@ namespace Shooter.Presentation.Session
                 float flash = FirstPersonHitFeedback.DamageFlashStrength(damageFlashUntil - Time.unscaledTime, reducedFlash);
                 if (flash > 0.01f) TacticalUi.DamagePlateFlash(combatUi.Width, combatUi.Height, flash);
                 DrawHealthVignette(human.Health);
+                DrawDamageIndicators(human);
                 DrawTacticalMap(a, human, snap);
                 DrawAmmoPanel(a, human, snap);
                 DrawCompass(a, human.AimYaw);

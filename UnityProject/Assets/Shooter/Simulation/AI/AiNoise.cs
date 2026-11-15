@@ -16,6 +16,7 @@ namespace Shooter.Simulation.AI
         public const ulong SaltStrafe = 0x53545246UL;
         public const ulong SaltHearingX = 0x48454158UL;
         public const ulong SaltHearingZ = 0x4845415AUL;
+        public const ulong SaltPatrol = 0x50415452UL;
 
         public static ulong Mix(ulong x)
         {

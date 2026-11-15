@@ -7,6 +7,30 @@ namespace Shooter.Simulation.Tests.Hud
     public sealed class CombatHudVisualTests
     {
         [Fact]
+        public void Damage_indicator_points_at_the_attacker_relative_to_the_view()
+        {
+            const float Pi = 3.14159265f;
+            // Facing +Z (yaw 0): ahead, right (+X), behind, left.
+            Assert.Equal(0f, CombatHudVisual.DamageIndicatorAngle(0f, 0, 0, 0, 10), 4);
+            Assert.Equal(Pi / 2, CombatHudVisual.DamageIndicatorAngle(0f, 0, 0, 10, 0), 4);
+            Assert.Equal(-Pi / 2, CombatHudVisual.DamageIndicatorAngle(0f, 0, 0, -10, 0), 4);
+            Assert.Equal(Pi, System.Math.Abs(CombatHudVisual.DamageIndicatorAngle(0f, 0, 0, 0, -10)), 4);
+            // Turning right by 90 degrees puts an attacker on +X straight ahead; the marker follows the view.
+            Assert.Equal(0f, CombatHudVisual.DamageIndicatorAngle(Pi / 2, 0, 0, 10, 0), 4);
+            float a = CombatHudVisual.DamageIndicatorAngle(3f, 5, 5, -20, 40);
+            Assert.InRange(a, -Pi, Pi);
+        }
+
+        [Fact]
+        public void Damage_indicator_holds_then_fades()
+        {
+            Assert.Equal(0.9f, CombatHudVisual.DamageIndicatorAlpha(CombatHudVisual.DamageIndicatorSeconds));
+            Assert.Equal(0.9f, CombatHudVisual.DamageIndicatorAlpha(CombatHudVisual.DamageIndicatorSeconds * 0.5f));
+            Assert.Equal(0.45f, CombatHudVisual.DamageIndicatorAlpha(CombatHudVisual.DamageIndicatorSeconds * 0.25f), 4);
+            Assert.Equal(0f, CombatHudVisual.DamageIndicatorAlpha(0f));
+        }
+
+        [Fact]
         public void Kill_feed_alpha_holds_then_fades()
         {
             Assert.Equal(1f, CombatHudVisual.KillFeedAlpha(6f));

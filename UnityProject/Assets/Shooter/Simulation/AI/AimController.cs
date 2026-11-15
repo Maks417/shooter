@@ -110,7 +110,10 @@ namespace Shooter.Simulation.AI
         public static void ErrorOffset(AiBlackboard board, uint tick, float distance, float targetSpeed, out float yawError, out float pitchError)
         {
             float personality = Personality(board.Self);
-            uint since = unchecked(tick - board.AcquiredTick);
+            // Recovery starts when the reaction delay ends (first possible shot), not at sighting: the opening
+            // trigger pulls are warning shots the player can see and hear before the bot settles (T084).
+            uint start = Math.Max(board.AcquiredTick, board.ReactionReadyTick);
+            uint since = tick > start ? tick - start : 0u;
             float recovery = AiTuning.AccuracyRecoveryTicks * personality;
             float k = Math.Max(0f, 1f - since / recovery);
             float settled = AiTuning.SettledErrorMeters + AiTuning.SettledErrorPerMeter * Math.Max(distance, 0f);

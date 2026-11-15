@@ -72,6 +72,17 @@ namespace Shooter.Simulation.AI
         private readonly PathBuffer pathBuffer = new PathBuffer(ContractVersion.MaxPathCorners);
         private readonly AiCounters counters = new AiCounters();
         private int[] visitOrder = new int[32];
+        // T084 footstep hearing: last known point/speed per enemy id (fixed capacity, no per-tick allocation).
+        private const int MaxTracked = 32;
+        private readonly ulong[] trackId = new ulong[MaxTracked];
+        private readonly Float3[] trackPoint = new Float3[MaxTracked];
+        private readonly uint[] trackTick = new uint[MaxTracked];
+        private readonly float[] trackSpeed = new float[MaxTracked];
+        private float[] enemySpeed = new float[32];
+        // Non-bot actors (humans) seen in the enemy list, with their team, so their gunfire can be attributed.
+        private readonly ulong[] humanTeamIds = new ulong[MaxTracked];
+        private readonly byte[] humanTeams = new byte[MaxTracked];
+        private int humanTeamCount;
         private int botCount;
         private uint tick;
         private int pathsThisTick;
@@ -171,6 +182,20 @@ namespace Shooter.Simulation.AI
                 counters.DamageReactions++;
                 bool fightingAttacker = board.HasVisibleTarget && attacker.IsValid && board.TargetId == attacker;
                 if (!attackerPoint.HasValue || fightingAttacker) return;
+                if (board.HasVisibleTarget && attacker.IsValid)
+                {
+                    // Shot by someone else while fighting: a second hit (or getting low) makes the bot turn on them.
+                    bool sameUnseen = board.UnseenAttacker.HasValue && board.UnseenAttacker.Value == attacker &&
+                        unchecked(tick - board.UnseenHitTick) <= AiTuning.UnseenHitWindowTicks;
+                    board.UnseenHits = sameUnseen ? board.UnseenHits + 1 : 1;
+                    board.UnseenAttacker = attacker;
+                    board.UnseenHitTick = tick;
+                    if (board.UnseenHits >= AiTuning.UnseenHitsToTurn || board.Health < AiTuning.TurnImmediatelyBelowHealth)
+                    {
+                        board.TurnToThreatUntilTick = tick + AiTuning.ThreatTurnTicks;
+                        counters.ThreatTurns++;
+                    }
+                }
                 float n = AiTuning.DamageSourceNoiseMeters;
                 var p = attackerPoint.Value;
                 board.LastHeard = new Float3(
@@ -196,7 +221,21 @@ namespace Shooter.Simulation.AI
                 var board = boards[i];
                 if (!board.Alive || board.State == AiState.Dead || board.Self == shooter) continue;
                 if (board.HasVisibleTarget || !IsCalm(board.State)) continue;
-                float dx = origin.X - board.Feet.X, dz = origin.Z - board.Feet.Z;
+                var source = origin;
+                var shooterBoard = FindBoard(shooter);
+                if (shooterBoard != null && board.Team != 0 && PerceptionSystem.IsAlliedTeam(board.Team, shooterBoard.Team))
+                {
+                    // A teammate shooting is not a threat at the teammate: look where it is fighting, or ignore it.
+                    if (!shooterBoard.LastSeenEnemy.HasValue ||
+                        unchecked(tick - shooterBoard.LastSeenTick) > AiTuning.CombatMemoryTicks)
+                    {
+                        counters.AllyGunfireIgnored++;
+                        continue;
+                    }
+                    source = shooterBoard.LastSeenEnemy.Value;
+                }
+                else if (shooterBoard == null && IsAlliedHuman(board, shooter)) { counters.AllyGunfireIgnored++; continue; }
+                float dx = source.X - board.Feet.X, dz = source.Z - board.Feet.Z;
                 float dSq = dx * dx + dz * dz;
                 if (dSq > radiusSq) continue;
                 if (board.LastHeard.HasValue && unchecked(tick - board.LastHeardTick) < AiTuning.StimulusRefreshTicks)
@@ -207,13 +246,13 @@ namespace Shooter.Simulation.AI
                 }
                 float noise = MathF.Sqrt(dSq) * AiTuning.GunfireNoisePerMeter;
                 board.LastHeard = new Float3(
-                    origin.X + noise * AiNoise.Signed(board.Self.Value, tick, AiNoise.SaltHearingX),
-                    origin.Y,
-                    origin.Z + noise * AiNoise.Signed(board.Self.Value, tick, AiNoise.SaltHearingZ));
+                    source.X + noise * AiNoise.Signed(board.Self.Value, tick, AiNoise.SaltHearingX),
+                    source.Y,
+                    source.Z + noise * AiNoise.Signed(board.Self.Value, tick, AiNoise.SaltHearingZ));
                 board.LastHeardTick = tick;
                 board.Heard = HeardClass.Gunfire;
                 counters.StimuliHeard++;
-                Enter(board, AiState.Investigate);
+                EnterInvestigateUnlessCrowded(board);
             }
         }
 
@@ -232,6 +271,47 @@ namespace Shooter.Simulation.AI
                 Enter(boards[i], AiState.Dead);
                 return;
             }
+        }
+
+        private AiBlackboard? FindBoard(EntityId id)
+        {
+            if (!id.IsValid) return null;
+            for (int i = 0; i < botCount; i++)
+                if (boards[i].Self == id && boards[i].Alive) return boards[i];
+            return null;
+        }
+
+        /// <summary>Non-bot shooter (the human) on the listener's team, as last seen in the planner's actor list.</summary>
+        private bool IsAlliedHuman(AiBlackboard board, EntityId shooter)
+        {
+            if (board.Team == 0) return false;
+            for (int i = 0; i < humanTeamCount; i++)
+                if (humanTeamIds[i] == shooter.Value) return PerceptionSystem.IsAlliedTeam(board.Team, humanTeams[i]);
+            return false;
+        }
+
+        /// <summary>
+        /// Investigate a stimulus unless enough allies already are; the rest keep their route and watch the
+        /// point (ThreatLook), so a team does not run to the same spot in a line.
+        /// </summary>
+        private void EnterInvestigateUnlessCrowded(AiBlackboard board)
+        {
+            if (board.State == AiState.Investigate || !board.LastHeard.HasValue || board.Team == 0)
+            {
+                Enter(board, AiState.Investigate);
+                return;
+            }
+            int crowd = 0;
+            var p = board.LastHeard.Value;
+            for (int i = 0; i < botCount; i++)
+            {
+                var other = boards[i];
+                if (other == board || !other.Alive || other.State != AiState.Investigate || !other.LastHeard.HasValue) continue;
+                if (!PerceptionSystem.IsAlliedTeam(board.Team, other.Team)) continue;
+                if (Within(other.LastHeard.Value, p, AiTuning.InvestigateCrowdMeters)) crowd++;
+            }
+            if (crowd >= AiTuning.InvestigateCrowdLimit) { counters.CrowdedStimuliHeld++; return; }
+            Enter(board, AiState.Investigate);
         }
 
         private static bool IsCalm(AiState state) =>
@@ -273,6 +353,10 @@ namespace Shooter.Simulation.AI
             board.LastSenseOpportunityTick = 0;
             board.DestinationCursor = 0;
             board.RetryAfterTick = 0;
+            board.PatrolGoal = null;
+            board.PatrolGoalCursor = -1;
+            board.PatrolIndex = -1;
+            board.PreviousPatrolIndex = -1;
             ResetMovement(board);
             ResetCombat(board);
             board.StateEnteredTick = tick;
@@ -324,6 +408,10 @@ namespace Shooter.Simulation.AI
             board.CoverPoint = null;
             board.InCover = false;
             board.InCoverSinceTick = 0;
+            board.UnseenAttacker = null;
+            board.UnseenHits = 0;
+            board.UnseenHitTick = 0;
+            board.TurnToThreatUntilTick = 0;
         }
 
         /// <summary>Plan next-tick commands for all living bots. Caller feeds them through normal simulation command path.</summary>
@@ -354,6 +442,8 @@ namespace Shooter.Simulation.AI
             perception.BeginTick();
             PollPaths();
             if (visitOrder.Length < enemyCount + 1) visitOrder = new int[enemyCount + 1];
+            if (enemySpeed.Length < enemyCount) enemySpeed = new float[enemyCount];
+            TrackEnemies(enemies, enemyCount);
 
             int written = 0;
             int firstBot = botCount == 0 ? 0 : (int)(simulationTick % (uint)botCount);
@@ -370,7 +460,11 @@ namespace Shooter.Simulation.AI
                 board.VisibleTarget = null;
                 board.LastSenseOpportunityTick = tick;
                 counters.SenseOpportunitiesThisTick++;
-                if (enemies != null && enemyCount > 0) Sense(board, enemies, enemyCount);
+                if (enemies != null && enemyCount > 0)
+                {
+                    Sense(board, enemies, enemyCount);
+                    if (!board.HasVisibleTarget) HearFootsteps(board, enemies, enemyCount);
+                }
                 ExpireStimuli(board);
                 ApplyUtility(board);
                 Decide(board);
@@ -386,6 +480,84 @@ namespace Shooter.Simulation.AI
         }
 
         // ---------------------------------------------------------------- perception / targeting
+
+        /// <summary>Per-enemy horizontal speed from consecutive planner ticks (feeds footstep hearing).</summary>
+        private void TrackEnemies(SenseTarget[]? enemies, int enemyCount)
+        {
+            humanTeamCount = 0;
+            for (int k = 0; k < enemyCount; k++)
+            {
+                var e = enemies![k];
+                if (FindBoard(e.Id) == null && humanTeamCount < MaxTracked)
+                {
+                    humanTeamIds[humanTeamCount] = e.Id.Value;
+                    humanTeams[humanTeamCount++] = e.Team;
+                }
+                int slot = -1, oldest = 0;
+                for (int i = 0; i < MaxTracked; i++)
+                {
+                    if (trackTick[i] != 0 && trackId[i] == e.Id.Value) { slot = i; break; }
+                    if (trackTick[i] < trackTick[oldest]) oldest = i;
+                }
+                float speed = 0;
+                if (slot >= 0)
+                {
+                    uint dt = unchecked(tick - trackTick[slot]);
+                    if (dt > 0 && dt <= 6)
+                    {
+                        float dx = e.Point.X - trackPoint[slot].X, dz = e.Point.Z - trackPoint[slot].Z;
+                        speed = MathF.Sqrt(dx * dx + dz * dz) * 60f / dt;
+                    }
+                    else if (dt == 0) speed = trackSpeed[slot];
+                }
+                else slot = oldest;
+                trackId[slot] = e.Id.Value;
+                trackPoint[slot] = e.Point;
+                trackTick[slot] = tick == 0 ? 1u : tick;
+                trackSpeed[slot] = speed;
+                enemySpeed[k] = speed;
+            }
+        }
+
+        /// <summary>
+        /// Footsteps (T084): an enemy moving fast enough within its audible radius, or anyone within arm reach,
+        /// is heard from any direction. The bot turns toward the noise and, if calm, checks it out. No rays.
+        /// </summary>
+        private void HearFootsteps(AiBlackboard board, SenseTarget[] enemies, int enemyCount)
+        {
+            int best = -1;
+            float bestSq = float.MaxValue;
+            for (int k = 0; k < enemyCount; k++)
+            {
+                var e = enemies[k];
+                if (!PerceptionSystem.IsOpponent(board, e)) continue;
+                float sp = enemySpeed[k];
+                float radius = sp >= AiTuning.SprintStepSpeed ? AiTuning.SprintStepRadius
+                    : sp >= AiTuning.RunStepSpeed ? AiTuning.RunStepRadius
+                    : sp >= AiTuning.WalkStepSpeed ? AiTuning.WalkStepRadius : 0f;
+                if (radius < AiTuning.PresenceRadius) radius = AiTuning.PresenceRadius;
+                float dx = e.Point.X - board.Feet.X, dz = e.Point.Z - board.Feet.Z;
+                float dSq = dx * dx + dz * dz;
+                if (dSq > radius * radius || dSq >= bestSq) continue;
+                best = k;
+                bestSq = dSq;
+            }
+            if (best < 0) return;
+            // A fresh damage report is better information than footsteps; keep it.
+            if (board.Heard == HeardClass.Damage && unchecked(tick - board.LastHeardTick) < AiTuning.StimulusRefreshTicks) return;
+            bool fresh = board.Heard != HeardClass.Footsteps || unchecked(tick - board.LastHeardTick) > AiTuning.StimulusRefreshTicks;
+            var p = enemies[best].Point;
+            float noise = MathF.Sqrt(bestSq) * AiTuning.FootstepNoisePerMeter;
+            board.LastHeard = new Float3(
+                p.X + noise * AiNoise.Signed(board.Self.Value, tick / 15, AiNoise.SaltHearingX),
+                board.Feet.Y,
+                p.Z + noise * AiNoise.Signed(board.Self.Value, tick / 15, AiNoise.SaltHearingZ));
+            board.LastHeardTick = tick;
+            board.Heard = HeardClass.Footsteps;
+            if (fresh) counters.FootstepsHeard++;
+            if (board.State == AiState.Patrol || board.State == AiState.Idle || board.State == AiState.Search)
+                EnterInvestigateUnlessCrowded(board);
+        }
 
         private void Sense(AiBlackboard board, SenseTarget[] enemies, int enemyCount)
         {
@@ -524,7 +696,7 @@ namespace Shooter.Simulation.AI
                 ally.LastHeardTick = tick;
                 ally.Heard = HeardClass.Callout;
                 counters.Callouts++;
-                Enter(ally, AiState.Investigate);
+                EnterInvestigateUnlessCrowded(ally);
             }
         }
 
@@ -676,27 +848,47 @@ namespace Shooter.Simulation.AI
             return new Float3(p.X + vx, p.Y, p.Z + vz);
         }
 
-        /// <summary>Rotate through combat destinations but skip ones already targeted by enough allies.</summary>
+        /// <summary>Combat destination that no ally is already heading for (or standing at).</summary>
         private Float3 ChooseCombatDestination(AiBlackboard board)
         {
-            int count = combatDestinations.Count;
-            int start = Rotate(board, count);
+            if (board.PathGoal.HasValue) return board.PathGoal.Value;
+            return combatDestinations[ChooseSpreadDestination(board, combatDestinations, -1, -1)];
+        }
+
+        /// <summary>
+        /// T084 team spread: score every destination by how far it is from allies' goals and positions, by a
+        /// preferred leg length, and by a seeded per-bot preference; never repeat the last two picks. Teammates
+        /// therefore fan out across the map instead of walking the same ordered route one behind another.
+        /// Deterministic; runs only when a bot needs a new destination.
+        /// </summary>
+        private int ChooseSpreadDestination(AiBlackboard board, List<Float3> points, int last, int previous)
+        {
+            int count = points.Count;
+            if (count == 1) return 0;
+            int best = Rotate(board, count);
+            float bestScore = float.MinValue;
             for (int k = 0; k < count; k++)
             {
-                var candidate = combatDestinations[(start + k) % count];
-                int crowd = 0;
+                if ((k == last || k == previous) && count > 2) continue;
+                var c = points[k];
+                float dx = c.X - board.Feet.X, dz = c.Z - board.Feet.Z;
+                float leg = MathF.Sqrt(dx * dx + dz * dz);
+                if (leg < 3f) continue;
+                float score = -Math.Abs(leg - AiTuning.PatrolPreferredMeters) / AiTuning.PatrolPreferredMeters;
+                score += 0.6f * AiNoise.Unit(board.Self.Value, (ulong)(uint)board.DestinationCursor * 131UL + (ulong)k, AiNoise.SaltPatrol);
                 for (int i = 0; i < botCount; i++)
                 {
                     var other = boards[i];
-                    if (other == board || !other.Alive || !PerceptionSystem.IsAlliedTeam(board.Team, other.Team)) continue;
-                    if (other.PathGoal.HasValue && Same(other.PathGoal.Value, candidate)) crowd++;
+                    if (other == board || !other.Alive || other.State == AiState.Dead) continue;
+                    if (board.Team != 0 && !PerceptionSystem.IsAlliedTeam(board.Team, other.Team)) continue;
+                    var goal = other.State == AiState.Patrol && other.PatrolGoal.HasValue ? other.PatrolGoal : other.PathGoal;
+                    if (goal.HasValue && Within(goal.Value, c, AiTuning.SpreadMeters)) score -= 2f;
+                    if (Within(other.Feet, c, AiTuning.SpreadMeters * 0.5f)) score -= 0.5f;
                 }
-                if (crowd < AiTuning.DestinationCrowdLimit) return candidate;
+                if (score > bestScore) { bestScore = score; best = k; }
             }
-            return combatDestinations[start];
+            return best;
         }
-
-        private static bool Same(Float3 a, Float3 b) => a.X == b.X && a.Y == b.Y && a.Z == b.Z;
 
         // ---------------------------------------------------------------- navigation
 
@@ -987,7 +1179,15 @@ namespace Shooter.Simulation.AI
         private Float3 PatrolPoint(AiBlackboard board)
         {
             if (patrolDestinations.Count > 0)
-                return patrolDestinations[Rotate(board, patrolDestinations.Count)];
+            {
+                if (board.PatrolGoal.HasValue && board.PatrolGoalCursor == board.DestinationCursor) return board.PatrolGoal.Value;
+                int index = ChooseSpreadDestination(board, patrolDestinations, board.PatrolIndex, board.PreviousPatrolIndex);
+                board.PreviousPatrolIndex = board.PatrolIndex;
+                board.PatrolIndex = index;
+                board.PatrolGoal = patrolDestinations[index];
+                board.PatrolGoalCursor = board.DestinationCursor;
+                return board.PatrolGoal.Value;
+            }
             // Deterministic local orbit based on entity id.
             double a = (board.Self.Value % 8) * (Math.PI / 4);
             return new Float3(board.Feet.X + (float)Math.Cos(a) * 4f, board.Feet.Y, board.Feet.Z + (float)Math.Sin(a) * 4f);
@@ -1018,6 +1218,11 @@ namespace Shooter.Simulation.AI
             if (board.InCover && (board.State == AiState.SeekCover || board.State == AiState.Reload))
                 return board.LastSeenEnemy ?? board.CoverThreat;
             if (board.State == AiState.SeekCover || board.State == AiState.Reload) return null; // run to cover facing the route
+            // Something just hit or walked up on the bot and nothing has been seen since: face it first.
+            if (board.LastHeard.HasValue && (board.Heard == HeardClass.Damage || board.Heard == HeardClass.Footsteps) &&
+                unchecked(tick - board.LastHeardTick) <= AiTuning.CloseThreatTicks &&
+                (board.LastSeenTick == 0 || board.LastHeardTick > board.LastSeenTick))
+                return board.LastHeard;
             if (board.State == AiState.Engage && board.LastSeenEnemy.HasValue &&
                 unchecked(tick - board.LastSeenTick) <= AiTuning.CombatMemoryTicks)
                 return board.LastSeenEnemy;
@@ -1054,7 +1259,21 @@ namespace Shooter.Simulation.AI
             float desiredYaw = board.Yaw, desiredPitch = board.Pitch;
             bool combatTurn = false;
             Float3? threatLook = null;
-            if (visible)
+            // Holds while the old target drops out of the vision cone, until the attacker is acquired or time runs out.
+            bool turnToThreat = tick < board.TurnToThreatUntilTick && board.LastHeard.HasValue &&
+                board.UnseenAttacker.HasValue && board.TargetId != board.UnseenAttacker;
+            if (turnToThreat)
+            {
+                // Being shot from elsewhere: break off the current target and turn toward the attacker.
+                var look = board.LastHeard!.Value;
+                var lookPoint = new Float3(look.X, Math.Max(look.Y, board.Feet.Y + StandingAimHeight), look.Z);
+                AimController.LookAngles(eye, lookPoint, out desiredYaw, out desiredPitch);
+                combatTurn = true;
+                threatLook = look;
+                visible = false;
+                engaging = false;
+            }
+            else if (visible)
             {
                 AimController.IdealAngles(eye, board.VisibleTarget!.Value, out float iy, out float ip);
                 AimController.ErrorOffset(board, tick, board.TargetDistance, board.TargetSpeed, out float ey, out float ep);

@@ -208,7 +208,11 @@ namespace Shooter.Simulation.Tests.AI
             Assert.Equal(AiState.Engage, bot.State);
             // Level target at own crouched eye height; the muzzle-offset compensation lifts the aim by 0.15 m.
             float expected = -(float)Math.Atan2(CombatAiDirector.MuzzleDownOffset, 20f);
-            Assert.Equal(expected, cmds[0].AimPitch, 2);
+            // Within the bot's settled seeded error (pitch share ≤ 0.8 × settled miss distance × personality ≤ 1.25).
+            float settled = (AiTuning.SettledErrorMeters + AiTuning.SettledErrorPerMeter * 20f) * 1.25f * 0.8f;
+            Assert.InRange(cmds[0].AimPitch, expected - (float)Math.Atan2(settled, 20f) - 0.002f, expected + (float)Math.Atan2(settled, 20f) + 0.002f);
+            // ...and clearly not the standing-eye answer (aiming 0.6 m lower).
+            Assert.True(Math.Abs(cmds[0].AimPitch - (float)Math.Atan2(0.6f - CombatAiDirector.MuzzleDownOffset, 20f)) > 0.005f);
         }
 
         private static float DamageDealtToTarget(bool targetCrouches)

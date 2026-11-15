@@ -11,8 +11,8 @@ namespace Shooter.Simulation.AI
         public const float TickSeconds = 1f / 60f;
 
         // Reaction (spec: 250–500 ms initial delay).
-        public const uint ReactionBaseTicks = 15;
-        public const uint ReactionSpreadTicks = 16;
+        public const uint ReactionBaseTicks = 18;
+        public const uint ReactionSpreadTicks = 18;
         /// <summary>Switching to another enemy while already fighting is faster than a cold acquisition.</summary>
         public const uint SwitchReactionBaseTicks = 8;
         public const uint SwitchReactionSpreadTicks = 6;
@@ -40,14 +40,15 @@ namespace Shooter.Simulation.AI
         public const float MaxPitch = 1.45f;             // inside the C0 ±89° bound
 
         // Aim uncertainty (spec: seeded uncertainty and accuracy recovery). Expressed as a miss distance at the target.
-        public const float AcquireErrorMeters = 1.1f;
-        public const float SettledErrorMeters = 0.12f;
+        public const float AcquireErrorMeters = 1.5f;
+        public const float SettledErrorMeters = 0.28f;
         /// <summary>Settled error grows with range so long shots are not laser-accurate.</summary>
-        public const float SettledErrorPerMeter = 0.009f;
-        public const uint AccuracyRecoveryTicks = 40;
+        public const float SettledErrorPerMeter = 0.005f;
+        /// <summary>Counted from the first tick the bot may fire, so the opening shots are visibly off target (T084).</summary>
+        public const uint AccuracyRecoveryTicks = 60;
         public const float MinErrorRadians = 0.005f;
         public const float MaxErrorRadians = 0.14f;      // ~8 deg
-        public const float MovingErrorMeters = 0.25f;
+        public const float MovingErrorMeters = 0.18f;
         public const float TargetMotionErrorMeters = 0.2f;
         public const float FlinchErrorMeters = 0.5f;
         public const uint FlinchTicks = 30;
@@ -83,9 +84,31 @@ namespace Shooter.Simulation.AI
         public const uint ThreatLookTicks = 180;
         public const float ThreatLookRange = 30f;
 
+        // T084 footstep hearing: horizontal speed of an enemy → audible radius (no rays).
+        public const float SprintStepSpeed = 5.0f, SprintStepRadius = 24f;
+        public const float RunStepSpeed = 2.6f, RunStepRadius = 13f;
+        public const float WalkStepSpeed = 0.6f, WalkStepRadius = 5f;
+        /// <summary>Any enemy this close is noticed regardless of speed (body presence).</summary>
+        public const float PresenceRadius = 2.5f;
+        public const float FootstepNoisePerMeter = 0.05f;
+        /// <summary>A fresh close stimulus (footsteps/damage) wins the look over an older last-seen point.</summary>
+        public const uint CloseThreatTicks = 60;
+        /// <summary>Hits from an unseen enemy while fighting another: turn after this many within the window.</summary>
+        public const int UnseenHitsToTurn = 2;
+        public const uint UnseenHitWindowTicks = 90;
+        public const ushort TurnImmediatelyBelowHealth = 50;
+        public const uint ThreatTurnTicks = 45;
+
         // Team coordination.
         public const float CalloutRadius = 30f;
-        public const int DestinationCrowdLimit = 2;
+        public const int DestinationCrowdLimit = 1;
+        /// <summary>Allies' goals/positions closer than this make a patrol or combat destination "taken".</summary>
+        public const float SpreadMeters = 12f;
+        /// <summary>Preferred patrol leg length; much shorter or longer legs score lower.</summary>
+        public const float PatrolPreferredMeters = 35f;
+        /// <summary>At most this many allies investigate the same stimulus; the rest hold and watch it.</summary>
+        public const int InvestigateCrowdLimit = 2;
+        public const float InvestigateCrowdMeters = 10f;
 
         // Health, ammo and cover.
         public const ushort LowHealth = 35;

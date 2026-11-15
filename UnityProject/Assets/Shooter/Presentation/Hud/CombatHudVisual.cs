@@ -17,6 +17,34 @@ namespace Shooter.Presentation.Hud
         public const float HealthBarHeight = 5f;
         public const int HealthSegments = 5;
         public const string KillFeedSeparator = "  >  ";
+        /// <summary>T084 incoming-damage direction marker: hold time, ring slots and radius around the reticle.</summary>
+        public const float DamageIndicatorSeconds = 1.4f;
+        public const int MaxDamageIndicators = 4;
+        public const float DamageIndicatorRadius = 118f;
+        public const float DamageIndicatorLength = 64f;
+
+        /// <summary>
+        /// Screen angle of a damage source relative to the viewer's aim yaw (radians in [-pi, pi)): 0 is straight
+        /// ahead (top of the ring), positive is to the right. Uses the simulation yaw convention atan2(dx, dz).
+        /// </summary>
+        public static float DamageIndicatorAngle(float viewYaw, float viewerX, float viewerZ, float sourceX, float sourceZ)
+        {
+            float dx = sourceX - viewerX, dz = sourceZ - viewerZ;
+            if (dx * dx + dz * dz < 1e-6f) return 0f;
+            double a = Math.Atan2(dx, dz) - viewYaw;
+            a = (a + Math.PI) % (2 * Math.PI);
+            if (a < 0) a += 2 * Math.PI;
+            return (float)(a - Math.PI);
+        }
+
+        /// <summary>Marker opacity from remaining hold time: full for the first half, then an ease-out fade.</summary>
+        public static float DamageIndicatorAlpha(float remainingSeconds)
+        {
+            if (remainingSeconds <= 0f) return 0f;
+            float t = remainingSeconds / DamageIndicatorSeconds;
+            if (t >= 0.5f) return 0.9f;
+            return 0.9f * (t / 0.5f);
+        }
 
         /// <summary>Opacity for a kill-feed row given remaining display time.</summary>
         public static float KillFeedAlpha(float remainingSeconds, float fadeSeconds = KillFeedFadeSeconds)
