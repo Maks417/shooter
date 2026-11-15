@@ -11,14 +11,14 @@ namespace Shooter.Simulation.Tests.Shell
     public sealed class ScoreboardTableTests
     {
         [Fact]
-        public void Live_rows_sort_by_kills_then_deaths_then_participant_id()
+        public void Live_rows_sort_by_score_then_kills_then_deaths_then_participant_id()
         {
             var rows = new List<ParticipantState>
             {
-                Row(3, "C", 1, false, 2, 5),
-                Row(1, "A", 1, true, 5, 1),
-                Row(2, "B", 2, false, 5, 0),
-                Row(4, "D", 2, false, 2, 1)
+                Row(3, "C", 1, false, score: 50, kills: 2, deaths: 5),
+                Row(1, "A", 1, true, score: 200, kills: 1, deaths: 1),
+                Row(2, "B", 2, false, score: 200, kills: 5, deaths: 0),
+                Row(4, "D", 2, false, score: 100, kills: 2, deaths: 1)
             };
             var snap = new MatchViewSnapshot(
                 1001, 10, 10, 100, GameMatchPhase.Playing, MatchOutcome.None, FinishReason.None,
@@ -26,11 +26,12 @@ namespace Shooter.Simulation.Tests.Shell
             var table = new ScoreboardTable();
             table.BindLive(snap, new EntityId(1));
             Assert.Equal(4, table.RowCount);
-            Assert.Equal("B", table.Rows[0].DisplayName);
-            Assert.Equal("A", table.Rows[1].DisplayName);
+            Assert.Equal("B", table.Rows[0].DisplayName); // 200 score, 5 kills
+            Assert.Equal("A", table.Rows[1].DisplayName); // 200 score, 1 kill
             Assert.Equal("D", table.Rows[2].DisplayName);
             Assert.Equal("C", table.Rows[3].DisplayName);
             Assert.True(table.Rows[1].IsLocal);
+            Assert.Equal(200u, table.Rows[0].Score);
         }
 
         [Fact]
@@ -69,6 +70,9 @@ namespace Shooter.Simulation.Tests.Shell
         }
 
         private static ParticipantState Row(uint id, string name, byte team, bool human, uint kills, uint deaths)
+            => Row(id, name, team, human, score: kills * 100u, kills, deaths);
+
+        private static ParticipantState Row(uint id, string name, byte team, bool human, uint score, uint kills, uint deaths)
             => new ParticipantState(
                 new ParticipantId(id),
                 name,
@@ -79,6 +83,7 @@ namespace Shooter.Simulation.Tests.Shell
                 true,
                 kills,
                 deaths,
-                0);
+                0,
+                score);
     }
 }

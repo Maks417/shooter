@@ -47,6 +47,11 @@ namespace Shooter.Game.Session
         private int preMatchCountdownTicks;
         private int preMatchTicksRemaining;
         private static readonly InputCommand[] NoCommands = new InputCommand[0];
+        /// <summary>Victim entity → (attacker entity → damage amount) for the current life (ADR-059).</summary>
+        private readonly Dictionary<ulong, Dictionary<ulong, uint>> damageByVictim = new Dictionary<ulong, Dictionary<ulong, uint>>();
+        private readonly Dictionary<ulong, uint> damageVictimLife = new Dictionary<ulong, uint>();
+        private readonly List<LocalScoreAward> localScoreAwards = new List<LocalScoreAward>(8);
+        private readonly List<ulong> assistAttackersScratch = new List<ulong>(8);
 
         public OfflineGameSession(IMapCatalog catalog, Func<IWorldQueries, INavigation, IMapRuntime> mapFactory, bool allowFakeMapRuntime = false)
         {
@@ -85,6 +90,19 @@ namespace Shooter.Game.Session
         public ulong SessionEpoch => epoch;
         /// <summary>Adapter sample total for tests/diagnostics ( -1 when no counting map).</summary>
         public long DebugWorldQueryAdapterSamples => countingMap == null ? -1 : countingMap.CountingQueries.TotalSamples;
+        /// <summary>
+        /// Personal Score awards for the local human pending presentation drain (ADR-059).
+        /// Accumulates across multi-tick frames; cleared by <see cref="DrainLocalScoreAwards"/>.
+        /// </summary>
+        public IReadOnlyList<LocalScoreAward> LocalScoreAwards => localScoreAwards;
+
+        /// <summary>Copies pending local awards into <paramref name="destination"/> and clears the session ring.</summary>
+        public void DrainLocalScoreAwards(List<LocalScoreAward> destination)
+        {
+            if (destination == null) throw new ArgumentNullException(nameof(destination));
+            for (int i = 0; i < localScoreAwards.Count; i++) destination.Add(localScoreAwards[i]);
+            localScoreAwards.Clear();
+        }
 
         public bool TryGetMovementView(EntityId entity, out LocalMovementView view)
         {
@@ -328,14 +346,29 @@ namespace Shooter.Game.Session
                     if (ev.Kind == CombatEventKind.DamageApplied)
                     {
                         bots.ObserveDamage(ev.Target, ev.Instigator, lifecycle);
+                        RecordDamageContribution(ev, lifecycle);
                         continue;
                     }
                     if (ev.Kind != CombatEventKind.Death) continue;
                     if (!lifecycle.TryGetLife(ev.Target, out _, out var life)) continue;
+                    if (ContainsEntity(deathsThisTick, ev.Target)) continue;
+                    if (!IsParticipantAlive(snap, ev.Target, life)) continue;
                     EntityId? killer = ev.Instigator.IsValid ? ev.Instigator : (EntityId?)null;
+                    SettlePersonalScores(ev.Target, life, killer, snap);
                     match.ProcessDeath(new DeathResolution(sessionId, ev.Id, ev.Target, life, killer, tick));
+                    // Kill Score is applied inside ProcessDeath; mirror a local HUD award when the human got the kill.
+                    if (killer is EntityId credited &&
+                        credited.Equals(humanEntity) &&
+                        humanEntity.IsValid &&
+                        IsEnemyOf(snap, credited, ev.Target))
+                    {
+                        PushLocalAward(new LocalScoreAward(
+                            LocalScoreAwardKind.Kill,
+                            (uint)GameContractVersion.PersonalKillPoints,
+                            ResolveDisplayName(ev.Target, snap)));
+                    }
                     bots.ResetLife(ev.Target);
-                    if (!ContainsEntity(deathsThisTick, ev.Target)) deathsThisTick.Add(ev.Target);
+                    deathsThisTick.Add(ev.Target);
                 }
             }
             // Preserve ordered scoring for every same-tick death before retiring any old life.
@@ -589,6 +622,107 @@ namespace Shooter.Game.Session
         /// <summary>Read-only AI diagnostics for capture summaries; null when no match is loaded.</summary>
         public AiCounters? BotCounters => bots?.Counters;
 
+        private const int MaxLocalScoreAwards = 16;
+
+        private void PushLocalAward(LocalScoreAward award)
+        {
+            if (localScoreAwards.Count >= MaxLocalScoreAwards)
+                localScoreAwards.RemoveAt(0);
+            localScoreAwards.Add(award);
+        }
+
+        private void RecordDamageContribution(CombatEvent ev, HarnessActorLifecycle actorLifecycle)
+        {
+            if (!ev.Instigator.IsValid || !ev.Target.IsValid) return;
+            if (ev.Instigator.Equals(ev.Target)) return;
+            if (ev.Payload is not DamagePayload damage || damage.Amount == 0) return;
+            if (!actorLifecycle.TryGetLife(ev.Target, out _, out var life)) return;
+            ulong victimKey = ev.Target.Value;
+            if (damageVictimLife.TryGetValue(victimKey, out uint recordedLife) && recordedLife != life.Value)
+            {
+                damageByVictim.Remove(victimKey);
+                damageVictimLife.Remove(victimKey);
+            }
+            damageVictimLife[victimKey] = life.Value;
+            if (!damageByVictim.TryGetValue(victimKey, out var byAttacker))
+            {
+                byAttacker = new Dictionary<ulong, uint>();
+                damageByVictim[victimKey] = byAttacker;
+            }
+            byAttacker.TryGetValue(ev.Instigator.Value, out uint prior);
+            byAttacker[ev.Instigator.Value] = unchecked(prior + damage.Amount);
+        }
+
+        private void SettlePersonalScores(EntityId victim, LifeId life, EntityId? killer, MatchViewSnapshot rosterSnap)
+        {
+            ulong victimKey = victim.Value;
+            if (!damageByVictim.TryGetValue(victimKey, out var byAttacker))
+            {
+                damageVictimLife.Remove(victimKey);
+                return;
+            }
+            if (damageVictimLife.TryGetValue(victimKey, out uint recordedLife) && recordedLife != life.Value)
+            {
+                damageByVictim.Remove(victimKey);
+                damageVictimLife.Remove(victimKey);
+                return;
+            }
+
+            ulong killerKey = killer is EntityId k ? k.Value : 0UL;
+            assistAttackersScratch.Clear();
+            foreach (var pair in byAttacker)
+                assistAttackersScratch.Add(pair.Key);
+
+            string victimName = ResolveDisplayName(victim, rosterSnap);
+            for (int i = 0; i < assistAttackersScratch.Count; i++)
+            {
+                ulong attackerKey = assistAttackersScratch[i];
+                if (attackerKey == 0 || attackerKey == victimKey) continue;
+                if (attackerKey == killerKey) continue; // killer gets flat PersonalKillPoints only
+                uint points = byAttacker[attackerKey];
+                if (points == 0) continue;
+                var attacker = new EntityId(attackerKey);
+                match.AddScore(attacker, points);
+                if (humanEntity.IsValid && attacker.Equals(humanEntity))
+                    PushLocalAward(new LocalScoreAward(LocalScoreAwardKind.Assist, points, victimName));
+            }
+
+            damageByVictim.Remove(victimKey);
+            damageVictimLife.Remove(victimKey);
+        }
+
+        private static bool IsParticipantAlive(MatchViewSnapshot snap, EntityId entity, LifeId life)
+        {
+            for (int i = 0; i < snap.Participants.Count; i++)
+            {
+                var p = snap.Participants[i];
+                if (p.EntityId.Equals(entity) && p.LifeId.Value == life.Value) return p.Alive;
+            }
+            return false;
+        }
+
+        private static bool IsEnemyOf(MatchViewSnapshot snap, EntityId a, EntityId b)
+        {
+            byte teamA = 0, teamB = 0;
+            for (int i = 0; i < snap.Participants.Count; i++)
+            {
+                var p = snap.Participants[i];
+                if (p.EntityId.Equals(a)) teamA = p.Team;
+                if (p.EntityId.Equals(b)) teamB = p.Team;
+            }
+            return teamA != 0 && teamB != 0 && teamA != teamB;
+        }
+
+        private static string ResolveDisplayName(EntityId entity, MatchViewSnapshot snap)
+        {
+            for (int i = 0; i < snap.Participants.Count; i++)
+            {
+                var p = snap.Participants[i];
+                if (p.EntityId.Equals(entity)) return p.IsHuman ? "YOU" : p.DisplayName;
+            }
+            return "Operator";
+        }
+
         private void ReleaseRuntime()
         {
             rescueSlotLastUsed.Clear();
@@ -601,6 +735,9 @@ namespace Shooter.Game.Session
             lifecycle = null;
             bots = null;
             deathsThisTick.Clear();
+            damageByVictim.Clear();
+            damageVictimLife.Clear();
+            localScoreAwards.Clear();
             querySamplesAtMatchStart = 0;
         }
 

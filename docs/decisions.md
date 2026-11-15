@@ -654,3 +654,18 @@ Decision:
 - Brandbook / visual brief language becomes “friendly + temporary gunfire reveal” rather than absolute friendly-only.
 
 Validation: pure `CombatHudVisual` filter/TTL/ring tests, Simulation suite. Interactive player review remains Pending. Rollback reverts the presentation ring and restores the prior Line chevron / friendly-only wording.
+
+## ADR-059 — Accepted: personal scoreboard Score and combat score badges
+
+Date 2026-11-15; owner-directed personal points for scoreboard/results and Battlefield-style combat HUD feedback. Sole integrator owns the bounded Game-v1 / session / presentation change. No win-condition change, art import or acceptance waiver.
+
+Context: Game-v1 `ParticipantState` carried only kills/deaths. Team win remains 150 enemy kills or 15:00. Owner wants personal Score (kill = 100; non-killer damage contribution = HP dealt that life) on Tab/results, plus procedural kill ribbon / center score feed / ammo +N badges. Assists were previously listed as out of scope for TDM progression; this ADR adds scoreboard Score only, not streaks or progression systems.
+
+Decision:
+- Add additive `uint Score` on frozen Game-v1 `ParticipantState` (constructor + snapshot/results rows). `Team1Kills` / `Team2Kills` / `ScoreLimit` / finish ordering unchanged.
+- Kill credit: valid enemy killer still gets `Kills++` and one team point; that killer also gets **exactly** `Score += 100` (`GameContractVersion.PersonalKillPoints`). Killer does not also receive their damage sum.
+- Assist: session accumulates `DamageApplied` amounts per victim life → attacker; on `Death`, every damager except the credited killer receives `Score +=` their accumulated HP. Environmental/no-killer deaths award damager HP points only (no 100). Friendly damage remains 0.
+- C0-v1 combat payloads unchanged. Presentation badges consume an internal session local-award ring (not a new Game-v1 DTO). Ribbon/feed are procedural IMGUI (no sprites).
+- Scoreboard/results sort: Score desc → Kills desc → Deaths asc → ParticipantId asc.
+
+Validation: `game-contract-lock.json` refreeze; `Tools/Test-Game.ps1`; Simulation HUD/scoreboard tests; docs/manifest. Interactive badge readability remains Pending. Rollback restores the prior Game-v1 lock/fixture pair and prior K/D-only UI.

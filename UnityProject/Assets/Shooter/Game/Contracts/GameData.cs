@@ -150,6 +150,8 @@ namespace Shooter.Game.Contracts
         public bool Alive { get; }
         public uint Kills { get; }
         public uint Deaths { get; }
+        /// <summary>Personal scoreboard points (ADR-059). Kill = PersonalKillPoints; assist = HP dealt. Not team win score.</summary>
+        public uint Score { get; }
         public uint RespawnDueActiveTick { get; }
 
         public ParticipantState(
@@ -162,7 +164,8 @@ namespace Shooter.Game.Contracts
             bool alive,
             uint kills,
             uint deaths,
-            uint respawnDueActiveTick)
+            uint respawnDueActiveTick,
+            uint score = 0)
         {
             GameRequire.That(team == 1 || team == 2, nameof(team));
             ParticipantId = participantId;
@@ -174,6 +177,7 @@ namespace Shooter.Game.Contracts
             Alive = alive;
             Kills = kills;
             Deaths = deaths;
+            Score = score;
             RespawnDueActiveTick = respawnDueActiveTick;
         }
     }

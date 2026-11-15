@@ -180,6 +180,34 @@ namespace Shooter.Presentation.Session
             DrawDiagonal(centerX + gap, centerY + gap + arm, centerX + gap + arm, centerY + gap, ink, thick);
         }
 
+        /// <summary>
+        /// Procedural kill ribbon (ADR-059): striped banner + center disk. No imported sprites.
+        /// </summary>
+        public static void ScoreRibbon(Rect banner, float alpha)
+        {
+            if (alpha <= 0.02f || Event.current.type != EventType.Repaint) return;
+            Fill(banner, new Color(0.04f, 0.055f, 0.06f, 0.72f * alpha));
+            // Alternating amber/green stripes (Battlefield-style composition reference only).
+            float stripe = Mathf.Max(6f, banner.width / 18f);
+            for (int i = 0; i < 18; i++)
+            {
+                float x = banner.x + i * stripe;
+                if (x >= banner.xMax) break;
+                float w = Mathf.Min(stripe * 0.55f, banner.xMax - x);
+                Color c = (i % 2 == 0)
+                    ? new Color(Accent.r, Accent.g, Accent.b, 0.55f * alpha)
+                    : new Color(0.25f, 0.55f, 0.32f, 0.45f * alpha);
+                Fill(new Rect(x, banner.y + 4, w, banner.height - 8), c);
+            }
+            float disk = Mathf.Min(banner.height - 6f, 28f);
+            float cx = banner.x + banner.width * 0.5f;
+            float cy = banner.y + banner.height * 0.5f;
+            Fill(new Rect(cx - disk * 0.5f, cy - disk * 0.5f, disk, disk), new Color(0.92f, 0.9f, 0.82f, 0.95f * alpha));
+            Fill(new Rect(cx - disk * 0.28f, cy - disk * 0.28f, disk * 0.56f, disk * 0.56f), new Color(0.55f, 0.42f, 0.18f, 0.9f * alpha));
+            AccentBar(new Rect(banner.x, banner.y, banner.width, 2), new Color(Accent.r, Accent.g, Accent.b, alpha));
+            AccentBar(new Rect(banner.x, banner.yMax - 2, banner.width, 2), new Color(Accent.r, Accent.g, Accent.b, 0.7f * alpha));
+        }
+
         /// <summary>Brief full-frame coral flash when damage is taken (analytic fill).</summary>
         public static void DamagePlateFlash(float width, float height, float strength)
         {

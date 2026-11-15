@@ -12,6 +12,7 @@ namespace Shooter.Presentation.Scoreboard
         public string DisplayName { get; }
         public byte Team { get; }
         public bool IsHuman { get; }
+        public uint Score { get; }
         public uint Kills { get; }
         public uint Deaths { get; }
         public bool IsLocal { get; }
@@ -22,6 +23,7 @@ namespace Shooter.Presentation.Scoreboard
             string displayName,
             byte team,
             bool isHuman,
+            uint score,
             uint kills,
             uint deaths,
             bool isLocal,
@@ -31,6 +33,7 @@ namespace Shooter.Presentation.Scoreboard
             DisplayName = displayName ?? "";
             Team = team;
             IsHuman = isHuman;
+            Score = score;
             Kills = kills;
             Deaths = deaths;
             IsLocal = isLocal;
@@ -78,6 +81,7 @@ namespace Shooter.Presentation.Scoreboard
                     p.DisplayName,
                     p.Team,
                     p.IsHuman,
+                    p.Score,
                     p.Kills,
                     p.Deaths,
                     p.EntityId.Equals(localHuman) || p.IsHuman,
@@ -102,6 +106,7 @@ namespace Shooter.Presentation.Scoreboard
                     p.DisplayName,
                     p.Team,
                     p.IsHuman,
+                    p.Score,
                     p.Kills,
                     p.Deaths,
                     p.IsHuman,
@@ -121,7 +126,9 @@ namespace Shooter.Presentation.Scoreboard
 
         private static int CompareRows(ScoreboardRow a, ScoreboardRow b)
         {
-            int cmp = b.Kills.CompareTo(a.Kills);
+            int cmp = b.Score.CompareTo(a.Score);
+            if (cmp != 0) return cmp;
+            cmp = b.Kills.CompareTo(a.Kills);
             if (cmp != 0) return cmp;
             cmp = a.Deaths.CompareTo(b.Deaths);
             if (cmp != 0) return cmp;

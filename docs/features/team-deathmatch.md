@@ -10,7 +10,7 @@ The owner confirmed on 2026-11-14 that this first version is local play with bot
 
 Select map → Team Deathmatch → 5v5 or 6v6 → load → play → final results → Play again or Main menu. Default 5v5: Team 1 is one human plus four bots, Team 2 five bots (10 actors / 9 bots). 6v6: one human plus five allied bots versus six bots (12 actors / 11 bots). Team membership stays fixed; no lobby, mid-match human joins, team switching, difficulty selector or remote multiplayer in this release. Bots have stable readable names and team markers independent of color.
 
-Both human and bots use the same motor, four-slot loadout (rifle/pistol/knife/grenade), health, ammo, hitscan/melee/blast and friendly-body obstruction rules in [gameplay baseline](../gameplay-baseline.md). Friendly damage is zero. One grenade is refilled on respawn with the rest of the life kit (ADR-057). No kill streaks, assists, pickups or progression. Mode-specific respawn refills are the explicit exception to Compound Clear's no-refill policy.
+Both human and bots use the same motor, four-slot loadout (rifle/pistol/knife/grenade), health, ammo, hitscan/melee/blast and friendly-body obstruction rules in [gameplay baseline](../gameplay-baseline.md). Friendly damage is zero. One grenade is refilled on respawn with the rest of the life kit (ADR-057). No kill streaks, pickups or progression systems. Personal scoreboard Score includes kill and damage-assist points ([ADR-059](../decisions.md#adr-059--accepted-personal-scoreboard-score-and-combat-score-badges)); that does not change team win totals. Mode-specific respawn refills are the explicit exception to Compound Clear's no-refill policy.
 
 ## Exact match rules
 
@@ -19,7 +19,9 @@ Both human and bots use the same motor, four-slot loadout (rifle/pistol/knife/gr
 | Start | Loading completes only with real map queries/nav, verified visuals and complete roster; the match enters Playing with activeTicksElapsed=0 after Ready, then runs the 5 s pre-match countdown below before the clock starts |
 | Pre-match | 300 ticks (5 s at 60 Hz) of frozen play in phase Playing: no human movement/fire/look, no bot planning, no respawns, no end-of-tick evaluation. Clock and timeout stay at 0 until it ends |
 | Limits | 150 enemy kills or 54000 active simulation ticks at 60 Hz (15:00); HUD countdown uses ceiling of remainingTicks/60 |
-| Kill credit | Each authoritative alive→dead transition increments victim deaths once; valid enemy killer gets one kill and its team one point, even if killer also dies that tick; environmental/self death gives no team point |
+| Kill credit | Each authoritative alive→dead transition increments victim deaths once; valid enemy killer gets one kill, its team one point, and personal Score += 100, even if killer also dies that tick; environmental/self death gives no team point |
+| Personal Score | Scoreboard/results only (does not change 150 team-kill win). Killer = exactly 100. Non-killer damagers of that life get Score += HP they dealt. Env death: damagers get HP points, no 100. Killer does not also receive their damage sum |
+| Score badges | Local human HUD: procedural kill ribbon + center feed (`ENEMY KILLED` / `ASSIST`) + ammo +N; authority awards only; no imported ribbon art |
 | Duplicate/stale events | Session+EventId and victim life dedupe; old life or previous session events cannot change score, deaths or a respawned actor |
 | End ordering | Resolve the entire tick's combat/death batch before evaluating limits. If either score ≥150, reason ScoreLimit; otherwise at 54000 reason TimeLimit. Higher final score wins; equal scores draw; no overtime. ScoreLimit takes precedence if both limits occur that tick |
 | Simultaneous limit | Do not stop midway through shots or clamp points at 150. For example 149:149 with a trade ends 150:150 Draw; 149:149 with two valid kills by Team 1 ends 151:149 Team 1 |
@@ -62,6 +64,6 @@ Bots patrol or move toward contested destinations when no enemy is known; follow
 
 ## HUD and results data
 
-In play show Team 1/Team 2 scores, 150 target, time remaining, team marker, health/ammo/action and respawn state. Hold Tab for live team tables; use remapped binding if changed. At finish show Victory/Defeat/Draw from the human team's perspective, finish reason, map, team size, elapsed time and final team scores. Each team's table lists name, Human/Bot, kills and deaths; highlight local player. Sort by kills descending, deaths ascending, ParticipantId ascending. Results expose Play again (same map/mode/team size; fresh session) and Main menu. Results survive unloading the map; no continuing background match.
+In play show Team 1/Team 2 scores, 150 target, time remaining, team marker, health/ammo/action and respawn state. Hold Tab for live team tables; use remapped binding if changed. At finish show Victory/Defeat/Draw from the human team's perspective, finish reason, map, team size, elapsed time and final team scores. Each team's table lists name, Human/Bot, Score, kills and deaths; highlight local player. Sort by Score descending, kills descending, deaths ascending, ParticipantId ascending. Results expose Play again (same map/mode/team size; fresh session) and Main menu. Results survive unloading the map; no continuing background match.
 
 Acceptance IDs TDM01–TDM08 and real-player scenarios are in [M9 validation](../milestones/m9-team-deathmatch/validation-acceptance.md). Exact boundary tests use short test-only rule fixtures; release UI always uses 150/15 minutes. Test hooks cannot silently alter production rules or benchmark workloads.

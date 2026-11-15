@@ -75,6 +75,8 @@ namespace Shooter.Game.Contracts
     {
         void Begin(SessionRequest request, IReadOnlyList<ParticipantState> roster, MapGameplayDefinition map);
         void ProcessDeath(DeathResolution death);
+        /// <summary>ADR-059 personal assist / damage contribution. Does not change kills or team totals.</summary>
+        void AddScore(EntityId entity, uint points);
         void EvaluateEndOfTick(uint completedSimulationTick, bool advanceActiveClock);
         void ScheduleDueRespawns(uint activeTicksElapsed, IActorLifecycle lifecycle, IMapRuntime map);
         MatchViewSnapshot AcquireSnapshot(ulong authoritySessionId, uint completedSimulationTick);

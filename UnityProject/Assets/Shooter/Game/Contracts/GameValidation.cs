@@ -12,6 +12,8 @@ namespace Shooter.Game.Contracts
         public const uint SettingsSchemaMinSupported = 1;
         public const int SimulationHz = 60;
         public const int ScoreLimit = 150;
+        /// <summary>Personal scoreboard points awarded to a valid enemy killer (ADR-059). Does not change team kill totals.</summary>
+        public const int PersonalKillPoints = 100;
         public const int TimeLimitActiveTicks = 54000;
         public const int MaxParticipants = 12;
         public const int MaxMaps = 16;

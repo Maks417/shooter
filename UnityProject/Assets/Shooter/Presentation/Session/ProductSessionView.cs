@@ -58,6 +58,14 @@ namespace Shooter.Presentation.Session
         private int deathIdCursor;
         private readonly string[] killFeed = new string[4];
         private readonly float[] killFeedUntil = new float[4];
+        private readonly string[] scoreFeedLabels = new string[ScoreBadgeVisual.MaxFeedRows];
+        private readonly uint[] scoreFeedPoints = new uint[ScoreBadgeVisual.MaxFeedRows];
+        private readonly float[] scoreFeedUntil = new float[ScoreBadgeVisual.MaxFeedRows];
+        private readonly List<LocalScoreAward> scoreAwardDrain = new List<LocalScoreAward>(8);
+        private float scoreRibbonUntil;
+        private uint scoreRibbonPoints;
+        private float ammoScoreUntil;
+        private uint ammoScorePoints;
         private int lastSeenHealth = 100;
         private float damagePulseUntil;
         private float hitMarkerUntil;
@@ -272,6 +280,10 @@ namespace Shooter.Presentation.Session
             hudBoxes = System.Array.Empty<CollisionBox>();
             System.Array.Clear(recentDeathIds, 0, recentDeathIds.Length);
             System.Array.Clear(killFeedUntil, 0, killFeedUntil.Length);
+            System.Array.Clear(scoreFeedUntil, 0, scoreFeedUntil.Length);
+            scoreRibbonUntil = 0f;
+            ammoScoreUntil = 0f;
+            scoreAwardDrain.Clear();
             cameraBob.Reset();
             hitMarkerUntil = 0f;
             damageFlashUntil = 0f;
@@ -397,6 +409,7 @@ namespace Shooter.Presentation.Session
                 combatLease = session.TryLeaseCombatEvents();
                 if (combatLease != null) combatEvents = combatLease.Events;
                 if (shellOwned && combatEvents != null) ObserveEliminations(combatEvents);
+                if (shellOwned) ObserveLocalScoreAwards();
 
                 if (actors != null)
                 {
@@ -790,8 +803,11 @@ namespace Shooter.Presentation.Session
                 DrawDamageIndicators(human);
                 DrawTacticalMap(a, human, snap);
                 DrawAmmoPanel(a, human, snap);
+                DrawAmmoScorePopup(a);
                 DrawCompass(a, human.AimYaw);
                 DrawKillFeed(a);
+                DrawScoreFeed(a);
+                DrawScoreRibbon(a);
                 float cx = combatUi.Width * .5f, cy = combatUi.Height * .5f;
                 // Analytic center reticle with a small center gap. ADS uses the weapon sight instead.
                 if (!input.AimHeld)
@@ -1034,6 +1050,99 @@ namespace Shooter.Presentation.Session
             float strength = CombatHudVisual.HealthVignette(health, damagePulseUntil > Time.unscaledTime, reducedFlash);
             if (strength <= 0.01f) return;
             TacticalUi.EdgeVignette(combatUi.Width, combatUi.Height, strength, TacticalUi.Enemy);
+        }
+
+        private void ObserveLocalScoreAwards()
+        {
+            if (session == null) return;
+            scoreAwardDrain.Clear();
+            session.DrainLocalScoreAwards(scoreAwardDrain);
+            float now = Time.unscaledTime;
+            for (int i = 0; i < scoreAwardDrain.Count; i++)
+            {
+                var award = scoreAwardDrain[i];
+                if (award.Points == 0) continue;
+                bool isKill = award.Kind == LocalScoreAwardKind.Kill;
+                PushScoreFeed(ScoreBadgeVisual.LabelFor(isKill), award.Points, now);
+                ammoScorePoints = award.Points;
+                ammoScoreUntil = now + ScoreBadgeVisual.AmmoPopupHoldSeconds;
+                if (isKill)
+                {
+                    scoreRibbonPoints = award.Points;
+                    scoreRibbonUntil = now + ScoreBadgeVisual.RibbonHoldDuration(reducedFlash);
+                }
+            }
+        }
+
+        private void PushScoreFeed(string label, uint points, float now)
+        {
+            for (int j = scoreFeedLabels.Length - 1; j > 0; j--)
+            {
+                scoreFeedLabels[j] = scoreFeedLabels[j - 1];
+                scoreFeedPoints[j] = scoreFeedPoints[j - 1];
+                scoreFeedUntil[j] = scoreFeedUntil[j - 1];
+            }
+            scoreFeedLabels[0] = label;
+            scoreFeedPoints[0] = points;
+            scoreFeedUntil[0] = now + ScoreBadgeVisual.FeedHoldSeconds;
+        }
+
+        private void DrawScoreRibbon(Rect safe)
+        {
+            float remaining = scoreRibbonUntil - Time.unscaledTime;
+            float alpha = ScoreBadgeVisual.RibbonAlpha(remaining, reducedFlash);
+            if (alpha <= 0.02f) return;
+            float w = 220f, h = 36f;
+            float x = safe.x + (safe.width - w) * 0.5f;
+            float y = safe.y + 78f;
+            var banner = new Rect(x, y, w, h);
+            TacticalUi.ScoreRibbon(banner, alpha);
+            Color ink = TacticalUi.Text;
+            ink.a = alpha;
+            Color pts = TacticalUi.Accent;
+            pts.a = alpha;
+            combatUi.Label(new Rect(x, y - 16, w, 16), ScoreBadgeVisual.KillLabel, 12, ink, TextAnchor.MiddleCenter);
+            combatUi.Label(new Rect(x, y + h + 2, w, 20), ScoreBadgeVisual.FormatPoints(scoreRibbonPoints), 18, pts, TextAnchor.MiddleCenter);
+        }
+
+        private void DrawScoreFeed(Rect safe)
+        {
+            float now = Time.unscaledTime;
+            const float rowH = 16f;
+            float baseY = safe.y + safe.height * 0.52f;
+            float w = 200f;
+            float x = safe.x + (safe.width - w) * 0.5f;
+            for (int i = 0; i < scoreFeedLabels.Length; i++)
+            {
+                float remaining = scoreFeedUntil[i] - now;
+                float alpha = ScoreBadgeVisual.FeedAlpha(remaining);
+                if (alpha <= 0.02f) continue;
+                string label = scoreFeedLabels[i];
+                if (string.IsNullOrEmpty(label)) continue;
+                Rect r = new Rect(x, baseY + i * (rowH + 2f), w, rowH);
+                Color plate = TacticalUi.HudPlate;
+                plate.a *= alpha * 0.75f;
+                TacticalUi.Fill(r, plate);
+                Color ink = TacticalUi.Text;
+                ink.a = alpha;
+                Color pts = TacticalUi.Accent;
+                pts.a = alpha;
+                combatUi.Label(new Rect(r.x + 8, r.y, r.width - 56, r.height), label, 11, ink, TextAnchor.MiddleLeft);
+                combatUi.Label(new Rect(r.xMax - 52, r.y, 44, r.height), ScoreBadgeVisual.FormatPoints(scoreFeedPoints[i]), 12, pts, TextAnchor.MiddleRight);
+            }
+        }
+
+        private void DrawAmmoScorePopup(Rect safe)
+        {
+            float remaining = ammoScoreUntil - Time.unscaledTime;
+            float alpha = ScoreBadgeVisual.AmmoPopupAlpha(remaining);
+            if (alpha <= 0.02f) return;
+            const float w = 152f, h = 62f;
+            float x = safe.xMax - w;
+            float y = safe.yMax - h - 22f;
+            Color ink = TacticalUi.Accent;
+            ink.a = alpha;
+            combatUi.Label(new Rect(x, y, w, 18), ScoreBadgeVisual.FormatPoints(ammoScorePoints), 16, ink, TextAnchor.MiddleRight);
         }
 
         private void ObserveEliminations(IReadOnlyList<CombatEvent> events)

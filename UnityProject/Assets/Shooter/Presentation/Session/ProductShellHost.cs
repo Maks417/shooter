@@ -911,7 +911,8 @@ namespace Shooter.Presentation.Session
                 ui.Label(new Rect(x + w - 74, y + 4, 62, 30), kills.ToString(), 24, TacticalUi.Text, TextAnchor.UpperRight);
                 float rowY = y + 40;
                 TacticalUi.Fill(new Rect(x + 10, rowY + 16, w - 20, 1), TacticalUi.Raised);
-                ui.Label(new Rect(x + 12, rowY, w - 112, 16), "OPERATOR", 12, TacticalUi.Muted);
+                ui.Label(new Rect(x + 12, rowY, w - 148, 16), "OPERATOR", 12, TacticalUi.Muted);
+                ui.Label(new Rect(x + w - 140, rowY, 44, 16), "SCORE", 12, TacticalUi.Muted, TextAnchor.UpperRight);
                 ui.Label(new Rect(x + w - 90, rowY, 32, 16), "K", 12, TacticalUi.Muted, TextAnchor.UpperRight);
                 ui.Label(new Rect(x + w - 44, rowY, 32, 16), "D", 12, TacticalUi.Muted, TextAnchor.UpperRight);
                 int rowIndex = 0;
@@ -924,7 +925,8 @@ namespace Shooter.Presentation.Session
                     TacticalUi.Fill(new Rect(x + 2, ry, w - 4, rh - 3), row.IsLocal ? TacticalUi.Raised : new Color(.04f, .055f, .06f, .55f));
                     if (row.IsLocal) TacticalUi.Fill(new Rect(x + 2, ry, 3, rh - 3), TacticalUi.Accent);
                     string name = (row.IsLocal ? "YOU / " : row.IsHuman ? "OP / " : "BOT / ") + row.DisplayName;
-                    ui.Label(new Rect(x + 14, ry, w - 124, rh - 3), name, 16, TacticalUi.Text, TextAnchor.MiddleLeft);
+                    ui.Label(new Rect(x + 14, ry, w - 160, rh - 3), name, 16, TacticalUi.Text, TextAnchor.MiddleLeft);
+                    ui.Label(new Rect(x + w - 140, ry, 44, rh - 3), row.Score.ToString(), 16, TacticalUi.Accent, TextAnchor.MiddleRight);
                     ui.Label(new Rect(x + w - 90, ry, 32, rh - 3), row.Kills.ToString(), 16, TacticalUi.Text, TextAnchor.MiddleRight);
                     ui.Label(new Rect(x + w - 44, ry, 32, rh - 3), row.Deaths.ToString(), 16, TacticalUi.Muted, TextAnchor.MiddleRight);
                     rowIndex++;

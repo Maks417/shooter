@@ -23,6 +23,7 @@ namespace Shooter.Simulation.TeamDeathmatch
             public bool Alive;
             public uint Kills;
             public uint Deaths;
+            public uint Score;
             public uint RespawnDueActiveTick;
             /// <summary>Fixed deadline from first failed spawn attempt; never moved by 30-tick retries.</summary>
             public uint SpawnFailureDeadlineActiveTick;
@@ -92,6 +93,7 @@ namespace Shooter.Simulation.TeamDeathmatch
                     Alive = p.Alive,
                     Kills = p.Kills,
                     Deaths = p.Deaths,
+                    Score = p.Score,
                     RespawnDueActiveTick = p.RespawnDueActiveTick,
                     SpawnFailureDeadlineActiveTick = 0
                 };
@@ -132,10 +134,19 @@ namespace Shooter.Simulation.TeamDeathmatch
                 if (killer.Team != victim.Team)
                 {
                     killer.Kills++;
+                    killer.Score = unchecked(killer.Score + (uint)GameContractVersion.PersonalKillPoints);
                     if (killer.Team == 1) team1Kills++;
                     else team2Kills++;
                 }
             }
+        }
+
+        /// <summary>ADR-059 assist / environmental damage contribution. Does not change kills or team totals.</summary>
+        public void AddScore(EntityId entity, uint points)
+        {
+            if (phase != GameMatchPhase.Playing || points == 0) return;
+            if (!entityToRow.TryGetValue(entity.Value, out int index)) return;
+            rows[index].Score = unchecked(rows[index].Score + points);
         }
 
         public void EvaluateEndOfTick(uint completedSimulationTick, bool advanceActiveClock)
@@ -252,7 +263,7 @@ namespace Shooter.Simulation.TeamDeathmatch
             for (int i = 0; i < rows.Count; i++)
             {
                 var r = rows[i];
-                list[i] = new ParticipantState(r.ParticipantId, r.DisplayName, r.Team, r.IsHuman, r.EntityId, r.LifeId, r.Alive, r.Kills, r.Deaths, r.RespawnDueActiveTick);
+                list[i] = new ParticipantState(r.ParticipantId, r.DisplayName, r.Team, r.IsHuman, r.EntityId, r.LifeId, r.Alive, r.Kills, r.Deaths, r.RespawnDueActiveTick, r.Score);
             }
             uint pending = 0;
             for (int i = 0; i < rows.Count; i++) if (!rows[i].Alive && rows[i].RespawnDueActiveTick != 0) pending++;
@@ -278,7 +289,7 @@ namespace Shooter.Simulation.TeamDeathmatch
             for (int i = 0; i < rows.Count; i++)
             {
                 var r = rows[i];
-                sorted.Add(new ParticipantState(r.ParticipantId, r.DisplayName, r.Team, r.IsHuman, r.EntityId, r.LifeId, r.Alive, r.Kills, r.Deaths, r.RespawnDueActiveTick));
+                sorted.Add(new ParticipantState(r.ParticipantId, r.DisplayName, r.Team, r.IsHuman, r.EntityId, r.LifeId, r.Alive, r.Kills, r.Deaths, r.RespawnDueActiveTick, r.Score));
             }
             sorted.Sort(CompareRows);
             return new MatchResults(
@@ -300,7 +311,9 @@ namespace Shooter.Simulation.TeamDeathmatch
 
         private static int CompareRows(ParticipantState a, ParticipantState b)
         {
-            int cmp = b.Kills.CompareTo(a.Kills);
+            int cmp = b.Score.CompareTo(a.Score);
+            if (cmp != 0) return cmp;
+            cmp = b.Kills.CompareTo(a.Kills);
             if (cmp != 0) return cmp;
             cmp = a.Deaths.CompareTo(b.Deaths);
             if (cmp != 0) return cmp;
