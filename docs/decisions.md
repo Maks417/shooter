@@ -766,3 +766,11 @@ Decision:
 - **Copy.** Player-facing shell/HUD strings move toward short military FPS language via `InsertionScreenCopy` / `ShellUiCopy`; diagnostics stay out of chrome.
 
 Validation: provenance PASS with the three TTFs; Generation font-closure assertion; Simulation shell copy tests; docs/manifest. Named 720p readability review remains Pending. Rollback restores engine-only IMGUI font + `engine-allowlist-v1`.
+
+## ADR-068 — Accepted: procedural arsenal visual profiles and finishes
+
+Date 2026-11-15; owner assigned visual improvement of every weapon with Battlefield V as a quality reference. Sole integrator owns the bounded weapon geometry, presentation materials, packaging recipes, migration, tests and evidence. No imported meshes/textures, combat changes, soldier clearance search or acceptance waiver.
+
+Decision: geometry.weapon advances 1.0.2 → 1.0.3. Retain old fixtures and reject old recipes rather than regenerate changed bytes under old identities. Rifle/pistol use closed numeric section lofts, a slotted rifle cage, separate fasteners/recesses, muzzle collar and a faceted pistol slide. Existing detachable magazine/cycle semantics remain. Knife gains a ground diamond blade and tapered tip; grenade gains an upright ovoid shell, bent spoon and closed pull ring. Map visual payloads remain content-hashed under the existing map package format; gameplay map roots are unaffected. Weapon material slots are 0 coated metal, 1 polymer, 2 machined steel, 3 dark recess/rubber, 4 olive enamel. Three additional 128² procedural albedo/normal/mask triplets supply machined steel, recess/rubber and enamel through the existing map visual closure, alongside coated metal and polymer. All product finishes retain spatial roughness/metallic masks; no runtime asset generation. All six body/magazine/cycle renderers consume the palette. Gallery rendering must also provide all five slots.
+
+Sockets, collision dimensions, seeds, C0/Game-v1/SGAF and four LOD ceilings stay fixed. Validate topology, winding, tangent frames, deterministic bytes, migration, detached-part totals and package round trips. Named first-person/world visual review and reference performance remain Pending; this is an incremental procedural improvement, not a claim of Battlefield V equivalence. Rollback requires restoring 1.0.2 source/recipes, old palette and matching packages together.

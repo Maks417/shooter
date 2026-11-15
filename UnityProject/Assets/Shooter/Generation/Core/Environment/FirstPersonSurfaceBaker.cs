@@ -9,11 +9,11 @@ namespace Shooter.Generation.Environment
         public const int Resolution = 128;
         public const float TileMeters = .1f;
         private static readonly Lazy<MaterialBake[]> bakes = new Lazy<MaterialBake[]>(
-            () => new[] { Build(0), Build(1), Build(2), Build(3) }, true);
+            () => new[] { Build(0), Build(1), Build(2), Build(3), Build(4), Build(5), Build(6) }, true);
 
         public static MaterialBake Bake(int family)
         {
-            if (family < 0 || family > 3) throw new ArgumentOutOfRangeException(nameof(family));
+            if (family < 0 || family > 6) throw new ArgumentOutOfRangeException(nameof(family));
             return bakes.Value[family];
         }
 
@@ -24,7 +24,7 @@ namespace Shooter.Generation.Environment
             var normal = new byte[albedo.Length];
             var mask = new byte[albedo.Length];
             var heights = new double[n * n];
-            int[][] colors = { new[] { 61, 67, 71 }, new[] { 31, 34, 30 }, new[] { 92, 108, 85 }, new[] { 70, 63, 48 } };
+            int[][] colors = { new[] { 61, 67, 71 }, new[] { 31, 34, 30 }, new[] { 92, 108, 85 }, new[] { 70, 63, 48 }, new[] { 108, 115, 122 }, new[] { 18, 23, 28 }, new[] { 51, 66, 28 } };
             for (int y = 0; y < n; y++)
                 for (int x = 0; x < n; x++)
                 {
@@ -53,6 +53,24 @@ namespace Shooter.Generation.Environment
                         height = .000075 * weave + .000012 * grain;
                         roughness = .91 + .035 * weave;
                     }
+                    else if (family == 4)
+                    {
+                        variation = .97 + .025 * grain + .018 * brush;
+                        height = .000008 * brush + .000003 * grain;
+                        roughness = .31 + .045 * grain + .025 * brush;
+                    }
+                    else if (family == 5)
+                    {
+                        variation = .94 + .12 * grain;
+                        height = .000012 * grain;
+                        roughness = .92 + .025 * grain;
+                    }
+                    else if (family == 6)
+                    {
+                        variation = .97 + .045 * grain;
+                        height = .000021 * grain;
+                        roughness = .64 + .055 * grain;
+                    }
                     else
                     {
                         double crease = Math.Pow(.5 + .5 * Math.Sin(2 * Math.PI * (3 * u + 2 * v)), 12);
@@ -64,7 +82,7 @@ namespace Shooter.Generation.Environment
                     int pixel = (y * n + x) * 4;
                     for (int c = 0; c < 3; c++) albedo[pixel + c] = Byte(colors[family][c] / 255d * variation);
                     albedo[pixel + 3] = 255;
-                    mask[pixel] = family == 0 ? (byte)190 : (byte)0;
+                    mask[pixel] = family == 0 ? (byte)190 : family == 4 ? (byte)240 : family == 6 ? (byte)30 : (byte)0;
                     mask[pixel + 1] = Byte(.96 - .03 * Math.Abs(grain));
                     mask[pixel + 2] = Byte(roughness);
                     mask[pixel + 3] = 255;

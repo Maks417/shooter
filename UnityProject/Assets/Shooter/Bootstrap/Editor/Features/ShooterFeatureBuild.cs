@@ -103,6 +103,81 @@ public static class ShooterFeatureBuild
         }
         finally { UnityEngine.Object.DestroyImmediate(gallery.gameObject); }
     });
+    // Offline source visual diagnostic with the same URP material adapter as the product.
+    // Captures are not first-person gameplay, packaged-player or performance acceptance.
+    public static void CaptureArsenal() => Guard(() =>
+    {
+        ShooterBuild.CheckToolchain();
+        string output = Path.GetFullPath(ShooterBuild.Argument("-shooterCaptureRoot"));
+        RequireArtifacts(output); Directory.CreateDirectory(output);
+        EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+        QualitySettings.SetQualityLevel(0, true);
+        var owned = new List<UnityEngine.Object>();
+        try
+        {
+            var shader = Shader.Find("Universal Render Pipeline/Lit");
+            if (shader == null) throw new InvalidOperationException("Required URP Lit unavailable.");
+            Material Surface(int family)
+            {
+                var bake = Shooter.Generation.Environment.FirstPersonSurfaceBaker.Bake(family);
+                return Shooter.Presentation.Rendering.ProductSurfaceMaterial.Create(shader, bake.Albedo, bake.Normal, bake.Mask,
+                    "Arsenal source finish " + family, 10, value => owned.Add(value));
+            }
+            var palette = Shooter.Presentation.Rendering.ProductSurfaceMaterial.WeaponFinishes(Surface(0), Surface(1), Surface(4), Surface(5), Surface(6));
+            var cameraObject = new GameObject("Arsenal capture camera"); owned.Add(cameraObject);
+            var camera = cameraObject.AddComponent<Camera>();
+            camera.clearFlags = CameraClearFlags.SolidColor; camera.backgroundColor = new Color(.075f, .09f, .11f);
+            camera.nearClipPlane = .005f; camera.farClipPlane = 10; camera.fieldOfView = 32;
+            var lightObject = new GameObject("Arsenal key"); owned.Add(lightObject);
+            var key = lightObject.AddComponent<Light>(); key.type = LightType.Directional; key.intensity = 2.0f;
+            key.transform.rotation = Quaternion.Euler(35, -35, 0);
+            RenderSettings.ambientMode = AmbientMode.Flat; RenderSettings.ambientLight = new Color(.32f, .36f, .42f);
+            var paths = new List<string>();
+            foreach (string kind in new[] { "rifle", "pistol", "knife", "grenade" })
+            {
+                var root = new GameObject(kind); owned.Add(root);
+                var parts = new List<MeshData>();
+                if (kind == "rifle" || kind == "pistol")
+                {
+                    var build = WeaponGeometry.Build(WeaponRecipe.Parse(Source(kind)));
+                    parts.Add(build.Lods[0]); parts.Add(build.Magazine); parts.Add(build.CyclePart);
+                }
+                else parts.Add(kind == "knife" ? LoadoutPropGeometry.BuildKnife(0) : LoadoutPropGeometry.BuildGrenade(0));
+                foreach (var data in parts)
+                {
+                    var mesh = new Mesh(); owned.Add(mesh);
+                    mesh.vertices = data.Positions.Select(v => new Vector3(v.X, v.Y, v.Z)).ToArray();
+                    mesh.normals = data.Normals.Select(v => new Vector3(v.X, v.Y, v.Z)).ToArray();
+                    mesh.tangents = data.Tangents.Select(v => new Vector4(v.X, v.Y, v.Z, v.W)).ToArray();
+                    mesh.uv = data.Uv.Select(v => new Vector2(v.X, v.Y)).ToArray();
+                    mesh.subMeshCount = data.Submeshes.Count;
+                    for (int i = 0; i < data.Submeshes.Count; i++)
+                    {
+                        var sub = data.Submeshes[i];
+                        mesh.SetIndices(data.Indices.Skip((int)sub.FirstIndex).Take((int)sub.IndexCount).Select(v => (int)v).ToArray(), MeshTopology.Triangles, i);
+                    }
+                    mesh.RecalculateBounds();
+                    var child = new GameObject("Source part"); child.transform.SetParent(root.transform, false);
+                    child.AddComponent<MeshFilter>().sharedMesh = mesh;
+                    child.AddComponent<MeshRenderer>().sharedMaterials = data.Submeshes.Select(sub => palette[sub.MaterialSlot]).ToArray();
+                }
+                var renderers = root.GetComponentsInChildren<MeshRenderer>(); var bounds = renderers[0].bounds;
+                foreach (var renderer in renderers) bounds.Encapsulate(renderer.bounds);
+                float distance = Mathf.Max(bounds.size.x, Mathf.Max(bounds.size.y, bounds.size.z)) * 2.2f;
+                foreach (string angle in new[] { "side", "three-quarter" })
+                {
+                    camera.transform.position = bounds.center + (angle == "side" ? Vector3.right : new Vector3(.8f, .35f, -.7f).normalized) * distance;
+                    camera.transform.LookAt(bounds.center);
+                    string path = Path.Combine(output, kind + "-" + angle + ".png"); Render(camera, path); paths.Add(path);
+                }
+                root.SetActive(false);
+            }
+            File.WriteAllText(Path.Combine(output, "scope.txt"), "Offline source LOD0 arsenal diagnostic, URP Lit, 1280x720. Not gameplay/visual acceptance. geometry.weapon " + WeaponRecipe.GeneratorVersion + " source " + ShooterBuild.HashFile(Path.Combine(Application.dataPath, "Shooter/Generation/Core/Weapons/WeaponGeometry.cs")));
+            Debug.Log("SHOOTER_ARSENAL_CAPTURE files=" + paths.Count);
+        }
+        finally { foreach (var value in owned) if (value != null) UnityEngine.Object.DestroyImmediate(value); }
+    });
+
     internal static void Render(Camera camera, string path)
     {
         var target = new RenderTexture(1280, 720, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB); target.Create();

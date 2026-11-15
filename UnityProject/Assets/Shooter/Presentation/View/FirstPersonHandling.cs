@@ -241,7 +241,7 @@ namespace Shooter.Presentation.View
                 (float)Math.Sin(phase) * .005f * gait + .018f * reload + mag.X + sway.X
                     + (0.055f * tuck + 0.04f * swing) * switchAmp,
                 -(float)Math.Cos(phase * 2d) * .004f * gait - .055f * reload + mag.Y + sway.Y
-                    - (0.175f * tuck + 0.02f * swing) * switchAmp,
+                    - (0.185f * tuck + 0.02f * swing) * switchAmp,
                 -.028f * reload + mag.Z + sway.Z
                     - (0.125f * tuck + 0.035f * swing) * switchAmp);
         }

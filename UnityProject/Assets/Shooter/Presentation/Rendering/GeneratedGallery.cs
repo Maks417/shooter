@@ -75,6 +75,11 @@ namespace Shooter.Presentation
             Place("Gallery floor", floorMesh, new[] { floor }, new Vector3(0, -.06f, 0), Vector3.one);
             // Inventory counts include eight scene instances and two shared analytic mesh buffers.
             Triangles += 8 * 12; MeshBytes += 2 * (24 * 48 + 36 * 4);
+            var steel = Own(new Material(materials[0]) { name = "Diagnostic exposed steel" });
+            steel.SetColor("_BaseColor", new Color(1.6f, 1.65f, 1.7f));
+            var recess = Own(new Material(materials[1]) { name = "Diagnostic recess" });
+            recess.SetColor("_BaseColor", new Color(.25f, .25f, .25f));
+            var weaponPalette = new[] { materials[0], materials[1], steel, recess, materials[0] };
             for (int weapon = 0; weapon < 2; weapon++)
             {
                 string kind = weapon == 0 ? "rifle" : "pistol";
@@ -86,8 +91,14 @@ namespace Shooter.Presentation
                 {
                     var data = GeometryCodec.DecodeMesh(ArtifactCodec.Decode(Acquire(store, id, ContentKind.Mesh, "lod" + lod), ContentKind.Mesh, manifest.GeneratorHash, expectedToolchain));
                     Mesh mesh = Upload(data, kind + " LOD" + lod);
-                    var mapped = data.Submeshes.Select(s => materials[s.MaterialSlot == 1 ? 1 : 0]).ToArray();
+                    var mapped = data.Submeshes.Select(s => weaponPalette[s.MaterialSlot]).ToArray();
                     var child = Place(kind + " LOD" + lod, mesh, mapped, Vector3.zero, Vector3.one, root.transform);
+                    foreach (string part in new[] { "magazine", "cycle" })
+                    {
+                        var partData = GeometryCodec.DecodeMesh(ArtifactCodec.Decode(Acquire(store, id, ContentKind.Mesh, part), ContentKind.Mesh, manifest.GeneratorHash, expectedToolchain));
+                        Place(kind + " " + part, Upload(partData, kind + " " + part),
+                            partData.Submeshes.Select(s => weaponPalette[s.MaterialSlot]).ToArray(), Vector3.zero, Vector3.one, child.transform);
+                    }
                     child.SetActive(lod == 0);
                 }
             }

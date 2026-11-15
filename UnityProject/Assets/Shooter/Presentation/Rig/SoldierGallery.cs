@@ -87,9 +87,10 @@ namespace Shooter.Presentation
             var meshes = new Mesh[3]; for (int i = 0; i < 3; i++) meshes[i] = Upload(GeometryCodec.DecodeMesh(Body(id, ContentKind.Mesh, "lod" + i)), true);
             var weaponId = new ContentId(plan["rifleVisual"].String);
             var weaponManifest = files.ReadManifest(weaponId);
-            if (weaponManifest.RecipeId != "weapons/rifle" || weaponManifest.GeneratorId != "geometry.weapon" || weaponManifest.GeneratorVersion != "1.0.1")
+            if (weaponManifest.RecipeId != "weapons/rifle" || weaponManifest.GeneratorId != "geometry.weapon" || weaponManifest.GeneratorVersion != WeaponRecipe.GeneratorVersion)
                 throw new InvalidDataException("Soldier preview requires the baseline rifle.");
-            Mesh rifleMesh = Upload(GeometryCodec.DecodeMesh(Body(weaponId, ContentKind.Mesh, "lod0")), false);
+            var rifleData = GeometryCodec.DecodeMesh(Body(weaponId, ContentKind.Mesh, "lod0"));
+            Mesh rifleMesh = Upload(rifleData, false);
             var shader = Shader.Find("Universal Render Pipeline/Lit");
             if (shader == null || !shader.isSupported) throw new InvalidOperationException("Required locked Lit shader unavailable.");
             Material Solid(string label, Color color, float metallic = 0, float smoothness = .2f)
@@ -101,7 +102,13 @@ namespace Shooter.Presentation
                 Solid("Numeric covered skin",new Color(.48f,.32f,.22f)), Solid("Numeric opaque goggles",new Color(.035f,.06f,.07f),.3f,.55f) };
             var metal = Solid("Numeric rifle metal", new Color(.08f,.09f,.10f), .15f);
             var polymer = Solid("Numeric rifle polymer", new Color(.05f,.055f,.045f));
-            var recipe = WeaponRecipe.Parse(Encoding.ASCII.GetBytes("{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/rifle\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.0.1\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"rifle\"},\"dependencies\":[]}"));
+            var recipe = WeaponRecipe.Parse(Encoding.ASCII.GetBytes("{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/rifle\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.0.3\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"rifle\"},\"dependencies\":[]}"));
+            var weaponPalette = Shooter.Presentation.Rendering.ProductSurfaceMaterial.WeaponFinishes(metal, polymer,
+                Solid("Numeric steel", new Color(.35f,.38f,.41f), .9f, .6f),
+                Solid("Numeric recess", new Color(.01f,.012f,.013f)),
+                Solid("Numeric enamel", new Color(.1f,.15f,.05f)));
+            var movingParts = new[] { "magazine", "cycle" }.Select(part => GeometryCodec.DecodeMesh(Body(weaponId, ContentKind.Mesh, part))).ToArray();
+            var movingMeshes = movingParts.Select(part => Upload(part, false)).ToArray();
             for (int i = 0; i < count; i++)
             {
                 var avatar = new Avatar { Root = new GameObject("Generated soldier " + i).transform, Bones = new Transform[23], Motion = new SoldierMotion(recipe) };
@@ -119,7 +126,14 @@ namespace Shooter.Presentation
                 avatar.Renderer.localBounds = new Bounds(new Vector3(0, 1, 0), new Vector3(4, 4, 4));
                 avatar.Weapon = new GameObject("Verified rifle").transform; avatar.Weapon.SetParent(avatar.Root, false);
                 avatar.Weapon.gameObject.AddComponent<MeshFilter>().sharedMesh = rifleMesh;
-                var renderer = avatar.Weapon.gameObject.AddComponent<MeshRenderer>(); renderer.sharedMaterials = new[] { metal, polymer };
+                var renderer = avatar.Weapon.gameObject.AddComponent<MeshRenderer>(); renderer.sharedMaterials = rifleData.Submeshes.Select(sub => weaponPalette[sub.MaterialSlot]).ToArray();
+                for (int part = 0; part < movingParts.Length; part++)
+                {
+                    var child = new GameObject(part == 0 ? "Verified magazine" : "Verified cycle");
+                    child.transform.SetParent(avatar.Weapon, false);
+                    child.AddComponent<MeshFilter>().sharedMesh = movingMeshes[part];
+                    child.AddComponent<MeshRenderer>().sharedMaterials = movingParts[part].Submeshes.Select(sub => weaponPalette[sub.MaterialSlot]).ToArray();
+                }
                 avatars.Add(avatar);
             }
             ViewCamera = new GameObject("Soldier diagnostic camera").AddComponent<Camera>(); ViewCamera.transform.SetParent(transform, false);

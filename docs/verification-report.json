@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "root": "C:\\Job\\shooter\\docs",
+  "root": "C:\\Job\\shooter\\Artifacts\\worktrees\\weapon-visuals\\docs",
   "markdownFiles": 128,
-  "wordCount": 148453,
-  "relativeLinksChecked": 1347,
-  "integrityFiles": 179,
+  "wordCount": 149386,
+  "relativeLinksChecked": 1351,
+  "integrityFiles": 180,
   "errors": [],
   "result": "PASS",
   "scope": "Documentation existence, index coverage, local links/anchors, fences and hashes including fixtures/scripts. No game implementation or runtime tests."

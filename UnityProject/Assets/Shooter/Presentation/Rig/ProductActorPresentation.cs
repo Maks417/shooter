@@ -101,6 +101,8 @@ namespace Shooter.Presentation.Rig
         private Material[]? team2Palette;
         private Material? rifleMetal;
         private Material? riflePolymer;
+        private Material[] weaponMaterials = Array.Empty<Material>();
+        private readonly Dictionary<Mesh, Material[]> weaponPalettes = new Dictionary<Mesh, Material[]>();
         private WeaponRecipe? rifleRecipe;
         private WeaponRecipe? pistolRecipe;
         private EntityId localHuman;
@@ -184,9 +186,9 @@ namespace Shooter.Presentation.Rig
 
             // Recipes for motion/sockets only â€” no SoldierGeometry/WeaponGeometry mesh generation on the product path.
             rifleRecipe = WeaponRecipe.Parse(Encoding.ASCII.GetBytes(
-                "{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/rifle\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.0.2\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"rifle\"},\"dependencies\":[]}"));
+                "{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/rifle\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.0.3\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"rifle\"},\"dependencies\":[]}"));
             pistolRecipe = WeaponRecipe.Parse(Encoding.ASCII.GetBytes(
-                "{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/pistol\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.0.2\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"pistol\"},\"dependencies\":[]}"));
+                "{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/pistol\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.0.3\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"pistol\"},\"dependencies\":[]}"));
 
             localWeapon = new GameObject("Local FP weapon").transform;
             localWeapon.SetParent(fpsCamera!.transform, false);
@@ -295,6 +297,11 @@ namespace Shooter.Presentation.Rig
                 riflePolymer = NearFieldSurface(MapVisualClosure.FirstPersonSurfacePaths[1], "Product stippled polymer");
                 var sleeve = NearFieldSurface(MapVisualClosure.FirstPersonSurfacePaths[2], "Product woven sleeve");
                 var glove = NearFieldSurface(MapVisualClosure.FirstPersonSurfacePaths[3], "Product glove grain");
+                weaponMaterials = Shooter.Presentation.Rendering.ProductSurfaceMaterial.WeaponFinishes(
+                    rifleMetal, riflePolymer,
+                    NearFieldSurface(MapVisualClosure.FirstPersonSurfacePaths[4], "Machined steel bevels and fasteners"),
+                    NearFieldSurface(MapVisualClosure.FirstPersonSurfacePaths[5], "Weapon recesses and rubber"),
+                    NearFieldSurface(MapVisualClosure.FirstPersonSurfacePaths[6], "Olive enamel grenade shell"));
                 firstPersonHandMaterials = new[] { sleeve, glove, riflePolymer };
 
                 visualsBound = true;
@@ -782,13 +789,13 @@ namespace Shooter.Presentation.Rig
         {
             avatar.Weapon.name = SlotWeaponName(slot, false);
             avatar.WeaponFilter.sharedMesh = HeldMeshForSlot(slot);
-            avatar.WeaponRenderer.sharedMaterials = new[] { rifleMetal, riflePolymer };
+            avatar.WeaponRenderer.sharedMaterials = WeaponPalette(avatar.WeaponFilter.sharedMesh);
             bool guns = FirstPersonWeaponMechanics.HasMagazinePart(slot);
             if (avatar.MagazineFilter != null && avatar.MagazinePart != null)
             {
                 avatar.MagazineFilter.sharedMesh = guns ? HeldMagazineForSlot(slot) : null;
                 if (avatar.MagazineRenderer != null)
-                    avatar.MagazineRenderer.sharedMaterials = new[] { rifleMetal, riflePolymer };
+                    avatar.MagazineRenderer.sharedMaterials = WeaponPalette(avatar.MagazineFilter.sharedMesh);
                 avatar.MagazinePart.gameObject.SetActive(guns);
                 avatar.MagazinePart.localPosition = Vector3.zero;
             }
@@ -796,7 +803,7 @@ namespace Shooter.Presentation.Rig
             {
                 avatar.CycleFilter.sharedMesh = guns ? HeldCycleForSlot(slot) : null;
                 if (avatar.CycleRenderer != null)
-                    avatar.CycleRenderer.sharedMaterials = new[] { rifleMetal, riflePolymer };
+                    avatar.CycleRenderer.sharedMaterials = WeaponPalette(avatar.CycleFilter.sharedMesh);
                 avatar.CyclePart.gameObject.SetActive(guns);
                 avatar.CyclePart.localPosition = Vector3.zero;
             }
@@ -808,19 +815,19 @@ namespace Shooter.Presentation.Rig
             if (localWeapon == null || !visualsBound) return;
             localWeapon.name = SlotWeaponName(slot, true);
             localWeapon.GetComponent<MeshFilter>().sharedMesh = LocalMeshForSlot(slot);
-            localWeapon.GetComponent<MeshRenderer>().sharedMaterials = new[] { rifleMetal, riflePolymer };
+            localWeapon.GetComponent<MeshRenderer>().sharedMaterials = WeaponPalette(localWeapon.GetComponent<MeshFilter>().sharedMesh);
             bool guns = FirstPersonWeaponMechanics.HasMagazinePart(slot);
             if (localMagazineFilter != null && localMagazine != null)
             {
                 localMagazineFilter.sharedMesh = guns ? LocalMagazineForSlot(slot) : null;
-                localMagazine.GetComponent<MeshRenderer>().sharedMaterials = new[] { rifleMetal, riflePolymer };
+                localMagazine.GetComponent<MeshRenderer>().sharedMaterials = WeaponPalette(localMagazineFilter!.sharedMesh);
                 localMagazine.gameObject.SetActive(guns);
                 localMagazine.localPosition = Vector3.zero;
             }
             if (localCycleFilter != null && localCycle != null)
             {
                 localCycleFilter.sharedMesh = guns ? LocalCycleForSlot(slot) : null;
-                localCycle.GetComponent<MeshRenderer>().sharedMaterials = new[] { rifleMetal, riflePolymer };
+                localCycle.GetComponent<MeshRenderer>().sharedMaterials = WeaponPalette(localCycleFilter!.sharedMesh);
                 localCycle.gameObject.SetActive(guns);
                 localCycle.localPosition = Vector3.zero;
             }
@@ -949,6 +956,16 @@ namespace Shooter.Presentation.Rig
             if (avatar.Root != null) DestroyObject(avatar.Root.gameObject);
         }
 
+        private Material[] WeaponPalette(Mesh? mesh)
+        {
+            if (mesh == null) return Array.Empty<Material>();
+            if (weaponPalettes.TryGetValue(mesh, out var palette)) return palette;
+            if (mesh.subMeshCount > weaponMaterials.Length) throw new InvalidOperationException("Unknown weapon material slot.");
+            palette = weaponMaterials.Take(mesh.subMeshCount).ToArray();
+            weaponPalettes.Add(mesh, palette);
+            return palette;
+        }
+
         private Mesh Upload(MeshData data, bool skin)
         {
             var mesh = Own(new Mesh { name = skin ? "Product soldier" : "Product weapon" });
@@ -956,14 +973,14 @@ namespace Shooter.Presentation.Rig
             mesh.normals = data.Normals.Select(V).ToArray();
             mesh.tangents = data.Tangents.Select(t => new Vector4(t.X, t.Y, t.Z, t.W)).ToArray();
             mesh.uv = data.Uv.Select(t => new Vector2(t.X, t.Y)).ToArray();
-            mesh.subMeshCount = data.Submeshes.Count;
+            mesh.subMeshCount = data.Submeshes.Max(s => (int)s.MaterialSlot) + 1;
             for (int i = 0; i < data.Submeshes.Count; i++)
             {
                 var sub = data.Submeshes[i];
                 mesh.SetIndices(
                     data.Indices.Skip((int)sub.FirstIndex).Take((int)sub.IndexCount).Select(v => (int)v).ToArray(),
                     MeshTopology.Triangles,
-                    i);
+                    sub.MaterialSlot);
             }
             if (skin)
             {

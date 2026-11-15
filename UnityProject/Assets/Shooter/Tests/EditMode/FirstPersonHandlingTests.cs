@@ -162,6 +162,40 @@ namespace Shooter.Tests
         }
 
         [Test]
+        public void EveryLoadoutSlotKeepsSemanticMaterialsAndHidesAbsentMovingParts()
+        {
+            var root = new GameObject("Arsenal slot test");
+            try
+            {
+                var camera = new GameObject("Camera").AddComponent<Camera>(); camera.transform.SetParent(root.transform);
+                var presentation = ProductActorPresentation.Create(root.transform, camera);
+                var visuals = PackagedVisualPayloads.FromBuild(MapPackageBuilder.Build("training-compound", "low",
+                    ContentIdentity.Hash(System.Text.Encoding.ASCII.GetBytes("arsenal-slots"))));
+                presentation.BindPackagedVisuals(visuals);
+                var lifecycle = new Lifecycle();
+                for (byte slot = 0; slot < 4; slot++)
+                {
+                    var id = new EntityId((ulong)slot + 1);
+                    lifecycle.State = new ActorLifecycleState(id, 1, true, 100, default, 0, 0, slot, 30, 90);
+                    var snapshot = new MatchViewSnapshot(1, 10, 10, 53990, GameMatchPhase.Playing,
+                        MatchOutcome.None, FinishReason.None, 0, 0, new[] {
+                            new ParticipantState(new ParticipantId(1), "Human", 1, true, id, new LifeId((uint)slot + 1), true, 0, 0, 0) }, 0);
+                    presentation.Sync(snapshot, lifecycle, null, 0, id, true, .3f, Array.Empty<CombatEvent>(), 10);
+                    string[] names = { "Local FP rifle", "Local FP pistol", "Local FP knife", "Local FP grenade" };
+                    var weapon = camera.transform.Find(names[slot]);
+                    var mesh = weapon.GetComponent<MeshFilter>().sharedMesh;
+                    var materials = weapon.GetComponent<MeshRenderer>().sharedMaterials;
+                    Assert.That(materials.Length, Is.EqualTo(mesh.subMeshCount), "Extra materials would redraw the last submesh.");
+                    if (slot == 2) Assert.That(materials[2].name, Does.Contain("Machined steel"));
+                    if (slot == 3) Assert.That(materials[4].name, Does.Contain("Olive enamel"));
+                    Assert.That(weapon.Find("FP magazine").gameObject.activeSelf, Is.EqualTo(slot < 2));
+                    Assert.That(weapon.Find("FP cycle").gameObject.activeSelf, Is.EqualTo(slot < 2));
+                }
+            }
+            finally { UnityEngine.Object.DestroyImmediate(root); }
+        }
+
+        [Test]
         public void PackagedRifleAndPistolSightsAlignWithCameraRayAndNewLifeClearsKick()
         {
             var root = new GameObject("FirstPersonHandlingTest");

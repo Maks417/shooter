@@ -27,6 +27,10 @@ namespace Shooter.Presentation.Rendering
             };
         }
 
+        /// <summary>Semantic palette shared by first-person, world and source diagnostics.</summary>
+        public static Material[] WeaponFinishes(Material coated, Material polymer, Material steel, Material recess, Material enamel)
+            => new[] { coated, polymer, steel, recess, enamel };
+
         /// <summary>Retains verified box geometry; adapts face UVs to metres after nonuniform scaling.</summary>
         public static Mesh MetricBoxUv(Mesh source, Vector3 size, Action<UnityEngine.Object> own)
         {

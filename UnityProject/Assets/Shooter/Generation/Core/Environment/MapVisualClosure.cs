@@ -71,7 +71,8 @@ namespace Shooter.Generation.Environment
         public static readonly string[] FirstPersonSurfacePaths =
         {
             "material-weapon-metal.bin", "material-weapon-polymer.bin",
-            "material-fp-sleeve.bin", "material-fp-glove.bin"
+            "material-fp-sleeve.bin", "material-fp-glove.bin",
+            "material-weapon-steel.bin", "material-weapon-recess.bin", "material-weapon-enamel.bin"
         };
 
         public static readonly string[] SoldierMaterialPaths =

@@ -46,7 +46,7 @@
     "docs/content-schemas/map-recipe.schema.json": "43b1a890f502da76d830dd8e7150f44379671dc9019058c0423e0b390226846e",
     "docs/content-schemas/release-catalog.invalid.json": "b49a8b11ad06c88f5ef48e9b8ec4a520b3a48108def292230f00be6b9a36fbb1",
     "docs/content-schemas/release-catalog.schema.json": "ac4be41865dc0a221115186171af594c69f24f0b4d04d13e3739cd1323f10338",
-    "docs/content-schemas/release-catalog.valid.json": "7f402373b5dde31edc5a53685f582077a5cbab472d7d2c49026e4ee550007195",
+    "docs/content-schemas/release-catalog.valid.json": "7abce49881d8714616dcaeb9c08bc96f94377f0b371733011664e007c8255d74",
     "Tools/Generation.Tests/CodecFixtures/generate_vectors.py": "5ef90986cc65590226deec5e35dcfd0d6b0fafa26cb181d49ba6d67870b96489",
     "Tools/Generation.Tests/CodecTests.cs": "ab606b851ca802673d6c8891185beb78d3eebde8901d68ca9fec82ddb4c20d48",
     "UnityProject/Assets/Shooter/Generation/Core/Canonical/CanonicalJson.cs": "64bc7ea7f4bcf1ecde9dfaec40a71b4cd575e3c0ae59b957614fc4e1498aecc9",

@@ -41,10 +41,11 @@ public sealed class FeatureIntegrationTests
         if (name == "rifle")
         {
             byte[] before = File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "FeatureFixtures", "rifle-1.0.1.json"));
-            byte[] after = File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "FeatureFixtures", "rifle-1.0.2.json"));
+            byte[] after = File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "FeatureFixtures", "rifle-1.0.3.json"));
             Assert.Throws<FormatException>(() => WeaponRecipe.Parse(before));
             Assert.Throws<FormatException>(() => WeaponRecipe.Parse(File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "FeatureFixtures", "rifle-1.0.0.json"))));
-            Assert.Equal("1.0.2", WeaponRecipe.Parse(after).Document.GeneratorVersion);
+            Assert.Throws<FormatException>(() => WeaponRecipe.Parse(File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "FeatureFixtures", "rifle-1.0.2.json"))));
+            Assert.Equal("1.0.3", WeaponRecipe.Parse(after).Document.GeneratorVersion);
         }
         else
         {

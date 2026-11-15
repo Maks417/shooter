@@ -28,7 +28,7 @@ public sealed class MapPackageSurfaceTests : IDisposable
             Assert.Equal("rgba8-srgb", albedo.ChannelFormat);
             Assert.Equal("rgba8-linear", normal.ChannelFormat);
             Assert.Equal("rgba8-linear", mask.ChannelFormat);
-            Assert.True(albedo.MipBytes[0].Distinct().Count() > 8);
+            Assert.True(albedo.MipBytes[0].Distinct().Count() > 8, "Spatial albedo family " + family);
             // Shallow coated-metal relief may span only a few encoded normal values.
             // Require real variation in both tangent axes without demanding exaggerated bump depth.
             Assert.True(normal.MipBytes[0].Where((v, i) => i % 4 == 0).Distinct().Count() > 1);
@@ -37,7 +37,10 @@ public sealed class MapPackageSurfaceTests : IDisposable
             double roughness = mask.MipBytes[0].Where((v, i) => i % 4 == 2).Average(v => (double)v);
             if (family == 0) Assert.InRange(roughness, 115, 160);
             if (family == 1 || family == 2) Assert.InRange(roughness, 210, 245);
-            Assert.All(mask.MipBytes[0].Where((v, i) => i % 4 == 0), m => Assert.Equal(family == 0 ? 190 : 0, m));
+            if (family == 4) Assert.InRange(roughness, 65, 95);
+            if (family == 5) Assert.InRange(roughness, 225, 245);
+            if (family == 6) Assert.InRange(roughness, 150, 180);
+            Assert.All(mask.MipBytes[0].Where((v, i) => i % 4 == 0), m => Assert.Equal(family == 0 ? 190 : family == 4 ? 240 : family == 6 ? 30 : 0, m));
         }
     }
 

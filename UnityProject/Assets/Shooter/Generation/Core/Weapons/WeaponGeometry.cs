@@ -93,7 +93,9 @@ namespace Shooter.Generation
             }
             if (kind == "rifle")
             {
-                Box(0, .065f, .09f, .058f, .09f, .27f);
+                assembly.Add(WeaponProfiles.Loft(new[] { -.045f, -.025f, .16f, .225f },
+                    new[] { .022f, .029f, .029f, .024f }, new[] { .034f, .045f, .045f, .032f }, 8),
+                    new Float3(0, .065f, 0), Quat.Identity);
                 if (lod < 2)
                 {
                     Box(0, .108f, .09f, .052f, .018f, .24f);
@@ -101,16 +103,23 @@ namespace Shooter.Generation
                     Box(-.027f, .065f, .02f, .006f, .055f, .08f);
                     Box(.027f, .065f, .02f, .006f, .055f, .08f);
                 }
-                Box(0, .08f, .345f, .056f, .06f, .28f, 1);
+                assembly.Add(WeaponProfiles.Loft(new[] { .205f, .22f, .455f, .485f },
+                    new[] { .025f, .030f, .028f, .023f }, new[] { .027f, .033f, .029f, .023f }, 8),
+                    new Float3(0, .08f, 0), Quat.Identity, 0);
                 if (lod < 2)
                 {
                     Box(0, .105f, .345f, .042f, .012f, .26f, 1);
                     Box(0, .055f, .345f, .048f, .014f, .26f, 1);
-                    for (int i = 0; i < (lod == 0 ? 8 : 4); i++)
+                    for (int side = -1; side <= 1; side += 2)
                     {
-                        float z = .22f + i * (lod == 0 ? .032f : .064f);
-                        Box(-.029f, .08f, z, .005f, .048f, .012f, 1);
-                        Box(.029f, .08f, z, .005f, .048f, .012f, 1);
+                        Box(side * .030f, .099f, .345f, .004f, .010f, .244f);
+                        Box(side * .030f, .061f, .345f, .004f, .010f, .244f);
+                        for (int i = 0; i < (lod == 0 ? 7 : 4); i++)
+                        {
+                            float z = .23f + i * (lod == 0 ? .036f : .068f);
+                            Box(side * .030f, .080f, z, .004f, .030f, .008f);
+                            Box(side * .0285f, .080f, z + .018f, .001f, .014f, .023f, 3);
+                        }
                     }
                     if (lod == 0)
                     {
@@ -121,7 +130,9 @@ namespace Shooter.Generation
                         }
                     }
                 }
-                Box(0, .06f, -.25f, .060f, .11f, .14f, 1);
+                assembly.Add(WeaponProfiles.Loft(new[] { -.32f, -.305f, -.22f, -.18f },
+                    new[] { .027f, .030f, .024f, .015f }, new[] { .050f, .055f, .045f, .020f }, 8),
+                    new Float3(0, .06f, 0), Quat.Identity, 1);
                 Box(0, .065f, -.11f, .030f, .035f, .16f, 0);
                 if (lod < 2)
                 {
@@ -140,6 +151,26 @@ namespace Shooter.Generation
                     }
                 }
                 Barrel(.08f, .21f, .64f, .009f);
+                if (lod < 2)
+                {
+                    // Compact optic with a bounded dark bore; existing sight socket stays authoritative.
+                    Box(0, .123f, .035f, .030f, .015f, .070f);
+                    assembly.Add(BoredMuzzle.Build(.0145f, .0115f, .100f, .018f, radial),
+                        new Float3(0, .139f, -.015f), Quat.Identity, 0);
+                    assembly.Add(PrimitiveGeometry.Cylinder(.0105f, .001f, radial),
+                        new Float3(0, .139f, .067f), Quat.Identity, 3);
+                    // Barrel shoulder, muzzle collar and rail teeth catch grazing light.
+                    assembly.Add(PrimitiveGeometry.Cylinder(.013f, .025f, radial), new Float3(0, .08f, .604f), Quat.Identity, 2);
+                    for (int i = 0; i < (lod == 0 ? 15 : 8); i++)
+                        Box(0, .123f, .02f + i * (lod == 0 ? .028f : .056f), .041f, .006f, .010f);
+                    Box(.030f, .075f, .13f, .002f, .029f, .091f, 3);
+                    Box(-.031f, .037f, .055f, .003f, .025f, .070f);
+                    for (int side = -1; side <= 1; side += 2)
+                        foreach (float z in new[] { -.012f, .16f, .222f, .46f })
+                            WeaponProfiles.Fastener(assembly, side * .033f, .080f, z, lod);
+                    Box(0, .06f, -.323f, .056f, .104f, .010f, 3);
+                    Box(-.029f, .105f, -.025f, .004f, .016f, .016f, 2);
+                }
                 if (lod < 2)
                 {
                     Box(0, .08f, .48f, .022f, .022f, .04f);
@@ -182,6 +213,16 @@ namespace Shooter.Generation
                     Box(0, .018f, -.055f, .028f, .012f, .02f, 1);
                 }
                 Barrel(.07f, .025f, .13f, .007f);
+                if (lod < 2)
+                {
+                    Box(0, .038f, .082f, .030f, .022f, .047f, 1);
+                    for (int i = 0; i < 3; i++) Box(0, .025f, .064f + i * .014f, .031f, .005f, .006f);
+                    for (int side = -1; side <= 1; side += 2)
+                    {
+                        WeaponProfiles.Fastener(assembly, side * .019f, .025f, -.035f, lod, .003f);
+                        WeaponProfiles.Fastener(assembly, side * .019f, .043f, .028f, lod, .0025f);
+                    }
+                }
                 Box(0, -.020f, .035f, .012f, .008f, .060f);
                 Box(0, .003f, .063f, .012f, .052f, .008f);
                 if (lod < 3) Box(.018f, .045f, -.010f, .009f, .008f, .035f);
@@ -211,6 +252,12 @@ namespace Shooter.Generation
             if (kind == "rifle")
             {
                 Box(0, RifleMagazineCenterY, .07f, .032f, RifleMagazineHeight, .055f, 0, -8);
+                if (lod < 2)
+                {
+                    Box(0, -.176f, .083f, .038f, .009f, .059f, 2, -8);
+                    for (int side = -1; side <= 1; side += 2)
+                        Box(side * .017f, -.08f, .07f, .002f, .125f, .018f, 3, -8);
+                }
                 if (lod < 2)
                 {
                     Box(0, RifleMagazineCenterY - .06f, .07f, .028f, .04f, .048f, 0, -8);
@@ -261,7 +308,16 @@ namespace Shooter.Generation
             }
             else
             {
-                Box(0, .07f, .005f, .032f, .034f, .17f);
+                assembly.Add(WeaponProfiles.Loft(new[] { -.080f, -.070f, .068f, .090f },
+                    new[] { .013f, .017f, .017f, .014f }, new[] { .014f, .018f, .018f, .014f }, 8),
+                    new Float3(0, .07f, 0), Quat.Identity);
+                if (lod < 2)
+                {
+                    Box(.017f, .077f, .039f, .0015f, .018f, .038f, 3);
+                    Box(.018f, .079f, .038f, .001f, .012f, .026f, 2);
+                    for (int i = 0; i < 4; i++)
+                        Box(-.017f, .070f, .046f + i * .008f, .002f, .023f, .002f, 3);
+                }
                 Box(-.008f, .095f, -.07f, .006f, .012f, .013f);
                 Box(.008f, .095f, -.07f, .006f, .012f, .013f);
                 Box(0, .092f, .078f, .006f, .010f, .010f);

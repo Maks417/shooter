@@ -12,7 +12,7 @@ public sealed class WeaponTests
     private readonly ITestOutputHelper output;
     public WeaponTests(ITestOutputHelper output) { this.output = output; }
     private static byte[] Source(string kind = "rifle", string seed = "460072030", string deps = "[]") => Encoding.UTF8.GetBytes(
-        "{\"recipeId\":\"weapons/" + kind + "\",\"schemaId\":\"shooter.recipe.weapon.v1\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.0.2\",\"seed\":\"" + seed + "\",\"parameters\":{\"kind\":\"" + kind + "\"},\"dependencies\":" + deps + "}");
+        "{\"recipeId\":\"weapons/" + kind + "\",\"schemaId\":\"shooter.recipe.weapon.v1\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.0.3\",\"seed\":\"" + seed + "\",\"parameters\":{\"kind\":\"" + kind + "\"},\"dependencies\":" + deps + "}");
     private static GenerationRequest Request(WeaponRecipe recipe, string profile) => new GenerationRequest(recipe.Document, "windows64", profile, new ContentId(new string('1', 64)));
     [Theory]
     [InlineData("rifle")][InlineData("pistol")]
@@ -27,10 +27,56 @@ public sealed class WeaponTests
             Assert.InRange(triangles, 1, ceilings[i]); Assert.True(triangles < previous); previous = triangles;
             GeometryCodec.DecodeMesh(GeometryCodec.EncodeMesh(mesh));
             MeshValidation.Check(mesh, false); // Closed solid components can overlap at mechanical joins.
-            Assert.All(mesh.Submeshes, s => Assert.InRange(s.MaterialSlot, (ushort)0, (ushort)1));
+            Assert.All(mesh.Submeshes, s => Assert.InRange(s.MaterialSlot, (ushort)0, (ushort)4));
             Assert.All(mesh.Positions, p => Assert.True(p.X >= build.Bounds.Min.X && p.X <= build.Bounds.Max.X && p.Y >= build.Bounds.Min.Y && p.Y <= build.Bounds.Max.Y && p.Z >= build.Bounds.Min.Z && p.Z <= build.Bounds.Max.Z));
             output.WriteLine(kind + " lod" + i + ": " + triangles + " triangles, " + mesh.Positions.Count + " vertices, " + mesh.Submeshes.Count + " submeshes");
         }
+    }
+    [Theory]
+    [InlineData("rifle", 18000)]
+    [InlineData("pistol", 8000)]
+    public void AssembledNearFieldWeaponIncludesMovingPartsInsideBudget(string kind, int ceiling)
+    {
+        var build = WeaponGeometry.Build(WeaponRecipe.Parse(Source(kind)));
+        int triangles = (build.Lods[0].Indices.Count + build.Magazine.Indices.Count + build.CyclePart.Indices.Count) / 3;
+        output.WriteLine(kind + " assembled lod0: " + triangles);
+        Assert.InRange(triangles, 1, ceiling);
+        foreach (var part in new[] { build.Magazine, build.CyclePart })
+        {
+            MeshValidation.Check(part, true);
+            Assert.All(part.Submeshes, sub => Assert.InRange(sub.MaterialSlot, (ushort)0, (ushort)4));
+        }
+    }
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void LoadoutPropsAreClosedDeterministicAndHaveLegibleProfiles(bool grenade)
+    {
+        for (int lod = 0; lod < 4; lod++)
+        {
+            var mesh = grenade ? LoadoutPropGeometry.BuildGrenade(lod) : LoadoutPropGeometry.BuildKnife(lod);
+            var repeat = grenade ? LoadoutPropGeometry.BuildGrenade(lod) : LoadoutPropGeometry.BuildKnife(lod);
+            MeshValidation.Check(mesh, true);
+            Assert.Equal(GeometryCodec.EncodeMesh(mesh), GeometryCodec.EncodeMesh(repeat));
+            Assert.All(mesh.Submeshes, sub => Assert.InRange(sub.MaterialSlot, (ushort)0, (ushort)4));
+            Assert.InRange(mesh.Indices.Count / 3, 1, grenade ? 3000 : 1800);
+            if (grenade)
+            {
+                float height = mesh.Positions.Max(p => p.Y) - mesh.Positions.Min(p => p.Y);
+                float depth = mesh.Positions.Max(p => p.Z) - mesh.Positions.Min(p => p.Z);
+                Assert.True(height > depth * 1.4f, "Shell and fuse must stand upright in the hand.");
+                Assert.Contains(mesh.Submeshes, sub => sub.MaterialSlot == 4);
+            }
+            else
+            {
+                var tip = mesh.Positions.Where(p => p.Z > .158f).ToArray();
+                Assert.NotEmpty(tip);
+                Assert.All(tip, p => Assert.True(Math.Abs(p.Y - .006f) < .001f && Math.Abs(p.X) < .001f));
+                Assert.Contains(mesh.Submeshes, sub => sub.MaterialSlot == 2);
+            }
+        }
+        Assert.Throws<ArgumentOutOfRangeException>(() => LoadoutPropGeometry.BuildKnife(4));
+        Assert.Throws<ArgumentOutOfRangeException>(() => LoadoutPropGeometry.BuildGrenade(-1));
     }
     [Theory]
     [InlineData("rifle",0,.08f,.64f,8)][InlineData("pistol",0,.07f,.13f,7)]
@@ -95,7 +141,7 @@ public sealed class WeaponTests
             source.Replace("\"kind\":\"rifle\"", "\"kind\":\"rifle\",\"vertices\":[[0,0,0]]"),
             source.Replace("\"seed\":\"460072030\"", "\"seed\":\"01\""),
             source.Replace("\"seed\":\"460072030\"", "\"seed\":\"18446744073709551616\""),
-            source.Replace("\"generatorVersion\":\"1.0.2\"", "\"generatorVersion\":\"2.0.0\""),
+            source.Replace("\"generatorVersion\":\"1.0.3\"", "\"generatorVersion\":\"2.0.0\""),
             source.Replace("\"dependencies\":[]", "\"dependencies\":[],\"unexpected\":0"),
             source.Replace("\"kind\":\"rifle\"", "\"kind\":\"rifle\",\"kind\":\"pistol\"") })
             Assert.Throws<FormatException>(() => WeaponRecipe.Parse(Encoding.UTF8.GetBytes(bad)));
@@ -124,9 +170,9 @@ public sealed class WeaponTests
     [Fact]
     public void OldGeneratorVersionRejectsInsteadOfReinterpretingExistingContent()
     {
-        foreach (string legacy in new[] { "1.0.0", "1.0.1" })
+        foreach (string legacy in new[] { "1.0.0", "1.0.1", "1.0.2" })
         {
-            var source = Encoding.UTF8.GetString(Source()).Replace("\"generatorVersion\":\"1.0.2\"", "\"generatorVersion\":\"" + legacy + "\"");
+            var source = Encoding.UTF8.GetString(Source()).Replace("\"generatorVersion\":\"1.0.3\"", "\"generatorVersion\":\"" + legacy + "\"");
             Assert.Throws<FormatException>(() => WeaponRecipe.Parse(Encoding.UTF8.GetBytes(source)));
             var current = WeaponRecipe.Parse(Source());
             var old = new RecipeDocument(current.Document.RecipeId, WeaponRecipe.Schema, WeaponRecipe.GeneratorId, legacy, current.Document.Seed, current.Document.Parameters, Array.Empty<ContentId>());
