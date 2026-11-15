@@ -60,7 +60,21 @@ namespace Shooter.Presentation.Session
             return scene;
         }
 
-        public void SetReducedMotion(bool value) => reducedMotion = value;
+        public void SetReducedMotion(bool value)
+        {
+            reducedMotion = value;
+            ApplyDustMotionPolicy();
+        }
+
+        /// <summary>Dust motes stay in the hierarchy for repair/retry ownership; reduced motion only hides them.</summary>
+        private void ApplyDustMotionPolicy()
+        {
+            for (int i = 0; i < motes.Count; i++)
+            {
+                if (motes[i] != null)
+                    motes[i].gameObject.SetActive(!reducedMotion);
+            }
+        }
 
         private void Update()
         {
@@ -114,44 +128,97 @@ namespace Shooter.Presentation.Session
             for (int i = 0; i < visuals.Length; i++) ValidateShader(visuals[i]);
             box = Upload(MapVisualClosure.DecodeMapMesh(visuals[0], MapVisualClosure.UnitBoxMeshPath), "Verified menu unit box");
 
-            // The stage and live maps share verified procedural surface families. Variants share
-            // uploaded planes; numeric tint changes do not create new texture caches or art inputs.
+            // Packaged surface families only. Variants share uploaded planes; numeric tints add no art bytes.
             Material concrete = PackagedMaterial(visuals[0], shader, MapVisualClosure.MapMaterialPaths[0], "Stage concrete", 4f);
             Material concreteWarm = Variant(concrete, "Stage concrete warm", new Color(1f, .93f, .82f));
-            Material steel = PackagedMaterial(visuals[0], shader, MapVisualClosure.MapMaterialPaths[1], "Stage steel", 3f);
-            steel.SetColor("_BaseColor", new Color(.56f, .68f, .73f));
-            Material steelMatte = Variant(steel, "Stage steel matte", new Color(.72f, .83f, .86f));
+            Material concreteCool = Variant(concrete, "Stage concrete cool", new Color(.78f, .84f, .86f));
+            Material cover = PackagedMaterial(visuals[0], shader, MapVisualClosure.MapMaterialPaths[1], "Stage cover", 3f);
+            Material steel = Variant(cover, "Stage steel", new Color(.56f, .68f, .73f));
+            Material steelMatte = Variant(cover, "Stage steel matte", new Color(.72f, .83f, .86f));
             steelMatte.SetFloat("_Smoothness", .42f);
-            Material ground = PackagedMaterial(visuals[1], shader, MapVisualClosure.MapMaterialPaths[3], "Stage ground", 24f);
-            Material apron = Variant(ground, "Stage apron", new Color(.62f, .64f, .60f));
+            Material soil = PackagedMaterial(visuals[0], shader, MapVisualClosure.MapMaterialPaths[2], "Stage soil", 18f);
+            Material asphalt = PackagedMaterial(visuals[1], shader, MapVisualClosure.MapMaterialPaths[3], "Stage asphalt", 24f);
+            Material apron = Variant(asphalt, "Stage apron", new Color(.62f, .64f, .60f));
+            Material apronWarm = Variant(asphalt, "Stage apron warm", new Color(.70f, .66f, .58f));
             Material contact = Material(shader, "Stage contact", new Color(.03f, .035f, .04f), .05f);
             Material light = Material(shader, "Stage lamps", new Color(.62f, .48f, .28f), .12f);
-            Material sandbag = PackagedMaterial(visuals[0], shader, MapVisualClosure.MapMaterialPaths[1], "Stage sandbags", 3f);
-            sandbag.SetColor("_BaseColor", new Color(.94f, .88f, .68f));
+            Material sandbag = Variant(cover, "Stage sandbags", new Color(.94f, .88f, .68f));
 
-            // Background — distant industrial skyline and hangar shells.
+            PlaceDistantShells(concrete, concreteCool, concreteWarm, steel, steelMatte);
+            PlaceMidProps(concrete, concreteWarm, steel, steelMatte, sandbag, contact, light);
+            PlaceApronAndSoldiersBand(asphalt, apron, apronWarm, soil, concreteWarm, steel, steelMatte, sandbag, contact);
+
+            // Camera frames the three showcase soldiers with mid/background depth behind them.
+            var cam = new GameObject("Menu scene camera").AddComponent<Camera>();
+            cam.transform.SetParent(transform, false);
+            cam.transform.position = MenuStagingComposition.CameraPosition;
+            cam.transform.LookAt(MenuStagingComposition.CameraLookAt);
+            cam.fieldOfView = MenuStagingComposition.CameraFieldOfView;
+            cam.nearClipPlane = .05f;
+            cam.farClipPlane = 120;
+            cam.clearFlags = CameraClearFlags.SolidColor;
+            cam.backgroundColor = MenuStagingComposition.CameraClear;
+            cam.cullingMask = 1 << StageLayer;
+            cam.allowHDR = false;
+            cam.allowMSAA = false;
+            cam.enabled = false;
+            stageCamera = cam;
+            frame = Own(new RenderTexture(1280, 720, 24, RenderTextureFormat.ARGB32) { name = "Live procedural menu", antiAliasing = 1 });
+            frame.Create();
+            cam.targetTexture = frame;
+
+            ApplyStagingLights();
+
+            actors = ProductActorPresentation.Create(transform, cam);
+            actors.BindMenuShowcase(visuals[0]);
+
+            Material dust = Material(shader, "Analytic dust", new Color(.48f, .52f, .46f), 0);
+            for (int i = 0; i < 14; i++)
+            {
+                var mote = Place("Mesh dust", new Vector3(-3.2f + (i * 7 % 19) * .38f, .35f + i % 7 * .38f, .4f + i * .5f), Vector3.one * .011f, dust, castShadows: false);
+                mote.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
+                mote.GetComponent<MeshRenderer>().receiveShadows = false;
+                motes.Add(mote.transform);
+            }
+            ApplyDustMotionPolicy();
+            for (int i = 0; i < visuals.Length; i++) BuildMapCard(visuals[i], shader, i);
+            SetLayer(transform);
+            built = true;
+            RenderStage();
+            Debug.Log("SHOOTER_MENU_SCENE_READY actors=3 cards=2 colliders=0 authority=0");
+        }
+
+        /// <summary>Far band — industrial skyline and hangar shells read through staged fog.</summary>
+        private void PlaceDistantShells(Material concrete, Material concreteCool, Material concreteWarm, Material steel, Material steelMatte)
+        {
             for (int i = 0; i < 6; i++)
             {
                 float x = -24 + i * 9.2f;
-                float h = 7 + (i % 3) * 2.4f;
-                float z = 42 + (i % 2) * 10;
-                Place("Skyline shell", new Vector3(x, h * .5f, z), new Vector3(8.2f, h, 12), concrete, castShadows: false);
+                float h = 7.4f + (i % 3) * 2.6f;
+                float z = MenuStagingComposition.DistantShellBandZ + (i % 2) * 10;
+                Place("Skyline shell", new Vector3(x, h * .5f, z), new Vector3(8.2f, h, 12), i % 2 == 0 ? concrete : concreteCool, castShadows: false);
                 Place("Skyline roof", new Vector3(x, h + .14f, z), new Vector3(8.6f, .28f, 12.4f), steel, castShadows: false);
                 if (i % 2 == 0)
                     Place("Skyline vent", new Vector3(x + 2.2f, h + 1.1f, z - 2f), new Vector3(1.4f, 1.6f, 1.4f), steelMatte, castShadows: false);
             }
+            // Deep silhouette slab behind the skyline for BFV-like atmospheric layering.
+            Place("Distant haze shell", new Vector3(2f, 10f, MenuStagingComposition.DistantShellBandZ + 22f),
+                new Vector3(58f, 18f, 8f), concreteCool, castShadows: false);
             Place("Hangar volume", new Vector3(18, 5.5f, 34), new Vector3(16, 11, 18), concreteWarm, castShadows: false);
             Place("Hangar door frame", new Vector3(10.5f, 3.2f, 25.5f), new Vector3(.45f, 6.4f, 8), steel, castShadows: false);
+            Place("Hangar threshold", new Vector3(10.5f, .04f, 25.5f), new Vector3(1.2f, .06f, 8.4f), concrete, castShadows: false);
+        }
 
-            // Midground — cargo, barriers, gantries framing the heroes.
+        /// <summary>Mid band — cargo, barriers and gantries frame the soldier showcase.</summary>
+        private void PlaceMidProps(Material concrete, Material concreteWarm, Material steel, Material steelMatte, Material sandbag, Material contact, Material light)
+        {
             for (int row = 0; row < 2; row++)
             {
                 float x = row == 0 ? -5.6f : 7.1f;
                 float z = 10 + row * 3.6f;
                 Place("Cargo container", new Vector3(x, 1.25f, z), new Vector3(2.55f, 2.5f, 6.2f), steel, castShadows: true);
-                for (int rib = 0; rib < 12; rib++)
-                    Place("Container rib", new Vector3(x - 1.3f, 1.25f, z - 2.9f + rib * .5f), new Vector3(.09f, 2.48f, .07f), concrete, castShadows: false);
-                // Numeric door construction gives the cargo a recognizable loading-site scale.
+                for (int rib = 0; rib < 10; rib++)
+                    Place("Container rib", new Vector3(x - 1.3f, 1.25f, z - 2.9f + rib * .58f), new Vector3(.09f, 2.48f, .07f), concrete, castShadows: false);
                 for (int door = -1; door <= 1; door += 2)
                 {
                     Place("Cargo door panel", new Vector3(x + door * .61f, 1.25f, z - 3.13f),
@@ -169,7 +236,7 @@ namespace Shooter.Presentation.Session
                 Place("Barrier contact", new Vector3(-7.2f + i * 2.55f, .02f, 17.5f), new Vector3(2.2f, .035f, .7f), contact, castShadows: false);
             }
             for (int i = 0; i < 5; i++)
-                Place("Sandbag stack", new Vector3(-4.8f + i * 2.4f, .28f, 14.2f), new Vector3(1.6f, .55f, .7f), sandbag, castShadows: true);
+                Place("Sandbag stack", new Vector3(-4.8f + i * 2.4f, .28f, MenuStagingComposition.MidPropBandZ), new Vector3(1.6f, .55f, .7f), sandbag, castShadows: true);
             for (int i = 0; i < 2; i++)
             {
                 float x = i == 0 ? -9.2f : 11.4f;
@@ -180,14 +247,19 @@ namespace Shooter.Presentation.Session
             }
             Place("Watch tower", new Vector3(-14.5f, 4.2f, 28), new Vector3(2.4f, 8.4f, 2.4f), concrete, castShadows: true);
             Place("Tower cabin", new Vector3(-14.5f, 8.6f, 28), new Vector3(3.2f, 1.6f, 3.2f), steelMatte, castShadows: true);
+        }
 
-            // Foreground — apron seams, soft contact under heroes, low props near the lens.
-            Place("Apron slab", new Vector3(1.2f, -.12f, 8), new Vector3(42, .22f, 48), ground, castShadows: false);
+        /// <summary>Near apron + soldier-band pads/props under the showcase feet.</summary>
+        private void PlaceApronAndSoldiersBand(Material asphalt, Material apron, Material apronWarm, Material soil, Material concreteWarm, Material steel, Material steelMatte, Material sandbag, Material contact)
+        {
+            Place("Apron slab", new Vector3(1.2f, -.12f, MenuStagingComposition.ApronBandZ), new Vector3(42, .22f, 48), asphalt, castShadows: false);
+            Place("Apron soil edge", new Vector3(1.2f, -.09f, 26f), new Vector3(42, .16f, 10f), soil, castShadows: false);
             Place("Apron seam", new Vector3(1.2f, -.01f, 8), new Vector3(42, .02f, .08f), apron, castShadows: false);
             Place("Apron seam B", new Vector3(1.2f, -.01f, 14), new Vector3(42, .02f, .08f), apron, castShadows: false);
-            Place("Apron seam C", new Vector3(1.2f, -.01f, 2.4f), new Vector3(42, .02f, .06f), apron, castShadows: false);
+            Place("Apron seam C", new Vector3(1.2f, -.01f, 2.4f), new Vector3(42, .02f, .06f), apronWarm, castShadows: false);
             Place("Apron seam cross", new Vector3(-2.4f, -.01f, 8), new Vector3(.06f, .02f, 36), apron, castShadows: false);
             Place("Apron seam cross B", new Vector3(5.1f, -.01f, 8), new Vector3(.06f, .02f, 36), apron, castShadows: false);
+            Place("Apron curb", new Vector3(1.2f, .05f, -1.85f), new Vector3(18f, .12f, .22f), apronWarm, castShadows: false);
             // Soft contact discs then hard pads — staged under exact BindMenuShowcase feet.
             Place("Hero soft A", new Vector3(1.25f, .008f, .3f), new Vector3(1.55f, .02f, 1.55f), contact, castShadows: false);
             Place("Hero soft B", new Vector3(-.25f, .008f, 3.2f), new Vector3(1.55f, .02f, 1.55f), contact, castShadows: false);
@@ -205,61 +277,29 @@ namespace Shooter.Presentation.Session
             Place("Fence rail", new Vector3(-.4f, .95f, -1.6f), new Vector3(6.4f, .08f, .08f), steel, castShadows: false);
             Place("Shelter lean-to", new Vector3(6.4f, 1.6f, 7.2f), new Vector3(3.2f, .18f, 4.4f), steelMatte, castShadows: true);
             Place("Shelter upright", new Vector3(5.1f, .9f, 7.2f), new Vector3(.22f, 1.8f, .22f), steel, castShadows: true);
+        }
 
-            // Camera frames the three showcase soldiers with mid/background depth behind them.
-            var cam = new GameObject("Menu scene camera").AddComponent<Camera>();
-            cam.transform.SetParent(transform, false);
-            cam.transform.position = new Vector3(-1.35f, 1.52f, -3.05f);
-            cam.transform.LookAt(new Vector3(1.4f, 1.08f, 2.7f));
-            cam.fieldOfView = 36;
-            cam.nearClipPlane = .05f;
-            cam.farClipPlane = 120;
-            cam.clearFlags = CameraClearFlags.SolidColor;
-            cam.backgroundColor = new Color(.09f, .14f, .16f);
-            cam.cullingMask = 1 << StageLayer;
-            cam.allowHDR = false;
-            cam.allowMSAA = false;
-            cam.enabled = false;
-            stageCamera = cam;
-            frame = Own(new RenderTexture(1280, 720, 24, RenderTextureFormat.ARGB32) { name = "Live procedural menu", antiAliasing = 1 });
-            frame.Create();
-            cam.targetTexture = frame;
-
-            // Warmer key / denser apron bounce for staging depth (BFV-like balance, StageLayer only).
-            var key = StageLight("Warm key light", LightType.Directional, new Color(1f, .88f, .68f), 2.15f);
-            key.transform.rotation = Quaternion.Euler(36, -36, 0);
-            key.shadows = LightShadows.Hard;
-            key.shadowStrength = .78f;
-            var fill = StageLight("Cool fill light", LightType.Directional, new Color(.40f, .60f, .76f), .42f);
-            fill.transform.rotation = Quaternion.Euler(16, 132, 0);
-            var rim = StageLight("Cool rim light", LightType.Directional, new Color(.52f, .76f, .90f), .88f);
-            rim.transform.rotation = Quaternion.Euler(6, 158, 0);
-            var lamp = StageLight("Apron lamp point", LightType.Point, new Color(1f, .76f, .48f), 1.75f);
-            lamp.transform.position = new Vector3(-2.2f, 4.8f, 8.5f);
-            lamp.range = 22f;
-            var heroLamp = StageLight("Hero warm bounce", LightType.Point, new Color(1f, .80f, .56f), .72f);
-            heroLamp.transform.position = new Vector3(1.4f, 2.4f, 1.2f);
-            heroLamp.range = 8.5f;
-            var apronBounce = StageLight("Apron ground bounce", LightType.Point, new Color(1f, .72f, .46f), .55f);
-            apronBounce.transform.position = new Vector3(1.2f, 1.1f, 6.5f);
-            apronBounce.range = 14f;
-
-            actors = ProductActorPresentation.Create(transform, cam);
-            actors.BindMenuShowcase(visuals[0]);
-
-            Material dust = Material(shader, "Analytic dust", new Color(.48f, .52f, .46f), 0);
-            for (int i = 0; i < 18; i++)
+        private void ApplyStagingLights()
+        {
+            for (int i = 0; i < MenuStagingComposition.Lights.Length; i++)
             {
-                var mote = Place("Mesh dust", new Vector3(-3.2f + (i * 7 % 19) * .38f, .35f + i % 7 * .38f, .4f + i * .5f), Vector3.one * .011f, dust, castShadows: false);
-                mote.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
-                mote.GetComponent<MeshRenderer>().receiveShadows = false;
-                motes.Add(mote.transform);
+                var recipe = MenuStagingComposition.Lights[i];
+                var light = StageLight(recipe.Name, recipe.Type, recipe.Color, recipe.Intensity);
+                if (recipe.Type == LightType.Directional)
+                {
+                    light.transform.rotation = Quaternion.Euler(recipe.EulerOrPosition);
+                    if (recipe.HardShadows)
+                    {
+                        light.shadows = LightShadows.Hard;
+                        light.shadowStrength = .8f;
+                    }
+                }
+                else
+                {
+                    light.transform.position = recipe.EulerOrPosition;
+                    light.range = recipe.Range;
+                }
             }
-            for (int i = 0; i < visuals.Length; i++) BuildMapCard(visuals[i], shader, i);
-            SetLayer(transform);
-            built = true;
-            RenderStage();
-            Debug.Log("SHOOTER_MENU_SCENE_READY actors=3 cards=2 colliders=0 authority=0");
         }
 
         private void BuildMapCard(PackagedVisualPayloads visuals, Shader shader, int index)
@@ -273,21 +313,29 @@ namespace Shooter.Presentation.Session
                 visuals, shader, MapVisualClosure.MapMaterialPaths[0], "Packaged card " + visuals.MapId, .5f);
             // Actual packaged solids above their matching material-family ground plane. No map
             // generator, collision or navigation is installed for these static overview renders.
-            Place("Map card ground " + visuals.MapId,
-                new Vector3(offset, -.05f, 0), new Vector3(256f, .1f, 256f),
-                PackagedMaterial(visuals, shader,
-                    MapVisualClosure.MapMaterialPaths[visuals.MapId == "depot-yard" ? 3 : 2],
-                    "Map card ground " + visuals.MapId, 128f));
+            int groundFamily = visuals.MapId == "depot-yard" ? 3 : 2;
+            Material ground = PackagedMaterial(visuals, shader, MapVisualClosure.MapMaterialPaths[groundFamily],
+                "Map card ground " + visuals.MapId, 128f);
+            Place("Map card ground " + visuals.MapId, new Vector3(offset, -.05f, 0), new Vector3(256f, .1f, 256f), ground);
+            // Dark under-plate + thin rim so the overview reads as an operation tile when cropped.
+            Material plate = Material(shader, "Map card plate " + visuals.MapId, new Color(.035f, .045f, .05f), .08f);
+            Place("Map card plate " + visuals.MapId, new Vector3(offset, -.18f, 0), new Vector3(290f, .06f, 290f), plate);
+            Material rim = Variant(ground, "Map card rim " + visuals.MapId, new Color(.18f, .22f, .24f));
+            Place("Map card rim N " + visuals.MapId, new Vector3(offset, .02f, 148f), new Vector3(296f, .08f, 2.4f), rim);
+            Place("Map card rim S " + visuals.MapId, new Vector3(offset, .02f, -148f), new Vector3(296f, .08f, 2.4f), rim);
+            Place("Map card rim E " + visuals.MapId, new Vector3(offset + 148f, .02f, 0), new Vector3(2.4f, .08f, 296f), rim);
+            Place("Map card rim W " + visuals.MapId, new Vector3(offset - 148f, .02f, 0), new Vector3(2.4f, .08f, 296f), rim);
             var camera = new GameObject("Map card camera").AddComponent<Camera>();
             camera.transform.SetParent(transform, false);
-            camera.transform.position = new Vector3(offset + 145, 175, -150);
+            Vector3 camOffset = MenuStagingComposition.MapCardCameraOffset;
+            camera.transform.position = new Vector3(offset + camOffset.x, camOffset.y, camOffset.z);
             camera.transform.LookAt(new Vector3(offset, 0, 0));
             camera.orthographic = true;
-            camera.orthographicSize = 160;
+            camera.orthographicSize = MenuStagingComposition.MapCardOrthoSize;
             camera.nearClipPlane = .1f;
             camera.farClipPlane = 600;
             camera.cullingMask = 1 << StageLayer;
-            camera.backgroundColor = new Color(.08f, .13f, .15f);
+            camera.backgroundColor = MenuStagingComposition.MapCardClear;
             camera.clearFlags = CameraClearFlags.SolidColor;
             camera.enabled = false;
             camera.allowHDR = false;
@@ -340,11 +388,15 @@ namespace Shooter.Presentation.Session
             float dt = reducedMotion ? 0 : Mathf.Min(Time.unscaledDeltaTime, .05f);
             sceneTime += dt;
             actors?.TickMenuShowcase(dt);
-            for (int i = 0; i < motes.Count; i++)
+            if (!reducedMotion)
             {
-                var p = motes[i].localPosition;
-                p.y = .35f + i % 7 * .38f + Mathf.Sin(sceneTime * .3f + i) * .08f;
-                motes[i].localPosition = p;
+                for (int i = 0; i < motes.Count; i++)
+                {
+                    if (motes[i] == null || !motes[i].gameObject.activeSelf) continue;
+                    var p = motes[i].localPosition;
+                    p.y = .35f + i % 7 * .38f + Mathf.Sin(sceneTime * .3f + i) * .08f;
+                    motes[i].localPosition = p;
+                }
             }
             RenderStage();
         }
@@ -388,12 +440,12 @@ namespace Shooter.Presentation.Session
             {
                 RenderSettings.fog = true;
                 RenderSettings.fogMode = FogMode.ExponentialSquared;
-                RenderSettings.fogColor = new Color(.09f, .14f, .16f);
-                RenderSettings.fogDensity = .020f;
+                RenderSettings.fogColor = MenuStagingComposition.FogColor;
+                RenderSettings.fogDensity = MenuStagingComposition.FogDensity;
                 RenderSettings.ambientMode = AmbientMode.Trilight;
-                RenderSettings.ambientSkyColor = new Color(.30f, .31f, .28f);
-                RenderSettings.ambientEquatorColor = new Color(.15f, .19f, .22f);
-                RenderSettings.ambientGroundColor = new Color(.05f, .06f, .07f);
+                RenderSettings.ambientSkyColor = MenuStagingComposition.AmbientSky;
+                RenderSettings.ambientEquatorColor = MenuStagingComposition.AmbientEquator;
+                RenderSettings.ambientGroundColor = MenuStagingComposition.AmbientGround;
                 stageCamera.Render();
             }
             finally

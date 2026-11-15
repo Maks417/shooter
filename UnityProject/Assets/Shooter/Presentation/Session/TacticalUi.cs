@@ -234,20 +234,33 @@ namespace Shooter.Presentation.Session
 
         public bool MapCard(Rect r, string id, Texture? image, string title, string subtitle, bool selected = false)
         {
-            Fill(r, Surface);
-            Fill(new Rect(r.x, r.y, r.width, 1), PanelEdge);
-            if (image != null && Event.current.type == EventType.Repaint) GUI.DrawTexture(r, image, ScaleMode.ScaleAndCrop);
-            // Dense caption plate with amber selection rail.
-            Fill(new Rect(r.x, r.yMax - 62, r.width, 62), new Color(.02f, .03f, .035f, .92f));
-            Fill(new Rect(r.x, r.yMax - 62, r.width, 1), new Color(1, 1, 1, .08f));
+            // Operation tile: charcoal well, inset media plate, caption bar — still draws real map RTTs.
+            Fill(r, new Color(.02f, .03f, .035f, .98f));
+            Edge(r);
+            Rect media = new Rect(r.x + 3, r.y + 3, r.width - 6, r.height - 66);
+            Fill(media, Surface);
+            if (image != null && Event.current.type == EventType.Repaint)
+                GUI.DrawTexture(media, image, ScaleMode.ScaleAndCrop);
+            // Soft top scrim so title plate stays readable over bright map solids.
+            for (int i = 0; i < 7; i++)
+            {
+                float u = i / 6f;
+                Fill(new Rect(media.x, media.y + i * 3f, media.width, 4f), new Color(0f, 0f, 0f, .16f * (1f - u)));
+            }
+            Rect plate = new Rect(r.x, r.yMax - 62, r.width, 62);
+            Fill(plate, new Color(.02f, .03f, .035f, .94f));
+            Fill(new Rect(plate.x, plate.y, plate.width, 1), new Color(1f, 1f, 1f, .10f));
+            AccentBar(new Rect(plate.x + 14, plate.y + 10, 20, 2), Accent);
             bool clicked = Button(r, id, "", selected: selected, quiet: true);
-            Label(new Rect(r.x + 14, r.yMax - 52, r.width - 28, 22), title, 18);
-            Label(new Rect(r.x + 14, r.yMax - 26, r.width - 28, 18), subtitle, 12, Muted);
+            Label(new Rect(r.x + 14, r.yMax - 48, r.width - 28, 22), title, 18);
+            Label(new Rect(r.x + 14, r.yMax - 24, r.width - 28, 16), subtitle, 12, Muted);
             if (selected)
             {
-                Fill(new Rect(r.x, r.y, 3, r.height), Accent);
-                Fill(new Rect(r.x, r.yMax - 3, r.width, 3), Accent);
-                Fill(new Rect(r.x, r.y, r.width, 2), Accent);
+                AccentBar(new Rect(r.x, r.y, 3, r.height), Accent);
+                AccentBar(new Rect(r.x, r.y, r.width, 2), Accent);
+                AccentBar(new Rect(r.x, r.yMax - 3, r.width, 3), Accent);
+                AccentBar(new Rect(r.xMax - 18, r.y + 6, 12, 1), Accent);
+                AccentBar(new Rect(r.xMax - 7, r.y + 6, 1, 12), Accent);
             }
             return clicked;
         }
