@@ -1,6 +1,6 @@
 # M11 — Playable build and acceptance — handoff and gate record
 
-**Latest preview — 2026-11-15:** T075 installer **0.3.4**, binary source `7407bc4`; [exact delivery and evidence](#t075--procedural-presentation-preview-034). Older deliveries below are retained history. VD/REL acceptance remains open and P05 FAIL is unchanged.
+**Latest preview — 2026-11-15:** T076 installer **0.3.5** (compact TDM maps), binary source `ad6bdea`; [exact delivery and evidence](#t076--compact-tdm-map-layouts-2026-11-15). Previous: T075 installer 0.3.4, source `7407bc4` ([evidence](#t075--procedural-presentation-preview-034)). Older deliveries below are retained history. VD/REL acceptance remains open and P05 FAIL is unchanged.
 
 ## Physics gap fixes — motor overlap recovery, stand-up sweep, muzzle cover, stuck-actor rescue
 
@@ -446,7 +446,8 @@ Both pass all 13 `ArenaRules` rows and `MapTopologyValidation` (3 staging exits 
 Evidence at final merged source `736548e` (includes T075 ADR-044 surface publication from main): Contracts 73, Generation 371, Maps 51, Game 61, Simulation 194, source provenance (714 entries / 357 GUIDs), docs, fixtures and contract lock PASS. Unity EditMode 43/43 and PlayMode 17/17 PASS. `Compile-GameContent.ps1 -Native` PASS with native nav, reproduction and spawn→objective paths for both maps. New gameplay identities (prefix): compound package root `e7cc94c0`, collision `a5ad5876`, navigation `c2fc4ed0`, metadata `cb2a7f13`; depot root `3f7679e4`, collision `fa38e9f0`, navigation `33a97d23`, metadata `604af33b`. These supersede the ADR-043/ADR-044 map identities. An intermediate run at `5d50b20` showed 4 EditMode failures (`InputBufferTests` ×3, `MenuStagingSurfaceTests`) that reproduced at unmodified base `cbd359b` and were fixed by T075 on main before this merge.
 
 Limitations and pending items:
-- Not done: Client/Server builds and installer rebuild. Existing installers still ship the old 256 m layouts.
+- Delivery 0.3.5 from clean source `ad6bdea` (locked Unity 6000.3.28f1 / 8f082d2fe476, Client IL2CPP / Server Mono): Client and Server builds PASS, Client and Server smoke PASS (`Artifacts/m0-foundation/ad6bdea6c74a8627f7afadd9ae4aace31de169bb/`). `Package-Release.ps1 -RequireNativeNav -MapCacheRoot Artifacts/map-packages-native` PASS with `navigationSource` unity-native-navmesh, content closure `c8ca52fb6d57582669d2dc9a372cad6fe9dced068a67b9498f57873b2f040bb3`, index `3842cccae20c4b1ab830b73c339b809332a867534cee9fa60994eda152c514f7`, archive `cdcfc45dca8818deef6a447db01e57cd7bca0d9fbfbdbc7d110f434dd50e83fb`, plus extract, corrupt and rollback rehearsals PASS. Note that the wrapper's default cache `Artifacts/map-packages` is the software-nav cache, so native packaging needs `-MapCacheRoot`.
+- Installer: `Artifacts/m11-playable-release/ad6bdea6c74a8627f7afadd9ae4aace31de169bb/installer-20261115T093200473Z-a2bdafc9/installer/Shooter-Setup-0.3.5.exe`, 26,346,316 bytes, SHA256 `b6e4f18455d8c577d3c854a031b578541f7d0ec80ddbf4b7a0942aa10f92a68c`, predecessor 0.3.4. AppId and settings policy are unchanged. Actual install/upgrade and player match start on the new layouts were NotRun (`playerLaunchEvidence` Pending).
 - Path anchor→centre is 54 m against the 55 m limit on both maps. The compound sightline is 58 m against 60. The depot container-lane sightline reaches 29.25 m, above the spec's ≤20 m goal; its layout test allows 30 m.
 - Pending manual playtest at 5v5 and 6v6 on both maps: route feel, spawn pressure under `SpawnSafetyPolicy` (40 m exposure refusal), and bot cover use.
 =======
