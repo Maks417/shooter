@@ -549,3 +549,25 @@ Offline-only delivery (owner: server build not required while online play is pos
 | Installer | `Shooter-Setup-0.3.6.exe`, 26,355,085 bytes, SHA256 `57659b9d8be7b687cdcf18f44e07959a0a0a3f4fc3728eaa1f0299dad11bc690`, predecessor 0.3.5, AppId unchanged, workspace clean | `Artifacts/m11-playable-release/946a58da684099abc1e6fd220ac49e97dde7891c/installer-20261115T103721220Z-d25742a5/installer/` |
 
 Pending: actual install/upgrade and manual playtest of sprint/jump/slide, bot movement, Pause → Resume → Main Menu, first-person weapon view and the T077 visuals. `releaseAcceptance` NotClaimed.
+
+### Delivery 0.3.7 (2026-11-15)
+
+Offline-only delivery from clean `e251702`. It contains the bot NavMesh winding fix with packaged-path fallback (`70538c4`), the relaxed spawn fallback with recoverable SpawnFailure (`a095cf7`/`db524b1`, ADR-047), the 5 s pre-match countdown (`cd52534`, ADR-048), and their docs (`6fb7d34`). Locked Unity 6000.3.28f1 / 8f082d2fe476.
+
+| Gate | Result | Evidence |
+|---|---|---|
+| Pure lanes | Generation 376, Simulation 204, Game 68, Maps 37, source provenance, contract lock PASS at `3785db4`; docs and fixtures PASS at `e251702` | `Artifacts/*/3785db495954b68a8e285e1b77db397ab21add82/` |
+| Unity | EditMode and PlayMode **NotRun** for this delivery, so the new `ProductBotNavigationTests` has never run | — |
+| Content | Reused `Artifacts/map-packages-native`, not recompiled; content closure `c8ca52fb…` unchanged from 0.3.6 | `Artifacts/map-packages-native` |
+| Client / smoke | IL2CPP client build PASS; client smoke **NotRun**; server build and smoke not run (offline-only) | `Artifacts/m0-foundation/e2517024dfa59ee5c74372f042efbff0d25c9d8b/build-client-20261115T111151155Z-191f256d/` |
+| Package | `Package-Release.ps1 -RequireNativeNav -MapCacheRoot Artifacts/map-packages-native` PASS, unity-native-navmesh, 294 files | `Artifacts/m11-playable-release/e2517024dfa59ee5c74372f042efbff0d25c9d8b/package-20261115T111645759Z-c45285ea/` |
+| Installer | `Shooter-Setup-0.3.7.exe`, 26,362,673 bytes, SHA256 `24a3c3db1ebfe266980b2a2c12c1955210d41dcdc1d07a3065fd7bde80416bdd`, predecessor 0.3.6, AppId unchanged, workspace clean | `Artifacts/m11-playable-release/e2517024dfa59ee5c74372f042efbff0d25c9d8b/installer-20261115T112034943Z-919f4b3a/installer/` |
+
+Pending (all manual):
+- Install or upgrade over 0.3.6, and run a playtest in the installed build. The owner could not test in this session.
+- Bots must leave spawn. Check that `SHOOTER_AI_SUMMARY` in `Player.log` shows `PathsCompleted` rising.
+- Respawn should take about 3–5 s, with no "Awaiting a safe spawn" stall.
+- The 5 s countdown overlay and freeze, then "FIGHT!".
+- Unity EditMode/PlayMode and client smoke for this commit.
+
+`releaseAcceptance` NotClaimed.
