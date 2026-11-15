@@ -22,7 +22,7 @@ namespace Shooter.Presentation.Rendering
             own(material);
             material.SetColor("_BaseColor", Color.white);
             material.SetTexture("_BaseMap", Upload(albedo, label + " albedo", false, own));
-            float repeats = albedo.Width <= 1 && albedo.Height <= 1 ? 1f : Math.Max(1f, tileRepeats);
+            float repeats = albedo.Width <= 1 && albedo.Height <= 1 ? 1f : tileRepeats;
             material.SetTextureScale("_BaseMap", new Vector2(repeats, repeats));
             if (normal != null)
             {

@@ -3,8 +3,8 @@
   "formatVersion": 1,
   "status": "FrozenByIntegrator",
   "contractVersion": "C0-v1",
-  "date": "2026-11-14",
-  "decision": "docs/decisions.md#adr-035--accepted-verified-release-map-packages-t055-boundary",
+  "date": "2026-11-15",
+  "decision": "docs/decisions.md#adr-044--accepted-versioned-procedural-map-surface-publication",
   "toolchainHash": "9ac31fe82117043e2bba3bfb843dd1ca32834b15425188e96d6f3369e2c627a8",
   "generatorRegistry": [
     {
@@ -15,21 +15,21 @@
     },
     {
       "id": "map.compound",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "schema": "shooter.recipe.map-compound.v1",
-      "scope": "Registered ADR-035 T055 boundary for training-compound release packages; publication not yet implemented"
+      "scope": "ADR-035 package publication with ADR-044 procedural map surface sets; unchanged decoded gameplay, new versioned envelopes"
     },
     {
       "id": "map.depot",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "schema": "shooter.recipe.map-depot.v1",
-      "scope": "Registered ADR-035 T055 boundary for depot-yard release packages; approved catalog seed 460072031; publication not yet implemented"
+      "scope": "ADR-035 package publication with ADR-044 procedural map surface sets; unchanged decoded gameplay, new versioned envelopes"
     },
     {
       "id": "map.package",
       "version": "1.0.0",
       "schema": "shooter.map-package.v1",
-      "scope": "Registered ADR-035 package-root publisher/validator boundary; Compile-GameContent publication not yet implemented"
+      "scope": "ADR-035 package-root publisher/validator, unchanged v1 encoding; native navigation through ADR-043"
     }
   ],
   "sources": {
@@ -38,15 +38,15 @@
     "docs/content-schemas/manifest.schema.json": "75a05692bc925f130dd4ff27874cff51cce5018b2421c71b21dbe8e293ec931c",
     "docs/content-schemas/map-metadata.schema.json": "c1f72de1fb0fad453ec95eab49fbfed40f3830e2c67467e1b49b975acd19482d",
     "docs/content-schemas/map-metadata.valid.json": "3286b86b407cf67c99a96a76c9f87dfa99ab6384b67c0e76f23e329d625a003b",
-    "docs/content-schemas/map-package.invalid.json": "0d8424c9c6162e44da8d734a89f67f9f0244b024efdb8cca99c5352b005b481a",
-    "docs/content-schemas/map-package.schema.json": "eb05bc8d1d0e5cc79c9ce300ce44e6932ae5a0f9f53a65c3e0d3fc1b91553aab",
-    "docs/content-schemas/map-package.valid.json": "baf27f55ffa7f85de804de5641e43e215a514ec9671b3ee98af8baf674d67b1d",
-    "docs/content-schemas/map-recipe.compound.json": "011bbf88b5d2e8446fec389c691bbb556e6a35f9e8e2e2196394be01026b192b",
-    "docs/content-schemas/map-recipe.depot.json": "1136be2a34f7c8b3df8c9d80dc01a468cd9b2b377df3a819d9eaeace7be67481",
-    "docs/content-schemas/map-recipe.schema.json": "d6887259265fba73951136a12dab2dcf0ce5360e13ef90e54800ba0d026774ce",
+    "docs/content-schemas/map-package.invalid.json": "738633ff2b7e3c4c3560798ccb3290cefc49f2f9ecaf1d10a84cf0b38e69c9d0",
+    "docs/content-schemas/map-package.schema.json": "4530a4c259190f9bde03c9773edf7458a3974f6f28d5a213a95c993d5db10e45",
+    "docs/content-schemas/map-package.valid.json": "0ab1c567dbffb1242c3f5e6ba6f074de1d43160caed6bc26ca0b2bb0e3ad7c26",
+    "docs/content-schemas/map-recipe.compound.json": "2686b3c2161f16cacd572aa4a6d5582a2e8f8a1eae2b099234fd8b6673c6d107",
+    "docs/content-schemas/map-recipe.depot.json": "0c148b53b2f2953fe4b2e1ed5f715f733b0d4859da1a87c9bdc34a4cf9178faa",
+    "docs/content-schemas/map-recipe.schema.json": "43b1a890f502da76d830dd8e7150f44379671dc9019058c0423e0b390226846e",
     "docs/content-schemas/release-catalog.invalid.json": "b49a8b11ad06c88f5ef48e9b8ec4a520b3a48108def292230f00be6b9a36fbb1",
     "docs/content-schemas/release-catalog.schema.json": "ac4be41865dc0a221115186171af594c69f24f0b4d04d13e3739cd1323f10338",
-    "docs/content-schemas/release-catalog.valid.json": "49af82ef74b7b8d5ab2df242af39a0f3ca896ee91ff7e1a0ebdea85bee821179",
+    "docs/content-schemas/release-catalog.valid.json": "7f402373b5dde31edc5a53685f582077a5cbab472d7d2c49026e4ee550007195",
     "Tools/Generation.Tests/CodecFixtures/generate_vectors.py": "5ef90986cc65590226deec5e35dcfd0d6b0fafa26cb181d49ba6d67870b96489",
     "Tools/Generation.Tests/CodecTests.cs": "ab606b851ca802673d6c8891185beb78d3eebde8901d68ca9fec82ddb4c20d48",
     "UnityProject/Assets/Shooter/Generation/Core/Canonical/CanonicalJson.cs": "64bc7ea7f4bcf1ecde9dfaec40a71b4cd575e3c0ae59b957614fc4e1498aecc9",

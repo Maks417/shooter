@@ -115,7 +115,7 @@ namespace Shooter.Presentation.Session
             // uploaded planes; numeric tint changes do not create new texture caches or art inputs.
             Material concrete = PackagedMaterial(visuals[0], shader, MapVisualClosure.MapMaterialPaths[0], "Stage concrete", 4f);
             Material concreteWarm = Variant(concrete, "Stage concrete warm", new Color(1f, .93f, .82f));
-            Material steel = PackagedMaterial(visuals[0], shader, MapVisualClosure.WeaponMaterialPaths[0], "Stage steel", 3f);
+            Material steel = PackagedMaterial(visuals[0], shader, MapVisualClosure.MapMaterialPaths[1], "Stage steel", 3f);
             steel.SetColor("_BaseColor", new Color(.56f, .68f, .73f));
             Material steelMatte = Variant(steel, "Stage steel matte", new Color(.72f, .83f, .86f));
             steelMatte.SetFloat("_Smoothness", .42f);
@@ -265,7 +265,7 @@ namespace Shooter.Presentation.Session
             root.layer = StageLayer;
             root.AddComponent<MeshFilter>().sharedMesh = Upload(MapVisualClosure.DecodeMapMesh(visuals, MapVisualClosure.MapSolidsMeshPath), "Map card " + visuals.MapId);
             root.AddComponent<MeshRenderer>().sharedMaterial = PackagedMaterial(
-                visuals, shader, MapVisualClosure.MapMaterialPaths[0], "Packaged card " + visuals.MapId, 4f);
+                visuals, shader, MapVisualClosure.MapMaterialPaths[0], "Packaged card " + visuals.MapId, .5f);
             // Actual packaged solids above their matching material-family ground plane. No map
             // generator, collision or navigation is installed for these static overview renders.
             Place("Map card ground " + visuals.MapId,

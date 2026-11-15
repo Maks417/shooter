@@ -6,7 +6,7 @@
     "sources": [
         {
             "path": "UnityProject/Assets/Shooter/Bootstrap/Editor/ShooterBuild.cs",
-            "sha256": "e9e49d24f44961173cca8b0393c6131c580cc646e95650357bc3dae5f363d382"
+            "sha256": "3307425317be32e0a80b55352e8a6acb668d94cc2d4c3857dd331ce0f82e1210"
         }
     ],
     "artifacts": [
@@ -45,6 +45,18 @@
         {
             "path": "UnityProject/Assets/Shooter/Settings/OrderedDither8.asset",
             "sha256": "55ce01887fc96100235227decd4d3dbf5b6036629ab5f780a2e7b18379dafff6"
+        },
+        {
+            "path": "UnityProject/Assets/Shooter/Settings/ProductSurfaceMask.mat",
+            "sha256": "48ef835103045856c8b266a707e661f43ce3a06b9685318eba860ded37efcf53"
+        },
+        {
+            "path": "UnityProject/Assets/Shooter/Settings/ProductSurfaceNormal.mat",
+            "sha256": "6929760d6c2f0893859ea1a3057c3d137d82d45da5470a69bac665bb7f45f950"
+        },
+        {
+            "path": "UnityProject/Assets/Shooter/Settings/ProductSurfaceNormalMask.mat",
+            "sha256": "135c1ea1969c6358e236ef59708e39f6c260ebf1c3ba045fafd353fb7f9e7777"
         },
         {
             "path": "UnityProject/Assets/Shooter/Settings/UniversalRenderPipelineGlobalSettings.asset",
