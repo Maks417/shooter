@@ -1,6 +1,12 @@
 # Launch and playtest the current candidate
 
-## Current visual preview — 0.3.1
+**Current T075 design preview — 2026-11-15:** Windows installer **0.3.4**, clean binary source `7407bc4`, implements procedural PBR map surfaces, textured menu staging, working actual-map cards and analytic first-person handling with LOD0 equipment on Low. Unity **43 EditMode / 17 PlayMode**, clean Client/Server, eight native packages, provenance and package/installer builders PASS. Automated player review observed both map cards and Compound 5v5 / Depot 6v6 loads; this is not full gameplay or comparative visual acceptance. P05 FAIL, reference performance and M8–M11/VD exits remain open. [Identities, evidence and limitations](milestones/m11-playable-release/handoff.md#t075--procedural-presentation-preview-034).
+
+## Launch 0.3.4
+
+Use the upgrading Windows installer recorded in the [T075 handoff](milestones/m11-playable-release/handoff.md#t075--procedural-presentation-preview-034). The 0.3.2/0.3.3 intermediates are retained for evidence, not the current recommendation. Choose a rendered map card or Play, select 5v5/6v6 and Start match. Controls and existing preferences are unchanged. This review loaded Compound 5v5 and Depot 6v6 only; the full matrix below remains Pending. Actual 0.3.4 installation/upgrade was not executed here.
+
+## Prior visual preview — 0.3.1
 
 Use the **Windows installer 0.3.1**, source b531da9, at the exact path/hash in the [current M11 handoff](milestones/m11-playable-release/handoff.md#t074--scene-led-menu-and-tactical-hud-preview). It preserves the stable installer identity and preference policy; actual 0.3.1 install/upgrade acceptance has not been executed here. Main now uses a live procedural staging scene and two rendered operation cards. Choose Play or a map card, select 5v5/6v6, then Start match. Settings has Audio/Video/Controls/Accessibility groups and Apply/Cancel. Existing WASD/mouse/weapons/Slide/Escape/Tab controls remain.
 

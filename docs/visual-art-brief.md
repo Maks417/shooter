@@ -1,5 +1,7 @@
 # VD0 visual art brief — Battlefield V / Bodycam / Warface
 
+**T075 implementation update — 2026-11-15:** source `7407bc4` / installer 0.3.4 extends the earlier T074 baseline with real procedural surface triplets, scene material reuse, working map overviews and near-field weapon handling. Player captures still show blockout environments/soldiers. All VD exits, exact comparison approval and P05 disposition remain unchanged. [Implementation/evidence](milestones/m11-playable-release/handoff.md#t075--procedural-presentation-preview-034).
+
 Status: **draft brief for owner approval**, 2026-11-14. Companion to [design milestones](design-milestones.md). This page records the working art direction, comparison register, current-build gaps and component ownership for parallel presentation work. It does **not** close VD0 (owner still selects exact Bodycam/Warface frames and approves the brief), does **not** accept any VD1–VD9 exit, and does **not** authorize a P05 clearance search (ADR-024).
 
 Baseline software under review: T074 preview source `b531da9` / installer 0.3.1; later HEAD may add presentation polish without claiming reference parity.

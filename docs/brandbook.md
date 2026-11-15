@@ -1,5 +1,7 @@
 # Visual direction and UI design system
 
+**T075 implementation update — 2026-11-15:** source `7407bc4` / installer 0.3.4 extends the earlier T074 baseline with real procedural surface triplets, scene material reuse, working map overviews and near-field weapon handling. Player captures still show blockout environments/soldiers. All VD exits, exact comparison approval and P05 disposition remain unchanged. [Implementation/evidence](milestones/m11-playable-release/handoff.md#t075--procedural-presentation-preview-034).
+
 T074 stage 1 implements the shell/HUD direction below in `Presentation/Session/TacticalUi.cs`, `Presentation/Session/ProductShellHost.cs` and `ProductSessionView.cs`. The environment, equipment and motion direction remains staged work. See [vision](vision.md), [shell](features/game-shell.md) and [rendering](features/materials-rendering.md). Implementation is separate from named visual acceptance.
 
 ## Owner direction — 2026-11-14

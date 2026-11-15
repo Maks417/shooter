@@ -1019,8 +1019,8 @@
         "T074"
       ],
       "contractVersion": "C0-v1 / Game-v1 / SGAF-v1 unchanged",
-      "status": "Integrated; root verifying combined software and rebuilding native content. VD/P05/player/hardware acceptance remains open.",
-      "leaseExpiry": "2026-11-16T00:00:00Z"
+      "status": "Implemented/integrated on main; final binary 7407bc4, installer 0.3.4. Pure/Unity/build/native/provenance checks PASS; limited automated player review only. VD/REL/P05/hardware acceptance remains open. Temporary worktree and branch removed; evidence retained.",
+      "leaseExpiry": null
     },
     {
       "packageId": "T075/handling",
@@ -1039,8 +1039,8 @@
         "T074"
       ],
       "contractVersion": "C0-v1 / Game-v1 / SGAF-v1 unchanged",
-      "status": "Integrated; root verifying combined software and rebuilding native content. VD/P05/player/hardware acceptance remains open.",
-      "leaseExpiry": "2026-11-16T00:00:00Z"
+      "status": "Implemented/integrated on main; final binary 7407bc4, installer 0.3.4. Pure/Unity/build/native/provenance checks PASS; limited automated player review only. VD/REL/P05/hardware acceptance remains open. Temporary worktree and branch removed; evidence retained.",
+      "leaseExpiry": null
     },
     {
       "packageId": "T075/menu",
@@ -1056,8 +1056,8 @@
         "T074"
       ],
       "contractVersion": "C0-v1 / Game-v1 / SGAF-v1 unchanged",
-      "status": "Integrated; root verifying combined software and rebuilding native content. VD/P05/player/hardware acceptance remains open.",
-      "leaseExpiry": "2026-11-16T00:00:00Z"
+      "status": "Implemented/integrated on main; final binary 7407bc4, installer 0.3.4. Pure/Unity/build/native/provenance checks PASS; limited automated player review only. VD/REL/P05/hardware acceptance remains open. Temporary worktree and branch removed; evidence retained.",
+      "leaseExpiry": null
     }
   ],
   "validationWave": {
