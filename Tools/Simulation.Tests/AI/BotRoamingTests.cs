@@ -66,8 +66,8 @@ namespace Shooter.Simulation.Tests.AI
             ai.SetNavigationDestinations(new[] { new Float3(8, 0, 0) }, null);
             ai.RegisterBot(new EntityId(1), new Float3(0, 0, 0), yaw: 0, team: 1);
             var commands = new InputCommand[1];
-            ai.Plan(1, null, commands, 0);
-            ai.Plan(2, null, commands, 0);
+            // T082: bots turn at a bounded rate/acceleration, so facing the route takes a few ticks, not one.
+            for (uint t = 1; t <= 40; t++) ai.Plan(t, null, commands, 0);
 
             Assert.Equal((float)(Math.PI / 2), commands[0].AimYaw, 3);
             Assert.True(commands[0].MoveY > 0.99f);
@@ -82,10 +82,12 @@ namespace Shooter.Simulation.Tests.AI
             ai.SetNavigationDestinations(new[] { new Float3(0, 0, -8) }, null);
             ai.RegisterBot(new EntityId(1), new Float3(0, 0, 0), yaw: 0, team: 1);
             var commands = new InputCommand[1];
-            ai.Plan(1, null, commands, 0);
-            ai.Plan(2, null, commands, 0);
-
-            Assert.True(commands[0].AimYaw >= -Math.PI && commands[0].AimYaw < Math.PI);
+            // A 180° bounded turn passes the ±π seam; every intermediate command must stay inside C0.
+            for (uint t = 1; t <= 40; t++)
+            {
+                ai.Plan(t, null, commands, 0);
+                Assert.True(commands[0].AimYaw >= -Math.PI && commands[0].AimYaw < Math.PI);
+            }
             Assert.True(commands[0].MoveY > 0.99f);
         }
 

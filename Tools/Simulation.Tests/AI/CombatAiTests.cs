@@ -161,10 +161,22 @@ namespace Shooter.Simulation.Tests.AI
             uint ready = bot.ReactionReadyTick;
             Assert.True(ready > 2);
 
-            ai.PlanEnemies(ready, candidates, candidates.Length, commands, 0);
+            // T082: no trigger before the reaction delay; once ready, the bot fires as soon as its bounded
+            // turn has settled on its (seeded, imperfect) aim point.
+            bool firedEarly = false, fired = false;
+            for (uint t = 3; t < ready + 40; t++)
+            {
+                ai.PlanEnemies(t, candidates, candidates.Length, commands, 0);
+                bool trigger = (commands[0].Buttons & (InputButtons.FireHeld | InputButtons.FirePressed)) ==
+                    (InputButtons.FireHeld | InputButtons.FirePressed);
+                if (t < ready) firedEarly |= trigger;
+                else fired |= trigger;
+                Assert.Equal(new EntityId(4), bot.TargetId);
+            }
+            Assert.False(firedEarly);
+            Assert.True(fired);
             Assert.Equal(AiState.Engage, bot.State);
-            Assert.Equal(InputButtons.FireHeld | InputButtons.FirePressed,
-                commands[0].Buttons & (InputButtons.FireHeld | InputButtons.FirePressed));
+            ready += 40; // continue after the loop's last planned tick
 
             // Ally-only roster: no acquisition, no fire.
             ai.NotifyDeath(bot.Self);

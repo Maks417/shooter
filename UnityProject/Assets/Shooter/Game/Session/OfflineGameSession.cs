@@ -266,7 +266,9 @@ namespace Shooter.Game.Session
             // Real respawn semantics: count life/entity replacements, not net alive growth
             // (same-tick death elsewhere must not cancel a successful respawn event).
             measurement.Respawns += CountRespawnEvents(pre, snap);
-            if (RebindReplacements(pre, snap))
+            // T082: a respawn rebinds only the replaced bot's slot. Rebuilding the planner wiped every other
+            // bot's targets, paths and cover several times a minute; it stays as the fallback only.
+            if (RebindReplacements(pre, snap) && !RebindBotLives(pre, snap, lifecycle))
             {
                 bots = RebuildBotPlanner(snap, lifecycle, mapRuntime);
             }
@@ -317,6 +319,17 @@ namespace Shooter.Game.Session
                 for (int i = 0; i < events.Events.Count; i++)
                 {
                     var ev = events.Events[i];
+                    // T082 stimuli from tick t; the planner consumes them when it plans t+1.
+                    if (ev.Kind == CombatEventKind.ShotAccepted && ev.Payload is ShotPayload shot)
+                    {
+                        bots.ObserveGunfire(ev.Instigator, shot.Origin);
+                        continue;
+                    }
+                    if (ev.Kind == CombatEventKind.DamageApplied)
+                    {
+                        bots.ObserveDamage(ev.Target, ev.Instigator, lifecycle);
+                        continue;
+                    }
                     if (ev.Kind != CombatEventKind.Death) continue;
                     if (!lifecycle.TryGetLife(ev.Target, out _, out var life)) continue;
                     EntityId? killer = ev.Instigator.IsValid ? ev.Instigator : (EntityId?)null;
@@ -520,6 +533,26 @@ namespace Shooter.Game.Session
                 if (current.IsHuman) humanEntity = current.EntityId;
             }
             return changed;
+        }
+
+        /// <summary>
+        /// Move each replaced bot's planner slot onto its new life (fresh blackboard and command epoch) and keep
+        /// every other bot's state. Returns false when a slot cannot be matched; the caller then rebuilds.
+        /// </summary>
+        private bool RebindBotLives(MatchViewSnapshot before, MatchViewSnapshot after, HarnessActorLifecycle actorLifecycle)
+        {
+            if (bots == null || before.Participants.Count != after.Participants.Count) return false;
+            for (int i = 0; i < after.Participants.Count; i++)
+            {
+                var current = after.Participants[i];
+                var prior = before.Participants[i];
+                if (current.EntityId.Equals(prior.EntityId) || current.IsHuman) continue;
+                if (!current.Alive || !actorLifecycle.TryGetActorState(current.EntityId, out var state)) return false;
+                if (!actorLifecycle.ResetCommandEpoch(current.EntityId))
+                    throw new InvalidOperationException("bot authority entity missing");
+                if (!bots.TryReplaceLife(prior.EntityId, current.EntityId, state.Feet, state.AimYaw, state.Team)) return false;
+            }
+            return true;
         }
 
         private TeamBotPlanner RebuildBotPlanner(

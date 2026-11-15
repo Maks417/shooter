@@ -70,7 +70,48 @@ namespace Shooter.Simulation.AI
         public uint NextSlideTick { get; set; }
         /// <summary>Set by BuildCommand for the tick being planned; consumed by the session as the slide request.</summary>
         public bool SlideIntent { get; set; }
+
+        // T082 combat behaviour. All reset per life; deterministic from authority feedback, entity id and tick.
+        /// <summary>Sticky current enemy; survives short visibility gaps (unlike per-tick <see cref="VisibleTargetId"/>).</summary>
+        public EntityId? TargetId { get; set; }
+        public uint AcquiredTick { get; set; }
+        public float TargetDistance { get; set; }
+        public ushort TargetHealth { get; set; } = 100;
+        public Float3 TargetVelocity { get; set; }
+        public float TargetSpeed { get; set; }
+        public float YawRate { get; set; }
+        public float PitchRate { get; set; }
+        /// <summary>Angle between current aim and the aim the bot is trying to hold (debug/tests).</summary>
+        public float AimOffsetRadians { get; set; }
+        public uint BurstStartTick { get; set; }
+        public uint BurstEndTick { get; set; }
+        public uint BurstPauseUntilTick { get; set; }
+        public int BurstIndex { get; set; }
+        public int StrafeDir { get; set; } = 1;
+        public uint StrafeFlipTick { get; set; }
+        public Float3 StrafeCenter { get; set; }
+        public bool HasStrafeCenter { get; set; }
+        public Float3 StrafeCheckFeet { get; set; }
+        public uint StrafeCheckTick { get; set; }
+        public uint FlinchUntilTick { get; set; }
+        public uint LastDamagedTick { get; set; }
+        public bool WasDamaged { get; set; }
+        public EntityId? LastAttacker { get; set; }
+        /// <summary>Source class of <see cref="LastHeard"/> (ai.md hearing stimulus).</summary>
+        public HeardClass Heard { get; set; }
+        public uint RetreatAllowedTick { get; set; }
+        public int ReloadStartMag { get; set; }
+        public bool CoverProbeActive { get; set; }
+        public bool CoverProbeFailed { get; set; }
+        public int CoverProbeIndex { get; set; }
+        public Float3 CoverProbeOrigin { get; set; }
+        public Float3 CoverThreat { get; set; }
+        public Float3? CoverPoint { get; set; }
+        public uint InCoverSinceTick { get; set; }
+        public bool InCover { get; set; }
     }
+
+    public enum HeardClass : byte { None = 0, Gunfire = 1, Damage = 2, Callout = 3 }
 
     public sealed class AiCounters
     {
@@ -89,5 +130,15 @@ namespace Shooter.Simulation.AI
         public int PathsCompleted;
         public int PathsPartial;
         public int PathsFailed;
+        // T082
+        public int CoverProbeRays;
+        public int CoverProbesFailed;
+        public int BurstsStarted;
+        public int StimuliHeard;
+        public int DamageReactions;
+        public int Callouts;
+        public int Retreats;
+        public int TacticalReloads;
+        public int TargetSwitches;
     }
 }

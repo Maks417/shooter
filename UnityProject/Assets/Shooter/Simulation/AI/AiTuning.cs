@@ -1,0 +1,105 @@
+#nullable enable
+
+namespace Shooter.Simulation.AI
+{
+    /// <summary>
+    /// T082 combat-behaviour tuning (docs/features/ai.md): one data set for every quality profile.
+    /// Ticks are 60 Hz simulation ticks; angles are radians unless the name says otherwise.
+    /// </summary>
+    public static class AiTuning
+    {
+        public const float TickSeconds = 1f / 60f;
+
+        // Reaction (spec: 250–500 ms initial delay).
+        public const uint ReactionBaseTicks = 15;
+        public const uint ReactionSpreadTicks = 16;
+        /// <summary>Switching to another enemy while already fighting is faster than a cold acquisition.</summary>
+        public const uint SwitchReactionBaseTicks = 8;
+        public const uint SwitchReactionSpreadTicks = 6;
+        /// <summary>Distant targets are harder to pick out: extra reaction ticks per 10 m beyond 15 m (capped).</summary>
+        public const float RangeReactionTicksPer10m = 3f;
+        public const uint MaxRangeReactionTicks = 12;
+        /// <summary>A target seen again within this gap keeps its reaction and accuracy state.</summary>
+        public const uint TargetMemoryTicks = 30;
+        /// <summary>"In combat" window used for switch reactions, callout suppression and tactical reloads.</summary>
+        public const uint CombatMemoryTicks = 120;
+        /// <summary>Stale-scan cadence: a bot with a sticky target re-checks other candidates this often.</summary>
+        public const uint TargetScanIntervalTicks = 20;
+        /// <summary>A newly seen enemy replaces the sticky one only if it is this much closer.</summary>
+        public const float TargetSwitchCloserFactor = 0.7f;
+        /// <summary>An attacker that damaged the bot this recently is checked first.</summary>
+        public const uint AttackerPriorityTicks = 120;
+
+        // Aim turning (spec: bounded angular acceleration).
+        public const float CombatTurnRate = 7.3f;        // ~420 deg/s
+        public const float CombatTurnAccel = 70f;
+        public const float TravelTurnRate = 10f;
+        public const float TravelTurnAccel = 90f;
+        public const float PitchRate = 5f;
+        public const float PitchAccel = 50f;
+        public const float MaxPitch = 1.45f;             // inside the C0 ±89° bound
+
+        // Aim uncertainty (spec: seeded uncertainty and accuracy recovery). Expressed as a miss distance at the target.
+        public const float AcquireErrorMeters = 1.1f;
+        public const float SettledErrorMeters = 0.12f;
+        /// <summary>Settled error grows with range so long shots are not laser-accurate.</summary>
+        public const float SettledErrorPerMeter = 0.009f;
+        public const uint AccuracyRecoveryTicks = 40;
+        public const float MinErrorRadians = 0.005f;
+        public const float MaxErrorRadians = 0.14f;      // ~8 deg
+        public const float MovingErrorMeters = 0.25f;
+        public const float TargetMotionErrorMeters = 0.2f;
+        public const float FlinchErrorMeters = 0.5f;
+        public const uint FlinchTicks = 30;
+        /// <summary>The error direction drifts every bucket; turning limits smooth the jump.</summary>
+        public const uint ErrorBucketTicks = 10;
+
+        // Fire discipline.
+        public const float FireToleranceMeters = 0.35f;
+        public const float FireToleranceMinRadians = 0.026f; // ~1.5 deg
+        public const float CloseRange = 12f;
+        public const float LongRange = 30f;
+        public const float AdvanceRange = 55f;
+        public const float BackOffRange = 4f;
+        public const uint WeaponIntervalTicks = 6;       // rifle cadence (WeaponDefinition.Rifle)
+        public const uint CloseBurstMinTicks = 60, CloseBurstSpreadTicks = 30, ClosePauseMinTicks = 4, ClosePauseSpreadTicks = 6;
+        public const uint MidBurstMinRounds = 3, MidBurstSpreadRounds = 4, MidPauseMinTicks = 10, MidPauseSpreadTicks = 11;
+        public const uint LongBurstMinRounds = 1, LongBurstSpreadRounds = 2, LongPauseMinTicks = 16, LongPauseSpreadTicks = 13;
+
+        // Combat movement.
+        public const uint StrafeFlipMinTicks = 24;
+        public const uint StrafeFlipSpreadTicks = 49;
+        public const float StrafeMaxOffset = 2.0f;       // oscillate around the nav point where the fight started
+        public const uint StrafeBlockedCheckTicks = 12;
+        public const float StrafeBlockedMeters = 0.15f;
+        /// <summary>Entity ids with (id % CrouchShooterModulo) == 0 crouch-burst at mid range instead of strafing.</summary>
+        public const ulong CrouchShooterModulo = 3;
+
+        // Hearing and damage stimuli (no rays; distance-attenuated).
+        public const float GunfireHearingRadius = 45f;
+        public const float GunfireNoisePerMeter = 0.08f;
+        public const float DamageSourceNoiseMeters = 1.5f;
+        public const uint StimulusRefreshTicks = 30;
+        public const uint ThreatLookTicks = 180;
+        public const float ThreatLookRange = 30f;
+
+        // Team coordination.
+        public const float CalloutRadius = 30f;
+        public const int DestinationCrowdLimit = 2;
+
+        // Health, ammo and cover.
+        public const ushort LowHealth = 35;
+        public const ushort LosingTradeMargin = 10;
+        public const uint RetreatCooldownTicks = 600;
+        public const int MagazineSize = 30;
+        public const int TacticalReloadBelow = 12;       // 40 % of the rifle magazine
+        public const uint CoverHoldTicks = 120;
+        public const float CoverArrivalMeters = 1.0f;
+        public const int MaxCoverProbeRaysPerTick = 4;
+        public const float CoverChestHeight = 0.75f;      // crouched chest: cover must hide a crouched bot
+        public const float ThreatEyeLift = 0.35f;         // threat sense point is the chest; its eye is above
+        /// <summary>Cover probe candidates relative to "away from threat": (degrees, meters), nearest first.</summary>
+        public static readonly float[] CoverProbeAngles = { 0f, 40f, -40f, 80f, -80f, 0f, 30f, -30f };
+        public static readonly float[] CoverProbeRadii = { 4f, 4f, 4f, 4.5f, 4.5f, 7f, 7f, 7f };
+    }
+}

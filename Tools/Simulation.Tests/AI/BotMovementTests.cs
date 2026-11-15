@@ -49,8 +49,7 @@ namespace Shooter.Simulation.Tests.AI
             ai.SetNavigationDestinations(new[] { new Float3(60, 0, 0) }, null);
             ai.RegisterBot(new EntityId(1), new Float3(0, 0, 0), 0, team: 1);
             var cmds = new InputCommand[1];
-            ai.Plan(1, null, cmds, 0);
-            ai.Plan(2, null, cmds, 0);
+            for (uint t = 1; t <= 40; t++) ai.Plan(t, null, cmds, 0); // bounded turn onto the +X route first
             Assert.True(cmds[0].MoveY > 0.9f);
             Assert.NotEqual(InputButtons.None, cmds[0].Buttons & InputButtons.SprintHeld);
             Assert.Equal(InputButtons.None, cmds[0].Buttons & (InputButtons.FireHeld | InputButtons.CrouchHeld | InputButtons.AimHeld));
@@ -78,11 +77,48 @@ namespace Shooter.Simulation.Tests.AI
         }
 
         [Fact]
-        public void Stationary_engage_crouches_by_id_or_long_range()
+        public void Long_range_engage_is_crouched_stationary_and_aimed_down_sights()
         {
-            Assert.NotEqual(InputButtons.None, EngageStationary(2, 20f, out _).Buttons & InputButtons.CrouchHeld);
-            Assert.Equal(InputButtons.None, EngageStationary(3, 20f, out _).Buttons & InputButtons.CrouchHeld);
-            Assert.NotEqual(InputButtons.None, EngageStationary(3, CombatAiDirector.LongRangeCrouchDistance + 5f, out _).Buttons & InputButtons.CrouchHeld);
+            var cmd = EngageStationary(4, CombatAiDirector.LongRangeCrouchDistance + 5f, out var board);
+            Assert.Equal(AiState.Engage, board.State);
+            Assert.NotEqual(InputButtons.None, cmd.Buttons & InputButtons.CrouchHeld);
+            Assert.NotEqual(InputButtons.None, cmd.Buttons & InputButtons.AimHeld);
+            Assert.Equal(0f, cmd.MoveX);
+            Assert.Equal(0f, cmd.MoveY);
+        }
+
+        [Fact]
+        public void Mid_range_engage_strafes_unless_the_bot_is_a_crouch_shooter()
+        {
+            // id 4: strafer (stands, moves across the line of fire).
+            bool strafed = false, crouchedStrafer = false;
+            var ai = Director(null);
+            ai.RegisterBot(new EntityId(4), new Float3(0, 0, 0), 0, team: 1);
+            var enemies = new[] { new SenseTarget(new EntityId(99), new Float3(0, CombatAiDirector.StandingAimHeight, 20f), 2) };
+            var cmds = new InputCommand[1];
+            for (uint t = 1; t <= 120; t++)
+            {
+                ai.PlanEnemies(t, enemies, 1, cmds, 0);
+                strafed |= Math.Abs(cmds[0].MoveX) > 0.9f;
+                crouchedStrafer |= (cmds[0].Buttons & InputButtons.CrouchHeld) != 0;
+            }
+            Assert.True(strafed);
+            Assert.False(crouchedStrafer);
+
+            // id 3 (id % 3 == 0): crouches and holds still while a burst is running.
+            bool crouchedBurst = false;
+            var ai2 = Director(null);
+            ai2.RegisterBot(new EntityId(3), new Float3(0, 0, 0), 0, team: 1);
+            for (uint t = 1; t <= 120; t++)
+            {
+                ai2.PlanEnemies(t, enemies, 1, cmds, 0);
+                if ((cmds[0].Buttons & InputButtons.FireHeld) != 0 && (cmds[0].Buttons & InputButtons.CrouchHeld) != 0)
+                {
+                    crouchedBurst = true;
+                    Assert.Equal(0f, cmds[0].MoveX);
+                }
+            }
+            Assert.True(crouchedBurst);
         }
 
         [Fact]

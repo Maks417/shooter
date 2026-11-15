@@ -18,7 +18,11 @@ namespace Shooter.Simulation.AI
         }
     }
 
-    /// <summary>Team AI: ≤16 vision rays and ≤2 new paths per tick; cover/reload/stuck through normal commands. Capacity 11 for 6v6.</summary>
+    /// <summary>
+    /// Team AI: ≤16 AI rays (vision + T082 cover probes) and ≤2 new paths per tick; cover/reload/stuck through
+    /// normal commands. Capacity 11 for 6v6. T082 adds bounded-rate seeded aim, burst discipline, strafing,
+    /// sticky threat-aware targeting, hearing/damage stimuli, low-health retreat, runtime cover and callouts.
+    /// </summary>
     public sealed class CombatAiDirector
     {
         public const int MaxBots = 11;
@@ -28,6 +32,8 @@ namespace Shooter.Simulation.AI
         public const uint StuckTicksThreshold = 120; // 2 s at 60 Hz
         public const uint ReplanCooldownTicks = 30;
         public const uint PathTimeoutTicks = 300;
+        /// <summary>An unconfirmed heard stimulus is dropped after this long.</summary>
+        public const uint StimulusExpiryTicks = 600;
 
         // Eye / aim heights matching MotorConfig eyes and GameplayPoseEvaluator hit volumes.
         public const float StandingEyeHeight = 1.65f;
@@ -42,10 +48,8 @@ namespace Shooter.Simulation.AI
         public const float MuzzleDownOffset = 0.15f;
 
         // Movement abilities (all deterministic from entity id / tick / authority feedback).
-        /// <summary>Crouch while engaging from rest when the target is at least this far away.</summary>
-        public const float LongRangeCrouchDistance = 30f;
-        /// <summary>Entity ids with (id % CrouchEngageModulo) == 0 always prefer crouching when engaging from rest.</summary>
-        public const ulong CrouchEngageModulo = 2;
+        /// <summary>Engagements at or beyond this range are fought crouched and stationary with taps.</summary>
+        public const float LongRangeCrouchDistance = AiTuning.LongRange;
         /// <summary>Stuck ticks (of StuckTicksThreshold) before the first jump attempt: 0.75 s.</summary>
         public const uint JumpStuckTicks = 45;
         public const uint JumpCooldownTicks = 90;
@@ -67,6 +71,7 @@ namespace Shooter.Simulation.AI
         private readonly List<Float3> combatDestinations = new List<Float3>();
         private readonly PathBuffer pathBuffer = new PathBuffer(ContractVersion.MaxPathCorners);
         private readonly AiCounters counters = new AiCounters();
+        private int[] visitOrder = new int[32];
         private int botCount;
         private uint tick;
         private int pathsThisTick;
@@ -117,39 +122,7 @@ namespace Shooter.Simulation.AI
         {
             if (botCount >= MaxBots) throw new InvalidOperationException("Team AI capacity exhausted");
             var board = boards[botCount++];
-            board.Self = id;
-            board.Team = team;
-            board.Feet = feet;
-            board.Yaw = yaw;
-            board.Pitch = 0;
-            board.Alive = true;
-            board.State = AiState.Patrol;
-            board.Health = 100;
-            board.MagAmmo = 30;
-            board.ReserveAmmo = 90;
-            board.VisibleTargetId = null;
-            board.HasVisibleTarget = false;
-            board.VisibleTarget = null;
-            board.LastSeenEnemy = null;
-            board.Confidence = 0;
-            board.ReactionReadyTick = 0;
-            board.PathTicket = null;
-            board.PathGoal = null;
-            board.PathCornerCount = 0;
-            board.PathCornerIndex = 0;
-            board.StuckAnchor = feet;
-            board.StuckTicks = 0;
-            board.StuckFailures = 0;
-            board.CoverReservation = null;
-            board.LastHeard = null;
-            board.LastHeardTick = 0;
-            board.LastSeenTick = 0;
-            board.SenseAgeTicks = 0;
-            board.LastSenseOpportunityTick = 0;
-            board.DestinationCursor = 0;
-            board.RetryAfterTick = 0;
-            ResetMovement(board);
-            board.StateEnteredTick = tick;
+            ResetBoardForLife(board, id, feet, yaw, team);
             return board;
         }
 
@@ -176,15 +149,71 @@ namespace Shooter.Simulation.AI
             return false;
         }
 
-        public void NotifyDamage(EntityId victim, Float3 source)
+        /// <summary>Legacy damage stimulus with a known source point (no attacker identity).</summary>
+        public void NotifyDamage(EntityId victim, Float3 source) => ObserveDamage(victim, default, source);
+
+        /// <summary>
+        /// Authoritative damage on <paramref name="victim"/> (tick t), consumed by the next plan (t+1).
+        /// The bot flinches; if it was not already fighting the attacker it turns toward a noisy source
+        /// estimate and investigates.
+        /// </summary>
+        public void ObserveDamage(EntityId victim, EntityId attacker, Float3? attackerPoint)
         {
             for (int i = 0; i < botCount; i++)
             {
-                if (boards[i].Self != victim) continue;
-                boards[i].LastHeard = source;
-                boards[i].LastHeardTick = tick;
-                if (boards[i].State != AiState.Dead) Enter(boards[i], AiState.Investigate);
+                var board = boards[i];
+                if (board.Self != victim) continue;
+                if (!board.Alive || board.State == AiState.Dead) return;
+                board.WasDamaged = true;
+                board.LastDamagedTick = tick;
+                board.FlinchUntilTick = tick + AiTuning.FlinchTicks;
+                if (attacker.IsValid) board.LastAttacker = attacker;
+                counters.DamageReactions++;
+                bool fightingAttacker = board.HasVisibleTarget && attacker.IsValid && board.TargetId == attacker;
+                if (!attackerPoint.HasValue || fightingAttacker) return;
+                float n = AiTuning.DamageSourceNoiseMeters;
+                var p = attackerPoint.Value;
+                board.LastHeard = new Float3(
+                    p.X + n * AiNoise.Signed(board.Self.Value, tick, AiNoise.SaltHearingX),
+                    p.Y,
+                    p.Z + n * AiNoise.Signed(board.Self.Value, tick, AiNoise.SaltHearingZ));
+                board.LastHeardTick = tick;
+                board.Heard = HeardClass.Damage;
+                if (IsCalm(board.State)) Enter(board, AiState.Investigate);
                 return;
+            }
+        }
+
+        /// <summary>
+        /// A shot fired at <paramref name="origin"/> (tick t). Calm bots within hearing radius investigate a
+        /// distance-attenuated estimate of the position. No rays are spent on hearing.
+        /// </summary>
+        public void ObserveGunfire(EntityId shooter, Float3 origin)
+        {
+            float radiusSq = AiTuning.GunfireHearingRadius * AiTuning.GunfireHearingRadius;
+            for (int i = 0; i < botCount; i++)
+            {
+                var board = boards[i];
+                if (!board.Alive || board.State == AiState.Dead || board.Self == shooter) continue;
+                if (board.HasVisibleTarget || !IsCalm(board.State)) continue;
+                float dx = origin.X - board.Feet.X, dz = origin.Z - board.Feet.Z;
+                float dSq = dx * dx + dz * dz;
+                if (dSq > radiusSq) continue;
+                if (board.LastHeard.HasValue && unchecked(tick - board.LastHeardTick) < AiTuning.StimulusRefreshTicks)
+                {
+                    // Recent stimulus: only a clearly closer source replaces it.
+                    float hx = board.LastHeard.Value.X - board.Feet.X, hz = board.LastHeard.Value.Z - board.Feet.Z;
+                    if (dSq >= (hx * hx + hz * hz) * 0.5f) continue;
+                }
+                float noise = MathF.Sqrt(dSq) * AiTuning.GunfireNoisePerMeter;
+                board.LastHeard = new Float3(
+                    origin.X + noise * AiNoise.Signed(board.Self.Value, tick, AiNoise.SaltHearingX),
+                    origin.Y,
+                    origin.Z + noise * AiNoise.Signed(board.Self.Value, tick, AiNoise.SaltHearingZ));
+                board.LastHeardTick = tick;
+                board.Heard = HeardClass.Gunfire;
+                counters.StimuliHeard++;
+                Enter(board, AiState.Investigate);
             }
         }
 
@@ -198,11 +227,16 @@ namespace Shooter.Simulation.AI
                 boards[i].HasVisibleTarget = false;
                 boards[i].VisibleTargetId = null;
                 boards[i].VisibleTarget = null;
+                boards[i].TargetId = null;
                 boards[i].ReactionReadyTick = 0;
                 Enter(boards[i], AiState.Dead);
                 return;
             }
         }
+
+        private static bool IsCalm(AiState state) =>
+            state == AiState.Patrol || state == AiState.Idle || state == AiState.Search ||
+            state == AiState.Investigate || state == AiState.Reposition;
 
         private void ResetBoardForLife(AiBlackboard board, EntityId id, Float3 feet, float yaw, byte team)
         {
@@ -214,7 +248,7 @@ namespace Shooter.Simulation.AI
             board.Alive = true;
             board.State = AiState.Patrol;
             board.Health = 100;
-            board.MagAmmo = 30;
+            board.MagAmmo = AiTuning.MagazineSize;
             board.ReserveAmmo = 90;
             board.VisibleTargetId = null;
             board.HasVisibleTarget = false;
@@ -225,6 +259,7 @@ namespace Shooter.Simulation.AI
             board.ReactionReadyTick = 0;
             board.LastHeard = null;
             board.LastHeardTick = 0;
+            board.Heard = HeardClass.None;
             board.PathTicket = null;
             board.PathGoal = null;
             board.PathCornerCount = 0;
@@ -236,8 +271,10 @@ namespace Shooter.Simulation.AI
             board.LastReplanTick = 0;
             board.SenseAgeTicks = 0;
             board.LastSenseOpportunityTick = 0;
+            board.DestinationCursor = 0;
             board.RetryAfterTick = 0;
             ResetMovement(board);
+            ResetCombat(board);
             board.StateEnteredTick = tick;
         }
 
@@ -252,6 +289,41 @@ namespace Shooter.Simulation.AI
             board.NextJumpTick = 0;
             board.NextSlideTick = 0;
             board.SlideIntent = false;
+        }
+
+        private static void ResetCombat(AiBlackboard board)
+        {
+            board.TargetId = null;
+            board.AcquiredTick = 0;
+            board.TargetDistance = 0;
+            board.TargetHealth = 100;
+            board.TargetVelocity = default;
+            board.TargetSpeed = 0;
+            board.YawRate = 0;
+            board.PitchRate = 0;
+            board.AimOffsetRadians = 0;
+            board.BurstStartTick = 0;
+            board.BurstEndTick = 0;
+            board.BurstPauseUntilTick = 0;
+            board.BurstIndex = 0;
+            board.StrafeDir = (board.Self.Value & 1) == 0 ? 1 : -1;
+            board.StrafeFlipTick = 0;
+            board.HasStrafeCenter = false;
+            board.StrafeCenter = board.Feet;
+            board.StrafeCheckFeet = board.Feet;
+            board.StrafeCheckTick = 0;
+            board.FlinchUntilTick = 0;
+            board.LastDamagedTick = 0;
+            board.WasDamaged = false;
+            board.LastAttacker = null;
+            board.RetreatAllowedTick = 0;
+            board.ReloadStartMag = 0;
+            board.CoverProbeActive = false;
+            board.CoverProbeFailed = false;
+            board.CoverProbeIndex = 0;
+            board.CoverPoint = null;
+            board.InCover = false;
+            board.InCoverSinceTick = 0;
         }
 
         /// <summary>Plan next-tick commands for all living bots. Caller feeds them through normal simulation command path.</summary>
@@ -281,6 +353,7 @@ namespace Shooter.Simulation.AI
             counters.AlliedCandidatesSkipped = 0;
             perception.BeginTick();
             PollPaths();
+            if (visitOrder.Length < enemyCount + 1) visitOrder = new int[enemyCount + 1];
 
             int written = 0;
             int firstBot = botCount == 0 ? 0 : (int)(simulationTick % (uint)botCount);
@@ -292,66 +365,223 @@ namespace Shooter.Simulation.AI
                 AdvancePathCorners(board);
                 UpdateSpeed(board);
                 UpdateStuck(board);
-                EntityId? priorVisible = board.VisibleTargetId;
                 board.HasVisibleTarget = false;
                 board.VisibleTargetId = null;
                 board.VisibleTarget = null;
                 board.LastSenseOpportunityTick = tick;
                 counters.SenseOpportunitiesThisTick++;
-                if (enemies != null && enemyCount > 0)
-                {
-                    var eye = new Float3(board.Feet.X, board.Feet.Y + EyeHeight(board), board.Feet.Z);
-                    bool any = false;
-                    int candidateStart = (int)((simulationTick + board.Self.Value) % (uint)enemyCount);
-                    for (int offset = 0; offset < enemyCount; offset++)
-                    {
-                        int idx = (candidateStart + offset) % enemyCount;
-                        var candidate = enemies[idx];
-                        // Filter team/life before perception so allies never consume LOS budget.
-                        if (!PerceptionSystem.IsOpponent(board, candidate))
-                        {
-                            if (candidate.Alive && candidate.Id != board.Self &&
-                                PerceptionSystem.IsAlliedTeam(board.Team, candidate.Team))
-                                counters.AlliedCandidatesSkipped++;
-                            continue;
-                        }
-                        int raysBefore = perception.RaysUsedThisTick;
-                        if (perception.TrySense(board, eye, board.Yaw, candidate, counters, out bool acquired) && acquired)
-                        {
-                            board.LastSeenTick = tick;
-                            board.LastSeenEnemy = candidate.Point;
-                            board.HasVisibleTarget = true;
-                            board.VisibleTarget = candidate.Point;
-                            board.Confidence = 1f;
-                            if (!priorVisible.HasValue || priorVisible.Value != candidate.Id)
-                                board.ReactionReadyTick = tick + 15 + (uint)(board.Self.Value % 16);
-                            if (tick >= board.ReactionReadyTick && board.State != AiState.Engage && board.State != AiState.Reload)
-                                Enter(board, AiState.Engage);
-                            any = true;
-                            break;
-                        }
-                        // One actual LOS opportunity per bot per pass keeps the shared budget fair.
-                        if (perception.RaysUsedThisTick != raysBefore) break;
-                    }
-                    if (!any && board.Confidence > 0)
-                    {
-                        board.Confidence = Math.Max(0, board.Confidence - 0.02f);
-                        if (board.Confidence <= 0 && board.State == AiState.Engage) Enter(board, AiState.Search);
-                    }
-                }
-
-                if (board.MagAmmo <= 0 && board.ReserveAmmo > 0 && board.State != AiState.Reload)
-                    Enter(board, AiState.Reload);
-                else if (board.State == AiState.Reload && board.MagAmmo > 0)
-                    Enter(board, board.HasVisibleTarget ? AiState.Engage : AiState.SeekCover);
+                if (enemies != null && enemyCount > 0) Sense(board, enemies, enemyCount);
+                ExpireStimuli(board);
+                ApplyUtility(board);
                 Decide(board);
                 if (destinationOffset + written >= destination.Length) break;
                 destination[destinationOffset + written] = BuildCommand(board, simulationTick, (uint)(written + 1));
                 written++;
             }
+            // Cover probes only get what vision left of the shared per-tick budget.
+            CoverFinder.Run(boards, botCount, tick, perception, covers, counters);
             counters.MaxPathQueue = Math.Max(counters.MaxPathQueue, pathsThisTick);
             counters.VisionRaysThisTick = perception.RaysUsedThisTick;
             return written;
+        }
+
+        // ---------------------------------------------------------------- perception / targeting
+
+        private void Sense(AiBlackboard board, SenseTarget[] enemies, int enemyCount)
+        {
+            var eye = new Float3(board.Feet.X, board.Feet.Y + EyeHeight(board), board.Feet.Z);
+            int stickyIdx = -1, attackerIdx = -1;
+            bool attackerRecent = board.WasDamaged && board.LastAttacker.HasValue &&
+                unchecked(tick - board.LastDamagedTick) <= AiTuning.AttackerPriorityTicks;
+            for (int k = 0; k < enemyCount; k++)
+            {
+                var id = enemies[k].Id;
+                if (board.TargetId.HasValue && board.TargetId.Value == id) stickyIdx = k;
+                if (attackerRecent && board.LastAttacker!.Value == id) attackerIdx = k;
+            }
+            if (attackerIdx == stickyIdx) attackerIdx = -1;
+            int preferred = attackerIdx >= 0 ? attackerIdx : stickyIdx;
+            // A sticky target is periodically re-scanned against others (staggered per bot) so a much
+            // closer threat can take over; the attacker priority never yields.
+            bool scan = attackerIdx < 0 && stickyIdx >= 0 &&
+                (tick + board.Self.Value) % AiTuning.TargetScanIntervalTicks == 0;
+
+            int n = 0;
+            if (preferred >= 0 && !scan) visitOrder[n++] = preferred;
+            int candidateStart = (int)((tick + board.Self.Value) % (uint)enemyCount);
+            for (int offset = 0; offset < enemyCount; offset++)
+            {
+                int idx = (candidateStart + offset) % enemyCount;
+                if (idx == preferred) continue;
+                visitOrder[n++] = idx;
+            }
+            if (preferred >= 0 && scan) visitOrder[n++] = preferred;
+
+            bool any = false;
+            for (int v = 0; v < n; v++)
+            {
+                var candidate = enemies[visitOrder[v]];
+                // Filter team/life before perception so allies never consume LOS budget.
+                if (!PerceptionSystem.IsOpponent(board, candidate))
+                {
+                    if (candidate.Alive && candidate.Id != board.Self &&
+                        PerceptionSystem.IsAlliedTeam(board.Team, candidate.Team))
+                        counters.AlliedCandidatesSkipped++;
+                    continue;
+                }
+                var savedLastSeen = board.LastSeenEnemy;
+                float savedConfidence = board.Confidence;
+                int raysBefore = perception.RaysUsedThisTick;
+                if (perception.TrySense(board, eye, board.Yaw, candidate, counters, out bool acquired) && acquired)
+                {
+                    float d = Distance(eye, candidate.Point);
+                    bool challenger = scan && stickyIdx >= 0 && candidate.Id != enemies[stickyIdx].Id &&
+                        unchecked(tick - board.LastSeenTick) <= AiTuning.TargetMemoryTicks;
+                    if (challenger && !(d < board.TargetDistance * AiTuning.TargetSwitchCloserFactor))
+                    {
+                        // Not worth switching; this tick's opportunity is spent and the sticky target is unconfirmed.
+                        board.HasVisibleTarget = false;
+                        board.VisibleTargetId = null;
+                        board.VisibleTarget = null;
+                        board.LastSeenEnemy = savedLastSeen;
+                        board.Confidence = savedConfidence;
+                        break;
+                    }
+                    Acquire(board, candidate, d, savedLastSeen);
+                    any = true;
+                    break;
+                }
+                // One actual LOS opportunity per bot per pass keeps the shared budget fair.
+                if (perception.RaysUsedThisTick != raysBefore) break;
+            }
+            if (!any && board.Confidence > 0)
+            {
+                board.Confidence = Math.Max(0, board.Confidence - 0.02f);
+                if (board.Confidence <= 0 && board.State == AiState.Engage) Enter(board, AiState.Search);
+            }
+        }
+
+        private void Acquire(AiBlackboard board, SenseTarget candidate, float distance, Float3? previousPoint)
+        {
+            bool sameTarget = board.TargetId.HasValue && board.TargetId.Value == candidate.Id &&
+                board.LastSeenTick != 0 && unchecked(tick - board.LastSeenTick) <= AiTuning.TargetMemoryTicks;
+            bool inCombat = board.LastSeenTick != 0 && unchecked(tick - board.LastSeenTick) <= AiTuning.CombatMemoryTicks;
+            if (sameTarget && previousPoint.HasValue)
+            {
+                uint dt = Math.Max(1u, unchecked(tick - board.LastSeenTick));
+                float s = 60f / dt;
+                var p = previousPoint.Value;
+                float vx = (candidate.Point.X - p.X) * s, vz = (candidate.Point.Z - p.Z) * s;
+                float sx = board.TargetVelocity.X * 0.7f + vx * 0.3f, sz = board.TargetVelocity.Z * 0.7f + vz * 0.3f;
+                float speed = MathF.Sqrt(sx * sx + sz * sz);
+                if (speed > 10f) { sx *= 10f / speed; sz *= 10f / speed; speed = 10f; }
+                board.TargetVelocity = new Float3(sx, 0, sz);
+                board.TargetSpeed = speed;
+            }
+            else if (!sameTarget)
+            {
+                if (board.TargetId.HasValue && board.TargetId.Value != candidate.Id) counters.TargetSwitches++;
+                uint reaction = inCombat
+                    ? AiTuning.SwitchReactionBaseTicks + AiNoise.Range(board.Self.Value, candidate.Id.Value, AiNoise.SaltReaction, AiTuning.SwitchReactionSpreadTicks)
+                    : AiTuning.ReactionBaseTicks + AiNoise.Range(board.Self.Value, candidate.Id.Value, AiNoise.SaltReaction, AiTuning.ReactionSpreadTicks);
+                float extra = Math.Max(0f, distance - 15f) * 0.1f * AiTuning.RangeReactionTicksPer10m;
+                reaction += Math.Min(AiTuning.MaxRangeReactionTicks, (uint)extra);
+                board.ReactionReadyTick = tick + reaction;
+                board.AcquiredTick = tick;
+                board.TargetVelocity = default;
+                board.TargetSpeed = 0;
+                board.HasStrafeCenter = false;
+                if (!inCombat) Callout(board, candidate.Point);
+            }
+            board.TargetId = candidate.Id;
+            board.LastSeenTick = tick;
+            board.LastSeenEnemy = candidate.Point;
+            board.HasVisibleTarget = true;
+            board.VisibleTargetId = candidate.Id;
+            board.VisibleTarget = candidate.Point;
+            board.Confidence = 1f;
+            board.TargetDistance = distance;
+            board.TargetHealth = candidate.Health;
+            if (tick >= board.ReactionReadyTick && board.State != AiState.Engage && board.State != AiState.SeekCover &&
+                !(board.State == AiState.Reload && board.MagAmmo <= 0))
+                Enter(board, AiState.Engage);
+        }
+
+        /// <summary>First sighting of an enemy: nearby calm allies investigate it (no rays).</summary>
+        private void Callout(AiBlackboard caller, Float3 point)
+        {
+            if (caller.Team == 0) return;
+            float radiusSq = AiTuning.CalloutRadius * AiTuning.CalloutRadius;
+            for (int i = 0; i < botCount; i++)
+            {
+                var ally = boards[i];
+                if (ally == caller || !ally.Alive || ally.State == AiState.Dead) continue;
+                if (!PerceptionSystem.IsAlliedTeam(caller.Team, ally.Team)) continue;
+                if (ally.HasVisibleTarget || !IsCalm(ally.State)) continue;
+                float dx = ally.Feet.X - caller.Feet.X, dz = ally.Feet.Z - caller.Feet.Z;
+                if (dx * dx + dz * dz > radiusSq) continue;
+                ally.LastHeard = point;
+                ally.LastHeardTick = tick;
+                ally.Heard = HeardClass.Callout;
+                counters.Callouts++;
+                Enter(ally, AiState.Investigate);
+            }
+        }
+
+        private void ExpireStimuli(AiBlackboard board)
+        {
+            if (board.LastHeard.HasValue && unchecked(tick - board.LastHeardTick) > StimulusExpiryTicks)
+            {
+                board.LastHeard = null;
+                board.Heard = HeardClass.None;
+            }
+        }
+
+        // ---------------------------------------------------------------- utility decisions
+
+        private void ApplyUtility(AiBlackboard board)
+        {
+            bool recentlyFighting = board.LastSeenTick != 0 && unchecked(tick - board.LastSeenTick) <= 60;
+            if (board.State == AiState.Reload)
+            {
+                // Authority owns reload timing and ammunition; leave only once the magazine actually grew.
+                if (board.MagAmmo > board.ReloadStartMag || board.MagAmmo >= AiTuning.MagazineSize)
+                    Enter(board, board.HasVisibleTarget ? AiState.Engage
+                        : board.CoverPoint.HasValue || board.CoverReservation.HasValue ? AiState.SeekCover : AiState.Search);
+            }
+            else if (board.MagAmmo <= 0 && board.ReserveAmmo > 0)
+            {
+                board.ReloadStartMag = 0;
+                Enter(board, AiState.Reload);
+                if (recentlyFighting && board.LastSeenEnemy.HasValue && coverSites.Count == 0 &&
+                    !board.CoverPoint.HasValue && !board.CoverProbeActive)
+                    CoverFinder.Start(board, board.LastSeenEnemy.Value);
+            }
+            else if (board.MagAmmo < AiTuning.TacticalReloadBelow && board.ReserveAmmo > 0 && !board.HasVisibleTarget &&
+                     (board.LastSeenTick == 0 || unchecked(tick - board.LastSeenTick) > AiTuning.CombatMemoryTicks) &&
+                     (IsCalm(board.State) || board.InCover))
+            {
+                board.ReloadStartMag = board.MagAmmo;
+                counters.TacticalReloads++;
+                Enter(board, AiState.Reload);
+            }
+            else if (board.InCover && board.State == AiState.SeekCover && !board.HasVisibleTarget &&
+                     board.MagAmmo < AiTuning.MagazineSize && board.ReserveAmmo > 0)
+            {
+                board.ReloadStartMag = board.MagAmmo;
+                Enter(board, AiState.Reload);
+            }
+
+            // Low health and losing the trade: break off toward cover (cooldown keeps it from flapping).
+            if (board.State == AiState.Engage && board.HasVisibleTarget && board.Health < AiTuning.LowHealth &&
+                tick >= board.RetreatAllowedTick &&
+                (board.TargetHealth > board.Health + AiTuning.LosingTradeMargin ||
+                 (board.WasDamaged && unchecked(tick - board.LastDamagedTick) < 30)))
+            {
+                board.RetreatAllowedTick = tick + AiTuning.RetreatCooldownTicks;
+                counters.Retreats++;
+                Enter(board, AiState.SeekCover);
+            }
         }
 
         private void Decide(AiBlackboard board)
@@ -362,57 +592,152 @@ namespace Shooter.Simulation.AI
                     EnsurePath(board, PatrolPoint(board));
                     break;
                 case AiState.Investigate:
-                    if (board.LastHeard.HasValue) EnsurePath(board, board.LastHeard.Value);
-                    else Enter(board, AiState.Patrol);
+                    if (board.LastHeard.HasValue) EnsurePath(board, board.LastHeard.Value, retarget: true);
+                    else Enter(board, AiState.Search);
                     break;
                 case AiState.Engage:
                     if (board.HasVisibleTarget && board.VisibleTarget.HasValue)
-                        AimAt(board, board.VisibleTarget.Value);
-                    else if (board.LastSeenEnemy.HasValue)
-                        EnsurePath(board, board.LastSeenEnemy.Value);
+                    {
+                        if (board.TargetDistance >= AiTuning.AdvanceRange) EnsurePath(board, board.VisibleTarget.Value, retarget: true);
+                        else DropPath(board); // tactical movement replaces route following while the enemy is in view
+                    }
+                    else if (board.LastSeenEnemy.HasValue && unchecked(tick - board.LastSeenTick) > AiTuning.TargetMemoryTicks)
+                        EnsurePath(board, SearchPoint(board), retarget: true);
                     break;
                 case AiState.SeekCover:
-                    if (!board.CoverReservation.HasValue) ClaimBestCover(board);
-                    if (board.CoverReservation.HasValue)
-                    {
-                        var site = FindCover(board.CoverReservation.Value);
-                        if (site.HasValue) EnsurePath(board, site.Value.Anchor);
-                    }
-                    else if (combatDestinations.Count > 0 || board.LastSeenEnemy.HasValue)
-                    {
-                        // No free cover site: keep fighting through the map instead of idling in place.
-                        Enter(board, AiState.Search);
-                    }
+                    DecideCover(board);
                     break;
                 case AiState.Reload:
-                    // Authority owns reload timing and ammunition. Stay here and request reload
-                    // until lifecycle synchronization observes replenished magazine state.
                     if (board.ReserveAmmo <= 0) Enter(board, AiState.SeekCover);
+                    else if (board.CoverPoint.HasValue && !board.InCover) MoveToCover(board);
                     break;
                 case AiState.Reposition:
                 case AiState.Search:
-                    if (board.LastSeenEnemy.HasValue) EnsurePath(board, board.LastSeenEnemy.Value);
-                    else if (combatDestinations.Count > 0)
-                        EnsurePath(board, combatDestinations[Rotate(board, combatDestinations.Count)]);
+                    if (board.LastSeenEnemy.HasValue) EnsurePath(board, SearchPoint(board), retarget: true);
+                    else if (combatDestinations.Count > 0) EnsurePath(board, ChooseCombatDestination(board));
                     else Enter(board, AiState.Patrol);
                     break;
             }
         }
 
-        private void EnsurePath(AiBlackboard board, Float3 goal)
+        private void DecideCover(AiBlackboard board)
         {
-            if (board.PathTicket.HasValue || board.PathCornerIndex < board.PathCornerCount) return;
+            if (coverSites.Count > 0)
+            {
+                if (!board.CoverReservation.HasValue) ClaimBestCover(board);
+                if (board.CoverReservation.HasValue)
+                {
+                    var site = FindCover(board.CoverReservation.Value);
+                    if (site.HasValue) EnsurePath(board, site.Value.Anchor);
+                }
+                else if (combatDestinations.Count > 0 || board.LastSeenEnemy.HasValue)
+                    Enter(board, AiState.Search);
+                return;
+            }
+            if (board.CoverPoint.HasValue)
+            {
+                if (!board.InCover) { MoveToCover(board); return; }
+                if (board.HasVisibleTarget && board.TargetDistance < AiTuning.CloseRange) { Enter(board, AiState.Engage); return; }
+                if (unchecked(tick - board.InCoverSinceTick) >= AiTuning.CoverHoldTicks) Enter(board, AiState.Reposition);
+                return;
+            }
+            if (board.CoverProbeActive) return; // probes run with leftover rays at the end of this tick
+            // No cover found (or no threat to hide from): fall back to the old behaviour.
+            if (board.MagAmmo <= 0 && board.ReserveAmmo > 0) Enter(board, AiState.Reload);
+            else if (board.HasVisibleTarget) Enter(board, AiState.Engage);
+            else if (combatDestinations.Count > 0 || board.LastSeenEnemy.HasValue)
+            {
+                // No free cover site: keep fighting through the map instead of idling in place.
+                Enter(board, AiState.Search);
+            }
+        }
+
+        private void MoveToCover(AiBlackboard board)
+        {
+            var point = board.CoverPoint!.Value;
+            float dx = point.X - board.Feet.X, dz = point.Z - board.Feet.Z;
+            if (dx * dx + dz * dz <= AiTuning.CoverArrivalMeters * AiTuning.CoverArrivalMeters)
+            {
+                board.InCover = true;
+                board.InCoverSinceTick = tick;
+                DropPath(board);
+                return;
+            }
+            EnsurePath(board, point, retarget: true);
+        }
+
+        /// <summary>Last seen position pushed forward along the target's observed motion (≤1 s, ≤5 m).</summary>
+        private static Float3 SearchPoint(AiBlackboard board)
+        {
+            var p = board.LastSeenEnemy!.Value;
+            float vx = board.TargetVelocity.X, vz = board.TargetVelocity.Z;
+            float len = MathF.Sqrt(vx * vx + vz * vz);
+            if (len > 5f) { vx *= 5f / len; vz *= 5f / len; }
+            return new Float3(p.X + vx, p.Y, p.Z + vz);
+        }
+
+        /// <summary>Rotate through combat destinations but skip ones already targeted by enough allies.</summary>
+        private Float3 ChooseCombatDestination(AiBlackboard board)
+        {
+            int count = combatDestinations.Count;
+            int start = Rotate(board, count);
+            for (int k = 0; k < count; k++)
+            {
+                var candidate = combatDestinations[(start + k) % count];
+                int crowd = 0;
+                for (int i = 0; i < botCount; i++)
+                {
+                    var other = boards[i];
+                    if (other == board || !other.Alive || !PerceptionSystem.IsAlliedTeam(board.Team, other.Team)) continue;
+                    if (other.PathGoal.HasValue && Same(other.PathGoal.Value, candidate)) crowd++;
+                }
+                if (crowd < AiTuning.DestinationCrowdLimit) return candidate;
+            }
+            return combatDestinations[start];
+        }
+
+        private static bool Same(Float3 a, Float3 b) => a.X == b.X && a.Y == b.Y && a.Z == b.Z;
+
+        // ---------------------------------------------------------------- navigation
+
+        /// <summary>Goal moved further than this from the active path's goal: an urgent goal replaces the route.</summary>
+        public const float RetargetDistance = 2f;
+
+        /// <param name="retarget">
+        /// Urgent goals (stimuli, last contact, cover, advancing on a visible enemy) replace an active route
+        /// whose goal is elsewhere, within the replan cooldown and the per-tick path budget. Routine
+        /// patrol/combat destinations keep the current route until it finishes.
+        /// </param>
+        private void EnsurePath(AiBlackboard board, Float3 goal, bool retarget = false)
+        {
+            if (board.PathTicket.HasValue || board.PathCornerIndex < board.PathCornerCount)
+            {
+                if (!retarget || !board.PathGoal.HasValue || Within(board.PathGoal.Value, goal, RetargetDistance)) return;
+                if (pathsThisTick >= MaxNewPathsPerTick || tick - board.LastReplanTick < ReplanCooldownTicks) return;
+                DropPath(board);
+            }
             if (pathsThisTick >= MaxNewPathsPerTick) return;
             if (tick < board.RetryAfterTick) return;
             if (tick - board.LastReplanTick < ReplanCooldownTicks && board.PathGoal.HasValue) return;
             var ticket = navigation.RequestPath(board.Self, goal, navRevision);
-            // Use navigation revision from ticket
             board.PathTicket = ticket;
             board.PathGoal = goal;
             board.PathRequestedTick = tick;
             board.LastReplanTick = tick;
             pathsThisTick++;
             counters.PathsRequestedThisTick++;
+        }
+
+        private void DropPath(AiBlackboard board)
+        {
+            if (board.PathTicket.HasValue)
+            {
+                navigation.Cancel(board.PathTicket.Value);
+                board.PathTicket = null;
+            }
+            board.PathCornerCount = 0;
+            board.PathCornerIndex = 0;
+            board.PathGoal = null;
         }
 
         private void PollPaths()
@@ -455,6 +780,12 @@ namespace Shooter.Simulation.AI
             counters.PathsFailed++;
             board.RetryAfterTick = tick + ReplanCooldownTicks;
             board.DestinationCursor++;
+            if (board.CoverPoint.HasValue && !board.InCover && board.CoverReservation.HasValue &&
+                (board.CoverReservation.Value & CoverFinder.DynamicCoverIdFlag) != 0)
+            {
+                // Unreachable probe point: give it up so the bot does not hold an orphan claim.
+                ReleaseCover(board);
+            }
         }
 
         private static int Rotate(AiBlackboard board, int count) =>
@@ -473,13 +804,25 @@ namespace Shooter.Simulation.AI
             }
             if (board.PathCornerIndex >= board.PathCornerCount && board.PathCornerCount > 0)
             {
-                // Arrived: rotate patrol/search destinations; an investigated last-seen point is spent.
+                // Arrived: rotate patrol/search destinations; an investigated last-seen or heard point is spent.
                 board.DestinationCursor++;
                 if (board.LastSeenEnemy.HasValue && !board.HasVisibleTarget)
                 {
                     float sx = board.LastSeenEnemy.Value.X - board.Feet.X;
                     float sz = board.LastSeenEnemy.Value.Z - board.Feet.Z;
-                    if (sx * sx + sz * sz <= 2.25f) board.LastSeenEnemy = null;
+                    var predicted = SearchPoint(board);
+                    float px = predicted.X - board.Feet.X, pz = predicted.Z - board.Feet.Z;
+                    if (sx * sx + sz * sz <= 2.25f || px * px + pz * pz <= 4f) board.LastSeenEnemy = null;
+                }
+                if (board.LastHeard.HasValue && board.State == AiState.Investigate)
+                {
+                    float hx = board.LastHeard.Value.X - board.Feet.X;
+                    float hz = board.LastHeard.Value.Z - board.Feet.Z;
+                    if (hx * hx + hz * hz <= 4f)
+                    {
+                        board.LastHeard = null;
+                        board.Heard = HeardClass.None;
+                    }
                 }
                 board.PathCornerCount = 0;
                 board.PathCornerIndex = 0;
@@ -490,6 +833,12 @@ namespace Shooter.Simulation.AI
         }
 
         private static float EyeHeight(AiBlackboard board) => board.Crouched ? CrouchedEyeHeight : StandingEyeHeight;
+
+        private static float Distance(Float3 a, Float3 b)
+        {
+            float dx = b.X - a.X, dy = b.Y - a.Y, dz = b.Z - a.Z;
+            return MathF.Sqrt(dx * dx + dy * dy + dz * dz);
+        }
 
         private static void UpdateSpeed(AiBlackboard board)
         {
@@ -541,6 +890,8 @@ namespace Shooter.Simulation.AI
             else Enter(board, AiState.SeekCover);
         }
 
+        // ---------------------------------------------------------------- cover
+
         private void ClaimBestCover(AiBlackboard board)
         {
             for (int i = 0; i < coverSites.Count; i++)
@@ -561,6 +912,20 @@ namespace Shooter.Simulation.AI
             return null;
         }
 
+        private void ReleaseCover(AiBlackboard board)
+        {
+            if (board.CoverReservation.HasValue)
+            {
+                if (covers.Release(board.CoverReservation.Value, board.Self)) counters.CoverReleases++;
+                else counters.OrphanReleases++;
+                board.CoverReservation = null;
+            }
+            board.CoverPoint = null;
+            board.InCover = false;
+            board.InCoverSinceTick = 0;
+            board.CoverProbeActive = false;
+        }
+
         private void ReleaseBotResources(AiBlackboard board)
         {
             if (board.PathTicket.HasValue)
@@ -571,6 +936,9 @@ namespace Shooter.Simulation.AI
             board.PathCornerCount = 0;
             board.PathCornerIndex = 0;
             board.PathGoal = null;
+            board.CoverPoint = null;
+            board.InCover = false;
+            board.CoverProbeActive = false;
             if (board.CoverReservation.HasValue)
             {
                 if (covers.Release(board.CoverReservation.Value, board.Self)) counters.CoverReleases++;
@@ -594,10 +962,26 @@ namespace Shooter.Simulation.AI
         private void Enter(AiBlackboard board, AiState state)
         {
             if (board.State == state) return;
+            var previous = board.State;
+            bool keepsCover = state == AiState.SeekCover || state == AiState.Reload;
+            if ((previous == AiState.SeekCover || previous == AiState.Reload) && !keepsCover &&
+                (board.CoverPoint.HasValue || board.CoverProbeActive ||
+                 (board.CoverReservation.HasValue && (board.CoverReservation.Value & CoverFinder.DynamicCoverIdFlag) != 0)))
+                ReleaseCover(board);
             board.State = state;
             board.StateEnteredTick = tick;
             counters.StateChanges++;
-            if (state == AiState.SeekCover) ClaimBestCover(board);
+            if (state == AiState.Engage) board.HasStrafeCenter = false;
+            if (state == AiState.SeekCover)
+            {
+                if (coverSites.Count > 0) ClaimBestCover(board);
+                else if (!board.CoverPoint.HasValue && !board.CoverProbeActive)
+                {
+                    Float3? threat = board.VisibleTarget ?? board.LastSeenEnemy ??
+                        (board.Heard == HeardClass.Damage ? board.LastHeard : null);
+                    if (threat.HasValue) CoverFinder.Start(board, threat.Value);
+                }
+            }
         }
 
         private Float3 PatrolPoint(AiBlackboard board)
@@ -617,24 +1001,6 @@ namespace Shooter.Simulation.AI
             return yaw;
         }
 
-        private static void AimAt(AiBlackboard board, Float3 target)
-        {
-            float dx = target.X - board.Feet.X, dy = target.Y - (board.Feet.Y + EyeHeight(board)), dz = target.Z - board.Feet.Z;
-            // Hitscan leaves the canonical muzzle (eye + 0.18 m right, 0.15 m down) parallel to the aim ray, so shift the
-            // eye ray the opposite way: the bullet, not the eye line, then passes through the chest point.
-            float bearing = MathF.Sqrt(dx * dx + dz * dz);
-            if (bearing > 1e-4f)
-            {
-                float rx = dz / bearing, rz = -dx / bearing;
-                dx -= rx * MuzzleRightOffset;
-                dz -= rz * MuzzleRightOffset;
-            }
-            dy += MuzzleDownOffset;
-            board.Yaw = ContractYaw(dx, dz);
-            float flat = MathF.Sqrt(dx * dx + dz * dz);
-            board.Pitch = flat < 1e-5f ? 0 : -MathF.Atan2(dy, flat);
-        }
-
         private static float StraightMetersToCorner(AiBlackboard board)
         {
             if (board.PathCornerIndex >= board.PathCornerCount) return 0f;
@@ -643,56 +1009,144 @@ namespace Shooter.Simulation.AI
             return MathF.Sqrt(dx * dx + dz * dz);
         }
 
+        /// <summary>
+        /// Where a bot without a visible enemy should look: the last contact while the fight is fresh, a recent
+        /// damage source, or a nearby heard/called-out stimulus (pre-aim instead of staring down the route).
+        /// </summary>
+        private Float3? ThreatLook(AiBlackboard board)
+        {
+            if (board.InCover && (board.State == AiState.SeekCover || board.State == AiState.Reload))
+                return board.LastSeenEnemy ?? board.CoverThreat;
+            if (board.State == AiState.SeekCover || board.State == AiState.Reload) return null; // run to cover facing the route
+            if (board.State == AiState.Engage && board.LastSeenEnemy.HasValue &&
+                unchecked(tick - board.LastSeenTick) <= AiTuning.CombatMemoryTicks)
+                return board.LastSeenEnemy;
+            if (board.LastHeard.HasValue && unchecked(tick - board.LastHeardTick) <= AiTuning.ThreatLookTicks)
+            {
+                if (board.Heard == HeardClass.Damage) return board.LastHeard;
+                if (Within(board.Feet, board.LastHeard.Value, AiTuning.ThreatLookRange)) return board.LastHeard;
+            }
+            if (board.LastSeenEnemy.HasValue && unchecked(tick - board.LastSeenTick) <= AiTuning.ThreatLookTicks * 2 &&
+                Within(board.Feet, board.LastSeenEnemy.Value, AiTuning.ThreatLookRange))
+                return board.LastSeenEnemy;
+            return null;
+        }
+
+        private static bool Within(Float3 a, Float3 b, float meters)
+        {
+            float dx = a.X - b.X, dz = a.Z - b.Z;
+            return dx * dx + dz * dz <= meters * meters;
+        }
+
+        // ---------------------------------------------------------------- command
+
         private InputCommand BuildCommand(AiBlackboard board, uint simulationTick, uint sequence)
         {
-            float mx = 0, my = 0;
             var buttons = InputButtons.None;
+            var eye = new Float3(board.Feet.X, board.Feet.Y + EyeHeight(board), board.Feet.Z);
+            bool visible = board.HasVisibleTarget && board.VisibleTarget.HasValue;
+            bool engaging = board.State == AiState.Engage && visible;
             Float3? movementTarget = board.PathCornerIndex < board.PathCornerCount
                 ? board.PathCorners[board.PathCornerIndex]
                 : (Float3?)null;
-            if (movementTarget.HasValue && board.State != AiState.Reload)
+
+            // 1. Where to look.
+            float desiredYaw = board.Yaw, desiredPitch = board.Pitch;
+            bool combatTurn = false;
+            Float3? threatLook = null;
+            if (visible)
+            {
+                AimController.IdealAngles(eye, board.VisibleTarget!.Value, out float iy, out float ip);
+                AimController.ErrorOffset(board, tick, board.TargetDistance, board.TargetSpeed, out float ey, out float ep);
+                desiredYaw = AimController.NormalizeYaw(iy + ey);
+                desiredPitch = AimController.ClampPitch(ip + ep);
+                combatTurn = true;
+            }
+            else if ((threatLook = ThreatLook(board)).HasValue)
+            {
+                var look = threatLook.Value;
+                // Stimulus points are feet-ish or muzzle height; look at standing chest height.
+                var lookPoint = new Float3(look.X, Math.Max(look.Y, board.Feet.Y + StandingAimHeight), look.Z);
+                AimController.LookAngles(eye, lookPoint, out desiredYaw, out desiredPitch);
+                combatTurn = true;
+            }
+            else if (movementTarget.HasValue)
+            {
+                float dx = movementTarget.Value.X - board.Feet.X, dz = movementTarget.Value.Z - board.Feet.Z;
+                if (dx * dx + dz * dz > 0.04f)
+                {
+                    // Without a threat, look where we walk so the forward vision cone sweeps the route.
+                    desiredYaw = ContractYaw(dx, dz);
+                    desiredPitch = 0;
+                }
+            }
+            AimController.Turn(board, desiredYaw, desiredPitch, combatTurn);
+            board.AimOffsetRadians = AimController.AngleBetween(board.Yaw, board.Pitch, desiredYaw, desiredPitch);
+
+            // 2. Where to move (world XZ), then into command space relative to the new aim yaw.
+            float wx = 0, wz = 0;
+            bool crouch = false, holdStill = false;
+            var range = FireDiscipline.Classify(board.TargetDistance);
+            bool crouchShooter = board.Self.Value % AiTuning.CrouchShooterModulo == 0;
+            if (engaging && board.TargetDistance < AiTuning.AdvanceRange)
+            {
+                holdStill = range == EngageRange.Long ||
+                    (range == EngageRange.Mid && crouchShooter && FireDiscipline.InBurst(board, tick));
+                if (!holdStill) EngageMove(board, out wx, out wz);
+                crouch = range == EngageRange.Long || (range == EngageRange.Mid && crouchShooter && FireDiscipline.InBurst(board, tick));
+            }
+            else if (movementTarget.HasValue)
             {
                 float dx = movementTarget.Value.X - board.Feet.X;
                 float dz = movementTarget.Value.Z - board.Feet.Z;
                 float len = MathF.Sqrt(dx * dx + dz * dz);
-                if (len > 0.2f)
-                {
-                    // Without a visible target, look where we walk so the forward vision cone sweeps the route.
-                    if (!(board.State == AiState.Engage && board.HasVisibleTarget))
-                    {
-                        board.Yaw = ContractYaw(dx, dz);
-                        board.Pitch = 0;
-                    }
-                    // Move relative to aim yaw: +Y forward, +X right in command space.
-                    float fx = MathF.Sin(board.Yaw), fz = MathF.Cos(board.Yaw);
-                    float rx = fz, rz = -fx;
-                    float worldX = dx / len, worldZ = dz / len;
-                    mx = worldX * rx + worldZ * rz;
-                    my = worldX * fx + worldZ * fz;
-                    float mlen = MathF.Sqrt(mx * mx + my * my);
-                    if (mlen > 1e-5f) { mx /= mlen; my /= mlen; }
-                    else { mx = 0; my = 0; }
-                    // Keep strictly inside the contract unit-disk tolerance (≤1.0000001).
-                    double disk = (double)mx * mx + (double)my * my;
-                    if (disk > 0.999999) { double s = Math.Sqrt(0.999999 / disk); mx = (float)(mx * s); my = (float)(my * s); }
-                }
+                if (len > 0.2f) { wx = dx / len; wz = dz / len; }
             }
-            if (board.State == AiState.Engage && board.HasVisibleTarget && board.MagAmmo > 0 && tick >= board.ReactionReadyTick)
+            if (!engaging && board.InCover && (board.State == AiState.SeekCover || board.State == AiState.Reload)) crouch = true;
+
+            float mx = 0, my = 0;
+            if (wx != 0 || wz != 0)
+            {
+                // Move relative to aim yaw: +Y forward, +X right in command space.
+                float fx = MathF.Sin(board.Yaw), fz = MathF.Cos(board.Yaw);
+                float rx = fz, rz = -fx;
+                mx = wx * rx + wz * rz;
+                my = wx * fx + wz * fz;
+                float mlen = MathF.Sqrt(mx * mx + my * my);
+                if (mlen > 1e-5f) { mx /= mlen; my /= mlen; }
+                else { mx = 0; my = 0; }
+                // Keep strictly inside the contract unit-disk tolerance (≤1.0000001).
+                double disk = (double)mx * mx + (double)my * my;
+                if (disk > 0.999999) { double s = Math.Sqrt(0.999999 / disk); mx = (float)(mx * s); my = (float)(my * s); }
+            }
+            bool moving = mx != 0 || my != 0;
+
+            // 3. Sprint on a route with no visible enemy and no threat to watch, mostly forward.
+            bool travelState = board.State == AiState.Patrol || board.State == AiState.Investigate || board.State == AiState.Search
+                || board.State == AiState.Reposition || board.State == AiState.SeekCover || board.State == AiState.Reload;
+            bool sprint = travelState && !visible && !threatLook.HasValue && moving && my >= SprintMinForward;
+
+            // 4. Trigger discipline: bursts only when aligned, never while sprinting or reloading.
+            bool canFire = visible && board.MagAmmo > 0 && tick >= board.ReactionReadyTick &&
+                board.State != AiState.Reload && !sprint;
+            bool fire = false;
+            if (canFire)
+            {
+                float tol = AimController.FireTolerance(board.TargetDistance);
+                fire = FireDiscipline.Update(board, tick, board.TargetDistance,
+                    board.AimOffsetRadians <= tol, board.AimOffsetRadians <= tol * 2.5f);
+                if (fire && board.BurstStartTick == tick) counters.BurstsStarted++;
+            }
+            else FireDiscipline.Cease(board, tick);
+            if (fire)
             {
                 buttons |= InputButtons.FireHeld | InputButtons.FirePressed;
                 counters.ShotsRequested++;
             }
             if (board.State == AiState.Reload) buttons |= InputButtons.ReloadPressed;
+            if (engaging && holdStill && range == EngageRange.Long) buttons |= InputButtons.AimHeld;
 
-            bool engaging = board.State == AiState.Engage && board.HasVisibleTarget;
-            bool moving = movementTarget.HasValue && board.State != AiState.Reload && (mx != 0 || my != 0);
-            bool firingOrReloading = (buttons & (InputButtons.FireHeld | InputButtons.FirePressed | InputButtons.ReloadPressed)) != 0;
             board.SlideIntent = false;
-
-            // 1. Sprint on a route with no visible target, mostly forward; never while firing/reloading/aiming.
-            bool travelState = board.State == AiState.Patrol || board.State == AiState.Investigate || board.State == AiState.Search
-                || board.State == AiState.Reposition || board.State == AiState.SeekCover;
-            bool sprint = travelState && !board.HasVisibleTarget && moving && my >= SprintMinForward && !firingOrReloading;
             if (sprint)
             {
                 buttons |= InputButtons.SprintHeld;
@@ -700,22 +1154,17 @@ namespace Shooter.Simulation.AI
             }
             else board.SprintTicks = 0;
 
-            // 2. Crouch while engaging from rest (id- or range-based so bots differ); moving stands up implicitly.
-            if (engaging && !moving && board.VisibleTarget.HasValue)
-            {
-                float tx = board.VisibleTarget.Value.X - board.Feet.X, tz = board.VisibleTarget.Value.Z - board.Feet.Z;
-                bool far = tx * tx + tz * tz >= LongRangeCrouchDistance * LongRangeCrouchDistance;
-                if (far || board.Self.Value % CrouchEngageModulo == 0) buttons |= InputButtons.CrouchHeld;
-            }
+            if (crouch) buttons |= InputButtons.CrouchHeld;
 
-            // 3. Jump (edge) when stuck: only on the tick UpdateStuck scheduled it.
+            // 5. Jump (edge) when stuck: only on the tick UpdateStuck scheduled it.
+            bool firingOrReloading = (buttons & (InputButtons.FireHeld | InputButtons.FirePressed | InputButtons.ReloadPressed)) != 0;
             if (board.JumpPending)
             {
                 if (!engaging && !firingOrReloading) buttons |= InputButtons.JumpPressed;
                 board.JumpPending = false;
             }
 
-            // 4. Occasional slide when sprinting toward cover / repositioning with a long straight leg left.
+            // 6. Occasional slide when sprinting toward cover / repositioning with a long straight leg left.
             if (sprint && (buttons & InputButtons.JumpPressed) == 0
                 && (board.State == AiState.SeekCover || board.State == AiState.Reposition)
                 && board.SprintTicks >= SlideMinSprintTicks
@@ -728,5 +1177,55 @@ namespace Shooter.Simulation.AI
             }
             return new InputCommand(board.Self, simulationTick, sequence, mx, my, board.Yaw, board.Pitch, buttons, 0);
         }
+
+        /// <summary>
+        /// Strafe across the line of fire around the nav point where the fight started (bounded offset keeps the
+        /// bot near walkable ground), reversing on a seeded timer, at the leash, or when blocked; back off when
+        /// the enemy is too close.
+        /// </summary>
+        private void EngageMove(AiBlackboard board, out float wx, out float wz)
+        {
+            wx = 0; wz = 0;
+            var target = board.VisibleTarget!.Value;
+            float tx = target.X - board.Feet.X, tz = target.Z - board.Feet.Z;
+            float tlen = MathF.Sqrt(tx * tx + tz * tz);
+            if (tlen < 1e-3f) return;
+            tx /= tlen; tz /= tlen;
+            float rx = tz, rz = -tx; // right of the line of fire
+            if (!board.HasStrafeCenter)
+            {
+                board.HasStrafeCenter = true;
+                board.StrafeCenter = board.Feet;
+                board.StrafeCheckFeet = board.Feet;
+                board.StrafeCheckTick = tick;
+                board.StrafeFlipTick = tick + NextStrafeInterval(board);
+            }
+            bool flip = tick >= board.StrafeFlipTick;
+            if (unchecked(tick - board.StrafeCheckTick) >= AiTuning.StrafeBlockedCheckTicks)
+            {
+                float bx = board.Feet.X - board.StrafeCheckFeet.X, bz = board.Feet.Z - board.StrafeCheckFeet.Z;
+                if (bx * bx + bz * bz < AiTuning.StrafeBlockedMeters * AiTuning.StrafeBlockedMeters) flip = true;
+                board.StrafeCheckFeet = board.Feet;
+                board.StrafeCheckTick = tick;
+            }
+            float offset = (board.Feet.X - board.StrafeCenter.X) * rx + (board.Feet.Z - board.StrafeCenter.Z) * rz;
+            if (offset * board.StrafeDir > AiTuning.StrafeMaxOffset) flip = true;
+            if (flip)
+            {
+                board.StrafeDir = -board.StrafeDir;
+                board.StrafeFlipTick = tick + NextStrafeInterval(board);
+            }
+            wx = rx * board.StrafeDir;
+            wz = rz * board.StrafeDir;
+            if (board.TargetDistance < AiTuning.BackOffRange)
+            {
+                wx -= tx; wz -= tz;
+                float len = MathF.Sqrt(wx * wx + wz * wz);
+                wx /= len; wz /= len;
+            }
+        }
+
+        private uint NextStrafeInterval(AiBlackboard board) =>
+            AiTuning.StrafeFlipMinTicks + AiNoise.Range(board.Self.Value, tick, AiNoise.SaltStrafe, AiTuning.StrafeFlipSpreadTicks);
     }
 }

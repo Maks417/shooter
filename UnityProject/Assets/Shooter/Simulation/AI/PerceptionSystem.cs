@@ -19,13 +19,16 @@ namespace Shooter.Simulation.AI
         public Float3 Point { get; }
         public byte Team { get; }
         public bool Alive { get; }
+        /// <summary>Authoritative health (used only to judge a losing trade); 100 when unknown.</summary>
+        public ushort Health { get; }
 
-        public SenseTarget(EntityId id, Float3 point, byte team = 0, bool alive = true)
+        public SenseTarget(EntityId id, Float3 point, byte team = 0, bool alive = true, ushort health = 100)
         {
             Id = id;
             Point = point;
             Team = team;
             Alive = alive;
+            Health = health;
         }
     }
 
@@ -49,6 +52,18 @@ namespace Shooter.Simulation.AI
         }
 
         public void BeginTick() => raysUsed = 0;
+
+        /// <summary>
+        /// Non-vision AI ray (cover probes) charged to the same global per-tick budget. Returns false,
+        /// without casting, when the budget is exhausted.
+        /// </summary>
+        public bool TryBudgetedRay(Float3 origin, Float3 unitDirection, float maxMeters, EntityId self, out RayHit hit)
+        {
+            if (raysUsed >= MaxVisionRaysPerTick) { hit = default; return false; }
+            raysUsed++;
+            hit = world.Raycast(origin, unitDirection, maxMeters, new QueryFilter(visionMask, self, false));
+            return true;
+        }
 
         public bool TrySense(
             AiBlackboard board,
@@ -103,7 +118,6 @@ namespace Shooter.Simulation.AI
             board.VisibleTargetId = candidate.Id;
             board.VisibleTarget = candidate.Point;
             board.LastSeenEnemy = candidate.Point;
-            board.LastSeenTick = board.StateEnteredTick; // caller overwrites with absolute tick
             board.Confidence = 1f;
             board.SenseAgeTicks = 0;
             return true;
