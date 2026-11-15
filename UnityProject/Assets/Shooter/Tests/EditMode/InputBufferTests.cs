@@ -12,10 +12,13 @@ namespace Shooter.Tests
     {
         private static readonly EntityId Player = new EntityId(1);
 
-        [TestCase(30)]
-        [TestCase(60)]
-        [TestCase(144)]
-        public void FrameEdgeLookAndWeaponSelectionAreAppliedOnce(int renderFps)
+        [TestCase(30, false, 1)]
+        [TestCase(60, false, 1)]
+        [TestCase(144, false, 1)]
+        [TestCase(30, true, LocalPlayerInput.FirePressBufferTicks)]
+        [TestCase(60, true, LocalPlayerInput.FirePressBufferTicks)]
+        [TestCase(144, true, LocalPlayerInput.FirePressBufferTicks)]
+        public void FrameLookAndSelectionApplyOnceWithSlotSpecificPressBuffer(int renderFps, bool pistol, int expectedPressTicks)
         {
             var input = new LocalPlayerInput();
             input.ResetForLife(0f, 0f, 0);
@@ -26,7 +29,7 @@ namespace Shooter.Tests
             for (int frame = 0; frame < renderFps / 5; frame++)
             {
                 FrameInputSample sample = frame == 1
-                    ? new FrameInputSample(1, 1, 10, -5, fire: true, selectPistol: true)
+                    ? new FrameInputSample(1, 1, 10, -5, fire: true, selectPistol: pistol)
                     : default;
                 input.CaptureFrame(sample, true);
                 accumulator += 1.0 / renderFps;
@@ -39,10 +42,10 @@ namespace Shooter.Tests
                 }
             }
 
-            Assert.That(pressed, Is.EqualTo(1));
+            Assert.That(pressed, Is.EqualTo(expectedPressTicks));
             Assert.That(input.Yaw, Is.EqualTo(1f * Mathf.Deg2Rad).Within(0.000001f));
             Assert.That(input.Pitch, Is.EqualTo(.5f * Mathf.Deg2Rad).Within(0.000001f));
-            Assert.That(input.SelectedSlot, Is.EqualTo(1));
+            Assert.That(input.SelectedSlot, Is.EqualTo(pistol ? 1 : 0));
         }
 
         [Test]

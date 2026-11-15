@@ -95,7 +95,7 @@ namespace Shooter.Tests
                 resources.Add((RenderTexture)scene.MapCard("training-compound")!);
                 resources.Add((RenderTexture)scene.MapCard("depot-yard")!);
                 Object.DestroyImmediate(root);
-                Assert.That(resources.All(r => r == null), Is.True,
+                Assert.That(resources.Where(r => r != null).Select(r => r.name).ToArray(), Is.Empty,
                     "Destroying the shell child must release its material/target ownership.");
             }
             finally
