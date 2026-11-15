@@ -22,12 +22,15 @@ namespace Shooter.Game.Session
         public Stance Stance { get; }
         public float EyeHeight { get; }
         public bool Sliding { get; }
+        /// <summary>Authoritative tightness fraction 0..1 (ADR-060). Defaults to full when omitted.</summary>
+        public float Tightness01 { get; }
 
-        public LocalMovementView(Stance stance, float eyeHeight, bool sliding)
+        public LocalMovementView(Stance stance, float eyeHeight, bool sliding, float tightness01 = 1f)
         {
             Stance = stance;
             EyeHeight = eyeHeight;
             Sliding = sliding;
+            Tightness01 = tightness01 < 0f ? 0f : tightness01 > 1f ? 1f : tightness01;
         }
     }
 }

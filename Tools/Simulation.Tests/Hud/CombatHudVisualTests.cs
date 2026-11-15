@@ -76,6 +76,17 @@ namespace Shooter.Simulation.Tests.Hud
         }
 
         [Fact]
+        public void Tightness_fill_width_clamps_fraction()
+        {
+            Assert.Equal(0f, CombatHudVisual.TightnessFillWidth(0f, 100f));
+            Assert.Equal(0f, CombatHudVisual.TightnessFillWidth(-1f, 100f));
+            Assert.Equal(50f, CombatHudVisual.TightnessFillWidth(0.5f, 100f));
+            Assert.Equal(100f, CombatHudVisual.TightnessFillWidth(1f, 100f));
+            Assert.Equal(100f, CombatHudVisual.TightnessFillWidth(2f, 100f));
+            Assert.Equal(0f, CombatHudVisual.TightnessFillWidth(0.5f, 0f));
+        }
+
+        [Fact]
         public void Critical_bar_pulse_freezes_under_accessibility_prefs()
         {
             Assert.Equal(1f, CombatHudVisual.CriticalBarPulse(1.2f, reducedFlash: true, reducedMotion: false));

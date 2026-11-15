@@ -1,5 +1,16 @@
 # M11 — Playable build and acceptance — handoff and gate record
 
+## ADR-060 — Local tightness (stamina)
+
+2026-11-15. Owner: held Shift sprinted forever; need tightness gating run/slide/jump with 5 s walk restore. [ADR-060](../../decisions.md#adr-060--accepted-local-authoritative-tightness-stamina).
+
+**Implemented (software):**
+- `MotorBodyState.Tightness` + `MotorConfig` recipe (8 s sprint drain, 5 s walk regen, jump 0.25, slide 0.40) gated in `KinematicMotor.Step`.
+- `LocalMovementView.Tightness01` → compact STA bar above HP in combat HUD; C0/Game-v1 unchanged.
+- Pure motor drain/regen/cost/exhaust tests.
+
+**Pending:** interactive feel on a matching player/installer identity. Does not close FIX/SET/REL/P05.
+
 ## T087 — Knife (slot 3) and grenade (slot 4) (ADR-057)
 
 2026-11-15. Owner asked for knife on Digit3 and grenade on Digit4 so players (and bots) can fight when guns are dry; one grenade per life until respawn; full cook/throw arc.
