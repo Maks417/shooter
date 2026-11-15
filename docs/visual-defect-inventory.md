@@ -12,7 +12,7 @@ Authoritative stop: [ADR-024](decisions.md#adr-024--accepted-p05-soldier-visual-
 | Visual acceptance | **FAIL** |
 | ADR | ADR-024 |
 | Fourth clearance/parameter search | **Not authorized** |
-| Soldier identity under review | `soldier.loft1.0.2` / `soldier.motion.spike.v4` (non-accepted diagnostic) |
+| Soldier identity under review | `soldier.loft1.0.2` / `soldier.motion.spike.v5` (non-accepted diagnostic) |
 | FIX11 software disposition | ToolingReady |
 | REL03 | Open until named review attaches captures with defects resolved/unresolved |
 

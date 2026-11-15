@@ -110,7 +110,11 @@ namespace Shooter.Game.Session
             if (harness == null || !harness.TryGetMotorState(entity, out var state)) return false;
             float eye = state.Stance == Stance.Dead ? 0.4f
                 : state.Stance == Stance.Crouching ? 1.05f : 1.65f;
-            view = new LocalMovementView(state.Stance, eye, state.SlideActive, state.Tightness);
+            float hx = state.Velocity.X;
+            float hz = state.Velocity.Z;
+            float horizontalSpeed = (float)System.Math.Sqrt(hx * hx + hz * hz);
+            view = new LocalMovementView(
+                state.Stance, eye, state.SlideActive, state.Tightness, horizontalSpeed, state.LocomotionDistanceMeters);
             return true;
         }
 

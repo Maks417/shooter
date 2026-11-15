@@ -1,5 +1,16 @@
 # M11 — Playable build and acceptance — handoff and gate record
 
+## ADR-067 — Soldier pose + motor corner launch fixes — 2026-11-15
+
+Owner: player/bot models flicky; sprint feet poor; slide animation missing; sprint near wall/floor seam launches into the sky. [ADR-067](../../decisions.md#adr-067--accepted-soldier-motionv5-slide-pose-gait-stability-and-motor-corner-anti-launch).
+
+**Implemented (software):**
+- `KinematicMotor`: airborne/non-jump upward velocity clamped after contact projection; non-walkable projection cannot raise `velocity.Y`; `TryStep` requires real rise.
+- `soldier.motion.spike.v5`: `SoldierMotionInput.Slide` dive pose; walk/run hysteresis; clearer run duty/clearance.
+- `LocalMovementView` + `ProductActorPresentation`: authoritative speed/distance for gait; slide wired; cosmetic root blend.
+
+**Checks:** Simulation **285/285** PASS; Generation **401/401** PASS (feature-content-lock `motionVersion` v5); Game **79/79** PASS; docs/fixtures/manifest PASS. Incidental: `content-format-lock.json` hash for already-committed `release-catalog.valid.json` synced so P02 verify matches HEAD (no schema/format change). Named player/bot pose review, Unity EditMode/PlayMode, Client/Server/package/installer remain Pending. Does not close FIX/SET/REL/P05/VD exits.
+
 ## ADR-066 — UI copy + Barlow Condensed typeface bank — 2026-11-15
 
 Owner: shell/HUD text felt technical; want BFV-like condensed fonts (non-commercial). [ADR-066](../../decisions.md#adr-066--accepted-non-commercial-ui-typeface-bank-barlow-condensed).

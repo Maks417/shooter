@@ -43,6 +43,8 @@ namespace Shooter.Presentation.Rig
             public float CycleOpen;
             public SoldierMotion Motion = null!;
             public Float3 PreviousFeet;
+            /// <summary>Cosmetic root blend target; authority feet stay on PreviousFeet / LastFeet.</summary>
+            public Float3 DisplayedFeet;
             public double Distance;
             public ushort PreviousHealth = 100;
             public float ReloadPhase = -1f;
@@ -639,6 +641,7 @@ namespace Shooter.Presentation.Rig
                 // Generation SoldierMotion spike validates rifle sockets; pistol mesh shares the bind.
                 Motion = new SoldierMotion(rifleRecipe),
                 PreviousFeet = state.Feet,
+                DisplayedFeet = state.Feet,
                 PreviousHealth = state.Health
             };
             avatar.Root.SetParent(transform, false);
@@ -690,6 +693,18 @@ namespace Shooter.Presentation.Rig
                 if (dtSeconds > 1e-4f) speed = Mathf.Clamp(dist / dtSeconds, 0f, 5.5f);
             }
 
+            // Prefer authoritative motor speed/distance when the session view is available (stable gait).
+            float slide = 0f;
+            bool crouching = false;
+            if (movement.HasValue && !avatar.Corpse && state.Alive)
+            {
+                var m = movement.Value;
+                speed = Mathf.Clamp(m.HorizontalSpeedMetersPerSecond, 0f, 5.5f);
+                avatar.Distance = m.LocomotionDistanceMeters;
+                crouching = m.Stance == Stance.Crouching && !m.Sliding;
+                if (m.Sliding) slide = 1f;
+            }
+
             byte slot = state.ActiveWeaponSlot;
             actions.SyncLifecycle(state.EntityId, slot, state.Alive && !avatar.Corpse);
             if (slot != avatar.WeaponSlot)
@@ -723,6 +738,7 @@ namespace Shooter.Presentation.Rig
                 else
                     avatar.DeathPhase = Mathf.Min(1f, avatar.DeathPhase + dtSeconds / SoldierMotion.DeathCollapseDurationSeconds);
                 speed = 0f;
+                slide = 0f;
             }
 
             // Reset only on first living pose or the first death-collapse frame (clears gait contacts).
@@ -734,10 +750,20 @@ namespace Shooter.Presentation.Rig
                 : Mathf.Clamp(state.AimPitch, -SoldierMotion.MaxAimPitchRadians, SoldierMotion.MaxAimPitchRadians);
             float aimYaw = Mathf.Clamp(0f, -SoldierMotion.MaxAimYawRadians, SoldierMotion.MaxAimYawRadians);
 
-            bool crouching = !dying && movement.HasValue && movement.Value.Stance == Stance.Crouching;
-            if (movement.HasValue && movement.Value.Sliding) speed = 0f; // Slide momentum is not a running gait.
+            // Cosmetic root blend toward authoritative feet (hit capsules stay tick-snapped).
+            Float3 displayFeet = state.Feet;
+            if (avatar.HasPrevious && !dying && dtSeconds > 1e-4f)
+            {
+                float blend = Mathf.Clamp01(dtSeconds * 18f);
+                displayFeet = new Float3(
+                    Mathf.Lerp(avatar.DisplayedFeet.X, state.Feet.X, blend),
+                    Mathf.Lerp(avatar.DisplayedFeet.Y, state.Feet.Y, blend),
+                    Mathf.Lerp(avatar.DisplayedFeet.Z, state.Feet.Z, blend));
+            }
+            avatar.DisplayedFeet = displayFeet;
+
             var input = new SoldierMotionInput(
-                state.Feet,
+                displayFeet,
                 yaw,
                 avatar.Distance,
                 dying ? 0f : speed,
@@ -746,8 +772,9 @@ namespace Shooter.Presentation.Rig
                 pitch,
                 avatar.ReloadPhase,
                 reset,
-                dying ? avatar.DeathPhase : -1f);
-            avatar.Root.position = V(state.Feet);
+                dying ? avatar.DeathPhase : -1f,
+                slide);
+            avatar.Root.position = V(displayFeet);
             var pose = avatar.Motion.Evaluate(input, ground);
             for (int j = 0; j < SoldierSkeleton.JointCount; j++)
                 avatar.Bones[j].SetPositionAndRotation(V(pose.WorldPositions[j]), Q(pose.WorldRotations[j]));

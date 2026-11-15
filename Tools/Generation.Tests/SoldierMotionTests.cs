@@ -303,6 +303,52 @@ public sealed class SoldierMotionTests
         Assert.Throws<ArgumentOutOfRangeException>(()=>new SoldierMotionInput(new Float3(0,0,0),0,0,0,deathPhase:-.5f));
         Assert.Throws<ArgumentOutOfRangeException>(()=>new SoldierMotionInput(new Float3(0,0,0),0,0,0,deathPhase:1.1f));
     }
+    [Fact]
+    public void SlidePoseLowersPelvisPitchesTorsoAndKeepsFeetNearGroundWhileRootTranslates()
+    {
+        var motion=new SoldierMotion(Rifle());var ground=new Ground();
+        var standing=motion.Evaluate(new SoldierMotionInput(new Float3(0,0,0),0,0,0),ground);
+        float standPelvis=standing.WorldPositions[1].Y;
+        Float3 prevRoot=default;
+        for(int i=0;i<30;i++)
+        {
+            float z=i*.09f;
+            var pose=motion.Evaluate(new SoldierMotionInput(new Float3(0,0,z),0,z,5.5f,slide:1f),ground);
+            Assert.InRange(pose.GroundQueries,0,2);
+            Assert.True(pose.WorldPositions[1].Y < standPelvis - .2f, "slide pelvis should sit below standing");
+            Assert.InRange(pose.WorldPositions[1].Y, .35f, .70f);
+            Assert.True(pose.WorldPositions[17].Y < .25f && pose.WorldPositions[21].Y < .25f, "slide feet stay near ground");
+            for(int j=0;j<SoldierSkeleton.JointCount;j++)
+                Assert.True(float.IsFinite(pose.WorldPositions[j].X)&&float.IsFinite(pose.WorldPositions[j].Y)&&float.IsFinite(pose.WorldPositions[j].Z));
+            if(i>0) Assert.True(pose.WorldPositions[0].Z > prevRoot.Z - 1e-4f);
+            prevRoot=pose.WorldPositions[0];
+        }
+        output.WriteLine("motion="+SoldierMotion.Version+" slidePose pelvis lowered and feet tracked with translating root");
+    }
+    [Fact]
+    public void RunHysteresisDoesNotResetContactsWhenSpeedChattersAroundWalkRunThreshold()
+    {
+        var motion=new SoldierMotion(Rifle());var ground=new Ground();
+        double dist=0;
+        // Enter run, then chatter between 3.3 and 3.7 (inside hysteresis band) without ContactsReset.
+        for(int i=0;i<10;i++){dist+=.1;motion.Evaluate(new SoldierMotionInput(new Float3(0,0,(float)dist),0,dist,5.0f),ground);}
+        int resets=0;
+        for(int i=0;i<40;i++)
+        {
+            dist+=.06;
+            float speed=i%2==0?3.7f:3.3f;
+            var pose=motion.Evaluate(new SoldierMotionInput(new Float3(0,0,(float)dist),0,dist,speed),ground);
+            if(pose.ContactsReset)resets++;
+        }
+        Assert.Equal(0,resets);
+        output.WriteLine("motion="+SoldierMotion.Version+" runHysteresis chatterResets="+resets);
+    }
+    [Fact]
+    public void UnsupportedSlideRejects()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(()=>new SoldierMotionInput(new Float3(0,0,0),0,0,0,slide:-.1f));
+        Assert.Throws<ArgumentOutOfRangeException>(()=>new SoldierMotionInput(new Float3(0,0,0),0,0,0,slide:1.1f));
+    }
     private static Float3 Transform(Float3 origin,Quat q,Float3 p)
     {
         float tx=2*(q.Y*p.Z-q.Z*p.Y),ty=2*(q.Z*p.X-q.X*p.Z),tz=2*(q.X*p.Y-q.Y*p.X);

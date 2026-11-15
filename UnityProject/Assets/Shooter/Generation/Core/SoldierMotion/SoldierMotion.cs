@@ -26,20 +26,23 @@ namespace Shooter.Generation
         public bool Reset { get; }
         /// <summary>-1 living; 0..1 analytic death collapse (cosmetic only).</summary>
         public float DeathPhase { get; }
+        /// <summary>0..1 cosmetic slide dive (motor still owns root translation).</summary>
+        public float Slide { get; }
         public SoldierMotionInput(Float3 root, float yawRadians, double distanceMeters, float speedMetersPerSecond,
             float crouch = 0, float aimYawRadians = 0, float aimPitchRadians = 0, float reloadPhase = -1, bool reset = false,
-            float deathPhase = -1)
+            float deathPhase = -1, float slide = 0)
         {
             if (!Finite(yawRadians) || Math.Abs(yawRadians) > 1000000 || double.IsNaN(distanceMeters) || double.IsInfinity(distanceMeters) || distanceMeters < 0 || distanceMeters > 10000000 ||
                 !Finite(speedMetersPerSecond) || speedMetersPerSecond < 0 || speedMetersPerSecond > 5.5f || !Finite(crouch) || crouch < 0 || crouch > 1 ||
                 !Finite(aimYawRadians) || Math.Abs(aimYawRadians) > SoldierMotion.MaxAimYawRadians + 1e-6f ||
                 !Finite(aimPitchRadians) || Math.Abs(aimPitchRadians) > SoldierMotion.MaxAimPitchRadians + 1e-6f ||
                 !Finite(reloadPhase) || (reloadPhase != -1 && (reloadPhase < 0 || reloadPhase > 1)) ||
-                !Finite(deathPhase) || (deathPhase != -1 && (deathPhase < 0 || deathPhase > 1)))
+                !Finite(deathPhase) || (deathPhase != -1 && (deathPhase < 0 || deathPhase > 1)) ||
+                !Finite(slide) || slide < 0 || slide > 1)
                 throw new ArgumentOutOfRangeException(nameof(distanceMeters), "Unsupported motion input; aim is bounded to +/-45 yaw and +/-25 pitch degrees.");
             Root = root; YawRadians = yawRadians; DistanceMeters = distanceMeters; SpeedMetersPerSecond = speedMetersPerSecond;
             Crouch = crouch; AimYawRadians = aimYawRadians; AimPitchRadians = aimPitchRadians; ReloadPhase = reloadPhase; Reset = reset;
-            DeathPhase = deathPhase;
+            DeathPhase = deathPhase; Slide = slide;
         }
     }
 
@@ -80,11 +83,14 @@ namespace Shooter.Generation
     /// <summary>Initial semantic23 view-only gait/IK spike. No clips, physics mutation or frame-time accumulation.</summary>
     public sealed class SoldierMotion
     {
-        public const string Version = "soldier.motion.spike.v4";
+        public const string Version = "soldier.motion.spike.v5";
         public const float MaxAimYawRadians = (float)Math.PI / 4;
         public const float MaxAimPitchRadians = 25 * (float)Math.PI / 180;
         /// <summary>Presentation advance duration for DeathPhase 0→1 (seconds).</summary>
         public const float DeathCollapseDurationSeconds = 0.75f;
+        /// <summary>Walk→run enter / run→walk leave speeds (hysteresis avoids frame-speed chatter resets).</summary>
+        public const float RunEnterSpeed = 3.8f;
+        public const float RunLeaveSpeed = 3.2f;
         private const float Radians = (float)Math.PI / 180;
         public const float BodyBladeRadians = 35 * Radians;
         public const float LegHeadingOffsetRadians = 5 * Radians;
@@ -127,7 +133,12 @@ namespace Shooter.Generation
             if (ground == null) throw new ArgumentNullException(nameof(ground));
             if (input.DeathPhase >= 0)
                 return EvaluateDeathCollapse(input, ground);
-            bool run = input.SpeedMetersPerSecond > 3.5f;
+            if (input.Slide > .01f)
+                return EvaluateSlide(input, ground);
+            // Hysteresis: enter run above RunEnterSpeed, leave below RunLeaveSpeed (avoids ContactsReset thrash).
+            bool run = !initialized ? input.SpeedMetersPerSecond > 3.5f
+                : running ? input.SpeedMetersPerSecond >= RunLeaveSpeed
+                : input.SpeedMetersPerSecond > RunEnterSpeed;
             bool moving = input.SpeedMetersPerSecond > .001f;
             double travel = input.DistanceMeters - previousDistance;
             bool reset = !initialized || input.Reset || run != running || moving != wasMoving || travel < 0 || travel > .5 || Sub(input.Root, previousRoot).LengthSquared > .25;
@@ -137,14 +148,15 @@ namespace Shooter.Generation
             // Pelvis stance is cosmetic; root position/rotation and requested weapon aim remain the input.
             Quat bodyYaw = Multiply(yaw, AxisAngle(Up, BodyBladeRadians));
             Quat legYaw = Multiply(yaw, AxisAngle(Up, LegHeadingOffsetRadians));
-            float cycle = run ? 2.2f : 1.4f, duty = run ? .35f : .50f, clearance = run ? .12f : .08f;
+            // v5 run: slightly longer plant duty and clearance so sprint feet read more clearly.
+            float cycle = run ? 2.2f : 1.4f, duty = run ? .38f : .50f, clearance = run ? .14f : .08f;
             double phase = input.DistanceMeters / cycle; phase -= Math.Floor(phase);
             var leftTarget = FootTarget(left, -.1f, phase, cycle, duty, clearance, moving, reset, input.Root, yaw, bodyYaw, ground);
             double rightPhase = phase + .5; rightPhase -= Math.Floor(rightPhase);
             var rightTarget = FootTarget(right, .1f, rightPhase, cycle, duty, clearance, moving, reset, input.Root, yaw, bodyYaw, ground);
             // Version2 uses a bent-knee locomotion posture. Full crouch remains the original.66m;
             // locomotion lowering is interpolated, never stacked onto the crouch displacement.
-            float nominalHeight = moving ? (run ? .76f : .78f) : .96f;
+            float nominalHeight = moving ? .78f : .96f;
             float pelvisY = input.Root.Y + nominalHeight + (.66f - nominalHeight) * input.Crouch;
             float desired = Math.Min(RequiredPelvis(leftTarget, -.1f, input.Root, bodyYaw), RequiredPelvis(rightTarget, .1f, input.Root, bodyYaw));
             pose.PelvisCorrection = Clamp(desired - pelvisY, -.08f, 0);
@@ -199,6 +211,93 @@ namespace Shooter.Generation
             pose.EyeSightLineErrorMeters=(float)Math.Sqrt(Sub(eyeDelta,Scale(axis,Dot(eyeDelta,axis))).LengthSquared);
             pose.ArmBodyClearanceMeters=Math.Min(armBody.Arm(p[8],p[9],p[10]),armBody.Arm(p[12],p[13],p[14]));
             StoreUpper(input);
+            return pose;
+        }
+
+        /// <summary>
+        /// Cosmetic slide dive while the motor owns root translation (ADR-039 capsule crouch unchanged).
+        /// Lead/trail feet track with the moving root; torso pitches forward; weapon braced low.
+        /// </summary>
+        private SoldierPose EvaluateSlide(SoldierMotionInput input, ISoldierGround ground)
+        {
+            float s = Clamp(input.Slide, 0, 1);
+            initialized = true;
+            running = false;
+            wasMoving = false;
+            previousDistance = input.DistanceMeters;
+            previousRoot = input.Root;
+            upperCacheValid = false;
+            left.Stance = right.Stance = false;
+            pose.ContactsReset = true;
+            pose.GroundQueries = 0;
+            pose.UpperBodyCacheHit = false;
+            pose.PlantSlide = 0;
+            pose.PlantTargetError = 0;
+            pose.PelvisCorrection = 0;
+            pose.LeftPlanted = pose.RightPlanted = false;
+
+            // Two foot ground samples (budget 2); pelvis uses the same flat height as the root.
+            pose.GroundQueries = 0;
+            Quat yaw = AxisAngle(Up, input.YawRadians);
+            Quat bodyYaw = Multiply(yaw, AxisAngle(Up, BodyBladeRadians));
+            Quat legYaw = Multiply(yaw, AxisAngle(Up, LegHeadingOffsetRadians));
+            Float3 forward = Rotate(Forward, yaw);
+            Float3 rightAxis = Rotate(new Float3(1, 0, 0), yaw);
+            Quat pitchDown = AxisAngle(new Float3(1, 0, 0), 58f * Radians * s);
+            Quat bodyRot = Multiply(bodyYaw, pitchDown);
+            Quat slideLegYaw = Multiply(legYaw, pitchDown);
+
+            float groundY = input.Root.Y;
+            float pelvisY = groundY + Lerp(.66f, .50f, s);
+            var p = pose.Positions; var r = pose.Rotations;
+            p[0] = new Float3(input.Root.X, groundY, input.Root.Z); r[0] = yaw;
+            p[1] = new Float3(input.Root.X, pelvisY, input.Root.Z); r[1] = bodyRot;
+
+            float spineFold = 12f * Radians * s;
+            for (int i = 2; i <= 4; i++)
+            {
+                p[i] = Add(p[i - 1], Rotate(SoldierSkeleton.Definition.Joints[i].LocalBindPosition, r[i - 1]));
+                r[i] = Multiply(bodyRot, Multiply(
+                    AxisAngle(Up, input.AimYawRadians * (i - 1) / 3f),
+                    AxisAngle(new Float3(1, 0, 0), -input.AimPitchRadians * (i - 1) / 3f - spineFold * (i - 1) / 3f)));
+            }
+            SetChild(5, Multiply(r[4], Multiply(AxisAngle(new Float3(0, 0, 1), -30 * Radians), AxisAngle(new Float3(1, 0, 0), 20 * Radians))));
+            SetChild(6, Multiply(r[5], AxisAngle(Up, -35 * Radians)));
+            SetChild(7, Multiply(r[4], AxisAngle(Up, 25 * Radians))); SetChild(8, r[4]);
+            SetChild(11, Multiply(r[4], AxisAngle(new Float3(0, 0, 1), 30 * Radians))); SetChild(12, r[4]);
+            SetChild(15, bodyRot); SetChild(19, bodyRot);
+
+            // Lead foot forward, trail foot aft — both near ground, tracking the moving root (no idle plant).
+            Float3 trail = Add(input.Root, Add(Scale(forward, -.42f * s), Scale(rightAxis, -.10f)));
+            Float3 lead = Add(input.Root, Add(Scale(forward, .55f * s), Scale(rightAxis, .10f)));
+            trail = Sample(trail, ground);
+            lead = Sample(lead, ground);
+            var leftLeg = Leg(15, 16, 17, 18, trail, slideLegYaw);
+            var rightLeg = Leg(19, 20, 21, 22, lead, slideLegYaw);
+            pose.LeftKneeFlexion = leftLeg.FlexionRadians; pose.RightKneeFlexion = rightLeg.FlexionRadians;
+            pose.PlantTargetError = Math.Max(leftLeg.TargetError, rightLeg.TargetError);
+
+            pose.WeaponRotation = Multiply(yaw, Multiply(
+                AxisAngle(Up, input.AimYawRadians),
+                AxisAngle(new Float3(1, 0, 0), -input.AimPitchRadians - 25f * Radians * s)));
+            pose.WeaponPosition = Sub(p[12], Rotate(stock, pose.WeaponRotation));
+            pose.RightHandTarget = Add(pose.WeaponPosition, Rotate(grip, pose.WeaponRotation));
+            pose.LeftHandTarget = Add(pose.WeaponPosition, Rotate(support, pose.WeaponRotation));
+            float protraction = SupportProtraction(pose.LeftHandTarget);
+            SetChild(7, Multiply(r[4], AxisAngle(Up, protraction))); SetChild(8, r[4]);
+            armBody.Update(pose);
+            var leftArm = Arm(8, 9, 10, pose.LeftHandTarget, r[7], -1);
+            var rightArm = Arm(12, 13, 14, pose.RightHandTarget, r[11], 1);
+            pose.LeftGripError = leftArm.TargetError; pose.RightGripError = rightArm.TargetError;
+            pose.LeftElbowFlexion = leftArm.FlexionRadians; pose.RightElbowFlexion = rightArm.FlexionRadians;
+            pose.LeftWristOrientationErrorRadians = AngularError(r[10], Multiply(pose.WeaponRotation, AxisAngle(Up, 90 * Radians)));
+            pose.RightWristOrientationErrorRadians = AngularError(r[14], Multiply(pose.WeaponRotation, AxisAngle(new Float3(0, 0, 1), 90 * Radians)));
+            pose.RightStockErrorMeters = (float)Math.Sqrt(Sub(Add(pose.WeaponPosition, Rotate(stock, pose.WeaponRotation)), p[12]).LengthSquared);
+            pose.RightEyePosition = Add(p[6], Rotate(new Float3(.035f, -.005f, .103f), r[6]));
+            var eyeDelta = Sub(pose.RightEyePosition, Add(pose.WeaponPosition, Rotate(sight, pose.WeaponRotation)));
+            var axis = Rotate(Forward, pose.WeaponRotation);
+            pose.EyeSightLineErrorMeters = (float)Math.Sqrt(Sub(eyeDelta, Scale(axis, Dot(eyeDelta, axis))).LengthSquared);
+            pose.ArmBodyClearanceMeters = Math.Min(armBody.Arm(p[8], p[9], p[10]), armBody.Arm(p[12], p[13], p[14]));
             return pose;
         }
 

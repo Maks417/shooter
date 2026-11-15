@@ -4,6 +4,8 @@
 
 **ADR-066 UI copy + Barlow Condensed fonts — 2026-11-15 (source):** OFL typeface bank in `Presentation/Fonts/Resources`, `UiFonts`/`TacticalUi` wiring, player-facing `ShellUiCopy`/`InsertionScreenCopy` rewrite, provenance `namedFontSources`, closure `ui-typeface-bank-v1`; pure tests Pending named 720p readability/installer. [Handoff](milestones/m11-playable-release/handoff.md#adr-066--ui-copy--barlow-condensed-typeface-bank--2026-11-15).
 
+**ADR-067 soldier pose + motor launch — 2026-11-15 (source):** motion.v5 slide dive pose, gait hysteresis + auth speed readout, motor corner anti-launch; pure motor/motion tests PASS; player/bot pose review and installer Pending. [Handoff](milestones/m11-playable-release/handoff.md#adr-067--soldier-pose--motor-corner-launch-fixes--2026-11-15).
+
 **T087 follow-up knife/grenade presentation — 2026-11-15 (source):** ADR-064 FP slash/stab + cook/throw + flying grenade; rising-edge cook after equip; knife no longer uses gun muzzle/audio; Game-v1 `WeaponAction` on lifecycle; pure tests Pending player/installer. [Handoff](milestones/m11-playable-release/handoff.md#t087--knife-slot-3-and-grenade-slot-4-adr-057).
 
 **ADR-063 hit damage coefficients — 2026-11-15 (source):** head×4 / torso×1 / limbs×0.5 (rifle one-shot head, ~4 chest, ~7 limbs); C0/base weapon damage/T085 aim unchanged; pure combat tests + docs Pending player feel. [Handoff](milestones/m11-playable-release/handoff.md#adr-063--hit-region-damage-coefficients--2026-11-15).

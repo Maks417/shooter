@@ -767,6 +767,19 @@ Decision:
 
 Validation: provenance PASS with the three TTFs; Generation font-closure assertion; Simulation shell copy tests; docs/manifest. Named 720p readability review remains Pending. Rollback restores engine-only IMGUI font + `engine-allowlist-v1`.
 
+## ADR-067 — Accepted: soldier motion.v5 slide pose, gait stability and motor corner anti-launch
+
+Date 2026-11-15; owner reported flicky player/bot models, bad sprint feet, missing slide animation, and sprinting near wall/floor “texture angles” launching the actor into the sky. Sole integrator owns `KinematicMotor`, `SoldierMotion`, `LocalMovementView` / presentation wiring, pure tests and docs. No C0/N1/Game-v1 wire freeze, no loft/P05 clearance search (ADR-024), no imported clips, no camera roll during slide.
+
+Context: ADR-039 slide is capsule/eye crouch only; presentation forced crouch-idle plants while the root slid. Gait speed came from `ΔFeet / unscaledDeltaTime`, which flipped walk↔run at 3.5 m/s and reset foot contacts. PhysX/box corner normals projected airborne sprint into +Y after momentary ground loss.
+
+Decision:
+- **Motor.** After `SlideMove`, clamp `velocity.Y ≤ 0` unless an active jump ascent owns the tick. Non-walkable contact projection must not increase upward velocity. `TryStep` requires a real rise (`> ε`) and rejects zero-rise false steps. InitialContact Skin lift (0.3.5) stays.
+- **Motion v5.** Bump identity to `soldier.motion.spike.v5`. Add `SoldierMotionInput.Slide` (0..1) with a cosmetic dive (low pelvis, pitched torso, lead/trail feet tracking the root). Walk/run hysteresis (`RunEnterSpeed` 3.8 / `RunLeaveSpeed` 3.2); slightly clearer run duty/clearance.
+- **Presentation.** `LocalMovementView` carries authoritative horizontal speed and locomotion distance. `ProductActorPresentation` drives gait from that readout, passes `Sliding` into motion, and lightly blends displayed feet toward authority feet (hit capsules remain tick-snapped). First-person camera stays ADR-039 (no slide roll).
+
+Validation: Simulation motor corner/step suites; Generation SoldierMotion slide/hysteresis cases; feature-content-lock `motionVersion` refresh; docs/manifest. Named player/bot pose review and installer remain Pending. Rollback restores motor clamps, motion.v4 and prior presentation gait path.
+
 ## ADR-068 — Accepted: procedural arsenal visual profiles and finishes
 
 Date 2026-11-15; owner assigned visual improvement of every weapon with Battlefield V as a quality reference. Sole integrator owns the bounded weapon geometry, presentation materials, packaging recipes, migration, tests and evidence. No imported meshes/textures, combat changes, soldier clearance search or acceptance waiver.

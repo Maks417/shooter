@@ -232,5 +232,56 @@ namespace Shooter.Simulation.Tests.Motor
             s = motor.Step(s, Cmd(tick, 0f, InputButtons.JumpPressed), tick, world);
             Assert.False(s.SlideActive);
         }
+
+        // ---------------- D. wall–floor corner launch ----------------
+        [Fact]
+        public void SprintAlongWallFloorCornerDoesNotLaunchSkyward()
+        {
+            // Floor plane + vertical wall: capsule edge hits produce rounded corner normals like PhysX BoxCollider seams.
+            var world = new SlopeWorld();
+            world.AddBox(new Float3(0.55f, 0f, -20f), new Float3(0.85f, 3f, 40f), 11);
+            var motor = new KinematicMotor();
+            uint tick = 0;
+            // Start clear of the wall; press into it with +MoveX while sprinting +Z so the rim grazes the seam.
+            var s = SpawnAt(world.GroundHeightAt(0));
+            float floorY = world.GroundHeightAt(0);
+            float maxFeetY = floorY + Cfg.Skin + Cfg.Snap + 0.05f;
+            for (int i = 0; i < 180; i++)
+            {
+                tick++;
+                // Diagonal unit wish: press into the wall while sprinting forward (length ≤ 1 for C0).
+                s = motor.Step(s, Cmd(tick, 0.7071f, InputButtons.SprintHeld, mx: 0.7071f), tick, world);
+                Assert.True(s.Velocity.Y <= 0.05f,
+                    $"upward launch vel.Y={s.Velocity.Y} at tick {tick} feet=({s.Feet.X},{s.Feet.Y},{s.Feet.Z})");
+                Assert.True(s.Feet.Y <= maxFeetY,
+                    $"feet.Y={s.Feet.Y} above floor bound {maxFeetY} at tick {tick}");
+            }
+            Assert.True(s.Feet.Z > 2f, $"did not travel along wall, z={s.Feet.Z}");
+            Assert.True(s.Grounded);
+        }
+
+        [Fact]
+        public void SprintIntoWallFloorCornerDoesNotLaunchSkyward()
+        {
+            var world = new SlopeWorld();
+            // Wall across +Z so forward sprint drives into the seam.
+            world.AddBox(new Float3(-5f, 0f, 1.2f), new Float3(5f, 3f, 1.5f), 12);
+            var motor = new KinematicMotor();
+            uint tick = 0;
+            var s = SpawnAt(world.GroundHeightAt(0));
+            float floorY = world.GroundHeightAt(0);
+            float maxFeetY = floorY + Cfg.Skin + Cfg.Snap + 0.05f;
+            for (int i = 0; i < 120; i++)
+            {
+                tick++;
+                s = motor.Step(s, Cmd(tick, 1f, InputButtons.SprintHeld), tick, world);
+                Assert.True(s.Velocity.Y <= 0.05f,
+                    $"upward launch vel.Y={s.Velocity.Y} at tick {tick} feet=({s.Feet.X},{s.Feet.Y},{s.Feet.Z})");
+                Assert.True(s.Feet.Y <= maxFeetY,
+                    $"feet.Y={s.Feet.Y} above floor bound {maxFeetY} at tick {tick}");
+            }
+            Assert.True(s.Grounded);
+            Assert.True(s.Feet.Z < 1.2f - Cfg.Radius + 0.1f, $"passed through wall z={s.Feet.Z}");
+        }
     }
 }

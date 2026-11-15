@@ -10,6 +10,7 @@
     "ADR-022",
     "ADR-023",
     "ADR-061",
+    "ADR-067",
     "ADR-068"
   ],
   "generators": [
@@ -53,7 +54,7 @@
     "UnityProject/Assets/Shooter/Generation/Core/Materials/MaterialBaker.cs": "6b61bd8e6838447ab9a9f2e2f55fad83ec2a69140c9b5734957cda566e75eb96",
     "UnityProject/Assets/Shooter/Generation/Core/Materials/MaterialRecipe.cs": "472e44e53da39ca31c6e45d9aee72ee388740463e9ceac32aeb276f9360ea141",
     "UnityProject/Assets/Shooter/Generation/Core/SoldierMotion/ArmBodyClearance.cs": "8f2836e21108ec273d3e79190f22601acc961b6325abe772a81ff14f8fed399d",
-    "UnityProject/Assets/Shooter/Generation/Core/SoldierMotion/SoldierMotion.cs": "cf1cf77dee7ea55d881ad30c811cca7056762b14df1a5ef199540a9d1a523f45",
+    "UnityProject/Assets/Shooter/Generation/Core/SoldierMotion/SoldierMotion.cs": "90c7045c7e8efa898a6eb7ee0e2610e9709f379371b4d7c8859c63fdcb757de7",
     "UnityProject/Assets/Shooter/Generation/Core/SoldierMotion/TwoBoneIk.cs": "94b09db2d0ff755baee8a73ef5165809b39a369732bbb7d194eb5c4fe673f5a5",
     "UnityProject/Assets/Shooter/Generation/Core/Soldiers/SoldierAssetGenerator.cs": "d4cb380f003ab2dca358c3926d85a16c2d4ee41ddbc7e574e08166510d1ed440",
     "UnityProject/Assets/Shooter/Generation/Core/Soldiers/SoldierGeometry.cs": "a4f4ce798ec704430f4f950569de8c5494f191866c8893f3693f560a085ad56b",
@@ -75,6 +76,6 @@
     "UnityProject/Assets/Shooter/Generation/FeatureRecipes/soil.json": "cc2ebc90846af67d3fad0333f0702b0f27142060a62ed7eb87d49cbe0270f79a",
     "UnityProject/Assets/Shooter/Generation/FeatureRecipes/soldier.json": "e0f291b94e52bb25148091e102ec2cdc8586e70179d7a5cd6d612c409e1b85cd"
   },
-  "motionVersion": "soldier.motion.spike.v4",
+  "motionVersion": "soldier.motion.spike.v5",
   "skeletonVersion": "soldier.semantic23.v1"
 }

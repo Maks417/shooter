@@ -175,8 +175,11 @@ namespace Shooter.Simulation.Motor
             // A grounded actor that is not jumping follows the ground: contact projection (ramps) must not leave it
             // with upward velocity, which would suppress the ground probe and launch it off the ramp.
             bool followGround = previous.Grounded && !jumpEdge;
+            // Preserve only an active jump ascent; wall/corner ProjectOnPlane must not create a sky launch.
+            bool jumpAscent = jumpEdge
+                || (jumpConsumed != 0 && jumpConsumed == previous.JumpConsumedSequence && previous.Velocity.Y > 0f);
             feet = SlideMove(feet, height, ref velocity, displacement, world, followGround, out bool stepped, out SurfaceId stepSurface);
-            if (followGround && velocity.Y > 0f) velocity = new Float3(velocity.X, 0f, velocity.Z);
+            if (!jumpAscent && velocity.Y > 0f) velocity = new Float3(velocity.X, 0f, velocity.Z);
 
             bool ascendingJump = velocity.Y > 0f && jumpConsumed == command.Sequence && (command.Buttons & InputButtons.JumpPressed) != 0;
             bool grounded = false;
@@ -316,22 +319,24 @@ namespace Shooter.Simulation.Motor
                 Float3 remaining = MotorMath.Sub(displacement, MotorMath.Scale(unit, travel));
                 // Step-up: a grounded actor blocked by a non-walkable contact lifts by step height, spends only the
                 // remaining horizontal travel and snaps down. The whole remaining displacement is consumed.
-                if (allowStep && hit.Normal.Y < Math.Cos(config.MaxSlopeRadians)
+                float walkableY = (float)Math.Cos(config.MaxSlopeRadians);
+                if (allowStep && hit.Normal.Y < walkableY
                     && TryStep(feet, height, MotorMath.Horizontal(remaining), world, out Float3 stepFeet, out SurfaceId surface))
                 {
                     feet = stepFeet;
                     stepped = true; stepSurface = surface;
                     break;
                 }
+                float vyBefore = velocity.Y;
                 displacement = MotorMath.ProjectOnPlane(remaining, hit.Normal);
                 velocity = MotorMath.ProjectOnPlane(velocity, hit.Normal);
-                if (hit.Normal.Y >= Math.Cos(config.MaxSlopeRadians))
+                if (hit.Normal.Y < walkableY)
                 {
-                    // Walkable: kill into-slope velocity already projected.
-                }
-                else if (hit.Normal.Y < 0.1f)
-                {
-                    // Steep/wall: keep vertical.
+                    // Non-walkable wall/corner: never convert horizontal sprint into upward launch.
+                    if (velocity.Y > vyBefore)
+                        velocity = new Float3(velocity.X, vyBefore, velocity.Z);
+                    if (vyBefore <= 0f && velocity.Y > 0f)
+                        velocity = new Float3(velocity.X, 0f, velocity.Z);
                 }
             }
             return feet;
@@ -368,11 +373,13 @@ namespace Shooter.Simulation.Motor
             var downCapsule = MotorMath.BodyCapsule(over, height, config.Radius);
             var down = world.SweepCapsule(downCapsule, new Float3(0, -(lift + config.Snap + config.Skin), 0), motorFilter);
             if (down.Status != QueryStatus.Hit) return false;
+            // Reject ceilings/near-horizontal walls; rounded step-edge normals stay accepted (≥0.1).
             if (down.Hit.Normal.Y < 0.1f) return false;
             float drop = Math.Max(0f, down.Hit.DistanceMeters - config.Skin);
             result = new Float3(over.X, over.Y - drop, over.Z);
             // Must actually be a rise (otherwise ordinary sliding handles it) and no higher than a step.
-            if (result.Y - feet.Y > lift + 1e-4f) return false;
+            float rise = result.Y - feet.Y;
+            if (rise <= 1e-4f || rise > lift + 1e-4f) return false;
             surface = down.Hit.StaticSurfaceId;
             return true;
         }
