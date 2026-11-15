@@ -225,21 +225,24 @@ namespace Shooter.Presentation.Session
             frame.Create();
             cam.targetTexture = frame;
 
-            // Warmer key / cooler fill + soft rim for readable hero silhouettes (BFV-like balance).
-            var key = StageLight("Warm key light", LightType.Directional, new Color(1f, .84f, .62f), 1.95f);
-            key.transform.rotation = Quaternion.Euler(34, -38, 0);
+            // Warmer key / denser apron bounce for staging depth (BFV-like balance, StageLayer only).
+            var key = StageLight("Warm key light", LightType.Directional, new Color(1f, .88f, .68f), 2.15f);
+            key.transform.rotation = Quaternion.Euler(36, -36, 0);
             key.shadows = LightShadows.Hard;
             key.shadowStrength = .78f;
-            var fill = StageLight("Cool fill light", LightType.Directional, new Color(.40f, .60f, .76f), .48f);
+            var fill = StageLight("Cool fill light", LightType.Directional, new Color(.40f, .60f, .76f), .42f);
             fill.transform.rotation = Quaternion.Euler(16, 132, 0);
-            var rim = StageLight("Cool rim light", LightType.Directional, new Color(.52f, .76f, .90f), .92f);
+            var rim = StageLight("Cool rim light", LightType.Directional, new Color(.52f, .76f, .90f), .88f);
             rim.transform.rotation = Quaternion.Euler(6, 158, 0);
-            var lamp = StageLight("Apron lamp point", LightType.Point, new Color(1f, .74f, .44f), 1.45f);
+            var lamp = StageLight("Apron lamp point", LightType.Point, new Color(1f, .76f, .48f), 1.75f);
             lamp.transform.position = new Vector3(-2.2f, 4.8f, 8.5f);
-            lamp.range = 20f;
-            var heroLamp = StageLight("Hero warm bounce", LightType.Point, new Color(1f, .78f, .52f), .55f);
+            lamp.range = 22f;
+            var heroLamp = StageLight("Hero warm bounce", LightType.Point, new Color(1f, .80f, .56f), .72f);
             heroLamp.transform.position = new Vector3(1.4f, 2.4f, 1.2f);
-            heroLamp.range = 7.5f;
+            heroLamp.range = 8.5f;
+            var apronBounce = StageLight("Apron ground bounce", LightType.Point, new Color(1f, .72f, .46f), .55f);
+            apronBounce.transform.position = new Vector3(1.2f, 1.1f, 6.5f);
+            apronBounce.range = 14f;
 
             actors = ProductActorPresentation.Create(transform, cam);
             actors.BindMenuShowcase(visuals[0]);

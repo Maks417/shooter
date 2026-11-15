@@ -11,9 +11,9 @@ namespace Shooter.Presentation
         public const float DefaultBoxSizeMeters = 12f;
         public const float DefaultIntensity = 1f;
         public const int DefaultResolution = 128;
-        /// <summary>Product map outdoor probe: larger capture volume for 256 m compounds without per-frame refresh.</summary>
-        public const float ProductMapBoxSizeMeters = 40f;
-        public const float ProductMapIntensity = 1.05f;
+        /// <summary>Product map outdoor probe: larger capture volume for arena compounds; bake once, never per frame.</summary>
+        public const float ProductMapBoxSizeMeters = 48f;
+        public const float ProductMapIntensity = 1.12f;
 
         private GameObject? root;
         private ReflectionProbe? probe;

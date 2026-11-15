@@ -220,8 +220,13 @@ namespace Shooter.Presentation.Rig
                     FromPackaged(shader, visuals, MapVisualClosure.SoldierMaterialPaths[6], "Team2 skin"),
                     FromPackaged(shader, visuals, MapVisualClosure.SoldierMaterialPaths[7], "Team2 goggles", 0.3f, 0.55f)
                 };
+                // Presentation-only numeric polish: team kits must read in sun/shade without touching generators.
+                ApplyPresentationSoldierPalette(team1Palette, team1: true);
+                ApplyPresentationSoldierPalette(team2Palette, team1: false);
+
                 rifleMetal = FromPackaged(shader, visuals, MapVisualClosure.WeaponMaterialPaths[0], "Product rifle metal", 0.15f, 0.35f);
                 riflePolymer = FromPackaged(shader, visuals, MapVisualClosure.WeaponMaterialPaths[1], "Product rifle polymer");
+                ApplyPresentationWeaponMaterials(rifleMetal, riflePolymer);
 
                 visualsBound = true;
                 ApplyLocalWeaponVisual(ProductAuthorityActionView.RifleSlot);
@@ -268,10 +273,7 @@ namespace Shooter.Presentation.Rig
                 new ActorLifecycleState(new EntityId(2), 1, true, 100, new Float3(-.25f, 0, 3.2f), -2.95f, -.06f, 0, 30, 90),
                 new ActorLifecycleState(new EntityId(3), 1, true, 100, new Float3(3.2f, 0, 4.8f), -2.4f, -.1f, 0, 30, 90)
             };
-            // Menu-only palette overrides are numeric presentation styling, not a soldier-generator iteration.
-            team1Palette![0].SetColor("_BaseColor", new Color(.16f, .21f, .19f));
-            team1Palette[1].SetColor("_BaseColor", new Color(.12f, .15f, .14f));
-            team1Palette[2].SetColor("_BaseColor", new Color(.35f, .28f, .22f));
+            // Menu showcase reuses the same Team1 presentation polish applied in BindPackagedVisuals.
             for (int i = 0; i < showcaseStates.Length; i++) CreateAvatar(showcaseStates[i], false);
         }
 
@@ -449,8 +451,9 @@ namespace Shooter.Presentation.Rig
                 Vector3 hip = new Vector3(pose.RightHand.X, pose.RightHand.Y, pose.RightHand.Z);
                 // Keep the stock behind the receiver clear of the camera near plane. These
                 // camera-local offsets affect presentation only; ballistic origin stays authoritative.
+                // Slightly lower/forward hip so the FP rifle fills more of the lower-right frame.
                 hip += ProductAuthorityActionView.IsPistolSlot(slot)
-                    ? new Vector3(.06f, -.06f, .12f) : new Vector3(.10f, -.08f, .32f);
+                    ? new Vector3(.07f, -.07f, .14f) : new Vector3(.12f, -.10f, .36f);
                 // The verified +Z sight line lies on the camera ray at full ADS.
                 // Keep physical depth; do not move the eye socket onto/behind the near plane.
                 Vector3 aligned = new Vector3(-sight.X, -sight.Y, hip.z);
@@ -531,6 +534,7 @@ namespace Shooter.Presentation.Rig
             avatar.WeaponFilter = avatar.Weapon.gameObject.AddComponent<MeshFilter>();
             avatar.WeaponRenderer = avatar.Weapon.gameObject.AddComponent<MeshRenderer>();
             ApplyHeldWeaponVisual(avatar, slot);
+            ApplyLocalHumanShadowMode(avatar, state.EntityId.Equals(localHuman) && !corpse && state.Alive);
 
             avatars[state.EntityId.Value] = avatar;
             PoseAvatar(avatar, state, 0f, 0u);
@@ -601,14 +605,8 @@ namespace Shooter.Presentation.Rig
 
             avatar.Weapon.SetPositionAndRotation(V(weaponPosition), Q(weaponRotation));
             avatar.Weapon.gameObject.SetActive(!avatar.Corpse && state.Alive);
-
-            // The living local human sees the FP viewmodel; the world avatar only casts shadows.
-            // Re-evaluated every pose so respawns, corpses and weapon swaps cannot leave it stale.
-            var avatarShadowMode = state.EntityId.Equals(localHuman) && !avatar.Corpse && state.Alive
-                ? UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly
-                : UnityEngine.Rendering.ShadowCastingMode.On;
-            if (avatar.Body != null) avatar.Body.shadowCastingMode = avatarShadowMode;
-            if (avatar.WeaponRenderer != null) avatar.WeaponRenderer.shadowCastingMode = avatarShadowMode;
+            // Re-assert each pose so respawn / corpse flip keeps local FP body+weapon ShadowsOnly.
+            ApplyLocalHumanShadowMode(avatar, state.EntityId.Equals(localHuman) && !avatar.Corpse && state.Alive);
 
             Float3 sightLocal = ProductAuthorityActionView.IsPistolSlot(slot) ? pistolSightSocketLocal : rifleSightSocketLocal;
             avatar.LastArmBodyClearance = pose.ArmBodyClearanceMeters;
@@ -734,6 +732,66 @@ namespace Shooter.Presentation.Rig
             material.SetFloat("_Metallic", metallic);
             material.SetFloat("_Smoothness", smoothness);
             return material;
+        }
+
+        /// <summary>
+        /// Presentation-only kit accents after packaged load. Ally cyan-leaning olive/slate vs
+        /// enemy coral-leaning desert/ochre; skin stays believable. Not solid flat blue.
+        /// Does not change mesh topology, sockets, or generator recipes.
+        /// </summary>
+        private static void ApplyPresentationSoldierPalette(Material[] palette, bool team1)
+        {
+            if (palette == null || palette.Length < 4) return;
+            if (team1)
+            {
+                // Olive/slate field kit with a cool cyan lean — readable allies without monochrome blue.
+                SetLit(palette[0], new Color(0.22f, 0.30f, 0.27f), 0.05f, 0.28f); // uniform
+                SetLit(palette[1], new Color(0.10f, 0.14f, 0.15f), 0.28f, 0.40f); // gear / straps
+                SetLit(palette[2], new Color(0.52f, 0.38f, 0.28f), 0f, 0.36f);    // skin
+                SetLit(palette[3], new Color(0.08f, 0.18f, 0.20f), 0.58f, 0.76f); // goggles
+            }
+            else
+            {
+                // Desert/ochre opposing kit with coral warmth — readable enemies in sun and shade.
+                SetLit(palette[0], new Color(0.50f, 0.34f, 0.22f), 0.05f, 0.26f); // uniform
+                SetLit(palette[1], new Color(0.16f, 0.10f, 0.07f), 0.24f, 0.34f); // gear
+                SetLit(palette[2], new Color(0.50f, 0.36f, 0.26f), 0f, 0.34f);    // skin
+                SetLit(palette[3], new Color(0.20f, 0.09f, 0.06f), 0.52f, 0.70f); // goggles
+            }
+        }
+
+        /// <summary>
+        /// Keep packaged weapon albedo; raise metal vs polymer metallic/smoothness so LOD0 FP
+        /// rifle reads as gun-metal and grip polymer instead of chalky grey plastic.
+        /// </summary>
+        private static void ApplyPresentationWeaponMaterials(Material? metal, Material? polymer)
+        {
+            if (metal != null)
+            {
+                metal.SetFloat("_Metallic", 0.88f);
+                metal.SetFloat("_Smoothness", 0.72f);
+            }
+            if (polymer != null)
+            {
+                polymer.SetFloat("_Metallic", 0.02f);
+                polymer.SetFloat("_Smoothness", 0.12f);
+            }
+        }
+
+        private static void SetLit(Material material, Color baseColor, float metallic, float smoothness)
+        {
+            material.SetColor("_BaseColor", baseColor);
+            material.SetFloat("_Metallic", metallic);
+            material.SetFloat("_Smoothness", smoothness);
+        }
+
+        private static void ApplyLocalHumanShadowMode(Avatar avatar, bool shadowsOnly)
+        {
+            var mode = shadowsOnly
+                ? UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly
+                : UnityEngine.Rendering.ShadowCastingMode.On;
+            if (avatar.Body != null) avatar.Body.shadowCastingMode = mode;
+            if (avatar.WeaponRenderer != null) avatar.WeaponRenderer.shadowCastingMode = mode;
         }
 
         private static Vector3 V(Float3 v) => new Vector3(v.X, v.Y, v.Z);

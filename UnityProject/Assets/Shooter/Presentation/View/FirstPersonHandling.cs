@@ -33,7 +33,8 @@ namespace Shooter.Presentation.View
             if (weaponSlot != slot) { slot = weaponSlot; equip = 0f; }
             if (dt > 0f)
             {
-                equip = Math.Min(1f, equip + dt / .22f);
+                // Slightly snappier raise so weapon swaps feel present without changing ADS truth.
+                equip = Math.Min(1f, equip + dt / .20f);
                 float distance = 0f;
                 if (hasPrevious)
                 {
@@ -59,9 +60,9 @@ namespace Shooter.Presentation.View
             float gait = reducedMotion ? 0f : movement * hip;
             double phase = travel * (Math.PI * 2d / 1.4d);
             return new Float3(
-                (float)Math.Sin(phase) * .004f * gait + .025f * reload,
-                -(float)Math.Cos(phase * 2d) * .003f * gait - .055f * reload - .12f * lower,
-                -.035f * reload - .07f * lower);
+                (float)Math.Sin(phase) * .0045f * gait + .025f * reload,
+                -(float)Math.Cos(phase * 2d) * .0035f * gait - .055f * reload - .12f * lower,
+                -.035f * reload - .075f * lower);
         }
 
         public Float3 RotationDegrees(float ads, float reloadPhase, bool reducedMotion)

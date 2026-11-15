@@ -29,7 +29,7 @@ namespace Shooter.Presentation.Rendering
                 // The frozen normal plane is XYZ with A=255. URP's desktop RGorAG decoder
                 // reads X=R*A and Y=G, so preserve XYZ and opaque alpha (also valid for RGB decoding).
                 material.SetTexture("_BumpMap", Upload(normal, label + " normal", false, own, true));
-                material.SetFloat("_BumpScale", 1f);
+                material.SetFloat("_BumpScale", 1.05f);
                 material.EnableKeyword("_NORMALMAP");
             }
             if (mask != null)
