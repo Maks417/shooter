@@ -38,8 +38,9 @@ namespace Shooter.Presentation.Audio
             float atten = playKind switch
             {
                 SynthVoiceKind.Footstep => 0.45f / (1f + distanceMeters * 0.45f),
-                SynthVoiceKind.ReloadStart => 1f / (1f + distanceMeters * 0.12f),
-                SynthVoiceKind.ReloadComplete => 1f / (1f + distanceMeters * 0.12f),
+                // Slightly hotter than other soft cues so local reload reads under residual gunfire.
+                SynthVoiceKind.ReloadStart => 1.35f / (1f + distanceMeters * 0.10f),
+                SynthVoiceKind.ReloadComplete => 1.25f / (1f + distanceMeters * 0.10f),
                 SynthVoiceKind.Death => 1f / (1f + distanceMeters * 0.12f),
                 SynthVoiceKind.Impact => 1f / (1f + distanceMeters * 0.12f),
                 SynthVoiceKind.DamageTaken => 1f / (1f + distanceMeters * 0.12f),

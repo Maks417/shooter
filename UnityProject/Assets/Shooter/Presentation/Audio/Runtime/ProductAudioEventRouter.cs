@@ -217,7 +217,7 @@ namespace Shooter.Presentation.Audio
         /// Authority grenade blast Impact uses invalid target, upward normal, surfaceTag=1, region=0
         /// (see CombatHarnessSimulation.ResolveExplosion).
         /// </summary>
-        private static bool IsGrenadeBlast(CombatEvent ev)
+        public static bool IsGrenadeBlastImpact(CombatEvent ev)
         {
             if (ev.Kind != CombatEventKind.Impact || ev.Target.IsValid) return false;
             if (ev.Payload is not ImpactPayload impact) return false;
@@ -226,6 +226,8 @@ namespace Shooter.Presentation.Audio
                 && impact.Normal.Y > 0.95f
                 && Math.Abs(impact.Normal.Z) < 1e-3f;
         }
+
+        private static bool IsGrenadeBlast(CombatEvent ev) => IsGrenadeBlastImpact(ev);
 
         private static bool IsHeadRegion(CombatEvent ev)
         {

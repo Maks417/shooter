@@ -520,29 +520,44 @@ namespace Shooter.Game.Session
         private readonly Dictionary<uint, uint> rescueSlotLastUsed = new Dictionary<uint, uint>();
         private readonly List<EntityId> rescueLiving = new List<EntityId>(GameContractVersion.MaxParticipants);
         private readonly List<Float3> rescueOccupancy = new List<Float3>(1);
+        private readonly List<EntityId> aiRelocationScratch = new List<EntityId>(CombatAiDirector.MaxBots);
+        private readonly HashSet<ulong> aiRelocationIds = new HashSet<ulong>();
 
         /// <summary>
-        /// Relocates living actors whose motor reports OverlapUnresolved to a valid same-team spawn chosen by
-        /// SpawnSafetyPolicy (deterministic, participant order). No death, score, LifeId, EntityId, health or ammo
-        /// change. If no safe slot exists the actor stays put and is retried next tick.
+        /// Relocates living actors whose motor reports OverlapUnresolved, or bots the AI marked NeedsRelocation
+        /// after hard stuck, to a valid same-team spawn chosen by SpawnSafetyPolicy (deterministic, participant
+        /// order). No death, score, LifeId, EntityId, health or ammo change. If no safe slot exists the actor
+        /// stays put and is retried next tick.
         /// </summary>
         private void RescueEmbeddedActors(
             MatchViewSnapshot snap, HarnessActorLifecycle actorLifecycle, CombatHarnessSimulation sim, IMapRuntime runtime)
         {
             if (gameplayDefinition == null) return;
+            aiRelocationIds.Clear();
+            if (bots != null)
+            {
+                aiRelocationScratch.Clear();
+                bots.CollectRelocationRequests(aiRelocationScratch);
+                for (int r = 0; r < aiRelocationScratch.Count; r++)
+                    aiRelocationIds.Add(aiRelocationScratch[r].Value);
+            }
+
             for (int i = 0; i < snap.Participants.Count; i++)
             {
                 var p = snap.Participants[i];
                 if (!p.Alive) continue;
-                if (!sim.TryGetMotorState(p.EntityId, out var motorState) || !motorState.OverlapUnresolved) continue;
                 if (!actorLifecycle.TryGetActorState(p.EntityId, out var state) || !state.Alive) continue;
+                bool overlap = sim.TryGetMotorState(p.EntityId, out var motorState) && motorState.OverlapUnresolved;
+                bool aiStuck = !p.IsHuman && aiRelocationIds.Contains(p.EntityId.Value);
+                if (!overlap && !aiStuck) continue;
 
+                Float3 blockFeet = overlap ? motorState.Feet : state.Feet;
                 rescueLiving.Clear();
                 for (int j = 0; j < snap.Participants.Count; j++)
                     if (j != i && snap.Participants[j].Alive) rescueLiving.Add(snap.Participants[j].EntityId);
-                // Block slots next to the embedded position so the actor is not put back where it was.
+                // Block slots next to the embedded/stuck position so the actor is not put back where it was.
                 rescueOccupancy.Clear();
-                rescueOccupancy.Add(motorState.Feet);
+                rescueOccupancy.Add(blockFeet);
                 if (!SpawnSafetyPolicy.TryPick(
                         p.Team, gameplayDefinition.SpawnSlots, runtime, actorLifecycle, rescueLiving,
                         rescueSlotLastUsed, rescueOccupancy, out var slot))
@@ -554,6 +569,7 @@ namespace Shooter.Game.Session
                     // Drop stale path/target state and restart the bot command sequence with the harness epoch.
                     actorLifecycle.ResetCommandEpoch(p.EntityId);
                     bots?.TryReplaceLife(p.EntityId, p.EntityId, slot.Position, slot.Yaw, p.Team);
+                    bots?.ClearRelocationRequest(p.EntityId);
                 }
             }
         }

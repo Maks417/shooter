@@ -140,6 +140,46 @@ namespace Shooter.Simulation.Tests.AI
             Assert.True(jumpTicks[0] <= CombatAiDirector.StuckTicksThreshold + 10);
         }
 
+        [Fact]
+        public void Repeated_stuck_failures_request_spawn_relocation()
+        {
+            var ai = Director(LongLeg);
+            ai.SetNavigationDestinations(new[] { new Float3(60, 0, 0) }, null);
+            var bot = ai.RegisterBot(new EntityId(1), new Float3(0, 0, 0), 0, team: 1);
+            var cmds = new InputCommand[1];
+            // Keep feet frozen so every StuckTicksThreshold window counts as a failure.
+            for (uint t = 1; t <= CombatAiDirector.StuckTicksThreshold * 3 + 5; t++)
+            {
+                bot.Feet = new Float3(0, 0, 0);
+                ai.Plan(t, null, cmds, 0);
+            }
+            Assert.True(bot.NeedsRelocation);
+            Assert.True(bot.StuckFailures >= 3);
+            var pending = new List<EntityId>();
+            Assert.Equal(1, ai.CollectRelocationRequests(pending));
+            Assert.Equal(new EntityId(1), pending[0]);
+            ai.ClearRelocationRequest(new EntityId(1));
+            Assert.False(bot.NeedsRelocation);
+            pending.Clear();
+            Assert.Equal(0, ai.CollectRelocationRequests(pending));
+        }
+
+        [Fact]
+        public void Move_intent_without_path_still_accumulates_stuck()
+        {
+            var ai = Director(null); // paths fail → no corners
+            ai.SetNavigationDestinations(new[] { new Float3(60, 0, 0) }, null);
+            var bot = ai.RegisterBot(new EntityId(1), new Float3(0, 0, 0), 0, team: 1);
+            bot.State = AiState.Patrol;
+            var cmds = new InputCommand[1];
+            for (uint t = 1; t <= CombatAiDirector.StuckTicksThreshold + 2; t++)
+            {
+                bot.Feet = new Float3(0, 0, 0);
+                ai.Plan(t, null, cmds, 0);
+            }
+            Assert.True(bot.StuckFailures >= 1);
+        }
+
         private static bool RunSlideRequests(out List<uint> requests)
         {
             var ai = Director(new[] { new Float3(0, 0, 0), new Float3(500, 0, 0) });

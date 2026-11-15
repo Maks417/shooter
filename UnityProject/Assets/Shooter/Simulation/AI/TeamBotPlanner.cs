@@ -122,6 +122,12 @@ namespace Shooter.Simulation.AI
 
         public void CancelAll() => director.CancelAll();
 
+        /// <summary>Living bots the director marked for spawn-slot rescue after hard stuck.</summary>
+        public int CollectRelocationRequests(List<EntityId> destination) =>
+            director.CollectRelocationRequests(destination);
+
+        public void ClearRelocationRequest(EntityId entity) => director.ClearRelocationRequest(entity);
+
         private void SyncFromLifecycle(IActorLifecycle lifecycle, IActorStanceSource? stanceSource)
         {
             for (int i = 0; i < director.BotCount; i++)

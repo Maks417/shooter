@@ -52,6 +52,11 @@ namespace Shooter.Simulation.AI
         public uint StuckTicks { get; set; }
         public Float3 StuckAnchor { get; set; }
         public int StuckFailures { get; set; }
+        /// <summary>
+        /// Set after repeated stuck failures or prolonged zero-speed with movement intent; session relocates
+        /// the living bot to a safe spawn without death/score/life change.
+        /// </summary>
+        public bool NeedsRelocation { get; set; }
         public uint LastReplanTick { get; set; }
         public uint SenseAgeTicks { get; set; }
         public bool HasVisibleTarget { get; set; }

@@ -14,7 +14,7 @@ Cover candidates are generated from cover proxies/nav edges with valid capsule s
 
 ## Scheduling and fail-safes
 
-Queue path requests with priority, max two new path solves/tick initially; poll through INavigation. Retire stale paths on revision change, release reservations on death/despawn/cancel. Stuck if progress <0.2 m over 2 s while movement requested: attempt replan, change cover, then hold/search after three failures with diagnostic counter. Do not teleport bots to hide path bugs. Replan cooldown and deterministic tie-breaking avoid synchronized spikes. Pure decision code may jobify later; engine navigation queries stay in adapter constraints.
+Queue path requests with priority, max two new path solves/tick initially; poll through INavigation. Retire stale paths on revision change, release reservations on death/despawn/cancel. Stuck if progress <0.2 m over 2 s while a path is active or movement intent remains (patrol/seek/engage/search even after the path ticket drops): jump, replan, change cover; after three failures set `NeedsRelocation` and enter Search. `OfflineGameSession` then relocates that living bot to a spawn-safety slot (same path as motor `OverlapUnresolved` rescue — no death, score or LifeId change). This is stuck-in-geometry recovery, not a substitute for fixing nav publication bugs. Replan cooldown and deterministic tie-breaking avoid synchronized spikes. Pure decision code may jobify later; engine navigation queries stay in adapter constraints.
 
 ## Implementation (M3)
 

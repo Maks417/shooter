@@ -1,5 +1,17 @@
 # M11 — Playable build and acceptance — handoff and gate record
 
+## Combat feel — auto-reload, empty grenade, M67 grenade mesh, bot stuck rescue — 2026-11-15
+
+Owner playtest fixes (no C0 / Game-v1 wire freeze).
+
+**Implemented (software):**
+- `WeaponSimulator` auto-starts reload when magazine is empty and reserve remains (manual `R` still works for partial mags); reload cues use existing `ReloadStarted`/`ReloadCompleted` WAV bank with slightly hotter soft-cue attenuation.
+- Empty grenade slot cannot be selected; after the one-per-life throw/cook boom the authority equips rifle so hands are not empty. `LocalPlayerInput` blocks Digit4 for the rest of the life after a local spend.
+- `LoadoutPropGeometry.BuildGrenade` rebuilt as an M67-style frag (shorter egg, tall fuse well, thicker spoon, pin/ring, seam rings). `feature-content-lock.json` hash refreshed.
+- AI `NeedsRelocation` after repeated stuck failures (and stuck accumulation with move intent even when path tickets are gone); `OfflineGameSession.RescueEmbeddedActors` relocates those bots via the same spawn-safety path as overlap rescue (no death/score/life change).
+
+**Checks (software):** Simulation **308/308** PASS (`Artifacts/m2-combat-harness/e89eb9ee…/20261115T204558703Z-8ecfef13/`); Generation **430/430** PASS (`Artifacts/m1-procedural-feasibility/e89eb9ee…/20261115T204626247Z-ef9d9f24/`). Software `Compile-GameContent.ps1 -Force` **PASS** 12 packages (`…/compile-gamecontent-20261115T204831933Z-bfe73c5a/`); native `-Force -Native` **PASS** (`…/compile-gamecontent-20261115T204955153Z-919b1ab1/`, `nativeUnityNavBake=PASS`, non-nav byte-identity guard PASS). Client/installer and named player review remain Pending.
+
 ## ADR-071 — Oil Depot third map + elevated routes — 2026-11-15
 
 Owner: Warface Oil Depot–inspired third catalog map with walkable stairs/catwalk. [ADR-071](../../decisions.md#adr-071--accepted-oil-depot-third-map-and-limited-elevated-routes); layouts in [tdm-map-layouts.md](../../features/tdm-map-layouts.md); catalog in [playable-maps.md](../../features/playable-maps.md).

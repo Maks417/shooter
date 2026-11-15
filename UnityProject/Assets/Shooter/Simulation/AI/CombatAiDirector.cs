@@ -365,6 +365,7 @@ namespace Shooter.Simulation.AI
             board.StuckAnchor = feet;
             board.StuckTicks = 0;
             board.StuckFailures = 0;
+            board.NeedsRelocation = false;
             board.CoverReservation = null;
             board.LastReplanTick = 0;
             board.SenseAgeTicks = 0;
@@ -1120,7 +1121,11 @@ namespace Shooter.Simulation.AI
 
         private void UpdateStuck(AiBlackboard board)
         {
-            if (!board.PathTicket.HasValue && board.PathCornerIndex >= board.PathCornerCount)
+            bool hasPath = board.PathTicket.HasValue || board.PathCornerIndex < board.PathCornerCount;
+            bool moveIntent = WantsHorizontalProgress(board);
+            // No path and no move intent: idle is fine. Move intent without progress still counts as stuck
+            // (bots wedged in geometry often drop their path ticket).
+            if (!hasPath && !moveIntent)
             {
                 board.StuckAnchor = board.Feet;
                 board.StuckTicks = 0;
@@ -1151,9 +1156,47 @@ namespace Shooter.Simulation.AI
             board.PathCornerCount = 0;
             board.PathCornerIndex = 0;
             board.PathGoal = null;
-            if (board.StuckFailures >= 3) Enter(board, AiState.Search);
+            if (board.StuckFailures >= 3)
+            {
+                board.NeedsRelocation = true;
+                Enter(board, AiState.Search);
+            }
             else if (board.CoverReservation.HasValue) Enter(board, AiState.Reposition);
             else Enter(board, AiState.SeekCover);
+        }
+
+        /// <summary>States that expect horizontal travel; used when path tickets are already dropped.</summary>
+        private static bool WantsHorizontalProgress(AiBlackboard board) =>
+            board.State == AiState.Patrol
+            || board.State == AiState.Investigate
+            || board.State == AiState.SeekCover
+            || board.State == AiState.Reposition
+            || board.State == AiState.Search
+            || (board.State == AiState.Engage && board.HasVisibleTarget);
+
+        /// <summary>Copy living bots that need a spawn-slot rescue into <paramref name="destination"/>.</summary>
+        public int CollectRelocationRequests(List<EntityId> destination)
+        {
+            if (destination == null) throw new ArgumentNullException(nameof(destination));
+            int n = 0;
+            for (int i = 0; i < botCount; i++)
+            {
+                var board = boards[i];
+                if (!board.Alive || board.State == AiState.Dead || !board.NeedsRelocation) continue;
+                destination.Add(board.Self);
+                n++;
+            }
+            return n;
+        }
+
+        public void ClearRelocationRequest(EntityId entity)
+        {
+            var board = FindBoard(entity);
+            if (board == null) return;
+            board.NeedsRelocation = false;
+            board.StuckTicks = 0;
+            board.StuckFailures = 0;
+            board.StuckAnchor = board.Feet;
         }
 
         // ---------------------------------------------------------------- cover

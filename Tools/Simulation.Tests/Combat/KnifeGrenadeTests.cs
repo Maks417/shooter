@@ -56,10 +56,31 @@ namespace Shooter.Simulation.Tests.Combat
             Assert.False(grenades[0].DetonateInHand);
             Assert.Equal(108u, grenades[0].RemainingFuseTicks); // 120 - (30-18)
             Assert.Equal((ushort)0, slots[3].AmmoInMagazine);
+            // Spent grenade leaves the empty slot so hands are not empty.
+            Assert.Equal((byte)0, active);
+            Assert.Equal(WeaponAction.Equipping, slots[0].Action);
             grenades.Clear();
             Step(sim, slots, ref active, ref desired, 31, InputButtons.FirePressed | InputButtons.FireHeld, 3, shots, grenades, events, ref next);
             Assert.Empty(grenades);
-            Assert.Equal(WeaponAction.Ready, slots[3].Action);
+            Assert.Equal((ushort)0, slots[3].AmmoInMagazine);
+            Assert.NotEqual((byte)3, active);
+        }
+
+        [Fact]
+        public void EmptyGrenadeSlotCannotBeSelected()
+        {
+            var sim = new WeaponSimulator();
+            var slots = WeaponSimulator.CreateDefaultLoadout();
+            slots[3] = new WeaponState(WeaponDefinition.Grenade.Id, WeaponAction.Ready, 0, 0, 0, 0, 0, 0, false);
+            byte active = 0, desired = 0;
+            var shots = new List<AcceptedShot>();
+            var grenades = new List<AcceptedGrenade>();
+            var events = new List<CombatEvent>();
+            var next = new EventId(1, 0, new EntityId(1), 0);
+            Step(sim, slots, ref active, ref desired, 0, InputButtons.None, 3, shots, grenades, events, ref next);
+            Assert.Equal((byte)0, active);
+            Assert.Equal((byte)0, desired);
+            Assert.Equal(WeaponAction.Ready, slots[0].Action);
         }
 
         [Fact]

@@ -117,6 +117,8 @@ namespace Shooter.Presentation.Input
         private byte selectedSlot;
         /// <summary>Previous active weapon slot for LastWeapon quick-switch (ADR-056).</summary>
         private byte lastSlot = 1;
+        /// <summary>One grenade per life; cleared after a local throw so Digit4 cannot re-select empty hands.</summary>
+        private bool grenadeAvailable = true;
         private float yaw;
         private float pitch;
         private float sensitivityDegrees = 0.1f;
@@ -161,10 +163,22 @@ namespace Shooter.Presentation.Input
             bindings.Apply(map ?? throw new System.ArgumentNullException(nameof(map)));
         }
 
+        /// <summary>Call after the local human's grenade leaves the hand this life.</summary>
+        public void NotifyGrenadeSpent()
+        {
+            grenadeAvailable = false;
+            if (selectedSlot == GrenadeSlot)
+            {
+                selectedSlot = lastSlot == GrenadeSlot ? (byte)0 : lastSlot;
+                lastSlot = GrenadeSlot;
+            }
+        }
+
         public void ResetForLife(float yawRadians, float pitchRadians, byte activeSlot)
         {
             yaw = NormalizeYaw(yawRadians);
             pitch = Mathf.Clamp(pitchRadians, -MaxPitchRadians, MaxPitchRadians);
+            grenadeAvailable = true;
             selectedSlot = activeSlot > MaxSlot ? (byte)0 : activeSlot;
             // Prefer the previous gun slot so the first Q after spawn/respawn remains useful.
             lastSlot = selectedSlot == 0 ? (byte)1 : (byte)0;
@@ -268,7 +282,7 @@ namespace Shooter.Presentation.Input
                 if (frame.SelectRifle) SelectAbsolute(0);
                 else if (frame.SelectPistol) SelectAbsolute(1);
                 else if (frame.SelectKnife) SelectAbsolute(KnifeSlot);
-                else if (frame.SelectGrenade) SelectAbsolute(GrenadeSlot);
+                else if (frame.SelectGrenade && grenadeAvailable) SelectAbsolute(GrenadeSlot);
                 else if (frame.SelectLastWeapon)
                 {
                     byte previous = selectedSlot;

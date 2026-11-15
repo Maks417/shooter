@@ -58,7 +58,17 @@ namespace Shooter.Simulation.Combat
                 return;
             }
 
-            desiredSlot = selectedSlot;
+            // Empty grenade cannot be selected (one per life); cooking keeps the slot until throw/boom.
+            const byte grenadeSlot = 3;
+            byte requested = selectedSlot;
+            if (requested == grenadeSlot
+                && slots[grenadeSlot].AmmoInMagazine == 0
+                && slots[grenadeSlot].Action != WeaponAction.Cooking)
+            {
+                requested = activeSlot == grenadeSlot ? (byte)0 : activeSlot;
+            }
+
+            desiredSlot = requested;
             if (desiredSlot != activeSlot)
             {
                 var current = slots[activeSlot];
@@ -109,6 +119,19 @@ namespace Shooter.Simulation.Combat
             if (activeDef.FireMode == FireMode.Throwable)
             {
                 StepGrenade(tick, fireHeld, firePressed, activeDef, ref active, activeSlot, acceptedGrenades, slots);
+                // After the only grenade is spent, leave the empty slot so the player is not empty-handed.
+                if (activeSlot == 3
+                    && slots[3].AmmoInMagazine == 0
+                    && slots[3].Action != WeaponAction.Cooking
+                    && slots[3].Action != WeaponAction.Equipping)
+                {
+                    var rifle = slots[0];
+                    var rifleDef = WeaponDefinition.FromId(rifle.DefinitionId);
+                    slots[0] = new WeaponState(rifle.DefinitionId, WeaponAction.Equipping, rifle.AmmoInMagazine, rifle.Reserve,
+                        rifle.NextAllowedFireTick, tick, unchecked(tick + rifleDef.EquipTicks), rifle.ShotIndex, false);
+                    activeSlot = 0;
+                    desiredSlot = 0;
+                }
                 return;
             }
 
@@ -121,7 +144,10 @@ namespace Shooter.Simulation.Combat
             bool canReload = activeDef.FireMode != FireMode.Melee && activeDef.FireMode != FireMode.Throwable
                 && activeDef.ReloadTicks > 0
                 && active.AmmoInMagazine < activeDef.MagazineSize && active.Reserve > 0;
-            if (reloadPressed && (active.Action == WeaponAction.Ready || active.Action == WeaponAction.FiringRecovery) && canReload)
+            bool autoReload = active.AmmoInMagazine == 0 && active.Reserve > 0 && activeDef.ConsumesAmmo;
+            if ((reloadPressed || autoReload)
+                && (active.Action == WeaponAction.Ready || active.Action == WeaponAction.FiringRecovery)
+                && canReload)
             {
                 active = new WeaponState(active.DefinitionId, WeaponAction.Reloading, active.AmmoInMagazine, active.Reserve,
                     active.NextAllowedFireTick, tick, unchecked(tick + activeDef.ReloadTicks), active.ShotIndex, fireHeld);

@@ -580,7 +580,18 @@ namespace Shooter.Presentation.Session
             if (ev.Kind == CombatEventKind.ProjectileSpawned && ev.Payload is ProjectilePayload projectile)
             {
                 grenadeFlight.TrySpawn(projectile.ProjectileId, projectile.Origin, projectile.Velocity);
+                if (session != null && ev.Instigator.Equals(session.HumanEntityId))
+                    input.NotifyGrenadeSpent();
                 return;
+            }
+
+            // Cooked-off in-hand boom also spends the only grenade this life.
+            if (ev.Kind == CombatEventKind.Impact
+                && session != null
+                && ev.Instigator.Equals(session.HumanEntityId)
+                && ProductAudioEventRouter.IsGrenadeBlastImpact(ev))
+            {
+                input.NotifyGrenadeSpent();
             }
 
             if (ev.Kind == CombatEventKind.ShotAccepted && ev.Payload is ShotPayload shot)

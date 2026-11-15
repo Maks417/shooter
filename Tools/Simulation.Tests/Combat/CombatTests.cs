@@ -115,5 +115,55 @@ namespace Shooter.Simulation.Tests.Combat
             Assert.Equal((ushort)5, slots[0].AmmoInMagazine);
             Assert.Equal((ushort)0, slots[0].Reserve);
         }
+
+        [Fact]
+        public void EmptyMagazineWithReserveAutoStartsReload()
+        {
+            var sim = new WeaponSimulator();
+            var slots = WeaponSimulator.CreateDefaultLoadout();
+            slots[0] = new WeaponState(WeaponDefinition.Rifle.Id, WeaponAction.Ready, 0, 90, 0, 0, 0, 0, false);
+            byte active = 0, desired = 0;
+            var shots = new List<AcceptedShot>();
+            var grenades = new List<AcceptedGrenade>();
+            var events = new List<CombatEvent>();
+            var next = new EventId(1, 0, new EntityId(1), 0);
+            sim.Step(0, InputButtons.None, 0, true, false, slots, ref active, ref desired, shots, grenades, events, ref next, new EntityId(1));
+            Assert.Equal(WeaponAction.Reloading, slots[0].Action);
+            Assert.Contains(events, e => e.Kind == CombatEventKind.ReloadStarted);
+        }
+
+        [Fact]
+        public void EmptyMagazineWithoutReserveDoesNotAutoReload()
+        {
+            var sim = new WeaponSimulator();
+            var slots = WeaponSimulator.CreateDefaultLoadout();
+            slots[0] = new WeaponState(WeaponDefinition.Rifle.Id, WeaponAction.Ready, 0, 0, 0, 0, 0, 0, false);
+            byte active = 0, desired = 0;
+            var shots = new List<AcceptedShot>();
+            var grenades = new List<AcceptedGrenade>();
+            var events = new List<CombatEvent>();
+            var next = new EventId(1, 0, new EntityId(1), 0);
+            sim.Step(0, InputButtons.None, 0, true, false, slots, ref active, ref desired, shots, grenades, events, ref next, new EntityId(1));
+            Assert.Equal(WeaponAction.Ready, slots[0].Action);
+            Assert.DoesNotContain(events, e => e.Kind == CombatEventKind.ReloadStarted);
+        }
+
+        [Fact]
+        public void KnifeDoesNotAutoReload()
+        {
+            var sim = new WeaponSimulator();
+            var slots = WeaponSimulator.CreateDefaultLoadout();
+            byte active = 2, desired = 2;
+            var shots = new List<AcceptedShot>();
+            var grenades = new List<AcceptedGrenade>();
+            var events = new List<CombatEvent>();
+            var next = new EventId(1, 0, new EntityId(1), 0);
+            for (uint t = 0; t < 12; t++)
+                sim.Step(t, InputButtons.None, 2, true, false, slots, ref active, ref desired, shots, grenades, events, ref next, new EntityId(1));
+            events.Clear();
+            sim.Step(12, InputButtons.None, 2, true, false, slots, ref active, ref desired, shots, grenades, events, ref next, new EntityId(1));
+            Assert.Equal(WeaponAction.Ready, slots[2].Action);
+            Assert.DoesNotContain(events, e => e.Kind == CombatEventKind.ReloadStarted);
+        }
     }
 }

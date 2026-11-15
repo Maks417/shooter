@@ -45,32 +45,50 @@ namespace Shooter.Generation
             var assembly = new MeshAssembly();
             int radial = new[] { 24, 16, 10, 6 }[lod];
             var upright = WeaponGeometry.Pitch(-90);
-            // Upright revolved ovoid; the old capped cylinder faced the firing axis.
-            assembly.Add(WeaponProfiles.Loft(new[] { -.045f, -.040f, -.024f, .002f, .024f, .038f, .042f },
-                new[] { .012f, .022f, .031f, .034f, .028f, .017f, .011f },
-                new[] { .012f, .022f, .031f, .034f, .028f, .017f, .011f }, radial),
+            // M67-style frag: shorter egg body with a flatter mid belt, tall fuse well, thick spoon.
+            assembly.Add(WeaponProfiles.Loft(new[] { -.038f, -.032f, -.018f, .000f, .016f, .028f, .034f },
+                new[] { .014f, .024f, .030f, .031f, .027f, .018f, .012f },
+                new[] { .014f, .024f, .030f, .031f, .027f, .018f, .012f }, radial),
                 new Float3(0, 0, 0), upright, 4);
-            assembly.Add(PrimitiveGeometry.Cylinder(.012f, .019f, radial), new Float3(0, .047f, 0), upright, 0);
-            void Box(float x, float y, float sx, float sy, float sz, float angle = 0)
+            // Fuse / igniter well (coated metal).
+            assembly.Add(PrimitiveGeometry.Cylinder(.011f, .028f, radial), new Float3(0, .048f, 0), upright, 0);
+            assembly.Add(PrimitiveGeometry.Cylinder(.014f, .006f, radial), new Float3(0, .036f, 0), upright, 0);
+            void Box(float x, float y, float sx, float sy, float sz, float angle = 0, ushort slot = 0)
                 => assembly.Add(PrimitiveGeometry.Box(new Float3(sx, sy, sz), lod < 2 ? .0006f : 0),
-                    new Float3(x, y, 0), new Quat(0, 0, (float)Math.Sin(angle * Math.PI / 360), (float)Math.Cos(angle * Math.PI / 360)), 0);
-            Box(.011f, .059f, .042f, .004f, .015f);
-            Box(.030f, .027f, .006f, .067f, .015f, 12); // bent safety spoon follows shell
+                    new Float3(x, y, 0), new Quat(0, 0, (float)Math.Sin(angle * Math.PI / 360), (float)Math.Cos(angle * Math.PI / 360)), slot);
+            // Safety lever head + long spoon offset from the shell so it reads at distance.
+            Box(.000f, .064f, .038f, .008f, .018f);
+            Box(.028f, .028f, .010f, .072f, .016f, 14);
+            Box(.034f, .000f, .008f, .030f, .014f, 22); // spoon tip curl
             if (lod < 2)
             {
-                assembly.Add(PrimitiveGeometry.Cylinder(.004f, .022f, 10), new Float3(-.008f, .052f, 0), Quat.Identity, 2);
-                // Closed pull ring made from bounded tube segments; no transparent decal.
+                // Fill plug on the opposite side of the spoon.
+                assembly.Add(PrimitiveGeometry.Cylinder(.006f, .004f, 10), new Float3(-.028f, .000f, 0),
+                    new Quat(0, 0, .70710677f, .70710677f), 0);
+                // Pull-pin stem + closed ring.
+                assembly.Add(PrimitiveGeometry.Cylinder(.0035f, .018f, 8), new Float3(-.010f, .058f, .008f), Quat.Identity, 2);
                 int count = lod == 0 ? 20 : 12;
                 for (int i = 0; i < count; i++)
                 {
                     double a = i * Math.PI * 2 / count, b = (i + 1) * Math.PI * 2 / count;
                     WeaponProfiles.Rod(assembly,
-                        new Float3(-.021f + .013f * (float)Math.Cos(a), .047f + .013f * (float)Math.Sin(a), .010f),
-                        new Float3(-.021f + .013f * (float)Math.Cos(b), .047f + .013f * (float)Math.Sin(b), .010f), .0012f, 2);
+                        new Float3(-.024f + .012f * (float)Math.Cos(a), .058f + .012f * (float)Math.Sin(a), .014f),
+                        new Float3(-.024f + .012f * (float)Math.Cos(b), .058f + .012f * (float)Math.Sin(b), .014f), .0014f, 2);
                 }
-                // Pressed shell equator and collar, both opaque geometry.
-                assembly.Add(PrimitiveGeometry.Cylinder(.0345f, .002f, radial), new Float3(0, .002f, 0), upright, 4);
-                assembly.Add(PrimitiveGeometry.Cylinder(.018f, .003f, radial), new Float3(0, .037f, 0), upright, 4);
+                // Pressed seam rings so the shell is not a featureless ball.
+                assembly.Add(PrimitiveGeometry.Cylinder(.0315f, .0022f, radial), new Float3(0, -.010f, 0), upright, 4);
+                assembly.Add(PrimitiveGeometry.Cylinder(.0318f, .0022f, radial), new Float3(0, .006f, 0), upright, 4);
+                assembly.Add(PrimitiveGeometry.Cylinder(.0285f, .0020f, radial), new Float3(0, .020f, 0), upright, 4);
+                if (lod == 0)
+                {
+                    for (int i = 0; i < 6; i++)
+                    {
+                        double a = i * Math.PI / 3.0;
+                        float x = .0305f * (float)Math.Cos(a), z = .0305f * (float)Math.Sin(a);
+                        assembly.Add(PrimitiveGeometry.Box(new Float3(.003f, .012f, .0025f), .0004f),
+                            new Float3(x, .000f, z), Quat.Identity, 4);
+                    }
+                }
             }
             return assembly.Build();
         }
