@@ -44,7 +44,7 @@ namespace Shooter.Simulation.AI
         public const float SettledErrorMeters = 0.28f;
         /// <summary>Settled error grows with range so long shots are not laser-accurate.</summary>
         public const float SettledErrorPerMeter = 0.005f;
-        /// <summary>Counted from the first tick the bot may fire, so the opening shots are visibly off target (T084).</summary>
+        /// <summary>Counted from the first tick the bot may fire, so the opening shots are visibly off target (T085).</summary>
         public const uint AccuracyRecoveryTicks = 60;
         public const float MinErrorRadians = 0.005f;
         public const float MaxErrorRadians = 0.14f;      // ~8 deg
@@ -84,7 +84,7 @@ namespace Shooter.Simulation.AI
         public const uint ThreatLookTicks = 180;
         public const float ThreatLookRange = 30f;
 
-        // T084 footstep hearing: horizontal speed of an enemy → audible radius (no rays).
+        // T085 footstep hearing: horizontal speed of an enemy → audible radius (no rays).
         public const float SprintStepSpeed = 5.0f, SprintStepRadius = 24f;
         public const float RunStepSpeed = 2.6f, RunStepRadius = 13f;
         public const float WalkStepSpeed = 0.6f, WalkStepRadius = 5f;

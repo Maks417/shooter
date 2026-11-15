@@ -17,7 +17,7 @@ namespace Shooter.Presentation.Hud
         public const float HealthBarHeight = 5f;
         public const int HealthSegments = 5;
         public const string KillFeedSeparator = "  >  ";
-        /// <summary>T084 incoming-damage direction marker: hold time, ring slots and radius around the reticle.</summary>
+        /// <summary>T085 incoming-damage direction marker: hold time, ring slots and radius around the reticle.</summary>
         public const float DamageIndicatorSeconds = 1.4f;
         public const int MaxDamageIndicators = 4;
         public const float DamageIndicatorRadius = 118f;

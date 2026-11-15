@@ -62,7 +62,7 @@ namespace Shooter.Presentation.Session
         private float damagePulseUntil;
         private float hitMarkerUntil;
         private float damageFlashUntil;
-        // T084 incoming-damage direction markers: attacker position at the hit, held in world space so the
+        // T085 incoming-damage direction markers: attacker position at the hit, held in world space so the
         // marker swings as the player turns toward it.
         private readonly ulong[] damageSourceIds = new ulong[CombatHudVisual.MaxDamageIndicators];
         private readonly float[] damageSourceX = new float[CombatHudVisual.MaxDamageIndicators];

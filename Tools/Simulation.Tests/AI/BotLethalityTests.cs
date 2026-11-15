@@ -11,7 +11,7 @@ using Xunit.Abstractions;
 namespace Shooter.Simulation.Tests.AI
 {
     /// <summary>
-    /// T084 time-to-kill envelope: a bot duelling a stationary, standing human-sized target through the real
+    /// T085 time-to-kill envelope: a bot duelling a stationary, standing human-sized target through the real
     /// combat harness (rifle 30 dmg, hit volumes, spread, recoil). Players must get a readable window — misses
     /// first, then hits — instead of dying inside the first half-second.
     /// </summary>
@@ -79,7 +79,7 @@ namespace Shooter.Simulation.Tests.AI
         }
 
         [Theory]
-        // Measured on the T084 tuning (median of 9 bots, ticks from sighting): 8 m ≈ 98, 20 m ≈ 151, 40 m ≈ 233.
+        // Measured on the T085 tuning (median of 9 bots, ticks from sighting): 8 m ≈ 98, 20 m ≈ 151, 40 m ≈ 233.
         // T082 tuning was 61 / 90 / 143 with kills 0.4 s after the first shot.
         [InlineData(8f, 75u, 140u)]
         [InlineData(20f, 110u, 240u)]

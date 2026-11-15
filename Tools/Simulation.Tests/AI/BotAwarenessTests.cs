@@ -7,7 +7,7 @@ using Xunit;
 
 namespace Shooter.Simulation.Tests.AI
 {
-    /// <summary>T084: rear awareness (footsteps, unseen attackers), ally gunfire, and team spread.</summary>
+    /// <summary>T085: rear awareness (footsteps, unseen attackers), ally gunfire, and team spread.</summary>
     public sealed class BotAwarenessTests
     {
         private sealed class OpenWorld : IWorldQueries

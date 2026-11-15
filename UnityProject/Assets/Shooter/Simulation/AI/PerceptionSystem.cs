@@ -36,7 +36,7 @@ namespace Shooter.Simulation.AI
     public sealed class PerceptionSystem
     {
         public const int MaxVisionRaysPerTick = 16;
-        /// <summary>Bot vision cone (T084: 120°, peripheral awareness wider than the 80° player camera).</summary>
+        /// <summary>Bot vision cone (T085: 120°, peripheral awareness wider than the 80° player camera).</summary>
         public const float DefaultFovDegrees = 120f;
         public const float DefaultRange = 80f;
 

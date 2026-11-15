@@ -72,7 +72,7 @@ namespace Shooter.Simulation.AI
         private readonly PathBuffer pathBuffer = new PathBuffer(ContractVersion.MaxPathCorners);
         private readonly AiCounters counters = new AiCounters();
         private int[] visitOrder = new int[32];
-        // T084 footstep hearing: last known point/speed per enemy id (fixed capacity, no per-tick allocation).
+        // T085 footstep hearing: last known point/speed per enemy id (fixed capacity, no per-tick allocation).
         private const int MaxTracked = 32;
         private readonly ulong[] trackId = new ulong[MaxTracked];
         private readonly Float3[] trackPoint = new Float3[MaxTracked];
@@ -520,7 +520,7 @@ namespace Shooter.Simulation.AI
         }
 
         /// <summary>
-        /// Footsteps (T084): an enemy moving fast enough within its audible radius, or anyone within arm reach,
+        /// Footsteps (T085): an enemy moving fast enough within its audible radius, or anyone within arm reach,
         /// is heard from any direction. The bot turns toward the noise and, if calm, checks it out. No rays.
         /// </summary>
         private void HearFootsteps(AiBlackboard board, SenseTarget[] enemies, int enemyCount)
@@ -856,7 +856,7 @@ namespace Shooter.Simulation.AI
         }
 
         /// <summary>
-        /// T084 team spread: score every destination by how far it is from allies' goals and positions, by a
+        /// T085 team spread: score every destination by how far it is from allies' goals and positions, by a
         /// preferred leg length, and by a seeded per-bot preference; never repeat the last two picks. Teammates
         /// therefore fan out across the map instead of walking the same ordered route one behind another.
         /// Deterministic; runs only when a bot needs a new destination.

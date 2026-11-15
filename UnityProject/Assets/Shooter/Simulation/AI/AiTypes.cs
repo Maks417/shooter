@@ -110,7 +110,7 @@ namespace Shooter.Simulation.AI
         public uint InCoverSinceTick { get; set; }
         public bool InCover { get; set; }
 
-        // T084 awareness and team spread.
+        // T085 awareness and team spread.
         /// <summary>Unseen attacker currently hurting the bot while it fights someone else.</summary>
         public EntityId? UnseenAttacker { get; set; }
         public int UnseenHits { get; set; }
@@ -153,7 +153,7 @@ namespace Shooter.Simulation.AI
         public int Retreats;
         public int TacticalReloads;
         public int TargetSwitches;
-        // T084
+        // T085
         public int FootstepsHeard;
         public int ThreatTurns;
         public int CrowdedStimuliHeld;

@@ -111,7 +111,7 @@ namespace Shooter.Simulation.AI
         {
             float personality = Personality(board.Self);
             // Recovery starts when the reaction delay ends (first possible shot), not at sighting: the opening
-            // trigger pulls are warning shots the player can see and hear before the bot settles (T084).
+            // trigger pulls are warning shots the player can see and hear before the bot settles (T085).
             uint start = Math.Max(board.AcquiredTick, board.ReactionReadyTick);
             uint since = tick > start ? tick - start : 0u;
             float recovery = AiTuning.AccuracyRecoveryTicks * personality;
