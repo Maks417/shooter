@@ -1089,6 +1089,25 @@ Failure history retained: first native build exhausted disk while copying `GameA
 
 Package ZIP SHA256 `923d2614f6820e42fa85eea4130ac27f638f64846b3602a4ae10a7cc740cd0b5`; source hash `0de06fdd6f6a802aed8a12a28169aaa59bc49595c859b8497109a5db50456893`; content closure `6e24f0c55221a1ece738544777bf57cf5b275ef50ed876bd223c66e96dcb774d`; index `b92af46fa08e0b6767765f774b9c54e0269e615ef410ddac0d400c3fd07929ba`. No Battlefield V parity or release/visual/performance acceptance is claimed.
 
+### Delivery 0.3.15 (2026-11-15)
+
+Clean binary/content source **`d51e377d4d68c2dde305d6c7935f3c99c788316f`**. It adds everything merged since 0.3.14: articulated first-person hands and procedural reflections, spatial combat audio, T090 bot tactics, motor corner-launch fix and slide pose, rifle shoulder framing, and the Oil Depot third map (ADR-071). It also includes the owner-approved B02 `routeHash` refreeze (ADR-071 addendum, `ea09345`) and a bounded retry for atomic cache-file replacement (`d51e377`). Windows installer **0.3.15**, **36,927,184 bytes**, SHA256 **`3ed1e4476cd13a05829cafbcbd2dcfe09111d7a868ee10e3920ae2c3c3834a6f`**. Convenient delivery: `Artifacts/deliveries/Shooter-Setup-0.3.15.exe`. Stable per-user AppId `B01E0F69-2123-4D91-AB59-88864A944E39` is unchanged; predecessor is 0.3.14. Locked Unity 6000.3.28f1 / 8f082d2fe476; Inno Setup 6.7.3.
+
+Before the build, the repository was consolidated: the merged `codex/audio-pass` branch and its worktree, two superseded stashes and two empty worktree folders were removed; the worktree's ignored evidence was copied without overwrite into the main `Artifacts/`.
+
+| Check | Actual result / retained run |
+|---|---|
+| Pure lanes | Contracts, Game, Maps, Simulation, SourceProvenance, docs, fixtures and contract lock PASS at `e2b8b69`. Generation 424/425 there (B02 route freeze); after the refreeze 425/425 PASS at `ea09345` and `d51e377`; Maps and provenance re-run PASS at `d51e377`. |
+| Native packages | **12 PASS** (3 maps × 4 profiles), `nativeUnityNavBake=PASS`, `sourceDirty=false`; `m8-runtime-composition/d51e377…/compile-gamecontent-20261115T200602339Z-e1e693e4/`. |
+| Clean IL2CPP Client | PASS, `sourceDirty=false`; `m0-foundation/d51e377…/build-client-20261115T200801637Z-cd6db336/`. |
+| Release smoke | PASS; `m0-foundation/d51e377…/smoke-client-20261115T201353735Z-2a3da4f6/`. Boot/shutdown only, not manual gameplay. |
+| Package / installer | PASS, native navigation required, 902 inventory files; `m11-playable-release/d51e377…/package-20261115T201219186Z-23ff7a9b/` and `installer-20261115T201246187Z-744c9199/`. Extraction and corrupt-content rehearsals PASS; rollback `SkippedNoPrevious`. |
+| Not run | Unity EditMode/PlayMode, Server build, benchmarks/reference captures, actual install/upgrade/settings preservation, named Oil Depot playtest. All remain Pending / NotClaimed. |
+
+Failure history retained: three native compiles at `ea09345` failed in the final .NET republish with `Unable to remove the file to be replaced` (`nav-provenance.json` twice, `catalog.json` once), each leaving an orphan stage `.tmp`. The cause is an external transient sharing lock; it was not reproduced outside the publisher and no lingering editor/dotnet process held the files. `d51e377` routes the three staged writes through `MapPackagePublisher.CommitStagedFile` (bounded IOException retry, stage cleanup). The failed runs remain under `m8-runtime-composition/ea09345…/`.
+
+Package ZIP SHA256 `815977a8b8f094925949cb9008864f2e503674896adc957cfd577b47b1551f24`; source hash `6fbddf5f2cf6f90a62f4c530e207c944e96365e519bf5c038035fff1f74485a8`; content closure `5c32c37f8287d2b6deb9b3e2fd4cd7c41a82c71ffba09c05158ba90926a7396c`; index `aba6dbbc5ee4ce9dc20b814884548ceb5b194169ae092dc5c3ef997f5ca9c9f0`. No release, visual or performance acceptance is claimed.
+
 ## Workspace cleanup evidence loss — 2026-11-15
 
 A manual disk cleanup deleted 40 ignored per-commit run folders under `Artifacts/m0-foundation/` and `Artifacts/m11-playable-release/` (≈5.5 GB). Its reference check matched only full 40-character hashes, so runs cited in docs by 7-character short hash were deleted too. The deletion bypassed the Recycle Bin; the raw files are **unrecoverable** and can only be rebuilt from their source commits. The recorded results, hashes and run IDs in the handoffs stand as written, but their raw files no longer exist:
