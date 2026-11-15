@@ -12,7 +12,7 @@ public sealed class WeaponTests
     private readonly ITestOutputHelper output;
     public WeaponTests(ITestOutputHelper output) { this.output = output; }
     private static byte[] Source(string kind = "rifle", string seed = "460072030", string deps = "[]") => Encoding.UTF8.GetBytes(
-        "{\"recipeId\":\"weapons/" + kind + "\",\"schemaId\":\"shooter.recipe.weapon.v1\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.0.1\",\"seed\":\"" + seed + "\",\"parameters\":{\"kind\":\"" + kind + "\"},\"dependencies\":" + deps + "}");
+        "{\"recipeId\":\"weapons/" + kind + "\",\"schemaId\":\"shooter.recipe.weapon.v1\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.0.2\",\"seed\":\"" + seed + "\",\"parameters\":{\"kind\":\"" + kind + "\"},\"dependencies\":" + deps + "}");
     private static GenerationRequest Request(WeaponRecipe recipe, string profile) => new GenerationRequest(recipe.Document, "windows64", profile, new ContentId(new string('1', 64)));
     [Theory]
     [InlineData("rifle")][InlineData("pistol")]
@@ -76,11 +76,11 @@ public sealed class WeaponTests
         foreach (string profile in new[] {"Low","Balanced","High"})
         {
             var request = Request(recipe, profile); var result = generator.Generate(request, CancellationToken.None);
-            Assert.Equal(ErrorCode.None, result.Error); Assert.Equal(4, result.Artifacts.Count);
+            Assert.Equal(ErrorCode.None, result.Error); Assert.Equal(6, result.Artifacts.Count);
             Assert.All(result.Artifacts, a => Assert.Equal(ContentKind.Mesh, a.Kind));
-            Assert.Equal(new[] {"lod0","lod1","lod2","lod3"}, result.Artifacts.Select(a => a.Variant));
+            Assert.Equal(new[] {"lod0","lod1","lod2","lod3","magazine","cycle"}, result.Artifacts.Select(a => a.Variant));
             var bodies = result.Artifacts.Select(a => ArtifactCodec.Decode(a.Payload, a.Kind, fingerprint, request.ToolchainHash)).ToArray();
-            if (expected == null) expected = bodies; else for (int i = 0; i < 4; i++) Assert.Equal(expected[i], bodies[i]);
+            if (expected == null) expected = bodies; else for (int i = 0; i < 6; i++) Assert.Equal(expected[i], bodies[i]);
             ContentManifest.Create(request, recipe.SourceHash, result, new[] {"metal","polymer"});
         }
     }
@@ -95,7 +95,7 @@ public sealed class WeaponTests
             source.Replace("\"kind\":\"rifle\"", "\"kind\":\"rifle\",\"vertices\":[[0,0,0]]"),
             source.Replace("\"seed\":\"460072030\"", "\"seed\":\"01\""),
             source.Replace("\"seed\":\"460072030\"", "\"seed\":\"18446744073709551616\""),
-            source.Replace("\"generatorVersion\":\"1.0.1\"", "\"generatorVersion\":\"2.0.0\""),
+            source.Replace("\"generatorVersion\":\"1.0.2\"", "\"generatorVersion\":\"2.0.0\""),
             source.Replace("\"dependencies\":[]", "\"dependencies\":[],\"unexpected\":0"),
             source.Replace("\"kind\":\"rifle\"", "\"kind\":\"rifle\",\"kind\":\"pistol\"") })
             Assert.Throws<FormatException>(() => WeaponRecipe.Parse(Encoding.UTF8.GetBytes(bad)));
@@ -124,12 +124,15 @@ public sealed class WeaponTests
     [Fact]
     public void OldGeneratorVersionRejectsInsteadOfReinterpretingExistingContent()
     {
-        var source = Encoding.UTF8.GetString(Source()).Replace("\"generatorVersion\":\"1.0.1\"", "\"generatorVersion\":\"1.0.0\"");
-        Assert.Throws<FormatException>(() => WeaponRecipe.Parse(Encoding.UTF8.GetBytes(source)));
-        var current = WeaponRecipe.Parse(Source());
-        var old = new RecipeDocument(current.Document.RecipeId, WeaponRecipe.Schema, WeaponRecipe.GeneratorId, "1.0.0", current.Document.Seed, current.Document.Parameters, Array.Empty<ContentId>());
-        Assert.False(new WeaponRecipeValidator().Validate(old).Valid);
-        Assert.Equal(ErrorCode.UnsupportedVersion, new WeaponAssetGenerator().Generate(new GenerationRequest(old, "windows64", "gameplay", new ContentId(new string('1',64))), CancellationToken.None).Error);
+        foreach (string legacy in new[] { "1.0.0", "1.0.1" })
+        {
+            var source = Encoding.UTF8.GetString(Source()).Replace("\"generatorVersion\":\"1.0.2\"", "\"generatorVersion\":\"" + legacy + "\"");
+            Assert.Throws<FormatException>(() => WeaponRecipe.Parse(Encoding.UTF8.GetBytes(source)));
+            var current = WeaponRecipe.Parse(Source());
+            var old = new RecipeDocument(current.Document.RecipeId, WeaponRecipe.Schema, WeaponRecipe.GeneratorId, legacy, current.Document.Seed, current.Document.Parameters, Array.Empty<ContentId>());
+            Assert.False(new WeaponRecipeValidator().Validate(old).Valid);
+            Assert.Equal(ErrorCode.UnsupportedVersion, new WeaponAssetGenerator().Generate(new GenerationRequest(old, "windows64", "gameplay", new ContentId(new string('1',64))), CancellationToken.None).Error);
+        }
     }
     [Fact]
     public void RifleMagazineVisualAndProxyJoinTheReceiverAndMagazineWell()
@@ -140,11 +143,14 @@ public sealed class WeaponTests
         float yExtent = Math.Abs(1 - 2 * rotation.X * rotation.X) * magazine.Size.Y / 2 + Math.Abs(2 * rotation.X * rotation.W) * magazine.Size.Z / 2;
         Assert.True(magazine.Center.Y + yExtent >= .02f, "Magazine must overlap the receiver bottom at .020m, not float below its well.");
         Assert.True(magazine.Center.Y - yExtent >= build.Bounds.Min.Y);
-        // LOD2 has hard edges. Its actual magazine corner must use the same mechanical dimensions as the proxy.
+        // Detachable magazine mesh uses the same mechanical dimensions as the proxy (hard-edge LOD for corner match).
+        var magMesh = WeaponGeometry.BuildMagazine("rifle", 2);
         float halfY = magazine.Size.Y / 2, halfZ = magazine.Size.Z / 2;
         float expectedY = magazine.Center.Y + (1 - 2 * rotation.X * rotation.X) * halfY - 2 * rotation.X * rotation.W * halfZ;
         float expectedZ = magazine.Center.Z + 2 * rotation.X * rotation.W * halfY + (1 - 2 * rotation.X * rotation.X) * halfZ;
-        Assert.Contains(build.Lods[2].Positions, p => Math.Abs(p.X - magazine.Size.X / 2) < 1e-6 && Math.Abs(p.Y - expectedY) < 1e-6 && Math.Abs(p.Z - expectedZ) < 1e-6);
+        Assert.Contains(magMesh.Positions, p => Math.Abs(p.X - magazine.Size.X / 2) < 1e-6 && Math.Abs(p.Y - expectedY) < 1e-6 && Math.Abs(p.Z - expectedZ) < 1e-6);
+        Assert.True(build.Magazine.Positions.Count > 0);
+        Assert.True(build.CyclePart.Positions.Count > 0);
     }
     [Theory]
     [InlineData("rifle", .0041f, .03f, .07f, .020f, -.036f)]

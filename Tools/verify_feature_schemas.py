@@ -19,7 +19,7 @@ def main():
         Draft202012Validator.check_schema(schema)
     outcomes = []
     sources = [(p, True) for p in sorted((ROOT / "UnityProject/Assets/Shooter/Generation/FeatureRecipes").glob("*.json"))]
-    current_versions = {"geometry.weapon": "1.0.1", "material.surface": "1.0.1", "soldier.loft": "1.0.2"}
+    current_versions = {"geometry.weapon": "1.0.2", "material.surface": "1.0.1", "soldier.loft": "1.0.2"}
     sources += [(p, json.loads(p.read_text(encoding="utf-8"))["generatorVersion"] ==
                  current_versions[json.loads(p.read_text(encoding="utf-8"))["generatorId"]])
                 for p in sorted((ROOT / "docs/feature-fixtures").glob("*.json"))]

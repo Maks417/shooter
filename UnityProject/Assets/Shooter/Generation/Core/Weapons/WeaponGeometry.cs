@@ -16,11 +16,22 @@ namespace Shooter.Generation
     public sealed class WeaponBuild
     {
         public FrozenList<MeshData> Lods { get; }
+        /// <summary>Detachable magazine mesh in weapon space (seated pose).</summary>
+        public MeshData Magazine { get; }
+        /// <summary>Rifle bolt carrier / pistol slide mesh in closed pose.</summary>
+        public MeshData CyclePart { get; }
         public CollisionData Collision { get; }
         public Aabb Bounds { get; }
         public FrozenList<WeaponSocket> Sockets { get; }
-        internal WeaponBuild(MeshData[] lods, CollisionData collision, Aabb bounds, WeaponSocket[] sockets)
-        { Lods = new FrozenList<MeshData>(lods, 4); Collision = collision; Bounds = bounds; Sockets = new FrozenList<WeaponSocket>(sockets, 8); }
+        internal WeaponBuild(MeshData[] lods, MeshData magazine, MeshData cyclePart, CollisionData collision, Aabb bounds, WeaponSocket[] sockets)
+        {
+            Lods = new FrozenList<MeshData>(lods, 4);
+            Magazine = magazine;
+            CyclePart = cyclePart;
+            Collision = collision;
+            Bounds = bounds;
+            Sockets = new FrozenList<WeaponSocket>(sockets, 8);
+        }
     }
     /// <summary>Rule-built fictional weapons. No combat rules, authored mesh vertices or seed-dependent mechanics.</summary>
     public static class WeaponGeometry
@@ -33,14 +44,15 @@ namespace Shooter.Generation
             if (recipe == null) throw new ArgumentNullException(nameof(recipe));
             var lods = new MeshData[4];
             for (int i = 0; i < 4; i++) lods[i] = BuildLod(recipe.Kind, i);
+            var magazine = BuildMagazine(recipe.Kind, 0);
+            var cycle = BuildCyclePart(recipe.Kind, 0);
             var collision = BuildCollision(recipe.Kind);
             var sockets = Sockets(recipe.Kind);
-            // Deliberately conservative fixed construction envelope, independent of seed/LOD/profile.
             var bounds = BoundsFor(recipe.Kind);
-            foreach (var lod in lods) foreach (var p in lod.Positions)
-                if (p.X < bounds.Min.X || p.X > bounds.Max.X || p.Y < bounds.Min.Y || p.Y > bounds.Max.Y || p.Z < bounds.Min.Z || p.Z > bounds.Max.Z)
-                    throw new InvalidOperationException("Weapon construction escaped its declared envelope.");
-            return new WeaponBuild(lods, collision, bounds, sockets);
+            foreach (var lod in lods) AssertInside(lod, bounds);
+            AssertInside(magazine, bounds);
+            AssertInside(cycle, bounds);
+            return new WeaponBuild(lods, magazine, cycle, collision, bounds, sockets);
         }
         public static FrozenList<WeaponSocket> Sockets(WeaponRecipe recipe)
         {
@@ -52,8 +64,15 @@ namespace Shooter.Generation
             if (recipe == null) throw new ArgumentNullException(nameof(recipe));
             return BuildCollision(recipe.Kind);
         }
-        internal static Aabb BoundsFor(string kind) => kind == "rifle" ? new Aabb(new Float3(-.065f, -.20f, -.321f), new Float3(.065f, .15f, .641f))
-            : new Aabb(new Float3(-.035f, -.09f, -.081f), new Float3(.035f, .11f, .131f));
+        // Construction envelope only — sockets stay on the numeric baseline; bevelled detail may fill this AABB.
+        internal static Aabb BoundsFor(string kind) => kind == "rifle" ? new Aabb(new Float3(-.068f, -.205f, -.330f), new Float3(.068f, .155f, .645f))
+            : new Aabb(new Float3(-.038f, -.095f, -.085f), new Float3(.038f, .115f, .135f));
+        private static void AssertInside(MeshData mesh, Aabb bounds)
+        {
+            foreach (var p in mesh.Positions)
+                if (p.X < bounds.Min.X || p.X > bounds.Max.X || p.Y < bounds.Min.Y || p.Y > bounds.Max.Y || p.Z < bounds.Min.Z || p.Z > bounds.Max.Z)
+                    throw new InvalidOperationException("Weapon construction escaped its declared envelope.");
+        }
         private static MeshData BuildLod(string kind, int lod)
         {
             var assembly = new MeshAssembly();
@@ -74,66 +93,194 @@ namespace Shooter.Generation
             }
             if (kind == "rifle")
             {
-                Box(0, .065f, .09f, .058f, .09f, .27f); // receiver
-                Box(0, .08f, .345f, .056f, .06f, .28f, 1); // handguard
-                Box(0, .06f, -.25f, .060f, .11f, .14f, 1); // butt stock
-                Box(0, .065f, -.11f, .030f, .035f, .16f, 0); // stock tube
-                Box(0, -.045f, -.015f, .037f, .13f, .055f, 1, 15); // grip
-                Box(0, RifleMagazineCenterY, .07f, .032f, RifleMagazineHeight, .055f, 0, -8); // magazine penetrates receiver/well
+                Box(0, .065f, .09f, .058f, .09f, .27f);
+                if (lod < 2)
+                {
+                    Box(0, .108f, .09f, .052f, .018f, .24f);
+                    Box(0, .028f, .095f, .054f, .016f, .22f);
+                    Box(-.027f, .065f, .02f, .006f, .055f, .08f);
+                    Box(.027f, .065f, .02f, .006f, .055f, .08f);
+                }
+                Box(0, .08f, .345f, .056f, .06f, .28f, 1);
+                if (lod < 2)
+                {
+                    Box(0, .105f, .345f, .042f, .012f, .26f, 1);
+                    Box(0, .055f, .345f, .048f, .014f, .26f, 1);
+                    for (int i = 0; i < (lod == 0 ? 8 : 4); i++)
+                    {
+                        float z = .22f + i * (lod == 0 ? .032f : .064f);
+                        Box(-.029f, .08f, z, .005f, .048f, .012f, 1);
+                        Box(.029f, .08f, z, .005f, .048f, .012f, 1);
+                    }
+                    if (lod == 0)
+                    {
+                        for (int i = 0; i < 5; i++)
+                        {
+                            float z = .26f + i * .04f;
+                            Box(0, .052f, z, .030f, .006f, .014f, 1);
+                        }
+                    }
+                }
+                Box(0, .06f, -.25f, .060f, .11f, .14f, 1);
+                Box(0, .065f, -.11f, .030f, .035f, .16f, 0);
+                if (lod < 2)
+                {
+                    Box(0, .095f, -.27f, .048f, .035f, .08f, 1);
+                    Box(0, .015f, -.275f, .052f, .035f, .08f, 1);
+                    Box(0, .045f, -.18f, .022f, .055f, .04f, 1);
+                }
+                Box(0, -.045f, -.015f, .037f, .13f, .055f, 1, 15);
+                if (lod < 2)
+                {
+                    for (int i = 0; i < (lod == 0 ? 4 : 2); i++)
+                    {
+                        float y = -.02f - i * .028f;
+                        Box(-.019f, y, -.015f, .004f, .018f, .045f, 1);
+                        Box(.019f, y, -.015f, .004f, .018f, .045f, 1);
+                    }
+                }
                 Barrel(.08f, .21f, .64f, .009f);
-                // Trigger guard is assembled from closed strips around an actual open gap.
+                if (lod < 2)
+                {
+                    Box(0, .08f, .48f, .022f, .022f, .04f);
+                    Box(0, .095f, .48f, .010f, .018f, .018f);
+                    assembly.Add(PrimitiveGeometry.Cylinder(.006f, .12f, Math.Max(6, radial / 2)),
+                        new Float3(0, .095f, .40f), Quat.Identity, 0);
+                }
                 Box(0, -.041f, .055f, .014f, .010f, .085f);
                 Box(0, -.017f, .095f, .014f, .055f, .010f);
                 Box(0, -.017f, .015f, .014f, .055f, .010f);
-                // Paired rail ridges leave the assigned .115m sight line clear down the center.
                 Box(-.018f, .114f, .22f, .008f, .012f, .24f);
                 Box(.018f, .114f, .22f, .008f, .012f, .24f);
                 Box(-.008f, .115f, -.01f, .006f, .016f, .015f);
                 Box(.008f, .115f, -.01f, .006f, .016f, .015f);
-                Box(0, .107f, .53f, .008f, .016f, .018f); // front post at eye line
-                if (lod < 3)
-                {
-                    Box(.032f, .071f, .11f, .012f, .020f, .08f); // bolt/ejection proxy
-                    Box(.043f, .085f, .055f, .034f, .012f, .018f); // charging handle
-                }
+                Box(0, .107f, .53f, .008f, .016f, .018f);
                 if (lod < 2)
                 {
-                    Box(0, .003f, .053f, .008f, .050f, .009f, 0, -15); // upper trigger joins receiver; lower guard remains open
-                    Box(0, .013f, .068f, .047f, .018f, .074f); // magazine well
-                    for (int i = 0; i < (lod == 0 ? 6 : 3); i++)
+                    Box(0, .003f, .053f, .008f, .050f, .009f, 0, -15);
+                    Box(0, .013f, .068f, .047f, .018f, .074f);
+                    if (lod == 0)
                     {
-                        float z = .24f + i * (lod == 0 ? .038f : .076f);
-                        Box(-.030f, .08f, z, .006f, .045f, .015f);
-                        Box(.030f, .08f, z, .006f, .045f, .015f);
+                        Box(0, .120f, .10f, .036f, .010f, .12f);
+                        Box(-.022f, .070f, .16f, .008f, .028f, .06f);
                     }
                 }
             }
             else
             {
-                Box(0, .07f, .005f, .032f, .034f, .17f); // slide
-                Box(0, .035f, .012f, .032f, .035f, .15f, 1); // frame
-                Box(0, -.018f, -.030f, .032f, .11f, .045f, 1, 16); // grip
-                Box(0, -.070f, -.045f, .033f, .012f, .045f); // magazine base
-                Barrel(.07f, .025f, .13f, .007f);
-                Box(0, -.020f, .035f, .012f, .008f, .060f); // guard lower
-                Box(0, .003f, .063f, .012f, .052f, .008f); // guard front
-                Box(-.008f, .095f, -.07f, .006f, .012f, .013f); // rear notch posts
-                Box(.008f, .095f, -.07f, .006f, .012f, .013f);
-                Box(0, .092f, .078f, .006f, .010f, .010f); // front sight
-                if (lod < 3) Box(.018f, .045f, -.010f, .009f, .008f, .035f); // slide release
+                Box(0, .035f, .012f, .032f, .035f, .15f, 1);
+                Box(0, -.018f, -.030f, .032f, .11f, .045f, 1, 16);
                 if (lod < 2)
                 {
-                    Box(0, .010f, .030f, .007f, .030f, .009f, 0, -14); // upper trigger joins frame; lower guard remains open
+                    for (int i = 0; i < (lod == 0 ? 5 : 2); i++)
+                    {
+                        float y = .01f - i * .022f;
+                        Box(-.016f, y, -.030f, .003f, .014f, .038f, 1);
+                        Box(.016f, y, -.030f, .003f, .014f, .038f, 1);
+                    }
+                    Box(0, .052f, .012f, .028f, .008f, .14f, 1);
+                    Box(0, .018f, -.055f, .028f, .012f, .02f, 1);
+                }
+                Barrel(.07f, .025f, .13f, .007f);
+                Box(0, -.020f, .035f, .012f, .008f, .060f);
+                Box(0, .003f, .063f, .012f, .052f, .008f);
+                if (lod < 3) Box(.018f, .045f, -.010f, .009f, .008f, .035f);
+                if (lod < 2)
+                {
+                    Box(0, .010f, .030f, .007f, .030f, .009f, 0, -14);
+                    Box(-.014f, .040f, .055f, .006f, .016f, .022f);
+                    if (lod == 0)
+                    {
+                        Box(0, .055f, -.02f, .024f, .012f, .04f, 1);
+                        Box(0, -.055f, -.02f, .026f, .014f, .038f, 1);
+                    }
+                }
+            }
+            return assembly.Build();
+        }
+
+        public static MeshData BuildMagazine(string kind, int lod)
+        {
+            var assembly = new MeshAssembly();
+            float bevel = lod == 0 ? .0025f : lod == 1 ? .0012f : 0;
+            void Box(float x, float y, float z, float sx, float sy, float sz, ushort material = 0, float pitch = 0)
+            {
+                float b = Math.Min(bevel, Math.Min(sx, Math.Min(sy, sz)) * .2f);
+                assembly.Add(PrimitiveGeometry.Box(new Float3(sx, sy, sz), b, 1), new Float3(x, y, z), Pitch(pitch), material);
+            }
+            if (kind == "rifle")
+            {
+                Box(0, RifleMagazineCenterY, .07f, .032f, RifleMagazineHeight, .055f, 0, -8);
+                if (lod < 2)
+                {
+                    Box(0, RifleMagazineCenterY - .06f, .07f, .028f, .04f, .048f, 0, -8);
+                    for (int i = 0; i < (lod == 0 ? 6 : 3); i++)
+                    {
+                        float y = RifleMagazineCenterY + .06f - i * .028f;
+                        Box(-.016f, y, .07f, .003f, .016f, .048f, 0, -8);
+                        Box(.016f, y, .07f, .003f, .016f, .048f, 0, -8);
+                    }
+                }
+            }
+            else
+            {
+                Box(0, -.070f, -.045f, .033f, .012f, .045f);
+                Box(0, -.040f, -.040f, .028f, .055f, .038f, 1);
+                if (lod < 2)
+                {
+                    Box(0, -.075f, -.045f, .030f, .006f, .042f);
+                    for (int i = 0; i < (lod == 0 ? 3 : 1); i++)
+                    {
+                        float y = -.055f - i * .012f;
+                        Box(-.014f, y, -.040f, .003f, .008f, .032f, 1);
+                        Box(.014f, y, -.040f, .003f, .008f, .032f, 1);
+                    }
+                }
+            }
+            return assembly.Build();
+        }
+
+        public static MeshData BuildCyclePart(string kind, int lod)
+        {
+            var assembly = new MeshAssembly();
+            float bevel = lod == 0 ? .0025f : lod == 1 ? .0012f : 0;
+            void Box(float x, float y, float z, float sx, float sy, float sz, ushort material = 0, float pitch = 0)
+            {
+                float b = Math.Min(bevel, Math.Min(sx, Math.Min(sy, sz)) * .2f);
+                assembly.Add(PrimitiveGeometry.Box(new Float3(sx, sy, sz), b, 1), new Float3(x, y, z), Pitch(pitch), material);
+            }
+            if (kind == "rifle")
+            {
+                Box(.032f, .071f, .11f, .012f, .020f, .08f);
+                Box(.043f, .085f, .055f, .034f, .012f, .018f);
+                if (lod < 2)
+                {
+                    Box(.032f, .071f, .15f, .010f, .014f, .04f);
+                    Box(.050f, .085f, .04f, .012f, .010f, .012f);
+                }
+            }
+            else
+            {
+                Box(0, .07f, .005f, .032f, .034f, .17f);
+                Box(-.008f, .095f, -.07f, .006f, .012f, .013f);
+                Box(.008f, .095f, -.07f, .006f, .012f, .013f);
+                Box(0, .092f, .078f, .006f, .010f, .010f);
+                if (lod < 2)
+                {
                     for (int i = 0; i < (lod == 0 ? 5 : 2); i++)
                     {
                         float z = -.062f + i * (lod == 0 ? .008f : .024f);
                         Box(-.017f, .07f, z, .004f, .025f, .003f);
                         Box(.017f, .07f, z, .004f, .025f, .003f);
                     }
+                    Box(0, .082f, -.02f, .028f, .012f, .06f);
+                    if (lod == 0)
+                        Box(0, .088f, .04f, .020f, .008f, .05f);
                 }
             }
             return assembly.Build();
         }
+
         internal static CollisionData BuildCollision(string kind)
         {
             var boxes = new List<TaggedBox>();

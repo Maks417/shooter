@@ -26,6 +26,8 @@ Shared gameplay pose evaluator maps stance, velocity, aim and action phase to a 
 
 Death first disables input/damage once and uses analytic joint-constrained collapse; optional bounded procedural ragdoll is a separate measured T032 spike, not mandatory for M4; server corpse collision uses fixed policy (nonblocking after death for slice). Cosmetic ragdolls cap at four active near corpses, then freeze simplified pose. No ragdoll bones replicate. Low can use the same algorithm with fewer render updates, not a different living hit profile.
 
+**Implemented (cosmetic):** `soldier.motion.spike.v4` adds `SoldierMotionInput.DeathPhase` (`-1` living, `0..1` collapse). Presentation drives phase over `DeathCollapseDurationSeconds` (0.75 s) when an avatar becomes a corpse or `!Alive`, then holds the side-lying pose until the existing four-corpse / five-second TTL. Root stays at authoritative feet; weapons stay hidden on corpses. Physics ragdoll remains optional and unimplemented.
+
 ## M1 spike and acceptance
 
 Generate one helmeted soldier and one weapon, implement bind pose, walk/run, crouch, aim and reload with hard-surface equipment. Capture front/side/three-quarter and motion on level, 15-degree slope, 0.2 m steps and turn-in-place. Near body LOD target ≤24k triangles / ≤40 active bones, middle ≤10k, far ≤3k / ≤20 bones. View arms ≤12k. Counts adapt to performance evidence.

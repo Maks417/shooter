@@ -33,10 +33,16 @@ namespace Shooter.Generation.Environment
             "mesh-rifle-lod0.bin", "mesh-rifle-lod1.bin", "mesh-rifle-lod2.bin", "mesh-rifle-lod3.bin"
         };
 
+        public const string RifleMagazinePath = "mesh-rifle-magazine.bin";
+        public const string RifleCyclePath = "mesh-rifle-cycle.bin";
+
         public static readonly string[] PistolLodPaths =
         {
             "mesh-pistol-lod0.bin", "mesh-pistol-lod1.bin", "mesh-pistol-lod2.bin", "mesh-pistol-lod3.bin"
         };
+
+        public const string PistolMagazinePath = "mesh-pistol-magazine.bin";
+        public const string PistolCyclePath = "mesh-pistol-cycle.bin";
 
         public static readonly string[] KnifeLodPaths =
         {
@@ -118,7 +124,11 @@ namespace Shooter.Generation.Environment
             list.AddRange(SoldierLodPaths);
             list.AddRange(FirstPersonHandPaths);
             list.AddRange(RifleLodPaths);
+            list.Add(RifleMagazinePath);
+            list.Add(RifleCyclePath);
             list.AddRange(PistolLodPaths);
+            list.Add(PistolMagazinePath);
+            list.Add(PistolCyclePath);
             list.AddRange(KnifeLodPaths);
             list.AddRange(GrenadeLodPaths);
             foreach (string path in MapMaterialPaths)
@@ -280,6 +290,18 @@ namespace Shooter.Generation.Environment
             byte[] body = ArtifactCodec.Decode(payloads.Bytes(PistolLodPaths[lod]), ContentKind.Mesh, WeaponFingerprint, payloads.ToolchainHash);
             return GeometryCodec.DecodeMesh(body);
         }
+
+        public static MeshData DecodeRifleMagazine(PackagedVisualPayloads payloads) =>
+            GeometryCodec.DecodeMesh(ArtifactCodec.Decode(payloads.Bytes(RifleMagazinePath), ContentKind.Mesh, WeaponFingerprint, payloads.ToolchainHash));
+
+        public static MeshData DecodeRifleCycle(PackagedVisualPayloads payloads) =>
+            GeometryCodec.DecodeMesh(ArtifactCodec.Decode(payloads.Bytes(RifleCyclePath), ContentKind.Mesh, WeaponFingerprint, payloads.ToolchainHash));
+
+        public static MeshData DecodePistolMagazine(PackagedVisualPayloads payloads) =>
+            GeometryCodec.DecodeMesh(ArtifactCodec.Decode(payloads.Bytes(PistolMagazinePath), ContentKind.Mesh, WeaponFingerprint, payloads.ToolchainHash));
+
+        public static MeshData DecodePistolCycle(PackagedVisualPayloads payloads) =>
+            GeometryCodec.DecodeMesh(ArtifactCodec.Decode(payloads.Bytes(PistolCyclePath), ContentKind.Mesh, WeaponFingerprint, payloads.ToolchainHash));
 
         public static MeshData DecodeKnifeLod(PackagedVisualPayloads payloads, int lod)
         {

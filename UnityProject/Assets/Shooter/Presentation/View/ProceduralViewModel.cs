@@ -34,12 +34,15 @@ namespace Shooter.Presentation.View
         private float recoilYawVel;
         private float reloadPhase;
         private float reloadDurationSeconds = 2.4f;
+        private float cycleOpen;
         private byte activeSlot;
         private Float3 leftGrip = new Float3(-0.12f, -0.08f, 0.35f);
         private Float3 rightGrip = new Float3(0.08f, -0.10f, 0.40f);
 
         public ViewPose Pose => new ViewPose(leftGrip, rightGrip, ads, recoilPitch, recoilYaw);
         public float ReloadPhase => reloadPhase > 0f ? reloadPhase : 0f;
+        /// <summary>0 = bolt/slide closed, 1 = fully open after a shot impulse.</summary>
+        public float CycleOpen01 => cycleOpen;
         public byte ActiveWeaponSlot => activeSlot;
 
         public void ResetForLife(byte weaponSlot = ProductAuthorityActionView.RifleSlot)
@@ -48,6 +51,7 @@ namespace Shooter.Presentation.View
                 throw new ArgumentOutOfRangeException(nameof(weaponSlot));
             activeSlot = weaponSlot;
             reloadPhase = 0f;
+            cycleOpen = 0f;
             recoilPitch = recoilYaw = recoilPitchVel = recoilYawVel = 0f;
             ads = 0f;
             consumedEvents.Clear();
@@ -62,6 +66,7 @@ namespace Shooter.Presentation.View
             {
                 activeSlot = weaponSlot;
                 reloadPhase = 0f;
+                cycleOpen = 0f;
                 recoilPitch = recoilYaw = recoilPitchVel = recoilYawVel = 0f;
                 ads = 0f;
                 ApplyGripPose();
@@ -76,6 +81,7 @@ namespace Shooter.Presentation.View
             ads = MoveTowards(ads, targetAds, dtSeconds / 0.15f);
             IntegrateSpring(ref recoilPitch, ref recoilPitchVel, dtSeconds);
             IntegrateSpring(ref recoilYaw, ref recoilYawVel, dtSeconds);
+            AdvanceCycle(dtSeconds);
             AdvanceReload(dtSeconds);
             ApplyGripPose();
         }
@@ -112,6 +118,7 @@ namespace Shooter.Presentation.View
                         recoilPitchVel += activeSlot == ProductAuthorityActionView.PistolSlot ? 3.2f : 2.5f;
                         recoilYawVel += ((ev.Id.Ordinal & 1) == 0 ? -1f : 1f) *
                             (activeSlot == ProductAuthorityActionView.PistolSlot ? 0.85f : 0.6f);
+                        cycleOpen = Math.Max(cycleOpen, FirstPersonWeaponMechanics.CycleImpulse);
                     }
                 }
                 else if (ev.Kind == CombatEventKind.ReloadStarted && ev.Payload is ActionPayload started)
@@ -130,7 +137,7 @@ namespace Shooter.Presentation.View
 
             IntegrateSpring(ref recoilPitch, ref recoilPitchVel, dtSeconds);
             IntegrateSpring(ref recoilYaw, ref recoilYawVel, dtSeconds);
-
+            AdvanceCycle(dtSeconds);
             AdvanceReload(dtSeconds);
             ApplyGripPose();
         }
@@ -147,6 +154,13 @@ namespace Shooter.Presentation.View
             float duration = reloadDurationSeconds > 1e-4f ? reloadDurationSeconds : 2.4f;
             reloadPhase = Math.Min(1f, reloadPhase + dtSeconds / duration);
             if (reloadPhase >= 1f) reloadPhase = 0f;
+        }
+
+        private void AdvanceCycle(float dtSeconds)
+        {
+            if (cycleOpen <= 0f) { cycleOpen = 0f; return; }
+            // Bolt/slide closes in ~90 ms after the impulse peak.
+            cycleOpen = MoveTowards(cycleOpen, 0f, dtSeconds / 0.09f);
         }
 
         private void ApplyGripPose()

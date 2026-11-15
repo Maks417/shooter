@@ -200,8 +200,24 @@ Scope:
 - Game-v1 additive `Slot3`/`Slot4` bindings; local input / HUD / presentation; AI empty-ammo knife + single grenade.
 - Procedural knife/grenade meshes packaged in map visuals (`LoadoutPropGeometry`); package identities change → native republish for player review.
 
-Frozen otherwise: toolchain, Game-v1 settings schema 2 layout, rifle/pistol `geometry.weapon` 1.0.1 recipes, friendly-damage policy, online wire migration (deferred).
+Frozen otherwise: toolchain, Game-v1 settings schema 2 layout, rifle/pistol recipes (later T088 bumps to 1.0.2), friendly-damage policy, online wire migration (deferred).
 
 Validation: Contracts/Simulation/Game/Generation/Maps pure suites, Unity EditMode where touched, provenance, docs/fixtures/manifest. Manual gameplay and native republish evidence remain Pending in the M11 handoff.
 
 Rollback: restore prior contract-lock/fixture/prediction-schema-1 pair and two-slot combat kit together.
+
+## T088 — Full weapon visual overhaul (VD3 slice+) and fire FX
+
+Owner-authorized 2026-11-15. Sole integrator. Decision: [ADR-061](decisions.md#adr-061--accepted-geometryweapon-102-mechanical-parts-and-denser-fire-fx-t088).
+
+Scope:
+- `geometry.weapon` **1.0.2**: richer rifle/pistol body LODs; separate packaged magazine + cycle (bolt/slide) meshes; sockets/collision mechanical dims unchanged; reject 1.0.0/1.0.1.
+- Presentation: bind body/mag/cycle for FP + world; mag travel from reload phase; cycle impulse on `ShotAccepted`; reduced-motion scales.
+- Analytic FX: denser muzzle, `ShellCasing`, `Tracer`; `ReducedFlash` suppresses muzzle+tracer.
+- Paths: `Generation/Core/Weapons/`, `MapVisualClosure` / `MapPackageBuilder`, `Presentation/View` / `Rig` / `Fx` / `Session`, Generation/Simulation tests, feature lock/fixtures, native republish + installer evidence docs.
+
+Frozen: C0/Game-v1 combat rules, ammo/timing, soldier/P05 (ADR-024), toolchain, settings schema 2. No articulated fingers, no imported art/clips.
+
+Validation: Generation/Simulation/Maps/Contracts/Game as touched, provenance, docs/fixtures/manifest, native publication, Client/Server/package/installer. Named visual acceptance Pending.
+
+Rollback: restore geometry.weapon 1.0.1 lock/fixture pair and prior presentation/FX together.

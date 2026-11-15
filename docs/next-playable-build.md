@@ -1,5 +1,9 @@
 # Next playable build — finish playtest and native navigation
 
+**Analytic death collapse — 2026-11-15 (source):** `soldier.motion.spike.v4` cosmetic DeathPhase collapse replaces crouch-idle corpses; pure motion tests PASS; player/installer Pending. [Handoff](milestones/m11-playable-release/handoff.md#analytic-death-collapse-soldiermotionspikev4).
+
+**T088 weapon visual overhaul — 2026-11-15 (source):** ADR-061 `geometry.weapon` 1.0.2 richer rifle/pistol LODs, detachable mag + bolt/slide, denser muzzle/casing/tracer FX; native republish and named visual review Pending. [Handoff](milestones/m11-playable-release/handoff.md#t088--weapon-visual-overhaul-adr-061).
+
 **T086 sample-bank audio — 2026-11-15 (source):** ADR-055 generated PCM combat bank (layered rifle/pistol/impact/reload/death/footstep/UI/ambient) replaces beep synth; pure audio tests PASS; FIX10 named hearing and installer Pending. [Handoff](milestones/m11-playable-release/handoff.md#t086--sample-bank-combat-audio-adr-055).
 
 **Latest combined preview — 2026-11-15:** installer **0.3.12**, clean binary/content source `50e8939`. It combines the T084 near-field PBR finishes, hip framing and continuous sleeve loft with the T085 bot update: teammates spread out, bots hear footsteps and turn on unseen attackers, time-to-kill on a still target is about 1.6 s at 8 m, and HUD markers point at whoever hit the player. Unity EditMode 53 / PlayMode 21, native publication (one transient failed attempt, retry PASS), clean Client/Server, server smoke, package and installer builders PASS. Installation/upgrade, player review, bot feel and all P05/VD/REL acceptance remain Pending. [Exact evidence and installer](milestones/m11-playable-release/handoff.md#release-0312). Older entries below are historical.

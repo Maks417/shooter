@@ -684,3 +684,17 @@ Decision:
 - Bots share the motor gate automatically; no AI blackboard change required for correctness.
 
 Validation: pure motor drain/regen/cost/exhaust cases in `Tools/Test-Simulation.ps1`; docs/manifest. Interactive feel and installer identity remain Pending. Rollback removes the motor field/gates and HUD bar.
+
+## ADR-061 — Accepted: geometry.weapon 1.0.2 mechanical parts and denser fire FX (T088)
+
+Date 2026-11-15; owner-authorized VD3 weapon visual overhaul (silhouette + mechanicals + fire FX). Sole integrator owns weapon generator/recipes, map visual packaging, first-person/world presentation and analytic FX. No C0/Game-v1 combat change, no soldier/P05 work, no imported art or authored clips.
+
+Context: `geometry.weapon` 1.0.1 baked magazine and bolt/slide into the body LODs. Reload was whole-gun + support-hand offset; fire FX were thin analytic spheres. VD3 requires detachable magazines, fire-cycle parts and denser combat feedback while preserving sockets and collision proxies.
+
+Decision:
+- Bump `geometry.weapon` **1.0.1 → 1.0.2**. Reject 1.0.0 and 1.0.1. Migrate registered recipes and add `docs/feature-fixtures/rifle-1.0.2.json`. Socket transforms, units, seeds, collision mechanical dimensions and C0/SGAF stay unchanged within existing tolerances.
+- Body LODs gain richer silhouette detail; **magazine** and **cycle** (rifle bolt / pistol slide) emit as separate packaged meshes (`mesh-*-magazine.bin`, `mesh-*-cycle.bin`) and generator variants `magazine` / `cycle`.
+- Presentation binds body + mag + cycle for FP and world held weapons. Mag follows `FirstPersonMagazineTravel`; cycle opens on `ShotAccepted` and closes analytically (~90 ms). Reduced-motion scales cosmetic travel. Knife/grenade slots omit these parts.
+- Extend `AnalyticFxPool` with `ShellCasing` and `Tracer`. Densify muzzle (secondary flash lobe). `ReducedFlash` suppresses muzzle and tracer meshes plus the local overlay; casings/impact/smoke remain.
+
+Validation: Generation/Simulation/Maps pure suites, Unity EditMode/PlayMode where applicable, feature-content-lock refresh, native content republish, clean Client/Server/package/installer. Named visual acceptance and reference cost remain Pending. Rollback restores 1.0.1 recipes/lock pair and prior presentation/FX.

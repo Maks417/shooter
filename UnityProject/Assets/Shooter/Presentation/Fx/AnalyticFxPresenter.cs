@@ -20,6 +20,8 @@ namespace Shooter.Presentation.Fx
         private Material? muzzleMaterial;
         private Material? sparkMaterial;
         private Material? smokeMaterial;
+        private Material? casingMaterial;
+        private Material? tracerMaterial;
         private Mesh? quadMesh;
         private Mesh? sphereMesh;
         private Mesh? capsuleMesh;
@@ -70,7 +72,8 @@ namespace Shooter.Presentation.Fx
             {
                 var fx = pool.Get(i);
                 var slot = slots[i];
-                bool hide = !fx.Active || (suppressMuzzleFlash && fx.Kind == FxKind.MuzzleFlash);
+                bool hide = !fx.Active
+                    || (suppressMuzzleFlash && (fx.Kind == FxKind.MuzzleFlash || fx.Kind == FxKind.Tracer));
                 if (hide)
                 {
                     if (slot.gameObject.activeSelf) slot.gameObject.SetActive(false);
@@ -79,7 +82,8 @@ namespace Shooter.Presentation.Fx
 
                 float scale = AnalyticFxPool.EvaluateScale(fx.Kind, fx.Age, fx.Lifetime);
                 float opacity = AnalyticFxPool.EvaluateOpacity(fx.Kind, fx.Age, fx.Lifetime);
-                Vector3 pos = new Vector3(fx.Position.X, fx.Position.Y, fx.Position.Z);
+                var world = AnalyticFxPool.EvaluateWorldPosition(fx.Kind, fx.Position, fx.Normal, fx.Age, fx.Lifetime);
+                Vector3 pos = new Vector3(world.X, world.Y, world.Z);
                 Vector3 normal = new Vector3(fx.Normal.X, fx.Normal.Y, fx.Normal.Z);
                 if (normal.sqrMagnitude < 1e-6f) normal = Vector3.up;
                 else normal.Normalize();
@@ -94,9 +98,9 @@ namespace Shooter.Presentation.Fx
                         mesh = sphereMesh;
                         material = muzzleMaterial;
                         // Elongated along shot direction so muzzle reads as a flash cone, not a marble.
-                        localScale = new Vector3(scale * 1.05f, scale * 1.05f, scale * 2.35f);
+                        localScale = new Vector3(scale * 1.25f, scale * 1.25f, scale * 2.85f);
                         rotation = Quaternion.LookRotation(normal, Vector3.up);
-                        pos += normal * (scale * 0.52f);
+                        pos += normal * (scale * 0.55f);
                         break;
                     case FxKind.ImpactSpark:
                         mesh = capsuleMesh;
@@ -104,6 +108,19 @@ namespace Shooter.Presentation.Fx
                         localScale = new Vector3(scale * 0.52f, scale * 2.25f, scale * 0.52f);
                         rotation = Quaternion.FromToRotation(Vector3.up, normal);
                         pos += normal * (scale * 0.65f);
+                        break;
+                    case FxKind.ShellCasing:
+                        mesh = capsuleMesh;
+                        material = casingMaterial;
+                        localScale = new Vector3(scale * 0.55f, scale * 2.4f, scale * 0.55f);
+                        rotation = Quaternion.FromToRotation(Vector3.up, normal) *
+                                   Quaternion.Euler(fx.Age * 420f, fx.Age * 180f, 0f);
+                        break;
+                    case FxKind.Tracer:
+                        mesh = capsuleMesh;
+                        material = tracerMaterial;
+                        localScale = new Vector3(scale * 0.55f, AnalyticFxPool.TracerLengthMeters * 0.5f, scale * 0.55f);
+                        rotation = Quaternion.FromToRotation(Vector3.up, normal);
                         break;
                     default:
                         mesh = sphereMesh != null ? sphereMesh : quadMesh;
@@ -140,12 +157,20 @@ namespace Shooter.Presentation.Fx
                 case FxKind.MuzzleFlash:
                     propertyBlock.SetColor("_BaseColor", new Color(1f, 0.82f, 0.34f, opacity));
                     if (muzzleMaterial != null && muzzleMaterial.HasProperty("_EmissionColor"))
-                        propertyBlock.SetColor("_EmissionColor", new Color(6.8f, 3.1f, 0.45f) * opacity);
+                        propertyBlock.SetColor("_EmissionColor", new Color(8.2f, 3.6f, 0.5f) * opacity);
                     break;
                 case FxKind.ImpactSpark:
                     propertyBlock.SetColor("_BaseColor", new Color(1f, 0.96f, 0.7f, opacity));
                     if (sparkMaterial != null && sparkMaterial.HasProperty("_EmissionColor"))
                         propertyBlock.SetColor("_EmissionColor", new Color(5.4f, 3.0f, 0.7f) * opacity);
+                    break;
+                case FxKind.ShellCasing:
+                    propertyBlock.SetColor("_BaseColor", new Color(0.78f, 0.62f, 0.28f, opacity));
+                    break;
+                case FxKind.Tracer:
+                    propertyBlock.SetColor("_BaseColor", new Color(1f, 0.55f, 0.18f, opacity));
+                    if (tracerMaterial != null && tracerMaterial.HasProperty("_EmissionColor"))
+                        propertyBlock.SetColor("_EmissionColor", new Color(7.5f, 2.4f, 0.35f) * opacity);
                     break;
                 default:
                     // Warm-grey smoke so impacts read against cool outdoor fill.
@@ -162,9 +187,11 @@ namespace Shooter.Presentation.Fx
             if (lit == null && unlit == null)
                 throw new System.InvalidOperationException("Required locked URP Lit/Unlit shader missing; no art fallback");
 
-            muzzleMaterial = BuildEmissive(lit != null ? lit : unlit!, "Analytic muzzle flash", new Color(1f, 0.8f, 0.32f, 1f), new Color(6f, 2.8f, 0.4f));
+            muzzleMaterial = BuildEmissive(lit != null ? lit : unlit!, "Analytic muzzle flash", new Color(1f, 0.8f, 0.32f, 1f), new Color(7.5f, 3.2f, 0.45f));
             sparkMaterial = BuildEmissive(lit != null ? lit : unlit!, "Analytic impact spark", new Color(1f, 0.95f, 0.55f, 1f), new Color(4.5f, 2.6f, 0.6f));
             smokeMaterial = BuildTransparent(unlit != null ? unlit : lit!, "Analytic smoke proxy", new Color(0.62f, 0.60f, 0.56f, 0.45f));
+            casingMaterial = BuildEmissive(lit != null ? lit : unlit!, "Analytic shell casing", new Color(0.78f, 0.62f, 0.28f, 1f), new Color(0.4f, 0.25f, 0.05f));
+            tracerMaterial = BuildEmissive(lit != null ? lit : unlit!, "Analytic tracer", new Color(1f, 0.55f, 0.18f, 1f), new Color(7.5f, 2.4f, 0.35f));
         }
 
         private static Material BuildEmissive(Shader shader, string name, Color baseColor, Color emission)
@@ -227,9 +254,13 @@ namespace Shooter.Presentation.Fx
             if (muzzleMaterial != null) Destroy(muzzleMaterial);
             if (sparkMaterial != null) Destroy(sparkMaterial);
             if (smokeMaterial != null) Destroy(smokeMaterial);
+            if (casingMaterial != null) Destroy(casingMaterial);
+            if (tracerMaterial != null) Destroy(tracerMaterial);
             muzzleMaterial = null;
             sparkMaterial = null;
             smokeMaterial = null;
+            casingMaterial = null;
+            tracerMaterial = null;
             pool = null;
         }
     }

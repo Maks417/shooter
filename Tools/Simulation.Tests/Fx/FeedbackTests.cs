@@ -42,12 +42,14 @@ namespace Shooter.Simulation.Tests.Fx
             Assert.Equal(AnalyticFxPool.MuzzleFlashLifetime, AnalyticFxPool.LifetimeFor(FxKind.MuzzleFlash));
             Assert.Equal(AnalyticFxPool.ImpactSparkLifetime, AnalyticFxPool.LifetimeFor(FxKind.ImpactSpark));
             Assert.Equal(AnalyticFxPool.SmokeProxyLifetime, AnalyticFxPool.LifetimeFor(FxKind.SmokeProxy));
+            Assert.Equal(AnalyticFxPool.ShellCasingLifetime, AnalyticFxPool.LifetimeFor(FxKind.ShellCasing));
+            Assert.Equal(AnalyticFxPool.TracerLifetime, AnalyticFxPool.LifetimeFor(FxKind.Tracer));
 
             float muzzleStart = AnalyticFxPool.EvaluateScale(FxKind.MuzzleFlash, 0f, AnalyticFxPool.MuzzleFlashLifetime);
             float muzzleEnd = AnalyticFxPool.EvaluateScale(FxKind.MuzzleFlash, AnalyticFxPool.MuzzleFlashLifetime, AnalyticFxPool.MuzzleFlashLifetime);
             Assert.True(muzzleStart > muzzleEnd);
-            // T079: denser flash cone start scale without exceeding short lifetime budget.
-            Assert.True(muzzleStart > 0.45f);
+            // T088: denser flash cone start scale without exceeding short lifetime budget.
+            Assert.True(muzzleStart > 0.55f);
             Assert.True(AnalyticFxPool.MuzzleFlashLifetime <= 0.14f);
 
             float sparkStart = AnalyticFxPool.EvaluateScale(FxKind.ImpactSpark, 0f, AnalyticFxPool.ImpactSparkLifetime);
@@ -63,6 +65,26 @@ namespace Shooter.Simulation.Tests.Fx
             Assert.True(smokeOpacity > 0.40f);
             Assert.True(AnalyticFxPool.EvaluateOpacity(FxKind.MuzzleFlash, 0f, AnalyticFxPool.MuzzleFlashLifetime) > 0.9f);
             Assert.Equal(0f, AnalyticFxPool.EvaluateOpacity(FxKind.ImpactSpark, AnalyticFxPool.ImpactSparkLifetime, AnalyticFxPool.ImpactSparkLifetime));
+
+            var casingMid = AnalyticFxPool.EvaluateWorldPosition(FxKind.ShellCasing, new Float3(0, 1, 0), new Float3(1, 0, 0), 0.4f, AnalyticFxPool.ShellCasingLifetime);
+            Assert.True(casingMid.X > 0.1f);
+            Assert.True(casingMid.Y < 1.1f);
+            var tracerMid = AnalyticFxPool.EvaluateWorldPosition(FxKind.Tracer, new Float3(0, 1, 0), new Float3(0, 0, 1), 0f, AnalyticFxPool.TracerLifetime);
+            Assert.InRange(tracerMid.Z, AnalyticFxPool.TracerLengthMeters * 0.4f, AnalyticFxPool.TracerLengthMeters * 0.6f);
+        }
+
+        [Fact]
+        public void Analytic_fx_shell_and_tracer_caps_are_independent()
+        {
+            var pool = new AnalyticFxPool();
+            int shells = 0, tracers = 0;
+            for (int i = 0; i < AnalyticFxPool.MaxShellCasings + 4; i++)
+                if (pool.TrySpawn(FxKind.ShellCasing, new Float3(i, 0, 0), new Float3(1, 0, 0))) shells++;
+            for (int i = 0; i < AnalyticFxPool.MaxTracers + 4; i++)
+                if (pool.TrySpawn(FxKind.Tracer, new Float3(0, i, 0), new Float3(0, 0, 1))) tracers++;
+            Assert.Equal(AnalyticFxPool.MaxShellCasings, shells);
+            Assert.Equal(AnalyticFxPool.MaxTracers, tracers);
+            Assert.True(pool.Rejected > 0);
         }
 
         [Fact]

@@ -24,17 +24,22 @@ namespace Shooter.Generation
         public float AimPitchRadians { get; }
         public float ReloadPhase { get; }
         public bool Reset { get; }
+        /// <summary>-1 living; 0..1 analytic death collapse (cosmetic only).</summary>
+        public float DeathPhase { get; }
         public SoldierMotionInput(Float3 root, float yawRadians, double distanceMeters, float speedMetersPerSecond,
-            float crouch = 0, float aimYawRadians = 0, float aimPitchRadians = 0, float reloadPhase = -1, bool reset = false)
+            float crouch = 0, float aimYawRadians = 0, float aimPitchRadians = 0, float reloadPhase = -1, bool reset = false,
+            float deathPhase = -1)
         {
             if (!Finite(yawRadians) || Math.Abs(yawRadians) > 1000000 || double.IsNaN(distanceMeters) || double.IsInfinity(distanceMeters) || distanceMeters < 0 || distanceMeters > 10000000 ||
                 !Finite(speedMetersPerSecond) || speedMetersPerSecond < 0 || speedMetersPerSecond > 5.5f || !Finite(crouch) || crouch < 0 || crouch > 1 ||
                 !Finite(aimYawRadians) || Math.Abs(aimYawRadians) > SoldierMotion.MaxAimYawRadians + 1e-6f ||
                 !Finite(aimPitchRadians) || Math.Abs(aimPitchRadians) > SoldierMotion.MaxAimPitchRadians + 1e-6f ||
-                !Finite(reloadPhase) || (reloadPhase != -1 && (reloadPhase < 0 || reloadPhase > 1)))
+                !Finite(reloadPhase) || (reloadPhase != -1 && (reloadPhase < 0 || reloadPhase > 1)) ||
+                !Finite(deathPhase) || (deathPhase != -1 && (deathPhase < 0 || deathPhase > 1)))
                 throw new ArgumentOutOfRangeException(nameof(distanceMeters), "Unsupported motion input; aim is bounded to +/-45 yaw and +/-25 pitch degrees.");
             Root = root; YawRadians = yawRadians; DistanceMeters = distanceMeters; SpeedMetersPerSecond = speedMetersPerSecond;
             Crouch = crouch; AimYawRadians = aimYawRadians; AimPitchRadians = aimPitchRadians; ReloadPhase = reloadPhase; Reset = reset;
+            DeathPhase = deathPhase;
         }
     }
 
@@ -75,9 +80,11 @@ namespace Shooter.Generation
     /// <summary>Initial semantic23 view-only gait/IK spike. No clips, physics mutation or frame-time accumulation.</summary>
     public sealed class SoldierMotion
     {
-        public const string Version = "soldier.motion.spike.v3";
+        public const string Version = "soldier.motion.spike.v4";
         public const float MaxAimYawRadians = (float)Math.PI / 4;
         public const float MaxAimPitchRadians = 25 * (float)Math.PI / 180;
+        /// <summary>Presentation advance duration for DeathPhase 0→1 (seconds).</summary>
+        public const float DeathCollapseDurationSeconds = 0.75f;
         private const float Radians = (float)Math.PI / 180;
         public const float BodyBladeRadians = 35 * Radians;
         public const float LegHeadingOffsetRadians = 5 * Radians;
@@ -118,6 +125,8 @@ namespace Shooter.Generation
         private SoldierPose EvaluateCore(SoldierMotionInput input, ISoldierGround ground)
         {
             if (ground == null) throw new ArgumentNullException(nameof(ground));
+            if (input.DeathPhase >= 0)
+                return EvaluateDeathCollapse(input, ground);
             bool run = input.SpeedMetersPerSecond > 3.5f;
             bool moving = input.SpeedMetersPerSecond > .001f;
             double travel = input.DistanceMeters - previousDistance;
@@ -191,6 +200,109 @@ namespace Shooter.Generation
             pose.ArmBodyClearanceMeters=Math.Min(armBody.Arm(p[8],p[9],p[10]),armBody.Arm(p[12],p[13],p[14]));
             StoreUpper(input);
             return pose;
+        }
+
+        /// <summary>
+        /// Analytic joint-constrained collapse (T032). Root stays at authoritative feet; limbs ease
+        /// into a side-lying ground pose and freeze at DeathPhase=1. Cosmetic only — no hit volumes.
+        /// </summary>
+        private SoldierPose EvaluateDeathCollapse(SoldierMotionInput input, ISoldierGround ground)
+        {
+            float t = Smooth(Clamp(input.DeathPhase, 0, 1));
+            initialized = false;
+            upperCacheValid = false;
+            left.Stance = right.Stance = false;
+            pose.ContactsReset = true;
+            pose.GroundQueries = 0;
+            pose.UpperBodyCacheHit = false;
+            pose.PlantSlide = 0;
+            pose.PlantTargetError = 0;
+            pose.PelvisCorrection = 0;
+            pose.LeftPlanted = pose.RightPlanted = false;
+            previousRoot = input.Root;
+            previousDistance = input.DistanceMeters;
+
+            float groundY = input.Root.Y;
+            if (ground.TrySample(input.Root.X, input.Root.Z, out float sampled) && Finite(sampled))
+                groundY = sampled;
+            pose.GroundQueries = 1;
+
+            Quat yaw = AxisAngle(Up, input.YawRadians);
+            Quat bodyYaw = Multiply(yaw, AxisAngle(Up, BodyBladeRadians));
+            Quat legYaw = Multiply(yaw, AxisAngle(Up, LegHeadingOffsetRadians));
+            Float3 forward = Rotate(Forward, yaw);
+            Float3 rightAxis = Rotate(new Float3(1, 0, 0), yaw);
+
+            float standPelvisY = groundY + .96f;
+            float liePelvisY = groundY + .18f;
+            float pelvisY = Lerp(standPelvisY, liePelvisY, t);
+            Quat roll = AxisAngle(forward, 88f * Radians * t);
+            Quat bodyRot = Multiply(roll, bodyYaw);
+            Quat lieLegYaw = Multiply(roll, legYaw);
+
+            var p = pose.Positions; var r = pose.Rotations;
+            p[0] = new Float3(input.Root.X, groundY, input.Root.Z); r[0] = yaw;
+            p[1] = new Float3(input.Root.X, pelvisY, input.Root.Z); r[1] = bodyRot;
+
+            float spineFold = 18f * Radians * t;
+            for (int i = 2; i <= 4; i++)
+            {
+                p[i] = Add(p[i - 1], Rotate(SoldierSkeleton.Definition.Joints[i].LocalBindPosition, r[i - 1]));
+                r[i] = Multiply(bodyRot, AxisAngle(new Float3(1, 0, 0), -spineFold * (i - 1) / 3f));
+            }
+            SetChild(5, Multiply(r[4], Multiply(AxisAngle(new Float3(0, 0, 1), -30 * Radians), AxisAngle(new Float3(1, 0, 0), 30 * Radians * (1f - .4f * t)))));
+            SetChild(6, Multiply(r[5], AxisAngle(Up, -35 * Radians * (1f - t))));
+            SetChild(7, Multiply(r[4], AxisAngle(Up, 20 * Radians * t))); SetChild(8, r[4]);
+            SetChild(11, Multiply(r[4], AxisAngle(new Float3(0, 0, 1), 40 * Radians * (1f - .5f * t)))); SetChild(12, r[4]);
+            SetChild(15, bodyRot); SetChild(19, bodyRot);
+
+            // Standing foot anchors → crumpled side-lying targets (right-side fall).
+            Float3 leftStand = Add(p[0], Add(Rotate(new Float3(-.1f, .08f, .02f), bodyYaw), new Float3(0, 0, 0)));
+            Float3 rightStand = Add(p[0], Rotate(new Float3(.1f, .08f, .02f), bodyYaw));
+            leftStand = new Float3(leftStand.X, groundY + .08f, leftStand.Z);
+            rightStand = new Float3(rightStand.X, groundY + .08f, rightStand.Z);
+            Float3 leftLie = Add(p[1], Add(Scale(forward, -.15f), Add(Scale(rightAxis, -.05f), new Float3(0, .08f - (pelvisY - groundY), .35f))));
+            Float3 rightLie = Add(p[1], Add(Scale(forward, .45f), Add(Scale(rightAxis, .12f), new Float3(0, .08f - (pelvisY - groundY), -.05f))));
+            leftLie = new Float3(leftLie.X, Math.Max(groundY + .06f, leftLie.Y), leftLie.Z);
+            rightLie = new Float3(rightLie.X, Math.Max(groundY + .06f, rightLie.Y), rightLie.Z);
+            Float3 leftFoot = Lerp(leftStand, leftLie, t);
+            Float3 rightFoot = Lerp(rightStand, rightLie, t);
+            var leftLeg = Leg(15, 16, 17, 18, leftFoot, lieLegYaw);
+            var rightLeg = Leg(19, 20, 21, 22, rightFoot, lieLegYaw);
+            pose.LeftKneeFlexion = leftLeg.FlexionRadians; pose.RightKneeFlexion = rightLeg.FlexionRadians;
+
+            Float3 leftHandStand = Add(p[4], Rotate(new Float3(-.35f, -.2f, .25f), r[4]));
+            Float3 rightHandStand = Add(p[4], Rotate(new Float3(.2f, -.15f, .35f), r[4]));
+            Float3 leftHandLie = Add(p[4], Add(Scale(forward, .1f), Add(Scale(rightAxis, -.35f), new Float3(0, groundY + .1f - p[4].Y, 0))));
+            Float3 rightHandLie = Add(p[4], Add(Scale(forward, -.05f), Add(Scale(rightAxis, .45f), new Float3(0, groundY + .12f - p[4].Y, 0))));
+            leftHandLie = new Float3(leftHandLie.X, Math.Max(groundY + .05f, leftHandLie.Y), leftHandLie.Z);
+            rightHandLie = new Float3(rightHandLie.X, Math.Max(groundY + .05f, rightHandLie.Y), rightHandLie.Z);
+            pose.LeftHandTarget = Lerp(leftHandStand, leftHandLie, t);
+            pose.RightHandTarget = Lerp(rightHandStand, rightHandLie, t);
+            pose.WeaponRotation = Multiply(yaw, AxisAngle(new Float3(1, 0, 0), -70f * Radians * t));
+            pose.WeaponPosition = Add(p[4], Rotate(new Float3(.15f, -.1f, .2f), r[4]));
+            armBody.Update(pose);
+            var leftArm = Arm(8, 9, 10, pose.LeftHandTarget, r[7], -1);
+            var rightArm = Arm(12, 13, 14, pose.RightHandTarget, r[11], 1);
+            pose.LeftGripError = leftArm.TargetError; pose.RightGripError = rightArm.TargetError;
+            pose.LeftElbowFlexion = leftArm.FlexionRadians; pose.RightElbowFlexion = rightArm.FlexionRadians;
+            pose.LeftWristOrientationErrorRadians = 0; pose.RightWristOrientationErrorRadians = 0;
+            pose.RightStockErrorMeters = 0; pose.EyeSightLineErrorMeters = 0;
+            pose.RightEyePosition = Add(p[6], Rotate(new Float3(.035f, -.005f, .103f), r[6]));
+            pose.ArmBodyClearanceMeters = Math.Min(armBody.Arm(p[8], p[9], p[10]), armBody.Arm(p[12], p[13], p[14]));
+            ClampJointAboveGround(groundY);
+            return pose;
+        }
+
+        private void ClampJointAboveGround(float groundY)
+        {
+            float minY = groundY + .02f;
+            var p = pose.Positions;
+            for (int i = 1; i < SoldierSkeleton.JointCount; i++)
+            {
+                if (p[i].Y < minY)
+                    p[i] = new Float3(p[i].X, minY, p[i].Z);
+            }
         }
 
         // Exact-key reuse of a rigidly translated upper-body solve. Stance and gait only translate

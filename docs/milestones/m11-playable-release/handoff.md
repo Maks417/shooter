@@ -1,5 +1,16 @@
 # M11 — Playable build and acceptance — handoff and gate record
 
+## T088 — Weapon visual overhaul (ADR-061)
+
+2026-11-15. Owner: improve weapon models, animations and fire feedback (full VD3 slice). [ADR-061](../../decisions.md#adr-061--accepted-geometryweapon-102-mechanical-parts-and-denser-fire-fx-t088).
+
+**Implemented (software):**
+- `geometry.weapon` **1.0.2**: richer body LODs; detachable magazine + cycle (bolt/slide) meshes packaged beside LOD meshes; sockets/collision mechanical dims preserved; 1.0.0/1.0.1 reject.
+- FP/world bind of body/mag/cycle; mag remove/seat from reload phase; cycle open on `ShotAccepted` (~90 ms close); reduced-motion scales.
+- Analytic FX: denser muzzle (dual lobe), `ShellCasing`, `Tracer`; `ReducedFlash` hides muzzle+tracer.
+
+**Pending:** native republish (weapon visual package identities change), clean Client/Server/installer identity, Unity EditMode/PlayMode on the locked editor, named player visual review. Does not close FIX/SET/REL/P05/VD exits.
+
 ## ADR-060 — Local tightness (stamina)
 
 2026-11-15. Owner: held Shift sprinted forever; need tightness gating run/slide/jump with 5 s walk restore. [ADR-060](../../decisions.md#adr-060--accepted-local-authoritative-tightness-stamina).
@@ -34,6 +45,17 @@
 - Pure `CombatHudVisual` filter/TTL/ring tests; brandbook / visual brief / VD7 wording updated.
 
 **Pending:** interactive player confirmation on both maps; package/installer identity for a build that includes this change. Does not close FIX/SET/REL/P05.
+
+## Analytic death collapse (soldier.motion.spike.v4)
+
+2026-11-15. Owner playtest: dead bots held a confusing crouch-idle frame until respawn. Software path:
+
+- `SoldierMotionInput.DeathPhase` (`-1` living, `0..1` collapse) and `EvaluateDeathCollapse` in `Generation/Core/SoldierMotion/SoldierMotion.cs` (version `soldier.motion.spike.v4`).
+- `ProductActorPresentation` advances phase over 0.75 s on corpse / `!Alive`, holds a side-lying pose, hides weapons; removes the prior crouch=1 + always-reset corpse hack.
+- Feature registry `motionVersion` + SoldierMotion/TwoBoneIk source hashes refreshed; visual-defect motion identity updated.
+- Pure `SoldierMotionTests` cover collapse lowering, phase=1 determinism, living `-1` baseline and rejected phases.
+
+**Pending:** interactive player confirmation; package/installer identity for a build that includes this change. Physics ragdoll remains optional/unimplemented. Does not close FIX/SET/REL/P05.
 
 ## T086 — Sample-bank combat audio (ADR-055)
 

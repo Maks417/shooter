@@ -102,6 +102,7 @@ namespace Shooter.Generation
     internal static class MotionMath
     {
         public static float Clamp(float value, float min, float max) => Math.Max(min, Math.Min(max, value));
+        public static float Lerp(float a, float b, float t) => a + (b - a) * t;
         public static Float3 Lerp(Float3 a, Float3 b, float t) => Add(a, Scale(Sub(b, a), t));
         public static float Smooth(float t) { t = Clamp(t, 0, 1); return t * t * (3 - 2 * t); }
         public static Float3 Cross(Float3 a, Float3 b) => new Float3(a.Y * b.Z - a.Z * b.Y, a.Z * b.X - a.X * b.Z, a.X * b.Y - a.Y * b.X);

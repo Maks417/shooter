@@ -31,7 +31,6 @@ namespace Shooter.Generation
             if (request.VisualProfile == "gameplay") Add(ContentKind.Collision, "main", GeometryCodec.EncodeCollision(WeaponGeometry.BuildCollision(kind)));
             else
             {
-                // Reconstruct the validated immutable source without accepting arbitrary serialized object types.
                 string source = "{\"schemaId\":\"" + WeaponRecipe.Schema + "\",\"recipeId\":\"" + request.Recipe.RecipeId + "\",\"generatorId\":\"" + WeaponRecipe.GeneratorId + "\",\"generatorVersion\":\"" + WeaponRecipe.GeneratorVersion + "\",\"seed\":\"" + request.Recipe.Seed + "\",\"parameters\":{\"kind\":\"" + kind + "\"},\"dependencies\":[]}";
                 var build = WeaponGeometry.Build(WeaponRecipe.Parse(System.Text.Encoding.UTF8.GetBytes(source)));
                 for (int i = 0; i < build.Lods.Count; i++)
@@ -39,6 +38,9 @@ namespace Shooter.Generation
                     if (cancel.IsCancellationRequested) return Fail(ErrorCode.Cancelled, "Weapon generation cancelled.");
                     Add(ContentKind.Mesh, "lod" + i, GeometryCodec.EncodeMesh(build.Lods[i]));
                 }
+                if (cancel.IsCancellationRequested) return Fail(ErrorCode.Cancelled, "Weapon generation cancelled.");
+                Add(ContentKind.Mesh, "magazine", GeometryCodec.EncodeMesh(build.Magazine));
+                Add(ContentKind.Mesh, "cycle", GeometryCodec.EncodeMesh(build.CyclePart));
             }
             if (cancel.IsCancellationRequested) return Fail(ErrorCode.Cancelled, "Weapon generation cancelled.");
             return new GenerationResult(ErrorCode.None, artifacts, bounds, Array.Empty<Diagnostic>());

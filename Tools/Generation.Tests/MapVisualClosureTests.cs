@@ -75,6 +75,10 @@ public sealed class MapVisualClosureTests : IDisposable
         Assert.True(MapVisualClosure.DecodeSoldierLod(payloads, 0).Positions.Count > 0);
         Assert.True(MapVisualClosure.DecodeRifleLod(payloads, 0).Positions.Count > 0);
         Assert.True(MapVisualClosure.DecodePistolLod(payloads, 0).Positions.Count > 0);
+        Assert.True(MapVisualClosure.DecodeRifleMagazine(payloads).Positions.Count > 0);
+        Assert.True(MapVisualClosure.DecodeRifleCycle(payloads).Positions.Count > 0);
+        Assert.True(MapVisualClosure.DecodePistolMagazine(payloads).Positions.Count > 0);
+        Assert.True(MapVisualClosure.DecodePistolCycle(payloads).Positions.Count > 0);
         for (byte slot = 0; slot < 2; slot++)
             foreach (bool support in new[] { false, true })
             {

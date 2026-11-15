@@ -202,6 +202,21 @@ namespace Shooter.Simulation.Tests.View
         }
 
         [Fact]
+        public void WeaponMechanicsDriveMagazineAndCycleOffsets()
+        {
+            Assert.Equal(0f, FirstPersonWeaponMechanics.MagazineOffset(0f, false, false).Y);
+            Assert.True(FirstPersonWeaponMechanics.MagazineOffset(FirstPersonMagazineTravel.RemoveEnd, false, false).Y < -0.05f);
+            Assert.True(FirstPersonWeaponMechanics.MagazineOffset(FirstPersonMagazineTravel.RemoveEnd, true, false).Y <
+                        FirstPersonWeaponMechanics.MagazineOffset(FirstPersonMagazineTravel.RemoveEnd, false, false).Y);
+            Assert.Equal(0f, FirstPersonWeaponMechanics.CycleOffset(ProductAuthorityActionView.RifleSlot, 0f, false).Z);
+            Assert.True(FirstPersonWeaponMechanics.CycleOffset(ProductAuthorityActionView.RifleSlot, 1f, false).Z < -0.04f);
+            Assert.True(FirstPersonWeaponMechanics.CycleOffset(ProductAuthorityActionView.PistolSlot, 1f, false).Z < -0.02f);
+            Assert.True(Math.Abs(FirstPersonWeaponMechanics.CycleOffset(ProductAuthorityActionView.RifleSlot, 1f, true).Z) <
+                        Math.Abs(FirstPersonWeaponMechanics.CycleOffset(ProductAuthorityActionView.RifleSlot, 1f, false).Z));
+            Assert.False(FirstPersonWeaponMechanics.HasCyclePart(ProductAuthorityActionView.KnifeSlot));
+        }
+
+        [Fact]
         public void HitFeedbackClassifiesAuthorityDamageAndFadesMarkers()
         {
             var local = new EntityId(7);

@@ -6,7 +6,7 @@ namespace Shooter.Generation
 {
     /// <summary>
     /// Procedural knife and grenade meshes for T087 loadout slots. Packaged as map visual props
-    /// (map fingerprint) so the frozen geometry.weapon 1.0.1 rifle/pistol recipes stay unchanged.
+    /// (map fingerprint) so the geometry.weapon rifle/pistol recipes stay independently versioned.
     /// </summary>
     public static class LoadoutPropGeometry
     {

@@ -34,11 +34,20 @@ namespace Shooter.Presentation.Rig
             public SkinnedMeshRenderer Body = null!;
             public MeshRenderer WeaponRenderer = null!;
             public MeshFilter WeaponFilter = null!;
+            public Transform? MagazinePart;
+            public MeshFilter? MagazineFilter;
+            public MeshRenderer? MagazineRenderer;
+            public Transform? CyclePart;
+            public MeshFilter? CycleFilter;
+            public MeshRenderer? CycleRenderer;
+            public float CycleOpen;
             public SoldierMotion Motion = null!;
             public Float3 PreviousFeet;
             public double Distance;
             public ushort PreviousHealth = 100;
             public float ReloadPhase = -1f;
+            public float DeathPhase = -1f;
+            public bool DeathCollapseActive;
             public bool HasPrevious;
             // T062 review metrics (read-only presentation; does not change authority or generator sources).
             public float LastArmBodyClearance;
@@ -80,6 +89,14 @@ namespace Shooter.Presentation.Rig
         private Mesh? firstPersonPistolMesh;
         private Mesh? firstPersonKnifeMesh;
         private Mesh? firstPersonGrenadeMesh;
+        private Mesh? rifleMagazineMesh;
+        private Mesh? pistolMagazineMesh;
+        private Mesh? rifleCycleMesh;
+        private Mesh? pistolCycleMesh;
+        private Mesh? firstPersonRifleMagazineMesh;
+        private Mesh? firstPersonPistolMagazineMesh;
+        private Mesh? firstPersonRifleCycleMesh;
+        private Mesh? firstPersonPistolCycleMesh;
         private Material[]? team1Palette;
         private Material[]? team2Palette;
         private Material? rifleMetal;
@@ -89,6 +106,10 @@ namespace Shooter.Presentation.Rig
         private EntityId localHuman;
         private Camera? fpsCamera;
         private Transform? localWeapon;
+        private Transform? localMagazine;
+        private MeshFilter? localMagazineFilter;
+        private Transform? localCycle;
+        private MeshFilter? localCycleFilter;
         private MeshFilter? triggerHand;
         private MeshFilter? supportHand;
         private readonly Mesh?[] firstPersonHandMeshes = new Mesh?[4];
@@ -157,14 +178,16 @@ namespace Shooter.Presentation.Rig
 
             // Recipes for motion/sockets only â€” no SoldierGeometry/WeaponGeometry mesh generation on the product path.
             rifleRecipe = WeaponRecipe.Parse(Encoding.ASCII.GetBytes(
-                "{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/rifle\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.0.1\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"rifle\"},\"dependencies\":[]}"));
+                "{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/rifle\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.0.2\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"rifle\"},\"dependencies\":[]}"));
             pistolRecipe = WeaponRecipe.Parse(Encoding.ASCII.GetBytes(
-                "{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/pistol\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.0.1\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"pistol\"},\"dependencies\":[]}"));
+                "{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/pistol\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.0.2\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"pistol\"},\"dependencies\":[]}"));
 
             localWeapon = new GameObject("Local FP weapon").transform;
             localWeapon.SetParent(fpsCamera!.transform, false);
             localWeapon.gameObject.AddComponent<MeshFilter>();
             localWeapon.gameObject.AddComponent<MeshRenderer>();
+            localMagazineFilter = CreateWeaponChild(localWeapon, "FP magazine", out localMagazine);
+            localCycleFilter = CreateWeaponChild(localWeapon, "FP cycle", out localCycle);
             MeshFilter CreateHand(string name)
             {
                 var hand = new GameObject(name);
@@ -218,12 +241,20 @@ namespace Shooter.Presentation.Rig
                 pistolMesh = Own(Upload(MapVisualClosure.DecodePistolLod(visuals, weaponLod), false));
                 knifeMesh = Own(Upload(MapVisualClosure.DecodeKnifeLod(visuals, weaponLod), false));
                 grenadeMesh = Own(Upload(MapVisualClosure.DecodeGrenadeLod(visuals, weaponLod), false));
+                rifleMagazineMesh = Own(Upload(MapVisualClosure.DecodeRifleMagazine(visuals), false));
+                pistolMagazineMesh = Own(Upload(MapVisualClosure.DecodePistolMagazine(visuals), false));
+                rifleCycleMesh = Own(Upload(MapVisualClosure.DecodeRifleCycle(visuals), false));
+                pistolCycleMesh = Own(Upload(MapVisualClosure.DecodePistolCycle(visuals), false));
                 // The camera sees equipment at arm's length even on Low. Keep world LOD
                 // scalability without replacing the player's sights/grips with distant proxies.
                 firstPersonRifleMesh = weaponLod == 0 ? rifleMesh : Own(Upload(MapVisualClosure.DecodeRifleLod(visuals, 0), false));
                 firstPersonPistolMesh = weaponLod == 0 ? pistolMesh : Own(Upload(MapVisualClosure.DecodePistolLod(visuals, 0), false));
                 firstPersonKnifeMesh = weaponLod == 0 ? knifeMesh : Own(Upload(MapVisualClosure.DecodeKnifeLod(visuals, 0), false));
                 firstPersonGrenadeMesh = weaponLod == 0 ? grenadeMesh : Own(Upload(MapVisualClosure.DecodeGrenadeLod(visuals, 0), false));
+                firstPersonRifleMagazineMesh = rifleMagazineMesh;
+                firstPersonPistolMagazineMesh = pistolMagazineMesh;
+                firstPersonRifleCycleMesh = rifleCycleMesh;
+                firstPersonPistolCycleMesh = pistolCycleMesh;
                 for (byte slot = 0; slot < 2; slot++)
                     for (int hand = 0; hand < 2; hand++)
                         firstPersonHandMeshes[slot * 2 + hand] = Own(Upload(MapVisualClosure.DecodeFirstPersonHand(visuals, slot, hand == 1), false));
@@ -273,10 +304,18 @@ namespace Shooter.Presentation.Rig
                 pistolMesh = null;
                 knifeMesh = null;
                 grenadeMesh = null;
+                rifleMagazineMesh = null;
+                pistolMagazineMesh = null;
+                rifleCycleMesh = null;
+                pistolCycleMesh = null;
                 firstPersonRifleMesh = null;
                 firstPersonPistolMesh = null;
                 firstPersonKnifeMesh = null;
                 firstPersonGrenadeMesh = null;
+                firstPersonRifleMagazineMesh = null;
+                firstPersonPistolMagazineMesh = null;
+                firstPersonRifleCycleMesh = null;
+                firstPersonPistolCycleMesh = null;
                 throw new InvalidOperationException("Required packaged actor visuals missing/corrupt; refusing generation fallback: " + error.Message, error);
             }
         }
@@ -382,7 +421,17 @@ namespace Shooter.Presentation.Rig
             corpseScratch.Clear();
 
             if (combatEvents != null)
+            {
                 actions.ApplyEvents(combatEvents);
+                for (int i = 0; i < combatEvents.Count; i++)
+                {
+                    var ev = combatEvents[i];
+                    if (ev.Kind != CombatEventKind.ShotAccepted) continue;
+                    if (!avatars.TryGetValue(ev.Instigator.Value, out var shooter)) continue;
+                    if (FirstPersonWeaponMechanics.HasCyclePart(shooter.WeaponSlot))
+                        shooter.CycleOpen = Mathf.Max(shooter.CycleOpen, FirstPersonWeaponMechanics.CycleImpulse);
+                }
+            }
 
             if (snapshot != null && lifecycle != null)
             {
@@ -425,6 +474,11 @@ namespace Shooter.Presentation.Rig
                 if (avatars.TryGetValue(corpseEnsureScratch[i].Value, out var existing))
                 {
                     existing.Corpse = true;
+                    if (!existing.DeathCollapseActive)
+                    {
+                        existing.DeathCollapseActive = true;
+                        existing.DeathPhase = 0f;
+                    }
                     actions.SyncLifecycle(existing.EntityId, existing.WeaponSlot, false);
                     continue;
                 }
@@ -506,6 +560,7 @@ namespace Shooter.Presentation.Rig
                     rotation.Z + composition.Z);
                 if (supportHand != null)
                     supportHand.transform.localPosition = V(FirstPersonHandling.SupportHandOffset(slot, reload, reducedMotion));
+                PoseLocalMechanicalParts(slot, reload, magazineEmpty, localView.CycleOpen01, reducedMotion);
             }
             else if (localViewHuman.IsValid)
             {
@@ -547,6 +602,8 @@ namespace Shooter.Presentation.Rig
                 Team = state.Team,
                 Corpse = corpse,
                 WeaponSlot = slot,
+                DeathCollapseActive = corpse,
+                DeathPhase = corpse ? 0f : -1f,
                 Root = new GameObject("Actor " + state.EntityId.Value).transform,
                 Bones = new Transform[SoldierSkeleton.JointCount],
                 // Generation SoldierMotion spike validates rifle sockets; pistol mesh shares the bind.
@@ -579,6 +636,10 @@ namespace Shooter.Presentation.Rig
             avatar.Weapon.SetParent(avatar.Root, false);
             avatar.WeaponFilter = avatar.Weapon.gameObject.AddComponent<MeshFilter>();
             avatar.WeaponRenderer = avatar.Weapon.gameObject.AddComponent<MeshRenderer>();
+            avatar.MagazineFilter = CreateWeaponChild(avatar.Weapon, "Held magazine", out avatar.MagazinePart);
+            avatar.MagazineRenderer = avatar.MagazinePart!.GetComponent<MeshRenderer>();
+            avatar.CycleFilter = CreateWeaponChild(avatar.Weapon, "Held cycle", out avatar.CyclePart);
+            avatar.CycleRenderer = avatar.CyclePart!.GetComponent<MeshRenderer>();
             ApplyHeldWeaponVisual(avatar, slot);
             ApplyLocalHumanShadowMode(avatar, state.EntityId.Equals(localHuman) && !corpse && state.Alive);
 
@@ -607,7 +668,7 @@ namespace Shooter.Presentation.Rig
                 ApplyHeldWeaponVisual(avatar, slot);
             }
 
-            // Authority ReloadStarted/Completed only â€” never magazine decrease.
+            // Authority ReloadStarted/Completed only — never magazine decrease.
             if (!avatar.Corpse && state.Alive)
                 avatar.ReloadPhase = actions.ResolveReloadPhase(state.EntityId, completedTick, dtSeconds);
             else
@@ -615,30 +676,47 @@ namespace Shooter.Presentation.Rig
                 avatar.ReloadPhase = -1f;
                 actions.SyncLifecycle(state.EntityId, slot, false);
             }
+            // World cycle follows the same cosmetic close rate as the local FP spring.
+            if (!avatar.Corpse && state.Alive && FirstPersonWeaponMechanics.HasCyclePart(slot))
+                avatar.CycleOpen = Mathf.MoveTowards(avatar.CycleOpen, 0f, dtSeconds / 0.09f);
+            else
+                avatar.CycleOpen = 0f;
 
-            bool reset = !avatar.HasPrevious || avatar.Corpse || !state.Alive;
-            ground.Height = state.Feet.Y;
-            float yaw = state.AimYaw;
-            float pitch = Mathf.Clamp(state.AimPitch, -SoldierMotion.MaxAimPitchRadians, SoldierMotion.MaxAimPitchRadians);
-            float aimYaw = Mathf.Clamp(0f, -SoldierMotion.MaxAimYawRadians, SoldierMotion.MaxAimYawRadians);
-            if (avatar.Corpse || !state.Alive)
+            bool dying = avatar.Corpse || !state.Alive;
+            if (dying)
             {
+                if (!avatar.DeathCollapseActive)
+                {
+                    avatar.DeathCollapseActive = true;
+                    avatar.DeathPhase = 0f;
+                }
+                else
+                    avatar.DeathPhase = Mathf.Min(1f, avatar.DeathPhase + dtSeconds / SoldierMotion.DeathCollapseDurationSeconds);
                 speed = 0f;
-                pitch = 0f;
             }
 
-            bool crouching = movement.HasValue && movement.Value.Stance == Stance.Crouching;
+            // Reset only on first living pose or the first death-collapse frame (clears gait contacts).
+            bool reset = !avatar.HasPrevious || (dying && avatar.DeathPhase <= 1e-4f);
+            ground.Height = state.Feet.Y;
+            float yaw = state.AimYaw;
+            float pitch = dying
+                ? 0f
+                : Mathf.Clamp(state.AimPitch, -SoldierMotion.MaxAimPitchRadians, SoldierMotion.MaxAimPitchRadians);
+            float aimYaw = Mathf.Clamp(0f, -SoldierMotion.MaxAimYawRadians, SoldierMotion.MaxAimYawRadians);
+
+            bool crouching = !dying && movement.HasValue && movement.Value.Stance == Stance.Crouching;
             if (movement.HasValue && movement.Value.Sliding) speed = 0f; // Slide momentum is not a running gait.
             var input = new SoldierMotionInput(
                 state.Feet,
                 yaw,
                 avatar.Distance,
-                avatar.Corpse || !state.Alive ? 0f : speed,
-                avatar.Corpse || !state.Alive || crouching ? 1f : 0f,
+                dying ? 0f : speed,
+                crouching ? 1f : 0f,
                 aimYaw,
                 pitch,
                 avatar.ReloadPhase,
-                reset);
+                reset,
+                dying ? avatar.DeathPhase : -1f);
             avatar.Root.position = V(state.Feet);
             var pose = avatar.Motion.Evaluate(input, ground);
             for (int j = 0; j < SoldierSkeleton.JointCount; j++)
@@ -651,6 +729,7 @@ namespace Shooter.Presentation.Rig
 
             avatar.Weapon.SetPositionAndRotation(V(weaponPosition), Q(weaponRotation));
             avatar.Weapon.gameObject.SetActive(!avatar.Corpse && state.Alive);
+            PoseHeldMechanicalParts(avatar, slot, state.Magazine == 0);
             // Re-assert each pose so respawn / corpse flip keeps local FP body+weapon ShadowsOnly.
             ApplyLocalHumanShadowMode(avatar, state.EntityId.Equals(localHuman) && !avatar.Corpse && state.Alive);
 
@@ -681,6 +760,24 @@ namespace Shooter.Presentation.Rig
             avatar.Weapon.name = SlotWeaponName(slot, false);
             avatar.WeaponFilter.sharedMesh = HeldMeshForSlot(slot);
             avatar.WeaponRenderer.sharedMaterials = new[] { rifleMetal, riflePolymer };
+            bool guns = FirstPersonWeaponMechanics.HasMagazinePart(slot);
+            if (avatar.MagazineFilter != null && avatar.MagazinePart != null)
+            {
+                avatar.MagazineFilter.sharedMesh = guns ? HeldMagazineForSlot(slot) : null;
+                if (avatar.MagazineRenderer != null)
+                    avatar.MagazineRenderer.sharedMaterials = new[] { rifleMetal, riflePolymer };
+                avatar.MagazinePart.gameObject.SetActive(guns);
+                avatar.MagazinePart.localPosition = Vector3.zero;
+            }
+            if (avatar.CycleFilter != null && avatar.CyclePart != null)
+            {
+                avatar.CycleFilter.sharedMesh = guns ? HeldCycleForSlot(slot) : null;
+                if (avatar.CycleRenderer != null)
+                    avatar.CycleRenderer.sharedMaterials = new[] { rifleMetal, riflePolymer };
+                avatar.CyclePart.gameObject.SetActive(guns);
+                avatar.CyclePart.localPosition = Vector3.zero;
+            }
+            avatar.CycleOpen = 0f;
         }
 
         private void ApplyLocalWeaponVisual(byte slot)
@@ -689,6 +786,21 @@ namespace Shooter.Presentation.Rig
             localWeapon.name = SlotWeaponName(slot, true);
             localWeapon.GetComponent<MeshFilter>().sharedMesh = LocalMeshForSlot(slot);
             localWeapon.GetComponent<MeshRenderer>().sharedMaterials = new[] { rifleMetal, riflePolymer };
+            bool guns = FirstPersonWeaponMechanics.HasMagazinePart(slot);
+            if (localMagazineFilter != null && localMagazine != null)
+            {
+                localMagazineFilter.sharedMesh = guns ? LocalMagazineForSlot(slot) : null;
+                localMagazine.GetComponent<MeshRenderer>().sharedMaterials = new[] { rifleMetal, riflePolymer };
+                localMagazine.gameObject.SetActive(guns);
+                localMagazine.localPosition = Vector3.zero;
+            }
+            if (localCycleFilter != null && localCycle != null)
+            {
+                localCycleFilter.sharedMesh = guns ? LocalCycleForSlot(slot) : null;
+                localCycle.GetComponent<MeshRenderer>().sharedMaterials = new[] { rifleMetal, riflePolymer };
+                localCycle.gameObject.SetActive(guns);
+                localCycle.localPosition = Vector3.zero;
+            }
             if (triggerHand != null && supportHand != null)
             {
                 int index = (slot > 1 ? 1 : slot) * 2;
@@ -700,6 +812,43 @@ namespace Shooter.Presentation.Rig
                     supportHand.GetComponent<MeshRenderer>().sharedMaterials = firstPersonHandMaterials;
                     supportHand.transform.localPosition = Vector3.zero;
                 }
+            }
+        }
+
+        private void PoseLocalMechanicalParts(byte slot, float reload, bool magazineEmpty, float cycleOpen, bool reducedMotion)
+        {
+            if (localMagazine != null)
+            {
+                bool show = FirstPersonWeaponMechanics.HasMagazinePart(slot);
+                localMagazine.gameObject.SetActive(show);
+                if (show)
+                    localMagazine.localPosition = V(FirstPersonWeaponMechanics.MagazineOffset(reload, magazineEmpty, reducedMotion));
+            }
+            if (localCycle != null)
+            {
+                bool show = FirstPersonWeaponMechanics.HasCyclePart(slot);
+                localCycle.gameObject.SetActive(show);
+                if (show)
+                    localCycle.localPosition = V(FirstPersonWeaponMechanics.CycleOffset(slot, cycleOpen, reducedMotion));
+            }
+        }
+
+        private void PoseHeldMechanicalParts(Avatar avatar, byte slot, bool magazineEmpty)
+        {
+            float reload = avatar.ReloadPhase > 0f ? avatar.ReloadPhase : 0f;
+            if (avatar.MagazinePart != null)
+            {
+                bool show = FirstPersonWeaponMechanics.HasMagazinePart(slot) && !avatar.Corpse;
+                avatar.MagazinePart.gameObject.SetActive(show);
+                if (show)
+                    avatar.MagazinePart.localPosition = V(FirstPersonWeaponMechanics.MagazineOffset(reload, magazineEmpty, false));
+            }
+            if (avatar.CyclePart != null)
+            {
+                bool show = FirstPersonWeaponMechanics.HasCyclePart(slot) && !avatar.Corpse;
+                avatar.CyclePart.gameObject.SetActive(show);
+                if (show)
+                    avatar.CyclePart.localPosition = V(FirstPersonWeaponMechanics.CycleOffset(slot, avatar.CycleOpen, false));
             }
         }
 
@@ -726,6 +875,27 @@ namespace Shooter.Presentation.Rig
             3 => firstPersonGrenadeMesh,
             _ => firstPersonRifleMesh
         };
+
+        private Mesh? HeldMagazineForSlot(byte slot) =>
+            slot == ProductAuthorityActionView.PistolSlot ? pistolMagazineMesh : rifleMagazineMesh;
+
+        private Mesh? LocalMagazineForSlot(byte slot) =>
+            slot == ProductAuthorityActionView.PistolSlot ? firstPersonPistolMagazineMesh : firstPersonRifleMagazineMesh;
+
+        private Mesh? HeldCycleForSlot(byte slot) =>
+            slot == ProductAuthorityActionView.PistolSlot ? pistolCycleMesh : rifleCycleMesh;
+
+        private Mesh? LocalCycleForSlot(byte slot) =>
+            slot == ProductAuthorityActionView.PistolSlot ? firstPersonPistolCycleMesh : firstPersonRifleCycleMesh;
+
+        private static MeshFilter CreateWeaponChild(Transform parent, string name, out Transform child)
+        {
+            child = new GameObject(name).transform;
+            child.SetParent(parent, false);
+            var renderer = child.gameObject.AddComponent<MeshRenderer>();
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            return child.gameObject.AddComponent<MeshFilter>();
+        }
 
         private static Float3 FindSocket(FrozenList<WeaponSocket> sockets, string id)
         {
@@ -854,6 +1024,8 @@ namespace Shooter.Presentation.Rig
                 : UnityEngine.Rendering.ShadowCastingMode.On;
             if (avatar.Body != null) avatar.Body.shadowCastingMode = mode;
             if (avatar.WeaponRenderer != null) avatar.WeaponRenderer.shadowCastingMode = mode;
+            if (avatar.MagazineRenderer != null) avatar.MagazineRenderer.shadowCastingMode = mode;
+            if (avatar.CycleRenderer != null) avatar.CycleRenderer.shadowCastingMode = mode;
         }
 
         private static Vector3 V(Float3 v) => new Vector3(v.X, v.Y, v.Z);

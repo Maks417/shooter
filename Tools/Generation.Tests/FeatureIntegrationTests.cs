@@ -38,10 +38,21 @@ public sealed class FeatureIntegrationTests
     [InlineData("metal")]
     public void VersionMigrationFixturesRejectLegacyInsteadOfReinterpreting(string name)
     {
-        byte[] before = File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "FeatureFixtures", name + "-1.0.0.json"));
-        byte[] after = File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "FeatureFixtures", name + "-1.0.1.json"));
-        if (name == "rifle") { Assert.Throws<FormatException>(() => WeaponRecipe.Parse(before)); Assert.Equal("1.0.1", WeaponRecipe.Parse(after).Document.GeneratorVersion); }
-        else { Assert.Throws<FormatException>(() => MaterialRecipe.Parse(before)); Assert.Equal("1.0.1", MaterialRecipe.Parse(after).Document.GeneratorVersion); }
+        if (name == "rifle")
+        {
+            byte[] before = File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "FeatureFixtures", "rifle-1.0.1.json"));
+            byte[] after = File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "FeatureFixtures", "rifle-1.0.2.json"));
+            Assert.Throws<FormatException>(() => WeaponRecipe.Parse(before));
+            Assert.Throws<FormatException>(() => WeaponRecipe.Parse(File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "FeatureFixtures", "rifle-1.0.0.json"))));
+            Assert.Equal("1.0.2", WeaponRecipe.Parse(after).Document.GeneratorVersion);
+        }
+        else
+        {
+            byte[] before = File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "FeatureFixtures", name + "-1.0.0.json"));
+            byte[] after = File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "FeatureFixtures", name + "-1.0.1.json"));
+            Assert.Throws<FormatException>(() => MaterialRecipe.Parse(before));
+            Assert.Equal("1.0.1", MaterialRecipe.Parse(after).Document.GeneratorVersion);
+        }
     }
     [Fact]
     public async Task ActualWeaponAndMaterialNodesPublishReproduceAndLeaseThroughFrozenCodec()

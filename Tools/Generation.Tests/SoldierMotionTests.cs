@@ -232,6 +232,77 @@ public sealed class SoldierMotionTests
         pose=motion.Evaluate(new SoldierMotionInput(new Float3(0,0,0),0,0,0,aimYawRadians:.1f),ground);Assert.False(pose.UpperBodyCacheHit);
         pose=motion.Evaluate(new SoldierMotionInput(new Float3(0,0,0),0,0,0,aimYawRadians:.1f,reloadPhase:.5f),ground);Assert.False(pose.UpperBodyCacheHit);
     }
+    [Fact]
+    public void DeathCollapseLowersPelvisAndHeadTowardGroundAndStaysFinite()
+    {
+        var motion=new SoldierMotion(Rifle());var ground=new Ground();
+        var standing=motion.Evaluate(new SoldierMotionInput(new Float3(0,0,0),0,0,0),ground);
+        float standPelvis=standing.WorldPositions[1].Y; float standHead=standing.WorldPositions[6].Y;
+        float midPelvis=0, midHead=0, endPelvis=0, endHead=0;
+        for (int i = 0; i <= 20; i++)
+        {
+            float phase = i / 20f;
+            var pose = motion.Evaluate(new SoldierMotionInput(new Float3(0,0,0),0,0,0,deathPhase:phase),ground);
+            Assert.False(pose.UpperBodyCacheHit);
+            Assert.InRange(pose.GroundQueries,0,2);
+            for (int j = 0; j < SoldierSkeleton.JointCount; j++)
+            {
+                Assert.True(float.IsFinite(pose.WorldPositions[j].X) && float.IsFinite(pose.WorldPositions[j].Y) && float.IsFinite(pose.WorldPositions[j].Z));
+                Assert.True(pose.WorldPositions[j].Y >= -1e-3f);
+            }
+            if (i == 10) { midPelvis = pose.WorldPositions[1].Y; midHead = pose.WorldPositions[6].Y; }
+            if (i == 20) { endPelvis = pose.WorldPositions[1].Y; endHead = pose.WorldPositions[6].Y; }
+        }
+        Assert.True(midPelvis < standPelvis - .15f);
+        Assert.True(endPelvis < midPelvis);
+        Assert.True(endHead < standHead - .4f);
+        Assert.InRange(endPelvis, 0f, .35f);
+        output.WriteLine("motion="+SoldierMotion.Version+" deathCollapse standPelvis="+standPelvis+" mid="+midPelvis+" end="+endPelvis+" endHead="+endHead);
+    }
+    [Fact]
+    public void DeathCollapsePhaseOneIsDeterministicAndIdempotent()
+    {
+        var motion=new SoldierMotion(Rifle());var ground=new Ground();
+        var first=motion.Evaluate(new SoldierMotionInput(new Float3(1,.5f,-2),.3f,0,0,deathPhase:1f),ground);
+        var snapshot=new Float3[SoldierSkeleton.JointCount];
+        var rotX=new float[SoldierSkeleton.JointCount];var rotY=new float[SoldierSkeleton.JointCount];
+        var rotZ=new float[SoldierSkeleton.JointCount];var rotW=new float[SoldierSkeleton.JointCount];
+        for (int j = 0; j < SoldierSkeleton.JointCount; j++)
+        {
+            snapshot[j]=first.WorldPositions[j];
+            rotX[j]=first.WorldRotations[j].X; rotY[j]=first.WorldRotations[j].Y;
+            rotZ[j]=first.WorldRotations[j].Z; rotW[j]=first.WorldRotations[j].W;
+        }
+        var second=motion.Evaluate(new SoldierMotionInput(new Float3(1,.5f,-2),.3f,0,0,deathPhase:1f),ground);
+        Assert.Same(first, second);
+        for (int j = 0; j < SoldierSkeleton.JointCount; j++)
+        {
+            Assert.InRange(Distance(snapshot[j], second.WorldPositions[j]), 0, 1e-6);
+            Assert.InRange(Math.Abs(rotX[j] - second.WorldRotations[j].X), 0, 1e-6);
+            Assert.InRange(Math.Abs(rotY[j] - second.WorldRotations[j].Y), 0, 1e-6);
+            Assert.InRange(Math.Abs(rotZ[j] - second.WorldRotations[j].Z), 0, 1e-6);
+            Assert.InRange(Math.Abs(rotW[j] - second.WorldRotations[j].W), 0, 1e-6);
+        }
+        Assert.Equal(0f, second.WorldPositions[0].Y); // Ground mode0 samples height 0, root clamps to ground.
+        Assert.True(second.WorldPositions[1].Y < .35f);
+    }
+    [Fact]
+    public void LivingDeathPhaseNegativeMatchesBaselineStandingSample()
+    {
+        var motion=new SoldierMotion(Rifle());var ground=new Ground();
+        var living=motion.Evaluate(new SoldierMotionInput(new Float3(0,0,0),0,0,0),ground);
+        var pelvis=living.WorldPositions[1]; var head=living.WorldPositions[6]; var weapon=living.WeaponPosition;
+        var explicitLiving=motion.Evaluate(new SoldierMotionInput(new Float3(0,0,0),0,0,0,deathPhase:-1f),ground);
+        Assert.InRange(Distance(pelvis, explicitLiving.WorldPositions[1]), 0, 1e-6);
+        Assert.InRange(Distance(head, explicitLiving.WorldPositions[6]), 0, 1e-6);
+        Assert.InRange(Distance(weapon, explicitLiving.WeaponPosition), 0, 1e-6);
+    }
+    [Fact]
+    public void UnsupportedDeathPhaseRejects()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(()=>new SoldierMotionInput(new Float3(0,0,0),0,0,0,deathPhase:-.5f));
+        Assert.Throws<ArgumentOutOfRangeException>(()=>new SoldierMotionInput(new Float3(0,0,0),0,0,0,deathPhase:1.1f));
+    }
     private static Float3 Transform(Float3 origin,Quat q,Float3 p)
     {
         float tx=2*(q.Y*p.Z-q.Z*p.Y),ty=2*(q.Z*p.X-q.X*p.Z),tz=2*(q.X*p.Y-q.Y*p.X);
