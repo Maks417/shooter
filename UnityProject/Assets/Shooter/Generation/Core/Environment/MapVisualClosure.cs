@@ -59,6 +59,14 @@ namespace Shooter.Generation.Environment
             "material-soldier-team2-goggles.bin"
         };
 
+        public static string MaterialCompanionPath(string albedoPath, string plane)
+        {
+            if (plane != "normal" && plane != "mask") throw new ArgumentOutOfRangeException(nameof(plane));
+            if (string.IsNullOrEmpty(albedoPath) || !albedoPath.EndsWith(".bin", StringComparison.Ordinal))
+                throw new ArgumentException("A packaged material .bin path is required.", nameof(albedoPath));
+            return albedoPath.Substring(0, albedoPath.Length - 4) + "-" + plane + ".bin";
+        }
+
         public static ContentId MapFingerprint(string mapId) =>
             GeneratorFingerprint.Compute(MapRecipe.GeneratorIdFor(mapId), MapRecipe.GeneratorVersion);
 
@@ -89,7 +97,12 @@ namespace Shooter.Generation.Environment
             list.AddRange(SoldierLodPaths);
             list.AddRange(RifleLodPaths);
             list.AddRange(PistolLodPaths);
-            list.AddRange(MapMaterialPaths);
+            foreach (string path in MapMaterialPaths)
+            {
+                list.Add(path);
+                list.Add(MaterialCompanionPath(path, "normal"));
+                list.Add(MaterialCompanionPath(path, "mask"));
+            }
             list.AddRange(WeaponMaterialPaths);
             list.AddRange(SoldierMaterialPaths);
             return list;

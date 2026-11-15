@@ -28,7 +28,7 @@
       "package": "com.unity.render-pipelines.universal",
       "version": "17.3.0",
       "asset": "Shaders/Lit.shader",
-      "reason": "Engine URP shading for a code-created constant-color material, no surface textures"
+      "reason": "Locked engine URP shading for code-created numeric materials and verified procedurally generated surface planes; no external art"
     },
     {
       "package": "com.unity.render-pipelines.core",

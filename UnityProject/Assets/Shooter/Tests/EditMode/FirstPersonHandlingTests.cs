@@ -105,7 +105,8 @@ namespace Shooter.Tests
                 camera.transform.SetParent(root.transform);
                 var presentation = ProductActorPresentation.Create(root.transform, camera);
                 var hash = ContentIdentity.Hash(System.Text.Encoding.ASCII.GetBytes("fp-handling-test"));
-                presentation.BindPackagedVisuals(PackagedVisualPayloads.FromBuild(MapPackageBuilder.Build("training-compound", "low", hash)));
+                var visuals = PackagedVisualPayloads.FromBuild(MapPackageBuilder.Build("training-compound", "low", hash));
+                presentation.BindPackagedVisuals(visuals);
                 var lifecycle = new Lifecycle();
                 for (byte slot = 0; slot < 2; slot++)
                 {
@@ -116,6 +117,11 @@ namespace Shooter.Tests
                             new ParticipantState(new ParticipantId(1), "Human", 1, true, id, new LifeId((uint)slot + 1), true, 0, 0, 0) }, 0);
                     presentation.Sync(snapshot, lifecycle, null, 0, id, true, .3f, Array.Empty<CombatEvent>(), 10);
                     var weapon = camera.transform.Find(slot == 0 ? "Local FP rifle" : "Local FP pistol");
+                    Assert.That(weapon.GetComponent<MeshFilter>().sharedMesh.vertexCount,
+                        Is.EqualTo(slot == 0
+                            ? MapVisualClosure.DecodeRifleLod(visuals, 0).Positions.Count
+                            : MapVisualClosure.DecodePistolLod(visuals, 0).Positions.Count),
+                        "Low must retain near-field first-person weapon detail independently of world LOD.");
                     Vector3 sight = new Vector3(0, slot == 0 ? .115f : .1f, slot == 0 ? -.04f : -.07f);
                     Vector3 eye = camera.transform.InverseTransformPoint(weapon.TransformPoint(sight));
                     Assert.That(eye.x, Is.EqualTo(0f).Within(.00001f));

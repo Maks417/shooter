@@ -360,7 +360,8 @@ namespace Shooter.Presentation.Session
                         Time.unscaledDeltaTime,
                         combatEvents,
                         session.CompletedTick,
-                        movementReader);
+                        movementReader,
+                        reducedMotion: reducedCameraMotion);
                     visualReview?.SetContext(boundMapId, QualitySettings.names[QualitySettings.GetQualityLevel()], session.CompletedTick);
                 }
 

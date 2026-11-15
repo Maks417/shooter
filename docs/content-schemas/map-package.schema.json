@@ -31,7 +31,7 @@
       ]
     },
     "generatorVersion": {
-      "const": "1.0.0"
+      "const": "1.0.1"
     },
     "seed": {
       "type": "string",

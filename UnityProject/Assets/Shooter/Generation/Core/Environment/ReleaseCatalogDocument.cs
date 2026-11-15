@@ -50,7 +50,7 @@ namespace Shooter.Generation.Environment
                     ["supportedModes"] = new List<object?> { "team-deathmatch" },
                     ["supportedTeamSizes"] = new List<object?> { 5, 6 },
                     ["recipeSeed"] = seed.ToString(CultureInfo.InvariantCulture),
-                    ["recipeVersion"] = mapId == "depot-yard" ? "map.depot.1.0.0" : "map.compound.1.0.0",
+                    ["recipeVersion"] = MapRecipe.GeneratorIdFor(mapId) + "." + MapRecipe.GeneratorVersion,
                     ["gameplayRootSha256"] = roots["gameplay"].ToString(),
                     ["lowVisualRootSha256"] = roots["low"].ToString(),
                     ["balancedVisualRootSha256"] = roots["balanced"].ToString(),

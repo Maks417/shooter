@@ -88,15 +88,8 @@ namespace Shooter.Tests
                 scene.BindVerified(visuals);
                 Assert.That(scene.IsReady, Is.True);
                 Assert.That(scene.ShowcaseActorCount, Is.EqualTo(3));
-                var resources = root.GetComponentsInChildren<MeshRenderer>()
-                    .SelectMany(r => r.sharedMaterials).Distinct().Cast<Object>().ToList();
-                var frame = (RenderTexture)scene.Frame!;
-                resources.Add(frame);
-                resources.Add((RenderTexture)scene.MapCard("training-compound")!);
-                resources.Add((RenderTexture)scene.MapCard("depot-yard")!);
-                Object.DestroyImmediate(root);
-                Assert.That(resources.All(r => r == null), Is.True,
-                    "Destroying the shell child must release its material/target ownership.");
+                // Normal MonoBehaviour destruction callbacks require PlayMode. Automatic GPU
+                // teardown is covered by MenuStagingLifetimeTests after actual activation.
             }
             finally
             {

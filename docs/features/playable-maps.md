@@ -2,7 +2,7 @@
 
 Status reviewed 2026-11-14 from 84befb9 / a54ed83: ADR-035/038 packages now include persisted catalog/gameplay metadata and actual map/soldier/weapon visual closure; runtime consumes verified bytes. Both maps have ≥12 slots/team, topology/spawn policy software, and Depot seed 460072031. Native editor bridge/runtime installer exist, but normal Compile-GameContent still publishes software-grid NVB1. [T067](../next-playable-build.md) must complete native publication, partial/fallback path semantics and real native route/spawn/player validation. The `7cd7e81` archive is available for [playtest](../playtest-guide.md); publication/Unity open-quad tests alone do not accept MAP/FIX gates.
 
-Superseding layout note 2026-11-15 (T076, ADR-044): both maps are now compact mirror-symmetric three-lane arenas — Training Compound 88 × 104 m, Depot Yard 80 × 112 m — specified in [compact TDM map layouts](tdm-map-layouts.md). The 256 m rows below describe the retired layouts; ids, seeds and package format are unchanged.
+Superseding layout note 2026-11-15 (T076, ADR-045): both maps are now compact mirror-symmetric three-lane arenas — Training Compound 88 × 104 m, Depot Yard 80 × 112 m — specified in [compact TDM map layouts](tdm-map-layouts.md). The 256 m rows below describe the retired layouts; ids, seeds and package format are unchanged.
 
 ## Catalog and layouts
 

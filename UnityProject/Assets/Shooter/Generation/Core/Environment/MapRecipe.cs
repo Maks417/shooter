@@ -15,7 +15,7 @@ namespace Shooter.Generation.Environment
         public const string DepotGenerator = "map.depot";
         public const string PackageSchema = "shooter.map-package.v1";
         public const string MetadataSchema = "shooter.map-metadata.v1";
-        public const string GeneratorVersion = "1.0.0";
+        public const string GeneratorVersion = "1.0.1";
 
         public RecipeDocument Document { get; }
         public byte[] CanonicalSource { get; }
@@ -75,7 +75,7 @@ namespace Shooter.Generation.Environment
             string generator = depot ? DepotGenerator : CompoundGenerator;
             string seed = depot ? "460072031" : "460072030";
             string recipeId = mapId;
-            string json = "{\"dependencies\":[],\"generatorId\":\"" + generator + "\",\"generatorVersion\":\"1.0.0\",\"parameters\":{\"chunkSizeMeters\":32,\"halfExtentMeters\":128,\"mapId\":\"" +
+            string json = "{\"dependencies\":[],\"generatorId\":\"" + generator + "\",\"generatorVersion\":\"" + GeneratorVersion + "\",\"parameters\":{\"chunkSizeMeters\":32,\"halfExtentMeters\":128,\"mapId\":\"" +
                 mapId + "\",\"navAdapterFormat\":\"unity.navmesh.bake.v1\",\"navAdapterVersion\":1},\"recipeId\":\"" + recipeId +
                 "\",\"schemaId\":\"" + schema + "\",\"seed\":\"" + seed + "\"}";
             return CanonicalJson.Encode(Encoding.UTF8.GetBytes(json));

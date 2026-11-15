@@ -88,6 +88,37 @@ public static class ShooterBuild
         WriteJson(Argument("-shooterReport"), new ToolchainProof { editorVersion = expected.editorVersion, editorRevision = expected.editorRevision, toolchainHash = HashFile(LockPath) });
         Debug.Log("SHOOTER_TOOLCHAIN_VERIFIED");
     });
+    // Runtime-created packaged surfaces need these local shader_feature combinations in players.
+    // Numeric materials retain the variants without adding source textures or disabling stripping.
+    private static readonly string[] ProductSurfaceVariantPaths =
+    {
+        "Assets/Shooter/Settings/ProductSurfaceNormal.mat",
+        "Assets/Shooter/Settings/ProductSurfaceMask.mat",
+        "Assets/Shooter/Settings/ProductSurfaceNormalMask.mat"
+    };
+    public static void ConfigureProductSurfaceVariants() => Guard(() =>
+    {
+        CheckToolchain();
+        var shader = Shader.Find("Universal Render Pipeline/Lit");
+        if (shader == null) throw new InvalidOperationException("Locked URP Lit shader missing");
+        for (int i = 0; i < ProductSurfaceVariantPaths.Length; i++)
+        {
+            string path = ProductSurfaceVariantPaths[i];
+            var material = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (material == null)
+            {
+                material = new Material(shader);
+                AssetDatabase.CreateAsset(material, path);
+            }
+            material.shaderKeywords = i == 0 ? new[] { "_NORMALMAP" } : i == 1
+                ? new[] { "_METALLICSPECGLOSSMAP", "_OCCLUSIONMAP" }
+                : new[] { "_NORMALMAP", "_METALLICSPECGLOSSMAP", "_OCCLUSIONMAP" };
+            EditorUtility.SetDirty(material);
+        }
+        AssetDatabase.SaveAssets();
+        WriteSettingsProvenance();
+        Debug.Log("SHOOTER_PRODUCT_SURFACE_VARIANTS_CONFIGURED");
+    });
     public static void InitializeFoundation() => Guard(() =>
     {
         CheckToolchain();
@@ -299,7 +330,13 @@ public static class ShooterBuild
                 for (int i = 0; i < qualityPaths.Length; i++) { QualitySettings.SetQualityLevel(i, false); QualitySettings.renderPipeline = null; }
                 UnityEditor.Rendering.EditorGraphicsSettings.SetRenderPipelineGlobalSettingsAsset<UniversalRenderPipeline>(null); PlayerSettings.SetPreloadedAssets(Array.Empty<UnityEngine.Object>());
             }
-            else PlayerSettings.SetPreloadedAssets(preloaded.Concat(new UnityEngine.Object[] { AssetDatabase.LoadAssetAtPath<Material>("Assets/Shooter/Settings/HarnessMaterial.mat"), AssetDatabase.LoadAssetAtPath<Shader>("Assets/Shooter/Shaders/ProceduralSurface.shader") }).ToArray());
+            else
+            {
+                var surfaceVariants = ProductSurfaceVariantPaths.Select(path =>
+                    AssetDatabase.LoadAssetAtPath<Material>(path) ?? throw new InvalidOperationException(
+                        "Missing numeric surface variant material; run ShooterBuild.ConfigureProductSurfaceVariants: " + path));
+                PlayerSettings.SetPreloadedAssets(preloaded.Concat(new UnityEngine.Object[] { AssetDatabase.LoadAssetAtPath<Material>("Assets/Shooter/Settings/HarnessMaterial.mat"), AssetDatabase.LoadAssetAtPath<Shader>("Assets/Shooter/Shaders/ProceduralSurface.shader") }).Concat(surfaceVariants).ToArray());
+            }
             QualitySettings.SetQualityLevel(0, false);
             var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
             {

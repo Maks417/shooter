@@ -113,9 +113,9 @@ namespace Shooter.Presentation.Rendering
 
                 mapSolids = Own(UploadMesh(MapVisualClosure.DecodeMapMesh(visuals, MapVisualClosure.MapSolidsMeshPath), "Product map solids"));
                 unitBox = Own(UploadMesh(MapVisualClosure.DecodeMapMesh(visuals, MapVisualClosure.UnitBoxMeshPath), "Product unit box"));
-                // Tile repeats: solids/cover use modest face density (shared mat across box sizes);
-                // ground/asphalt target ~2 m tiles on the 256 m product ground plane (UV 0..1).
-                concrete = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[0], "Numeric concrete", 0f, 0.18f, 4f);
+                // Combined map solids retain metric UVs, so .5 repeats/m matches the two-metre recipe.
+                // The scaled unit-box ground uses 0..1 face UVs: 128 repeats across 256 metres.
+                concrete = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[0], "Numeric concrete", 0f, 0.18f, .5f);
                 cover = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[1], "Numeric cover", 0.05f, 0.28f, 4f);
                 ground = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[2], "Numeric soil ground", 0f, 0.08f, CompoundPlan.MapHalfExtent);
                 asphalt = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[3], "Numeric asphalt", 0f, 0.12f, CompoundPlan.MapHalfExtent);

@@ -74,6 +74,8 @@ namespace Shooter.Presentation.Rig
         private Mesh? bodyMesh;
         private Mesh? rifleMesh;
         private Mesh? pistolMesh;
+        private Mesh? firstPersonRifleMesh;
+        private Mesh? firstPersonPistolMesh;
         private Material[]? team1Palette;
         private Material[]? team2Palette;
         private Material? rifleMetal;
@@ -145,7 +147,7 @@ namespace Shooter.Presentation.Rig
             if (shader == null || !shader.isSupported)
                 throw new InvalidOperationException("Required locked URP Lit shader missing; no art fallback.");
 
-            // Recipes for motion/sockets only — no SoldierGeometry/WeaponGeometry mesh generation on the product path.
+            // Recipes for motion/sockets only â€” no SoldierGeometry/WeaponGeometry mesh generation on the product path.
             rifleRecipe = WeaponRecipe.Parse(Encoding.ASCII.GetBytes(
                 "{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/rifle\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.0.1\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"rifle\"},\"dependencies\":[]}"));
             pistolRecipe = WeaponRecipe.Parse(Encoding.ASCII.GetBytes(
@@ -196,6 +198,10 @@ namespace Shooter.Presentation.Rig
                 bodyMesh = Own(Upload(MapVisualClosure.DecodeSoldierLod(visuals, soldierLod), true));
                 rifleMesh = Own(Upload(MapVisualClosure.DecodeRifleLod(visuals, weaponLod), false));
                 pistolMesh = Own(Upload(MapVisualClosure.DecodePistolLod(visuals, weaponLod), false));
+                // The camera sees equipment at arm's length even on Low. Keep world LOD
+                // scalability without replacing the player's sights/grips with distant proxies.
+                firstPersonRifleMesh = weaponLod == 0 ? rifleMesh : Own(Upload(MapVisualClosure.DecodeRifleLod(visuals, 0), false));
+                firstPersonPistolMesh = weaponLod == 0 ? pistolMesh : Own(Upload(MapVisualClosure.DecodePistolLod(visuals, 0), false));
 
                 rifleSightSocketLocal = FindSocket(WeaponGeometry.Sockets(rifleRecipe!), "sight-eye");
                 pistolSightSocketLocal = FindSocket(WeaponGeometry.Sockets(pistolRecipe!), "sight-eye");
@@ -228,6 +234,8 @@ namespace Shooter.Presentation.Rig
                 bodyMesh = null;
                 rifleMesh = null;
                 pistolMesh = null;
+                firstPersonRifleMesh = null;
+                firstPersonPistolMesh = null;
                 throw new InvalidOperationException("Required packaged actor visuals missing/corrupt; refusing generation fallback: " + error.Message, error);
             }
         }
@@ -256,9 +264,9 @@ namespace Shooter.Presentation.Rig
             BindPackagedVisuals(visuals, showcase: true);
             showcaseStates = new[]
             {
-                new ActorLifecycleState(new EntityId(1), 1, true, 100, new Float3(1.25f, 0, .3f), -.45f, -.14f, 0, 30, 90),
-                new ActorLifecycleState(new EntityId(2), 1, true, 100, new Float3(-.25f, 0, 3.2f), -.7f, -.06f, 0, 30, 90),
-                new ActorLifecycleState(new EntityId(3), 1, true, 100, new Float3(3.2f, 0, 4.8f), .3f, -.1f, 0, 30, 90)
+                new ActorLifecycleState(new EntityId(1), 1, true, 100, new Float3(1.25f, 0, .3f), -2.45f, -.14f, 0, 30, 90),
+                new ActorLifecycleState(new EntityId(2), 1, true, 100, new Float3(-.25f, 0, 3.2f), -2.95f, -.06f, 0, 30, 90),
+                new ActorLifecycleState(new EntityId(3), 1, true, 100, new Float3(3.2f, 0, 4.8f), -2.4f, -.1f, 0, 30, 90)
             };
             // Menu-only palette overrides are numeric presentation styling, not a soldier-generator iteration.
             team1Palette![0].SetColor("_BaseColor", new Color(.16f, .21f, .19f));
@@ -439,6 +447,10 @@ namespace Shooter.Presentation.Rig
                 var rotation = localHandling.RotationDegrees(pose.AdsBlend, reload, reducedMotion);
                 Float3 sight = ProductAuthorityActionView.IsPistolSlot(slot) ? pistolSightSocketLocal : rifleSightSocketLocal;
                 Vector3 hip = new Vector3(pose.RightHand.X, pose.RightHand.Y, pose.RightHand.Z);
+                // Keep the stock behind the receiver clear of the camera near plane. These
+                // camera-local offsets affect presentation only; ballistic origin stays authoritative.
+                hip += ProductAuthorityActionView.IsPistolSlot(slot)
+                    ? new Vector3(.06f, -.06f, .12f) : new Vector3(.10f, -.08f, .32f);
                 // The verified +Z sight line lies on the camera ray at full ADS.
                 // Keep physical depth; do not move the eye socket onto/behind the near plane.
                 Vector3 aligned = new Vector3(-sight.X, -sight.Y, hip.z);
@@ -552,7 +564,7 @@ namespace Shooter.Presentation.Rig
                 ApplyHeldWeaponVisual(avatar, slot);
             }
 
-            // Authority ReloadStarted/Completed only — never magazine decrease.
+            // Authority ReloadStarted/Completed only â€” never magazine decrease.
             if (!avatar.Corpse && state.Alive)
                 avatar.ReloadPhase = actions.ResolveReloadPhase(state.EntityId, completedTick, dtSeconds);
             else
@@ -632,7 +644,7 @@ namespace Shooter.Presentation.Rig
             if (localWeapon == null || !visualsBound) return;
             bool pistol = ProductAuthorityActionView.IsPistolSlot(slot);
             localWeapon.name = pistol ? "Local FP pistol" : "Local FP rifle";
-            localWeapon.GetComponent<MeshFilter>().sharedMesh = pistol ? pistolMesh : rifleMesh;
+            localWeapon.GetComponent<MeshFilter>().sharedMesh = pistol ? firstPersonPistolMesh : firstPersonRifleMesh;
             localWeapon.GetComponent<MeshRenderer>().sharedMaterials = new[] { rifleMetal, riflePolymer };
         }
 

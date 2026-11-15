@@ -9,7 +9,7 @@
       "supportedModes": ["team-deathmatch"],
       "supportedTeamSizes": [5, 6],
       "recipeSeed": "460072030",
-      "recipeVersion": "map.compound.1.0.0",
+      "recipeVersion": "map.compound.1.0.1",
       "gameplayRootSha256": "1111111111111111111111111111111111111111111111111111111111111111",
       "lowVisualRootSha256": "2222222222222222222222222222222222222222222222222222222222222222",
       "balancedVisualRootSha256": "3333333333333333333333333333333333333333333333333333333333333333",

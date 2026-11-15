@@ -65,3 +65,7 @@ Historical 2026-11-13 software closeout (retained; superseded for current produc
 | UI01–UI02 / SET02 device | Partial / Pending named device review |
 
 [Release roadmap](../../playable-release-plan.md) · [Previous](../m9-team-deathmatch/index.md) · [Next](../m11-playable-release/index.md).
+
+## T075 presentation follow-up — 2026-11-15
+
+Three owner-authorized agents are integrated and temporary worktrees removed. Source `7407bc4` adds procedural map surface publication/binding, menu/card rendering and analytic near-field equipment handling. [Canonical delivery, verification, migration and Pending evidence](../m11-playable-release/handoff.md#t075--procedural-presentation-preview-034). No milestone or P05 acceptance is changed.

@@ -1,5 +1,7 @@
 # Visual design milestones — Battlefield V / Bodycam / Warface quality goal
 
+**T075 implementation update — 2026-11-15:** source `7407bc4` / installer 0.3.4 extends the earlier T074 baseline with real procedural surface triplets, scene material reuse, working map overviews and near-field weapon handling. Player captures still show blockout environments/soldiers. All VD exits, exact comparison approval and P05 disposition remain unchanged. [Implementation/evidence](milestones/m11-playable-release/handoff.md#t075--procedural-presentation-preview-034).
+
 Owner direction, 2026-11-14: **the finished visual design should be as good as Battlefield V, Bodycam and Warface**. This is the target for perceived quality, coherence, physical credibility and presentation. Current parity is **unproven**. The b531da9 / 0.3.1 preview is an implementation baseline, with final interactive visual review Pending; it does not close these milestones.
 
 This page is the canonical visual-quality track **VD0–VD9** inside the existing M8–M11 delivery programme. It replaces the five informal stages in the [brandbook](brandbook.md) as the execution order. M0–M7 historical closures, M8–M11 open gates, P05 FAIL and retained evidence remain unchanged. This assignment generates a plan; it creates no runtime coding lease, agent dispatch, toolchain change or acceptance waiver.

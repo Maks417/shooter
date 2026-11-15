@@ -5,7 +5,7 @@
   "branch": "main",
   "baseCommit": "4e71bea",
   "contractVersion": "C0-v1",
-  "readyForParallelIntegration": true,
+  "readyForParallelIntegration": false,
   "packages": [
     {
       "packageId": "WP-00",
@@ -1007,15 +1007,20 @@
       "paths": [
         "UnityProject/Assets/Shooter/Presentation/Rendering/ProductMapView.cs",
         "UnityProject/Assets/Shooter/Presentation/Rendering/ProductSurface*",
-        "UnityProject/Assets/Shooter/Tests/EditMode/ProductSurface*"
+        "UnityProject/Assets/Shooter/Tests/EditMode/ProductSurface*",
+        "UnityProject/Assets/Shooter/Generation/Core/Environment/MapRecipe.cs",
+        "UnityProject/Assets/Shooter/Generation/Core/Environment/MapPackageBuilder.cs",
+        "UnityProject/Assets/Shooter/Generation/Core/Environment/MapVisualClosure.cs",
+        "Tools/Generation.Tests/MapPackageSurfaceTests.cs",
+        "Tools/Generation.Tests/MapVisualClosureTests.cs"
       ],
       "dependencies": [
         "T035",
         "T074"
       ],
       "contractVersion": "C0-v1 / Game-v1 / SGAF-v1 unchanged",
-      "status": "Active; owner authorized implementation and agents 2026-11-15. Presentation-only, no P05 search. Integrator runs Unity after merge.",
-      "leaseExpiry": "2026-11-16T00:00:00Z"
+      "status": "Implemented/integrated on main; final binary 7407bc4, installer 0.3.4. Pure/Unity/build/native/provenance checks PASS; limited automated player review only. VD/REL/P05/hardware acceptance remains open. Temporary worktree and branch removed; evidence retained.",
+      "leaseExpiry": null
     },
     {
       "packageId": "T075/handling",
@@ -1026,15 +1031,16 @@
         "UnityProject/Assets/Shooter/Presentation/Rig/ProductActorPresentation.cs",
         "UnityProject/Assets/Shooter/Presentation/View/ProceduralViewModel.cs",
         "UnityProject/Assets/Shooter/Presentation/View/FirstPerson*",
-        "UnityProject/Assets/Shooter/Tests/EditMode/FirstPersonHandling*"
+        "UnityProject/Assets/Shooter/Tests/EditMode/FirstPersonHandling*",
+        "Tools/Simulation.Tests/View/FirstPersonHandlingTests.cs"
       ],
       "dependencies": [
         "T035",
         "T074"
       ],
       "contractVersion": "C0-v1 / Game-v1 / SGAF-v1 unchanged",
-      "status": "Active; owner authorized implementation and agents 2026-11-15. Presentation-only, no P05 search. Integrator runs Unity after merge.",
-      "leaseExpiry": "2026-11-16T00:00:00Z"
+      "status": "Implemented/integrated on main; final binary 7407bc4, installer 0.3.4. Pure/Unity/build/native/provenance checks PASS; limited automated player review only. VD/REL/P05/hardware acceptance remains open. Temporary worktree and branch removed; evidence retained.",
+      "leaseExpiry": null
     },
     {
       "packageId": "T075/menu",
@@ -1050,8 +1056,8 @@
         "T074"
       ],
       "contractVersion": "C0-v1 / Game-v1 / SGAF-v1 unchanged",
-      "status": "Active; owner authorized implementation and agents 2026-11-15. Presentation-only, no P05 search. Integrator runs Unity after merge.",
-      "leaseExpiry": "2026-11-16T00:00:00Z"
+      "status": "Implemented/integrated on main; final binary 7407bc4, installer 0.3.4. Pure/Unity/build/native/provenance checks PASS; limited automated player review only. VD/REL/P05/hardware acceptance remains open. Temporary worktree and branch removed; evidence retained.",
+      "leaseExpiry": null
     }
   ],
   "validationWave": {

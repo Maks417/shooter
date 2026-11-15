@@ -30,6 +30,12 @@ public sealed class MapVisualClosureTests : IDisposable
         Assert.Equal("low", payloads.Profile);
         foreach (string path in MapVisualClosure.RequiredPaths("low"))
             Assert.True(payloads.Has(path), path);
+        foreach (string path in MapVisualClosure.MapMaterialPaths)
+        {
+            Assert.Equal(128, MapVisualClosure.DecodeMapMaterial(payloads, path).Width);
+            Assert.True(payloads.Has(MapVisualClosure.MaterialCompanionPath(path, "normal")));
+            Assert.True(payloads.Has(MapVisualClosure.MaterialCompanionPath(path, "mask")));
+        }
 
         var skeleton = MapVisualClosure.DecodeSoldierSkeleton(payloads);
         Assert.Equal(SoldierSkeleton.JointCount, skeleton.Joints.Count);

@@ -172,8 +172,10 @@ namespace Shooter.Tests
             Physics.SyncTransforms();
 
             var motor = new KinematicMotor();
+            // Begin in a valid crouched spawn. A standing body already penetrating this
+            // ceiling exercises overlap recovery, which intentionally holds invalid spawns.
             var state = new MotorBodyState(
-                new Float3(0, 0, 0), default, 0, 0, Stance.Standing, 1.8f,
+                new Float3(0, 0, 0), default, 0, 0, Stance.Crouching, 1.2f,
                 true, new SurfaceId(100), new Float3(0, 1, 0), 0, 0, 0, false);
             state = motor.Step(state, new InputCommand(new EntityId(1), 0, 1, 0, 0, 0, 0, InputButtons.CrouchHeld, 0), 0, world!);
             Assert.That(state.Stance, Is.EqualTo(Stance.Crouching));
