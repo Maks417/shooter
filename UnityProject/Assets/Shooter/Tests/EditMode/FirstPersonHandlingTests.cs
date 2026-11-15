@@ -110,6 +110,32 @@ namespace Shooter.Tests
             Assert.That(handling.SwayBlend, Is.EqualTo(0f));
         }
 
+        [Test]
+        public void CameraBobIsSuppressedByReducedMotionAndAds()
+        {
+            var bob = new FirstPersonCameraBob();
+            bob.Step(default, 1f / 60f, false);
+            for (int i = 1; i < 12; i++)
+                bob.Step(new Float3(i * 0.05f, 0, 0), 1f / 60f, false);
+            Assert.That(bob.MovementBlend, Is.GreaterThan(0.2f));
+            Assert.That(Math.Abs(bob.LocalOffsetMeters(0f, false, true).Y), Is.GreaterThan(0f));
+            Assert.That(bob.LocalOffsetMeters(0f, true, true).X, Is.EqualTo(0f));
+            Assert.That(bob.RollDegrees(1f, false, true), Is.EqualTo(0f));
+            bob.Reset();
+            Assert.That(bob.MovementBlend, Is.EqualTo(0f));
+        }
+
+        [Test]
+        public void HitFeedbackUsesAuthorityDamageTargetsOnly()
+        {
+            var local = new EntityId(3);
+            Assert.That(FirstPersonHitFeedback.IsDamageTaken(CombatEventKind.DamageApplied, local, local), Is.True);
+            Assert.That(FirstPersonHitFeedback.IsDamageDealt(CombatEventKind.DamageApplied, local, local), Is.True);
+            Assert.That(FirstPersonHitFeedback.IsDamageTaken(CombatEventKind.ShotAccepted, local, local), Is.False);
+            Assert.That(FirstPersonHitFeedback.HitMarkerAlpha(0f), Is.EqualTo(0f));
+            Assert.That(FirstPersonHitFeedback.DamageShakeMeters(0.2f, true, false), Is.EqualTo(0f));
+        }
+
         private sealed class Lifecycle : IActorLifecycle
         {
             public ActorLifecycleState State;

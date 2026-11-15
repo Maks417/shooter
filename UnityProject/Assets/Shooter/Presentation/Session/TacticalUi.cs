@@ -19,10 +19,10 @@ namespace Shooter.Presentation.Session
         public static readonly Color Ally = new Color32(123, 197, 209, 255);
         public static readonly Color Enemy = new Color32(228, 123, 112, 255);
         // Combat HUD plates: thinner charcoal with restrained edge contrast (world-first readability).
-        public static readonly Color HudPlate = new Color(.04f, .055f, .06f, .58f);
-        public static readonly Color HudPlateStrong = new Color(.035f, .048f, .055f, .72f);
-        public static readonly Color HudEdge = new Color(1f, 1f, 1f, .10f);
-        public static readonly Color HudEdgeSoft = new Color(1f, 1f, 1f, .06f);
+        public static readonly Color HudPlate = new Color(.035f, .048f, .055f, .48f);
+        public static readonly Color HudPlateStrong = new Color(.03f, .042f, .05f, .62f);
+        public static readonly Color HudEdge = new Color(1f, 1f, 1f, .09f);
+        public static readonly Color HudEdgeSoft = new Color(1f, 1f, 1f, .05f);
 
         private readonly List<string> controls = new List<string>(48);
         private readonly Dictionary<int, GUIStyle> labels = new Dictionary<int, GUIStyle>();
@@ -141,27 +141,62 @@ namespace Shooter.Presentation.Session
             Fill(r, strong ? HudPlateStrong : HudPlate);
             Edge(r);
             if (accentLeft) AccentBar(new Rect(r.x, r.y + 1, 2, r.height - 2), Accent);
-            if (accentBottom) AccentBar(new Rect(r.x + 2, r.yMax - 2, Mathf.Min(28, r.width - 4), 1), Accent);
+            if (accentBottom) AccentBar(new Rect(r.x + 2, r.yMax - 2, Mathf.Min(22, r.width - 4), 1), Accent);
         }
 
         /// <summary>1px plate edge: soft top/left highlight, quiet bottom/right shadow.</summary>
         public static void Edge(Rect r)
         {
             Fill(new Rect(r.x, r.y, r.width, 1), HudEdge);
-            Fill(new Rect(r.x, r.yMax - 1, r.width, 1), new Color(0, 0, 0, .28f));
+            Fill(new Rect(r.x, r.yMax - 1, r.width, 1), new Color(0, 0, 0, .22f));
             Fill(new Rect(r.x, r.y, 1, r.height), HudEdgeSoft);
-            Fill(new Rect(r.xMax - 1, r.y, 1, r.height), new Color(0, 0, 0, .18f));
+            Fill(new Rect(r.xMax - 1, r.y, 1, r.height), new Color(0, 0, 0, .14f));
         }
 
         /// <summary>Thin accent rail or progress fill (ally/enemy/amber).</summary>
         public static void AccentBar(Rect r, Color color) => Fill(r, color);
 
+        /// <summary>Outlined reticle arm (dark understroke + ivory stroke) for hip-fire readability.</summary>
+        public static void ReticleArm(Rect rect)
+        {
+            Fill(new Rect(rect.x - 0.75f, rect.y - 0.75f, rect.width + 1.5f, rect.height + 1.5f), new Color(0.02f, 0.03f, 0.035f, 0.85f));
+            Fill(rect, Text);
+        }
+
+        /// <summary>Warface-style X hit marker at screen center. Alpha is presentation-only.</summary>
+        public static void HitMarker(float centerX, float centerY, float alpha)
+        {
+            if (alpha <= 0.02f || Event.current.type != EventType.Repaint) return;
+            const float arm = 5.5f, gap = 3.5f, thick = 1.25f;
+            Color ink = new Color(Text.r, Text.g, Text.b, alpha);
+            Color under = new Color(0.02f, 0.03f, 0.035f, alpha * 0.9f);
+            DrawDiagonal(centerX - gap - arm, centerY - gap - arm, centerX - gap, centerY - gap, under, thick + 1.2f);
+            DrawDiagonal(centerX + gap, centerY - gap - arm, centerX + gap + arm, centerY - gap, under, thick + 1.2f);
+            DrawDiagonal(centerX - gap - arm, centerY + gap + arm, centerX - gap, centerY + gap, under, thick + 1.2f);
+            DrawDiagonal(centerX + gap, centerY + gap + arm, centerX + gap + arm, centerY + gap, under, thick + 1.2f);
+            DrawDiagonal(centerX - gap - arm, centerY - gap - arm, centerX - gap, centerY - gap, ink, thick);
+            DrawDiagonal(centerX + gap, centerY - gap - arm, centerX + gap + arm, centerY - gap, ink, thick);
+            DrawDiagonal(centerX - gap - arm, centerY + gap + arm, centerX - gap, centerY + gap, ink, thick);
+            DrawDiagonal(centerX + gap, centerY + gap + arm, centerX + gap + arm, centerY + gap, ink, thick);
+        }
+
+        /// <summary>Brief full-frame coral flash when damage is taken (analytic fill).</summary>
+        public static void DamagePlateFlash(float width, float height, float strength)
+        {
+            if (strength <= 0.01f || Event.current.type != EventType.Repaint) return;
+            Fill(new Rect(0, 0, width, height), new Color(Enemy.r, Enemy.g, Enemy.b, strength * 0.55f));
+            EdgeVignette(width, height, strength * 0.85f, Enemy);
+        }
+
+        private static void DrawDiagonal(float x0, float y0, float x1, float y1, Color color, float thickness) =>
+            Line(new Vector2(x0, y0), new Vector2(x1, y1), color, thickness);
+
         /// <summary>Soft edge vignette from observed health/damage. Analytic fills only.</summary>
         public static void EdgeVignette(float width, float height, float strength, Color tint)
         {
             if (strength <= 0f || Event.current.type != EventType.Repaint) return;
-            float band = Mathf.Max(28f, height * .12f);
-            int steps = 10;
+            float band = Mathf.Max(26f, height * .11f);
+            int steps = 11;
             for (int i = 0; i < steps; i++)
             {
                 float u = i / (float)(steps - 1);

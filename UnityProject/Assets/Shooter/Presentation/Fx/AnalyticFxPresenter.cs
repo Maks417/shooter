@@ -94,23 +94,23 @@ namespace Shooter.Presentation.Fx
                         mesh = sphereMesh;
                         material = muzzleMaterial;
                         // Elongated along shot direction so muzzle reads as a flash cone, not a marble.
-                        localScale = new Vector3(scale * 0.95f, scale * 0.95f, scale * 2.15f);
+                        localScale = new Vector3(scale * 1.05f, scale * 1.05f, scale * 2.35f);
                         rotation = Quaternion.LookRotation(normal, Vector3.up);
-                        pos += normal * (scale * 0.5f);
+                        pos += normal * (scale * 0.52f);
                         break;
                     case FxKind.ImpactSpark:
                         mesh = capsuleMesh;
                         material = sparkMaterial;
-                        localScale = new Vector3(scale * 0.48f, scale * 2.05f, scale * 0.48f);
+                        localScale = new Vector3(scale * 0.52f, scale * 2.25f, scale * 0.52f);
                         rotation = Quaternion.FromToRotation(Vector3.up, normal);
-                        pos += normal * (scale * 0.6f);
+                        pos += normal * (scale * 0.65f);
                         break;
                     default:
                         mesh = sphereMesh != null ? sphereMesh : quadMesh;
                         material = smokeMaterial;
-                        localScale = new Vector3(scale * 1.15f, scale * 0.95f, scale * 1.15f);
+                        localScale = new Vector3(scale * 1.22f, scale * 0.98f, scale * 1.22f);
                         rotation = Quaternion.identity;
-                        pos += normal * (scale * 0.26f);
+                        pos += normal * (scale * 0.28f);
                         break;
                 }
 
@@ -138,14 +138,14 @@ namespace Shooter.Presentation.Fx
             switch (kind)
             {
                 case FxKind.MuzzleFlash:
-                    propertyBlock.SetColor("_BaseColor", new Color(1f, 0.8f, 0.3f, opacity));
+                    propertyBlock.SetColor("_BaseColor", new Color(1f, 0.82f, 0.34f, opacity));
                     if (muzzleMaterial != null && muzzleMaterial.HasProperty("_EmissionColor"))
-                        propertyBlock.SetColor("_EmissionColor", new Color(6.2f, 2.9f, 0.4f) * opacity);
+                        propertyBlock.SetColor("_EmissionColor", new Color(6.8f, 3.1f, 0.45f) * opacity);
                     break;
                 case FxKind.ImpactSpark:
-                    propertyBlock.SetColor("_BaseColor", new Color(1f, 0.95f, 0.65f, opacity));
+                    propertyBlock.SetColor("_BaseColor", new Color(1f, 0.96f, 0.7f, opacity));
                     if (sparkMaterial != null && sparkMaterial.HasProperty("_EmissionColor"))
-                        propertyBlock.SetColor("_EmissionColor", new Color(4.8f, 2.7f, 0.6f) * opacity);
+                        propertyBlock.SetColor("_EmissionColor", new Color(5.4f, 3.0f, 0.7f) * opacity);
                     break;
                 default:
                     // Warm-grey smoke so impacts read against cool outdoor fill.

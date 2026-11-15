@@ -135,5 +135,53 @@ namespace Shooter.Simulation.Tests.View
             Assert.True(rifle.Z > pistol.Z);
             Assert.True(pistol.Y < 0f && rifle.Y < 0f);
         }
+
+        [Fact]
+        public void CameraBobAppearsWhenMovingAndIsKilledByReducedMotionAdsDeathOrReset()
+        {
+            var bob = new FirstPersonCameraBob();
+            bob.Step(default, 1f / 60f, false);
+            for (int i = 1; i < 12; i++)
+                bob.Step(new Float3(i * 0.05f, 0, 0), 1f / 60f, false);
+            Assert.True(bob.MovementBlend > 0.2f);
+            Float3 offset = bob.LocalOffsetMeters(0f, false, true);
+            Assert.True(Math.Abs(offset.X) + Math.Abs(offset.Y) > 0f);
+            Assert.True(Math.Abs(bob.RollDegrees(0f, false, true)) > 0f);
+            Assert.Equal(0f, bob.LocalOffsetMeters(0f, true, true).X);
+            Assert.Equal(0f, bob.LocalOffsetMeters(1f, false, true).Y);
+            Assert.Equal(0f, bob.RollDegrees(0f, false, false));
+            bob.Reset();
+            Assert.Equal(0f, bob.MovementBlend);
+            Assert.Equal(0f, bob.LocalOffsetMeters(0f, false, true).Y);
+        }
+
+        [Fact]
+        public void CameraBobIgnoresTeleportAndSlide()
+        {
+            var bob = new FirstPersonCameraBob();
+            bob.Step(default, 0.016f, false);
+            bob.Step(new Float3(20, 0, 0), 0.016f, false);
+            Assert.InRange(bob.MovementBlend, 0f, 0.05f);
+            bob.Step(new Float3(20.1f, 0, 0), 0.016f, true);
+            Assert.InRange(bob.MovementBlend, 0f, 0.05f);
+        }
+
+        [Fact]
+        public void HitFeedbackClassifiesAuthorityDamageAndFadesMarkers()
+        {
+            var local = new EntityId(7);
+            var other = new EntityId(9);
+            Assert.True(FirstPersonHitFeedback.IsDamageTaken(CombatEventKind.DamageApplied, local, local));
+            Assert.False(FirstPersonHitFeedback.IsDamageTaken(CombatEventKind.DamageApplied, other, local));
+            Assert.True(FirstPersonHitFeedback.IsDamageDealt(CombatEventKind.DamageApplied, local, local));
+            Assert.False(FirstPersonHitFeedback.IsDamageDealt(CombatEventKind.Impact, local, local));
+            Assert.Equal(1f, FirstPersonHitFeedback.HitMarkerAlpha(FirstPersonHitFeedback.HitMarkerSeconds));
+            Assert.Equal(0.5f, FirstPersonHitFeedback.HitMarkerAlpha(FirstPersonHitFeedback.HitMarkerFadeSeconds * 0.5f));
+            Assert.Equal(0f, FirstPersonHitFeedback.HitMarkerAlpha(0f));
+            Assert.True(FirstPersonHitFeedback.DamageFlashStrength(FirstPersonHitFeedback.DamageFlashSeconds, false) >
+                        FirstPersonHitFeedback.DamageFlashStrength(FirstPersonHitFeedback.DamageFlashSeconds, true));
+            Assert.Equal(0f, FirstPersonHitFeedback.DamageShakeMeters(0.2f, reducedMotion: true, reducedFlash: false));
+            Assert.True(FirstPersonHitFeedback.DamageShakeMeters(0.2f, false, false) > 0f);
+        }
     }
 }

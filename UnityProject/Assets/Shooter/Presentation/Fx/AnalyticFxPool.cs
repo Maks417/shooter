@@ -22,9 +22,9 @@ namespace Shooter.Presentation.Fx
         public const int MaxInstances = 64;
         public const int MaxSmokeProxies = 16;
         // Brief but denser combat proxies (Warface-scale feedback without particle packs).
-        public const float MuzzleFlashLifetime = 0.12f;
-        public const float ImpactSparkLifetime = 0.22f;
-        public const float SmokeProxyLifetime = 1.40f;
+        public const float MuzzleFlashLifetime = 0.13f;
+        public const float ImpactSparkLifetime = 0.26f;
+        public const float SmokeProxyLifetime = 1.45f;
 
         private readonly FxInstance[] items = new FxInstance[MaxInstances];
         public int ActiveCount { get; private set; }
@@ -46,9 +46,9 @@ namespace Shooter.Presentation.Fx
             float t = NormalizeAge(age, lifetime);
             return kind switch
             {
-                FxKind.MuzzleFlash => 0.18f + 0.28f * (1f - t) * (1f - t),
-                FxKind.ImpactSpark => 0.09f + 0.22f * (1f - t),
-                FxKind.SmokeProxy => 0.40f + 1.05f * t,
+                FxKind.MuzzleFlash => 0.20f + 0.32f * (1f - t) * (1f - t),
+                FxKind.ImpactSpark => 0.10f + 0.26f * (1f - t),
+                FxKind.SmokeProxy => 0.42f + 1.12f * t,
                 _ => 0.1f
             };
         }
@@ -60,9 +60,9 @@ namespace Shooter.Presentation.Fx
             return kind switch
             {
                 // Hot punch then rapid falloff so flashes stay readable at 720p Low.
-                FxKind.MuzzleFlash => (1f - t) * (1f - t * 0.3f),
-                FxKind.ImpactSpark => (1f - t) * (1f - t * 0.15f),
-                FxKind.SmokeProxy => (1f - t) * 0.46f,
+                FxKind.MuzzleFlash => (1f - t) * (1f - t * 0.25f),
+                FxKind.ImpactSpark => (1f - t) * (1f - t * 0.12f),
+                FxKind.SmokeProxy => (1f - t) * 0.50f,
                 _ => 1f - t
             };
         }
