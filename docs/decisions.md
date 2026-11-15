@@ -569,3 +569,18 @@ Decision: add four required SGAF mesh dependencies to each non-gameplay visual c
 Presentation attaches the two active meshes to the existing camera-local weapon root, swaps them with rifle/pistol, disables their shadow casting, hides them with dead/session viewmodels and releases the camera-owned root with its owner. Support-hand reach is an analytic read-only reload-phase offset toward the existing magazine location, with reduced-motion scaling and exact rest endpoints. The remove/insert path now shares the same boundary value and settles smoothly to zero. No authority timing/ammo/reload rules change. This is rigid camera-prop pose animation, not a full articulated hand/finger rig or a complete magazine-replacement animation.
 
 Consequences: four additional required meshes per visual package and two active renderers / up to six material submesh draws near the camera; actual hardware cost remains Pending. Publish fresh native content, verify unchanged collision/nav/catalog identities, freeze clean Client/Server/package identities and build an upgrading installer. Validate mesh bounds/sight clearance, corruption rejection, motion continuity, slot/life/reset/pause/teardown and real-player rifle/pistol/ADS/reload appearance. P05 FAIL and all VD/REL exits remain open. Rollback the whole closure/presentation change and use a matching retained binary/content pair.
+
+## ADR-054 — Accepted: bot footstep hearing, wider vision and a readable lethality envelope (T085)
+
+Date 2026-11-15. Status: accepted for the offline product build. Real-player confirmation is Pending.
+
+Context: an owner playtest of T082 found that bots trail each other along the route, miss enemies behind them, and kill too quickly to be understood. `ai.md` already requires hearing stimuli with source class, position and radius, and "not constant instant headshots"; it does not fix a vision cone or footstep radii. The rifle's damage and cadence are shared with the player and fixed by `combat.md`, so lethality has to be tuned in bot aim, not in weapons.
+
+Decision:
+- **Footstep hearing.** The planner derives each listed enemy's horizontal speed from consecutive planner positions. Audible radius: 24 m when sprinting (≥5 m/s), 13 m when running (≥2.6 m/s), 5 m when walking, and 2.5 m always. This is distance-attenuated like gunfire, with no occlusion and no rays, so the 16-ray budget is untouched.
+- **Vision.** The vision cone is 120° (was 90°).
+- **Unseen attackers.** Two hits within 1.5 s from an enemy the bot is not fighting (or one hit below 50 health) turn the bot onto that attacker.
+- **Lethality envelope.** Accuracy recovery starts at the end of the reaction delay. Kept as a regression test on the real combat harness, against a still standing target (median from sighting): 1.25–2.3 s at 8 m, 1.8–4 s at 20 m, 2.7–7 s at 40 m, and no kill sooner than 0.67 s after the bot's first shot.
+- **Team spread.** Destinations are chosen by a deterministic spread score instead of an id-ordered walk of the route. At most 2 allies investigate one noise. Allied gunfire never points at the ally.
+
+Consequences: bots are slower to kill and harder to sneak up on at a run, but still blind to slow or crouched movement behind them beyond 5 m. Hearing through walls is possible, as it already was for gunfire. No contract, fixture, budget, content or weapon change. Rollback: revert T085. The previous constants are recorded in the [M11 handoff](milestones/m11-playable-release/handoff.md#t085--bot-rear-awareness-team-spread-and-readable-time-to-kill).

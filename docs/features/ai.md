@@ -61,6 +61,27 @@ New counters on `AiCounters`: `CoverProbeRays`, `CoverProbesFailed`, `BurstsStar
 
 Known limits: strafing has no ledge query. The ±2 m leash around a navmesh point limits the risk of walking off edges but does not remove it. Probe points are checked for reachability only through the normal path request. Real-player feel is Pending; see the [M11 handoff](../milestones/m11-playable-release/handoff.md#t082--solid-fps-bot-combat-behaviour).
 
+## Awareness, team spread and lethality (T085, 2026-11-15)
+
+[T085](../task-supplement.md#t085--bot-rear-awareness-team-spread-and-readable-time-to-kill-2026-11-15) answers an owner playtest of T082: bots ran after each other, did not notice enemies behind them, and killed too fast to read. Budgets, contracts and the planner seam are unchanged ([ADR-054](../decisions.md#adr-054--accepted-bot-footstep-hearing-wider-vision-and-a-readable-lethality-envelope-t085)).
+
+- **Following each other (root cause).** Product patrol destinations are the map's ordered route corners. Each bot took `destinations[(id + cursor) % n]`, so teammates with consecutive ids walked the same route one corner apart, in a line. `ChooseSpreadDestination` now scores every destination: about 35 m legs preferred, −2 for each ally already heading within 12 m of it, −0.5 for each ally standing near it, a seeded per-bot preference, and never the last two picks. The goal is chosen once per arrival, not every tick. Combat destinations use the same scorer.
+- **Ally noise.** Teammate gunfire used to send listeners to the teammate's own position. It now points at that teammate's last-seen enemy, or is ignored when it has none (a human teammate's shots are ignored). Gunfire, callouts and footsteps send at most 2 allies to one noise (within 10 m); the rest keep their route and face it.
+- **Behind the back.**
+  - Footsteps: every tick the planner derives each enemy's horizontal speed from its position. An enemy is audible from any direction within 24 m when sprinting (≥5 m/s), 13 m when running (≥2.6 m/s) and 5 m when walking, and always within 2.5 m. The heard point has 5% distance noise. A bot without a visible target turns toward it; a patrolling or searching bot investigates it. No rays are used.
+  - A fresh footstep or damage stimulus newer than the last sighting wins the look over the older last-seen point.
+  - An engaged bot hit twice within 1.5 s by an enemy it is not fighting (or once when below 50 health) breaks off for up to 0.75 s and turns on the attacker. Attacker priority in sensing then acquires it.
+  - The vision cone widens from 90° to 120°.
+- **Time-to-kill.** The rifle stays at 30 damage and 10 rounds/s for everyone (`combat.md`), so the bots' aim carries the change.
+  - Accuracy recovery now starts when the reaction delay ends (the first possible shot), not at sighting. Before, most of the acquisition error had decayed during the reaction delay and the first shots hit.
+  - Acquisition miss 1.5 m, settled miss 0.28 m + 0.5 cm/m, recovery 1 s, own-movement penalty 0.18 m, cold reaction 300–600 ms.
+  - Measured by `BotLethalityTests` on the real combat harness (still, standing target, median of 9 bots, from sighting): 8 m about 1.6 s (T082: 1.0 s), 20 m about 2.5 s (1.5 s), 40 m about 3.9 s (2.4 s). The fastest kill after a bot's first shot is now 0.8 s, against 0.4 s before.
+- **Readable damage (HUD).** `ProductSessionView` draws red chevrons around the reticle pointing at the attacker's position at the time of each authoritative hit taken: up to 4 at once, held 1.4 s, rotating as the player turns. The angle and fade math are `CombatHudVisual.DamageIndicatorAngle` and `DamageIndicatorAlpha`. This is presentation only.
+
+New counters: `FootstepsHeard`, `ThreatTurns`, `CrowdedStimuliHeld`, `AllyGunfireIgnored`.
+
+Known limits: hearing ignores walls (distance only, like gunfire). Footstep speed comes from planner positions, so a teleport or respawn counts as one fast step and is heard at most once. Spread scoring only knows allies' goals and positions, not which routes they take. Real-player feel is Pending.
+
 ## Acceptance
 
 Seeded scripted scenarios: occluded enemy never acquired via vision; hearing triggers investigation at last-known position; target loss decays confidence; bots reload safely without infinite loop; two bots do not permanently reserve same cover; unreachable destination exits bounded retry. Eight bots run 30-minute B03 soak with no unbounded path queue, query cap breaches or orphan reservations. Accuracy/reaction distribution matches configuration, not constant instant headshots. Same command/collision recording across profiles produces equivalent AI decisions within documented adapter nondeterminism. AI counters expose sense age, path latency, state changes, shot rate and CPU budget.

@@ -143,3 +143,30 @@ Rollback: revert the T082 merge. AI state is not persisted and no content identi
 Owner-authorized visual continuation, 2026-11-15. Sole integrator, base merged T082 `e2c26e9` with docs-only `a9f228d` retained. Paths: new `Generation/Core/Environment/FirstPersonHandGeometry.cs`, `MapVisualClosure.cs` / `MapPackageBuilder.cs`, `Presentation/Rig/ProductActorPresentation.cs`, existing `View/FirstPersonHandling.cs` / `FirstPersonMagazineTravel.cs`, associated Generation/Simulation/Unity tests, content publication/build/installer evidence and shared docs. No soldier-generator/clearance search, C0/Game-v1/N1/schema/toolchain or gameplay change.
 
 Deliver ADR-052 offline packaged rifle/pistol glove/sleeve pairs, material reuse, slot/life/session ownership, support-hand reach and continuous reload path. Preserve T081 architecture and landed T082 bot behaviour. Required checks: Contracts/Generation/Simulation/Game/Maps, Unity EditMode/PlayMode, frozen/provenance guards, docs/fixtures, clean native publication, Client/Server/package/installer and actual player review. Tests/pure evidence cannot close P05, visual comparison, full gameplay, installed-upgrade or reference performance. Rollback the paired closure/runtime changes together. [M11 handoff](milestones/m11-playable-release/handoff.md) records actual results.
+
+## T085 — Bot rear awareness, team spread and readable time-to-kill (2026-11-15)
+
+The owner playtested T082 and reported: bots "running after each other", they "don't see enemies behind their back", and time-to-kill "is not obvious and too short". Base `12ff5ac`; worktree `.local/worktrees/t084-bot-awareness`, branch `t084-bot-awareness`. Scope:
+- `Simulation/AI/**` (existing files only).
+- `Presentation/Hud/CombatHudVisual.cs` and `Presentation/Session/ProductSessionView.cs`, for the incoming-damage direction markers.
+- `Tools/Simulation.Tests/AI/**` and `Tools/Simulation.Tests/Hud/CombatHudVisualTests.cs`.
+- The AI feature doc, [ADR-054](decisions.md#adr-054--accepted-bot-footstep-hearing-wider-vision-and-a-readable-lethality-envelope-t085) and the M11 handoff.
+
+Frozen and unchanged: C0/Game-v1 contracts, fixtures, locks, the AI ray and path budgets, weapon damage and rate (`combat.md`), map packages and the toolchain. The concurrent T084 near-field surface work (`2b9c743`, which also took ADR-053) is not touched. This card was drafted as T084 and renumbered; the branch name `t084-bot-awareness` predates that.
+
+Investigation found:
+- **Conga line.** Patrol destinations are ordered route corners, and bots picked them by `(entity id + cursor) % n`. Teammates with consecutive ids therefore walked the same route one corner apart.
+- **Allies as noise.** Teammates' gunfire was investigated at the teammate's position, and every calm ally in range answered every noise.
+- **Blind behind.** There was no footstep or proximity hearing, and the vision cone was 90°. An engaged bot ignored a second enemy shooting it from behind, because damage from a non-target attacker never changed its aim while it had a visible target.
+- **Front-loaded accuracy.** Accuracy recovery ran from sighting. The 250–500 ms reaction delay consumed most of the acquisition error, so the opening shots hit and still targets died within about 0.4 s of the first shot.
+- **No direction cue.** The player had no direction cue for incoming hits, only a full-screen flash.
+
+Implementation is described in [AI awareness, team spread and lethality](features/ai.md#awareness-team-spread-and-lethality-t084-2026-11-15).
+
+Validation:
+- New `BotAwarenessTests` (6 tests) and `BotLethalityTests` (TTK envelope at 8, 20 and 40 m on the real combat harness).
+- HUD indicator math tests.
+- All pure lanes, the docs, fixture and lock checks, and Unity EditMode/PlayMode after the merge.
+- A build, an installer and real-player feel are listed as Pending in the handoff.
+
+Rollback: revert the T085 merge. No persisted state or content identity changes.

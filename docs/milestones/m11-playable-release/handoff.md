@@ -1,5 +1,49 @@
 # M11 — Playable build and acceptance — handoff and gate record
 
+## T085 — Bot rear awareness, team spread and readable time-to-kill
+
+2026-11-15. The owner played the T082 bots and reported that they run after each other, do not see enemies behind their backs, and kill too fast to read. Base `12ff5ac`; code commit `ef96e45` (lanes ran here), then a comment-only renumbering commit after concurrent work took T084 and ADR-053 (`2b9c743`). Worktree branch `t084-bot-awareness`; the name predates the renumbering. Scope and rollback: [task card](../../task-supplement.md#t085--bot-rear-awareness-team-spread-and-readable-time-to-kill-2026-11-15). Design: [AI awareness, team spread and lethality](../../features/ai.md#awareness-team-spread-and-lethality-t085-2026-11-15) and [ADR-054](../../decisions.md#adr-054--accepted-bot-footstep-hearing-wider-vision-and-a-readable-lethality-envelope-t085).
+
+**Implemented:**
+- Spread-scored patrol and combat destinations, replacing the id-ordered route walk that made teammates trail each other.
+- Ally gunfire points at the ally's enemy or is ignored, and at most 2 allies investigate one noise.
+- Footstep hearing from any direction (24/13/5 m by speed, 2.5 m always) and a 120° vision cone.
+- Turning on an unseen attacker after 2 hits (or 1 below 50 health).
+- Accuracy recovery starts at the first possible shot, with a wider settled error.
+- HUD chevrons pointing at whoever hit the player.
+
+**Unchanged:** C0/Game-v1, fixtures, locks, AI ray and path budgets, weapon damage and rate, content and toolchain.
+
+**Time-to-kill** (`BotLethalityTests`, real combat harness, still standing target, median of 9 bots, from sighting; this is a regression envelope, not player acceptance):
+
+| Distance | T082 | T085 | Fastest after first shot, T082 → T085 |
+|---|---|---|---|
+| 8 m | 61 ticks (1.0 s) | 98 ticks (1.6 s) | 24 → 48 ticks |
+| 20 m | 90 ticks (1.5 s) | 151 ticks (2.5 s) | 30 → 65 ticks |
+| 40 m | 143 ticks (2.4 s) | 233 ticks (3.9 s) | 29 → 96 ticks |
+
+Previous constants, for rollback by tuning only: reaction 15 + 0..15 ticks; acquisition miss 1.1 m; settled miss 0.12 m + 0.9 cm/m; recovery 40 ticks from sighting; moving penalty 0.25 m; vision cone 90°.
+
+| Lane, source `ef96e45` (clean) | Result |
+|---|---|
+| Test-Simulation | PASS 239 (6 new `BotAwarenessTests`, 3 `BotLethalityTests`, 2 HUD indicator tests; one stance-aim assertion moved from an exact pitch to the settled-error bound; the M3 11-bot budget and soak are unchanged) |
+| Test-Game | PASS 70 |
+| Test-Maps | PASS 14 + 41 |
+| Test-Contracts / Test-Generation | PASS 76 / 392 |
+| Test-SourceProvenance | PASS (no new assets) |
+| Fixtures, C0 lock, Game-v1 lock | PASS (35 fixture assertions) |
+
+Reports were copied to `Artifacts/m0-foundation/`, `m1-procedural-feasibility/`, `m2-combat-harness/` and `m8-runtime-composition/` under `ef96e4593494e538c7c071727656eac03aa5c033/`.
+
+**Pending** (not run; never PASS without evidence):
+- Unity EditMode/PlayMode on the merged `main`, which also compiles the Unity-only `ProductSessionView` marker drawing.
+- Client and server builds, a smoke test and an installer.
+- A `SHOOTER_AI_SUMMARY` capture on real maps, including the new counters.
+- The owner's feel review: spread, rear awareness, time-to-kill, and whether the hit markers read well.
+
+Known limits: hearing ignores walls; slow or crouched movement behind a bot beyond 5 m stays unheard; spread scoring knows allies' goals but not their routes.
+
+
 ## T083 — First-person glove and sleeve presentation
 
 Owner requested continued visual implementation, 2026-11-15. T082 main/runtime merges are preserved; docs-only `a9f228d` landed while this working-source pass was underway. No agents or new worktrees. [Task](../../task-supplement.md#t083--first-person-gloved-hands-and-continuous-reload-reach), [ADR-052](../../decisions.md#adr-052--accepted-packaged-first-person-glove-and-sleeve-props-t083).
