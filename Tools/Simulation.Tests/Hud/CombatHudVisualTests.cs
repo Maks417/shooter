@@ -76,5 +76,16 @@ namespace Shooter.Simulation.Tests.Hud
             Assert.Equal("N", CombatHudVisual.CardinalOrBearing(0));
             Assert.Equal("45", CombatHudVisual.CardinalOrBearing(45));
         }
+
+        [Fact]
+        public void Segment_fill_covers_left_to_right()
+        {
+            const float w = 20f;
+            Assert.Equal(0f, CombatHudVisual.SegmentFill(0f, 0, w));
+            Assert.Equal(w, CombatHudVisual.SegmentFill(20f, 0, w));
+            Assert.Equal(0f, CombatHudVisual.SegmentFill(20f, 1, w));
+            Assert.Equal(w * 0.5f, CombatHudVisual.SegmentFill(30f, 1, w));
+            Assert.Equal(w, CombatHudVisual.SegmentFill(100f, 4, w));
+        }
     }
 }
