@@ -10,9 +10,27 @@ Review: current T079 source plus retained T075 player/staging images. Computer U
 
 Failures retained under `Artifacts/m0-foundation/7b05e9e9f36863414171a06316cae5e4288deb78/`: sandbox Unity `tests-editmode-20261115T131127202Z-13e333a0` exited before tests with licensing/WMI access failure; sandbox Contracts restore failed before tests. Permitted EditMode rerun `tests-editmode-20261115T131251011Z-3281048f` found the discarded-submesh defect (three materials on one submesh); source upload was fixed, not the assertion weakened.
 
-Pre-build checks: Contracts 76, Generation 387 and Unity EditMode 55 PASS on the dirty T080 working source (reports remain under base `7b05e9e`; not relabelled clean-source runs). Source provenance 736 entries / 368 GUIDs, fixture 35 assertions / 17 JSON files and docs checks PASS. Final clean-source PlayMode/build/package/installer verification follows below. P05 FAIL, named comparison, full gameplay, installed upgrade, GPU/thermal/reference proofs and VD/REL acceptance remain open. This is a bounded material/composition correction, not AAA visual acceptance.
+Pre-build checks: Contracts 76, Generation 387 and Game 68, Unity EditMode 52 and PlayMode 20 PASS on the dirty T080 working source (reports remain under base `7b05e9e`; not relabelled clean-source runs). Source provenance 736 entries / 368 GUIDs, fixture 35 assertions / 17 JSON files and docs checks PASS. These test runs began before the implementation commit; their base source/dirty flags are retained. Final clean-source build/package/installer verification follows below. P05 FAIL, named comparison, full gameplay, installed upgrade, GPU/thermal/reference proofs and VD/REL acceptance remain open. This is a bounded material/composition correction, not AAA visual acceptance.
 
-**Latest preview — 2026-11-15:** T079 installer **0.3.8**, binary source `07c5db7` (env/menu/combat design wave). [Delivery evidence](#t079--design-wave-installer-038). Prior installer **0.3.7** at `e251702` remains a valid rollback pair. VD/REL acceptance remains open and P05 FAIL is unchanged.
+### T080 delivery 0.3.9
+
+Binary source **`beac9aec1e1af0548c4b396f380f3ef010f067cd`**, source hash `309bbcfb86e30ae06a470b8ca648f79204caecb7edd392865ac336184fd34763`. Later documentation commits do not relabel the binary. Locked Unity 6000.3.28f1 / URP 17.3.0; native content closure `a4b2827a9cdd453db131539db49081ab7873f9ee46fd744a7f6dd238f2250794` is reused from T079, with no generator/content edits.
+
+| Check | Actual evidence |
+|---|---|
+| Client | Clean IL2CPP PASS, `Artifacts/m0-foundation/beac9aec1e1af0548c4b396f380f3ef010f067cd/build-client-20261115T131800764Z-fb383fbf/` |
+| Server / smoke | Clean build PASS with zero graphics source assets, `build-server-20261115T131952744Z-f971cb30/`; smoke PASS `smoke-server-20261115T132350139Z-7b8eb3bd/` under the same source root |
+| Native package | PASS, 294 files, native requirement, extract/corrupt/rollback software rehearsals; `Artifacts/m11-playable-release/beac9aec1e1af0548c4b396f380f3ef010f067cd/package-20261115T132000149Z-5695e5dd/` |
+| Installer | PASS **0.3.9**, 26,446,324 bytes; SHA256 `fa0c684d3613312befdfc8046ed97443948f69f02e9cc6337cd35119b703a521`; stable AppId / preference policy, predecessor 0.3.8 |
+| Player review | Inventory-verified short copy `Artifacts/T080Preview` (294/294 hashes); observed Main with enlarged distinct cards, Depot 5v5 load, pause/leave return, Compound 6v6 load. Logs + inventory review retained in `Artifacts/visual-design/t080/`. Automated limited review, not named visual acceptance or a full match |
+
+Installer: `C:/Job/shooter/Artifacts/m11-playable-release/beac9aec1e1af0548c4b396f380f3ef010f067cd/installer-20261115T132256394Z-24c64b00/installer/Shooter-Setup-0.3.9.exe`. Actual installation/upgrade was **NotRun**. The wrapper initially failed on sandbox-redirected ISCC discovery and then temporary-junction access; permitted rerun used the exact pinned compiler and passed. Failed reports are retained.
+
+Direct player launch inside the deep evidence package path reproduced the known Windows content-path failure; the short inventory-matched copy loaded both maps. This limitation remains, with `deep-path-failure.log`; do not recommend direct launches from deeply nested evidence paths. No long-path runtime repair is claimed.
+
+Review conclusion: map cards and material consistency improved, but current menu soldiers remain visibly mannequin-like; live spawn views retain long unbroken box walls, basic equipment and no convincing first-person hands. The requested BFV quality goal is **not achieved**. Further architecture/character/hand/action work, original P05 disposition, named comparisons, full matches, installed upgrade and reference-machine gates remain open. All VD/REL acceptance remains NotClaimed.
+
+**Prior preview — 2026-11-15:** T079 installer **0.3.8**, binary source `07c5db7` (env/menu/combat design wave). [Delivery evidence](#t079--design-wave-installer-038). Prior installer **0.3.7** at `e251702` remains a valid rollback pair. VD/REL acceptance remains open and P05 FAIL is unchanged.
 
 ## T079 — Material-split maps, menu staging, combat presence
 

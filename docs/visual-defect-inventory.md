@@ -28,7 +28,7 @@ Do not delete failed M1 artifacts, do not relabel FAIL as PASS, and do not inher
 | PROD-D01 | readability | PendingCapture | Team-identifiable living soldiers in product player (both maps) |
 | PROD-D02 | lod | PendingCapture | Required LOD / grip / foot / clearance tolerances in live poses |
 | PROD-D03 | ui | PendingReview | 720p HUD/shell readability at 100–150% UI scale |
-| VD-D01 | materials | SoftFixedPendingReview | Product map now uploads packaged albedo `_BaseMap` (+ optional normal/mask when present); current packages remain largely 1×1 albedo-only |
+| VD-D01 | materials | SoftFixedPendingReview | Product map now uploads packaged albedo `_BaseMap` (+ optional normal/mask when present); T075+ packages carry spatial albedo/normal/mask planes; T080 fixes scaled-box texture scale and card submesh retention |
 | VD-D02 | atmosphere | SoftFixedPendingReview | Product sky/fog/probe defaults tuned for grounded daylight; owner/player review Pending |
 | VD-D03 | fx | SoftFixedPendingReview | T079 denser analytic FX plus hit marker/damage flash; player review Pending |
 | VD-D04 | menu | SoftFixedPendingReview | T079 BFV staging depth bands and stronger operation cards; interactive review Pending |
