@@ -41,3 +41,7 @@ Publish world seed/manifests (`Benchmarks/b02-b03-m3-freeze.json`), collision/na
 ## Sign-off rule
 
 Pure software required checks have archived evidence. Unity and reference hardware remain Pending/PendingHardware and are owner-waived for M3 only; they are not claimed PASS. Stretch/deferred performance work moves to M4.
+
+## Post-close refreeze (2026-11-15)
+
+Only the B02/B03 `routeHash` in `Benchmarks/b02-b03-m3-freeze.json` was refrozen (`eb135d38…ab6` → `2a378cb0…bf05`) after ADR-071 Y-aware connectivity stopped the compound's 6 m gameplay roof slabs from sealing ground routes. Collision/nav/nav-settings hashes, counts and generator version are unchanged. Owner-approved; see the [ADR-071 addendum](../../decisions.md#adr-071--accepted-oil-depot-third-map-and-limited-elevated-routes). M3 closure status is unchanged.
