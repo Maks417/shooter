@@ -1,5 +1,24 @@
 # M11 — Playable build and acceptance — handoff and gate record
 
+## Release 0.3.12
+
+2026-11-15. The owner asked to commit the pending main-checkout work and create a new release. The pending files were the T084 continuous sleeve loft and its welded-topology test, plus T084 doc wording. Generation 394 and docs verification PASS on the working tree (`Artifacts/m1-procedural-feasibility/7cbabd38bdd25c6e572c14f85d761da48448b1bd/20261115T145451354Z-dfce7da1/`); committed as `50e8939`.
+
+Clean binary/content source **`50e893976efa51d57ecf965e34f61150dbe22c9a`**, source hash `220d70c263b4e28059435b7043e9b9554b6cebfd70f50b6aba54818052e9d208`. It contains [T084](#t084--near-field-finish-and-hip-composition) and [T085](#t085--bot-rear-awareness-team-spread-and-readable-time-to-kill). Locked Unity 6000.3.28f1 / URP 17.3.0 / D3D11, Client IL2CPP / Server Mono.
+
+| Check | Actual result / retained evidence |
+|---|---|
+| Unity | EditMode 53/53 and PlayMode 21/21 PASS, clean: `Artifacts/m0-foundation/50e893976efa51d57ecf965e34f61150dbe22c9a/tests-editmode-20261115T145603562Z-62734d45/`, `tests-playmode-20261115T145705401Z-500642bd/` |
+| Native content | The first attempt `Artifacts/m8-runtime-composition/50e893976efa51d57ecf965e34f61150dbe22c9a/compile-gamecontent-20261115T145745436Z-42e7ae29/` FAILED in the MapContent publish tool: `InternalError: Unable to remove the file to be replaced` (an atomic `File.Replace`). No game or editor process was running afterwards; the cause is unconfirmed. This is the same symptom class as the transient T084 native failure. The immediate retry `compile-gamecontent-20261115T145844309Z-f6c0b77b/` PASSED: 8 native packages, `nativeUnityNavBake` PASS, and the non-navigation byte-identity guard PASS. Both runs are retained |
+| Client / Server | Clean PASS: `Artifacts/m0-foundation/50e893976efa51d57ecf965e34f61150dbe22c9a/build-client-20261115T145959017Z-a52eab72/`, `build-server-20261115T150133132Z-8565b063/`; headless server smoke PASS `smoke-server-20261115T150253504Z-487e795b/` |
+| Native package | PASS, 378 inventoried files, extract and corrupt-content rehearsals PASS (rollback rehearsal SkippedNoPrevious); `Artifacts/m11-playable-release/50e893976efa51d57ecf965e34f61150dbe22c9a/package-20261115T150302379Z-ca4f9856/`. Content closure `9c9c16dd6393b262d6d88ce7db8b33780dd25cadd350d399acdedc521e22ea50`, index `d883f2500b0cf4eb6f9967ac3d307229e1c26066c13fa878d834bdfa833a0cd8`, ZIP SHA256 `7e57c727eddf2ce12aba25cdb1d0a8ccdf17e4de9c9a0b972f7c23457a542066` |
+| Installer | PASS **0.3.12**, 27,071,621 bytes, SHA256 `a8839dec54c90cc816c0b88dd5c8f63021ad4a7fc7c4067606c0e5b3baf32855`; stable AppId and per-user scope, predecessor report 0.3.11. Actual installation/upgrade **NotRun** |
+
+Installer: `C:/Job/shooter/Artifacts/m11-playable-release/50e893976efa51d57ecf965e34f61150dbe22c9a/installer-20261115T150318690Z-28a5defc/installer/Shooter-Setup-0.3.12.exe`. The prior 0.3.11 binary/content pair remains the rollback.
+
+**Pending** (never PASS without evidence): installing over 0.3.11, launch and player review of the final sleeve and finishes, the owner's bot feel review (spread, rear awareness, time-to-kill, hit markers), a `SHOOTER_AI_SUMMARY` capture, and reference GPU/thermal/performance. P05 FAIL and all VD/REL exits remain open.
+
+
 ## T085 — Bot rear awareness, team spread and readable time-to-kill
 
 2026-11-15. The owner played the T082 bots and reported that they run after each other, do not see enemies behind their backs, and kill too fast to read. Base `12ff5ac`; code commit `ef96e45` (lanes ran here), then a comment-only renumbering commit after concurrent work took T084 and ADR-053 (`2b9c743`). Worktree branch `t084-bot-awareness`; the name predates the renumbering. Scope and rollback: [task card](../../task-supplement.md#t085--bot-rear-awareness-team-spread-and-readable-time-to-kill-2026-11-15). Design: [AI awareness, team spread and lethality](../../features/ai.md#awareness-team-spread-and-lethality-t085-2026-11-15) and [ADR-054](../../decisions.md#adr-054--accepted-bot-footstep-hearing-wider-vision-and-a-readable-lethality-envelope-t085).
