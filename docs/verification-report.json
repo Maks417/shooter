@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "root": "C:\\Job\\shooter\\docs",
+  "root": "C:\\Job\\shooter\\.claude\\worktrees\\agent-a6bbbade469c448ff\\docs",
   "markdownFiles": 127,
-  "wordCount": 128004,
-  "relativeLinksChecked": 1218,
+  "wordCount": 129604,
+  "relativeLinksChecked": 1232,
   "integrityFiles": 176,
   "errors": [],
   "result": "PASS",
