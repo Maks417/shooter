@@ -50,6 +50,8 @@ namespace Shooter.Presentation.Audio
                 SynthVoiceKind.Ui => 1f,
                 _ => 1f / (1f + distanceMeters * 0.05f)
             };
+            // Fade to silence before the hard cull so crossing the radius does not pop.
+            if (max > 0f) atten *= Math.Clamp((max - distanceMeters) / (max * 0.25f), 0f, 1f);
             return atten;
         }
 

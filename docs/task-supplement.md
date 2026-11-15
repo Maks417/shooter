@@ -222,6 +222,8 @@ Deliver: stereo product bank path; footsteps hard-culled beyond 18 m; gunfire re
 
 Rollback: revert T089; prior T086 mono/soft-distance path.
 
+T089 owner follow-up, 2026-11-15: implement the reviewed first audio improvement pass (camera-relative positioning, rate-correct playback, recorded-PCM gunfire body/reflections, priority/limiter and bounded map-collision acoustics). Scope additionally includes `Presentation/Session/ProductSessionView.cs` and its real Unity integration test in `Tests/EditMode/ProductViewBindingTests.cs`. Existing CC0 bank, settings/contract/content formats, toolchain and ≤24 voices stay fixed. See [audio refinement](features/audio.md#owner-requested-spatial-and-mix-refinement--2026-11-15) and [handoff](milestones/m11-playable-release/handoff.md#audio-spatial-and-mix-refinement--2026-11-15). Listening and reference acceptance remain Pending.
+
 ## T090 — Bot tactics: cover peek, wall hearing, ledge strafe, route spread (2026-11-15)
 
 Owner approved the bot-AI improvement plan Phase 1. Sole integrator. Decision: [ADR-070](decisions.md#adr-070--accepted-bot-tactics-tranche-cover-peek-wall-hearing-ledge-strafe-route-spread-t090).

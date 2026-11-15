@@ -30,6 +30,13 @@ namespace Shooter.Presentation.Session
         private readonly HudLayout hud = new HudLayout();
         private SynthAudioMixer? mixer;
         private ProductAudioEventRouter? audio;
+        private const int AudioProbeBudget = 8;
+        private int audioProbesRemaining;
+        private float nextAcousticProbe;
+        private float audioReflection;
+        private Vector3 acousticListenerPosition;
+        private readonly Dictionary<Vector3Int, (float value, float expires)> audioObstructions =
+            new Dictionary<Vector3Int, (float value, float expires)>();
         private readonly AnalyticFxPool analyticFxPool = new AnalyticFxPool();
         private readonly CosmeticGrenadeFlight grenadeFlight = new CosmeticGrenadeFlight();
         private readonly FirstPersonCameraBob cameraBob = new FirstPersonCameraBob();
@@ -103,7 +110,7 @@ namespace Shooter.Presentation.Session
             if (mixer != null && audio != null) return (mixer, audio);
             string? sampleRoot = ResolveCombatAudioRoot();
             mixer = new SynthAudioMixer(CombatAudioBankBaker.Bake(sampleRoot: sampleRoot));
-            audio = new ProductAudioEventRouter(mixer);
+            audio = new ProductAudioEventRouter(mixer) { ObstructionProbe = ProbeAudioObstruction };
             return (mixer, audio);
         }
 
@@ -729,6 +736,8 @@ namespace Shooter.Presentation.Session
                 audioOutput?.ArmOutput();
             }
 
+            UpdateAudioAcoustics(router, listenerFeet);
+
             if (combatEvents != null)
             {
                 router.ConsumeCombatEvents(combatEvents, listenerFeet, session.HumanEntityId);
@@ -756,7 +765,51 @@ namespace Shooter.Presentation.Session
                     footstepScratch.Add(state);
                 }
             }
-            router.TickFootsteps(footstepScratch, listenerFeet, session.CompletedTick);
+            router.TickFootsteps(footstepScratch, listenerFeet, session.CompletedTick, session.HumanEntityId);
+        }
+
+        private void UpdateAudioAcoustics(ProductAudioEventRouter router, Float3 listenerFeet)
+        {
+            audioProbesRemaining = AudioProbeBudget;
+            Vector3 ears = new Vector3(listenerFeet.X, listenerFeet.Y + 1.35f, listenerFeet.Z);
+            if ((ears - acousticListenerPosition).sqrMagnitude > 1f)
+            {
+                audioObstructions.Clear();
+                nextAcousticProbe = 0f;
+                acousticListenerPosition = ears;
+            }
+            if (Time.unscaledTime >= nextAcousticProbe)
+            {
+                nextAcousticProbe = Time.unscaledTime + 0.2f;
+                // Authoritative map solids only (layer 8); ignore actors, triggers and cosmetic meshes.
+                // Fixed ray count and cadence are independent of graphics quality.
+                int nearby = 0;
+                if (Physics.Raycast(ears, Vector3.up, 7f, 1 << 8, QueryTriggerInteraction.Ignore)) nearby += 2;
+                if (Physics.Raycast(ears, Vector3.right, 10f, 1 << 8, QueryTriggerInteraction.Ignore)) nearby++;
+                if (Physics.Raycast(ears, Vector3.left, 10f, 1 << 8, QueryTriggerInteraction.Ignore)) nearby++;
+                audioProbesRemaining -= 3;
+                audioReflection = nearby / 4f;
+            }
+            float yaw = camera != null ? camera.transform.eulerAngles.y * Mathf.Deg2Rad : 0f;
+            router.SetListenerAcoustics(yaw, audioReflection, listenerFeet);
+        }
+
+        private float ProbeAudioObstruction(Float3 listener, Float3 source)
+        {
+            var point = new Vector3(source.X, source.Y, source.Z);
+            var key = new Vector3Int(Mathf.FloorToInt(point.x * 2f), Mathf.FloorToInt(point.y * 2f), Mathf.FloorToInt(point.z * 2f));
+            if (audioObstructions.TryGetValue(key, out var cached) && cached.expires > Time.unscaledTime)
+                return cached.value;
+            if (audioProbesRemaining <= 0) return 0f;
+            audioProbesRemaining--;
+            Vector3 start = new Vector3(listener.X, listener.Y, listener.Z);
+            Vector3 delta = point - start;
+            float distance = delta.magnitude;
+            float obstruction = distance > 0.5f && Physics.Raycast(start, delta / distance,
+                distance - 0.15f, 1 << 8, QueryTriggerInteraction.Ignore) ? 1f : 0f;
+            if (audioObstructions.Count >= 128) audioObstructions.Clear();
+            audioObstructions[key] = (obstruction, Time.unscaledTime + 0.15f);
+            return obstruction;
         }
 
         private void DetachAudioSession()
@@ -764,6 +817,9 @@ namespace Shooter.Presentation.Session
             var router = audio;
             if (!audioAttached && (router == null || !router.IsAttached)) return;
             router?.DetachSession();
+            audioObstructions.Clear();
+            nextAcousticProbe = 0f;
+            audioReflection = 0f;
             audioAttached = false;
             audioSessionId = 0;
             accessibilityCueKeys.Clear();

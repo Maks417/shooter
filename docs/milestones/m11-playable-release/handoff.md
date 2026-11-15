@@ -1,5 +1,27 @@
 # M11 — Playable build and acceptance — handoff and gate record
 
+## Audio spatial and mix refinement — 2026-11-15
+
+Owner assigned the reviewed first audio improvement pass as a T089 / ADR-062 follow-up. Base `077b77f`; sole audio integrator worked in an isolated checkout after unrelated active geometry work was observed in the shared checkout. Scope: `Presentation/Audio/Runtime`, the audio pump/acoustic probes in `ProductSessionView`, pure audio tests, a real-collision Unity integration test and affected docs. Existing CC0 bank and all authority/contracts/settings/content identities are preserved.
+
+Implemented camera-relative equal-power panning with live direction updates, local cue centering, rate-correct interpolated PCM, distance width/body and boundary fade, bounded map-only occlusion/enclosure probes, quiet recorded-PCM early reflections, priority-based replacement within 24 voices and a linked stereo limiter. Unity audio configuration is cached outside the callback. Horizontal footsteps reject teleport bursts. [Detailed behavior and limitations](../../features/audio.md#owner-requested-spatial-and-mix-refinement--2026-11-15).
+
+Final audio runtime source **`e7798c5251915e8deecc773087668c4a1348f3a3`** (initial pass `e8ace07`, then ambience recovery after voice saturation). Locked Unity **6000.3.28f1 / 8f082d2fe476**, unchanged toolchain hash `9ac31fe82117043e2bba3bfb843dd1ca32834b15425188e96d6f3369e2c627a8`. Durable evidence is relocated to **`Artifacts/audio-refinement/isolated-evidence/`**; raw reports keep original absolute worktree paths, with a relocation/inventory proof beside them. The 12-second matched before/after PCM examples and provenance are in **`Artifacts/audio-refinement/audition/`**: local rifle, enclosure, distant rifle, right-side rifle, wall-muffled rifle and pistol. These explicit acoustic parameters are an offline illustration, not a captured device/player test.
+
+| Check | Actual result / run relative to durable evidence root |
+|---|---|
+| Contracts / Generation | **76 / 405 PASS**, dirty implementation runs on base `077b77f`: `m0-foundation/077b77f…/20261115T190003492Z-cc57bacd/`, `m1-procedural-feasibility/077b77f…/20261115T190101169Z-4d17e0a3/`. No contract/generation source changes in this task. |
+| Final Simulation | **297/297 PASS**, including **30 audio cases**, clean source `e7798c5`: `m2-combat-harness/e7798c5…/20261115T191756925Z-9a888d49/`. Prior 292/294/296 runs retained. |
+| Final Unity EditMode | **58/58 PASS**, including actual map-only occlusion/query-budget integration: `m0-foundation/e7798c5…/tests-editmode-20261115T191823674Z-fb000b6b/`. |
+| Final Unity PlayMode | **21/21 PASS**, zero skipped/inconclusive: `m0-foundation/e7798c5…/tests-playmode-20261115T192039305Z-37610895/`. Initial run had two Inconclusive cases because this fresh checkout lacked map fixtures; no passing status was inferred. Matching pure diagnostic map fixtures were then generated (eight packages / 39 publication regressions PASS at `m8-runtime-composition/e8ace07…/compile-gamecontent-20261115T190717947Z-c46cf47a/`) before the successful rerun. This is not new native publication or navigation acceptance. |
+| Clean IL2CPP Client | **PASS**, `sourceDirty=false`, non-development source `e7798c5`: `m0-foundation/e7798c5…/build-client-20261115T192259171Z-07ec32a2/`. Initial `e8ace07` clean build retained separately. This is an internal compile artifact, not a new installed game or final candidate. |
+| Client smoke | **PASS**, `m0-foundation/e7798c5…/smoke-client-20261115T192519824Z-0284e624/`; startup/shutdown only, not a listening or manual gameplay review. |
+| Provenance / fixtures / docs | PASS: **802 entries / 401 GUIDs**, **35 specification assertions / 17 JSON**, docs links/hash inventory and whitespace. Documentation verification is not gameplay evidence. |
+
+Owner explicitly requested **no installer now**, because other agents are working. No package/installer/native republish was produced; no fresh Server build was needed for this presentation-only task. Other agents' committed changes are preserved on integration and their uncommitted work is excluded from this audio build identity. Combined final-player/release validation belongs to the later integrator. Named headset/speaker listening, output-device-change proof, 6v6 reference CPU/GPU/thermal measurements and Battlefield V equivalence remain Pending. FIX10/SET02, P05 FAIL and other open release/hardware gates remain unchanged.
+
+Rollback: revert the bounded T089 follow-up source/docs together; the bank/manifest and settings need no migration. Preserve test/build evidence outside the temporary checkout before removing it.
+
 ## T090 — Bot tactics (cover peek, wall hearing, ledge strafe, route spread) — 2026-11-15
 
 Owner: approved Phase 1 bot-AI improvement plan. [ADR-070](../../decisions.md#adr-070--accepted-bot-tactics-tranche-cover-peek-wall-hearing-ledge-strafe-route-spread-t090); [task](../../task-supplement.md#t090--bot-tactics-cover-peek-wall-hearing-ledge-strafe-route-spread-2026-11-15); [ai.md](../../features/ai.md#bot-tactics-cover-peek-wall-hearing-ledge-strafe-route-spread-t090-2026-11-15).

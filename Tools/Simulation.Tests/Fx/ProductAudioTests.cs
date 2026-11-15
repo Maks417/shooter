@@ -9,6 +9,174 @@ namespace Shooter.Simulation.Tests.Fx
 {
     public sealed class ProductAudioTests
     {
+        [Theory]
+        [InlineData(44100)]
+        [InlineData(48000)]
+        [InlineData(96000)]
+        public void Device_rate_preserves_recording_duration_and_pitch(int outputRate)
+        {
+            var samples = new float[4800 * 2];
+            for (int i = 0; i < 4800; i++)
+                samples[i * 2] = samples[i * 2 + 1] = 0.3f * (float)System.Math.Sin(i * 2 * System.Math.PI * 1000 / 48000);
+            var voice = new SynthVoice(SynthVoiceKind.Ui, 1f, 0f, 1f, samples, 48000, false);
+            int frames = 0, crossings = 0;
+            float previous = 0f;
+            while (voice.Active && frames < outputRate)
+            {
+                voice.ReadSample(1f / outputRate, out float l, out _);
+                if (previous <= 0 && l > 0) crossings++;
+                previous = l;
+                frames++;
+            }
+            Assert.InRange(frames, outputRate / 10 - 1, outputRate / 10 + 2);
+            Assert.InRange(crossings, 99, 101);
+        }
+
+        [Fact]
+        public void Direction_rotates_with_listener_and_rear_is_centered()
+        {
+            var listener = new Float3(0, 0, 0);
+            var east = new Float3(10, 0, 0);
+            Assert.InRange(ProductAudioEventRouter.ComputePan(listener, east, 0f), 0.99f, 1f);
+            Assert.InRange(ProductAudioEventRouter.ComputePan(listener, east, (float)System.Math.PI), -1f, -0.99f);
+            Assert.InRange(ProductAudioEventRouter.ComputePan(listener, east, (float)System.Math.PI / 2), -0.001f, 0.001f);
+        }
+
+        [Fact]
+        public void Playing_world_voice_follows_turns_and_local_voice_stays_centered()
+        {
+            var samples = new float[4800 * 2];
+            System.Array.Fill(samples, 0.1f);
+            var world = new SynthVoice(SynthVoiceKind.RifleShot, 1f, 1f, 1f, samples, 48000, false,
+                sourceX: 10f, sourceZ: 0f);
+            world.ReadSample(1f / 48000, out float l, out float r);
+            Assert.True(r > l);
+            world.UpdateListener((float)System.Math.PI, 0f, 0f);
+            world.ReadSample(1f / 48000, out l, out r);
+            Assert.True(l > r);
+            var local = new SynthVoice(SynthVoiceKind.RifleShot, 1f, 0f, 1f, samples, 48000, false);
+            local.UpdateListener((float)System.Math.PI, 0f, 0f);
+            local.ReadSample(1f / 48000, out l, out r);
+            Assert.Equal(l, r);
+        }
+
+        [Fact]
+        public void Distance_cull_boundary_fades_to_zero()
+        {
+            Assert.Equal(0f, CombatAudioDistance.Attenuation(SynthVoiceKind.RifleShot, CombatAudioDistance.GunfireMaxMeters));
+            Assert.Equal(0f, CombatAudioDistance.Attenuation(SynthVoiceKind.Footstep, CombatAudioDistance.FootstepMaxMeters));
+            Assert.InRange(CombatAudioDistance.Attenuation(SynthVoiceKind.RifleShot, CombatAudioDistance.GunfireMaxMeters - 0.01f), 0f, 0.001f);
+        }
+
+        [Fact]
+        public void Limiter_preserves_stereo_ratio_under_saturated_mix()
+        {
+            var samples = new float[4800 * 2];
+            for (int i = 0; i < 4800; i++) { samples[i * 2] = 0.8f; samples[i * 2 + 1] = 0.4f; }
+            var clips = new float[CombatAudioBank.KindCount][][];
+            for (int i = 0; i < clips.Length; i++) clips[i] = new[] { samples };
+            var mix = new SynthAudioMixer(new CombatAudioBank(48000, clips, "limiter-test"));
+            for (int i = 0; i < SynthAudioMixer.MaxVoices; i++) mix.TryPlay(SynthVoiceKind.Ui, 0f, (ulong)i);
+            var buffer = new float[1024];
+            mix.Fill(buffer, 2, 48000);
+            for (int i = 0; i < buffer.Length; i += 2)
+            {
+                Assert.InRange(buffer[i], 0f, 0.891f);
+                Assert.InRange(buffer[i] / buffer[i + 1], 1.999f, 2.001f);
+            }
+        }
+
+        [Fact]
+        public void Local_weapon_cue_bypasses_world_occlusion_query()
+        {
+            var router = new ProductAudioEventRouter(new SynthAudioMixer());
+            int probes = 0;
+            router.ObstructionProbe = (from, to) => { probes++; return 1f; };
+            router.AttachSession(1001);
+            var local = new EntityId(5);
+            var shot = new CombatEvent(new EventId(1001, 3, local, 1), CombatEventKind.ShotAccepted, local, default,
+                new ShotPayload(new DefinitionId("weapons/rifle"), 1, new Float3(0, 1.5f, 0), new Float3(0, 0, 1), 42, 1));
+            Assert.Equal(1, router.ConsumeCombatEvents(new[] { shot }, default, local));
+            Assert.Equal(0, probes);
+        }
+
+        [Fact]
+        public void Ambient_recovers_after_yielding_its_voice_to_combat()
+        {
+            var mix = new SynthAudioMixer();
+            var router = new ProductAudioEventRouter(mix);
+            router.AttachSession(55);
+            for (int i = 0; i < SynthAudioMixer.MaxVoices; i++)
+                Assert.True(mix.TryPlay(SynthVoiceKind.RifleShot, 0f, (ulong)i));
+            Assert.True(mix.StolenVoices > 0);
+            mix.Fill(new float[48000 * 4], 2, 48000);
+            Assert.Equal(0, mix.ActiveVoices);
+            router.SetListenerAcoustics(0f, 0f);
+            mix.Mix(1f / 48000);
+            Assert.Equal(1, mix.ActiveVoices);
+        }
+
+        [Fact]
+        public void Local_shot_replaces_lower_priority_voice_without_exceeding_cap()
+        {
+            var mix = new SynthAudioMixer();
+            for (int i = 0; i < SynthAudioMixer.MaxVoices; i++)
+                Assert.True(mix.TryPlay(SynthVoiceKind.Footstep, 5f, (ulong)i));
+            Assert.True(mix.TryPlay(SynthVoiceKind.RifleShot, 0f, 0f, 99, true, 0f, 0f));
+            Assert.Equal(1, mix.StolenVoices);
+            mix.Mix(1f / 48000);
+            Assert.Equal(SynthAudioMixer.MaxVoices, mix.ActiveVoices);
+            mix.StopAll();
+            for (int i = 0; i < SynthAudioMixer.MaxVoices; i++)
+                Assert.True(mix.TryPlay(SynthVoiceKind.RifleShot, 0f, 0f, (ulong)i, true, 0f, 0f));
+            Assert.False(mix.TryPlay(SynthVoiceKind.Footstep, 1f, 99));
+        }
+
+        [Fact]
+        public void Obstruction_reduces_report_and_reflections_extend_tail_but_stop_clears_it()
+        {
+            var clear = new SynthAudioMixer();
+            var blocked = new SynthAudioMixer();
+            clear.TryPlay(SynthVoiceKind.RifleShot, 10f, 0f, 1, false, 0f, 0f);
+            blocked.TryPlay(SynthVoiceKind.RifleShot, 10f, 0f, 1, false, 1f, 0f);
+            var a = new float[4096];
+            var b = new float[4096];
+            clear.Fill(a, 2, 48000);
+            blocked.Fill(b, 2, 48000);
+            Assert.True(Energy(a) > Energy(b) * 1.5f);
+
+            var mix = new SynthAudioMixer();
+            mix.Bank.TryGetClip(SynthVoiceKind.PistolShot, 0, out var clip);
+            mix.TryPlay(SynthVoiceKind.PistolShot, 0f, 0f, 0, false, 0f, 1f);
+            mix.Fill(new float[clip.Length], 2, 48000);
+            var tail = new float[4096];
+            mix.Fill(tail, 2, 48000);
+            Assert.True(Energy(tail) > 0f);
+            mix.StopAll();
+            mix.Fill(tail, 2, 48000);
+            Assert.Equal(0f, Energy(tail));
+        }
+
+        [Fact]
+        public void Teleport_and_vertical_movement_do_not_emit_footstep_bursts()
+        {
+            var router = new ProductAudioEventRouter(new SynthAudioMixer());
+            router.AttachSession(55);
+            var actors = new[] { new ActorLifecycleState(new EntityId(7), 1, true, 100, new Float3(0, 0, 0), 0, 0, 1, 30, 90) };
+            router.TickFootsteps(actors, default, 1);
+            actors[0] = new ActorLifecycleState(new EntityId(7), 1, true, 100, new Float3(0, 2, 0), 0, 0, 1, 30, 90);
+            Assert.Equal(0, router.TickFootsteps(actors, default, 2));
+            actors[0] = new ActorLifecycleState(new EntityId(7), 1, true, 100, new Float3(8, 0, 0), 0, 0, 1, 30, 90);
+            Assert.Equal(0, router.TickFootsteps(actors, default, 3));
+        }
+
+        private static float Energy(float[] samples)
+        {
+            float sum = 0f;
+            foreach (float sample in samples) sum += sample * sample;
+            return sum;
+        }
+
         [Fact]
         public void Device_rate_fill_peak_limits_and_voice_cap()
         {

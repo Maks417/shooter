@@ -17,6 +17,36 @@ namespace Shooter.Tests
     /// <summary>T056/T067/T068 EditMode: packaged map/actor visuals, binder policy, authority weapon/action views.</summary>
     public sealed class ProductViewBindingTests
     {
+        [Test]
+        public void AudioOcclusionUsesOnlyMapCollisionAndHasABoundedProbeBudget()
+        {
+            var root = new GameObject("Audio occlusion integration");
+            var wall = new GameObject("Authoritative map wall") { layer = 8 };
+            wall.transform.position = new Vector3(0, 1.5f, 5);
+            wall.AddComponent<BoxCollider>().size = new Vector3(4, 3, 1);
+            try
+            {
+                var view = root.AddComponent<ProductSessionView>();
+                var router = view.Audio;
+                var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+                var update = typeof(ProductSessionView).GetMethod("UpdateAudioAcoustics", flags)!;
+                Physics.SyncTransforms();
+                update.Invoke(view, new object[] { router, default(Float3) });
+                Assert.That(router.ObstructionProbe!(new Float3(0, 1.35f, 0), new Float3(0, 1.35f, 10)), Is.EqualTo(1f));
+                wall.layer = 11; // Cosmetic geometry must not change hearing.
+                Physics.SyncTransforms();
+                Assert.That(router.ObstructionProbe!(new Float3(0, 1.35f, 0), new Float3(0.6f, 1.35f, 10)), Is.Zero);
+                for (int i = 0; i < 30; i++)
+                    router.ObstructionProbe!(new Float3(0, 1.35f, 0), new Float3(i + 1, 1.35f, 12));
+                Assert.That((int)typeof(ProductSessionView).GetField("audioProbesRemaining", flags)!.GetValue(view)!, Is.Zero);
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+                Object.DestroyImmediate(wall);
+            }
+        }
+
         private sealed class FakeLifecycle : IActorLifecycle
         {
             private readonly Dictionary<ulong, ActorLifecycleState> states = new Dictionary<ulong, ActorLifecycleState>();
