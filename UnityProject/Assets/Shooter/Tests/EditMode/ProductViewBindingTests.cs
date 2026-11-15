@@ -132,6 +132,19 @@ namespace Shooter.Tests
                 presentation.Sync(snap, lifecycle, null, 0, human, false, 1f / 60f, null, 10);
                 Assert.That(presentation.LiveAvatarCount, Is.EqualTo(1));
                 Assert.That(presentation.Actions.IsRifle(human), Is.True);
+                var localBody = root.GetComponentsInChildren<SkinnedMeshRenderer>(true);
+                Assert.That(localBody.Length, Is.GreaterThan(0));
+                Assert.That(localBody[0].shadowCastingMode, Is.EqualTo(UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly),
+                    "Local human world body must cast ShadowsOnly while the FP viewmodel is shown.");
+                var heldWeapons = root.GetComponentsInChildren<MeshRenderer>(true);
+                bool sawHeldShadowsOnly = false;
+                for (int i = 0; i < heldWeapons.Length; i++)
+                {
+                    if (heldWeapons[i].gameObject.name.StartsWith("Held ", System.StringComparison.Ordinal) &&
+                        heldWeapons[i].shadowCastingMode == UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly)
+                        sawHeldShadowsOnly = true;
+                }
+                Assert.That(sawHeldShadowsOnly, Is.True, "Local human world weapon must also be ShadowsOnly.");
 
                 lifecycle.Set(new ActorLifecycleState(human, 1, true, 100, new Float3(0, 0, 0), 0, 0, 0, 29, 90));
                 presentation.Sync(snap, lifecycle, null, 0, human, false, 1f / 60f, System.Array.Empty<CombatEvent>(), 11);
@@ -174,6 +187,13 @@ namespace Shooter.Tests
                 Assert.That(presentation.CorpseAvatarCount, Is.EqualTo(1));
                 Assert.That(presentation.Actions.IsRifle(replacement), Is.True);
                 Assert.That(presentation.Actions.IsReloading(human), Is.False);
+                var afterRespawn = root.GetComponentsInChildren<SkinnedMeshRenderer>(true);
+                int shadowsOnlyBodies = 0;
+                for (int i = 0; i < afterRespawn.Length; i++)
+                    if (afterRespawn[i].shadowCastingMode == UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly)
+                        shadowsOnlyBodies++;
+                Assert.That(shadowsOnlyBodies, Is.EqualTo(1),
+                    "After respawn, only the new local living body stays ShadowsOnly (corpse renders normally).");
 
                 presentation.ClearAll();
                 Assert.That(presentation.HandleCount, Is.EqualTo(0));

@@ -51,7 +51,10 @@ namespace Shooter.Simulation.Tests.Fx
             float smokeEnd = AnalyticFxPool.EvaluateScale(FxKind.SmokeProxy, AnalyticFxPool.SmokeProxyLifetime, AnalyticFxPool.SmokeProxyLifetime);
             Assert.True(smokeEnd > smokeStart);
 
-            Assert.True(AnalyticFxPool.EvaluateOpacity(FxKind.SmokeProxy, 0f, AnalyticFxPool.SmokeProxyLifetime) < 0.5f);
+            float smokeOpacity = AnalyticFxPool.EvaluateOpacity(FxKind.SmokeProxy, 0f, AnalyticFxPool.SmokeProxyLifetime);
+            Assert.True(smokeOpacity < 0.5f);
+            Assert.True(smokeOpacity > 0.35f);
+            Assert.True(AnalyticFxPool.EvaluateOpacity(FxKind.MuzzleFlash, 0f, AnalyticFxPool.MuzzleFlashLifetime) > 0.9f);
             Assert.Equal(0f, AnalyticFxPool.EvaluateOpacity(FxKind.ImpactSpark, AnalyticFxPool.ImpactSparkLifetime, AnalyticFxPool.ImpactSparkLifetime));
         }
 

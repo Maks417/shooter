@@ -401,7 +401,7 @@ namespace Shooter.Presentation.Session
             if (kind == CombatEventKind.ShotAccepted)
             {
                 // Cosmetic view flash only; ReducedFlash suppresses it while preserving shot audio/hit info.
-                if (!reducedFlash) muzzleFlashRemaining = 0.06f;
+                if (!reducedFlash) muzzleFlashRemaining = 0.09f;
                 if (subtitlesEnabled) ShowSubtitle("Shot");
             }
             else if (kind == CombatEventKind.Impact || kind == CombatEventKind.DamageApplied)
@@ -425,10 +425,11 @@ namespace Shooter.Presentation.Session
                 // Accessibility: reducedFlash suppresses world muzzle proxies and the IMGUI overlay.
                 if (reducedFlash) return;
                 Float3 dir = shot.UnitDirection;
+                // Push the proxy slightly past the muzzle so the flash clears the viewmodel.
                 var muzzle = new Float3(
-                    shot.Origin.X + dir.X * 0.12f,
-                    shot.Origin.Y + dir.Y * 0.12f,
-                    shot.Origin.Z + dir.Z * 0.12f);
+                    shot.Origin.X + dir.X * 0.18f,
+                    shot.Origin.Y + dir.Y * 0.18f,
+                    shot.Origin.Z + dir.Z * 0.18f);
                 analyticFxPool.TrySpawn(FxKind.MuzzleFlash, muzzle, dir);
                 return;
             }
@@ -768,9 +769,9 @@ namespace Shooter.Presentation.Session
         {
             if (muzzleFlashRemaining > 0f && !reducedFlash)
             {
-                float alpha = Mathf.Clamp01(muzzleFlashRemaining / 0.06f) * 0.35f;
+                float alpha = Mathf.Clamp01(muzzleFlashRemaining / 0.09f) * 0.42f;
                 var prev = GUI.color;
-                GUI.color = new Color(1f, 1f, 0.85f, alpha);
+                GUI.color = new Color(1f, 0.95f, 0.75f, alpha);
                 GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), Texture2D.whiteTexture);
                 GUI.color = prev;
             }

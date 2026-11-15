@@ -59,8 +59,8 @@ namespace Shooter.Presentation.View
             float gait = reducedMotion ? 0f : movement * hip;
             double phase = travel * (Math.PI * 2d / 1.4d);
             return new Float3(
-                (float)Math.Sin(phase) * .004f * gait + .025f * reload,
-                -(float)Math.Cos(phase * 2d) * .003f * gait - .055f * reload - .12f * lower,
+                (float)Math.Sin(phase) * .0045f * gait + .025f * reload,
+                -(float)Math.Cos(phase * 2d) * .0035f * gait - .055f * reload - .12f * lower,
                 -.035f * reload - .07f * lower);
         }
 
