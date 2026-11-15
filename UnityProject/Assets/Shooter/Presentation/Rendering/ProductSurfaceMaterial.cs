@@ -23,7 +23,9 @@ namespace Shooter.Presentation.Rendering
             {
                 Variant(metal, "Weathered depot blue", new Color(.19f, .34f, .40f)),
                 Variant(metal, "Weathered oxide paint", new Color(.43f, .22f, .13f)),
-                Variant(concrete, "Concrete footing and joints", new Color(.32f, .34f, .33f))
+                Variant(concrete, "Concrete footing and joints", new Color(.32f, .34f, .33f)),
+                Variant(metal, "Weathered tank enamel", new Color(.74f, .75f, .72f)),
+                Variant(metal, "Safety yellow paint", new Color(.78f, .60f, .12f))
             };
         }
 

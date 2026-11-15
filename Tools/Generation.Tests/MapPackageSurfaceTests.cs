@@ -188,7 +188,17 @@ public sealed class MapPackageSurfaceTests : IDisposable
             Assert.Contains((ushort)MapSolidsMaterialRole.DepotBlue, slots);
             Assert.Contains((ushort)MapSolidsMaterialRole.OxidePaint, slots);
         }
-        Assert.All(slots, slot => Assert.InRange(slot, (ushort)0, (ushort)MapSolidsMaterialRole.Foundation));
+        if (mapId == "oil-depot")
+        {
+            Assert.Contains((ushort)MapSolidsMaterialRole.TankWhite, slots);
+            Assert.Contains((ushort)MapSolidsMaterialRole.SafetyYellow, slots);
+        }
+        else
+        {
+            Assert.DoesNotContain((ushort)MapSolidsMaterialRole.TankWhite, slots);
+            Assert.DoesNotContain((ushort)MapSolidsMaterialRole.SafetyYellow, slots);
+        }
+        Assert.All(slots, slot => Assert.InRange(slot, (ushort)0, (ushort)MapSolidsMaterialRole.SafetyYellow));
         Assert.InRange(mesh.Positions.Count, 1, MapSolidsMesh.MaxVisualVertices);
         Assert.All(mesh.Uv, uv => Assert.True(float.IsFinite(uv.X) && float.IsFinite(uv.Y)));
     }

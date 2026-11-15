@@ -16,7 +16,11 @@ namespace Shooter.Generation.Environment
         Trim = 2,
         DepotBlue = 3,
         OxidePaint = 4,
-        Foundation = 5
+        Foundation = 5,
+        /// <summary>Oil-depot white tank enamel (OilDepotDressing).</summary>
+        TankWhite = 6,
+        /// <summary>Oil-depot safety-yellow rails, ladders and gantry steel.</summary>
+        SafetyYellow = 7
     }
 
     /// <summary>Builds the combined map-solids mesh with metric UVs and role submeshes.</summary>
@@ -93,9 +97,16 @@ namespace Shooter.Generation.Environment
         /// Emits every collision box (gameplay + visual) so roofs/trim remain visible.
         /// Collision SGAF still filters gameplay-only elsewhere. UVs stay metric via PrimitiveGeometry.Box.
         /// </summary>
-        public static MeshData Build(CompoundPlan plan)
+        public static MeshData Build(CompoundPlan plan) => Build(plan, null);
+
+        /// <summary>
+        /// Map-aware overload: <c>oil-depot</c> replaces its square tank drums with round shells and appends
+        /// <see cref="OilDepotDressing"/>. Collision boxes are never changed.
+        /// </summary>
+        public static MeshData Build(CompoundPlan plan, string? mapId)
         {
             if (plan == null) throw new ArgumentNullException(nameof(plan));
+            bool oil = string.Equals(mapId, OilDepotDressing.MapId, StringComparison.Ordinal) && plan.Arena != null;
             if (plan.CollisionBoxes.Count == 0)
                 return PrimitiveGeometry.Box(new Float3(1f, 1f, 1f), 0f, 1);
 
@@ -104,6 +115,7 @@ namespace Shooter.Generation.Environment
             for (int i = 0; i < plan.CollisionBoxes.Count; i++)
             {
                 CollisionBox box = plan.CollisionBoxes[i];
+                if (oil && OilDepotDressing.ReplacedByDressing(box)) continue;
                 ushort slot = Classify(box, coverIds);
                 // Small physical edge radii catch directional light instead of a razor-sharp blockout edge.
                 float minimum = Math.Min(box.Size.X, Math.Min(box.Size.Y, box.Size.Z));
@@ -115,6 +127,7 @@ namespace Shooter.Generation.Environment
                     Math.Min(box.Size.X, box.Size.Z) <= 2.01f && Math.Max(box.Size.X, box.Size.Z) >= 3f)
                     AddWallDetails(assembly, box);
             }
+            if (oil) OilDepotDressing.Append(assembly, plan.Arena!);
             if (assembly.VertexCount > MaxVisualVertices)
                 throw new InvalidOperationException("Architectural mesh exceeds the reviewed visual vertex budget.");
             return assembly.Build();

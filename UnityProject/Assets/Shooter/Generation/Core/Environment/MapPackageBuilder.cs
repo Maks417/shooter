@@ -168,7 +168,7 @@ namespace Shooter.Generation.Environment
             string profile)
         {
             AddSgaf(dependencies, "mesh", MapVisualClosure.MapSolidsMeshPath, ContentKind.Mesh,
-                GeometryCodec.EncodeMesh(MapSolidsMesh.Build(plan)), mapFingerprint, toolchainHash);
+                GeometryCodec.EncodeMesh(MapSolidsMesh.Build(plan, mapId)), mapFingerprint, toolchainHash);
             AddSgaf(dependencies, "mesh", MapVisualClosure.UnitBoxMeshPath, ContentKind.Mesh,
                 GeometryCodec.EncodeMesh(PrimitiveGeometry.Box(new Float3(1f, 1f, 1f), 0f, 1)), mapFingerprint, toolchainHash);
             for (int hand = 0; hand < MapVisualClosure.FirstPersonHandPaths.Length; hand++)

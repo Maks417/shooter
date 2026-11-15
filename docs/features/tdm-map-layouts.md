@@ -65,6 +65,7 @@ Playable rectangle x ∈ [−42, 42], z ∈ [−54, 54] (84 × 108 m). Team 1 an
 - **Right lane — Container / shed CQB** with a clear strip for the elevated flank.
 - **Elevated flank** at x ≈ 32: walkable catwalk deck top 2.25 m (underpass), stair runs ≤0.25 m risers at both ends, mirrored across z = 0; half-cover rails.
 - **Cross connectors** at z ≈ ±28 through separator gaps and pump-house side doors.
+- **Visual dressing (mesh-only)** — `Generation/Core/Environment/OilDepotDressing.cs`, appended by `MapSolidsMesh.Build(plan, "oil-depot")`: round 32-sided white tank shells that enclose the square drum collision (the drum/buttress boxes are not drawn), strake bands, cone roofs, yellow roof rails and caged ladders; wall-mounted pipe racks on all four perimeter walls; two overhead pipe bridges (y ≈ 6 m) from the tank farm to the pump-house roof on columns that stand only on gameplay solids; pump-house roof plant; a yellow loading gantry standing on the row-zero containers (canopy 5.5 m, filler arms ≥ 3.6 m); and an out-of-bounds skyline of large tanks plus a banded flare stack. Two accent roles `TankWhite` (6) and `SafetyYellow` (7) were added to `MapSolidsMaterialRole` and `ProductSurfaceMaterial.ArchitecturalAccents`. Collision boxes, collision/nav hashes and routes are unchanged. The design is original and does not reproduce any commercial map. Known limitation: near the tank cardinal faces the visual shell sits up to ≈ 0.35 r − 0.35 m (≤ 0.85 m) outside the authoritative buttress collision.
 
 ## Implementation boundary
 
