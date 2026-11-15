@@ -63,7 +63,8 @@ namespace Shooter.Simulation.AI
                     p.EntityId,
                     new Float3(state.Feet.X, state.Feet.Y + (crouched ? CombatAiDirector.CrouchedAimHeight : CombatAiDirector.StandingAimHeight), state.Feet.Z),
                     state.Team,
-                    state.Alive);
+                    state.Alive,
+                    state.Health);
             }
 
             int raw = director.PlanEnemies(nextTick, enemyScratch, enemyCount, planScratch, 0);
@@ -100,6 +101,22 @@ namespace Shooter.Simulation.AI
             return true;
         }
 
+        /// <summary>
+        /// T082: authoritative damage from tick t, consumed by the plan for t+1. The attacker's current chest
+        /// point (from the lifecycle) is the stimulus position; the director adds its own noise.
+        /// </summary>
+        public void ObserveDamage(EntityId victim, EntityId attacker, IActorLifecycle lifecycle)
+        {
+            if (lifecycle == null) throw new ArgumentNullException(nameof(lifecycle));
+            Float3? point = null;
+            if (attacker.IsValid && lifecycle.TryGetActorState(attacker, out var state) && state.Alive)
+                point = new Float3(state.Feet.X, state.Feet.Y + CombatAiDirector.StandingAimHeight, state.Feet.Z);
+            director.ObserveDamage(victim, attacker, point);
+        }
+
+        /// <summary>T082: an accepted shot from <paramref name="shooter"/> at <paramref name="origin"/> (hearing stimulus).</summary>
+        public void ObserveGunfire(EntityId shooter, Float3 origin) => director.ObserveGunfire(shooter, origin);
+
         public uint GetSequence(EntityId entity) =>
             sequences.TryGetValue(entity.Value, out var seq) ? seq : 0u;
 
@@ -133,6 +150,7 @@ namespace Shooter.Simulation.AI
                         board.VisibleTargetId = null;
                         board.HasVisibleTarget = false;
                         board.VisibleTarget = null;
+                        board.TargetId = null;
                         board.LastSeenEnemy = null;
                         board.Confidence = 0;
                         board.ReactionReadyTick = 0;

@@ -107,3 +107,33 @@ Validation: existing source/frozen guards, Contracts/Generation/Game, Unity Edit
 Owner-authorized continued visual review/implementation, 2026-11-15, base `615b6a5`. Sole integrator owns `Generation/Core/Environment/MapSolidsMesh.cs`, `Presentation/Rendering/ProductMapView.cs` / `ProductSurfaceMaterial.cs`, `Presentation/Session/ProductMenuScene.cs`, weapon coating in `ProductActorPresentation.cs`, associated Generation/Unity tests, native publication/build/installer wrappers and shared design/evidence docs. No shared contract/schema/toolchain or soldier-generator change.
 
 Implement ADR-050 packaged wall articulation and recognisable cargo, six shared PBR roles, menu loading-bay facades and restrained weapon coating. Existing collision/nav/spawn identities remain identical; old paired installers remain rollback artifacts. Run Contracts/Generation/Game/Maps, Unity EditMode/PlayMode, provenance/frozen guards, native publication, clean Client/Server/package and upgrading installer build. Capture actual player views; missing full gameplay/reference/installed-upgrade evidence stays Pending. [Handoff](milestones/m11-playable-release/handoff.md) records results and limitations.
+
+## T082 — Solid-FPS bot combat behaviour (2026-11-15)
+
+Owner requested an investigation, then bot behaviour "like in solid FPS games". Base `ffd0754`, rebased onto `e140dd6`; worktree `.local/worktrees/t080-bot-tactics` on branch `t080-bot-tactics`. The branch name predates the discovery that T080 and then T081 (and ADR-050) were taken by concurrent visual work; this card is T082 with ADR-051. Scope:
+- `Simulation/AI/**`: new `AiTuning`, `AiNoise`, `AimController`, `FireDiscipline` and `CoverFinder` files, each with a committed `.meta`.
+- `Game/Session/OfflineGameSession.cs`: wiring only.
+- `Tools/Simulation.Tests/AI/**` and `Tools/Game.Contracts.Tests/TeamBotPlannerTests.cs`.
+- The AI feature doc, [ADR-051](decisions.md#adr-051--accepted-runtime-cover-probes-share-the-ai-ray-budget-t082) and the M11 handoff.
+
+Frozen and unchanged: C0/Game-v1 contracts and fixtures, the 16-ray and 2-path budgets in `tdm-workloads.json`, lock files, map packages, generators and toolchain. No difficulty selector is added (excluded by the TDM spec).
+
+Investigation found:
+- **Instant aim.** Aim snapped perfectly in one tick, with no rate limit, error or recovery, contrary to `ai.md`.
+- **Nonstop fire.** `FireHeld` was held continuously at every range.
+- **No combat movement.** Bots stood still while a target was visible.
+- **Naive targeting.** The target was simply the first visible candidate in rotation, and one-tick dropouts re-armed the reaction delay.
+- **No hearing or damage reaction.** There was no hearing, and `NotifyDamage` was never called in the product.
+- **Cover never used.** `SetCoverSites` was never called in the product, so `SeekCover` always fell through to Search.
+- **Stale routes.** An active patrol route blocked every new goal until it finished.
+- **Memory wipes on respawn.** `OfflineGameSession` rebuilt the whole planner on every respawn, wiping all bot memory.
+
+Implementation is described in [AI combat behaviour](features/ai.md#combat-behaviour-t082-2026-11-15).
+
+Validation:
+- Pure lanes: Simulation, Game, Maps, Contracts, Generation and SourceProvenance.
+- Docs, fixture and contract-lock checks.
+- New `BotTacticsTests` (15 tests), plus updated AI and planner tests.
+- Unity EditMode/PlayMode, client build and real-player feel are listed in the handoff.
+
+Rollback: revert the T082 merge. AI state is not persisted and no content identity changes.

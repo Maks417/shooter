@@ -35,6 +35,57 @@ Validation of the resolved working tree (sourceDirty=true at base `ffd0754`): Ge
 
 This is source integration only. Visual mesh/package identities change; native content publication, new Client/Server builds, PlayMode/player review and a new installer are **NotRun** for this merge. The 0.3.9 installer below remains the prior `beac9ae` binary/content pair and does not contain these newly merged props. P05 and VD/REL acceptance remain unchanged. The archive tag is retained; no temporary branch/worktree was created, and the unrelated active `t080-bot-tactics` worktree is preserved.
 
+## T082 — Solid-FPS bot combat behaviour
+
+2026-11-15. The owner asked for an investigation of bot behaviour and then an upgrade. The work started from `ffd0754` and was rebased onto `e140dd6` after concurrent visual work took T080, T081 and ADR-050. Lanes ran on code commit `c5a16a4`. That commit was then rebased over the docs-only `d119045` to become `8e22f18`, with an identical non-docs tree. Worktree branch `t080-bot-tactics`; the branch name predates the renumbering. Scope and rollback: [task card](../../task-supplement.md#t082--solid-fps-bot-combat-behaviour-2026-11-15). Design: [AI combat behaviour](../../features/ai.md#combat-behaviour-t082-2026-11-15) and [ADR-051](../../decisions.md#adr-051--accepted-runtime-cover-probes-share-the-ai-ray-budget-t082).
+
+**Implemented:**
+- Bounded-rate seeded aim with accuracy recovery.
+- Range-based burst discipline.
+- Strafing.
+- Sticky, threat-aware targeting.
+- Hearing and damage stimuli, forwarded from session events.
+- Callouts and destination spreading.
+- Low-health retreat and tactical reload.
+- Runtime cover probes inside the 16-ray budget.
+- Urgent goals replace stale routes.
+- Respawns rebind one planner slot instead of rebuilding every bot's memory.
+
+**Unchanged:** C0/Game-v1, fixtures, locks, budgets, content and toolchain.
+
+**Synthetic tuning check** (not evidence). A throwaway duel probe on `CombatHarnessSimulation` with an open plane and two stationary-spawned bots, 20 offsets per distance. Hit rate and time-to-kill after the first shot:
+
+| Distance | Hit rate | Time-to-kill |
+|---|---|---|
+| 8 m | about 57% | about 0.5 s |
+| 20 m, both strafing | about 34% | about 1.0 s |
+| 40 m, crouched with ADS | about 60% | about 0.5 s |
+
+The probe was deleted after tuning. It is a tuning aid, not acceptance.
+
+| Lane, source `c5a16a4` (clean) | Result |
+|---|---|
+| Test-Simulation | PASS 227 (includes 15 new `BotTacticsTests` and the updated AI tests; the M3 compound 11-bot budget and 108k-tick soak are unchanged) |
+| Test-Game | PASS 70 (respawn keeps the planner instance; damage stimulus uses the attacker's authoritative position) |
+| Test-Maps | PASS 14 + 41 |
+| Test-Contracts / Test-Generation | PASS 76 / 391 |
+| Test-SourceProvenance | PASS, 746 entries / 373 GUIDs (5 new `.meta`) |
+| Fixtures, C0 lock, Game-v1 lock, docs | PASS (35 fixture assertions) |
+
+Reports were copied from the worktree to `Artifacts/m2-combat-harness/`, `m8-runtime-composition/`, `m0-foundation/` and `m1-procedural-feasibility/` under `c5a16a4fb6102c7882bf8858fe728aed7b0ff074/`. A first run on the pre-rebase commit `d5e8db0` also passed in every lane, and its reports are kept alongside.
+
+**Pending** (not run; never PASS without evidence):
+- Unity EditMode/PlayMode on the merged source.
+- Client and server builds and smoke tests.
+- A `SHOOTER_AI_SUMMARY` capture on real maps.
+- A benchmark of AI CPU against the 1.5 ms mean budget.
+- A real-player feel review: aim fairness, strafing near ledges, cover choices, and whether bots are too lethal or too passive.
+
+Known limits:
+- Strafing has no ledge query; the risk is limited only by the ±2 m leash around a navmesh point.
+- Cover is judged by a single occlusion ray, with no exposure scoring.
+- In the fake-map session test there was no combat (zero rays and shots), so stimulus forwarding is proven at the planner level plus in the code review of `OfflineGameSession`, not in a live session.
+
 ## T080 — Visual review and material-scale correction
 
 2026-11-15 owner-authorized visual review and implementation, base `7b05e9e`; sole integrator, no temporary branches/worktrees. Scope and rollback: [task card](../../task-supplement.md#t080--visual-review-and-material-scale-correction-2026-11-15).

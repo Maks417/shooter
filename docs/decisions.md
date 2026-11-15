@@ -541,3 +541,19 @@ Decision: `MapSolidsMesh` builds loading-time-independent, offline packaged visu
 Extend the map-local visual material role enum with 3=DepotBlue, 4=OxidePaint, 5=Foundation; roles 0–2 retain their meaning. SGAF v1 already carries ushort material slots, so no format/schema/C0/Game-v1 change is required. Client and menu both bind the six-role palette; unknown or unbound roles fail closed. New materials use numeric tints of existing verified PBR planes, sharing texture uploads. Publication generates new visual hashes/catalog roots; existing native content may not be paired with a new claimed presentation review. Native republish and clean source-matched builds/package/installer are required. Soldier/weapon generator identities and all P05 defects remain frozen; weapon coating tint is a read-only presentation choice.
 
 Consequences: at most six map draw submeshes rather than three, plus more offline mesh geometry. Reference hardware cost remains Pending, not inferred from a vertex budget. Validate gameplay fingerprints, both material-role closures, vertex budget, native publication and player views. Preserve prior 0.3.9 binary/content for rollback; reverting this implementation requires republishing a matching visual package. No VD/REL acceptance is closed.
+
+## ADR-051 — Accepted: runtime cover probes share the AI ray budget (T082)
+
+Date 2026-11-15. Status: accepted for the offline product build. Unity lanes and real-player confirmation are Pending.
+
+Context: `ai.md` specifies cover candidates "from cover proxies/nav edges". The frozen product map packages (`MapGameplayDefinition`, Game-v1) carry only spawn slots and patrol/combat destinations. The only cover data, `NavCoverCandidate`, comes from the legacy Compound plan. As a result `SeekCover` never found cover in the product. Adding cover data to packages would change Game-v1 and every content identity.
+
+Decision: `Simulation/AI/CoverFinder.cs` generates cover at runtime, relative to the threat.
+- A bot that wants cover samples up to 8 points 4–7 m away, within ±80° of the direction away from the threat, nearest first.
+- It keeps the first point where a ray from the threat's eye to a crouched chest (0.75 m) at that point is blocked.
+- Probe rays go through `PerceptionSystem.TryBudgetedRay`, so they count against the **same** global 16 rays per tick. They run only after every bot's vision pass and are capped at 4 per tick, so vision fairness (a sensing opportunity within 12 ticks) is unchanged.
+- Reachability is decided by the normal path request, within the 2 new paths per tick. A failed path releases the claim.
+- Claims use quantized position ids with the high bit set in the existing `CoverReservationBoard`. They are released on leaving cover, on path failure, on death, on life replacement and on cancel.
+- Explicit `CoverSite` lists still take precedence where provided.
+
+Consequences: no contract, fixture, budget or package change. `aiRays` now includes probe rays, which stay within the cap. Cover quality is limited to what a single occlusion ray shows. There is no exposure scoring beyond the occlusion test and no peek-point validation; repositioning is driven by the last-seen position. Rollback: remove the `CoverFinder` calls. `SeekCover` then falls back to Search as before.
