@@ -469,8 +469,10 @@ namespace Shooter.Game.Session
             uint participant = 1;
             int team1 = 0, team2 = 0;
             int botsRegistered = 0;
+            int botIndex = 0;
+            int botCount = request.ParticipantCount - 1;
             // M8 composition workload is eight bots; M9 full 5v5/6v6 registers the rest.
-            int botCap = Math.Min(CombatAiDirector.MaxBots, request.ParticipantCount - 1);
+            int botCap = Math.Min(CombatAiDirector.MaxBots, botCount);
             for (int i = 0; i < request.ParticipantCount; i++)
             {
                 byte team = team1 < request.TeamSize ? (byte)1 : (byte)2;
@@ -504,7 +506,9 @@ namespace Shooter.Game.Session
 
                 var life = new LifeId(1);
                 var entity = lifecycle.SpawnLife(new ParticipantId(participant), life, slot.Position, slot.Yaw, team);
-                string name = human ? "Player" : "Bot" + participant;
+                string name = human
+                    ? "Player"
+                    : BotDisplayNames.Resolve(botIndex++, botCount, request.Seed);
                 if (human) humanEntity = entity;
                 else if (botsRegistered < botCap)
                 {

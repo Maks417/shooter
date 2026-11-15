@@ -1,5 +1,18 @@
 # M11 — Playable build and acceptance — handoff and gate record
 
+## Bot short first-name display names — 2026-11-15
+
+Owner: replace synthetic `BotN` roster labels with readable short first names.
+
+**Implemented (software):**
+- `BotDisplayNames` fixed ASCII pool (≥24) with seed-deterministic unique assignment per match (`Resolve(botIndex, botCount, seed)`).
+- `OfflineGameSession.BuildRoster` keeps human as `Player` and assigns bot `ParticipantState.DisplayName` from the helper (scoreboard / kill feed / shell already consume DisplayName).
+- Pure coverage in `BotDisplayNamesTests` (determinism, uniqueness, offline 5v5 roster smoke).
+
+**Checks (software):** Game **88/88** PASS (`Artifacts/m8-runtime-composition/8f70a4af…/20261115T211434277Z-db90755b/`). Docs/fixtures PASS after manifest refresh.
+
+**Pending:** named player/installer review of scoreboard and kill-feed readability. No Game-v1 / contract-lock change.
+
 ## Combat feel — auto-reload, empty grenade, M67 grenade mesh, bot stuck rescue — 2026-11-15
 
 Owner playtest fixes (no C0 / Game-v1 wire freeze).
