@@ -10,6 +10,8 @@
 
 **Analytic death collapse — 2026-11-15 (source):** `soldier.motion.spike.v4` cosmetic DeathPhase collapse replaces crouch-idle corpses; pure motion tests PASS; player/installer Pending. [Handoff](milestones/m11-playable-release/handoff.md#analytic-death-collapse-soldiermotionspikev4).
 
+**T088 follow-up rifle POV fire — 2026-11-15 (source):** crossed capsule muzzle flame (no sphere bubbles); product path spawns dual lobe + tracer + casing; ReducedFlash keeps casings; stronger hip kick/roll + longer bolt travel; soft local overlay; pure FX/view tests; named fire review Pending. [Handoff](milestones/m11-playable-release/handoff.md#t088-follow-up--rifle-pov-fire-presentation).
+
 **T088 weapon visual overhaul — 2026-11-15 (source):** ADR-061 `geometry.weapon` 1.0.2 richer rifle/pistol LODs, detachable mag + bolt/slide, denser muzzle/casing/tracer FX; native republish and named visual review Pending. [Handoff](milestones/m11-playable-release/handoff.md#t088--weapon-visual-overhaul-adr-061).
 
 **T089 stereo combat audio — 2026-11-15 (source):** ADR-062 stereo WAV bank under `Content/Audio/combat` + per-kind distance (footsteps 18 m); T086 mono/soft-atten path superseded for product; pure audio tests PASS; FIX10 named hearing and installer Pending. [Handoff](milestones/m11-playable-release/handoff.md#t089--stereo-combat-wav-bank-and-footstep-distance-adr-062).

@@ -47,6 +47,17 @@ Owner feedback: match/boot felt like a blank hitch with no loading UI. Software 
 
 **Builds:** Client PASS `Artifacts/m0-foundation/be6293b5c82041bdd397b6533c28af7b04a02493/build-client-20261115T162134243Z-c53f2c95`; Server PASS `.../build-server-20261115T162539462Z-5db920b3`. Package-Release with `-RequireNativeNav` **rejected dirty workspace** (`sourceDirty=true`) — needs a clean committed HEAD before ZIP/installer. Unity EditMode/PlayMode and named player visual review remain Pending. Does not close FIX/SET/REL/P05/VD exits.
 
+### T088 follow-up — rifle POV fire presentation
+
+2026-11-15. Owner playtest: gunfire read as spherical “bubbles” instead of rifle POV muzzle flame / recoil / bolt cycle. Completes ADR-061 product-path wiring (presentation only; no C0/Game-v1/`geometry.weapon` bump).
+
+**Implemented (software):**
+- `AnalyticFxPresenter` muzzle uses thin emissive capsules (crossed dual lobes), not spheres; hotter white/orange emission.
+- `AnalyticFxPool.SpawnGunshotFeedback` spawns primary + cross-lobe muzzle, tracer, and ejected casing; `ReducedFlash` suppresses muzzle+tracer only (casings remain). Product `ObserveCombatFx` calls this helper (fixes prior single-sphere spawn and early `reducedFlash` return that dropped casings).
+- Stronger rifle shot spring (~4.0 pitch), ~1.4× hip equipment kick, mechanical roll/pitch oscillation from recoil energy; rifle bolt travel 0.070 m; soft lower-center local overlay (not full-screen wash). Knife/grenade paths unchanged. ADS-safe kick rules preserved.
+
+**Checks (software):** `Test-Simulation.ps1 -Offline` **283/283 PASS** (`Artifacts/m2-combat-harness/.../20261115T174854597Z-689efe26`). Docs/fixtures integrity refreshed. Named player fire review and installer remain Pending. Does not close FIX/SET/REL/P05/VD exits.
+
 ### T088 follow-up — weapon switch holster/draw
 
 Cosmetic FP switch is two-phase: holster the visible mesh (~0.14 s), swap at the tuck, draw the incoming weapon (~0.20 s). Mid-switch keeps the outgoing gun on screen with an outward hip arc (position + pitch/yaw/roll); `AdvanceEquip` consumes leftover dt across holster→draw in one Step so hitch/test frames finish ready. ADS presentation blend gates with equip so the tucked gun cannot snap onto the sight ray. Reduced-motion shortens both phases and scales the arc. Pure `FirstPersonHandling` tests cover holster→draw, mid-draw re-switch, and ADS gating.

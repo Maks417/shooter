@@ -1,4 +1,5 @@
 #nullable enable
+using System;
 using Shooter.Contracts;
 using Shooter.Presentation.Audio;
 using Shooter.Presentation.Fx;
@@ -149,6 +150,62 @@ namespace Shooter.Simulation.Tests.Fx
             Assert.Equal(FxKind.MuzzleFlash, muzzle.Kind);
             Assert.Equal(AnalyticFxPool.MuzzleFlashLifetime, muzzle.Lifetime);
             Assert.True(muzzle.Normal.IsUnit);
+        }
+
+        [Fact]
+        public void SpawnGunshotFeedback_emits_dual_muzzle_tracer_and_casing()
+        {
+            var pool = new AnalyticFxPool();
+            var origin = new Float3(1f, 1.5f, 2f);
+            var dir = new Float3(0f, 0f, 1f);
+            int spawned = pool.SpawnGunshotFeedback(origin, dir, suppressMuzzleAndTracer: false);
+            Assert.Equal(4, spawned);
+            Assert.Equal(4, pool.ActiveCount);
+            Assert.Equal(1, pool.ShellCount);
+            Assert.Equal(1, pool.TracerCount);
+
+            int flashes = 0;
+            bool sawTracer = false, sawCasing = false;
+            Float3 primaryNormal = default;
+            Float3 secondaryNormal = default;
+            for (int i = 0; i < AnalyticFxPool.MaxInstances; i++)
+            {
+                var fx = pool.Get(i);
+                if (!fx.Active) continue;
+                if (fx.Kind == FxKind.MuzzleFlash)
+                {
+                    flashes++;
+                    if (flashes == 1) primaryNormal = fx.Normal;
+                    else secondaryNormal = fx.Normal;
+                }
+                else if (fx.Kind == FxKind.Tracer) sawTracer = true;
+                else if (fx.Kind == FxKind.ShellCasing) sawCasing = true;
+            }
+            Assert.Equal(2, flashes);
+            Assert.True(sawTracer);
+            Assert.True(sawCasing);
+            // Primary along shot; secondary is the crossed flame lobe.
+            Assert.InRange(primaryNormal.Z, 0.99f, 1.01f);
+            Assert.True(Math.Abs(secondaryNormal.Y) > 0.9f);
+            Float3 eject = AnalyticFxPool.EjectionAxis(dir);
+            Assert.InRange(eject.X, 0.99f, 1.01f);
+        }
+
+        [Fact]
+        public void SpawnGunshotFeedback_reduced_flash_keeps_casing_only()
+        {
+            var pool = new AnalyticFxPool();
+            int spawned = pool.SpawnGunshotFeedback(new Float3(0, 1, 0), new Float3(0, 0, 1), suppressMuzzleAndTracer: true);
+            Assert.Equal(1, spawned);
+            Assert.Equal(1, pool.ActiveCount);
+            Assert.Equal(1, pool.ShellCount);
+            Assert.Equal(0, pool.TracerCount);
+            for (int i = 0; i < AnalyticFxPool.MaxInstances; i++)
+            {
+                var fx = pool.Get(i);
+                if (!fx.Active) continue;
+                Assert.Equal(FxKind.ShellCasing, fx.Kind);
+            }
         }
 
         [Fact]

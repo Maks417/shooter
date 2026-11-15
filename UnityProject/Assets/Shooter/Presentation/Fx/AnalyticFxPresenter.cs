@@ -95,12 +95,12 @@ namespace Shooter.Presentation.Fx
                 switch (fx.Kind)
                 {
                     case FxKind.MuzzleFlash:
-                        mesh = sphereMesh;
+                        // Thin emissive capsule along the shot/cross axis — reads as muzzle flame, not a bubble.
+                        mesh = capsuleMesh;
                         material = muzzleMaterial;
-                        // Elongated along shot direction so muzzle reads as a flash cone, not a marble.
-                        localScale = new Vector3(scale * 1.25f, scale * 1.25f, scale * 2.85f);
-                        rotation = Quaternion.LookRotation(normal, Vector3.up);
-                        pos += normal * (scale * 0.55f);
+                        localScale = new Vector3(scale * 0.28f, scale * 1.95f, scale * 0.28f);
+                        rotation = Quaternion.FromToRotation(Vector3.up, normal);
+                        pos += normal * (scale * 0.85f);
                         break;
                     case FxKind.ImpactSpark:
                         mesh = capsuleMesh;
@@ -155,9 +155,10 @@ namespace Shooter.Presentation.Fx
             switch (kind)
             {
                 case FxKind.MuzzleFlash:
-                    propertyBlock.SetColor("_BaseColor", new Color(1f, 0.82f, 0.34f, opacity));
+                    // Hot white core with orange rim via emissive punch (dual lobes supply the star shape).
+                    propertyBlock.SetColor("_BaseColor", new Color(1f, 0.94f, 0.72f, opacity));
                     if (muzzleMaterial != null && muzzleMaterial.HasProperty("_EmissionColor"))
-                        propertyBlock.SetColor("_EmissionColor", new Color(8.2f, 3.6f, 0.5f) * opacity);
+                        propertyBlock.SetColor("_EmissionColor", new Color(14f, 7.2f, 1.6f) * opacity);
                     break;
                 case FxKind.ImpactSpark:
                     propertyBlock.SetColor("_BaseColor", new Color(1f, 0.96f, 0.7f, opacity));
@@ -187,7 +188,7 @@ namespace Shooter.Presentation.Fx
             if (lit == null && unlit == null)
                 throw new System.InvalidOperationException("Required locked URP Lit/Unlit shader missing; no art fallback");
 
-            muzzleMaterial = BuildEmissive(lit != null ? lit : unlit!, "Analytic muzzle flash", new Color(1f, 0.8f, 0.32f, 1f), new Color(7.5f, 3.2f, 0.45f));
+            muzzleMaterial = BuildEmissive(lit != null ? lit : unlit!, "Analytic muzzle flash", new Color(1f, 0.94f, 0.72f, 1f), new Color(14f, 7.2f, 1.6f));
             sparkMaterial = BuildEmissive(lit != null ? lit : unlit!, "Analytic impact spark", new Color(1f, 0.95f, 0.55f, 1f), new Color(4.5f, 2.6f, 0.6f));
             smokeMaterial = BuildTransparent(unlit != null ? unlit : lit!, "Analytic smoke proxy", new Color(0.62f, 0.60f, 0.56f, 0.45f));
             casingMaterial = BuildEmissive(lit != null ? lit : unlit!, "Analytic shell casing", new Color(0.78f, 0.62f, 0.28f, 1f), new Color(0.4f, 0.25f, 0.05f));

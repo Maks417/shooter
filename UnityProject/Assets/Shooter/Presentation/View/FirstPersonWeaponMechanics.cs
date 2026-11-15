@@ -11,9 +11,9 @@ namespace Shooter.Presentation.View
     public static class FirstPersonWeaponMechanics
     {
         /// <summary>Peak open travel for rifle bolt (meters, weapon-local).</summary>
-        public const float RifleBoltTravel = 0.055f;
+        public const float RifleBoltTravel = 0.070f;
         /// <summary>Peak open travel for pistol slide (meters, weapon-local).</summary>
-        public const float PistolSlideTravel = 0.032f;
+        public const float PistolSlideTravel = 0.038f;
         /// <summary>Impulse applied to the cosmetic cycle spring on each local ShotAccepted.</summary>
         public const float CycleImpulse = 1f;
 

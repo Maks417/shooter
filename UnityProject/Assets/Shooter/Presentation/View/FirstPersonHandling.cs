@@ -203,10 +203,11 @@ namespace Shooter.Presentation.View
             float hip = 1f - a;
             float pitch = recoilPitch;
             float yaw = recoilYaw;
+            // ~1.4× prior hip kick so rifle fire reads as noticeable rearward punch (ADS still Z-only).
             return new Float3(
-                yaw * 0.0065f * hip,
-                pitch * 0.0045f * (0.2f + 0.8f * hip),
-                -Math.Abs(pitch) * 0.014f - Math.Abs(yaw) * 0.0035f);
+                yaw * 0.0091f * hip,
+                pitch * 0.0063f * (0.2f + 0.8f * hip),
+                -Math.Abs(pitch) * 0.020f - Math.Abs(yaw) * 0.005f);
         }
 
         /// <summary>Rotational recoil fades with ADS so optic alignment is not desynced.</summary>
@@ -256,11 +257,16 @@ namespace Shooter.Presentation.View
             float tuck = 1f - Smooth(equip);
             float swing = SwitchSwing(equip);
             Float3 sway = IdleSway(ads, reloadPhase, false, recoilEnergy);
+            // Short mechanical roll/pitch oscillation while the cosmetic spring is still settling.
+            float energy = Math.Min(Math.Max(recoilEnergy, 0f), 0.45f);
+            float rollKick = energy * 28f * hip;
+            float pitchKick = energy * 10f * hip;
             return new Float3(
-                34f * tuck + 10f * swing + 11f * reload + sway.X * 18f,
+                34f * tuck + 10f * swing + 11f * reload + sway.X * 18f + pitchKick,
                 14f * tuck + 18f * swing + sway.Y * 12f,
                 -12f * reload - 18f * tuck - 8f * swing
-                    + (float)Math.Sin(travel * Math.PI * 2d / 1.4d) * .5f * movement * hip + sway.Z * 14f);
+                    + (float)Math.Sin(travel * Math.PI * 2d / 1.4d) * .5f * movement * hip + sway.Z * 14f
+                    + rollKick);
         }
 
         /// <summary>Peaks mid-switch so the gun arcs outward before the tuck/draw settles.</summary>

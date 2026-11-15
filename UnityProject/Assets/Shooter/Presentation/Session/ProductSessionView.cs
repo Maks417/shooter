@@ -8,6 +8,7 @@ using Shooter.Presentation.Audio;
 using Shooter.Presentation.Fx;
 using Shooter.Presentation.Hud;
 using Shooter.Presentation.Input;
+using Shooter.Presentation.Menus;
 using Shooter.Presentation.Rendering;
 using Shooter.Presentation.Rig;
 using Shooter.Presentation.View;
@@ -577,15 +578,8 @@ namespace Shooter.Presentation.Session
             {
                 // Knife melee: no muzzle flash / tracer / casing — slash is the FP viewmodel.
                 if (IsKnifeDefinition(shot.WeaponId)) return;
-                // Accessibility: reducedFlash suppresses world muzzle proxies and the IMGUI overlay.
-                if (reducedFlash) return;
-                Float3 dir = shot.UnitDirection;
-                // Push the proxy slightly past the muzzle so the flash clears the viewmodel.
-                var muzzle = new Float3(
-                    shot.Origin.X + dir.X * 0.18f,
-                    shot.Origin.Y + dir.Y * 0.18f,
-                    shot.Origin.Z + dir.Z * 0.18f);
-                analyticFxPool.TrySpawn(FxKind.MuzzleFlash, muzzle, dir);
+                // ADR-061: dual flame lobes + tracer + casing. ReducedFlash hides muzzle+tracer only.
+                analyticFxPool.SpawnGunshotFeedback(shot.Origin, shot.UnitDirection, suppressMuzzleAndTracer: reducedFlash);
                 return;
             }
 
@@ -1336,10 +1330,15 @@ namespace Shooter.Presentation.Session
         {
             if (muzzleFlashRemaining > 0f && !reducedFlash)
             {
-                float alpha = Mathf.Clamp01(muzzleFlashRemaining / 0.09f) * 0.42f;
+                // Soft lower-center wash near the muzzle, not a full-screen bubble flash.
+                float alpha = Mathf.Clamp01(muzzleFlashRemaining / 0.09f) * 0.28f;
+                float w = Screen.width;
+                float h = Screen.height;
                 var prev = GUI.color;
-                GUI.color = new Color(1f, 0.95f, 0.75f, alpha);
-                GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), Texture2D.whiteTexture);
+                GUI.color = new Color(1f, 0.92f, 0.68f, alpha);
+                GUI.DrawTexture(new Rect(w * 0.28f, h * 0.42f, w * 0.44f, h * 0.38f), Texture2D.whiteTexture);
+                GUI.color = new Color(1f, 0.85f, 0.45f, alpha * 0.55f);
+                GUI.DrawTexture(new Rect(w * 0.38f, h * 0.52f, w * 0.24f, h * 0.22f), Texture2D.whiteTexture);
                 GUI.color = prev;
             }
             if (subtitlesEnabled && subtitleRemaining > 0f && !string.IsNullOrEmpty(subtitleText))

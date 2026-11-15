@@ -145,9 +145,10 @@ namespace Shooter.Presentation.View
                 {
                     if (ProductAuthorityActionView.IsGunSlot(activeSlot))
                     {
-                        recoilPitchVel += activeSlot == ProductAuthorityActionView.PistolSlot ? 3.2f : 2.5f;
+                        // Stronger hip-fire spring so each shot reads as mechanical kick from the shooter POV.
+                        recoilPitchVel += activeSlot == ProductAuthorityActionView.PistolSlot ? 3.6f : 4.0f;
                         recoilYawVel += ((ev.Id.Ordinal & 1) == 0 ? -1f : 1f) *
-                            (activeSlot == ProductAuthorityActionView.PistolSlot ? 0.85f : 0.6f);
+                            (activeSlot == ProductAuthorityActionView.PistolSlot ? 0.95f : 0.85f);
                         cycleOpen = Math.Max(cycleOpen, FirstPersonWeaponMechanics.CycleImpulse);
                     }
                     else if (ProductAuthorityActionView.IsKnifeSlot(activeSlot))

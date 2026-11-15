@@ -169,9 +169,26 @@ namespace Shooter.Simulation.Tests.View
             Assert.NotEqual(0f, hip.X);
             Assert.Equal(0f, ads.X);
             Assert.True(ads.Z < 0f);
+            // Hip rearward punch is stronger than the prior 0.014*|pitch| scale (~1.4×).
+            Assert.True(hip.Z <= -0.004f);
             Assert.Equal(0f, FirstPersonHandling.RecoilRotationScale(1f, false));
             Assert.Equal(1f, FirstPersonHandling.RecoilRotationScale(0f, false));
             Assert.Equal(0f, FirstPersonHandling.EquipmentRecoilKick(0.2f, 0.1f, 0f, true).Z);
+        }
+
+        [Fact]
+        public void RecoilEnergyAddsMechanicalRollOscillationAtHip()
+        {
+            var handling = new FirstPersonHandling();
+            handling.Reset(0);
+            Float3 idle = handling.RotationDegrees(0f, -1f, false, recoilEnergy: 0f);
+            Float3 kicked = handling.RotationDegrees(0f, -1f, false, recoilEnergy: 0.25f);
+            Assert.True(kicked.Z > idle.Z);
+            Assert.True(kicked.X > idle.X);
+            // ADS fades the mechanical oscillation so the optic stays aligned.
+            Float3 ads = handling.RotationDegrees(1f, -1f, false, recoilEnergy: 0.25f);
+            Assert.Equal(0f, ads.Z);
+            Assert.Equal(0f, handling.RotationDegrees(0f, -1f, true, recoilEnergy: 0.25f).Z);
         }
 
         [Fact]
@@ -240,8 +257,11 @@ namespace Shooter.Simulation.Tests.View
             Assert.True(FirstPersonWeaponMechanics.MagazineOffset(FirstPersonMagazineTravel.RemoveEnd, true, false).Y <
                         FirstPersonWeaponMechanics.MagazineOffset(FirstPersonMagazineTravel.RemoveEnd, false, false).Y);
             Assert.Equal(0f, FirstPersonWeaponMechanics.CycleOffset(ProductAuthorityActionView.RifleSlot, 0f, false).Z);
-            Assert.True(FirstPersonWeaponMechanics.CycleOffset(ProductAuthorityActionView.RifleSlot, 1f, false).Z < -0.04f);
-            Assert.True(FirstPersonWeaponMechanics.CycleOffset(ProductAuthorityActionView.PistolSlot, 1f, false).Z < -0.02f);
+            Assert.Equal(-FirstPersonWeaponMechanics.RifleBoltTravel,
+                FirstPersonWeaponMechanics.CycleOffset(ProductAuthorityActionView.RifleSlot, 1f, false).Z);
+            Assert.True(FirstPersonWeaponMechanics.RifleBoltTravel >= 0.07f);
+            Assert.True(FirstPersonWeaponMechanics.CycleOffset(ProductAuthorityActionView.RifleSlot, 1f, false).Z < -0.06f);
+            Assert.True(FirstPersonWeaponMechanics.CycleOffset(ProductAuthorityActionView.PistolSlot, 1f, false).Z < -0.03f);
             Assert.True(Math.Abs(FirstPersonWeaponMechanics.CycleOffset(ProductAuthorityActionView.RifleSlot, 1f, true).Z) <
                         Math.Abs(FirstPersonWeaponMechanics.CycleOffset(ProductAuthorityActionView.RifleSlot, 1f, false).Z));
             Assert.False(FirstPersonWeaponMechanics.HasCyclePart(ProductAuthorityActionView.KnifeSlot));

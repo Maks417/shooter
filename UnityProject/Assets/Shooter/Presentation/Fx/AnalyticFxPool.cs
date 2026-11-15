@@ -49,13 +49,25 @@ namespace Shooter.Presentation.Fx
             _ => ImpactSparkLifetime
         };
 
+        /// <summary>
+        /// Peak primary-lobe scale at spawn (meters). Presenter stretches this into a thin flame cone.
+        /// </summary>
+        public const float MuzzleFlashPeakScale = 0.62f;
+        /// <summary>Secondary cross-lobe scale factor relative to primary (classic star flash).</summary>
+        public const float MuzzleFlashSecondaryScale = 0.72f;
+        /// <summary>Meters past the shot origin so the flame clears the viewmodel tip.</summary>
+        public const float MuzzleFlashForwardPushMeters = 0.18f;
+        /// <summary>Extra forward offset for the secondary cross lobe.</summary>
+        public const float MuzzleFlashSecondaryPushMeters = 0.025f;
+
         /// <summary>Deterministic world scale for mesh proxies (shrink flash/spark, expand smoke).</summary>
         public static float EvaluateScale(FxKind kind, float age, float lifetime)
         {
             float t = NormalizeAge(age, lifetime);
             return kind switch
             {
-                FxKind.MuzzleFlash => 0.28f + 0.38f * (1f - t) * (1f - t),
+                // Hot punch then rapid shrink — elongated into a flame cone by the presenter.
+                FxKind.MuzzleFlash => 0.22f + (MuzzleFlashPeakScale - 0.22f) * (1f - t) * (1f - t),
                 FxKind.ImpactSpark => 0.10f + 0.26f * (1f - t),
                 FxKind.SmokeProxy => 0.42f + 1.12f * t,
                 FxKind.ShellCasing => 0.045f + 0.01f * (1f - t),
@@ -136,6 +148,73 @@ namespace Shooter.Presentation.Fx
             Rejected++;
             return false;
         }
+
+        /// <summary>
+        /// Product-path gunshot FX (ADR-061): dual muzzle lobes + tracer + ejected casing.
+        /// <paramref name="suppressMuzzleAndTracer"/> mirrors ReducedFlash — casings still spawn.
+        /// </summary>
+        public int SpawnGunshotFeedback(Float3 origin, Float3 unitDirection, bool suppressMuzzleAndTracer)
+        {
+            Float3 dir = unitDirection.IsUnit ? unitDirection : new Float3(0f, 0f, 1f);
+            Float3 eject = EjectionAxis(dir);
+            int spawned = 0;
+
+            if (!suppressMuzzleAndTracer)
+            {
+                var primary = new Float3(
+                    origin.X + dir.X * MuzzleFlashForwardPushMeters,
+                    origin.Y + dir.Y * MuzzleFlashForwardPushMeters,
+                    origin.Z + dir.Z * MuzzleFlashForwardPushMeters);
+                if (TrySpawn(FxKind.MuzzleFlash, primary, dir)) spawned++;
+
+                // Cross lobe: vertical relative to the shot so the flash reads as a star, not a marble.
+                Float3 cross = CrossLobeAxis(dir);
+                var secondary = new Float3(
+                    primary.X + dir.X * MuzzleFlashSecondaryPushMeters,
+                    primary.Y + dir.Y * MuzzleFlashSecondaryPushMeters,
+                    primary.Z + dir.Z * MuzzleFlashSecondaryPushMeters);
+                if (TrySpawn(FxKind.MuzzleFlash, secondary, cross)) spawned++;
+
+                if (TrySpawn(FxKind.Tracer, primary, dir)) spawned++;
+            }
+
+            // Casings remain under ReducedFlash (ADR-061).
+            if (TrySpawn(FxKind.ShellCasing, origin, eject)) spawned++;
+            return spawned;
+        }
+
+        /// <summary>Rightward ejection axis from the shot direction (weapon-local +X approximation).</summary>
+        public static Float3 EjectionAxis(Float3 unitDirection)
+        {
+            Float3 forward = unitDirection.IsUnit ? unitDirection : new Float3(0f, 0f, 1f);
+            // Prefer world-up cross (right-handed); fall back if looking nearly vertical.
+            Float3 up = new Float3(0f, 1f, 0f);
+            Float3 right = Cross(up, forward);
+            float lenSq = right.X * right.X + right.Y * right.Y + right.Z * right.Z;
+            if (lenSq < 1e-8f)
+            {
+                right = Cross(new Float3(1f, 0f, 0f), forward);
+                lenSq = right.X * right.X + right.Y * right.Y + right.Z * right.Z;
+            }
+            if (lenSq < 1e-8f) return new Float3(1f, 0f, 0f);
+            float inv = 1f / (float)Math.Sqrt(lenSq);
+            return new Float3(right.X * inv, right.Y * inv, right.Z * inv);
+        }
+
+        /// <summary>Perpendicular flame lobe axis for the secondary muzzle flash.</summary>
+        public static Float3 CrossLobeAxis(Float3 unitDirection)
+        {
+            Float3 forward = unitDirection.IsUnit ? unitDirection : new Float3(0f, 0f, 1f);
+            Float3 right = EjectionAxis(forward);
+            Float3 up = Cross(right, forward);
+            float lenSq = up.X * up.X + up.Y * up.Y + up.Z * up.Z;
+            if (lenSq < 1e-8f) return new Float3(0f, 1f, 0f);
+            float inv = 1f / (float)Math.Sqrt(lenSq);
+            return new Float3(up.X * inv, up.Y * inv, up.Z * inv);
+        }
+
+        private static Float3 Cross(Float3 a, Float3 b) =>
+            new Float3(a.Y * b.Z - a.Z * b.Y, a.Z * b.X - a.X * b.Z, a.X * b.Y - a.Y * b.X);
 
         public void Tick(float dt)
         {
