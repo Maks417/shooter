@@ -16,6 +16,18 @@ namespace Shooter.Simulation.Tests.Hud
         }
 
         [Fact]
+        public void Kill_labels_escalate_by_life_streak()
+        {
+            Assert.Equal(ScoreBadgeVisual.KillLabel, ScoreBadgeVisual.KillLabelFor(0));
+            Assert.Equal(ScoreBadgeVisual.KillLabel, ScoreBadgeVisual.KillLabelFor(1));
+            Assert.Equal(ScoreBadgeVisual.DoubleKillLabel, ScoreBadgeVisual.KillLabelFor(2));
+            Assert.Equal(ScoreBadgeVisual.TripleKillLabel, ScoreBadgeVisual.KillLabelFor(3));
+            Assert.Equal(ScoreBadgeVisual.MultiKillLabel, ScoreBadgeVisual.KillLabelFor(4));
+            Assert.Equal(ScoreBadgeVisual.MultiKillLabel, ScoreBadgeVisual.KillLabelFor(9));
+            Assert.Equal("HEADSHOT", ScoreBadgeVisual.HeadshotLabel);
+        }
+
+        [Fact]
         public void Feed_alpha_holds_then_fades()
         {
             Assert.Equal(1f, ScoreBadgeVisual.FeedAlpha(ScoreBadgeVisual.FeedHoldSeconds));

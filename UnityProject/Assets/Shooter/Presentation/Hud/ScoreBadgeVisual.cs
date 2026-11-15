@@ -3,7 +3,7 @@ using System;
 
 namespace Shooter.Presentation.Hud
 {
-    /// <summary>Pure timing/labels for ADR-059 combat score badges (no Unity).</summary>
+    /// <summary>Pure timing/labels for ADR-059 / ADR-073 combat score badges (no Unity).</summary>
     public static class ScoreBadgeVisual
     {
         public const float FeedHoldSeconds = 3.0f;
@@ -15,9 +15,23 @@ namespace Shooter.Presentation.Hud
         public const float AmmoPopupHoldSeconds = 1.6f;
         public const float AmmoPopupFadeSeconds = 0.5f;
         public const string KillLabel = "ENEMY KILLED";
+        public const string DoubleKillLabel = "DOUBLE KILL";
+        public const string TripleKillLabel = "TRIPLE KILL";
+        public const string MultiKillLabel = "MULTI KILL";
+        public const string HeadshotLabel = "HEADSHOT";
         public const string AssistLabel = "ASSIST";
 
+        /// <summary>Legacy binary mapping (assist vs first-kill wording).</summary>
         public static string LabelFor(bool isKill) => isKill ? KillLabel : AssistLabel;
+
+        /// <summary>Life-scoped kill streak label (1 = ENEMY KILLED, 2 = DOUBLE, 3 = TRIPLE, 4+ = MULTI).</summary>
+        public static string KillLabelFor(byte killStreak)
+        {
+            if (killStreak >= 4) return MultiKillLabel;
+            if (killStreak == 3) return TripleKillLabel;
+            if (killStreak == 2) return DoubleKillLabel;
+            return KillLabel;
+        }
 
         public static float FeedAlpha(float remainingSeconds, float fadeSeconds = FeedFadeSeconds)
         {

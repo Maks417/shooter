@@ -1,5 +1,7 @@
 # Next playable build — finish playtest and native navigation
 
+**Kill-streak / headshot score badges — 2026-11-15 (source):** ADR-073 extends ADR-059 local awards with life-scoped DOUBLE/TRIPLE/MULTI kill ribbon+feed labels and an extra HEADSHOT feed badge; Score math unchanged. Pure Hud/session award tests in this change set; named 720p review Pending. [Handoff](milestones/m11-playable-release/handoff.md#kill-streak-and-headshot-score-badges--2026-11-15).
+
 **Kill-feed weapon/headshot icons — 2026-11-15 (source):** elimination rows replace the arrow with procedural Fill weapon silhouettes plus a headshot mark, correlated from same-tick `ShotAccepted`/`DamageApplied` (C0 DeathPayload unchanged). Pure Hud tests in this change set; named 720p review Pending. [Handoff](milestones/m11-playable-release/handoff.md#kill-feed-weapon-and-headshot-icons--2026-11-15).
 
 **ADR-072 weapon profiles — 2026-11-15 (source):** DefinitionId-keyed combat catalog + visual profiles; `geometry.weapon` 1.0.5 silhouette (`standard`/`carbine`); proof primary `weapons/rifle-carbine` packaged beside classic rifle; default loadout still rifle. C0 PredictionSchema unchanged. Pure catalog/visual/generation tests in this change set; content republish / named playtest Pending. [Handoff](milestones/m11-playable-release/handoff.md#adr-072--weapon-profiles).

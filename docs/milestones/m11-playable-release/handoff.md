@@ -1,5 +1,18 @@
 # M11 — Playable build and acceptance — handoff and gate record
 
+## Kill-streak and headshot score badges — 2026-11-15
+
+Owner: different score badges for 2 / 3 / 4+ kills in a row until local death, plus an extra headshot badge.
+
+**Implemented (software):**
+- [ADR-073](../../decisions.md#adr-073--accepted-life-scoped-multi-kill-and-headshot-hud-badges): life-scoped local-human streak on `OfflineGameSession`; `LocalScoreAward` carries `KillStreak` + optional `Headshot` kind (0 points); Score still kill=100 / assist=HP.
+- `ScoreBadgeVisual` labels: `ENEMY KILLED` / `DOUBLE KILL` / `TRIPLE KILL` / `MULTI KILL` / `HEADSHOT` / `ASSIST`; ribbon uses streak kill label; headshot is feed-only.
+- Fatal head correlated from same-batch `DamageApplied.RegionId` (no C0 DeathPayload change).
+- Pure tests: `ScoreBadgeVisualTests`, `LocalKillBadgeLogicTests`.
+- Checks (software): Simulation **322/322** PASS (`Artifacts/m2-combat-harness/129a0ad8…/20261115T215354942Z-a74cf281/`); Game **96/96** PASS (`Artifacts/m8-runtime-composition/129a0ad8…/20261115T215253560Z-6af3d5d0/`); provenance PASS (826 entries / 413 GUIDs); docs/fixtures PASS after manifest refresh.
+
+**Pending:** named 720p player/installer badge readability. No Game-v1 / contract-lock change.
+
 ## Kill-feed weapon and headshot icons — 2026-11-15
 
 Owner: replace the elimination-row arrow with the kill weapon icon and a headshot mark (AAA FPS layout).

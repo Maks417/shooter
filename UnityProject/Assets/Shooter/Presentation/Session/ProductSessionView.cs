@@ -75,6 +75,7 @@ namespace Shooter.Presentation.Session
         private readonly List<LocalScoreAward> scoreAwardDrain = new List<LocalScoreAward>(8);
         private float scoreRibbonUntil;
         private uint scoreRibbonPoints;
+        private string scoreRibbonLabel = ScoreBadgeVisual.KillLabel;
         private float ammoScoreUntil;
         private uint ammoScorePoints;
         private int lastSeenHealth = 100;
@@ -1247,13 +1248,23 @@ namespace Shooter.Presentation.Session
             for (int i = 0; i < scoreAwardDrain.Count; i++)
             {
                 var award = scoreAwardDrain[i];
+                if (award.Kind == LocalScoreAwardKind.Headshot)
+                {
+                    // ADR-073: extra feed-only badge; no ribbon, no ammo +0.
+                    PushScoreFeed(ScoreBadgeVisual.HeadshotLabel, 0, now);
+                    continue;
+                }
                 if (award.Points == 0) continue;
                 bool isKill = award.Kind == LocalScoreAwardKind.Kill;
-                PushScoreFeed(ScoreBadgeVisual.LabelFor(isKill), award.Points, now);
+                string label = isKill
+                    ? ScoreBadgeVisual.KillLabelFor(award.KillStreak)
+                    : ScoreBadgeVisual.AssistLabel;
+                PushScoreFeed(label, award.Points, now);
                 ammoScorePoints = award.Points;
                 ammoScoreUntil = now + ScoreBadgeVisual.AmmoPopupHoldSeconds;
                 if (isKill)
                 {
+                    scoreRibbonLabel = label;
                     scoreRibbonPoints = award.Points;
                     scoreRibbonUntil = now + ScoreBadgeVisual.RibbonHoldDuration(reducedFlash);
                 }
@@ -1287,7 +1298,7 @@ namespace Shooter.Presentation.Session
             ink.a = alpha;
             Color pts = TacticalUi.Accent;
             pts.a = alpha;
-            combatUi.Label(new Rect(x, y - 16, w, 16), ScoreBadgeVisual.KillLabel, 12, ink, TextAnchor.MiddleCenter);
+            combatUi.Label(new Rect(x, y - 16, w, 16), scoreRibbonLabel, 12, ink, TextAnchor.MiddleCenter);
             combatUi.Label(new Rect(x, y + h + 2, w, 20), ScoreBadgeVisual.FormatPoints(scoreRibbonPoints), 18, pts, TextAnchor.MiddleCenter);
         }
 
@@ -1314,7 +1325,15 @@ namespace Shooter.Presentation.Session
                 Color pts = TacticalUi.Accent;
                 pts.a = alpha;
                 combatUi.Label(new Rect(r.x + 8, r.y, r.width - 56, r.height), label, 11, ink, TextAnchor.MiddleLeft);
-                combatUi.Label(new Rect(r.xMax - 52, r.y, 44, r.height), ScoreBadgeVisual.FormatPoints(scoreFeedPoints[i]), 12, pts, TextAnchor.MiddleRight);
+                if (scoreFeedPoints[i] > 0)
+                {
+                    combatUi.Label(
+                        new Rect(r.xMax - 52, r.y, 44, r.height),
+                        ScoreBadgeVisual.FormatPoints(scoreFeedPoints[i]),
+                        12,
+                        pts,
+                        TextAnchor.MiddleRight);
+                }
             }
         }
 

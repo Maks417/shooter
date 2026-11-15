@@ -52,6 +52,8 @@ namespace Shooter.Game.Session
         private readonly Dictionary<ulong, uint> damageVictimLife = new Dictionary<ulong, uint>();
         private readonly List<LocalScoreAward> localScoreAwards = new List<LocalScoreAward>(8);
         private readonly List<ulong> assistAttackersScratch = new List<ulong>(8);
+        /// <summary>Local-human enemy kills since last death (ADR-073 HUD badges).</summary>
+        private byte localKillStreak;
 
         public OfflineGameSession(IMapCatalog catalog, Func<IWorldQueries, INavigation, IMapRuntime> mapFactory, bool allowFakeMapRuntime = false)
         {
@@ -338,9 +340,10 @@ namespace Shooter.Game.Session
             using (var events = harness.AcquireEvents())
             {
                 measurement.LeaseAcquires++;
-                for (int i = 0; i < events.Events.Count; i++)
+                IReadOnlyList<CombatEvent> batch = events.Events;
+                for (int i = 0; i < batch.Count; i++)
                 {
-                    var ev = events.Events[i];
+                    var ev = batch[i];
                     // T082 stimuli from tick t; the planner consumes them when it plans t+1.
                     if (ev.Kind == CombatEventKind.ShotAccepted && ev.Payload is ShotPayload shot)
                     {
@@ -366,15 +369,22 @@ namespace Shooter.Game.Session
                         humanEntity.IsValid &&
                         IsEnemyOf(snap, credited, ev.Target))
                     {
-                        PushLocalAward(new LocalScoreAward(
-                            LocalScoreAwardKind.Kill,
-                            (uint)GameContractVersion.PersonalKillPoints,
-                            ResolveDisplayName(ev.Target, snap)));
+                        localKillStreak = LocalKillBadgeLogic.IncrementStreak(localKillStreak);
+                        bool headshot = LocalKillBadgeLogic.IsFatalHeadshot(batch, i);
+                        LocalKillBadgeLogic.PushKillBadges(
+                            PushLocalAward,
+                            ResolveDisplayName(ev.Target, snap),
+                            localKillStreak,
+                            headshot,
+                            (uint)GameContractVersion.PersonalKillPoints);
                     }
                     bots.ResetLife(ev.Target);
                     deathsThisTick.Add(ev.Target);
                 }
             }
+            // ADR-073: reset after the full death batch so a same-tick trade cannot leave a post-death streak.
+            if (humanEntity.IsValid && ContainsEntity(deathsThisTick, humanEntity))
+                localKillStreak = 0;
             // Preserve ordered scoring for every same-tick death before retiring any old life.
             uint activeTick = snap.ActiveTicksElapsed;
             for (int i = 0; i < deathsThisTick.Count; i++)
@@ -762,6 +772,7 @@ namespace Shooter.Game.Session
             damageByVictim.Clear();
             damageVictimLife.Clear();
             localScoreAwards.Clear();
+            localKillStreak = 0;
             querySamplesAtMatchStart = 0;
         }
 

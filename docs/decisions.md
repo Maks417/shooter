@@ -842,3 +842,18 @@ Decision:
 
 Validation: pure Simulation catalog/loadout/AI tests; Generation recipe/silhouette + package path tests; Presentation profile/optic resolution tests; Game-v1 and feature-content locks refreshed. Named player/installer review Pending. Rollback: revert ADR-072 merge and republish prior generator version / packages.
 
+## ADR-073 — Accepted: life-scoped multi-kill and headshot HUD badges
+
+Date 2026-11-15; owner requested different combat score badges for 2 / 3 / 4+ kills in a row until the local player dies, plus an extra badge on headshots. Sole integrator owns the bounded session award ring / HUD labels / tests / docs. No Game-v1 Score math change, C0 DeathPayload change, art import or acceptance waiver.
+
+Context: ADR-059 added personal Score (kill = 100; assist = HP) and binary `ENEMY KILLED` / `ASSIST` badges, and explicitly carved out streaks and progression. Kill-feed already correlates fatal head region via same-tick `DamageApplied` without changing DeathPayload. Owner wants Battlefield-style multi-kill / headshot **HUD feedback** only.
+
+Decision:
+- Keep Score math and team win unchanged (kill still exactly 100; assist still HP; no streak bonus points).
+- Session tracks a **local-human life kill streak**: increment on each credited enemy kill award; reset when the human dies or the match runtime is released.
+- Enrich the internal `LocalScoreAward` ring (still not a Game-v1 DTO): Kill carries `KillStreak`; optional sibling `Headshot` kind (0 points) when the fatal same-batch `DamageApplied.RegionId` is head.
+- Presentation maps Kill streak → `ENEMY KILLED` / `DOUBLE KILL` / `TRIPLE KILL` / `MULTI KILL` (4+); ribbon uses the streak kill label; Headshot is an extra mid-screen feed row only (no ribbon, no ammo +0). Assist unchanged.
+- Procedural Fill ribbon/feed only; no imported badge art; not a progression, pickup or unlock system.
+
+Validation: pure `ScoreBadgeVisual` / local award shaping tests; Game and Simulation wrappers as needed; docs/manifest. Named 720p badge readability remains Pending. Rollback removes streak/headshot award fields and restores binary Kill/Assist labels.
+
