@@ -110,12 +110,14 @@ namespace Shooter.Presentation.Session
             var sun = new GameObject("Product sun").AddComponent<Light>();
             sun.transform.SetParent(transform, false);
             sun.type = LightType.Directional;
-            sun.transform.rotation = Quaternion.Euler(50f, 40f, 0f);
-            sun.intensity = 1.1f;
+            // Slightly lower elevation + more lateral azimuth: longer readable hard shadows on Low.
+            sun.transform.rotation = Quaternion.Euler(46f, 52f, 0f);
+            sun.color = new Color(1f, 0.93f, 0.82f, 1f);
+            sun.intensity = 1.28f;
             sun.shadows = LightShadows.Hard;
             sun.cullingMask &= ~(1 << ProductMenuScene.StageLayer);
             RenderSettings.ambientMode = AmbientMode.Flat;
-            RenderSettings.ambientLight = new Color(0.28f, 0.30f, 0.34f, 1f);
+            RenderSettings.ambientLight = new Color(0.30f, 0.29f, 0.26f, 1f);
             QualitySettings.vSyncCount = 0;
             Application.targetFrameRate = -1;
             int profile = QualitySettings.GetQualityLevel();

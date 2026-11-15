@@ -91,6 +91,7 @@ namespace Shooter.Presentation.Rendering
             if (metadataBytes != null && metadataBytes.Length > 0)
                 PlaceMetadataCovers(metadataBytes, coverIds);
 
+            // Atmosphere after materials/meshes so Trilight + one-shot probe sample the installed surfaces.
             GeneratedSkyMath.ResolveProductPalette(mapId, out var zenith, out var horizon, out var groundRgb, out float fogStart, out float fogEnd, out float fogDensity);
             sky = GeneratedSky.Apply(transform, zenith, horizon, groundRgb, true, fogStart, fogEnd, fogDensity);
             probe = GeneratedReflectionProbe.Apply(
@@ -115,10 +116,11 @@ namespace Shooter.Presentation.Rendering
                 unitBox = Own(UploadMesh(MapVisualClosure.DecodeMapMesh(visuals, MapVisualClosure.UnitBoxMeshPath), "Product unit box"));
                 // Combined map solids retain metric UVs, so .5 repeats/m matches the two-metre recipe.
                 // The scaled unit-box ground uses 0..1 face UVs: 128 repeats across 256 metres.
-                concrete = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[0], "Numeric concrete", 0f, 0.18f, .5f);
-                cover = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[1], "Numeric cover", 0.05f, 0.28f, 4f);
-                ground = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[2], "Numeric soil ground", 0f, 0.08f, CompoundPlan.MapHalfExtent);
-                asphalt = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[3], "Numeric asphalt", 0f, 0.12f, CompoundPlan.MapHalfExtent);
+                // Scalar metallic/smoothness only apply when packaged mask planes are absent; keep recipe identity unchanged.
+                concrete = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[0], "Numeric concrete", 0.02f, 0.22f, .5f);
+                cover = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[1], "Numeric cover", 0.08f, 0.36f, 4f);
+                ground = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[2], "Numeric soil ground", 0f, 0.06f, CompoundPlan.MapHalfExtent);
+                asphalt = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[3], "Numeric asphalt", 0.04f, 0.14f, CompoundPlan.MapHalfExtent);
                 visualsBound = true;
             }
             catch (Exception error)

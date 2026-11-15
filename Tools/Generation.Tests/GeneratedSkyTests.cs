@@ -121,12 +121,12 @@ internal static class GeneratedSkyMath
         public Rgb(float r, float g, float b) { R = r; G = g; B = b; }
     }
 
-    public static readonly Rgb DefaultZenith = new Rgb(.30f, .40f, .52f);
-    public static readonly Rgb DefaultHorizon = new Rgb(.58f, .62f, .64f);
-    public static readonly Rgb DefaultGround = new Rgb(.26f, .24f, .20f);
-    public const float DefaultFogStartMeters = 32f;
-    public const float DefaultFogEndMeters = 105f;
-    public const float DefaultFogDensity = .0075f;
+    public static readonly Rgb DefaultZenith = new Rgb(.26f, .42f, .58f);
+    public static readonly Rgb DefaultHorizon = new Rgb(.62f, .66f, .68f);
+    public static readonly Rgb DefaultGround = new Rgb(.28f, .25f, .20f);
+    public const float DefaultFogStartMeters = 38f;
+    public const float DefaultFogEndMeters = 120f;
+    public const float DefaultFogDensity = .0065f;
 
     public static void ResolveProductPalette(
         string mapId,
@@ -142,19 +142,22 @@ internal static class GeneratedSkyMath
         fogDensity = DefaultFogDensity;
         if (string.Equals(mapId, "training-compound", StringComparison.Ordinal))
         {
-            zenith = new Rgb(.28f, .40f, .50f);
-            horizon = new Rgb(.56f, .62f, .63f);
-            ground = new Rgb(.24f, .26f, .20f);
+            zenith = new Rgb(.24f, .40f, .56f);
+            horizon = new Rgb(.58f, .64f, .68f);
+            ground = new Rgb(.22f, .24f, .22f);
+            fogStartMeters = 36f;
+            fogEndMeters = 115f;
+            fogDensity = .0068f;
             return;
         }
         if (string.Equals(mapId, "depot-yard", StringComparison.Ordinal))
         {
-            zenith = new Rgb(.34f, .40f, .48f);
-            horizon = new Rgb(.62f, .60f, .56f);
-            ground = new Rgb(.30f, .26f, .20f);
-            fogStartMeters = 28f;
-            fogEndMeters = 95f;
-            fogDensity = .0085f;
+            zenith = new Rgb(.32f, .42f, .50f);
+            horizon = new Rgb(.68f, .62f, .54f);
+            ground = new Rgb(.32f, .26f, .18f);
+            fogStartMeters = 30f;
+            fogEndMeters = 100f;
+            fogDensity = .0078f;
             return;
         }
         zenith = DefaultZenith;
@@ -206,8 +209,8 @@ internal static class GeneratedReflectionProbeMath
     public const float DefaultBoxSizeMeters = 12f;
     public const float DefaultIntensity = 1f;
     public const int DefaultResolution = 128;
-    public const float ProductMapBoxSizeMeters = 40f;
-    public const float ProductMapIntensity = 1.05f;
+    public const float ProductMapBoxSizeMeters = 48f;
+    public const float ProductMapIntensity = 1.18f;
 
     public static void Validate(float boxSizeMeters, float intensity, int resolution)
     {
