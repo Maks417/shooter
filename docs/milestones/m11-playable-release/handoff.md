@@ -29,9 +29,9 @@ Owner: the maps were too big (all fights happened in the middle) and looked alik
 - **Game-v1 tests:** 88/88 PASS via `dotnet test`.
 - **`Test-Game.ps1` wrapper:** FAILs its Game-v1 lock pre-check on any clean LF checkout. This is pre-existing at `334812b`: the lock hash for `docs/game-fixtures/user-settings-last-weapon.valid.json` was frozen from a CRLF working copy. It is not caused by ADR-074.
 - **Content:** software `Compile-GameContent.ps1 -Force` PASS, 12 packages; gameplay package roots compound `0653de52…`, depot `5da3d4af…`, oil `d5f1e3e4…` (software-walkable-grid NVB1). Evidence: `Artifacts/m8-runtime-composition/d7adc84…/compile-gamecontent-20261115T220041193Z-bda40418/`.
+- **Native content (merged `48373d1`, locked editor):** `Compile-GameContent.ps1 -Native -Force` PASS. All 12 packages are native (`unity-ai-navigation-2.0.0;pinned-physx-collision-bake`) and the non-navigation byte-identity guard PASSes. Gameplay package roots: compound `d15c01d7…`, depot `50229906…`, oil `5a77763e…`. Evidence: `Artifacts/m8-runtime-composition/48373d1…/compile-gamecontent-20261115T221531760Z-36b2c426/`.
 
 **Pending:**
-- Native `-Native` nav republish with the locked editor.
 - Unity EditMode/PlayMode, Client/Server builds and the installer.
 - The named 5v5/6v6 playtest of all three maps: time to first contact, spawn pressure, bot routing on the new topologies.
 
