@@ -38,6 +38,40 @@ namespace Shooter.Contracts.Tests
             Assert.Equal(8.0 / 60, clock.DebtSeconds, 10);
         }
         [Fact]
+        public void ProductClientDropsHitchDebtKeepsTickOrderAndNeverOverloads()
+        {
+            var clock = new FixedTickClock(false, true); var ticks = new List<uint>();
+            for (int i = 0; i < 10; i++) clock.Advance(1.0 / 60, ticks.Add);
+            clock.Advance(.2 + .5 / 60, ticks.Add);
+            Assert.False(clock.Overloaded); Assert.Equal(4, clock.LastAdvanceTicks);
+            Assert.Equal(14u, clock.NextTick); Assert.Equal(1, clock.HitchRecoveries);
+            Assert.Equal(8.0 / 60, clock.LastDroppedDebtSeconds, 10);
+            Assert.Equal(.5 / 60, clock.DebtSeconds, 10);
+            clock.Advance(.5 / 60, ticks.Add);
+            Assert.Equal(0.0, clock.LastDroppedDebtSeconds);
+            Assert.Equal(15, ticks.Count);
+            for (int i = 0; i < ticks.Count; i++) Assert.Equal((uint)i, ticks[i]);
+            Assert.False(clock.Overloaded);
+        }
+        [Fact]
+        public void ProductHitchRecoveryNeverAppliesToServerOrDefaultClocks()
+        {
+            var server = new FixedTickClock(true, true); int steps = 0;
+            server.Advance(.2, _ => steps++); Assert.True(server.Overloaded); Assert.Equal(0.0, server.LastDroppedDebtSeconds);
+            var offline = new FixedTickClock(false); offline.Advance(.2, _ => steps++);
+            Assert.True(offline.Overloaded); Assert.Equal(0, offline.HitchRecoveries);
+        }
+        [Fact]
+        public void ResumeSamplesZeroElapsedOnFirstFrameEvenWhenSuspendedDirectly()
+        {
+            var clock = new FixedTickClock(false, true); var ticks = new List<uint>();
+            clock.SetSuspended(true); clock.SetSuspended(false); // product Resume path
+            clock.Advance(clock.SampleActiveElapsed(5, true), ticks.Add);
+            Assert.Empty(ticks); Assert.Equal(0.0, clock.DebtSeconds);
+            clock.Advance(clock.SampleActiveElapsed(1.0 / 60, true), ticks.Add);
+            Assert.Equal(new uint[] { 0 }, ticks);
+        }
+        [Fact]
         public void ServerCatchesUpButTerminatesSustainedOneSecondDebt()
         {
             var clock = new FixedTickClock(true); int steps = 0; clock.Advance(.1, _ => steps++); clock.Advance(0, _ => steps++);

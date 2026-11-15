@@ -44,7 +44,8 @@ namespace Shooter.Simulation.Tests.Motor
             var b = sprint ? InputButtons.SprintHeld : InputButtons.None;
             s = Run(motor, world, s, ref tick, 90, 1f, b, assertGrounded: true);
             Assert.True(s.Feet.Z > 1f);
-            Assert.Equal(world.GroundHeightAt(s.Feet.Z), s.Feet.Y, 2);
+            // Resting height is Skin above the ground (a body spawned in contact is lifted by the shortfall).
+            Assert.InRange(s.Feet.Y, world.GroundHeightAt(s.Feet.Z) - 0.005f, world.GroundHeightAt(s.Feet.Z) + Cfg.Skin + 0.005f);
         }
 
         [Fact]
@@ -159,7 +160,7 @@ namespace Shooter.Simulation.Tests.Motor
             uint tick = 0;
             var s = Run(motor, world, SpawnAt(world.GroundHeightAt(0)), ref tick, 100, 1f, InputButtons.None);
             Assert.True(s.Feet.Z < 1f - Cfg.Radius + 0.05f, $"z={s.Feet.Z}");
-            Assert.Equal(0f, s.Feet.Y, 2);
+            Assert.InRange(s.Feet.Y, -0.005f, Cfg.Skin + 0.005f);
         }
 
         // ---------------- basics ----------------

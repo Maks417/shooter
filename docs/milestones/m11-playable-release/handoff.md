@@ -433,7 +433,6 @@ Twelve product captures (4 workloads × 3, Low 1280×720, native content) and tw
 
 Not measured: GPU timing (PresentMon produced a CSV during the soak, but it was not analyzed), thermal stabilization (no sensor log). The 12-capture/2-soak reference set must be rerun on an idle machine after the bot fix and the per-tick allocation work; the owner deferred that long run on 2026-11-14. Evidence: ignored `Artifacts/m0-foundation/9f2219f9d67a91c5103decdf5ea6bd0958eb0573/benchmark-*`.
 
-<<<<<<< HEAD
 ## T076 — Compact TDM map layouts (2026-11-15)
 
 Owner assignment: map design for 5v5/6v6. Spec [compact TDM map layouts](../../features/tdm-map-layouts.md), decision [ADR-045](../../decisions.md#adr-045--accepted-compact-tdm-arena-layouts-for-catalog-maps-t076). Arena foundation and the two planners were implemented by Sonnet subagents in isolated worktrees (`maps/tdm-compact`, `maps/compound-arena`, `maps/depot-arena`) and integrated by Claude.
@@ -452,7 +451,7 @@ Limitations and pending items:
 - Installer: `Artifacts/m11-playable-release/ad6bdea6c74a8627f7afadd9ae4aace31de169bb/installer-20261115T093200473Z-a2bdafc9/installer/Shooter-Setup-0.3.5.exe`, 26,346,316 bytes, SHA256 `b6e4f18455d8c577d3c854a031b578541f7d0ec80ddbf4b7a0942aa10f92a68c`, predecessor 0.3.4. AppId and settings policy are unchanged. Actual install/upgrade and player match start on the new layouts were NotRun (`playerLaunchEvidence` Pending).
 - Path anchor→centre is 54 m against the 55 m limit on both maps. The compound sightline is 58 m against 60. The depot container-lane sightline reaches 29.25 m, above the spec's ≤20 m goal; its layout test allows 30 m.
 - Pending manual playtest at 5v5 and 6v6 on both maps: route feel, spawn pressure under `SpawnSafetyPolicy` (40 m exposure refusal), and bot cover use.
-=======
+
 ## T075 — Procedural presentation preview 0.3.4
 
 Owner authorized design implementation and multiple agents on 2026-11-15. Three isolated worktrees delivered surfaces (a9ea3e6 / 5c739a1), handling (b7c3105) and menu (eca8a84); all are merged to main and their temporary worktrees/branches removed. The unrelated pre-existing maps/tdm-compact worktree was preserved. This is software toward VD1/VD3/VD4/VD6/VD7, not VD or release acceptance.
@@ -490,4 +489,17 @@ Remaining: environments/soldiers still read as blockout; no Battlefield V/Bodyca
 | Independent player | 294/294 hashes match; alive **112 seconds**; both map cards render, Compound 5v5 and Depot 6v6 reach Playing; pause/leave/return observed | `Artifacts/visual-design/7407bc4/player-review/`: observations, extraction review, Player.log and Main/two map PNGs |
 
 The final UI review is **Codex automated inspection**, not named owner/human acceptance. It confirms visible surfaces, first-person rifle and card rendering at native 720p Low, not manual aim/fire/reload/respawn, bot combat, complete matches, audio, 150% UI, performance or installer acceptance. The remaining 20-cycle actor/resource retention audit also remains Pending; actor mesh/material uploads live until component destruction and repeated rebind retention needs separate review. No additional runtime changes were made to close that gate.
->>>>>>> main
+
+## 0.3.5 playtest fixes (2026-11-15)
+
+Owner report after installing 0.3.5: nobody (player or bots) could sprint, jump or slide; after Pause → Resume the game closed instead of continuing/returning to the menu; two rifles rendered in first person. Investigated and fixed by Sonnet subagents on branch `fix/0.3.5-playtest`, reviewed and verified by Claude.
+
+| Defect | Root cause | Fix |
+|---|---|---|
+| No sprint/jump/slide | Product spawns put feet exactly on the floor. PhysX `CapsuleCast` reports an already-touching collider as distance 0 with normal = −direction for every sweep, so `KinematicMotor` projected all horizontal, jump and step motion to zero. Fake test worlds never modelled this. | `ProbeGround` lifts a body in initial contact (≤1 mm) to rest `Skin` above the surface. Pure regression `InitialContactWorldTests` (PhysX-style fake) and PlayMode `ProductLocomotionPhysXTests` (motor on a product-style floor and the real depot-yard `OfflineGameSession` human), both failing before the fix. Exact-Y-at-contact expectations in three pure tests now allow `[ground, ground+Skin]`. |
+| Game closes after Resume | `Player-prev.log`: `SHOOTER_FAILURE: Offline tick overload … elapsed=0.1026` — any ≥~83 ms frame latched `Overloaded`, `FoundationEntry.Fail` called `Application.Quit(1)`; Resume had no rebase frame. | [ADR-046](../../decisions.md): product client drops hitch debt and logs `SHOOTER_HITCH`; diagnostic/benchmark/server stay fatal; first sample after resume is zero. New `FoundationTests`. |
+| Two rifles | Local avatar's third-person "Held" weapon renderer stayed visible beside the FP viewmodel; only the body was shadow-only, and only at creation. | `ProductActorPresentation.PoseAvatar` sets body and held weapon `ShadowsOnly` for the living local human every pose (`On` otherwise). EditMode regression in `ProductViewBindingTests`. |
+
+Evidence at base `9940fb1` with the working-tree fix: Contracts 76, Simulation 196, Game 61, Maps 37, source provenance, docs, fixtures and contract lock PASS; Unity EditMode 44/44 (`Artifacts/m0-foundation/9940fb1600e9f14e495715045beb2104cac349df/tests-editmode-20261115T101232639Z-1cd38f4a/`) and PlayMode 19/19 (`…/tests-playmode-20261115T101327899Z-7cf9f574/`) PASS.
+
+Pending: no new client build or installer; `Tools/Test-FailureShutdown.ps1` NotRun (needs a matching release build); manual playtest of sprint/jump/slide, bot movement, Pause → Resume → Main Menu and first-person weapon view in an installed build. The cause of the ≥83 ms hitch frames is unexplained. The stray merge-conflict markers left in this file by the T075/T076 merge were removed, keeping both sections.

@@ -11,17 +11,32 @@ namespace Shooter.Bootstrap
         public bool Overloaded { get; private set; }
         public int LastAdvanceTicks { get; private set; }
         public bool Suspended { get; private set; }
+        /// <summary>Unserviced whole-tick debt discarded by the last Advance (product hitch recovery only), else 0.</summary>
+        public double LastDroppedDebtSeconds { get; private set; }
+        public int HitchRecoveries { get; private set; }
         private readonly bool server;
+        private readonly bool dropHitchDebt;
+        private bool rebasePending;
         private double excessiveDebtDuration;
-        public FixedTickClock(bool server) { this.server = server; }
+        public FixedTickClock(bool server) : this(server, false) { }
+        /// <summary>
+        /// dropHitchDebt (offline product client only, ADR-046): a frame needing more than four ticks drops the
+        /// unserviced whole ticks instead of latching Overloaded. Diagnostic/benchmark clocks and the server keep
+        /// the retained-debt behaviour.
+        /// </summary>
+        public FixedTickClock(bool server, bool dropHitchDebt)
+        {
+            this.server = server;
+            this.dropHitchDebt = dropHitchDebt && !server;
+        }
         /// <summary>The interval crossing a suspended/loading boundary is not active play time.</summary>
         public double SampleActiveElapsed(double elapsedSeconds, bool running)
         {
             if (double.IsNaN(elapsedSeconds) || double.IsInfinity(elapsedSeconds) || elapsedSeconds < 0)
                 throw new ArgumentOutOfRangeException(nameof(elapsedSeconds));
-            bool resumed = Suspended && running;
             SetSuspended(!running);
-            return running && !resumed ? elapsedSeconds : 0;
+            if (running && rebasePending) { rebasePending = false; return 0; }
+            return running ? elapsedSeconds : 0;
         }
         /// <summary>
         /// Suspended wall time is deliberately discarded. Existing fractional debt and the next
@@ -29,10 +44,13 @@ namespace Shooter.Bootstrap
         /// </summary>
         public void SetSuspended(bool suspended)
         {
+            if (!suspended && Suspended) rebasePending = true; // first sample after resume is zero
             Suspended = suspended;
             LastAdvanceTicks = 0;
+            LastDroppedDebtSeconds = 0;
             if (suspended)
             {
+                rebasePending = false;
                 Overloaded = false;
                 excessiveDebtDuration = 0;
             }
@@ -42,6 +60,7 @@ namespace Shooter.Bootstrap
             if (step == null) throw new ArgumentNullException(nameof(step));
             if (double.IsNaN(elapsedSeconds) || double.IsInfinity(elapsedSeconds) || elapsedSeconds < 0) throw new ArgumentOutOfRangeException(nameof(elapsedSeconds));
             LastAdvanceTicks = 0;
+            LastDroppedDebtSeconds = 0;
             if (Suspended) return;
             if (Overloaded && !server) return;
             DebtSeconds += elapsedSeconds;
@@ -53,6 +72,14 @@ namespace Shooter.Bootstrap
                 LastAdvanceTicks++;
             }
             Overloaded = DebtSeconds + 1e-12 >= TickSeconds;
+            if (Overloaded && dropHitchDebt)
+            {
+                double remainder = DebtSeconds % TickSeconds;
+                LastDroppedDebtSeconds = DebtSeconds - remainder;
+                DebtSeconds = remainder;
+                Overloaded = false;
+                HitchRecoveries++;
+            }
             if (server)
             {
                 excessiveDebtDuration = DebtSeconds > 1 ? excessiveDebtDuration + elapsedSeconds : 0;

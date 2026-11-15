@@ -532,13 +532,6 @@ namespace Shooter.Presentation.Rig
             avatar.WeaponRenderer = avatar.Weapon.gameObject.AddComponent<MeshRenderer>();
             ApplyHeldWeaponVisual(avatar, slot);
 
-            bool local = state.EntityId.Equals(localHuman) && !corpse;
-            if (local)
-            {
-                // Local body stays for shadow/third-person coherence but weapons use FP child.
-                avatar.Body.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly;
-            }
-
             avatars[state.EntityId.Value] = avatar;
             PoseAvatar(avatar, state, 0f, 0u);
         }
@@ -608,6 +601,14 @@ namespace Shooter.Presentation.Rig
 
             avatar.Weapon.SetPositionAndRotation(V(weaponPosition), Q(weaponRotation));
             avatar.Weapon.gameObject.SetActive(!avatar.Corpse && state.Alive);
+
+            // The living local human sees the FP viewmodel; the world avatar only casts shadows.
+            // Re-evaluated every pose so respawns, corpses and weapon swaps cannot leave it stale.
+            var avatarShadowMode = state.EntityId.Equals(localHuman) && !avatar.Corpse && state.Alive
+                ? UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly
+                : UnityEngine.Rendering.ShadowCastingMode.On;
+            if (avatar.Body != null) avatar.Body.shadowCastingMode = avatarShadowMode;
+            if (avatar.WeaponRenderer != null) avatar.WeaponRenderer.shadowCastingMode = avatarShadowMode;
 
             Float3 sightLocal = ProductAuthorityActionView.IsPistolSlot(slot) ? pistolSightSocketLocal : rifleSightSocketLocal;
             avatar.LastArmBodyClearance = pose.ArmBodyClearanceMeters;

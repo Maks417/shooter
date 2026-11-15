@@ -45,6 +45,7 @@ namespace Shooter.Simulation.Motor
         private readonly MotorConfig config;
         private readonly QueryFilter motorFilter = new QueryFilter(CollisionLayers.MotorMask, default, false);
         private const float OverlapEpsilon = 1e-4f;
+        private const float ContactDistance = 1e-3f;
         private readonly HitBuffer overlapBuffer = new HitBuffer(16);
 
         public KinematicMotor(MotorConfig? config = null) { this.config = config ?? MotorConfig.BaselineV1; }
@@ -367,7 +368,13 @@ namespace Shooter.Simulation.Motor
             grounded = true;
             groundId = hit.StaticSurfaceId;
             groundNormal = hit.Normal;
-            float drop = Math.Max(0f, hit.DistanceMeters - config.Skin);
+            // Never rest in initial contact. PhysX CapsuleCast reports an already-touching collider (feet exactly on the
+            // floor: a spawn placed on the surface, a rescue/relocation) as distance 0 with normal = -direction, which blocks
+            // every horizontal, upward (jump) and step sweep from that pose and froze sprint, jump and slide for good.
+            // Lift such a body by Skin so later sweeps start clear of the surface.
+            float drop = hit.DistanceMeters <= ContactDistance
+                ? hit.DistanceMeters - config.Skin
+                : Math.Max(0f, hit.DistanceMeters - config.Skin);
             snappedFeet = new Float3(feet.X, feet.Y - drop, feet.Z);
         }
     }

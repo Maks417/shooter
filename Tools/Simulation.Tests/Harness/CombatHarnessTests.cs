@@ -133,7 +133,9 @@ namespace Shooter.Simulation.Tests.Harness
             sim.Step(1, new[] { new InputCommand(actor, 1, 1, 0, 0, 1f, 0, InputButtons.None, 0) });
             using var snap = sim.AcquireSnapshot();
             var state = Assert.Single(snap.Snapshot.Entities);
-            Assert.Equal(new Float3(7, 0, 9), state.Position);
+            Assert.Equal(7f, state.Position.X);
+            Assert.Equal(9f, state.Position.Z);
+            Assert.InRange(state.Position.Y, 0f, 0.025f); // spawned in ground contact: lifted by Skin
             Assert.Equal((ushort)100, state.Health);
             Assert.Equal((ushort)30, state.Weapon.AmmoInMagazine);
         }

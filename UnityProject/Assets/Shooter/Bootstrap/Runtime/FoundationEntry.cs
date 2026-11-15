@@ -139,7 +139,9 @@ namespace Shooter.Bootstrap
                 if (diagnosticMode) StartDiagnostic();
                 else StartProduct();
 
-                clock = new FixedTickClock(IsServer);
+                // ADR-046: only the normal offline product client recovers from a hitch; diagnostics, benchmarks
+                // and failure injection keep the fatal retained-debt overload.
+                clock = new FixedTickClock(IsServer, !IsServer && !diagnosticMode && benchmarkWorkload.Length == 0);
                 clock.SetSuspended(!CanAdvanceProduct());
                 // Measurement-only: the IL2CPP allocation hook re-enters itself when Unity first attaches a native
                 // thread (e.g. the audio thread), overflowing that thread's stack. Normal play never installs it.
@@ -355,6 +357,10 @@ namespace Shooter.Bootstrap
                 }
                 clock.Advance(LastElapsedSeconds, tickAction);
                 previousTimestamp = now;
+                if (clock.LastDroppedDebtSeconds > 0)
+                    Debug.LogWarning("SHOOTER_HITCH elapsed=" + LastElapsedSeconds.ToString("R", CultureInfo.InvariantCulture)
+                        + " droppedDebt=" + clock.LastDroppedDebtSeconds.ToString("R", CultureInfo.InvariantCulture)
+                        + " serviced=" + clock.LastAdvanceTicks + " nextTick=" + clock.NextTick);
                 if (IsServer && clock.Overloaded && !reportedOverload)
                     Debug.LogWarning("SHOOTER_TICK_OVERLOAD debtSeconds=" + clock.DebtSeconds.ToString("R", CultureInfo.InvariantCulture));
                 reportedOverload = clock.Overloaded;

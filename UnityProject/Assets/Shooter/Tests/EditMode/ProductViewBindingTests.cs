@@ -184,6 +184,74 @@ namespace Shooter.Tests
             }
         }
 
+        private static MeshRenderer? FindHeldWeaponRenderer(Transform searchRoot, EntityId entity)
+        {
+            string actorName = "Actor " + entity.Value;
+            foreach (var renderer in searchRoot.GetComponentsInChildren<MeshRenderer>(true))
+            {
+                var parent = renderer.transform.parent;
+                if (parent != null && parent.name == actorName && renderer.name.StartsWith("Held "))
+                    return renderer;
+            }
+            return null;
+        }
+
+        [Test]
+        public void ProductActorPresentation_LocalHumanHeldWeaponOnlyCastsShadowsWhileBotWeaponStaysVisible()
+        {
+            var toolchain = ContentIdentity.Hash(System.Text.Encoding.ASCII.GetBytes("product-actor-local-weapon-hidden"));
+            var visuals = PackagedVisualPayloads.FromBuild(MapPackageBuilder.Build("training-compound", "low", toolchain));
+            var root = new GameObject("ProductActorLocalWeaponHidden");
+            var cameraGo = new GameObject("Cam");
+            cameraGo.transform.SetParent(root.transform, false);
+            var camera = cameraGo.AddComponent<Camera>();
+            try
+            {
+                var presentation = ProductActorPresentation.Create(root.transform, camera);
+                presentation.BindPackagedVisuals(visuals);
+                Assert.That(presentation.VisualsBound, Is.True);
+
+                var lifecycle = new FakeLifecycle();
+                var human = new EntityId(42);
+                var bot = new EntityId(50);
+                lifecycle.Set(new ActorLifecycleState(human, 1, true, 100, new Float3(0, 0, 0), 0, 0, 0, 30, 90));
+                lifecycle.Set(new ActorLifecycleState(bot, 2, true, 100, new Float3(3, 0, 0), 0, 0, 0, 30, 90));
+                var snap = new MatchViewSnapshot(
+                    1, 10, 10, 53990, GameMatchPhase.Playing, MatchOutcome.None, FinishReason.None, 0, 0,
+                    new[]
+                    {
+                        new ParticipantState(new ParticipantId(1), "human", 1, true, human, new LifeId(1), true, 0, 0, 0),
+                        new ParticipantState(new ParticipantId(2), "bot", 2, true, bot, new LifeId(2), true, 0, 0, 0)
+                    },
+                    0);
+
+                presentation.Sync(snap, lifecycle, null, 0, human, false, 1f / 60f, null, 10);
+                Assert.That(presentation.LiveAvatarCount, Is.EqualTo(2));
+                Assert.That(camera.transform.Find("Local FP rifle").gameObject.activeInHierarchy, Is.True);
+
+                var humanWeapon = FindHeldWeaponRenderer(root.transform, human);
+                var botWeapon = FindHeldWeaponRenderer(root.transform, bot);
+                Assert.That(humanWeapon, Is.Not.Null, "Local human world avatar must have a held weapon renderer.");
+                Assert.That(botWeapon, Is.Not.Null, "Bot avatar must have a held weapon renderer.");
+                Assert.That(humanWeapon!.shadowCastingMode, Is.EqualTo(UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly),
+                    "The local world rifle must not render beside the first-person viewmodel.");
+                Assert.That(botWeapon!.shadowCastingMode, Is.EqualTo(UnityEngine.Rendering.ShadowCastingMode.On));
+
+                // Pistol swap replaces the mesh/materials; the shadow-only mode must survive it.
+                lifecycle.Set(new ActorLifecycleState(human, 1, true, 100, new Float3(0, 0, 0), 0, 0, 1, 15, 45));
+                presentation.Sync(snap, lifecycle, null, 0, human, false, 1f / 60f, System.Array.Empty<CombatEvent>(), 11);
+                Assert.That(presentation.Actions.IsPistol(human), Is.True);
+                Assert.That(FindHeldWeaponRenderer(root.transform, human)!.shadowCastingMode,
+                    Is.EqualTo(UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly));
+
+                presentation.ClearAll();
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
+
         [Test]
         public void MenuStageRendersPackagedSoldiersAndMapCardsWithoutGameplayObjects()
         {
