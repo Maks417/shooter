@@ -168,7 +168,7 @@ namespace Shooter.Generation.Environment
             string profile)
         {
             AddSgaf(dependencies, "mesh", MapVisualClosure.MapSolidsMeshPath, ContentKind.Mesh,
-                GeometryCodec.EncodeMesh(BuildSolidsMesh(plan)), mapFingerprint, toolchainHash);
+                GeometryCodec.EncodeMesh(MapSolidsMesh.Build(plan)), mapFingerprint, toolchainHash);
             AddSgaf(dependencies, "mesh", MapVisualClosure.UnitBoxMeshPath, ContentKind.Mesh,
                 GeometryCodec.EncodeMesh(PrimitiveGeometry.Box(new Float3(1f, 1f, 1f), 0f, 1)), mapFingerprint, toolchainHash);
 
@@ -361,42 +361,6 @@ namespace Shooter.Generation.Environment
             var font = MapJsonValue.Parse(payloads.Bytes(MapVisualClosure.FontPath)).Object;
             if (font["fontException"].String != "engine-allowlist-v1" || !font["retainedByPlayer"].Boolean)
                 throw new InvalidOperationException("Font provenance incomplete.");
-        }
-
-        /// <summary>
-        /// Emits every collision box (gameplay + visual) so non-gameplay roofs/trim are visible.
-        /// Collision SGAF / metadata still filter to gameplay-only via <see cref="ToCollisionData"/>.
-        /// UVs stay metric (PrimitiveGeometry.Box scales with world size).
-        /// </summary>
-        private static MeshData BuildSolidsMesh(CompoundPlan plan)
-        {
-            var positions = new List<Float3>();
-            var normals = new List<Float3>();
-            var tangents = new List<Float4>();
-            var uv = new List<Float2>();
-            var indices = new List<uint>();
-            for (int i = 0; i < plan.CollisionBoxes.Count; i++)
-            {
-                var box = plan.CollisionBoxes[i];
-                var local = PrimitiveGeometry.Box(box.Size, 0f, 1);
-                uint baseIndex = (uint)positions.Count;
-                for (int v = 0; v < local.Positions.Count; v++)
-                {
-                    var p = local.Positions[v];
-                    positions.Add(new Float3(p.X + box.Center.X, p.Y + box.Center.Y, p.Z + box.Center.Z));
-                    normals.Add(local.Normals[v]);
-                    tangents.Add(local.Tangents[v]);
-                    uv.Add(local.Uv[v]);
-                }
-                for (int t = 0; t < local.Indices.Count; t++)
-                    indices.Add(baseIndex + local.Indices[t]);
-            }
-            if (positions.Count == 0)
-            {
-                var fallback = PrimitiveGeometry.Box(new Float3(1, 1, 1), 0f, 1);
-                return fallback;
-            }
-            return new MeshData(positions, normals, tangents, uv, indices, new[] { new Submesh(0, (uint)indices.Count, 0) }, null, null);
         }
 
         private static byte[] EncodeMetadata(string mapId, CompoundPlan plan, CollisionData collision, ContentId collisionArtifactHash)

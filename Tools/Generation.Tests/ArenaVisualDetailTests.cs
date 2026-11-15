@@ -5,7 +5,6 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 using Shooter.Contracts;
-using Shooter.Generation;
 using Shooter.Generation.Environment;
 using Xunit;
 using Xunit.Abstractions;
@@ -121,13 +120,36 @@ namespace Shooter.Generation.Tests
             }
             Assert.True(hasRoofBox, "expected a non-gameplay roof/eave slab");
 
-            var mesh = BuildSolidsMeshEquivalent(plan);
+            var mesh = MapSolidsMesh.Build(plan);
             float maxY = float.NegativeInfinity;
             for (int i = 0; i < mesh.Positions.Count; i++)
                 if (mesh.Positions[i].Y > maxY) maxY = mesh.Positions[i].Y;
             output.WriteLine(mapId + " mesh maxY=" + maxY + " roofTop=" + maxRoofTop);
             Assert.True(maxY > buildingHeight, "solids mesh maxY " + maxY + " should exceed building height " + buildingHeight);
             Assert.True(maxY >= maxRoofTop - 0.001f, "mesh should include roof vertices");
+        }
+
+        [Theory]
+        [InlineData("training-compound")]
+        [InlineData("depot-yard")]
+        public void Solids_mesh_splits_concrete_metal_and_trim_submeshes(string mapId)
+        {
+            var plan = ProductMapPlanner.Generate(mapId);
+            var mesh = MapSolidsMesh.Build(plan);
+            Assert.True(mesh.Submeshes.Count >= 2, mapId + " expected multi-material solids, got " + mesh.Submeshes.Count);
+            var slots = new HashSet<ushort>();
+            uint indexCoverage = 0;
+            for (int i = 0; i < mesh.Submeshes.Count; i++)
+            {
+                slots.Add(mesh.Submeshes[i].MaterialSlot);
+                indexCoverage += mesh.Submeshes[i].IndexCount;
+                Assert.InRange(mesh.Submeshes[i].MaterialSlot, (ushort)0, (ushort)2);
+            }
+            Assert.Equal((uint)mesh.Indices.Count, indexCoverage);
+            Assert.Contains((ushort)MapSolidsMaterialRole.StructureConcrete, slots);
+            Assert.Contains((ushort)MapSolidsMaterialRole.MetalCover, slots);
+            Assert.Contains((ushort)MapSolidsMaterialRole.Trim, slots);
+            output.WriteLine(mapId + " solids submeshes=" + mesh.Submeshes.Count + " slots=" + string.Join(",", slots));
         }
 
         [Fact]
@@ -203,31 +225,5 @@ namespace Shooter.Generation.Tests
             return sb.ToString();
         }
 
-        /// <summary>Mirrors MapPackageBuilder.BuildSolidsMesh: emit ALL boxes (gameplay + visual).</summary>
-        private static MeshData BuildSolidsMeshEquivalent(CompoundPlan plan)
-        {
-            var positions = new List<Float3>();
-            var normals = new List<Float3>();
-            var tangents = new List<Float4>();
-            var uv = new List<Float2>();
-            var indices = new List<uint>();
-            for (int i = 0; i < plan.CollisionBoxes.Count; i++)
-            {
-                var box = plan.CollisionBoxes[i];
-                var local = PrimitiveGeometry.Box(box.Size, 0f, 1);
-                uint baseIndex = (uint)positions.Count;
-                for (int v = 0; v < local.Positions.Count; v++)
-                {
-                    var p = local.Positions[v];
-                    positions.Add(new Float3(p.X + box.Center.X, p.Y + box.Center.Y, p.Z + box.Center.Z));
-                    normals.Add(local.Normals[v]);
-                    tangents.Add(local.Tangents[v]);
-                    uv.Add(local.Uv[v]);
-                }
-                for (int t = 0; t < local.Indices.Count; t++)
-                    indices.Add(baseIndex + local.Indices[t]);
-            }
-            return new MeshData(positions, normals, tangents, uv, indices, new[] { new Submesh(0, (uint)indices.Count, 0) }, null, null);
-        }
     }
 }

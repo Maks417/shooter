@@ -70,6 +70,14 @@ namespace Shooter.Generation.Environment
             AddLaneCurbAlongZ(b, 18f, -36f, -2f);
             AddLaneCurbAlongZ(b, -18f, -36f, -2f);
 
+            // Gate lamp posts + short fence stubs along the staging apron (team-1 + mirror).
+            AddGateLamps(b, gateXs: new[] { -30f, 0f, 30f }, wallZ: -37f, gateWidth: 4f);
+            AddFenceStubs(b, layout, wallZ: -37f, spacing: 8f);
+
+            // Roof ridge caps on HQ / barracks shells.
+            AddRoofRidge(b, 0f, 0f, 16f, 3.5f, mirror: false);
+            AddRoofRidge(b, 32.2f, -19f, 12f, 3.5f, mirror: true);
+
             EnsureBudget(b.Boxes.Count - start);
         }
 
@@ -112,6 +120,15 @@ namespace Shooter.Generation.Environment
             AddLaneCurbAlongZ(b, 20f, 2f, 40f, mirror: false);
             AddLaneCurbAlongZ(b, -20f, 2f, 40f, mirror: false);
 
+            AddGateLamps(b, gateXs: new[] { -28f, 0f, 26f }, wallZ: -42f, gateWidth: 4f);
+            AddFenceStubs(b, layout, wallZ: -42f, spacing: 9f);
+            AddRoofRidge(b, 0f, 0f, 22f, 5f, mirror: false);
+            // Container corner castings on a subset of maze stacks (metal-prop heuristic).
+            AddContainerCorners(b, 23.25f, 0f, 6f, 2.5f, 2.6f, mirror: false);
+            AddContainerCorners(b, 33.25f, 0f, 6f, 2.5f, 5.2f, mirror: false);
+            AddContainerCorners(b, 27.5f, -6.5f, 6f, 2.5f, 2.6f, mirror: true);
+            AddContainerCorners(b, -9f, -30f, 6f, 2.5f, 5.2f, mirror: true);
+
             EnsureBudget(b.Boxes.Count - start);
         }
 
@@ -126,6 +143,58 @@ namespace Shooter.Generation.Environment
                 AddDoorFrame(b, cx, cz, sizeX, sizeZ, thickness, height, doors[i], mirror);
             if (longWallWindows)
                 AddWindowFrames(b, cx, cz, sizeX, sizeZ, thickness, height, doors, mirror);
+        }
+
+        private static void AddRoofRidge(ArenaBoxBuilder b, float cx, float cz, float sizeX, float height, bool mirror)
+        {
+            // Thin ridge beam along the long axis, sitting on the roof slab.
+            float y = height + EaveThickness + 0.1f;
+            b.Add(new Float3(cx, y, cz), new Float3(sizeX * 0.55f, 0.12f, 0.22f), ArenaBoxBuilder.TagSolid, mirror, false);
+        }
+
+        private static void AddGateLamps(ArenaBoxBuilder b, float[] gateXs, float wallZ, float gateWidth)
+        {
+            const float postH = 3.2f;
+            const float post = 0.18f;
+            const float head = 0.28f;
+            float z = wallZ + (wallZ < 0f ? 0.9f : -0.9f);
+            float y = postH * 0.5f;
+            for (int i = 0; i < gateXs.Length; i++)
+            {
+                float half = gateWidth * 0.5f + 0.55f;
+                // Stem + small head box; stem hits metal-prop heuristic.
+                b.Add(new Float3(gateXs[i] - half, y, z), new Float3(post, postH, post), ArenaBoxBuilder.TagSolid, true, false);
+                b.Add(new Float3(gateXs[i] - half, postH + head * 0.5f, z), new Float3(head, head, head), ArenaBoxBuilder.TagSolid, true, false);
+                b.Add(new Float3(gateXs[i] + half, y, z), new Float3(post, postH, post), ArenaBoxBuilder.TagSolid, true, false);
+                b.Add(new Float3(gateXs[i] + half, postH + head * 0.5f, z), new Float3(head, head, head), ArenaBoxBuilder.TagSolid, true, false);
+            }
+        }
+
+        private static void AddFenceStubs(ArenaBoxBuilder b, ArenaLayout layout, float wallZ, float spacing)
+        {
+            float z = wallZ + (wallZ < 0f ? 1.4f : -1.4f);
+            float x0 = layout.StagingMinX + 2f;
+            float x1 = layout.StagingMaxX - 2f;
+            for (float x = x0; x <= x1 + 0.01f; x += spacing)
+            {
+                // Skip near gate centers (±2 m around typical mid-map gates).
+                if (Math.Abs(x) < 3f || Math.Abs(x - 28f) < 3f || Math.Abs(x + 28f) < 3f ||
+                    Math.Abs(x - 30f) < 3f || Math.Abs(x + 30f) < 3f || Math.Abs(x - 26f) < 3f)
+                    continue;
+                b.Add(new Float3(x, 0.55f, z), new Float3(0.12f, 1.1f, 0.12f), ArenaBoxBuilder.TagSolid, true, false);
+            }
+        }
+
+        private static void AddContainerCorners(ArenaBoxBuilder b, float x, float z, float sizeX, float sizeZ, float height, bool mirror)
+        {
+            // Uniform corner castings (TagCover → metal). Same size on ±Z so mirror-twin checks hold.
+            const float cast = 0.28f;
+            float hx = sizeX * 0.5f, hz = sizeZ * 0.5f;
+            float y = height + cast * 0.5f;
+            b.Add(new Float3(x + hx, y, z + hz), new Float3(cast, cast, cast), ArenaBoxBuilder.TagCover, mirror, false);
+            b.Add(new Float3(x - hx, y, z + hz), new Float3(cast, cast, cast), ArenaBoxBuilder.TagCover, mirror, false);
+            b.Add(new Float3(x + hx, y, z - hz), new Float3(cast, cast, cast), ArenaBoxBuilder.TagCover, mirror, false);
+            b.Add(new Float3(x - hx, y, z - hz), new Float3(cast, cast, cast), ArenaBoxBuilder.TagCover, mirror, false);
         }
 
         private static void AddEaves(ArenaBoxBuilder b, float cx, float cz, float sizeX, float sizeZ, float height, bool mirror)
@@ -261,12 +330,18 @@ namespace Shooter.Generation.Environment
             float halfW = WindowWidth * 0.5f;
             float halfH = WindowHeight * 0.5f;
             const float bar = 0.1f;
+            const float sillDepth = 0.22f;
+            const float sillHeight = 0.08f;
             if (alongX)
             {
                 b.Add(new Float3(along - halfW - bar * 0.5f, winY, face), new Float3(bar, WindowHeight, FrameDepth), ArenaBoxBuilder.TagSolid, mirror, false);
                 b.Add(new Float3(along + halfW + bar * 0.5f, winY, face), new Float3(bar, WindowHeight, FrameDepth), ArenaBoxBuilder.TagSolid, mirror, false);
                 b.Add(new Float3(along, winY - halfH - bar * 0.5f, face), new Float3(WindowWidth + bar * 2f, bar, FrameDepth), ArenaBoxBuilder.TagSolid, mirror, false);
                 b.Add(new Float3(along, winY + halfH + bar * 0.5f, face), new Float3(WindowWidth + bar * 2f, bar, FrameDepth), ArenaBoxBuilder.TagSolid, mirror, false);
+                // Proud sill ledge under the frame.
+                float sillY = winY - halfH - bar - sillHeight * 0.5f;
+                float sillFace = face + (face >= 0f ? sillDepth * 0.35f : -sillDepth * 0.35f);
+                b.Add(new Float3(along, sillY, sillFace), new Float3(WindowWidth + bar * 2f, sillHeight, sillDepth), ArenaBoxBuilder.TagSolid, mirror, false);
             }
             else
             {
@@ -274,6 +349,9 @@ namespace Shooter.Generation.Environment
                 b.Add(new Float3(face, winY, along + halfW + bar * 0.5f), new Float3(FrameDepth, WindowHeight, bar), ArenaBoxBuilder.TagSolid, mirror, false);
                 b.Add(new Float3(face, winY - halfH - bar * 0.5f, along), new Float3(FrameDepth, bar, WindowWidth + bar * 2f), ArenaBoxBuilder.TagSolid, mirror, false);
                 b.Add(new Float3(face, winY + halfH + bar * 0.5f, along), new Float3(FrameDepth, bar, WindowWidth + bar * 2f), ArenaBoxBuilder.TagSolid, mirror, false);
+                float sillY = winY - halfH - bar - sillHeight * 0.5f;
+                float sillFace = face + (face >= 0f ? sillDepth * 0.35f : -sillDepth * 0.35f);
+                b.Add(new Float3(sillFace, sillY, along), new Float3(sillDepth, sillHeight, WindowWidth + bar * 2f), ArenaBoxBuilder.TagSolid, mirror, false);
             }
         }
 
@@ -361,10 +439,10 @@ namespace Shooter.Generation.Environment
         {
             float y = height + 0.06f;
             const float rail = 0.08f;
-            b.Add(new Float3(x, y, z + sizeZ * 0.5f), new Float3(sizeX, rail, rail), ArenaBoxBuilder.TagSolid, mirror, false);
-            b.Add(new Float3(x, y, z - sizeZ * 0.5f), new Float3(sizeX, rail, rail), ArenaBoxBuilder.TagSolid, mirror, false);
-            b.Add(new Float3(x + sizeX * 0.5f, y, z), new Float3(rail, rail, sizeZ), ArenaBoxBuilder.TagSolid, mirror, false);
-            b.Add(new Float3(x - sizeX * 0.5f, y, z), new Float3(rail, rail, sizeZ), ArenaBoxBuilder.TagSolid, mirror, false);
+            b.Add(new Float3(x, y, z + sizeZ * 0.5f), new Float3(sizeX, rail, rail), ArenaBoxBuilder.TagCover, mirror, false);
+            b.Add(new Float3(x, y, z - sizeZ * 0.5f), new Float3(sizeX, rail, rail), ArenaBoxBuilder.TagCover, mirror, false);
+            b.Add(new Float3(x + sizeX * 0.5f, y, z), new Float3(rail, rail, sizeZ), ArenaBoxBuilder.TagCover, mirror, false);
+            b.Add(new Float3(x - sizeX * 0.5f, y, z), new Float3(rail, rail, sizeZ), ArenaBoxBuilder.TagCover, mirror, false);
         }
 
         private static void EnsureBudget(int added)

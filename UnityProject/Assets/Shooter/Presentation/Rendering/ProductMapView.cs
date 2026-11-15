@@ -30,7 +30,9 @@ namespace Shooter.Presentation.Rendering
         private Shader? litShader;
         private Mesh? unitBox;
         private Mesh? mapSolids;
+        private MeshData? solidsMeshData;
         private Material? concrete;
+        private Material? trim;
         private Material? cover;
         private Material? ground;
         private Material? asphalt;
@@ -88,16 +90,13 @@ namespace Shooter.Presentation.Rendering
             Material yardSurface = PreferDepotYardAsphalt(mapId) ? asphalt! : ground!;
             Place("Product ground", new Vector3(0f, -0.02f, 0f), new Vector3(inner, 0.1f, inner), yardSurface, unitBox!);
 
-            // Packaged combined solids mesh already encodes gameplay boxes; one renderer, identity transform.
-            // Limitation (VD5/T076/T078): single-submesh packages still share one concrete slot — cover volumes
-            // baked into solids cannot get distinct metal without mesh/material splits. Presentation-only
-            // metal unit boxes from cover metadata/heuristics overlay those volumes so steel props still read.
-            // When env publishes multiple submeshes, fill every slot with concrete until material indices arrive.
+            // Packaged combined solids mesh encodes gameplay + visual boxes with MaterialSlot roles
+            // (concrete / metal cover / plaster trim). Discrete metal overlays still inset cover props.
             var solidsGo = new GameObject("Product map solids") { layer = 11 };
             solidsGo.transform.SetParent(transform, false);
             solidsGo.AddComponent<MeshFilter>().sharedMesh = mapSolids;
             var solidsRenderer = solidsGo.AddComponent<MeshRenderer>();
-            AssignSolidsMaterials(solidsRenderer, mapSolids!, concrete!);
+            AssignSolidsMaterials(solidsRenderer, solidsMeshData!, concrete!, cover!, trim!);
             solids.Add(solidsGo);
             solidCount = boxes.Count;
             for (int i = 0; i < boxes.Count; i++)
@@ -134,13 +133,17 @@ namespace Shooter.Presentation.Rendering
                     shaderRoot["shaderException"].String != "procedural-urp-lit-v1")
                     throw new InvalidOperationException("Packaged shader provenance rejected.");
 
-                mapSolids = Own(UploadMesh(MapVisualClosure.DecodeMapMesh(visuals, MapVisualClosure.MapSolidsMeshPath), "Product map solids"));
+                solidsMeshData = MapVisualClosure.DecodeMapMesh(visuals, MapVisualClosure.MapSolidsMeshPath);
+                mapSolids = Own(UploadMesh(solidsMeshData, "Product map solids"));
                 unitBox = Own(UploadMesh(MapVisualClosure.DecodeMapMesh(visuals, MapVisualClosure.UnitBoxMeshPath), "Product unit box"));
                 // Combined map solids retain metric UVs, so .5 repeats/m matches the two-metre recipe.
                 // The scaled unit-box ground uses 0..1 face UVs: 128 repeats across 256 metres.
                 // Scalar metallic/smoothness only apply when packaged mask planes are absent; T075 masks own response.
                 concrete = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[0], "Numeric concrete",
                     ProductSurfaceResponse.Concrete, .5f);
+                // Trim reuses packaged concrete planes with a warmer plaster response (no extra material path).
+                trim = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[0], "Numeric trim plaster",
+                    ProductSurfaceResponse.TrimPlaster, .5f);
                 cover = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[1], "Numeric cover",
                     ProductSurfaceResponse.CoverMetal, 4f);
                 ground = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[2], "Numeric soil ground",
@@ -252,25 +255,32 @@ namespace Shooter.Presentation.Rendering
             return ids;
         }
 
-        private static bool LooksLikeCover(CollisionBox box)
-        {
-            return box.Size.Y <= 1.6f && box.Size.Y >= 0.8f
-                && box.Size.X <= 4f && box.Size.Z <= 4f
-                && box.Size.X >= 0.6f && box.Size.Z >= 0.6f;
-        }
+        private static bool LooksLikeCover(CollisionBox box) => MapSolidsMesh.LooksLikeMetalCover(box);
 
-        private static void AssignSolidsMaterials(MeshRenderer renderer, Mesh mesh, Material material)
+        /// <summary>
+        /// Maps each Unity submesh to concrete / metal / plaster using MeshData MaterialSlot roles.
+        /// Submesh array order follows MeshAssembly's ascending slot sort; empty roles are omitted.
+        /// </summary>
+        private static void AssignSolidsMaterials(
+            MeshRenderer renderer, MeshData meshData, Material concreteMaterial, Material coverMaterial, Material trimMaterial)
         {
-            int slots = Math.Max(1, mesh.subMeshCount);
-            if (slots == 1)
+            if (meshData.Submeshes.Count <= 1)
             {
-                renderer.sharedMaterial = material;
+                renderer.sharedMaterial = MaterialForSlot(meshData.Submeshes[0].MaterialSlot, concreteMaterial, coverMaterial, trimMaterial);
                 return;
             }
-            var materials = new Material[slots];
-            for (int i = 0; i < slots; i++)
-                materials[i] = material;
+            var materials = new Material[meshData.Submeshes.Count];
+            for (int i = 0; i < meshData.Submeshes.Count; i++)
+                materials[i] = MaterialForSlot(meshData.Submeshes[i].MaterialSlot, concreteMaterial, coverMaterial, trimMaterial);
             renderer.sharedMaterials = materials;
+        }
+
+        private static Material MaterialForSlot(
+            ushort slot, Material concreteMaterial, Material coverMaterial, Material trimMaterial)
+        {
+            if (slot == (ushort)MapSolidsMaterialRole.MetalCover) return coverMaterial;
+            if (slot == (ushort)MapSolidsMaterialRole.Trim) return trimMaterial;
+            return concreteMaterial;
         }
 
         private void Place(string label, Vector3 center, Vector3 size, Material material, Mesh mesh)
@@ -346,8 +356,10 @@ namespace Shooter.Presentation.Rendering
         {
             visualsBound = false;
             mapSolids = null;
+            solidsMeshData = null;
             unitBox = null;
             concrete = null;
+            trim = null;
             cover = null;
             ground = null;
             asphalt = null;
