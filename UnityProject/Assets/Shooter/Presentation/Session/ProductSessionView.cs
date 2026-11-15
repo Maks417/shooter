@@ -38,6 +38,7 @@ namespace Shooter.Presentation.Session
         private UnitySynthAudioOutput? audioOutput;
         private AnalyticFxPresenter? analyticFxPresenter;
         private Camera? camera;
+        private AdsScopePipPresenter? scopePip;
         private ProductMapView? mapView;
         private ProductActorPresentation? actors;
         private ProductVisualReviewOverlay? visualReview;
@@ -160,6 +161,7 @@ namespace Shooter.Presentation.Session
             camera.allowHDR = false;
             camera.allowMSAA = QualitySettings.GetQualityLevel() == 2;
             camera.cullingMask &= ~(1 << ProductMenuScene.StageLayer);
+            scopePip = AdsScopePipPresenter.Attach(camera);
 
             // Bodycam daylight key: warm hard sun. GeneratedSky trilight owns outdoor fill after map install.
             var sun = new GameObject("Product sun").AddComponent<Light>();
@@ -277,14 +279,31 @@ namespace Shooter.Presentation.Session
         {
             if (camera == null) return;
             float hip = hud.Settings.HipFov;
-            if (reducedCameraMotion)
-            {
-                camera.fieldOfView = hip;
-                return;
-            }
             float ads = AdsOpticVisual.AdsFieldOfViewDegrees(hip, weaponSlot);
             adsFovDegrees = ads;
-            camera.fieldOfView = AdsOpticVisual.BlendedFieldOfViewDegrees(hip, ads, adsPresentationBlend);
+            // Rifle PiP keeps hip FOV; digital zoom lives in AdsScopePipPresenter.
+            // Reduced camera motion keeps hip FOV for every weapon.
+            if (reducedCameraMotion || AdsOpticVisual.KeepsHipCameraFov(weaponSlot))
+                camera.fieldOfView = hip;
+            else
+                camera.fieldOfView = AdsOpticVisual.BlendedFieldOfViewDegrees(hip, ads, adsPresentationBlend);
+            ApplyScopePip(adsPresentationBlend, weaponSlot);
+        }
+
+        private void ApplyScopePip(float adsPresentationBlend, byte weaponSlot)
+        {
+            if (scopePip == null) return;
+            float hip = hud.Settings.HipFov;
+            if (!AdsOpticVisual.UsesScopedOptic(weaponSlot))
+            {
+                scopePip.Configure(0f, 1f, AdsOpticVisual.LensRadiusFraction);
+                return;
+            }
+            float strength = AdsOpticVisual.PipStrength(adsPresentationBlend, reducedCameraMotion);
+            float zoom = reducedCameraMotion
+                ? 1f
+                : AdsOpticVisual.LensUvZoom(hip, weaponSlot, adsPresentationBlend);
+            scopePip.Configure(strength, zoom, AdsOpticVisual.LensRadiusFraction);
         }
 
         /// <summary>
@@ -771,6 +790,7 @@ namespace Shooter.Presentation.Session
             var voice = kind switch
             {
                 CombatEventKind.ShotAccepted => SynthVoiceKind.RifleShot,
+                CombatEventKind.ProjectileSpawned => SynthVoiceKind.GrenadeThrow,
                 CombatEventKind.Impact => SynthVoiceKind.Impact,
                 CombatEventKind.DamageApplied => SynthVoiceKind.DamageTaken,
                 CombatEventKind.ReloadStarted => SynthVoiceKind.ReloadStart,
@@ -1346,6 +1366,8 @@ namespace Shooter.Presentation.Session
         private void OnDestroy()
         {
             ClearPresentation();
+            scopePip?.Configure(0f, 1f, AdsOpticVisual.LensRadiusFraction);
+            scopePip = null;
             analyticFxPresenter = null;
             audioOutput?.Detach();
             audioOutput = null;

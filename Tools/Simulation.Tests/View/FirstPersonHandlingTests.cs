@@ -283,6 +283,12 @@ namespace Shooter.Simulation.Tests.View
             Assert.Equal(42f, AdsOpticVisual.BlendedFieldOfViewDegrees(80f, 42f, 1f));
             Assert.InRange(AdsOpticVisual.LensRadiusPixels(1280f, 720f), 200f, 400f);
             Assert.True(AdsOpticVisual.MilDotCount(300f) >= 2);
+            Assert.True(AdsOpticVisual.KeepsHipCameraFov(ProductAuthorityActionView.RifleSlot));
+            Assert.False(AdsOpticVisual.KeepsHipCameraFov(ProductAuthorityActionView.PistolSlot));
+            Assert.Equal(1f, AdsOpticVisual.LensUvZoom(80f, ProductAuthorityActionView.RifleSlot, 0f));
+            Assert.Equal(42f / 80f, AdsOpticVisual.LensUvZoom(80f, ProductAuthorityActionView.RifleSlot, 1f), 3);
+            Assert.Equal(0f, AdsOpticVisual.PipStrength(1f, reducedCameraMotion: true));
+            Assert.True(AdsOpticVisual.PipStrength(1f, reducedCameraMotion: false) > 0.95f);
         }
 
         [Fact]

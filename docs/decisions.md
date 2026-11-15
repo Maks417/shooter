@@ -738,3 +738,17 @@ Decision:
 - FX/audio: skip knife muzzle/overlay/gunfire reveal; map knife ShotAccepted to impact cue; soft UI cue on ProjectileSpawned.
 
 Validation: Simulation knife/grenade/view/FX tests; Game lock verify; docs/manifest. Interactive player/installer Pending. Rollback restores prior lifecycle DTO/lock and gun-path FX for knife.
+
+## ADR-065 — Accepted: screen-space PiP rifle scope (blurred periphery)
+
+Date 2026-11-15; owner reported rifle ADS covered the whole screen with an opaque black tube. Sole integrator owns Presentation optic math, a lightweight blit presenter/shader, IMGUI housing/reticle and docs. No C0/Game-v1 change, no second optic camera, no URP Volume/DOF stack, no acceptance waiver.
+
+Context: T088 shipped a procedural circular mask that filled outside the lens with near-black while blending the whole gameplay camera FOV tighter. That matched an analytic tube but not the desired picture-in-picture look (sharp zoomed lens, live blurred unzoomed world outside). Brandbook still forbids recursive render-to-texture optics.
+
+Decision:
+- **Single-camera screen-space PiP.** Keep hip FOV on the gameplay camera for rifle ADS. Magnification is digital UV zoom inside the lens (`ads/hip` ratio, same 42/80 cosmetic). Outside the circle: separable blur of the hip-FOV frame. Soft analytic housing rim in the composite + thin IMGUI ring/mil-dot. No opaque full-screen black fill.
+- **Pistol unchanged.** Iron sights keep real camera FOV blend + edge vignette.
+- **Accessibility.** `ReducedCameraMotion` keeps hip FOV and skips blur/digital zoom; housing/reticle may still fade in.
+- **Shipping.** `Shooter/AdsScopePip` is preloaded beside `ProceduralSurface`; ADR-013 null `postProcessData` stays. Not a stock URP Volume feature.
+
+Validation: Simulation pure optic tests; provenance for new shader/presenter; docs/manifest. Named player optic review remains Pending. Rollback restores black-tube `AdsScope` fills and whole-camera rifle FOV blend.

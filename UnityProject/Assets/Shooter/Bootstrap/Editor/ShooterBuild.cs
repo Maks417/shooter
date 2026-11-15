@@ -335,7 +335,13 @@ public static class ShooterBuild
                 var surfaceVariants = ProductSurfaceVariantPaths.Select(path =>
                     AssetDatabase.LoadAssetAtPath<Material>(path) ?? throw new InvalidOperationException(
                         "Missing numeric surface variant material; run ShooterBuild.ConfigureProductSurfaceVariants: " + path));
-                PlayerSettings.SetPreloadedAssets(preloaded.Concat(new UnityEngine.Object[] { AssetDatabase.LoadAssetAtPath<Material>("Assets/Shooter/Settings/HarnessMaterial.mat"), AssetDatabase.LoadAssetAtPath<Shader>("Assets/Shooter/Shaders/ProceduralSurface.shader") }).Concat(surfaceVariants).ToArray());
+                PlayerSettings.SetPreloadedAssets(preloaded.Concat(new UnityEngine.Object[]
+                {
+                    AssetDatabase.LoadAssetAtPath<Material>("Assets/Shooter/Settings/HarnessMaterial.mat"),
+                    AssetDatabase.LoadAssetAtPath<Shader>("Assets/Shooter/Shaders/ProceduralSurface.shader"),
+                    AssetDatabase.LoadAssetAtPath<Shader>("Assets/Shooter/Shaders/AdsScopePip.shader")
+                        ?? throw new InvalidOperationException("Missing AdsScopePip shader")
+                }).Concat(surfaceVariants).ToArray());
             }
             QualitySettings.SetQualityLevel(0, false);
             var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions

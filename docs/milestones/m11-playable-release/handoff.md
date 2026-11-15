@@ -1,5 +1,17 @@
 # M11 — Playable build and acceptance — handoff and gate record
 
+## ADR-065 — PiP rifle scope (blurred periphery) — 2026-11-15
+
+Owner: rifle ADS covered the whole screen; want sharp zoomed circle with live blurred world outside (reference PiP look). [ADR-065](../../decisions.md#adr-065--accepted-screen-space-pip-rifle-scope-blurred-periphery).
+
+**Implemented (software):**
+- AdsOpticVisual PiP helpers (PipStrength, LensUvZoom, KeepsHipCameraFov); rifle keeps hip camera FOV.
+- AdsScopePipPresenter + Shooter/AdsScopePip shader: separable blur + circular composite (sharp zoomed lens, blurred periphery, soft rim). Preloaded in Client build beside ProceduralSurface.
+- TacticalUi.AdsScope drops opaque corner fills; housing ring + mil-dot only.
+- Pistol irons / vignette / camera FOV blend unchanged. ReducedCameraMotion skips blur/digital zoom.
+
+**Checks:** Simulation pure optic tests + docs/manifest in this change set. Named player optic review, Unity EditMode/PlayMode, Client/Server/package/installer remain Pending. Does not close FIX/SET/REL/P05/VD exits.
+
 ## ADR-063 — Hit-region damage coefficients — 2026-11-15
 
 Owner: headshot should kill; chest 3–4 rifle shots; limbs (arms/legs; no separate hand/foot volumes) 6–7. [ADR-063](../../decisions.md#adr-063--accepted-hit-region-damage-coefficients-one-shot-head).
@@ -119,6 +131,8 @@ Rifle ADS now raises a procedural circular scope mask (soft housing + mil-dot re
 **Pending (not PASS):** FIX10 / SET02 named device hearing; package/installer identity that includes this bank. Does not close REL/P05.
 
 **Shot sample refresh (same task):** rifle/pistol cues replaced with OpenGameArt CC0 real target-shooting recordings (Tabasco SKS/Mosin + CZ-52; kurt 22 Pistol/Magnum), sliced to 48 kHz stereo one-shots via `Tools/import_real_gunshots.py`. Manifest source notes updated. Named hearing still Pending.
+
+**Knife/grenade cues (bank v4):** KnifeSwing on knife ShotAccepted; GrenadeThrow on ProjectileSpawned; GrenadeExplode on blast Impact heuristic. Samples via Tools/import_knife_grenade_audio.py (OGA swing + explosion/shotgun layers). Pure ProductAudio mapping tests PASS.
 
 ## ADR-056 — Last weapon (Q) and local-only muzzle overlay
 

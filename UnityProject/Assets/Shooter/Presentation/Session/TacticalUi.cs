@@ -241,8 +241,9 @@ namespace Shooter.Presentation.Session
         private static Texture2D? scopeMaskTexture;
 
         /// <summary>
-        /// Rifle ADS optic: circular lens hole, soft black housing, mil-dot reticle.
-        /// Procedural texture + fills only — no imported sprites.
+        /// Rifle ADS optic overlay: soft housing ring + mil-dot only.
+        /// Periphery blur and digital lens zoom are owned by <c>AdsScopePipPresenter</c>
+        /// (no opaque full-screen black fill — live blurred world stays visible outside the lens).
         /// </summary>
         public static void AdsScope(float width, float height, float opacity)
         {
@@ -252,17 +253,10 @@ namespace Shooter.Presentation.Session
             float radius = View.AdsOpticVisual.LensRadiusPixels(width, height);
             Texture2D mask = EnsureScopeMask();
             Color prior = GUI.color;
-            // Stretch mask so the clear lens sits at screen center with a thick housing ring.
-            float pad = radius * 1.55f;
-            GUI.color = new Color(1f, 1f, 1f, a);
+            // Housing ring only — clear lens (~0.62 of pad) aligned to LensRadiusPixels; no opaque corners.
+            float pad = radius / 0.62f;
+            GUI.color = new Color(1f, 1f, 1f, a * 0.85f);
             GUI.DrawTexture(new Rect(cx - pad, cy - pad, pad * 2f, pad * 2f), mask, ScaleMode.StretchToFill);
-            // Cover the corners outside the stretched mask square.
-            float left = cx - pad, right = cx + pad, top = cy - pad, bottom = cy + pad;
-            Color black = new Color(0.01f, 0.012f, 0.015f, a);
-            if (left > 0f) Fill(new Rect(0, 0, left, height), black);
-            if (right < width) Fill(new Rect(right, 0, width - right, height), black);
-            if (top > 0f) Fill(new Rect(left, 0, pad * 2f, top), black);
-            if (bottom < height) Fill(new Rect(left, bottom, pad * 2f, height - bottom), black);
             GUI.color = prior;
             DrawMilDotReticle(cx, cy, radius, a);
         }

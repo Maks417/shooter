@@ -4,6 +4,8 @@
 
 **ADR-063 hit damage coefficients — 2026-11-15 (source):** head×4 / torso×1 / limbs×0.5 (rifle one-shot head, ~4 chest, ~7 limbs); C0/base weapon damage/T085 aim unchanged; pure combat tests + docs Pending player feel. [Handoff](milestones/m11-playable-release/handoff.md#adr-063--hit-region-damage-coefficients--2026-11-15).
 
+**ADR-065 PiP rifle scope — 2026-11-15 (source):** rifle ADS keeps hip FOV with screen-space blurred periphery + digital lens zoom (no opaque full-screen tube; no RTT optics); pistol irons unchanged; pure optic tests in this change set; named optic review Pending. [Handoff](milestones/m11-playable-release/handoff.md#adr-065--pip-rifle-scope-blurred-periphery--2026-11-15).
+
 **Visible insertion loading — 2026-11-15 (source):** match/boot insertion briefing paints before sync load/bind (`DrawInsertionScreen`, paint yields, `BootLoadingHost`); pure shell copy tests PASS; named player review Pending. [Handoff](milestones/m11-playable-release/handoff.md#visible-insertion-loading-screens--2026-11-15).
 
 **Analytic death collapse — 2026-11-15 (source):** `soldier.motion.spike.v4` cosmetic DeathPhase collapse replaces crouch-idle corpses; pure motion tests PASS; player/installer Pending. [Handoff](milestones/m11-playable-release/handoff.md#analytic-death-collapse-soldiermotionspikev4).

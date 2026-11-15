@@ -5,8 +5,9 @@ using Shooter.Contracts;
 namespace Shooter.Presentation.View
 {
     /// <summary>
-    /// Pure ADS optic layout: rifle scope mask + mil-dot math, pistol iron-sight vignette.
-    /// Presentation-only — does not change aim input, FOV settings schema, or ballistics.
+    /// Pure ADS optic layout: rifle PiP scope (digital zoom + blur strength) + mil-dot math,
+    /// pistol iron-sight vignette. Presentation-only — does not change aim input, FOV settings
+    /// schema, or ballistics.
     /// </summary>
     public static class AdsOpticVisual
     {
@@ -38,7 +39,10 @@ namespace Shooter.Presentation.View
         public static bool HideRifleViewModel(byte weaponSlot, float adsPresentationBlend) =>
             UsesScopedOptic(weaponSlot) && OpticStrength(adsPresentationBlend) >= RifleMeshHideBlend;
 
-        /// <summary>Mask opacity for the black outside-lens fill (0..1).</summary>
+        /// <summary>
+        /// Optic presentation strength (0..1): PiP blur/zoom enable, housing ring, mil-dot.
+        /// Rifle PiP keeps hip camera FOV; magnification is digital inside the lens only.
+        /// </summary>
         public static float ScopeMaskOpacity(float adsPresentationBlend)
         {
             float s = OpticStrength(adsPresentationBlend);
@@ -46,6 +50,15 @@ namespace Shooter.Presentation.View
             float u = (s - 0.35f) / (FullMaskBlend - 0.35f);
             if (u > 1f) u = 1f;
             return u * u;
+        }
+
+        /// <summary>
+        /// PiP composite strength. Zero under reduced camera motion (no blur/digital zoom).
+        /// </summary>
+        public static float PipStrength(float adsPresentationBlend, bool reducedCameraMotion)
+        {
+            if (reducedCameraMotion) return 0f;
+            return ScopeMaskOpacity(adsPresentationBlend);
         }
 
         /// <summary>Pistol ADS edge vignette only — no circular scope tube.</summary>
@@ -57,8 +70,9 @@ namespace Shooter.Presentation.View
         }
 
         /// <summary>
-        /// Cosmetic ADS FOV from hip degrees. Rifle scopes tighter than pistol irons;
-        /// reduced-camera-motion callers should keep hip FOV instead.
+        /// Cosmetic ADS FOV from hip degrees. Rifle uses this ratio for digital lens zoom only
+        /// (camera stays at hip FOV). Pistol still blends real camera FOV. Reduced-camera-motion
+        /// callers keep hip FOV for both.
         /// </summary>
         public static float AdsFieldOfViewDegrees(float hipFovDegrees, byte weaponSlot)
         {
@@ -78,11 +92,28 @@ namespace Shooter.Presentation.View
             return hipFovDegrees + (adsFovDegrees - hipFovDegrees) * s;
         }
 
+        /// <summary>
+        /// UV scale toward center for digital lens magnification (1 = none; ads/hip at full ADS).
+        /// </summary>
+        public static float LensUvZoom(float hipFovDegrees, byte weaponSlot, float adsPresentationBlend)
+        {
+            float ads = AdsFieldOfViewDegrees(hipFovDegrees, weaponSlot);
+            float full = ads / hipFovDegrees;
+            float s = OpticStrength(adsPresentationBlend);
+            return 1f + (full - 1f) * s;
+        }
+
+        /// <summary>True when rifle scoped ADS should keep hip camera FOV (PiP digital zoom).</summary>
+        public static bool KeepsHipCameraFov(byte weaponSlot) => UsesScopedOptic(weaponSlot);
+
+        /// <summary>Lens radius as a fraction of min(width,height).</summary>
+        public const float LensRadiusFraction = 0.42f;
+
         /// <summary>Lens radius in logical HUD pixels; keeps a readable outside housing band.</summary>
         public static float LensRadiusPixels(float width, float height)
         {
             if (width < 1f || height < 1f) throw new ArgumentOutOfRangeException(nameof(width));
-            return Math.Min(width, height) * 0.42f;
+            return Math.Min(width, height) * LensRadiusFraction;
         }
 
         /// <summary>Mil-dot spacing along one reticle arm (pixels).</summary>
