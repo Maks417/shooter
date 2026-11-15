@@ -15,12 +15,12 @@ namespace Shooter.Presentation
         }
 
         // Bodycam/BFV grounded daylight: richer zenith→horizon→ground, Linear haze; 40–60 m fights stay clear.
-        public static readonly Rgb DefaultZenith = new Rgb(.24f, .36f, .52f);
-        public static readonly Rgb DefaultHorizon = new Rgb(.64f, .66f, .68f);
-        public static readonly Rgb DefaultGround = new Rgb(.22f, .20f, .16f);
-        public const float DefaultFogStartMeters = 40f;
+        public static readonly Rgb DefaultZenith = new Rgb(.24f, .38f, .56f);
+        public static readonly Rgb DefaultHorizon = new Rgb(.64f, .67f, .68f);
+        public static readonly Rgb DefaultGround = new Rgb(.26f, .23f, .18f);
+        public const float DefaultFogStartMeters = 30f;
         public const float DefaultFogEndMeters = 100f;
-        public const float DefaultFogDensity = .007f;
+        public const float DefaultFogDensity = .0082f;
 
         /// <summary>
         /// Mild map-id atmosphere variants (presentation only). Does not change collision, nav, or authority.
@@ -40,24 +40,24 @@ namespace Shooter.Presentation
             fogDensity = DefaultFogDensity;
             if (string.Equals(mapId, "training-compound", StringComparison.Ordinal))
             {
-                // Cooler outdoor compound: deeper blue zenith, clean cool horizon, modest depth fog.
-                zenith = new Rgb(.20f, .34f, .50f);
-                horizon = new Rgb(.58f, .64f, .70f);
-                ground = new Rgb(.18f, .20f, .17f);
-                fogStartMeters = 40f;
-                fogEndMeters = 100f;
-                fogDensity = .0068f;
+                // Cooler outdoor compound: deeper blue zenith, cool grey horizon, soft depth fog.
+                zenith = new Rgb(.20f, .36f, .56f);
+                horizon = new Rgb(.56f, .64f, .70f);
+                ground = new Rgb(.20f, .22f, .20f);
+                fogStartMeters = 32f;
+                fogEndMeters = 105f;
+                fogDensity = .0078f;
                 return;
             }
             if (string.Equals(mapId, "depot-yard", StringComparison.Ordinal))
             {
-                // Warmer dusty yard: muted zenith, amber haze, earlier fog without washing silhouettes.
-                zenith = new Rgb(.30f, .38f, .44f);
-                horizon = new Rgb(.72f, .62f, .50f);
+                // Warmer dusty yard: muted zenith, amber haze, earlier Linear fog without mid-range washout.
+                zenith = new Rgb(.32f, .40f, .46f);
+                horizon = new Rgb(.72f, .60f, .50f);
                 ground = new Rgb(.34f, .26f, .16f);
-                fogStartMeters = 36f;
+                fogStartMeters = 26f;
                 fogEndMeters = 92f;
-                fogDensity = .008f;
+                fogDensity = .0090f;
                 return;
             }
             zenith = DefaultZenith;

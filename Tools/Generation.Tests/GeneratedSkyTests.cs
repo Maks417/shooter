@@ -98,15 +98,13 @@ public sealed class GeneratedSkyTests
         Assert.True(compoundZ.B > compoundZ.R);
         Assert.True(depotH.R > depotH.B);
         Assert.True(compoundZ.B > depotZ.B);
-        // Linear fog: mid-range Bodycam haze (~40–100 m) keeps 5v5/6v6 readable at ~50 m.
-        Assert.InRange(cStart, 30f, 45f);
-        Assert.InRange(cEnd, 90f, 110f);
-        Assert.InRange(dStart, 30f, 45f);
-        Assert.InRange(dEnd, 85f, 105f);
+        // Linear fog leaves 40–60 m fights clear (factor at 50 m under ~0.4) while still denser than a washed-out sky.
+        Assert.True(cStart < 40f && cEnd > 60f);
+        Assert.True(dStart < 40f && dEnd > 60f);
         Assert.InRange(LinearFogFactor(50f, cStart, cEnd), 0.05f, 0.40f);
         Assert.InRange(LinearFogFactor(50f, dStart, dEnd), 0.10f, 0.45f);
         Assert.InRange(LinearFogFactor(50f, GeneratedSkyMath.DefaultFogStartMeters, GeneratedSkyMath.DefaultFogEndMeters), 0.10f, 0.40f);
-        Assert.True(GeneratedSkyMath.DefaultFogDensity >= .0065f);
+        Assert.True(GeneratedSkyMath.DefaultFogDensity >= .0075f);
         Assert.True(dDensity >= cDensity);
     }
 
@@ -144,12 +142,12 @@ internal static class GeneratedSkyMath
         public Rgb(float r, float g, float b) { R = r; G = g; B = b; }
     }
 
-    public static readonly Rgb DefaultZenith = new Rgb(.24f, .36f, .52f);
-    public static readonly Rgb DefaultHorizon = new Rgb(.64f, .66f, .68f);
-    public static readonly Rgb DefaultGround = new Rgb(.22f, .20f, .16f);
-    public const float DefaultFogStartMeters = 40f;
+    public static readonly Rgb DefaultZenith = new Rgb(.24f, .38f, .56f);
+    public static readonly Rgb DefaultHorizon = new Rgb(.64f, .67f, .68f);
+    public static readonly Rgb DefaultGround = new Rgb(.26f, .23f, .18f);
+    public const float DefaultFogStartMeters = 30f;
     public const float DefaultFogEndMeters = 100f;
-    public const float DefaultFogDensity = .007f;
+    public const float DefaultFogDensity = .0082f;
 
     public static void ResolveProductPalette(
         string mapId,
@@ -165,22 +163,22 @@ internal static class GeneratedSkyMath
         fogDensity = DefaultFogDensity;
         if (string.Equals(mapId, "training-compound", StringComparison.Ordinal))
         {
-            zenith = new Rgb(.20f, .34f, .50f);
-            horizon = new Rgb(.58f, .64f, .70f);
-            ground = new Rgb(.18f, .20f, .17f);
-            fogStartMeters = 40f;
-            fogEndMeters = 100f;
-            fogDensity = .0068f;
+            zenith = new Rgb(.20f, .36f, .56f);
+            horizon = new Rgb(.56f, .64f, .70f);
+            ground = new Rgb(.20f, .22f, .20f);
+            fogStartMeters = 32f;
+            fogEndMeters = 105f;
+            fogDensity = .0078f;
             return;
         }
         if (string.Equals(mapId, "depot-yard", StringComparison.Ordinal))
         {
-            zenith = new Rgb(.30f, .38f, .44f);
-            horizon = new Rgb(.72f, .62f, .50f);
+            zenith = new Rgb(.32f, .40f, .46f);
+            horizon = new Rgb(.72f, .60f, .50f);
             ground = new Rgb(.34f, .26f, .16f);
-            fogStartMeters = 36f;
+            fogStartMeters = 26f;
             fogEndMeters = 92f;
-            fogDensity = .008f;
+            fogDensity = .0090f;
             return;
         }
         zenith = DefaultZenith;
