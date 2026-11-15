@@ -711,3 +711,30 @@ Decision:
 - **Distance.** Per-kind ceilings: footsteps **18 m** with steep atten + 0.45 base gain; reload/death/impact **35 m**; gunfire/headshot **80 m**; UI/ambient listener-local.
 
 Validation: `Tools/Test-Simulation.ps1` audio cases; docs/manifest. FIX10 named device hearing and installer identity remain Pending. Rollback: revert T089 and restore the T086 mono/soft-distance path.
+
+## ADR-063 — Accepted: hit-region damage coefficients (one-shot head)
+
+Date 2026-11-15; owner requested clearer body-part lethality: headshot = death, chest needs several hits, limbs need more. Sole integrator owns `Simulation/Combat/DamageMath`, combat docs/fixtures sync and pure combat tests. No C0 region-ID change, no base rifle/pistol/knife/grenade damage or fire-rate change, no T085 bot-aim retune, no new hand/foot hit volumes.
+
+Context: prior defaults were head×2 / torso×1 / limb×0.75 (rifle head 60 → two shots; limbs ~5). Owner feel target for rifle: **1** head / **3–4** torso / **6–7** limb shots on 100 HP. Region IDs remain Head=1, Torso=2, Arms=3–4, Legs=5–6; hands/feet share limb capsules.
+
+Decision:
+- Set `DamageMath.RegionMultiplier` to **head×4**, **torso×1**, **limbs×0.5**. Rounding rule unchanged (`floor(base×mult+0.5)`, min 1).
+- Rifle outcomes: head 120 (one-shot), torso 30 (~4 shots), limb 15 (~7 shots). Pistol head also one-shots (100); pistol limbs take more shots — acceptable; primary feel is rifle.
+- Sync [gameplay baseline](gameplay-baseline.md) and [combat](features/combat.md). Do not edit frozen C0/Game-v1 locks or `gameplay-defaults.json` weapon base damage.
+
+Validation: `Tools/Test-Simulation.ps1` combat rounding cases; docs/manifest. Named player feel and matching installer remain Pending. Rollback restores ×2 / ×1 / ×0.75.
+
+## ADR-064 — Accepted: knife/grenade FP special actions and throw presentation (T087 follow-up)
+
+Date 2026-11-15; owner reported knife/grenade reused gun animations and grenades could not be thrown visually. Sole integrator owns bounded combat polish + presentation/FX/audio/Game.Contracts lifecycle field. No C0 event-kind change, no SoldierMotion melee choreography, no imported clips.
+
+Context: ADR-057 shipped authority knife melee and cook/throw grenade, but FP still applied gun feedback (muzzle/rifle audio) and never rendered `ProjectileSpawned`, so the held grenade stayed in hand.
+
+Decision:
+- Authority: rising-edge cook/melee after equip (`fireHeld && !PreviousFireHeld`); clear `PreviousFireHeld` on equip→Ready so hold-through-draw still cooks/slashes once.
+- Game-v1 additive `ActorLifecycleState.WeaponAction` mirrored from `EntitySnapshot.Weapon.Action` (refreeze `game-contract-lock.json`).
+- Presentation: `FirstPersonSpecialActions` slash vs close-range stab (same-tick body Impact/Damage); grenade cook raise from `WeaponAction.Cooking`, throw arc + hide held prop on `ProjectileSpawned` / empty magazine; `CosmeticGrenadeFlight` gravity arc until nearby Impact.
+- FX/audio: skip knife muzzle/overlay/gunfire reveal; map knife ShotAccepted to impact cue; soft UI cue on ProjectileSpawned.
+
+Validation: Simulation knife/grenade/view/FX tests; Game lock verify; docs/manifest. Interactive player/installer Pending. Rollback restores prior lifecycle DTO/lock and gun-path FX for knife.

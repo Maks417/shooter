@@ -10,9 +10,9 @@ namespace Shooter.Simulation.Tests.Combat
     public sealed class CombatTests
     {
         [Theory]
-        [InlineData(30, 3, 23)] // rifle limb 22.5 -> 23
-        [InlineData(25, 3, 19)] // pistol limb 18.75 -> 19
-        [InlineData(30, 1, 60)] // rifle head
+        [InlineData(30, 3, 15)] // rifle limb 15 -> 15 (ADR-063)
+        [InlineData(25, 3, 13)] // pistol limb 12.5 -> 13
+        [InlineData(30, 1, 120)] // rifle head one-shot
         [InlineData(30, 2, 30)] // rifle torso
         public void DamageRoundingMatchesBaseline(ushort baseDamage, ushort region, ushort expected)
         {

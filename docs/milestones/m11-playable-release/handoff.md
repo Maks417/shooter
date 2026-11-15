@@ -1,5 +1,13 @@
 # M11 — Playable build and acceptance — handoff and gate record
 
+## ADR-063 — Hit-region damage coefficients — 2026-11-15
+
+Owner: headshot should kill; chest 3–4 rifle shots; limbs (arms/legs; no separate hand/foot volumes) 6–7. [ADR-063](../../decisions.md#adr-063--accepted-hit-region-damage-coefficients-one-shot-head).
+
+**Implemented (software):** `DamageMath.RegionMultiplier` → head×4 / torso×1 / limbs×0.5. Rifle: 120 / 30 / 15. C0 region IDs, base weapon damage, fire rate and T085 bot-aim envelope unchanged; effective player TTK by hit region changes.
+
+**Checks:** pure combat rounding tests + docs/manifest in this change set. Named player feel and installer identity remain Pending. Does not close FIX/SET/REL/P05/VD exits.
+
 ## Visible insertion loading screens — 2026-11-15
 
 Owner feedback: match/boot felt like a blank hitch with no loading UI. Software already had `DrawLoading`, but synchronous package/nav/visual bind finished (or froze) before IMGUI could paint.
@@ -52,7 +60,7 @@ Rifle ADS now raises a procedural circular scope mask (soft housing + mil-dot re
 
 **Implemented (software):**
 - [ADR-057](../../decisions.md#adr-057--accepted-knife-and-grenade-loadout-slots-t087): C0 `PredictionSchema` 2, `Require.Slot` 0..3, `WeaponAction.Cooking`, four `WeaponState` records; fixtures + `contract-lock.json` refreshed.
-- Knife melee (1.8 m / 55 / sprint 24 / sprint fire) and cook/throw grenade (fuse 120, blast 5 m, self-damage yes, friendly 0) in `WeaponSimulator` / `GrenadeSimulator` / combat harness.
+- Knife melee (1.8 m / 55 / interval 24 / sprint fire) and cook/throw grenade (fuse 120, blast 5 m, self-damage yes, friendly 0) in `WeaponSimulator` / `GrenadeSimulator` / combat harness.
 - Game-v1 additive `Slot3`/`Slot4`; local input + HUD; AI empty-ammo knife / single grenade; procedural `LoadoutPropGeometry` packaged in map visuals.
 
 **Checks (software):** Contracts 76/76, Simulation 251/251 (incl. KnifeGrenadeTests), Game 74/74, Generation 394/394, docs/fixtures + C0/Game-v1 locks PASS on the working tree.

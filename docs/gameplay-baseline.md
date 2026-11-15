@@ -23,7 +23,7 @@ Scope update 2026-11-13: this page and its frozen fixtures retain the historical
 | Pistol fire/reload/equip | semi interval10 ticks, reload108 ticks, equip18 ticks;15mag+45reserve |
 | Knife (slot 2 / Digit3) | melee interval24 ticks, equip12; no ammo consume; range1.8 m; damage55; sprint fire allowed (ADR-057) |
 | Grenade (slot 3 / Digit4) | one per life (1/0); cook on FirePressed, throw on release; fuse120 ticks; throw18 m/s; blast5 m max100; self-damage yes, friendly0 (ADR-057) |
-| Health / damage |100; rifle30/pistol25/knife55/grenade blast; head×2,torso×1,limbs×0.75 |
+| Health / damage |100; rifle30/pistol25/knife55/grenade blast; head×4,torso×1,limbs×0.5 (ADR-063) |
 | Damage rounding | floor(base×multiplier+0.5), clamp remaining health≥0 |
 | Spread cone half-angle hip/ADS | rifle1.0/0.15 deg; pistol1.5/0.3 deg |
 | Authoritative recoil impulse | rifle pitch+0.35 deg,yaw uniform±0.1 deg; pistol+0.55 deg,yaw±0.15 deg |
@@ -59,4 +59,4 @@ Actors do not physically push/block each other in slice; damage capsules are mat
 
 ## Validation
 
-Test exact damage rounding for rifle limb22.5→23 and pistol limb18.75→19, cadence at tick0 and subsequent allowed ticks, reload cancellation order, stance ceiling failure, objective120-tick boundary, same-tick death precedence, restart state and cooperative join spectator rule. World checks enforce valid spawn/capture routes at all fixture seeds. These choices are accepted defaults and may be tuned only with synchronized definitions/fixtures.
+Test exact damage rounding for rifle limb15 and pistol limb12.5→13, cadence at tick0 and subsequent allowed ticks, reload cancellation order, stance ceiling failure, objective120-tick boundary, same-tick death precedence, restart state and cooperative join spectator rule. World checks enforce valid spawn/capture routes at all fixture seeds. These choices are accepted defaults and may be tuned only with synchronized definitions/fixtures.

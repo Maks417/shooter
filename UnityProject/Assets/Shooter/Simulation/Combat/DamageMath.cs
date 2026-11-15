@@ -10,9 +10,9 @@ namespace Shooter.Simulation.Combat
 
         public static float RegionMultiplier(ushort regionId) => regionId switch
         {
-            1 => 2.0f,   // Head
-            2 => 1.0f,   // Torso
-            3 or 4 or 5 or 6 => 0.75f, // Limbs
+            1 => 4.0f,   // Head — rifle/pistol one-shot (ADR-063)
+            2 => 1.0f,   // Torso — ~4 rifle shots
+            3 or 4 or 5 or 6 => 0.5f, // Limbs — ~7 rifle shots
             _ => throw new ArgumentOutOfRangeException(nameof(regionId))
         };
 
