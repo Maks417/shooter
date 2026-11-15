@@ -445,22 +445,28 @@ namespace Shooter.Presentation.Rig
                 var movement = movementView?.Invoke(human.EntityId);
                 localHandling.Step(human.Feet, slot, dtSeconds, movement.HasValue && movement.Value.Sliding);
                 float reload = actions.ReloadPhaseAtTick(human.EntityId, completedTick);
-                var offset = localHandling.PositionOffset(pose.AdsBlend, reload, reducedMotion);
-                var rotation = localHandling.RotationDegrees(pose.AdsBlend, reload, reducedMotion);
+                float recoilEnergy = Math.Abs(pose.RecoilPitch) + Math.Abs(pose.RecoilYaw);
+                bool magazineEmpty = human.Magazine == 0;
+                var offset = localHandling.PositionOffset(pose.AdsBlend, reload, reducedMotion, recoilEnergy, magazineEmpty);
+                var rotation = localHandling.RotationDegrees(pose.AdsBlend, reload, reducedMotion, recoilEnergy);
+                var kick = localView.EquipmentKickMeters(reducedMotion);
                 Float3 sight = ProductAuthorityActionView.IsPistolSlot(slot) ? pistolSightSocketLocal : rifleSightSocketLocal;
+                float scale = FirstPersonHandling.NearFieldScale(slot);
+                Float3 hipBias = FirstPersonHandling.NearFieldHipBias(slot);
                 Vector3 hip = new Vector3(pose.RightHand.X, pose.RightHand.Y, pose.RightHand.Z);
                 // Keep the stock behind the receiver clear of the camera near plane. These
                 // camera-local offsets affect presentation only; ballistic origin stays authoritative.
-                // Slightly lower/forward hip so the FP rifle fills more of the lower-right frame.
-                hip += ProductAuthorityActionView.IsPistolSlot(slot)
-                    ? new Vector3(.07f, -.07f, .14f) : new Vector3(.12f, -.10f, .36f);
-                // The verified +Z sight line lies on the camera ray at full ADS.
-                // Keep physical depth; do not move the eye socket onto/behind the near plane.
-                Vector3 aligned = new Vector3(-sight.X, -sight.Y, hip.z);
-                localWeapon.localPosition = Vector3.Lerp(hip, aligned, pose.AdsBlend) + V(offset);
+                // Stronger near-field hip so rifle/pistol read with Bodycam mass without breaking ADS truth.
+                hip += new Vector3(hipBias.X, hipBias.Y, hipBias.Z);
+                // Scale the sight socket with near-field mass so TransformPoint still lands on the camera ray.
+                Vector3 aligned = new Vector3(-sight.X * scale, -sight.Y * scale, hip.z);
+                localWeapon.localScale = new Vector3(scale, scale, scale);
+                localWeapon.localPosition = Vector3.Lerp(hip, aligned, pose.AdsBlend) + V(offset) + V(kick);
+                float rotKick = FirstPersonHandling.RecoilRotationScale(pose.AdsBlend, reducedMotion);
                 localWeapon.localRotation = Quaternion.Euler(
-                    rotation.X + (reducedMotion ? 0f : pose.RecoilPitch * Mathf.Rad2Deg),
-                    rotation.Y + (reducedMotion ? 0f : pose.RecoilYaw * Mathf.Rad2Deg), rotation.Z);
+                    rotation.X + pose.RecoilPitch * Mathf.Rad2Deg * rotKick,
+                    rotation.Y + pose.RecoilYaw * Mathf.Rad2Deg * rotKick,
+                    rotation.Z);
             }
             else if (localViewHuman.IsValid)
             {
