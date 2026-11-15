@@ -132,6 +132,33 @@ namespace Shooter.Tests
                 presentation.Sync(snap, lifecycle, null, 0, human, false, 1f / 60f, null, 10);
                 Assert.That(presentation.LiveAvatarCount, Is.EqualTo(1));
                 Assert.That(presentation.Actions.IsRifle(human), Is.True);
+                var localBody = root.GetComponentsInChildren<SkinnedMeshRenderer>(true);
+                Assert.That(localBody.Length, Is.GreaterThan(0));
+                Assert.That(localBody[0].shadowCastingMode, Is.EqualTo(UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly),
+                    "Local human world body must cast ShadowsOnly while the FP viewmodel is shown.");
+                var heldWeapons = root.GetComponentsInChildren<MeshRenderer>(true);
+                bool sawHeldShadowsOnly = false;
+                for (int i = 0; i < heldWeapons.Length; i++)
+                {
+                    if (heldWeapons[i].gameObject.name.StartsWith("Held ", System.StringComparison.Ordinal) &&
+                        heldWeapons[i].shadowCastingMode == UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly)
+                        sawHeldShadowsOnly = true;
+                }
+                Assert.That(sawHeldShadowsOnly, Is.True, "Local human world weapon must also be ShadowsOnly.");
+
+                // T077 presentation kit: Team1 olive/slate (not flat blue); FP metal/polymer contrast.
+                var team1Mats = localBody[0].sharedMaterials;
+                Assert.That(team1Mats.Length, Is.GreaterThanOrEqualTo(1));
+                Color uniform = team1Mats[0].GetColor("_BaseColor");
+                Assert.That(uniform.g, Is.GreaterThan(uniform.b - 0.02f),
+                    "Ally uniform must read olive/slate, not solid flat blue.");
+                Assert.That(uniform.b, Is.LessThan(0.40f));
+                var fpWeapon = camera.transform.Find("Local FP rifle").GetComponent<MeshRenderer>();
+                Assert.That(fpWeapon.sharedMaterials.Length, Is.GreaterThanOrEqualTo(2));
+                Assert.That(fpWeapon.sharedMaterials[0].GetFloat("_Metallic"), Is.GreaterThan(0.7f));
+                Assert.That(fpWeapon.sharedMaterials[0].GetFloat("_Smoothness"), Is.GreaterThan(0.5f));
+                Assert.That(fpWeapon.sharedMaterials[1].GetFloat("_Metallic"), Is.LessThan(0.1f));
+                Assert.That(fpWeapon.sharedMaterials[1].GetFloat("_Smoothness"), Is.LessThan(0.25f));
 
                 lifecycle.Set(new ActorLifecycleState(human, 1, true, 100, new Float3(0, 0, 0), 0, 0, 0, 29, 90));
                 presentation.Sync(snap, lifecycle, null, 0, human, false, 1f / 60f, System.Array.Empty<CombatEvent>(), 11);
@@ -174,6 +201,13 @@ namespace Shooter.Tests
                 Assert.That(presentation.CorpseAvatarCount, Is.EqualTo(1));
                 Assert.That(presentation.Actions.IsRifle(replacement), Is.True);
                 Assert.That(presentation.Actions.IsReloading(human), Is.False);
+                var afterRespawn = root.GetComponentsInChildren<SkinnedMeshRenderer>(true);
+                int shadowsOnlyBodies = 0;
+                for (int i = 0; i < afterRespawn.Length; i++)
+                    if (afterRespawn[i].shadowCastingMode == UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly)
+                        shadowsOnlyBodies++;
+                Assert.That(shadowsOnlyBodies, Is.EqualTo(1),
+                    "After respawn, only the new local living body stays ShadowsOnly (corpse renders normally).");
 
                 presentation.ClearAll();
                 Assert.That(presentation.HandleCount, Is.EqualTo(0));
