@@ -241,6 +241,8 @@ namespace Shooter.Bootstrap
                 if (!catalog.TryGet(id, out var catalogEntry)) throw new InvalidOperationException("Unknown map " + id.Value);
                 return catalogEntry.GameplayRootHash;
             });
+            // Product bots must never idle when a native NavMesh query misses: packaged NVB1 graph answers (counted as FallbackComplete).
+            productMap.AllowPackagedPathFallback = true;
             productSession = new OfflineGameSession(catalog, (_, __) => productMap, allowFakeMapRuntime: false);
             CompositionPolicy.RequireReal(productMap);
             return true;
@@ -330,7 +332,19 @@ namespace Shooter.Bootstrap
             }
             LastStepAllocatedBytes = before < 0 ? -1 : AllocationMeter.ThreadBytes - before;
             LastStepMilliseconds = (Stopwatch.GetTimestamp() - start) * 1000.0 / Stopwatch.Frequency;
+            if (!IsServer && !diagnosticMode && tick % AiSummaryIntervalTicks == 0 && tick != 0) LogAiSummary(tick);
             StepCompleted?.Invoke(tick, LastStepMilliseconds, LastStepAllocatedBytes);
+        }
+
+        private const uint AiSummaryIntervalTicks = 300;
+
+        private void LogAiSummary(uint tick)
+        {
+            var ai = productSession?.BotCounters;
+            if (ai == null) return;
+            Debug.Log("SHOOTER_AI_SUMMARY tick=" + tick + " pathsCompleted=" + ai.PathsCompleted + " pathsPartial=" + ai.PathsPartial +
+                      " pathsFailed=" + ai.PathsFailed + " stuckEvents=" + ai.StuckEvents + " shotsRequested=" + ai.ShotsRequested +
+                      " stateChanges=" + ai.StateChanges + (productMap != null ? " " + productMap.NavCounterSummary : ""));
         }
 
         private void Update()

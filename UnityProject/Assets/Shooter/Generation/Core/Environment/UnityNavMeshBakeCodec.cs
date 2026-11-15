@@ -150,6 +150,39 @@ namespace Shooter.Generation.Environment
             return new Bake(vertices, polys, min, max);
         }
 
+        /// <summary>
+        /// Fan-triangulates every polygon and emits each triangle wound so its Unity (clockwise-from-above) front face
+        /// points +Y, regardless of the stored polygon winding. Native NavMesh triangulation is clockwise from above while
+        /// the software grid is counter-clockwise; a fixed winding would leave one of them facing down, which NavMesh
+        /// building treats as non-walkable (empty NavMesh). Degenerate (zero-area) triangles are skipped.
+        /// </summary>
+        public static int[] BuildUpFacingTriangleIndices(Bake bake)
+        {
+            if (bake == null) throw new ArgumentNullException(nameof(bake));
+            var indices = new List<int>(bake.Polygons.Count * 6);
+            for (int p = 0; p < bake.Polygons.Count; p++)
+            {
+                var poly = bake.Polygons[p].Indices;
+                for (int i = 1; i + 1 < poly.Length; i++)
+                {
+                    var a = bake.Vertices[(int)poly[0]];
+                    var b = bake.Vertices[(int)poly[i]];
+                    var c = bake.Vertices[(int)poly[i + 1]];
+                    // y component of cross(b - a, c - a); > 0 means the clockwise-from-above front face points up.
+                    float crossY = (b.Z - a.Z) * (c.X - a.X) - (b.X - a.X) * (c.Z - a.Z);
+                    if (crossY > 0f)
+                    {
+                        indices.Add((int)poly[0]); indices.Add((int)poly[i]); indices.Add((int)poly[i + 1]);
+                    }
+                    else if (crossY < 0f)
+                    {
+                        indices.Add((int)poly[0]); indices.Add((int)poly[i + 1]); indices.Add((int)poly[i]);
+                    }
+                }
+            }
+            return indices.ToArray();
+        }
+
         /// <summary>True when the XZ point lies inside any bake polygon (Y ignored for containment).</summary>
         public static bool ContainsPointXZ(Bake bake, float x, float z)
         {
@@ -180,7 +213,7 @@ namespace Shooter.Generation.Environment
             }
 
             int polyCount = bake.Polygons.Count;
-            var adjacency = BuildAdjacency(bake);
+            var adjacency = AdjacencyFor(bake);
             var came = new int[polyCount];
             var gScore = new float[polyCount];
             var open = new List<int>(polyCount);
@@ -245,6 +278,34 @@ namespace Shooter.Generation.Environment
             if (DistanceXZ(corners[corners.Count - 1], goalPoint) > 1e-4f)
                 corners.Add(goalPoint);
             return corners.Count >= 1;
+        }
+
+        private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<Bake, List<int>[]> AdjacencyCache =
+            new System.Runtime.CompilerServices.ConditionalWeakTable<Bake, List<int>[]>();
+
+        private static List<int>[] AdjacencyFor(Bake bake)
+        {
+            lock (AdjacencyCache)
+            {
+                if (AdjacencyCache.TryGetValue(bake, out var cached)) return cached;
+                var built = BuildAdjacency(bake);
+                AdjacencyCache.Add(bake, built);
+                return built;
+            }
+        }
+
+        /// <summary>Evenly thins a corner list to at most <paramref name="maxCorners"/> entries, keeping first and last.</summary>
+        public static void DecimateCorners(List<Float3> corners, int maxCorners)
+        {
+            if (corners == null) throw new ArgumentNullException(nameof(corners));
+            if (maxCorners < 2) throw new ArgumentOutOfRangeException(nameof(maxCorners));
+            if (corners.Count <= maxCorners) return;
+            var kept = new List<Float3>(maxCorners);
+            int last = corners.Count - 1;
+            for (int i = 0; i < maxCorners; i++)
+                kept.Add(corners[(int)((long)i * last / (maxCorners - 1))]);
+            corners.Clear();
+            corners.AddRange(kept);
         }
 
         private static List<int>[] BuildAdjacency(Bake bake)
