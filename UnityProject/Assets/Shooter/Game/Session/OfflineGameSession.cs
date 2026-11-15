@@ -44,6 +44,9 @@ namespace Shooter.Game.Session
         private long querySamplesAtMatchStart;
         private GameOperationResult? terminalFault;
         private bool disposed;
+        private int preMatchCountdownTicks;
+        private int preMatchTicksRemaining;
+        private static readonly InputCommand[] NoCommands = new InputCommand[0];
 
         public OfflineGameSession(IMapCatalog catalog, Func<IWorldQueries, INavigation, IMapRuntime> mapFactory, bool allowFakeMapRuntime = false)
         {
@@ -53,6 +56,17 @@ namespace Shooter.Game.Session
         }
 
         public ulong AuthoritySessionId => sessionId;
+        /// <summary>
+        /// Pre-match countdown length applied by the next Start() (default 0 = no countdown; ProductShellHost sets SessionDefaults.PreMatchCountdownTicks).
+        /// Benchmarks and tick-count tests set 0. Ignored once the match is Playing.
+        /// </summary>
+        public int PreMatchCountdownTicks
+        {
+            get => preMatchCountdownTicks;
+            set => preMatchCountdownTicks = value < 0 ? 0 : value;
+        }
+        /// <summary>Ticks left of the pre-match freeze (no movement/fire, match clock stopped). 0 when live.</summary>
+        public int PreMatchTicksRemaining => preMatchTicksRemaining;
         public GameMatchPhase Phase => phase;
         /// <summary>
         /// Terminal recoverable fault (for example SpawnFailure after the match aborted because no navigable,
@@ -204,6 +218,7 @@ namespace Shooter.Game.Session
             if (phase != GameMatchPhase.Ready) return new GameOperationResult(GameErrorCode.Busy, "not-ready", "Cannot start.");
             match.MarkPlaying(sessionId, 0);
             phase = GameMatchPhase.Playing;
+            preMatchTicksRemaining = preMatchCountdownTicks;
             return GameOperationResult.Ok;
         }
 
@@ -230,6 +245,9 @@ namespace Shooter.Game.Session
                 return new GameOperationResult(GameErrorCode.Busy, "not-playing", "Session is not advancing.");
             if (harness == null || lifecycle == null || bots == null || mapRuntime == null || request == null)
                 return new GameOperationResult(GameErrorCode.InternalError, "missing-services", "Session services missing.");
+
+            if (preMatchTicksRemaining > 0)
+                return StepPreMatch();
 
             // Install due respawns before movement (Game-v1 tick order).
             var pre = match.AcquireSnapshot(sessionId, tick);
@@ -321,6 +339,27 @@ namespace Shooter.Game.Session
             measurement.Actors = endSnap.Participants.Count;
             lifecycle.AdvanceActiveTick(endSnap.ActiveTicksElapsed);
             if (match.TryAcquireResults() != null) phase = GameMatchPhase.Finished;
+            tick = unchecked(tick + 1);
+            return GameOperationResult.Ok;
+        }
+
+        /// <summary>
+        /// Countdown tick: no human/bot commands, no slides, no respawns, no end-of-tick evaluation (the match clock stays at 0).
+        /// The harness still steps so gravity/settling run; lifecycle is synced from the resulting snapshot.
+        /// </summary>
+        private GameOperationResult StepPreMatch()
+        {
+            var snap = match.AcquireSnapshot(sessionId, tick);
+            measurement.LeaseAcquires++;
+            slideActors.Clear();
+            harness!.StepWithSlideActors(tick, NoCommands, slideActors);
+            using (var lease = harness.AcquireSnapshot())
+            {
+                measurement.LeaseAcquires++;
+                lifecycle!.SyncFromSnapshot(lease.Snapshot);
+            }
+            RescueEmbeddedActors(snap, lifecycle, harness, mapRuntime!);
+            preMatchTicksRemaining--;
             tick = unchecked(tick + 1);
             return GameOperationResult.Ok;
         }
