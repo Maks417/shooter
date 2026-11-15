@@ -1,5 +1,15 @@
 # M11 — Playable build and acceptance — handoff and gate record
 
+## Audio spatial and mix refinement — 2026-11-15
+
+Owner assigned the reviewed first audio improvement pass as a T089 / ADR-062 follow-up. Base `077b77f`; sole audio integrator worked in an isolated checkout after unrelated active geometry work was observed in the shared checkout. Scope: `Presentation/Audio/Runtime`, the audio pump/acoustic probes in `ProductSessionView`, pure audio tests, a real-collision Unity integration test and affected docs. Existing CC0 bank and all authority/contracts/settings/content identities are preserved.
+
+Implemented camera-relative equal-power panning with live direction updates, local cue centering, rate-correct interpolated PCM, distance width/body and boundary fade, bounded map-only occlusion/enclosure probes, quiet recorded-PCM early reflections, priority-based replacement within 24 voices and a linked stereo limiter. Unity audio configuration is cached outside the callback. Horizontal footsteps reject teleport bursts. [Detailed behavior and limitations](../../features/audio.md#owner-requested-spatial-and-mix-refinement--2026-11-15).
+
+Validation in progress: first pure Simulation run passed 292 tests; final regressions, Unity and build results will be recorded before handoff. Initial shared-checkout attempts failed (restricted .NET process access and an unrelated in-progress geometry compile); retained logs are not passing evidence. The isolated checkout configured the locked Unity 6000.3.28f1 / revision 8f082d2fe476 successfully. No new installer, named device review, output-device-change proof, reference CPU measurement or Battlefield V equivalence is claimed here. FIX10/SET02, P05 FAIL and other open release/hardware gates remain unchanged.
+
+Rollback: revert the bounded T089 follow-up source/docs together; the bank/manifest and settings need no migration. Preserve test/build evidence outside the temporary checkout before removing it.
+
 ## ADR-067 — Soldier pose + motor corner launch fixes — 2026-11-15
 
 Owner: player/bot models flicky; sprint feet poor; slide animation missing; sprint near wall/floor seam launches into the sky. [ADR-067](../../decisions.md#adr-067--accepted-soldier-motionv5-slide-pose-gait-stability-and-motor-corner-anti-launch).

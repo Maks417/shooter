@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "root": "C:\\Job\\shooter\\docs",
+  "root": "C:\\Job\\shooter\\.local\\worktrees\\audio-pass\\docs",
   "markdownFiles": 128,
-  "wordCount": 150404,
-  "relativeLinksChecked": 1355,
+  "wordCount": 151231,
+  "relativeLinksChecked": 1363,
   "integrityFiles": 180,
   "errors": [],
   "result": "PASS",

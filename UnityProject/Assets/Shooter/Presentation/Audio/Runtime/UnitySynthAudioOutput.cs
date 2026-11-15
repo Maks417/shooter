@@ -15,6 +15,7 @@ namespace Shooter.Presentation.Audio
         private bool deviceWarned;
         private bool outputEnabled = true;
         private volatile bool callbackArmed;
+        private volatile int deviceSampleRate = 48000;
 
         public SynthAudioMixer? Mixer => mixer;
         public bool IsOutputEnabled => outputEnabled;
@@ -69,6 +70,7 @@ namespace Shooter.Presentation.Audio
             source.priority = 0;
             // Silence clip keeps the filter callback pumping; audible content comes from the mixer bank.
             int rate = AudioSettings.outputSampleRate > 0 ? AudioSettings.outputSampleRate : 48000;
+            deviceSampleRate = rate;
             var clip = AudioClip.Create("ShooterSynthSilence", rate, 1, rate, false);
             var zeros = new float[rate];
             clip.SetData(zeros, 0);
@@ -94,14 +96,27 @@ namespace Shooter.Presentation.Audio
                     System.Array.Clear(data, 0, data.Length);
                 return;
             }
+            // Configuration is cached on the main thread; callback invokes no Unity API.
+            mixer.Fill(data, channels, deviceSampleRate);
+        }
+
+        private void RefreshDeviceRate(bool deviceChanged)
+        {
             int rate = AudioSettings.outputSampleRate;
-            if (rate < 8000) rate = 48000;
-            // Mixer Fill overwrites the buffer with sample-bank PCM; no authority / Unity API beyond this.
-            mixer.Fill(data, channels, rate);
+            deviceSampleRate = rate >= 8000 ? rate : 48000;
+        }
+
+        private void OnEnable()
+        {
+            AudioSettings.OnAudioConfigurationChanged += RefreshDeviceRate;
+            RefreshDeviceRate(false);
+            callbackArmed = outputEnabled && mixer != null;
+            if (callbackArmed) ArmOutput();
         }
 
         private void OnDisable()
         {
+            AudioSettings.OnAudioConfigurationChanged -= RefreshDeviceRate;
             callbackArmed = false;
         }
 

@@ -4,6 +4,8 @@
 
 ## Goal
 
+Owner-assigned T089 [audio spatial/mix follow-up](../../features/audio.md#owner-requested-spatial-and-mix-refinement--2026-11-15) is recorded in the [handoff](handoff.md#audio-spatial-and-mix-refinement--2026-11-15); this does not close device or reference acceptance.
+
 Deliver a source-matched Windows installer that installs the local game and upgrades an existing installation when a newer installer is run, preserving settings/controls. The owner can play offline on either map, with verified match rules, working settings, reviewed procedural soldiers and honest native-720p performance evidence. Administrative closeouts of earlier milestones do not satisfy this delivery gate.
 
 ## Entry gate

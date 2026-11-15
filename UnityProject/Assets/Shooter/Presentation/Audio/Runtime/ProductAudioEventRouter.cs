@@ -29,6 +29,17 @@ namespace Shooter.Presentation.Audio
         private ulong attachedSessionId;
         private bool attached;
         private ushort uiOrdinal;
+        private float listenerYaw;
+        private float reflections;
+        /// <summary>Main-thread presentation query only; never invoked by the audio callback.</summary>
+        public Func<Float3, Float3, float>? ObstructionProbe { get; set; }
+
+        public void SetListenerAcoustics(float yawRadians, float reflectionAmount, Float3 listenerFeet = default)
+        {
+            listenerYaw = yawRadians;
+            reflections = Math.Clamp(reflectionAmount, 0f, 1f);
+            mixer.UpdateListener(yawRadians, listenerFeet.X, listenerFeet.Z);
+        }
 
         public ProductAudioEventRouter(SynthAudioMixer mixer)
         {
@@ -81,14 +92,20 @@ namespace Shooter.Presentation.Audio
                 float distance = DistanceMeters(listenerFeet, pos);
                 float max = CombatAudioDistance.MaxAudibleMeters(voice);
                 if (max > 0f && distance > max) continue;
-                float pan = ComputePan(listenerFeet, pos);
+                bool local = localEntity.IsValid &&
+                    ((ev.Instigator == localEntity && (ev.Kind == CombatEventKind.ShotAccepted
+                        || ev.Kind == CombatEventKind.ReloadStarted || ev.Kind == CombatEventKind.ReloadCompleted
+                        || ev.Kind == CombatEventKind.ProjectileSpawned))
+                    || (ev.Target == localEntity && ev.Kind == CombatEventKind.DamageApplied));
+                float pan = local ? 0f : ComputePan(listenerFeet, pos, listenerYaw);
+                float obstruction = local ? 0f : ObstructionProbe?.Invoke(EarHeight(listenerFeet), pos) ?? 0f;
                 ulong seed = ev.Id.Tick ^ ((ulong)ev.Id.Ordinal << 16) ^ ev.Id.EntityId.Value;
-                if (mixer.TryPlay(voice, distance, pan, seed)) played++;
+                if (mixer.TryPlay(voice, distance, pan, seed, local, obstruction, reflections, pos.X, pos.Z)) played++;
             }
             return played;
         }
 
-        public int TickFootsteps(IReadOnlyList<ActorLifecycleState> living, Float3 listenerFeet, uint completedTick)
+        public int TickFootsteps(IReadOnlyList<ActorLifecycleState> living, Float3 listenerFeet, uint completedTick, EntityId localEntity = default)
         {
             if (living == null) throw new ArgumentNullException(nameof(living));
             if (!attached) return 0;
@@ -104,8 +121,11 @@ namespace Shooter.Presentation.Audio
                     strideAccum[id] = 0f;
                     continue;
                 }
-                float step = DistanceMeters(prev, actor.Feet);
+                float dx = actor.Feet.X - prev.X, dz = actor.Feet.Z - prev.Z;
+                float step = (float)Math.Sqrt(dx * dx + dz * dz);
                 lastFeet[id] = actor.Feet;
+                // Respawn/teleport must not generate a burst of dozens of footsteps.
+                if (step > 3f) { strideAccum[id] = 0f; continue; }
                 if (step < 1e-4f) continue;
                 float accum = (strideAccum.TryGetValue(id, out var a) ? a : 0f) + step;
                 while (accum >= FootstepStrideMeters)
@@ -115,9 +135,12 @@ namespace Shooter.Presentation.Audio
                     if (!consumed.Add(key)) continue;
                     float distance = DistanceMeters(listenerFeet, actor.Feet);
                     if (distance > CombatAudioDistance.FootstepMaxMeters) continue;
-                    float pan = ComputePan(listenerFeet, actor.Feet);
+                    bool local = localEntity.IsValid && actor.EntityId == localEntity;
+                    float pan = local ? 0f : ComputePan(listenerFeet, actor.Feet, listenerYaw);
+                    float obstruction = local ? 0f : ObstructionProbe?.Invoke(EarHeight(listenerFeet),
+                        new Float3(actor.Feet.X, actor.Feet.Y + 0.2f, actor.Feet.Z)) ?? 0f;
                     ulong seed = attachedSessionId ^ id ^ completedTick;
-                    if (mixer.TryPlay(SynthVoiceKind.Footstep, distance, pan, seed)) played++;
+                    if (mixer.TryPlay(SynthVoiceKind.Footstep, distance, pan, seed, local, obstruction, 0f, actor.Feet.X, actor.Feet.Z)) played++;
                 }
                 strideAccum[id] = accum;
             }
@@ -217,22 +240,24 @@ namespace Shooter.Presentation.Audio
             if (ev.Kind == CombatEventKind.ReloadStarted || ev.Kind == CombatEventKind.ReloadCompleted)
             {
                 if (ev.Instigator.IsValid && lastFeet.TryGetValue(ev.Instigator.Value, out var feet))
-                    return feet;
+                    return EarHeight(feet);
             }
             if (ev.Kind == CombatEventKind.Death && ev.Target.IsValid && lastFeet.TryGetValue(ev.Target.Value, out var victim))
-                return victim;
+                return EarHeight(victim);
             if (ev.Kind == CombatEventKind.DamageApplied && ev.Target.IsValid && lastFeet.TryGetValue(ev.Target.Value, out var damaged))
-                return damaged;
-            return fallback;
+                return EarHeight(damaged);
+            return EarHeight(fallback);
         }
 
-        private static float ComputePan(Float3 listener, Float3 source)
+        private static Float3 EarHeight(Float3 feet) => new Float3(feet.X, feet.Y + 1.35f, feet.Z);
+
+        public static float ComputePan(Float3 listener, Float3 source, float yawRadians)
         {
             float dx = source.X - listener.X;
             float dz = source.Z - listener.Z;
             float horiz = (float)Math.Sqrt(dx * dx + dz * dz);
             if (horiz < 1e-4f) return 0f;
-            return Math.Clamp(dx / horiz, -1f, 1f);
+            return Math.Clamp((dx * (float)Math.Cos(yawRadians) - dz * (float)Math.Sin(yawRadians)) / horiz, -1f, 1f);
         }
 
         private static string EventKey(EventId id) =>
