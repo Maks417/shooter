@@ -8,6 +8,25 @@ Initial working-source checks at base `615b6a5`: Generation 391, Contracts 76, G
 
 Scope limitations: first-person hands, anatomy/uniform construction and full weapon/reload continuity remain unresolved. P05 FAIL / VD / REL / full gameplay / installed-upgrade / GPU/thermal/reference acceptance remain open. More detailed geometry is not reference-machine performance evidence. Revert the implementation and restore an exact retained binary/content pair for rollback.
 
+### T081 delivery 0.3.10
+
+Clean binary/content publication source **`e140dd6f5a8fb2677ffd71634c211a21a27fa113`**, source hash `dd24d29b7af25f761177cfcb23bd4c55e83c0bd967749e47188e6195c60c5062`. Later evidence/docs commits do not relabel the binary. Locked Unity 6000.3.28f1 / URP 17.3.0 / D3D11, Client IL2CPP / Server Mono.
+
+| Check | Actual result / evidence |
+|---|---|
+| Native content | PASS all eight packages, 38 selected publication tests, non-nav identity guard; `Artifacts/m8-runtime-composition/e140dd6f5a8fb2677ffd71634c211a21a27fa113/compile-gamecontent-20261115T134402390Z-96001e54/` |
+| Gameplay preservation | Both gameplay roots and complete gameplay catalog identical to 0.3.9; visual roots differ. Independently verified mesh body hashes: Compound 33,696 vertices / 24,648 triangles / four submeshes; Depot 60,720 / 37,320 / six. `Artifacts/visual-design/t081/content-comparison.json` |
+| Clean PlayMode | PASS 20/20 at e140dd6; `Artifacts/m0-foundation/e140dd6f5a8fb2677ffd71634c211a21a27fa113/tests-playmode-20261115T134507784Z-7d3a796d/` |
+| Clean Client | PASS, sourceDirty=false; `build-client-20261115T134616184Z-9216f25e/` under the same source root |
+| Clean Server | PASS, sourceDirty=false, zero graphics source assets; `build-server-20261115T135014031Z-c0c5b674/`; headless smoke PASS `smoke-server-20261115T135210326Z-225e90b6/` under the same source root |
+| Native package | PASS, 294 files; extract/corrupt/rollback software rehearsals; `Artifacts/m11-playable-release/e140dd6f5a8fb2677ffd71634c211a21a27fa113/package-20261115T134832418Z-decf629e/` |
+| Installer | PASS 0.3.10, 26,581,066 bytes, SHA256 `0c64ce3c54c658922b759787a97356003c9baec027a8e2a6c5762eda606be6f1`; stable AppId and preference policy, predecessor 0.3.9. Actual install/upgrade **NotRun** |
+| Player review | 294/294 inventory hashes match short copy `Artifacts/T081Preview`; Main, both distinct map cards and Compound 6v6 gameplay observed. Screenshot shows wall panel joints, footing/coping and dark coated weapon. Automation detected live user input; refreshed state showed continued player movement, so further controls stopped and the player was left open. Close-up Depot review **Pending**; no full match or comparative acceptance |
+
+Installer: `C:/Job/shooter/Artifacts/m11-playable-release/e140dd6f5a8fb2677ffd71634c211a21a27fa113/installer-20261115T134907370Z-b586bcf1/installer/Shooter-Setup-0.3.10.exe`. Content closure `f19659447773a84131408a5933f89aaf7167a2cf06a2f60d5ece81f161a8d815`; content index `c4e05e422318c1d24139fc82bbb8ac68e09344c05323e544a70119d3163c78c4`; ZIP SHA256 `20d75c68817912c8194d650a0912af29d8956587e5413c93e24f2260dd24b56f`. Prior 0.3.9 binary/content is retained as rollback.
+
+Raw review log, content comparison, verified-copy report and unmodified player screenshot (`compound-player.jpg`) are retained under `Artifacts/visual-design/t081/`. Capture was a 1920×1080 window; this is not native720p reference performance proof. The new wall construction and cargo palette improve place readability but the observed world remains sparse; near-field hands, believable soldiers, action continuity and richer authored-by-code place composition remain substantial deficits. No BFV parity / P05 / VD / REL acceptance is claimed. Full gameplay, installed upgrade, GPU/thermal/reference capture and known deep evidence-path loading limitation remain open.
+
 ## Archived T079 alternate branch integration — 2026-11-15
 
 Owner explicitly requested merging the highlighted `archive/t079-env-alt-2415153` ref. It is an archive tag at `241515387f2ed1780e05c154b1b879080dbcd69a`, not a live branch, and was not an ancestor of `main` (`ffd0754`). Merge resolution integrates its distinct plaza/yard lamp posts, outer fence rows, full-length axis-aware ridge caps and package/prop tests. Existing main gate lamps, inner fence stubs, container corners, finer concrete/metal/trim classification and all T080 metric UV/menu-card fixes are retained; alternative material assignment/tint implementations are superseded by those newer consumers. Short roof ridges are replaced, avoiding duplicate ridge geometry.

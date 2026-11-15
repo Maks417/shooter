@@ -32,7 +32,7 @@ Do not delete failed M1 artifacts, do not relabel FAIL as PASS, and do not inher
 | VD-D02 | atmosphere | SoftFixedPendingReview | Product sky/fog/probe defaults tuned for grounded daylight; owner/player review Pending |
 | VD-D03 | fx | SoftFixedPendingReview | T079 denser analytic FX plus hit marker/damage flash; player review Pending |
 | VD-D04 | menu | SoftFixedPendingReview | T079 BFV staging depth bands and stronger operation cards; interactive review Pending |
-| VD-D05 | environment | SoftFixedPendingReview | T078+T079 roofs/architecture boxes and concrete/metal/trim submeshes; owner VD5 review Pending |
+| VD-D05 | environment | SoftFixedPendingReview | T081 packaged wall articulation and painted cargo/door hardware, four/six material submeshes; Compound view observed, Depot close-up and named VD5 review Pending |
 | VD-D07 | material scale / cards | SoftFixedPendingReview | T080 metric box UVs, consistent two-metre repeats, actual-bounds overview framing and material roles; source/tests are distinct from named player acceptance |
 | VD-D06 | reference | PendingOwner | Exact Bodycam/Warface comparison frames/timecodes not yet selected (BFV chat screenshots establish direction only) |
 
