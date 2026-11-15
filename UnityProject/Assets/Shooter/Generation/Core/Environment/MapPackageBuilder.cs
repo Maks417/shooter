@@ -75,6 +75,12 @@ namespace Shooter.Generation.Environment
     public static class MapPackageBuilder
     {
         public static readonly string[] VisualProfiles = { "gameplay", "low", "balanced", "high" };
+        public const int MapSurfaceResolution = 128;
+        public const int MapSurfaceTileMm = 2000;
+        public const ulong MapSurfaceSeed = 460072030UL;
+        // Exactly four immutable bakes shared by the two maps and all graphics profiles.
+        // Lazy publication is thread safe; package encoders copy the frozen plane bytes.
+        private static readonly Lazy<MaterialBake[]> surfaceBakes = new Lazy<MaterialBake[]>(CreateSurfaceBakes, true);
 
         public static MapPackageBuild Build(string mapId, string visualProfile, ContentId toolchainHash)
         {
@@ -194,10 +200,16 @@ namespace Shooter.Generation.Environment
                 AddSgaf(dependencies, "mesh", MapVisualClosure.PistolLodPaths[lod], ContentKind.Mesh,
                     GeometryCodec.EncodeMesh(pistolBuild.Lods[lod]), weaponFp, toolchainHash);
 
-            AddSolidMaterial(dependencies, MapVisualClosure.MapMaterialPaths[0], 107, 112, 105, 255, mapFingerprint, toolchainHash);
-            AddSolidMaterial(dependencies, MapVisualClosure.MapMaterialPaths[1], 56, 61, 51, 255, mapFingerprint, toolchainHash);
-            AddSolidMaterial(dependencies, MapVisualClosure.MapMaterialPaths[2], 46, 36, 20, 255, mapFingerprint, toolchainHash);
-            AddSolidMaterial(dependencies, MapVisualClosure.MapMaterialPaths[3], 20, 23, 26, 255, mapFingerprint, toolchainHash);
+            for (int i = 0; i < MapVisualClosure.MapMaterialPaths.Length; i++)
+            {
+                string path = MapVisualClosure.MapMaterialPaths[i];
+                MaterialBake bake = surfaceBakes.Value[i];
+                AddSgaf(dependencies, "material", path, ContentKind.Material, GeometryCodec.EncodeMaterial(bake.Albedo), mapFingerprint, toolchainHash);
+                AddSgaf(dependencies, "material", MapVisualClosure.MaterialCompanionPath(path, "normal"), ContentKind.Material,
+                    GeometryCodec.EncodeMaterial(bake.Normal), mapFingerprint, toolchainHash);
+                AddSgaf(dependencies, "material", MapVisualClosure.MaterialCompanionPath(path, "mask"), ContentKind.Material,
+                    GeometryCodec.EncodeMaterial(bake.Mask), mapFingerprint, toolchainHash);
+            }
             AddSolidMaterial(dependencies, MapVisualClosure.WeaponMaterialPaths[0], 20, 23, 26, 255, mapFingerprint, toolchainHash);
             AddSolidMaterial(dependencies, MapVisualClosure.WeaponMaterialPaths[1], 13, 14, 11, 255, mapFingerprint, toolchainHash);
             AddSolidMaterial(dependencies, MapVisualClosure.SoldierMaterialPaths[0], 41, 71, 107, 255, mapFingerprint, toolchainHash);
@@ -248,6 +260,25 @@ namespace Shooter.Generation.Environment
         private static void AddJson(List<MapPackageDependency> dependencies, string role, string path, byte[] json)
         {
             dependencies.Add(new MapPackageDependency(role, ContentIdentity.Hash(json), path, json));
+        }
+
+        private static MaterialBake[] CreateSurfaceBakes()
+        {
+            string[] names = { "concrete", "cover", "ground", "asphalt" };
+            string[] families = { "concrete", "metal", "soil", "asphalt" };
+            var bakes = new MaterialBake[names.Length];
+            for (int i = 0; i < bakes.Length; i++)
+            {
+                // Versioned map 1.0.1 composes the unchanged material.surface 1.0.1 algorithm.
+                // Keep all inputs explicit and independent of profile, map load order and gameplay RNG.
+                string source = "{\"schemaId\":\"" + MaterialRecipe.Schema + "\",\"recipeId\":\"materials/map-" + names[i] +
+                    "\",\"generatorId\":\"" + MaterialRecipe.Generator + "\",\"generatorVersion\":\"" + MaterialRecipe.Version +
+                    "\",\"seed\":\"" + MapSurfaceSeed.ToString(CultureInfo.InvariantCulture) + "\",\"parameters\":{\"family\":\"" + families[i] +
+                    "\",\"resolution\":" + MapSurfaceResolution.ToString(CultureInfo.InvariantCulture) + ",\"tileMm\":" +
+                    MapSurfaceTileMm.ToString(CultureInfo.InvariantCulture) + "},\"dependencies\":[]}";
+                bakes[i] = MaterialBaker.Bake(MaterialRecipe.Parse(Encoding.ASCII.GetBytes(source)));
+            }
+            return bakes;
         }
 
         private static void AddSolidMaterial(
@@ -306,7 +337,23 @@ namespace Shooter.Generation.Environment
                 if (material.Width == 0 || material.Height == 0 || material.MipBytes.Count == 0)
                     throw new InvalidOperationException("Visual material empty: " + path);
             }
-            for (int i = 0; i < MapVisualClosure.MapMaterialPaths.Length; i++) RequireMaterial(MapVisualClosure.MapMaterialPaths[i]);
+            foreach (string path in MapVisualClosure.MapMaterialPaths)
+            {
+                RequireMaterial(path);
+                var albedo = MapVisualClosure.DecodeMapMaterial(payloads, path);
+                if (albedo.Width != MapSurfaceResolution || albedo.Height != MapSurfaceResolution ||
+                    albedo.ChannelFormat != "rgba8-srgb" || albedo.MipBytes.Count != 8)
+                    throw new InvalidOperationException("Map surface albedo is not a complete production plane: " + path);
+                foreach (string plane in new[] { "normal", "mask" })
+                {
+                    string companionPath = MapVisualClosure.MaterialCompanionPath(path, plane);
+                    RequireMaterial(companionPath);
+                    var companion = MapVisualClosure.DecodeMapMaterial(payloads, companionPath);
+                    if (companion.Width != albedo.Width || companion.Height != albedo.Height ||
+                        companion.MipBytes.Count != albedo.MipBytes.Count || companion.ChannelFormat != "rgba8-linear")
+                        throw new InvalidOperationException("Map surface companion mismatch: " + companionPath);
+                }
+            }
             for (int i = 0; i < MapVisualClosure.WeaponMaterialPaths.Length; i++) RequireMaterial(MapVisualClosure.WeaponMaterialPaths[i]);
             for (int i = 0; i < MapVisualClosure.SoldierMaterialPaths.Length; i++) RequireMaterial(MapVisualClosure.SoldierMaterialPaths[i]);
 
