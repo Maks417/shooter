@@ -9,6 +9,37 @@ using Xunit;
 [Collection("NativeNavProvider")]
 public sealed class MapVisualClosureTests : IDisposable
 {
+    [Fact]
+    public void FoldedSleeveIsAClosedSurfaceWithoutInternalCapEdges()
+    {
+        foreach (float length in new[] { .28f, .58f })
+        {
+            var mesh = FirstPersonHandGeometry.BuildSleeve(length);
+            var welded = new System.Collections.Generic.Dictionary<(long, long, long), int>();
+            var ids = new int[mesh.Positions.Count];
+            for (int i = 0; i < ids.Length; i++)
+            {
+                var p = mesh.Positions[i];
+                var key = ((long)Math.Round(p.X * 1000000), (long)Math.Round(p.Y * 1000000), (long)Math.Round(p.Z * 1000000));
+                if (!welded.TryGetValue(key, out int id)) { id = welded.Count; welded.Add(key, id); }
+                ids[i] = id;
+            }
+            var edges = new System.Collections.Generic.Dictionary<(int, int), int>();
+            void Edge(int a, int b)
+            {
+                Assert.NotEqual(a, b);
+                var key = a < b ? (a, b) : (b, a);
+                edges.TryGetValue(key, out int count); edges[key] = count + 1;
+            }
+            for (int i = 0; i < mesh.Indices.Count; i += 3)
+            {
+                int a = ids[mesh.Indices[i]], b = ids[mesh.Indices[i + 1]], c = ids[mesh.Indices[i + 2]];
+                Edge(a, b); Edge(b, c); Edge(c, a);
+            }
+            Assert.All(edges.Values, count => Assert.Equal(2, count));
+        }
+    }
+
     private readonly string root = Path.Combine(Path.GetTempPath(), "shooter-map-visual-" + Guid.NewGuid().ToString("N"));
     private readonly ContentId toolchain = ContentIdentity.Hash(System.Text.Encoding.ASCII.GetBytes("map-visual-closure-test-toolchain"));
 
