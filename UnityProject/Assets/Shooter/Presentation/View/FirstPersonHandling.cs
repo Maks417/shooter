@@ -147,7 +147,7 @@ namespace Shooter.Presentation.View
         public static Float3 NearFieldHipBias(byte weaponSlot)
         {
             if (ProductAuthorityActionView.IsRifleSlot(weaponSlot))
-                return new Float3(0.08f, -0.03f, 0.13f);
+                return new Float3(0.08f, 0.02f, -0.10f);
             if (weaponSlot == ProductAuthorityActionView.PistolSlot)
                 return new Float3(0.08f, -0.085f, 0.11f);
             if (weaponSlot == ProductAuthorityActionView.KnifeSlot)

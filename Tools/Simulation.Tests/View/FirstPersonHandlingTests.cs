@@ -209,14 +209,19 @@ namespace Shooter.Simulation.Tests.View
         }
 
         [Fact]
-        public void NearFieldPresenceConstantsFavorReadableRifleAndPistolMass()
+        public void NearFieldCompositionKeepsTheRifleShoulderBehindTheLensAndGripsBelowTheEye()
         {
             Assert.True(FirstPersonHandling.RifleNearFieldScale > 1f);
             Assert.True(FirstPersonHandling.PistolNearFieldScale > FirstPersonHandling.RifleNearFieldScale);
             Float3 rifle = FirstPersonHandling.NearFieldHipBias(0);
             Float3 pistol = FirstPersonHandling.NearFieldHipBias(1);
-            Assert.True(rifle.Z > pistol.Z);
-            Assert.True(pistol.Y < 0f && rifle.Y < 0f);
+            var view=new ProceduralViewModel();view.ResetForLife(0);
+            float depth=view.Pose.RightHand.Z+rifle.Z;
+            float shoulderDepth=depth-.32f*(float)Math.Cos(18*Math.PI/180)*FirstPersonHandling.RifleNearFieldScale;
+            Assert.True(shoulderDepth<.005f,"The stock butt belongs behind the first-person lens.");
+            Assert.True(view.Pose.RightHand.Y+rifle.Y<0);
+            view.ResetForLife(1);
+            Assert.True(view.Pose.RightHand.Y+pistol.Y<0);
         }
 
         [Fact]

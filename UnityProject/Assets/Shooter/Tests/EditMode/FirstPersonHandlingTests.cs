@@ -218,6 +218,9 @@ namespace Shooter.Tests
                     presentation.Sync(snapshot, lifecycle, null, 0, id, true, .3f, Array.Empty<CombatEvent>(), 10);
                     string[] names = { "Local FP rifle", "Local FP pistol", "Local FP knife", "Local FP grenade" };
                     var weapon = camera.transform.Find(names[slot]);
+                    if(slot==0)
+                        Assert.That(camera.transform.InverseTransformPoint(weapon.TransformPoint(new Vector3(0,.06f,-.32f))).z,
+                            Is.LessThan(camera.nearClipPlane),"Rifle stock butt must not dominate the first-person frame.");
                     var mesh = weapon.GetComponent<MeshFilter>().sharedMesh;
                     var materials = weapon.GetComponent<MeshRenderer>().sharedMaterials;
                     Assert.That(materials.Length, Is.EqualTo(mesh.subMeshCount), "Extra materials would redraw the last submesh.");
