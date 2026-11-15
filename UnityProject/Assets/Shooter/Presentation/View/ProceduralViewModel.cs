@@ -58,7 +58,14 @@ namespace Shooter.Presentation.View
         {
             if (weaponSlot > ProductAuthorityActionView.PistolSlot)
                 throw new ArgumentOutOfRangeException(nameof(weaponSlot));
-            activeSlot = weaponSlot;
+            if (activeSlot != weaponSlot)
+            {
+                activeSlot = weaponSlot;
+                reloadPhase = 0f;
+                recoilPitch = recoilYaw = recoilPitchVel = recoilYawVel = 0f;
+                ads = 0f;
+                ApplyGripPose();
+            }
         }
 
         /// <summary>Cosmetic ADS/spring only when combat event leases are unavailable on the product path.</summary>
@@ -67,10 +74,8 @@ namespace Shooter.Presentation.View
             if (!float.IsFinite(dtSeconds) || dtSeconds < 0) throw new ArgumentOutOfRangeException(nameof(dtSeconds));
             float targetAds = aimHeld ? 1f : 0f;
             ads = MoveTowards(ads, targetAds, dtSeconds / 0.15f);
-            recoilPitchVel += -recoilPitch * 40f - recoilPitchVel * 12f;
-            recoilYawVel += -recoilYaw * 40f - recoilYawVel * 12f;
-            recoilPitch += recoilPitchVel * dtSeconds;
-            recoilYaw += recoilYawVel * dtSeconds;
+            IntegrateSpring(ref recoilPitch, ref recoilPitchVel, dtSeconds);
+            IntegrateSpring(ref recoilYaw, ref recoilYawVel, dtSeconds);
             AdvanceReload(dtSeconds);
             ApplyGripPose();
         }
@@ -96,13 +101,9 @@ namespace Shooter.Presentation.View
             for (int i = 0; i < events.Count; i++)
             {
                 var ev = events[i];
+                if (localEntity.IsValid && !ev.Instigator.Equals(localEntity)) continue;
                 string key = ev.Id.AuthoritySessionId + ":" + ev.Id.Tick + ":" + ev.Id.EntityId + ":" + ev.Id.Ordinal;
                 if (!consumedEvents.Add(key)) continue;
-                if (localEntity.IsValid && !ev.Instigator.Equals(localEntity) &&
-                    (ev.Kind == CombatEventKind.ShotAccepted ||
-                     ev.Kind == CombatEventKind.ReloadStarted ||
-                     ev.Kind == CombatEventKind.ReloadCompleted))
-                    continue;
 
                 if (ev.Kind == CombatEventKind.ShotAccepted)
                 {
@@ -124,10 +125,8 @@ namespace Shooter.Presentation.View
                 }
             }
 
-            recoilPitchVel += -recoilPitch * 40f - recoilPitchVel * 12f;
-            recoilYawVel += -recoilYaw * 40f - recoilYawVel * 12f;
-            recoilPitch += recoilPitchVel * dtSeconds;
-            recoilYaw += recoilYawVel * dtSeconds;
+            IntegrateSpring(ref recoilPitch, ref recoilPitchVel, dtSeconds);
+            IntegrateSpring(ref recoilYaw, ref recoilYawVel, dtSeconds);
 
             AdvanceReload(dtSeconds);
             ApplyGripPose();
@@ -159,6 +158,19 @@ namespace Shooter.Presentation.View
             float hipY = activeSlot == ProductAuthorityActionView.PistolSlot ? -0.08f : -0.10f;
             rightGrip = new Float3(0.08f - adsPull, hipY + ads * 0.02f, hipZ + adsPull);
             leftGrip = new Float3(leftGrip.X - adsPull * 0.5f, leftGrip.Y, leftGrip.Z + adsPull * 0.5f);
+        }
+
+        // Exact solution of x'' + 12x' + 40x = 0. Frame rate and pause do not
+        // change the spring energy; large frame gaps decay rather than exploding.
+        private static void IntegrateSpring(ref float position, ref float velocity, float dt)
+        {
+            double decay = Math.Exp(-6d * dt);
+            double cosine = Math.Cos(2d * dt);
+            double sine = Math.Sin(2d * dt);
+            float initialPosition = position;
+            float initialVelocity = velocity;
+            position = (float)(decay * (initialPosition * cosine + (initialVelocity + 6d * initialPosition) * sine / 2d));
+            velocity = (float)(decay * (initialVelocity * cosine - (6d * initialVelocity + 40d * initialPosition) * sine / 2d));
         }
 
         private static float MoveTowards(float current, float target, float maxDelta)
