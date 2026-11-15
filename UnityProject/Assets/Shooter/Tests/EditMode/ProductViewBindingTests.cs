@@ -156,11 +156,14 @@ namespace Shooter.Tests
                 var fpWeapon = camera.transform.Find("Local FP rifle").GetComponent<MeshRenderer>();
                 Assert.That(fpWeapon.sharedMaterials.Length, Is.GreaterThanOrEqualTo(2));
                 Assert.That(fpWeapon.sharedMaterials[0].GetFloat("_Metallic"), Is.GreaterThan(0.7f));
-                Assert.That(fpWeapon.sharedMaterials[0].GetFloat("_Smoothness"), Is.InRange(.35f, .60f),
-                    "Coated gunmetal retains a broad highlight rather than the prior polished finish.");
-                Assert.That(fpWeapon.sharedMaterials[0].GetColor("_BaseColor").maxColorComponent, Is.LessThan(.5f));
-                Assert.That(fpWeapon.sharedMaterials[1].GetFloat("_Metallic"), Is.LessThan(0.1f));
-                Assert.That(fpWeapon.sharedMaterials[1].GetFloat("_Smoothness"), Is.LessThan(0.25f));
+                foreach (var material in fpWeapon.sharedMaterials)
+                {
+                    Assert.That(material.GetTexture("_BaseMap").width, Is.EqualTo(128));
+                    Assert.That(material.GetTexture("_BumpMap"), Is.Not.Null);
+                    Assert.That(material.GetTexture("_MetallicGlossMap"), Is.SameAs(material.GetTexture("_OcclusionMap")));
+                    Assert.That(material.GetFloat("_Smoothness"), Is.EqualTo(1f), "Spatial mask owns the finish, not a flat fallback scalar.");
+                    Assert.That(material.IsKeywordEnabled("_NORMALMAP"), Is.True);
+                }
 
                 lifecycle.Set(new ActorLifecycleState(human, 1, true, 100, new Float3(0, 0, 0), 0, 0, 0, 29, 90));
                 presentation.Sync(snap, lifecycle, null, 0, human, false, 1f / 60f, System.Array.Empty<CombatEvent>(), 11);

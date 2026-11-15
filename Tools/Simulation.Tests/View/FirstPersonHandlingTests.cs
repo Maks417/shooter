@@ -10,6 +10,22 @@ namespace Shooter.Simulation.Tests.View
     public sealed class FirstPersonHandlingTests
     {
         [Fact]
+        public void HipCompositionFadesToIdentityWithoutChangingAdsOrWeaponScale()
+        {
+            for (byte slot = 0; slot < 2; slot++)
+            {
+                var hip = FirstPersonHandling.HipRotationDegrees(slot, 0);
+                var halfway = FirstPersonHandling.HipRotationDegrees(slot, .5f);
+                var ads = FirstPersonHandling.HipRotationDegrees(slot, 1);
+                Assert.Equal(hip.Y * .5f, halfway.Y);
+                Assert.Equal(0f, ads.X);
+                Assert.Equal(0f, ads.Y);
+                Assert.Equal(0f, ads.Z);
+                Assert.True(hip.Y < 0 && hip.Z < 0);
+            }
+        }
+
+        [Fact]
         public void ReloadTravelAndSupportHandStayContinuousAndReturnToGrip()
         {
             foreach (bool reduced in new[] { false, true })
