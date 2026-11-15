@@ -433,6 +433,8 @@ Decision: lock hashes are computed over the repository's canonical LF bytes. The
 
 Validation: both guards PASS on a fresh LF clone and on the normalized integrator checkout. Working copies must stay LF (`git ls-files --eol` shows no `w/crlf`); a tool that writes CRLF reintroduces drift and must be fixed rather than refrozen.
 
+Addendum 2026-11-15 (identity-only refreeze, owner-requested): commit `42ae931` (ADR-056/057 binding defaults) froze the new `docs/game-fixtures/user-settings-last-weapon.valid.json` entry in `game-contract-lock.json` from a CRLF working copy (`b8976f3f…8328`), so `Tools/verify_game_contract_lock.py` and `Test-Game.ps1` failed on every clean LF checkout from then on, including after ADR-072 (`334812b`). All 12 `sources` and 7 `fixtures` entries were re-checked against their committed LF blobs; only that one differed. It was replaced with the LF value `966b8455…4064` by the same guarded rule as above (the old hash had to equal sha256 of the committed blob with LF→CRLF, otherwise refuse). No fixture, source, schema, settings layout or contract version changed. Rollback restores the prior value, which fails on LF checkouts.
+
 
 ## ADR-041 — Accepted: Inno Setup per-user installer and in-place upgrade (T073)
 

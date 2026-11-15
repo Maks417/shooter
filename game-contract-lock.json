@@ -28,7 +28,7 @@
     "docs/game-fixtures/session-request.invalid-size.json": "9429ca8c81ea95c7c88a01c7ac073b12688986a25381851436e909aaf4d01ae1",
     "docs/game-fixtures/session-request.valid.json": "02cbb1ccedcf45912c91ff669d815f3ee5fa12bb214e808604cbd6d8f6245669",
     "docs/game-fixtures/tdm-workloads.json": "00c2ef1b4470e690efa3b06e8eade076cb6dea485b7fd63e1a2a64e89e446038",
-    "docs/game-fixtures/user-settings-last-weapon.valid.json": "b8976f3f5f1fdd2348c8b98c916c56ad3b8b58cf6e3aeecfdfe1dc4dc7c98328",
+    "docs/game-fixtures/user-settings-last-weapon.valid.json": "966b8455e53df40ed67c99a175effe2cba864e90538f95fdefe443d626ed4064",
     "docs/game-fixtures/user-settings-slide.valid.json": "4a3d69069a7c212e9679d0b194c13cd6a560c6c32772753479a07bc104611f6a",
     "docs/game-fixtures/user-settings.schema.json": "a67004574cb2223024d3b2b0242290baea10c1bc0d7918ce11f0cf673beadb6a",
     "docs/game-fixtures/user-settings.valid.json": "5fce4b51e5cf79f2f97b10f963dd625c6f6973a8a154c2d4f67b4cbb2ae2ae01"
