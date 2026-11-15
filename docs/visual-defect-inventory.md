@@ -34,6 +34,7 @@ Do not delete failed M1 artifacts, do not relabel FAIL as PASS, and do not inher
 | VD-D04 | menu | SoftFixedPendingReview | T079 BFV staging depth bands and stronger operation cards; interactive review Pending |
 | VD-D05 | environment | SoftFixedPendingReview | T081 packaged wall articulation and painted cargo/door hardware, four/six material submeshes; Compound view observed, Depot close-up and named VD5 review Pending |
 | VD-D07 | material scale / cards | SoftFixedPendingReview | T080 metric box UVs, consistent two-metre repeats, actual-bounds overview framing and material roles; source/tests are distinct from named player acceptance |
+| VD-D08 | first-person hands | SoftFixedPendingReview | T083 packaged trigger/support gloves and sleeves; rifle observed, live pistol/reload/ADS and articulated fingers/full magazine exchange remain Pending |
 | VD-D06 | reference | PendingOwner | Exact Bodycam/Warface comparison frames/timecodes not yet selected (BFV chat screenshots establish direction only) |
 
 VD gaps are tracked for the [VD0–VD9](design-milestones.md) track and the [art brief](visual-art-brief.md). Closing a VD-D* row requires evidence and owner/technical review; software merges alone do not mark them resolved.

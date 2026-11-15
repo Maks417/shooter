@@ -10,6 +10,26 @@ Initial pure working-source checks at `a9f228d`: Generation **392** and Simulati
 
 Limits: rigid camera-prop hands, not articulated fingers or a complete magazine replacement; third-person mannequin anatomy and historical P05 FAIL remain. Visual comparative acceptance, installed upgrade, full gameplay and reference GPU/thermal/performance proofs remain Pending. Revert the whole hand closure/presentation change and restore a paired prior installer for rollback.
 
+### T083 delivery 0.3.11
+
+Clean binary/content source **`df64aa8aab3fc465b3d07f49f3642ca57121e14d`**, source hash `ee1e86eb30578dbd33d1c0350c09a50d54f091c8121f58f37ae0e5b0b71bda85`. Includes the previously merged T082 bot baseline. Later documentation does not relabel these binaries. Locked Unity 6000.3.28f1 / URP 17.3.0 / D3D11, Client IL2CPP / Server Mono.
+
+| Check | Actual result / retained evidence |
+|---|---|
+| Pure lanes | Working source at `a9f228d`, sourceDirty=true: Contracts 76, Generation 392, Simulation 228, Game **70**, Maps 55 PASS. Evidence under matching `Artifacts/m0-foundation`, `m1-procedural-feasibility`, `m2-combat-harness`, `m8-runtime-composition` roots |
+| Unity | Final EditMode 53 PASS at `a9f228d6aaed66dae062131de7fb43b08505b81b/tests-editmode-20261115T140518442Z-64d9f976/`; clean PlayMode **21** PASS at `df64aa8aab3fc465b3d07f49f3642ca57121e14d/tests-playmode-20261115T140725670Z-7af00c5a/`, both under `Artifacts/m0-foundation/` |
+| Native content | PASS eight packages / 38 selected publication tests and non-nav guard, clean source; `Artifacts/m8-runtime-composition/df64aa8aab3fc465b3d07f49f3642ca57121e14d/compile-gamecontent-20261115T140839211Z-4aae7f0c/` |
+| Hand / gameplay identities | Four meshes each 2,016 vertices / 1,224 triangles / three material roles, unskinned; both gameplay roots and full gameplay catalog identical to 0.3.10. `Artifacts/visual-design/t083/content-comparison.json` |
+| Client | Clean PASS, sourceDirty=false; `Artifacts/m0-foundation/df64aa8aab3fc465b3d07f49f3642ca57121e14d/build-client-20261115T141004068Z-10576a08/` |
+| Server | Clean PASS, sourceDirty=false, zero graphics source assets; `build-server-20261115T141509540Z-57665c1e/`; headless smoke PASS `smoke-server-20261115T141650906Z-d972351e/` under the same source root |
+| Native package | PASS, 318 inventoried files, extract/corrupt/rollback software rehearsals; `Artifacts/m11-playable-release/df64aa8aab3fc465b3d07f49f3642ca57121e14d/package-20261115T141213128Z-8742220a/` |
+| Installer | PASS **0.3.11**, 26,986,939 bytes, SHA256 `4d9bbe6c74df16a8aa3e5f58d78e759d52d26995ebad22b31bf8299aca343df8`; stable AppId/settings policy, predecessor 0.3.10. Actual installation/upgrade **NotRun** |
+| Player | 318/318 file hashes match short review copy `Artifacts/T083Preview`. Main/cards, Depot 6v6 load, rifle support glove/cuffs/sleeves observed in a 1920×1080 window. One momentary Slot2 key did not establish a visible pistol switch. Subsequent view showed live player movement, so automation stopped and the game was left open. Live pistol/reload/ADS and full match review remain **Pending** |
+
+Installer: `C:/Job/shooter/Artifacts/m11-playable-release/df64aa8aab3fc465b3d07f49f3642ca57121e14d/installer-20261115T141302718Z-dcdce976/installer/Shooter-Setup-0.3.11.exe`. Content closure `ec953f317c968069c1cb4fb818baa7832dbdfe9fe9ad9a48ea6efe75a7c79e29`; index `d7d1baeff8b4e37f36137e302d6bbc6b7feb5d9ebbd80652408e46096aa299a3`; internal ZIP SHA256 `a27a70a8d0e520c3281747589504b33b86b42a7e14cb4ae52b4ff31d596696b2`. Prior 0.3.10 remains a matching rollback pair.
+
+Provenance PASS 748 entries / 374 GUIDs; C0/Game-v1/content/weapon/soldier freezes pass. Fixture/docs checks cover specifications only. The independent comparison, inventory review, raw player log and unmodified `rifle-player.jpg` are retained under `Artifacts/visual-design/t083/`. Rifle presence is visibly improved, but fingers remain rigid and sleeve silhouettes/simple surface finish still need refinement. No BFV parity, P05, VD or REL acceptance; installed upgrade, full gameplay, known deep evidence-path limitation and reference GPU/thermal/performance proofs remain open. New binary requires the new hand closure; do not combine it with old visual packages.
+
 ## T081 — Architectural surface and place identity
 
 2026-11-15 owner-authorized continuation from `615b6a5`, sole integrator. [Task scope](../../task-supplement.md#t081--architectural-surface-and-place-identity), [ADR-050](../../decisions.md#adr-050--accepted-packaged-architectural-surface-construction-t081). Map mesh generation now adds small physical bevels, footing/coping/end bands and panel joints to long walls, with cargo corrugation/rails/door hardware and blue/oxide painted steel. Map/menu share six material roles; variants share texture planes. Menu skyline receives loading-bay facades; weapons receive dark rougher gunmetal/matte-polymer coating. Gameplay collision/nav/spawn/hit/weapon rules and soldier/P05 sources remain unchanged. No imported/AI art, authored animation or runtime fallback.
