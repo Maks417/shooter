@@ -103,7 +103,7 @@
     "milestones/m10-maps-shell/validation-acceptance.md": "f59ee4e95e39af44a274700951d39dc61da91b06052a7fabe894edc44e21f6d3",
     "milestones/m11-playable-release/agent-assignments.md": "fcd6a3e9bdf5b669f012363d3976a06aec86e0d0262b706e2b3a9963796c3285",
     "milestones/m11-playable-release/contracts-integration.md": "3fdcc05ea9c42a86de5ba1f272acd7eff6a6bde8ab390730e02a5874534382d6",
-    "milestones/m11-playable-release/handoff.md": "23d88ec1972aa0f09a9f2913f628d695e4d369a0a9c34994668ed1ee14cba968",
+    "milestones/m11-playable-release/handoff.md": "25fd873828c97274420f9dfaa033206418ea9b16066f0f57c32968354bae2390",
     "milestones/m11-playable-release/implementation.md": "f3101f38b36698f09db1790bbd211ffb2d7dd21041b750db9bd525a8774a045b",
     "milestones/m11-playable-release/index.md": "b99b363158f50c06ce3b687f888b72f9042f8e70583d85891200c3f10f064041",
     "milestones/m11-playable-release/validation-acceptance.md": "0a8e37914940aba53d295d7cc59dcab41c1b54a50b9c8663b299a56710c26e37",
@@ -171,12 +171,12 @@
     "risks.md": "8b097b845902c3b5392877d358b8f89858bcdb2931337e31509f668a6f02aa3e",
     "simulation-protocol.md": "59b1d9ae63c7ae0aeca57c6fc55b00103362249c0af8aa8d38feaeeb2a8ad1f8",
     "soldier-baseline.md": "27f73bd9f55ed551fb811aa62b798a25cdb547e7f85552b50dafdf29c1546477",
-    "task-supplement.md": "5a2b916e91cd5ef56194b523c814f1a8d18b5547c9018200b24c8b768feec7f9",
+    "task-supplement.md": "e213d81d3646adcb380eab983ef8640a4c2d98a4c86d4b39dca754cbc6473740",
     "validation.md": "941b350833f3d19cfb430d2c997acd6c470ec0dc6518c428fca63bd6c291010f",
     "verify_docs.py": "b213b88e001c2fba0ab82d1d400c0b4903716a9a6ae3496c7bcc0540c34bda97",
     "vision.md": "47df36e3f613e6dd1982389a16a6d931bd30fae4aa19e767bf69faa93cbe4fa8",
     "visual-art-brief.md": "f37f59b789ebe41ac39e26bd8b8efd64d601c4c77379178ef8664b6cfa1c5972",
-    "visual-defect-inventory.md": "e43e63d85142d0f711bd268645ec5b060ec1e5b5ab69cb1df6fa8b81d5ef793d",
+    "visual-defect-inventory.md": "421e99d4e0258aacaea52ebdbf2334537ca87156f735ef3e0d72e2cb8b53b06e",
     "weapon-recipe-baseline.md": "0e560943c4386152e3febf98038a91325b08233694a8bf2f39e004ffb68b07ee"
   }
 }

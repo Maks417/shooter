@@ -1,6 +1,18 @@
 # M11 — Playable build and acceptance — handoff and gate record
 
-**Latest source — 2026-11-15:** T078 architectural/FP/material wave merged at `ddce776` ([ADR-049](../../decisions.md#adr-049--accepted-non-gameplay-visual-architecture-boxes-for-map-solids-t078)); no new installer yet — native content republish and package/installer still required. Prior installer **0.3.7** at `e251702` remains the last playable binary. VD/REL acceptance remains open and P05 FAIL is unchanged.
+**Latest source — 2026-11-15:** T079 design wave merged at `73a18e4` (env/menu/combat). Native content republish Verified for this source; Client/package/installer delivery in progress or Pending in this handoff section. Prior installer **0.3.7** at `e251702` remains the last shipped binary until 0.3.8 lands. VD/REL acceptance remains open and P05 FAIL is unchanged.
+
+## T079 — Material-split maps, menu staging, combat presence
+
+Owner-directed continuation after T078. Three worktrees merged to main: env `7bfa1ec` → `7c5a4cd`, menu `5f32a02` → `ea40c07`, combat `0936190` → `73a18e4`. `TacticalUi` auto-merged (menu MapCard + combat HUD helpers). Temporary `visual/t079-*` worktrees/branches removed after preservation.
+
+| Slice | Software | Evidence |
+|---|---|---|
+| Env | Concrete/metal/trim solids submeshes + visual prop enrichment; gameplay collision unchanged | Generation 387 / Maps 53 PASS at `73a18e4` |
+| Menu | BFV-like staging depth bands, packaged materials, stronger operation cards | EditMode assertions extended; Unity EditMode run Pending (editor contention) |
+| Combat | Camera bob, hit marker/damage flash, thinner HUD, denser FX | Simulation 211 PASS |
+
+Native `Compile-GameContent -Native -Force` Verified (`allNative=true`) for `73a18e4`. Provenance 736/368 PASS. Player comparative review and VD exits remain Pending. P05 unauthorized.
 
 ## T078 — Architectural / FP / material readability (source merge)
 
