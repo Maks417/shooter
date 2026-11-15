@@ -74,8 +74,7 @@ namespace Shooter.Generation.Environment
             string stage = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
             using (var stream = new FileStream(stage, FileMode.CreateNew, FileAccess.Write, FileShare.None))
                 stream.Write(bytes, 0, bytes.Length);
-            if (File.Exists(path)) File.Replace(stage, path, null);
-            else File.Move(stage, path);
+            MapPackagePublisher.CommitStagedFile(stage, path);
         }
 
         public static bool TryOpen(string cacheRoot, ContentId expectedToolchain, out byte[] catalogBytes, out string diagnostic)

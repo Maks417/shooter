@@ -286,8 +286,35 @@ namespace Shooter.Generation.Environment
             string path = Path.Combine(root, "index.json");
             string stage = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
             WriteAll(stage, bytes);
-            if (File.Exists(path)) File.Replace(stage, path, null);
-            else File.Move(stage, path);
+            CommitStagedFile(stage, path);
+        }
+
+        /// <summary>
+        /// Atomically moves a fully written stage file over <paramref name="path"/>. Windows can briefly refuse to
+        /// remove the replaced file while another process (e.g. an on-access scanner) holds it without delete sharing;
+        /// that IOException is retried with bounded backoff (~3 s total). The stage is deleted if every attempt fails.
+        /// </summary>
+        internal static void CommitStagedFile(string stage, string path)
+        {
+            const int attempts = 8;
+            for (int attempt = 1; ; attempt++)
+            {
+                try
+                {
+                    if (File.Exists(path)) File.Replace(stage, path, null);
+                    else File.Move(stage, path);
+                    return;
+                }
+                catch (IOException) when (attempt < attempts)
+                {
+                    Thread.Sleep(50 * attempt * attempt);
+                }
+                catch
+                {
+                    try { if (File.Exists(stage)) File.Delete(stage); } catch { /* best effort */ }
+                    throw;
+                }
+            }
         }
 
         private static List<string> DistinctMapIds(List<MapPackageBuild> packages)
