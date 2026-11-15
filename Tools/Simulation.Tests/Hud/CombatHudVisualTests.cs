@@ -20,8 +20,9 @@ namespace Shooter.Simulation.Tests.Hud
         public void Health_vignette_escalates_on_danger_and_damage_pulse()
         {
             Assert.Equal(0f, CombatHudVisual.HealthVignette(100, false));
-            Assert.Equal(0f, CombatHudVisual.HealthVignette(26, false));
-            Assert.True(CombatHudVisual.HealthVignette(25, false) > 0f);
+            Assert.Equal(0f, CombatHudVisual.HealthVignette(41, false));
+            Assert.True(CombatHudVisual.HealthVignette(40, false) > 0f);
+            Assert.True(CombatHudVisual.HealthVignette(25, false) > CombatHudVisual.HealthVignette(40, false));
             Assert.True(CombatHudVisual.HealthVignette(20, false) > 0f);
             Assert.True(CombatHudVisual.HealthVignette(100, true) > 0f);
             Assert.True(CombatHudVisual.HealthVignette(20, true) <= 0.28f);

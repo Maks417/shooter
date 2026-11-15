@@ -435,31 +435,31 @@ namespace Shooter.Presentation.Session
         {
             ui.Backdrop();
             Rect a = ui.Safe;
-            float navWidth = Mathf.Min(248, a.width * .24f);
+            float navWidth = Mathf.Min(236, a.width * .22f);
             ui.BrandMark(new Rect(a.x, a.y, navWidth, 28), "SHOOTER");
-            ui.Section(new Rect(a.x, a.y + 36, navWidth, 18), "LOCAL / OFFLINE");
-            ui.Label(new Rect(a.x, a.y + 68, navWidth + 48, 68), "YOUR NEXT\nOPERATION", 30);
-            float y = a.y + 156;
-            if (ui.Button(new Rect(a.x, y, navWidth, 38), "main.play", "PLAY", quiet: true)) navigation.OpenSetup();
-            if (ui.Button(new Rect(a.x, y + 42, navWidth, 38), "main.settings", "SETTINGS", quiet: true)) OpenSettingsScreen();
-            if (ui.Button(new Rect(a.x, y + 84, navWidth, 38), "main.quit", "QUIT", quiet: true))
+            ui.Section(new Rect(a.x, a.y + 34, navWidth, 16), "LOCAL / OFFLINE");
+            ui.Label(new Rect(a.x, a.y + 58, navWidth + 56, 64), "YOUR NEXT\nOPERATION", 28);
+            float y = a.y + 140;
+            if (ui.Button(new Rect(a.x, y, navWidth, 36), "main.play", "PLAY", quiet: true)) navigation.OpenSetup();
+            if (ui.Button(new Rect(a.x, y + 40, navWidth, 36), "main.settings", "SETTINGS", quiet: true)) OpenSettingsScreen();
+            if (ui.Button(new Rect(a.x, y + 80, navWidth, 36), "main.quit", "QUIT", quiet: true))
             {
                 quitRequested = true;
                 Application.Quit();
             }
-            float cardsX = a.x + navWidth + 32;
+            float cardsX = a.x + navWidth + 28;
             float cardsWidth = a.xMax - cardsX;
-            float cardWidth = (cardsWidth - 16) * .5f;
+            float cardWidth = (cardsWidth - 14) * .5f;
             float cardHeight = Mathf.Min(198, a.height * .38f);
-            float cardsY = a.yMax - cardHeight - 24;
-            ui.Section(new Rect(cardsX, cardsY - 24, cardsWidth, 18), "OFFLINE BATTLES / TEAM DEATHMATCH");
+            float cardsY = a.yMax - cardHeight - 22;
+            ui.Section(new Rect(cardsX, cardsY - 22, cardsWidth, 16), "OFFLINE BATTLES / TEAM DEATHMATCH");
             bool compound = setup!.SelectedMapId.Equals(WellKnownMaps.TrainingCompound);
             if (ui.MapCard(new Rect(cardsX, cardsY, cardWidth, cardHeight), "main.compound", menuScene?.MapCard("training-compound"), "TRAINING COMPOUND", "5v5 / 6v6  ·  LOCAL BOTS", compound))
             {
                 if (!compound) setup.CycleMap(1);
                 navigation.OpenSetup();
             }
-            if (ui.MapCard(new Rect(cardsX + cardWidth + 16, cardsY, cardWidth, cardHeight), "main.depot", menuScene?.MapCard("depot-yard"), "DEPOT YARD", "5v5 / 6v6  ·  LOCAL BOTS", !compound))
+            if (ui.MapCard(new Rect(cardsX + cardWidth + 14, cardsY, cardWidth, cardHeight), "main.depot", menuScene?.MapCard("depot-yard"), "DEPOT YARD", "5v5 / 6v6  ·  LOCAL BOTS", !compound))
             {
                 if (compound) setup.CycleMap(1);
                 navigation.OpenSetup();

@@ -644,7 +644,7 @@ namespace Shooter.Presentation.Session
 
         private void DrawAmmoPanel(Rect safe, ActorLifecycleState human, MatchViewSnapshot? snapshot)
         {
-            float w = CombatHudChrome.AmmoPlateWidth, h = CombatHudChrome.AmmoPlateHeight;
+            const float w = 156f, h = 62f;
             float x = safe.xMax - w, y = safe.yMax - h;
             TacticalUi.CombatPlate(new Rect(x, y, w, h), accentBottom: true);
             string weapon = human.ActiveWeaponSlot == 0 ? "RIFLE" : "SIDEARM";
@@ -655,7 +655,7 @@ namespace Shooter.Presentation.Session
             combatUi.Label(new Rect(x + 80, y + 18, 12, 16), "/", 11, TacticalUi.Muted, TextAnchor.MiddleCenter);
             combatUi.Label(new Rect(x + 90, y + 28, 54, 18), human.Reserve.ToString("000"), 13, TacticalUi.Muted, TextAnchor.MiddleLeft);
             bool reloading = actors != null && actors.Actions.IsReloading(session!.HumanEntityId);
-            float trackX = x + 8, trackY = y + h - 7, trackW = w - 16, trackH = CombatHudChrome.ReloadBarHeight;
+            float trackX = x + 8, trackY = y + h - 7, trackW = w - 16, trackH = 3f;
             TacticalUi.Fill(new Rect(trackX, trackY, trackW, trackH), new Color(.06f, .08f, .09f, .65f));
             if (reloading)
             {
@@ -731,27 +731,28 @@ namespace Shooter.Presentation.Session
                     var p = snapshot.Participants[i];
                     if (p.Team == human.Team && !p.IsHuman) allies++;
                 }
-            float squadH = 18 + allies * 15 + 44;
-            TacticalUi.CombatPlate(new Rect(squadX - 4, squadTop - 2, 142, squadH));
-            combatUi.Label(new Rect(squadX, squadTop, 128, 14), "SQUAD", 11, TacticalUi.Ally);
+            float squadH = 16 + allies * 14 + 40;
+            TacticalUi.CombatPlate(new Rect(squadX - 4, squadTop - 2, 138, squadH));
+            TacticalUi.Fill(new Rect(squadX - 4, squadTop - 2, 2, squadH), TacticalUi.Ally);
+            combatUi.Label(new Rect(squadX, squadTop, 124, 12), "SQUAD", 10, TacticalUi.Ally);
             int row = 0;
             if (snapshot != null)
                 for (int i = 0; i < snapshot.Participants.Count; i++)
                 {
                     var participant = snapshot.Participants[i];
                     if (participant.Team != human.Team || participant.IsHuman) continue;
-                    string name = participant.DisplayName.Length > 12 ? participant.DisplayName.Substring(0, 11) + "…" : participant.DisplayName;
-                    float ry = squadTop + 16 + row * 15;
+                    string name = participant.DisplayName.Length > 11 ? participant.DisplayName.Substring(0, 10) + "…" : participant.DisplayName;
+                    float ry = squadTop + 14 + row * 14;
                     if (participant.Alive)
                     {
-                        TacticalUi.Fill(new Rect(squadX, ry + 4, 5, 5), TacticalUi.Ally);
-                        combatUi.Label(new Rect(squadX + 10, ry, 118, 14), name, 11, TacticalUi.Text);
+                        TacticalUi.Fill(new Rect(squadX, ry + 3, 4, 4), TacticalUi.Ally);
+                        combatUi.Label(new Rect(squadX + 8, ry, 114, 13), name, 10, TacticalUi.Text);
                     }
                     else
                     {
-                        TacticalUi.Fill(new Rect(squadX, ry + 4, 5, 5), TacticalUi.Raised);
-                        TacticalUi.Fill(new Rect(squadX + 1, ry + 5, 3, 1), TacticalUi.Muted);
-                        combatUi.Label(new Rect(squadX + 10, ry, 118, 14), "× " + name, 11, TacticalUi.Muted);
+                        TacticalUi.Fill(new Rect(squadX, ry + 3, 4, 4), TacticalUi.Raised);
+                        TacticalUi.Fill(new Rect(squadX + 1, ry + 4, 2, 1), TacticalUi.Muted);
+                        combatUi.Label(new Rect(squadX + 8, ry, 114, 13), "× " + name, 10, TacticalUi.Muted);
                     }
                     row++;
                 }
@@ -760,28 +761,41 @@ namespace Shooter.Presentation.Session
             Color healthInk = danger ? TacticalUi.Enemy
                 : CombatHudVisual.IsHealthWarning(human.Health) ? TacticalUi.Accent
                 : TacticalUi.Text;
-            if (danger)
-            {
-                float pulse = CombatHudVisual.CriticalBarPulse(Time.unscaledTime, reducedFlash, reducedCameraMotion);
-                healthInk = new Color(healthInk.r, healthInk.g, healthInk.b, pulse);
-            }
-            float hx = squadX, hy = safe.yMax - 42;
+            float pulse = danger
+                ? CombatHudVisual.CriticalBarPulse(Time.unscaledTime, reducedFlash, reducedCameraMotion)
+                : 1f;
+            float hx = squadX, hy = safe.yMax - 36;
             float barH = CombatHudVisual.HealthBarHeight;
-            combatUi.Label(new Rect(hx, hy - 4, 58, 32), human.Health.ToString(), 28, healthInk, TextAnchor.MiddleLeft);
-            combatUi.Label(new Rect(hx + 54, hy + 8, 70, 14), "HEALTH", 10, TacticalUi.Muted, TextAnchor.MiddleLeft);
+            combatUi.Label(new Rect(hx, hy - 2, 48, 28), human.Health.ToString(), 26, healthInk, TextAnchor.MiddleLeft);
+            combatUi.Label(new Rect(hx + 46, hy + 8, 70, 12), "HP", 10, TacticalUi.Muted, TextAnchor.MiddleLeft);
+            float barW = 128f, gap = 2f;
+            float segW = (barW - gap * (CombatHudVisual.HealthSegments - 1)) / CombatHudVisual.HealthSegments;
             float barY = safe.yMax - barH;
-            TacticalUi.Fill(new Rect(hx, barY, 128, barH), new Color(.06f, .08f, .09f, .55f));
-            float fill = 128 * CombatHudVisual.HealthFraction(human.Health);
-            TacticalUi.Fill(new Rect(hx, barY, fill, barH), healthInk);
-            if (fill > 2) TacticalUi.Fill(new Rect(hx, barY, Mathf.Min(2, fill), barH), new Color(1, 1, 1, .18f * healthInk.a));
+            // Dual-layer track under segmented fill.
+            TacticalUi.Fill(new Rect(hx, barY, barW, barH), new Color(.05f, .07f, .08f, .7f));
+            TacticalUi.Fill(new Rect(hx, barY, barW, 1), new Color(1f, 1f, 1f, .05f));
+            for (int s = 0; s < CombatHudVisual.HealthSegments; s++)
+            {
+                float sx = hx + s * (segW + gap);
+                float fill = CombatHudVisual.SegmentFill(human.Health, s, segW);
+                if (fill <= 0f) continue;
+                var ink = new Color(healthInk.r, healthInk.g, healthInk.b, healthInk.a * pulse);
+                TacticalUi.Fill(new Rect(sx, barY, fill, barH), ink);
+                if (fill > 1.5f)
+                    TacticalUi.Fill(new Rect(sx, barY, Mathf.Min(1.5f, fill), barH), new Color(1f, 1f, 1f, .16f * pulse));
+            }
         }
 
-        private static void DrawAllyMarker(float px, float py)
+        private static void DrawAllyMarker(float px, float py, float aimYaw)
         {
-            // Outlined ally pip: dark halo + cyan fill (shape-readable without color alone).
+            // Outlined ally pip + facing tick (shape + direction; color alone is not the cue).
             TacticalUi.Fill(new Rect(px - 3.5f, py - 3.5f, 7, 7), new Color(0.02f, 0.03f, 0.035f, 0.9f));
             TacticalUi.Fill(new Rect(px - 2f, py - 2f, 4, 4), TacticalUi.Ally);
             TacticalUi.Fill(new Rect(px - 0.5f, py - 0.5f, 1, 1), TacticalUi.Text);
+            Vector2 fwd = new Vector2(Mathf.Sin(aimYaw), -Mathf.Cos(aimYaw));
+            Vector2 tip = new Vector2(px, py) + fwd * 6f;
+            TacticalUi.Line(new Vector2(px, py), tip, TacticalUi.Ally, 1.25f);
+            TacticalUi.Line(new Vector2(px, py), tip, TacticalUi.Text, 0.75f);
         }
 
         private void DrawCompass(Rect safe, float yaw)
@@ -849,23 +863,30 @@ namespace Shooter.Presentation.Session
         private void DrawKillFeed(Rect safe)
         {
             float now = Time.unscaledTime;
+            const float rowH = 16f;
+            const float gap = 2f;
             for (int i = 0; i < killFeed.Length; i++)
             {
                 float remaining = killFeedUntil[i] - now;
                 float alpha = CombatHudVisual.KillFeedAlpha(remaining);
                 if (alpha <= 0.02f) continue;
                 string line = killFeed[i];
-                Rect r = new Rect(safe.xMax - 216, safe.y + 62 + i * 18, 216, 16);
+                Rect r = new Rect(safe.xMax - 216, safe.y + 62 + i * (rowH + gap), 216, rowH);
                 Color plate = TacticalUi.HudPlate;
                 plate.a *= alpha * 0.8f;
                 TacticalUi.Fill(r, plate);
+                bool localKiller = KillFeedText.IsLocalKiller(line);
+                bool localVictim = KillFeedText.IsLocalVictim(line);
+                Color rail = localKiller ? TacticalUi.Ally : (localVictim ? TacticalUi.Enemy : TacticalUi.HudEdge);
+                rail.a *= alpha;
+                TacticalUi.Fill(new Rect(r.xMax - 2, r.y + 2, 2, r.height - 4), rail);
                 if (CombatHudVisual.TrySplitKillFeed(line, out string left, out string right))
                 {
                     bool env = string.Equals(right, "ENVIRONMENT", System.StringComparison.Ordinal);
-                    Color leftInk = KillFeedText.IsLocalKiller(line) ? TacticalUi.Accent
-                        : env ? TacticalUi.Text : TacticalUi.Ally;
-                    Color rightInk = KillFeedText.IsLocalVictim(line) ? TacticalUi.Accent
-                        : env ? TacticalUi.Muted : TacticalUi.Enemy;
+                    Color leftInk = localKiller ? TacticalUi.Ally
+                        : env ? TacticalUi.Text : TacticalUi.Text;
+                    Color rightInk = localVictim ? TacticalUi.Enemy
+                        : env ? TacticalUi.Muted : TacticalUi.Muted;
                     leftInk.a = alpha;
                     rightInk.a = alpha;
                     Color sep = TacticalUi.Muted;
@@ -876,16 +897,16 @@ namespace Shooter.Presentation.Session
                 }
                 else
                 {
-                    Color ink = TacticalUi.Text;
+                    Color ink = localKiller ? TacticalUi.Ally : (localVictim ? TacticalUi.Enemy : TacticalUi.Text);
                     ink.a = alpha;
-                    combatUi.Label(new Rect(r.x + 4, r.y, r.width - 8, r.height), line, 11, ink, TextAnchor.MiddleRight);
+                    combatUi.Label(new Rect(r.x + 4, r.y, r.width - 10, r.height), line, 11, ink, TextAnchor.MiddleRight);
                 }
             }
         }
 
         private static void ReticleStroke(Rect rect)
         {
-            TacticalUi.Fill(new Rect(rect.x - 1, rect.y - 1, rect.width + 2, rect.height + 2), new Color(0.02f, 0.03f, 0.035f, 0.85f));
+            TacticalUi.Fill(new Rect(rect.x - 0.75f, rect.y - 0.75f, rect.width + 1.5f, rect.height + 1.5f), new Color(0.02f, 0.03f, 0.035f, 0.85f));
             TacticalUi.Fill(rect, TacticalUi.Text);
         }
 

@@ -15,6 +15,7 @@ namespace Shooter.Presentation.Hud
         public const float DamagePulseSeconds = 0.45f;
         public const float MaxHealth = 100f;
         public const float HealthBarHeight = 5f;
+        public const int HealthSegments = 5;
         public const string KillFeedSeparator = "  >  ";
 
         /// <summary>Opacity for a kill-feed row given remaining display time.</summary>
@@ -54,6 +55,18 @@ namespace Shooter.Presentation.Hud
             if (health <= 0) return 0f;
             if (health >= MaxHealth) return 1f;
             return health / MaxHealth;
+        }
+
+        /// <summary>Filled width for health segment index (0..HealthSegments-1), left-to-right.</summary>
+        public static float SegmentFill(float health, int index, float segmentWidth)
+        {
+            if (index < 0 || index >= HealthSegments || segmentWidth <= 0f) return 0f;
+            float per = MaxHealth / HealthSegments;
+            float start = index * per;
+            float local = health - start;
+            if (local <= 0f) return 0f;
+            if (local >= per) return segmentWidth;
+            return segmentWidth * (local / per);
         }
 
         /// <summary>Critical health bar opacity pulse. Reduced flash/motion freeze at full readability.</summary>
