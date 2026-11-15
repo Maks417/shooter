@@ -435,31 +435,31 @@ namespace Shooter.Presentation.Session
         {
             ui.Backdrop();
             Rect a = ui.Safe;
-            float navWidth = Mathf.Min(248, a.width * .24f);
+            float navWidth = Mathf.Min(236, a.width * .22f);
             ui.BrandMark(new Rect(a.x, a.y, navWidth, 28), "SHOOTER");
-            ui.Section(new Rect(a.x, a.y + 36, navWidth, 18), "LOCAL / OFFLINE");
-            ui.Label(new Rect(a.x, a.y + 68, navWidth + 48, 68), "YOUR NEXT\nOPERATION", 30);
-            float y = a.y + 156;
-            if (ui.Button(new Rect(a.x, y, navWidth, 38), "main.play", "PLAY", quiet: true)) navigation.OpenSetup();
-            if (ui.Button(new Rect(a.x, y + 42, navWidth, 38), "main.settings", "SETTINGS", quiet: true)) OpenSettingsScreen();
-            if (ui.Button(new Rect(a.x, y + 84, navWidth, 38), "main.quit", "QUIT", quiet: true))
+            ui.Section(new Rect(a.x, a.y + 34, navWidth, 16), "LOCAL / OFFLINE");
+            ui.Label(new Rect(a.x, a.y + 58, navWidth + 56, 64), "YOUR NEXT\nOPERATION", 28);
+            float y = a.y + 140;
+            if (ui.Button(new Rect(a.x, y, navWidth, 36), "main.play", "PLAY", quiet: true)) navigation.OpenSetup();
+            if (ui.Button(new Rect(a.x, y + 40, navWidth, 36), "main.settings", "SETTINGS", quiet: true)) OpenSettingsScreen();
+            if (ui.Button(new Rect(a.x, y + 80, navWidth, 36), "main.quit", "QUIT", quiet: true))
             {
                 quitRequested = true;
                 Application.Quit();
             }
-            float cardsX = a.x + navWidth + 32;
+            float cardsX = a.x + navWidth + 28;
             float cardsWidth = a.xMax - cardsX;
-            float cardWidth = (cardsWidth - 16) * .5f;
+            float cardWidth = (cardsWidth - 14) * .5f;
             float cardHeight = Mathf.Min(198, a.height * .38f);
-            float cardsY = a.yMax - cardHeight - 24;
-            ui.Section(new Rect(cardsX, cardsY - 24, cardsWidth, 18), "OFFLINE BATTLES / TEAM DEATHMATCH");
+            float cardsY = a.yMax - cardHeight - 22;
+            ui.Section(new Rect(cardsX, cardsY - 22, cardsWidth, 16), "OFFLINE BATTLES / TEAM DEATHMATCH");
             bool compound = setup!.SelectedMapId.Equals(WellKnownMaps.TrainingCompound);
             if (ui.MapCard(new Rect(cardsX, cardsY, cardWidth, cardHeight), "main.compound", menuScene?.MapCard("training-compound"), "TRAINING COMPOUND", "5v5 / 6v6  ·  LOCAL BOTS", compound))
             {
                 if (!compound) setup.CycleMap(1);
                 navigation.OpenSetup();
             }
-            if (ui.MapCard(new Rect(cardsX + cardWidth + 16, cardsY, cardWidth, cardHeight), "main.depot", menuScene?.MapCard("depot-yard"), "DEPOT YARD", "5v5 / 6v6  ·  LOCAL BOTS", !compound))
+            if (ui.MapCard(new Rect(cardsX + cardWidth + 14, cardsY, cardWidth, cardHeight), "main.depot", menuScene?.MapCard("depot-yard"), "DEPOT YARD", "5v5 / 6v6  ·  LOCAL BOTS", !compound))
             {
                 if (compound) setup.CycleMap(1);
                 navigation.OpenSetup();
@@ -823,17 +823,20 @@ namespace Shooter.Presentation.Session
         {
             var snap = session?.TryAcquireSnapshot();
             if (snap == null) return;
-            float w = 248, x = (ui.Width - w) * .5f, y = ui.Safe.y + 14;
-            TacticalUi.Fill(new Rect(x, y, w, 34), new Color(.02f, .03f, .035f, .92f));
-            TacticalUi.Fill(new Rect(x, y, w, 1), new Color(1, 1, 1, .08f));
-            TacticalUi.Fill(new Rect(x, y, 3, 34), TacticalUi.Ally);
-            TacticalUi.Fill(new Rect(x + w - 3, y, 3, 34), TacticalUi.Enemy);
-            ui.Label(new Rect(x + 12, y + 3, 54, 28), snap.Team1Kills.ToString("000"), 20, TacticalUi.Ally, TextAnchor.MiddleLeft);
-            ui.Label(new Rect(x + 66, y + 4, w - 132, 26), TacticalUi.Clock(snap.RemainingActiveTicks), 16, TacticalUi.Text, TextAnchor.MiddleCenter);
-            ui.Label(new Rect(x + w - 66, y + 3, 54, 28), snap.Team2Kills.ToString("000"), 20, TacticalUi.Enemy, TextAnchor.MiddleRight);
-            TacticalUi.Fill(new Rect(x + 3, y + 32, (w - 6) * .5f * Mathf.Clamp01(snap.Team1Kills / 150f), 2), TacticalUi.Ally);
-            float enemy = (w - 6) * .5f * Mathf.Clamp01(snap.Team2Kills / 150f);
-            TacticalUi.Fill(new Rect(x + w - 3 - enemy, y + 32, enemy, 2), TacticalUi.Enemy);
+            // BFV-like top score/clock strip; combat compass sits just below (ProductSessionView).
+            float w = 248, h = 26, x = (ui.Width - w) * .5f, y = ui.Safe.y + 8;
+            TacticalUi.CombatPlate(new Rect(x, y, w, h), strong: true);
+            TacticalUi.Fill(new Rect(x, y, 2, h), TacticalUi.Ally);
+            TacticalUi.Fill(new Rect(x + w - 2, y, 2, h), TacticalUi.Enemy);
+            TacticalUi.Fill(new Rect(x + 2, y + h - 1, w - 4, 1), new Color(1f, 1f, 1f, .06f));
+            ui.Label(new Rect(x + 10, y + 1, 54, 24), snap.Team1Kills.ToString("000"), 20, TacticalUi.Ally, TextAnchor.MiddleLeft);
+            ui.Label(new Rect(x + 64, y + 1, w - 128, 24), TacticalUi.Clock(snap.RemainingActiveTicks), 16, TacticalUi.Text, TextAnchor.MiddleCenter);
+            ui.Label(new Rect(x + w - 64, y + 1, 54, 24), snap.Team2Kills.ToString("000"), 20, TacticalUi.Enemy, TextAnchor.MiddleRight);
+            float mid = x + w * .5f;
+            float allyBar = (w * .5f - 6) * Mathf.Clamp01(snap.Team1Kills / 150f);
+            float enemyBar = (w * .5f - 6) * Mathf.Clamp01(snap.Team2Kills / 150f);
+            TacticalUi.Fill(new Rect(mid - allyBar, y + h - 2, allyBar, 1), TacticalUi.Ally);
+            TacticalUi.Fill(new Rect(mid, y + h - 2, enemyBar, 1), TacticalUi.Enemy);
         }
 
         private void DrawResults(float s)
