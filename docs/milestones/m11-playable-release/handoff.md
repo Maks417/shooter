@@ -428,3 +428,21 @@ Twelve product captures (4 workloads × 3, Low 1280×720, native content) and tw
 | 2 soaks FAIL | `Product TDM frame capacity exceeded` after ~6 minutes: a fixed 262,144-frame buffer at ~700 fps uncapped. Capacity now scales with the capture window (`2ee1a3d`). |
 
 Not measured: GPU timing (PresentMon produced a CSV during the soak, but it was not analyzed), thermal stabilization (no sensor log). The 12-capture/2-soak reference set must be rerun on an idle machine after the bot fix and the per-tick allocation work; the owner deferred that long run on 2026-11-14. Evidence: ignored `Artifacts/m0-foundation/9f2219f9d67a91c5103decdf5ea6bd0958eb0573/benchmark-*`.
+
+## T076 — Compact TDM map layouts (2026-11-15)
+
+Owner assignment: map design for 5v5/6v6. Spec [compact TDM map layouts](../../features/tdm-map-layouts.md), decision [ADR-044](../../decisions.md#adr-044--accepted-compact-tdm-arena-layouts-for-catalog-maps-t076). Arena foundation and the two planners were implemented by Sonnet subagents in isolated worktrees (`maps/tdm-compact`, `maps/compound-arena`, `maps/depot-arena`) and integrated by Claude.
+
+| Map | Playable | Anchor→centre / →enemy path | Longest sightline | Worst cover gap | Boxes / cover proxies | Spawn visibility worst case |
+|---|---|---|---|---|---|---|
+| training-compound | 88 × 104 m | 54 / 108 m | 58 m | 6.27 m | 130 / 42 | 4 of 12 slots |
+| depot-yard | 80 × 112 m | 54 / 106 m | 49.75 m | 6.75 m | 116 / 44 | 4 of 12 slots |
+
+Both pass all 13 `ArenaRules` rows and `MapTopologyValidation` (3 staging exits per team, 3 distinct routes with one covered, no spawn-to-spawn or centre-to-spawn eye line, mirror symmetry).
+
+Evidence at merged source `ca5babc`/`5d50b20`: Contracts 73, Generation 364, Maps 44, Game 61, Simulation 194, source provenance (706 entries / 353 GUIDs), docs, fixtures and contract lock PASS. `Compile-GameContent.ps1 -Native` PASS with native nav and reproduction for both maps. New gameplay identities (prefix): compound collision `3663d69d`, navigation `c67935d8`, metadata `da4805bf`, gameplay root `0a9c2ab8`; depot collision `89b65864`, navigation `d0c0d249`, metadata `1aa989b4`, gameplay root `8fcb7881`. These supersede the ADR-043 native nav hashes (`07560a8d…`, `802dcfbb…`). Unity EditMode: 36/40, with the same 4 failures (`InputBufferTests.FrameEdgeLookAndWeaponSelectionAreAppliedOnce` ×3, `MenuStagingSurfaceTests.FailedLateDependencyReleasesPartialStageAndAllowsRepair`) reproduced at unmodified base `cbd359b`, so they predate T076.
+
+Limitations and pending items:
+- Not done: PlayMode tests, Client/Server builds, installer rebuild. Existing installers still ship the old 256 m layouts.
+- Path anchor→centre is 54 m against the 55 m limit on both maps. The compound sightline is 58 m against 60. The depot container-lane sightline reaches 29.25 m, above the spec's ≤20 m goal; its layout test allows 30 m.
+- Pending manual playtest at 5v5 and 6v6 on both maps: route feel, spawn pressure under `SpawnSafetyPolicy` (40 m exposure refusal), and bot cover use.
