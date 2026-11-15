@@ -12,15 +12,23 @@ namespace Shooter.Presentation.Rendering
         public static Material Create(Shader shader, MaterialData albedo, MaterialData? normal, MaterialData? mask,
             string label, float tileRepeats, Action<UnityEngine.Object> own, float metallic = 0f, float smoothness = .2f)
         {
+            return Create(shader, albedo, normal, mask, label, tileRepeats, own,
+                new ProductSurfaceResponse(Color.white, 1.05f, 1f, metallic, smoothness));
+        }
+
+        public static Material Create(Shader shader, MaterialData albedo, MaterialData? normal, MaterialData? mask,
+            string label, float tileRepeats, Action<UnityEngine.Object> own, ProductSurfaceResponse response)
+        {
             if (shader == null) throw new ArgumentNullException(nameof(shader));
             if (own == null) throw new ArgumentNullException(nameof(own));
             if (!float.IsFinite(tileRepeats) || tileRepeats <= 0f) throw new ArgumentOutOfRangeException(nameof(tileRepeats));
+            ValidateResponse(response);
             ValidatePlane(albedo, "rgba8-srgb");
             if (normal != null) ValidateCompanion(albedo, normal);
             if (mask != null) ValidateCompanion(albedo, mask);
             var material = new Material(shader) { name = label };
             own(material);
-            material.SetColor("_BaseColor", Color.white);
+            material.SetColor("_BaseColor", response.BaseColor);
             material.SetTexture("_BaseMap", Upload(albedo, label + " albedo", false, own));
             float repeats = albedo.Width <= 1 && albedo.Height <= 1 ? 1f : tileRepeats;
             material.SetTextureScale("_BaseMap", new Vector2(repeats, repeats));
@@ -29,7 +37,7 @@ namespace Shooter.Presentation.Rendering
                 // The frozen normal plane is XYZ with A=255. URP's desktop RGorAG decoder
                 // reads X=R*A and Y=G, so preserve XYZ and opaque alpha (also valid for RGB decoding).
                 material.SetTexture("_BumpMap", Upload(normal, label + " normal", false, own, true));
-                material.SetFloat("_BumpScale", 1.05f);
+                material.SetFloat("_BumpScale", response.BumpScale);
                 material.EnableKeyword("_NORMALMAP");
             }
             if (mask != null)
@@ -41,14 +49,14 @@ namespace Shooter.Presentation.Rendering
                 material.SetTexture("_OcclusionMap", texture);
                 material.SetFloat("_Metallic", 1f);
                 material.SetFloat("_Smoothness", 1f);
-                material.SetFloat("_OcclusionStrength", 1f);
+                material.SetFloat("_OcclusionStrength", response.OcclusionStrength);
                 material.EnableKeyword("_METALLICSPECGLOSSMAP");
                 material.EnableKeyword("_OCCLUSIONMAP");
             }
             else
             {
-                material.SetFloat("_Metallic", metallic);
-                material.SetFloat("_Smoothness", smoothness);
+                material.SetFloat("_Metallic", response.MetallicFallback);
+                material.SetFloat("_Smoothness", response.SmoothnessFallback);
             }
             return material;
         }
@@ -67,6 +75,23 @@ namespace Shooter.Presentation.Rendering
                 bytes[i + 3] = (byte)(255 - source[i + 2]);
             }
             return bytes;
+        }
+
+        private static void ValidateResponse(ProductSurfaceResponse response)
+        {
+            if (!Finite(response.BumpScale) || response.BumpScale <= 0f || response.BumpScale > 4f)
+                throw new ArgumentOutOfRangeException(nameof(response), "BumpScale must be finite in (0,4].");
+            if (!Finite(response.OcclusionStrength) || response.OcclusionStrength < 0f || response.OcclusionStrength > 1f)
+                throw new ArgumentOutOfRangeException(nameof(response), "OcclusionStrength must be finite in [0,1].");
+            if (!Finite(response.MetallicFallback) || response.MetallicFallback < 0f || response.MetallicFallback > 1f)
+                throw new ArgumentOutOfRangeException(nameof(response), "MetallicFallback must be finite in [0,1].");
+            if (!Finite(response.SmoothnessFallback) || response.SmoothnessFallback < 0f || response.SmoothnessFallback > 1f)
+                throw new ArgumentOutOfRangeException(nameof(response), "SmoothnessFallback must be finite in [0,1].");
+            Color c = response.BaseColor;
+            if (!Finite(c.r) || !Finite(c.g) || !Finite(c.b) || !Finite(c.a) ||
+                c.r < 0f || c.g < 0f || c.b < 0f || c.a < 0f ||
+                c.r > 8f || c.g > 8f || c.b > 8f || c.a > 1f)
+                throw new ArgumentOutOfRangeException(nameof(response), "BaseColor channels must be finite and in range.");
         }
 
         private static Texture2D Upload(MaterialData data, string label, bool mask, Action<UnityEngine.Object> own, bool normal = false)
@@ -116,5 +141,7 @@ namespace Shooter.Presentation.Rendering
                 height = Math.Max(1, height / 2);
             }
         }
+
+        private static bool Finite(float value) => !float.IsNaN(value) && !float.IsInfinity(value);
     }
 }

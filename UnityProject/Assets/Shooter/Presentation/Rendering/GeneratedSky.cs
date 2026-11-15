@@ -112,6 +112,10 @@ namespace Shooter.Presentation
         private Texture2D? gradient;
         private bool disposed;
 
+        /// <summary>Product maps: slightly deeper ambient so hard shadows and metal/concrete contrast hold on Low720.</summary>
+        public const float ProductAmbientIntensity = 0.80f;
+        public const float DefaultAmbientIntensity = 0.88f;
+
         public Color Zenith { get; private set; }
         public Color Horizon { get; private set; }
         public Color Ground { get; private set; }
@@ -125,7 +129,8 @@ namespace Shooter.Presentation
                 enableFog,
                 GeneratedSkyMath.DefaultFogStartMeters,
                 GeneratedSkyMath.DefaultFogEndMeters,
-                GeneratedSkyMath.DefaultFogDensity);
+                GeneratedSkyMath.DefaultFogDensity,
+                DefaultAmbientIntensity);
 
         public static GeneratedSky Apply(
             Transform parent,
@@ -135,13 +140,27 @@ namespace Shooter.Presentation
             bool enableFog,
             float fogStartMeters,
             float fogEndMeters,
-            float fogDensity)
+            float fogDensity) =>
+            Apply(parent, zenith, horizon, ground, enableFog, fogStartMeters, fogEndMeters, fogDensity, DefaultAmbientIntensity);
+
+        public static GeneratedSky Apply(
+            Transform parent,
+            GeneratedSkyMath.Rgb zenith,
+            GeneratedSkyMath.Rgb horizon,
+            GeneratedSkyMath.Rgb ground,
+            bool enableFog,
+            float fogStartMeters,
+            float fogEndMeters,
+            float fogDensity,
+            float ambientIntensity)
         {
             GeneratedSkyMath.Validate(zenith, horizon, ground, enableFog, fogStartMeters, fogEndMeters, fogDensity);
+            if (float.IsNaN(ambientIntensity) || float.IsInfinity(ambientIntensity) || ambientIntensity < 0f || ambientIntensity > 2f)
+                throw new ArgumentOutOfRangeException(nameof(ambientIntensity), "Ambient intensity must be finite in [0,2].");
             var sky = new GeneratedSky();
             try
             {
-                sky.Initialize(parent, zenith, horizon, ground, enableFog, fogStartMeters, fogEndMeters, fogDensity);
+                sky.Initialize(parent, zenith, horizon, ground, enableFog, fogStartMeters, fogEndMeters, fogDensity, ambientIntensity);
                 return sky;
             }
             catch
@@ -159,7 +178,8 @@ namespace Shooter.Presentation
             bool enableFog,
             float fogStartMeters,
             float fogEndMeters,
-            float fogDensity)
+            float fogDensity,
+            float ambientIntensity)
         {
             Zenith = ToColor(zenith);
             Horizon = ToColor(horizon);
@@ -173,7 +193,7 @@ namespace Shooter.Presentation
             RenderSettings.ambientEquatorColor = Horizon;
             RenderSettings.ambientGroundColor = Ground;
             // Slightly under-unity ambient so directional hard shadows read on Low/iGPU.
-            RenderSettings.ambientIntensity = .88f;
+            RenderSettings.ambientIntensity = ambientIntensity;
 
             // Panoramic accepts a generated lat-long strip; Cubemap would need a Cubemap asset.
             gradient = BuildGradientTexture(zenith, horizon, ground);

@@ -49,6 +49,72 @@ namespace Shooter.Tests
         }
 
         [Test]
+        public void SurfaceResponseProfilesDriveBaseColorBumpAndOcclusionWithoutMutatingMaskScalars()
+        {
+            var owned = new List<Object>();
+            try
+            {
+                var albedo = Plane("rgba8-srgb", new byte[] { 140, 130, 120, 255 });
+                var normal = Plane("rgba8-linear", new byte[] { 153, 102, 250, 255 });
+                var mask = Plane("rgba8-linear", new byte[] { 35, 202, 176, 255 });
+                Material concrete = ProductSurfaceMaterial.Create(Shader.Find("Universal Render Pipeline/Lit"),
+                    albedo, normal, mask, "Concrete response", 2f, value => owned.Add(value), ProductSurfaceResponse.Concrete);
+                Material cover = ProductSurfaceMaterial.Create(Shader.Find("Universal Render Pipeline/Lit"),
+                    albedo, normal, mask, "Cover response", 2f, value => owned.Add(value), ProductSurfaceResponse.CoverMetal);
+                Assert.That(concrete.GetColor("_BaseColor").b, Is.GreaterThan(cover.GetColor("_BaseColor").b - 0.01f),
+                    "Concrete stays cooler/brighter than steel cover.");
+                Assert.That(cover.GetColor("_BaseColor").r, Is.LessThan(concrete.GetColor("_BaseColor").r));
+                Assert.That(concrete.GetFloat("_BumpScale"), Is.GreaterThan(cover.GetFloat("_BumpScale")));
+                Assert.That(cover.GetFloat("_OcclusionStrength"), Is.LessThan(concrete.GetFloat("_OcclusionStrength")));
+                Assert.That(concrete.GetFloat("_Smoothness"), Is.EqualTo(1f));
+                Assert.That(cover.GetFloat("_Metallic"), Is.EqualTo(1f), "Mask path still drives metallic via map, not fallback scalar.");
+                Assert.That(ProductSurfaceResponse.Apron.BaseColor.r, Is.LessThan(ProductSurfaceResponse.Asphalt.BaseColor.r),
+                    "Apron ring must read darker than inner asphalt/yard pad.");
+            }
+            finally { foreach (Object value in owned) if (value != null) Object.DestroyImmediate(value); }
+        }
+
+        [Test]
+        public void ProductMapView_InstallsApronInnerYardAndInsetCoverOverlays()
+        {
+            var hash = ContentIdentity.Hash(System.Text.Encoding.ASCII.GetBytes("product-surface-apron-cover"));
+            var visuals = PackagedVisualPayloads.FromBuild(MapPackageBuilder.Build("training-compound", "low", hash));
+            var boxes = new[]
+            {
+                new CollisionBox(1001, 2001, 1, new Float3(0, 1, 0), new Float3(2, 2, 2), true),
+                new CollisionBox(1002, 2002, 2, new Float3(4, 0.6f, 0), new Float3(1.2f, 1.2f, 1.2f), true)
+            };
+            var root = new GameObject("Product surface apron cover");
+            try
+            {
+                ProductMapView view = ProductMapView.Create(root.transform);
+                view.Install(boxes, null, "training-compound", visuals);
+                Assert.That(view.CoverCount, Is.EqualTo(1), "Heuristic cover box must count as metal overlay.");
+                Transform apron = view.transform.Find("Product apron");
+                Transform ground = view.transform.Find("Product ground");
+                Assert.That(apron, Is.Not.Null);
+                Assert.That(ground, Is.Not.Null);
+                Assert.That(apron!.localScale.x, Is.GreaterThan(ground!.localScale.x));
+                Assert.That(apron.GetComponent<MeshRenderer>().sharedMaterial.GetColor("_BaseColor").r,
+                    Is.LessThan(ground.GetComponent<MeshRenderer>().sharedMaterial.GetColor("_BaseColor").r));
+                Transform cover = view.transform.Find("Product cover 1002");
+                Assert.That(cover, Is.Not.Null);
+                Assert.That(cover!.localScale.x, Is.EqualTo(1.2f * ProductMapView.CoverHorizontalInset).Within(0.0001f));
+                Assert.That(cover.localScale.y, Is.EqualTo(1.2f * ProductMapView.CoverVerticalInset).Within(0.0001f));
+                Assert.That(cover.position.y, Is.EqualTo(0.6f + ProductMapView.CoverLiftMeters).Within(0.0001f));
+                Assert.That(cover.GetComponent<MeshRenderer>().sharedMaterial.GetFloat("_BumpScale"),
+                    Is.EqualTo(ProductSurfaceResponse.CoverMetal.BumpScale).Within(0.0001f));
+                Assert.That(root.GetComponentsInChildren<Collider>().Length, Is.Zero,
+                    "Apron/cover overlays must stay presentation-only.");
+                Material solidsMat = view.transform.Find("Product map solids").GetComponent<MeshRenderer>().sharedMaterial;
+                Assert.That(solidsMat.GetColor("_BaseColor"), Is.EqualTo(ProductSurfaceResponse.Concrete.BaseColor));
+                view.ClearVisuals();
+                Assert.That(view.GetComponentsInChildren<MeshRenderer>().Length, Is.Zero);
+            }
+            finally { Object.DestroyImmediate(root); }
+        }
+
+        [Test]
         public void InvalidCompanionCannotSilentlyBecomeFlatMaterial()
         {
             var owned = new List<Object>();
