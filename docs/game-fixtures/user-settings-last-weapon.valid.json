@@ -31,6 +31,8 @@
     "Jump": "Key.Space",
     "Slot1": "Key.Digit1",
     "Slot2": "Key.Digit2",
+    "Slot3": "Key.Digit3",
+    "Slot4": "Key.Digit4",
     "Scoreboard": "Key.Tab",
     "Pause": "Key.Escape",
     "Slide": "Key.F",

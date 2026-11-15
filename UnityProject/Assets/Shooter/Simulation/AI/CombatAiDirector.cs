@@ -330,6 +330,12 @@ namespace Shooter.Simulation.AI
             board.Health = 100;
             board.MagAmmo = AiTuning.MagazineSize;
             board.ReserveAmmo = 90;
+            board.DesiredSlot = 0;
+            board.GrenadeRemaining = 1;
+            board.RifleEmpty = false;
+            board.PistolEmpty = false;
+            board.CookingGrenade = false;
+            board.GrenadeCookStartTick = 0;
             board.VisibleTargetId = null;
             board.HasVisibleTarget = false;
             board.VisibleTarget = null;

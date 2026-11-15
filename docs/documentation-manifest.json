@@ -75,7 +75,7 @@
     "game-fixtures/session-request.invalid-size.json": "9429ca8c81ea95c7c88a01c7ac073b12688986a25381851436e909aaf4d01ae1",
     "game-fixtures/session-request.valid.json": "02cbb1ccedcf45912c91ff669d815f3ee5fa12bb214e808604cbd6d8f6245669",
     "game-fixtures/tdm-workloads.json": "eaf98274b800d01ed9469cacbc053d0f6888e5f95e4ee1072931222eefea8df3",
-    "game-fixtures/user-settings-last-weapon.valid.json": "ef49ce5464182402d35f4b96c946ce0c7fe3c23c7433c94d8eacef25f4625fe7",
+    "game-fixtures/user-settings-last-weapon.valid.json": "b8976f3f5f1fdd2348c8b98c916c56ad3b8b58cf6e3aeecfdfe1dc4dc7c98328",
     "game-fixtures/user-settings-slide.valid.json": "4a3d69069a7c212e9679d0b194c13cd6a560c6c32772753479a07bc104611f6a",
     "game-fixtures/user-settings.schema.json": "a67004574cb2223024d3b2b0242290baea10c1bc0d7918ce11f0cf673beadb6a",
     "game-fixtures/user-settings.valid.json": "5fce4b51e5cf79f2f97b10f963dd625c6f6973a8a154c2d4f67b4cbb2ae2ae01",

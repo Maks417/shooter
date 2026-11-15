@@ -74,8 +74,12 @@ namespace Shooter.Presentation.Rig
         private Mesh? bodyMesh;
         private Mesh? rifleMesh;
         private Mesh? pistolMesh;
+        private Mesh? knifeMesh;
+        private Mesh? grenadeMesh;
         private Mesh? firstPersonRifleMesh;
         private Mesh? firstPersonPistolMesh;
+        private Mesh? firstPersonKnifeMesh;
+        private Mesh? firstPersonGrenadeMesh;
         private Material[]? team1Palette;
         private Material[]? team2Palette;
         private Material? rifleMetal;
@@ -212,10 +216,14 @@ namespace Shooter.Presentation.Rig
                 bodyMesh = Own(Upload(MapVisualClosure.DecodeSoldierLod(visuals, soldierLod), true));
                 rifleMesh = Own(Upload(MapVisualClosure.DecodeRifleLod(visuals, weaponLod), false));
                 pistolMesh = Own(Upload(MapVisualClosure.DecodePistolLod(visuals, weaponLod), false));
+                knifeMesh = Own(Upload(MapVisualClosure.DecodeKnifeLod(visuals, weaponLod), false));
+                grenadeMesh = Own(Upload(MapVisualClosure.DecodeGrenadeLod(visuals, weaponLod), false));
                 // The camera sees equipment at arm's length even on Low. Keep world LOD
                 // scalability without replacing the player's sights/grips with distant proxies.
                 firstPersonRifleMesh = weaponLod == 0 ? rifleMesh : Own(Upload(MapVisualClosure.DecodeRifleLod(visuals, 0), false));
                 firstPersonPistolMesh = weaponLod == 0 ? pistolMesh : Own(Upload(MapVisualClosure.DecodePistolLod(visuals, 0), false));
+                firstPersonKnifeMesh = weaponLod == 0 ? knifeMesh : Own(Upload(MapVisualClosure.DecodeKnifeLod(visuals, 0), false));
+                firstPersonGrenadeMesh = weaponLod == 0 ? grenadeMesh : Own(Upload(MapVisualClosure.DecodeGrenadeLod(visuals, 0), false));
                 for (byte slot = 0; slot < 2; slot++)
                     for (int hand = 0; hand < 2; hand++)
                         firstPersonHandMeshes[slot * 2 + hand] = Own(Upload(MapVisualClosure.DecodeFirstPersonHand(visuals, slot, hand == 1), false));
@@ -263,8 +271,12 @@ namespace Shooter.Presentation.Rig
                 bodyMesh = null;
                 rifleMesh = null;
                 pistolMesh = null;
+                knifeMesh = null;
+                grenadeMesh = null;
                 firstPersonRifleMesh = null;
                 firstPersonPistolMesh = null;
+                firstPersonKnifeMesh = null;
+                firstPersonGrenadeMesh = null;
                 throw new InvalidOperationException("Required packaged actor visuals missing/corrupt; refusing generation fallback: " + error.Message, error);
             }
         }
@@ -474,7 +486,7 @@ namespace Shooter.Presentation.Rig
                 var offset = localHandling.PositionOffset(pose.AdsBlend, reload, reducedMotion, recoilEnergy, magazineEmpty);
                 var rotation = localHandling.RotationDegrees(pose.AdsBlend, reload, reducedMotion, recoilEnergy);
                 var kick = localView.EquipmentKickMeters(reducedMotion);
-                Float3 sight = ProductAuthorityActionView.IsPistolSlot(slot) ? pistolSightSocketLocal : rifleSightSocketLocal;
+                Float3 sight = ProductAuthorityActionView.IsRifleSlot(slot) ? rifleSightSocketLocal : pistolSightSocketLocal;
                 float scale = FirstPersonHandling.NearFieldScale(slot);
                 Float3 hipBias = FirstPersonHandling.NearFieldHipBias(slot);
                 Vector3 hip = new Vector3(pose.RightHand.X, pose.RightHand.Y, pose.RightHand.Z);
@@ -524,7 +536,8 @@ namespace Shooter.Presentation.Rig
         private void CreateAvatar(ActorLifecycleState state, bool corpse)
         {
             if (avatars.ContainsKey(state.EntityId.Value)) return;
-            if (!visualsBound || rifleRecipe == null || bodyMesh == null || rifleMesh == null || pistolMesh == null) return;
+            if (!visualsBound || rifleRecipe == null || bodyMesh == null || rifleMesh == null || pistolMesh == null
+                || knifeMesh == null || grenadeMesh == null) return;
 
             byte slot = state.ActiveWeaponSlot;
             actions.SyncLifecycle(state.EntityId, slot, state.Alive && !corpse);
@@ -633,7 +646,7 @@ namespace Shooter.Presentation.Rig
 
             Float3 weaponPosition = pose.WeaponPosition;
             Quat weaponRotation = pose.WeaponRotation;
-            if (ProductAuthorityActionView.IsPistolSlot(slot) && !avatar.Corpse && state.Alive)
+            if (!ProductAuthorityActionView.IsRifleSlot(slot) && !avatar.Corpse && state.Alive)
                 weaponPosition = pose.WorldPositions[RightHandJoint];
 
             avatar.Weapon.SetPositionAndRotation(V(weaponPosition), Q(weaponRotation));
@@ -641,7 +654,7 @@ namespace Shooter.Presentation.Rig
             // Re-assert each pose so respawn / corpse flip keeps local FP body+weapon ShadowsOnly.
             ApplyLocalHumanShadowMode(avatar, state.EntityId.Equals(localHuman) && !avatar.Corpse && state.Alive);
 
-            Float3 sightLocal = ProductAuthorityActionView.IsPistolSlot(slot) ? pistolSightSocketLocal : rifleSightSocketLocal;
+            Float3 sightLocal = ProductAuthorityActionView.IsRifleSlot(slot) ? rifleSightSocketLocal : pistolSightSocketLocal;
             avatar.LastArmBodyClearance = pose.ArmBodyClearanceMeters;
             avatar.LastEyeSightLineError = pose.EyeSightLineErrorMeters;
             avatar.LastLeftGripError = pose.LeftGripError;
@@ -665,22 +678,20 @@ namespace Shooter.Presentation.Rig
 
         private void ApplyHeldWeaponVisual(Avatar avatar, byte slot)
         {
-            bool pistol = ProductAuthorityActionView.IsPistolSlot(slot);
-            avatar.Weapon.name = pistol ? "Held pistol" : "Held rifle";
-            avatar.WeaponFilter.sharedMesh = pistol ? pistolMesh : rifleMesh;
+            avatar.Weapon.name = SlotWeaponName(slot, false);
+            avatar.WeaponFilter.sharedMesh = HeldMeshForSlot(slot);
             avatar.WeaponRenderer.sharedMaterials = new[] { rifleMetal, riflePolymer };
         }
 
         private void ApplyLocalWeaponVisual(byte slot)
         {
             if (localWeapon == null || !visualsBound) return;
-            bool pistol = ProductAuthorityActionView.IsPistolSlot(slot);
-            localWeapon.name = pistol ? "Local FP pistol" : "Local FP rifle";
-            localWeapon.GetComponent<MeshFilter>().sharedMesh = pistol ? firstPersonPistolMesh : firstPersonRifleMesh;
+            localWeapon.name = SlotWeaponName(slot, true);
+            localWeapon.GetComponent<MeshFilter>().sharedMesh = LocalMeshForSlot(slot);
             localWeapon.GetComponent<MeshRenderer>().sharedMaterials = new[] { rifleMetal, riflePolymer };
             if (triggerHand != null && supportHand != null)
             {
-                int index = slot * 2;
+                int index = (slot > 1 ? 1 : slot) * 2;
                 if (triggerHand.sharedMesh != firstPersonHandMeshes[index])
                 {
                     triggerHand.sharedMesh = firstPersonHandMeshes[index];
@@ -691,6 +702,30 @@ namespace Shooter.Presentation.Rig
                 }
             }
         }
+
+        private static string SlotWeaponName(byte slot, bool local) => slot switch
+        {
+            1 => local ? "Local FP pistol" : "Held pistol",
+            2 => local ? "Local FP knife" : "Held knife",
+            3 => local ? "Local FP grenade" : "Held grenade",
+            _ => local ? "Local FP rifle" : "Held rifle"
+        };
+
+        private Mesh? HeldMeshForSlot(byte slot) => slot switch
+        {
+            1 => pistolMesh,
+            2 => knifeMesh,
+            3 => grenadeMesh,
+            _ => rifleMesh
+        };
+
+        private Mesh? LocalMeshForSlot(byte slot) => slot switch
+        {
+            1 => firstPersonPistolMesh,
+            2 => firstPersonKnifeMesh,
+            3 => firstPersonGrenadeMesh,
+            _ => firstPersonRifleMesh
+        };
 
         private static Float3 FindSocket(FrozenList<WeaponSocket> sockets, string id)
         {

@@ -117,6 +117,11 @@ namespace Shooter.Simulation.AI
         public const int MagazineSize = 30;
         public const int TacticalReloadBelow = 12;       // 40 % of the rifle magazine
         public const uint CoverHoldTicks = 120;
+        // T087 knife / one grenade per life.
+        public const float KnifeEngageMeters = 2.5f;
+        public const float GrenadeMinMeters = 8f;
+        public const float GrenadeMaxMeters = 22f;
+        public const uint GrenadeCookTicks = 24;
         public const float CoverArrivalMeters = 1.0f;
         public const int MaxCoverProbeRaysPerTick = 4;
         public const float CoverChestHeight = 0.75f;      // crouched chest: cover must hide a crouched bot

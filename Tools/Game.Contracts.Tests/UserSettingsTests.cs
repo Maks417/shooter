@@ -27,9 +27,11 @@ namespace Shooter.Game.Contracts.Tests
             Assert.Equal(80f, s.HipFovDegrees);
             Assert.Equal(0.10f, s.MouseSensitivity);
             Assert.Equal(1f, s.UiScale);
-            Assert.Equal(16, s.Bindings.Count);
+            Assert.Equal(18, s.Bindings.Count);
             Assert.Equal(GameContractVersion.SettingsSchema, 2u);
             Assert.Contains(s.Bindings, b => b.Action == "LastWeapon" && b.Control == "Key.Q");
+            Assert.Contains(s.Bindings, b => b.Action == "Slot3" && b.Control == "Key.Digit3");
+            Assert.Contains(s.Bindings, b => b.Action == "Slot4" && b.Control == "Key.Digit4");
         }
 
         [Theory]

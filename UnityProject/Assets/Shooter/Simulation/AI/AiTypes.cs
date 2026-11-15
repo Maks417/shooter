@@ -27,6 +27,14 @@ namespace Shooter.Simulation.AI
         public ushort Health { get; set; } = 100;
         public int MagAmmo { get; set; } = 30;
         public int ReserveAmmo { get; set; } = 90;
+        /// <summary>Commanded loadout slot (0 rifle / 1 pistol / 2 knife / 3 grenade).</summary>
+        public byte DesiredSlot { get; set; }
+        /// <summary>One grenade per life; decremented when the bot commits a throw/cook detonation.</summary>
+        public int GrenadeRemaining { get; set; } = 1;
+        public bool RifleEmpty { get; set; }
+        public bool PistolEmpty { get; set; }
+        public bool CookingGrenade { get; set; }
+        public uint GrenadeCookStartTick { get; set; }
         public bool Alive { get; set; } = true;
         public EntityId? VisibleTargetId { get; set; }
         public Float3? LastSeenEnemy { get; set; }

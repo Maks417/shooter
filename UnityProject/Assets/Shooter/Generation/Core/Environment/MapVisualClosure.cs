@@ -38,6 +38,16 @@ namespace Shooter.Generation.Environment
             "mesh-pistol-lod0.bin", "mesh-pistol-lod1.bin", "mesh-pistol-lod2.bin", "mesh-pistol-lod3.bin"
         };
 
+        public static readonly string[] KnifeLodPaths =
+        {
+            "mesh-knife-lod0.bin", "mesh-knife-lod1.bin", "mesh-knife-lod2.bin", "mesh-knife-lod3.bin"
+        };
+
+        public static readonly string[] GrenadeLodPaths =
+        {
+            "mesh-grenade-lod0.bin", "mesh-grenade-lod1.bin", "mesh-grenade-lod2.bin", "mesh-grenade-lod3.bin"
+        };
+
         public static readonly string[] MapMaterialPaths =
         {
             "material-map-concrete.bin",
@@ -109,6 +119,8 @@ namespace Shooter.Generation.Environment
             list.AddRange(FirstPersonHandPaths);
             list.AddRange(RifleLodPaths);
             list.AddRange(PistolLodPaths);
+            list.AddRange(KnifeLodPaths);
+            list.AddRange(GrenadeLodPaths);
             foreach (string path in MapMaterialPaths)
             {
                 list.Add(path);
@@ -269,6 +281,29 @@ namespace Shooter.Generation.Environment
             return GeometryCodec.DecodeMesh(body);
         }
 
+        public static MeshData DecodeKnifeLod(PackagedVisualPayloads payloads, int lod)
+        {
+            if (lod < 0 || lod >= KnifeLodPaths.Length) throw new ArgumentOutOfRangeException(nameof(lod));
+            byte[] body = ArtifactCodec.Decode(payloads.Bytes(KnifeLodPaths[lod]), ContentKind.Mesh, MapFingerprint(payloads.MapId), payloads.ToolchainHash);
+            return GeometryCodec.DecodeMesh(body);
+        }
+
+        public static MeshData DecodeGrenadeLod(PackagedVisualPayloads payloads, int lod)
+        {
+            if (lod < 0 || lod >= GrenadeLodPaths.Length) throw new ArgumentOutOfRangeException(nameof(lod));
+            byte[] body = ArtifactCodec.Decode(payloads.Bytes(GrenadeLodPaths[lod]), ContentKind.Mesh, MapFingerprint(payloads.MapId), payloads.ToolchainHash);
+            return GeometryCodec.DecodeMesh(body);
+        }
+
+        public static MeshData DecodeFirstPersonHand(PackagedVisualPayloads payloads, byte slot, bool support)
+        {
+            // Knife/grenade reuse the pistol glove pair (slot 1).
+            byte handSlot = slot > 1 ? (byte)1 : slot;
+            int index = handSlot * 2 + (support ? 1 : 0);
+            return GeometryCodec.DecodeMesh(ArtifactCodec.Decode(payloads.Bytes(FirstPersonHandPaths[index]),
+                ContentKind.Mesh, MapFingerprint(payloads.MapId), payloads.ToolchainHash));
+        }
+
         public static SkeletonData DecodeSoldierSkeleton(PackagedVisualPayloads payloads)
         {
             byte[] body = ArtifactCodec.Decode(payloads.Bytes(SoldierSkeletonPath), ContentKind.Skeleton, SoldierFingerprint, payloads.ToolchainHash);
@@ -283,14 +318,6 @@ namespace Shooter.Generation.Environment
 
         public static MaterialData DecodeMapMaterial(PackagedVisualPayloads payloads, string path) =>
             DecodeMaterial(payloads, path, MapFingerprint(payloads.MapId));
-
-        public static MeshData DecodeFirstPersonHand(PackagedVisualPayloads payloads, byte slot, bool support)
-        {
-            if (slot > 1) throw new ArgumentOutOfRangeException(nameof(slot));
-            int index = slot * 2 + (support ? 1 : 0);
-            return GeometryCodec.DecodeMesh(ArtifactCodec.Decode(payloads.Bytes(FirstPersonHandPaths[index]),
-                ContentKind.Mesh, MapFingerprint(payloads.MapId), payloads.ToolchainHash));
-        }
 
         private static string Trim(string message) => message.Length <= 200 ? message : message.Substring(0, 200);
     }

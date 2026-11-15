@@ -198,6 +198,12 @@ namespace Shooter.Generation.Environment
             for (int lod = 0; lod < MapVisualClosure.PistolLodPaths.Length; lod++)
                 AddSgaf(dependencies, "mesh", MapVisualClosure.PistolLodPaths[lod], ContentKind.Mesh,
                     GeometryCodec.EncodeMesh(pistolBuild.Lods[lod]), weaponFp, toolchainHash);
+            for (int lod = 0; lod < MapVisualClosure.KnifeLodPaths.Length; lod++)
+                AddSgaf(dependencies, "mesh", MapVisualClosure.KnifeLodPaths[lod], ContentKind.Mesh,
+                    GeometryCodec.EncodeMesh(LoadoutPropGeometry.BuildKnife(lod)), mapFingerprint, toolchainHash);
+            for (int lod = 0; lod < MapVisualClosure.GrenadeLodPaths.Length; lod++)
+                AddSgaf(dependencies, "mesh", MapVisualClosure.GrenadeLodPaths[lod], ContentKind.Mesh,
+                    GeometryCodec.EncodeMesh(LoadoutPropGeometry.BuildGrenade(lod)), mapFingerprint, toolchainHash);
 
             for (int i = 0; i < MapVisualClosure.MapMaterialPaths.Length; i++)
             {
@@ -338,6 +344,10 @@ namespace Shooter.Generation.Environment
                 RequireMesh(MapVisualClosure.RifleLodPaths[i], weaponFingerprint);
             for (int i = 0; i < MapVisualClosure.PistolLodPaths.Length; i++)
                 RequireMesh(MapVisualClosure.PistolLodPaths[i], weaponFingerprint);
+            for (int i = 0; i < MapVisualClosure.KnifeLodPaths.Length; i++)
+                RequireMesh(MapVisualClosure.KnifeLodPaths[i], mapFingerprint);
+            for (int i = 0; i < MapVisualClosure.GrenadeLodPaths.Length; i++)
+                RequireMesh(MapVisualClosure.GrenadeLodPaths[i], mapFingerprint);
 
             void RequireMaterial(string path)
             {
