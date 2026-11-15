@@ -56,12 +56,14 @@ namespace Shooter.Simulation.Tests.View
             handling.Reset(0);
             handling.Step(default, 0, .016f, false);
             handling.Step(new Float3(20, 0, 0), 0, .016f, false);
-            Assert.Equal(0f, handling.PositionOffset(0, -1, false).X);
+            // Teleport must not create gait; tiny idle sway may remain until Reset.
+            Assert.InRange(Math.Abs(handling.PositionOffset(0, -1, false).X), 0f, 0.0025f);
             handling.Step(new Float3(20.1f, 0, 0), 0, .016f, true);
-            Assert.Equal(0f, handling.PositionOffset(0, -1, false).X);
+            Assert.InRange(Math.Abs(handling.PositionOffset(0, -1, false).X), 0f, 0.0025f);
             handling.Step(new Float3(20.2f, 0, 0), 0, .016f, false);
             handling.Reset(0);
             Assert.Equal(0f, handling.PositionOffset(0, -1, false).Y);
+            Assert.Equal(0f, handling.SwayBlend);
         }
 
         [Fact]
@@ -77,7 +79,61 @@ namespace Shooter.Simulation.Tests.View
             view.ResetForLife(1);
             Assert.Equal(0f, view.Pose.RecoilPitch);
             Assert.Equal(0, view.ConsumedEventCount);
+            Assert.Equal(0f, view.EquipmentKickMeters(false).Z);
         }
 
+        [Fact]
+        public void MagazineTravelRemoveIsDeeperWhenEmptyAndSettlesAtEnd()
+        {
+            Float3 nonempty = FirstPersonMagazineTravel.Offset(FirstPersonMagazineTravel.RemoveEnd, false, false);
+            Float3 empty = FirstPersonMagazineTravel.Offset(FirstPersonMagazineTravel.RemoveEnd, true, false);
+            Assert.True(empty.Y < nonempty.Y);
+            Assert.True(nonempty.Y < -0.08f);
+            Assert.InRange(Math.Abs(FirstPersonMagazineTravel.Offset(1f, true, false).Y), 0f, 1e-6f);
+            Assert.True(Math.Abs(FirstPersonMagazineTravel.PeakRemoveDepth(true, true)) <
+                        Math.Abs(FirstPersonMagazineTravel.PeakRemoveDepth(true, false)));
+        }
+
+        [Fact]
+        public void EquipmentRecoilKickIsAdsSafeAndReducedMotionZerosKick()
+        {
+            Float3 hip = FirstPersonHandling.EquipmentRecoilKick(0.2f, 0.1f, 0f, false);
+            Float3 ads = FirstPersonHandling.EquipmentRecoilKick(0.2f, 0.1f, 1f, false);
+            Assert.True(hip.Z < 0f);
+            Assert.NotEqual(0f, hip.X);
+            Assert.Equal(0f, ads.X);
+            Assert.True(ads.Z < 0f);
+            Assert.Equal(0f, FirstPersonHandling.RecoilRotationScale(1f, false));
+            Assert.Equal(1f, FirstPersonHandling.RecoilRotationScale(0f, false));
+            Assert.Equal(0f, FirstPersonHandling.EquipmentRecoilKick(0.2f, 0.1f, 0f, true).Z);
+        }
+
+        [Fact]
+        public void IdleSwayAppearsAtRestAndIsKilledByReducedMotionOrAdsOrLifeReset()
+        {
+            var handling = new FirstPersonHandling();
+            handling.Reset(0);
+            for (int i = 0; i < 90; i++)
+                handling.Step(new Float3(0, 0, 0), 0, 1f / 60f, false);
+            Assert.True(handling.SwayBlend > 0.5f);
+            Float3 sway = handling.PositionOffset(0f, -1f, false);
+            Assert.True(Math.Abs(sway.X) + Math.Abs(sway.Y) + Math.Abs(sway.Z) > 0f);
+            Assert.Equal(0f, handling.PositionOffset(0f, -1f, true).X);
+            Assert.Equal(0f, handling.PositionOffset(1f, -1f, false).X);
+            handling.Reset(0);
+            Assert.Equal(0f, handling.SwayBlend);
+            Assert.Equal(0f, handling.PositionOffset(0f, -1f, false).X);
+        }
+
+        [Fact]
+        public void NearFieldPresenceConstantsFavorReadableRifleAndPistolMass()
+        {
+            Assert.True(FirstPersonHandling.RifleNearFieldScale > 1f);
+            Assert.True(FirstPersonHandling.PistolNearFieldScale > FirstPersonHandling.RifleNearFieldScale);
+            Float3 rifle = FirstPersonHandling.NearFieldHipBias(0);
+            Float3 pistol = FirstPersonHandling.NearFieldHipBias(1);
+            Assert.True(rifle.Z > pistol.Z);
+            Assert.True(pistol.Y < 0f && rifle.Y < 0f);
+        }
     }
 }

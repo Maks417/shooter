@@ -148,17 +148,23 @@ namespace Shooter.Presentation.View
 
         private void ApplyGripPose()
         {
-            float adsPull = ads * 0.08f;
+            // Near-field Bodycam mass: grips sit a touch lower/closer; ADS still pulls to the sight plane.
+            float adsPull = ads * 0.09f;
+            Float3 mag = FirstPersonMagazineTravel.Offset(reloadPhase, magazineEmpty: false, reducedMotion: false);
             if (reloadPhase > 0f)
-                leftGrip = new Float3(-0.12f, -0.08f - 0.05f * reloadPhase, 0.35f - 0.1f * reloadPhase);
+                leftGrip = new Float3(-0.12f + mag.X, -0.09f + mag.Y, 0.33f + mag.Z);
             else
-                leftGrip = new Float3(-0.12f, -0.08f, 0.35f);
+                leftGrip = new Float3(-0.12f, -0.09f, 0.33f);
 
-            float hipZ = activeSlot == ProductAuthorityActionView.PistolSlot ? 0.32f : 0.40f;
-            float hipY = activeSlot == ProductAuthorityActionView.PistolSlot ? -0.08f : -0.10f;
-            rightGrip = new Float3(0.08f - adsPull, hipY + ads * 0.02f, hipZ + adsPull);
+            float hipZ = activeSlot == ProductAuthorityActionView.PistolSlot ? 0.28f : 0.36f;
+            float hipY = activeSlot == ProductAuthorityActionView.PistolSlot ? -0.09f : -0.12f;
+            rightGrip = new Float3(0.085f - adsPull, hipY + ads * 0.025f, hipZ + adsPull);
             leftGrip = new Float3(leftGrip.X - adsPull * 0.5f, leftGrip.Y, leftGrip.Z + adsPull * 0.5f);
         }
+
+        /// <summary>Equipment-relative kick meters from the cosmetic springs (ADS-safe).</summary>
+        public Float3 EquipmentKickMeters(bool reducedMotion) =>
+            FirstPersonHandling.EquipmentRecoilKick(recoilPitch, recoilYaw, ads, reducedMotion);
 
         // Exact solution of x'' + 12x' + 40x = 0. Frame rate and pause do not
         // change the spring energy; large frame gaps decay rather than exploding.

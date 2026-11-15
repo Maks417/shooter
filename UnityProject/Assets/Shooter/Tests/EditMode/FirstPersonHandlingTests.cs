@@ -62,12 +62,13 @@ namespace Shooter.Tests
             handling.Reset(0);
             handling.Step(default, 0, .016f, false);
             handling.Step(new Float3(20, 0, 0), 0, .016f, false);
-            Assert.That(handling.PositionOffset(0, -1, false).X, Is.EqualTo(0f));
+            Assert.That(Math.Abs(handling.PositionOffset(0, -1, false).X), Is.LessThan(0.0025f));
             handling.Step(new Float3(20.1f, 0, 0), 0, .016f, true);
-            Assert.That(handling.PositionOffset(0, -1, false).X, Is.EqualTo(0f));
+            Assert.That(Math.Abs(handling.PositionOffset(0, -1, false).X), Is.LessThan(0.0025f));
             handling.Step(new Float3(20.2f, 0, 0), 0, .016f, false);
             handling.Reset(0);
             Assert.That(handling.PositionOffset(0, -1, false).Y, Is.EqualTo(0f));
+            Assert.That(handling.SwayBlend, Is.EqualTo(0f));
         }
 
         [Test]
@@ -83,6 +84,30 @@ namespace Shooter.Tests
             view.ResetForLife(1);
             Assert.That(view.Pose.RecoilPitch, Is.EqualTo(0f));
             Assert.That(view.ConsumedEventCount, Is.EqualTo(0));
+            Assert.That(view.EquipmentKickMeters(false).Z, Is.EqualTo(0f));
+        }
+
+        [Test]
+        public void MagazineTravelAndRecoilKickRespectAdsAndEmptyHooks()
+        {
+            Assert.That(FirstPersonMagazineTravel.Offset(FirstPersonMagazineTravel.RemoveEnd, true, false).Y,
+                Is.LessThan(FirstPersonMagazineTravel.Offset(FirstPersonMagazineTravel.RemoveEnd, false, false).Y));
+            Assert.That(FirstPersonHandling.EquipmentRecoilKick(0.25f, 0.1f, 1f, false).X, Is.EqualTo(0f));
+            Assert.That(FirstPersonHandling.RecoilRotationScale(1f, false), Is.EqualTo(0f));
+            Assert.That(FirstPersonHandling.EquipmentRecoilKick(0.25f, 0.1f, 0f, true).Z, Is.EqualTo(0f));
+        }
+
+        [Test]
+        public void IdleSwayClearsOnLifeResetAndReducedMotion()
+        {
+            var handling = new FirstPersonHandling();
+            handling.Reset(0);
+            for (int i = 0; i < 90; i++)
+                handling.Step(default, 0, 1f / 60f, false);
+            Assert.That(handling.SwayBlend, Is.GreaterThan(0.5f));
+            Assert.That(handling.PositionOffset(0f, -1f, true).X, Is.EqualTo(0f));
+            handling.Reset(0);
+            Assert.That(handling.SwayBlend, Is.EqualTo(0f));
         }
 
         private sealed class Lifecycle : IActorLifecycle
@@ -122,6 +147,8 @@ namespace Shooter.Tests
                             ? MapVisualClosure.DecodeRifleLod(visuals, 0).Positions.Count
                             : MapVisualClosure.DecodePistolLod(visuals, 0).Positions.Count),
                         "Low must retain near-field first-person weapon detail independently of world LOD.");
+                    float scale = FirstPersonHandling.NearFieldScale(slot);
+                    Assert.That(weapon.localScale.x, Is.EqualTo(scale).Within(1e-5f));
                     Vector3 sight = new Vector3(0, slot == 0 ? .115f : .1f, slot == 0 ? -.04f : -.07f);
                     Vector3 eye = camera.transform.InverseTransformPoint(weapon.TransformPoint(sight));
                     Assert.That(eye.x, Is.EqualTo(0f).Within(.00001f));

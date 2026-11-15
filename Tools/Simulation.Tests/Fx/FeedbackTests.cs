@@ -46,8 +46,8 @@ namespace Shooter.Simulation.Tests.Fx
             float muzzleStart = AnalyticFxPool.EvaluateScale(FxKind.MuzzleFlash, 0f, AnalyticFxPool.MuzzleFlashLifetime);
             float muzzleEnd = AnalyticFxPool.EvaluateScale(FxKind.MuzzleFlash, AnalyticFxPool.MuzzleFlashLifetime, AnalyticFxPool.MuzzleFlashLifetime);
             Assert.True(muzzleStart > muzzleEnd);
-            // T077: readable flash cone start scale without exceeding short lifetime budget.
-            Assert.True(muzzleStart > 0.30f);
+            // T078: denser flash cone start scale without exceeding short lifetime budget.
+            Assert.True(muzzleStart > 0.40f);
             Assert.True(AnalyticFxPool.MuzzleFlashLifetime <= 0.12f);
 
             float sparkStart = AnalyticFxPool.EvaluateScale(FxKind.ImpactSpark, 0f, AnalyticFxPool.ImpactSparkLifetime);
