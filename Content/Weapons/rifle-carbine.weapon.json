@@ -1,0 +1,32 @@
+{
+  "schemaId": "shooter.weapon.v1",
+  "id": "weapons/rifle-carbine",
+  "order": 1,
+  "displayLabel": "Carbine",
+  "family": "PrimaryGun",
+  "combat": {
+    "fireMode": "Automatic",
+    "fireIntervalTicks": 5,
+    "reloadTicks": 132,
+    "equipTicks": 22,
+    "magazineSize": 25,
+    "reserveCapacity": 75,
+    "baseDamage": 28,
+    "hipSpreadDegrees": 1.15,
+    "adsSpreadDegrees": 0.18,
+    "recoilPitchDegrees": 0.40,
+    "recoilYawHalfDegrees": 0.12
+  },
+  "visual": {
+    "meshKey": "rifle-carbine",
+    "geometryRecipe": "rifle-carbine",
+    "optic": "ScopedPip",
+    "magazineCycle": true,
+    "nearFieldScale": 1.10,
+    "nearFieldHipBias": [0.08, 0.02, -0.09],
+    "hipRotationDegrees": [0, -16, -4],
+    "cycleTravelMeters": 0.060
+  },
+  "audio": { "shot": "RifleShot" },
+  "hud": { "killFeedGlyph": "Carbine" }
+}

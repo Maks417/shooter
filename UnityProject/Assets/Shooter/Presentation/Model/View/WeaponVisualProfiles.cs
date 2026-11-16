@@ -2,6 +2,8 @@
 using System;
 using System.Collections.Generic;
 using Shooter.Contracts;
+using Shooter.Presentation.Audio;
+using Shooter.Presentation.Hud;
 
 namespace Shooter.Presentation.View
 {
@@ -30,7 +32,10 @@ namespace Shooter.Presentation.View
         public string MeshAssetKey { get; }
         public WeaponOpticMode OpticMode { get; }
         public bool HasMagazineCycle { get; }
-        public string AudioShotKey { get; }
+        /// <summary>Bank voice played for this weapon's ShotAccepted events (ADR-077).</summary>
+        public SynthVoiceKind ShotVoice { get; }
+        /// <summary>Kill-feed silhouette for kills made with this weapon (ADR-077).</summary>
+        public KillFeedWeapon KillFeedGlyph { get; }
         public float NearFieldScale { get; }
         public Float3 NearFieldHipBias { get; }
         public Float3 HipRotationDegrees { get; }
@@ -43,7 +48,8 @@ namespace Shooter.Presentation.View
             string meshAssetKey,
             WeaponOpticMode opticMode,
             bool hasMagazineCycle,
-            string audioShotKey,
+            SynthVoiceKind shotVoice,
+            KillFeedWeapon killFeedGlyph,
             float nearFieldScale,
             Float3 nearFieldHipBias,
             Float3 hipRotationDegrees,
@@ -57,7 +63,9 @@ namespace Shooter.Presentation.View
             MeshAssetKey = meshAssetKey;
             OpticMode = opticMode;
             HasMagazineCycle = hasMagazineCycle;
-            AudioShotKey = audioShotKey ?? string.Empty;
+            if (killFeedGlyph == KillFeedWeapon.None) throw new ArgumentException("Kill-feed glyph required.", nameof(killFeedGlyph));
+            ShotVoice = shotVoice;
+            KillFeedGlyph = killFeedGlyph;
             NearFieldScale = nearFieldScale;
             NearFieldHipBias = nearFieldHipBias;
             HipRotationDegrees = hipRotationDegrees;
@@ -66,8 +74,8 @@ namespace Shooter.Presentation.View
         }
     }
 
-    /// <summary>Frozen presentation catalog parallel to Simulation WeaponCatalog ids.</summary>
-    public static class WeaponVisualProfiles
+    /// <summary>Frozen presentation catalog parallel to Simulation WeaponCatalog ids; generated from the same definition files.</summary>
+    public static partial class WeaponVisualProfiles
     {
         public const string MeshKeyRifle = "rifle";
         public const string MeshKeyRifleCarbine = "rifle-carbine";
@@ -80,29 +88,8 @@ namespace Shooter.Presentation.View
 
         static WeaponVisualProfiles()
         {
-            AllProfiles = new[]
-            {
-                new WeaponVisualProfile(
-                    new DefinitionId("weapons/rifle"), WeaponVisualFamily.PrimaryGun, MeshKeyRifle,
-                    WeaponOpticMode.ScopedPip, true, "weapons/rifle",
-                    1.12f, new Float3(0.08f, 0.02f, -0.10f), new Float3(0, -18f, -5f), 0.070f, "Rifle"),
-                new WeaponVisualProfile(
-                    new DefinitionId("weapons/rifle-carbine"), WeaponVisualFamily.PrimaryGun, MeshKeyRifleCarbine,
-                    WeaponOpticMode.ScopedPip, true, "weapons/rifle-carbine",
-                    1.10f, new Float3(0.08f, 0.02f, -0.09f), new Float3(0, -16f, -4f), 0.060f, "Carbine"),
-                new WeaponVisualProfile(
-                    new DefinitionId("weapons/pistol"), WeaponVisualFamily.Sidearm, MeshKeyPistol,
-                    WeaponOpticMode.Irons, true, "weapons/pistol",
-                    1.15f, new Float3(0.08f, -0.085f, 0.11f), new Float3(0, -3f, -2f), 0.038f, "Sidearm"),
-                new WeaponVisualProfile(
-                    new DefinitionId("weapons/knife"), WeaponVisualFamily.Melee, MeshKeyKnife,
-                    WeaponOpticMode.None, false, "weapons/knife",
-                    1.08f, new Float3(0.10f, -0.10f, 0.16f), new Float3(0, -3f, -2f), 0f, "Knife"),
-                new WeaponVisualProfile(
-                    new DefinitionId("weapons/grenade"), WeaponVisualFamily.Throwable, MeshKeyGrenade,
-                    WeaponOpticMode.None, false, "weapons/grenade",
-                    1.08f, new Float3(0.09f, -0.09f, 0.14f), new Float3(0, -3f, -2f), 0f, "Grenade")
-            };
+            // Rows come from Content/Weapons/*.weapon.json via Tools/generate_weapon_catalog.py (ADR-077).
+            AllProfiles = CreateGeneratedProfiles();
             ById = new Dictionary<string, WeaponVisualProfile>(AllProfiles.Length, StringComparer.Ordinal);
             for (int i = 0; i < AllProfiles.Length; i++)
                 ById.Add(AllProfiles[i].DefinitionId.ToString(), AllProfiles[i]);

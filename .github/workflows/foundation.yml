@@ -53,6 +53,10 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           python Tools/verify_asmdef_graph.py
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          python Tools/generate_weapon_catalog.py --check
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          python Tools/test_generate_weapon_catalog.py
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
           python Tools/test_contract_lock.py
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           ./Tools/test_smoke.ps1

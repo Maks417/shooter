@@ -1,0 +1,37 @@
+{
+  "schemaId": "shooter.weapon.v1",
+  "id": "weapons/grenade",
+  "order": 4,
+  "displayLabel": "Grenade",
+  "family": "Throwable",
+  "combat": {
+    "fireMode": "Throwable",
+    "fireIntervalTicks": 0,
+    "reloadTicks": 0,
+    "equipTicks": 18,
+    "magazineSize": 1,
+    "reserveCapacity": 0,
+    "baseDamage": 100,
+    "hipSpreadDegrees": 0,
+    "adsSpreadDegrees": 0,
+    "recoilPitchDegrees": 0,
+    "recoilYawHalfDegrees": 0,
+    "maxRangeMeters": 0,
+    "fuseTicks": 120,
+    "throwSpeedMetersPerSecond": 18,
+    "blastRadiusMeters": 5,
+    "consumesAmmo": true,
+    "allowsSprintFire": false
+  },
+  "visual": {
+    "meshKey": "grenade",
+    "optic": "None",
+    "magazineCycle": false,
+    "nearFieldScale": 1.08,
+    "nearFieldHipBias": [0.09, -0.09, 0.14],
+    "hipRotationDegrees": [0, -3, -2],
+    "cycleTravelMeters": 0
+  },
+  "audio": { "shot": "GrenadeThrow" },
+  "hud": { "killFeedGlyph": "Grenade" }
+}

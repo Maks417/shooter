@@ -1,0 +1,32 @@
+{
+  "schemaId": "shooter.weapon.v1",
+  "id": "weapons/rifle",
+  "order": 0,
+  "displayLabel": "Rifle",
+  "family": "PrimaryGun",
+  "combat": {
+    "fireMode": "Automatic",
+    "fireIntervalTicks": 6,
+    "reloadTicks": 144,
+    "equipTicks": 24,
+    "magazineSize": 30,
+    "reserveCapacity": 90,
+    "baseDamage": 30,
+    "hipSpreadDegrees": 1.0,
+    "adsSpreadDegrees": 0.15,
+    "recoilPitchDegrees": 0.35,
+    "recoilYawHalfDegrees": 0.1
+  },
+  "visual": {
+    "meshKey": "rifle",
+    "geometryRecipe": "rifle",
+    "optic": "ScopedPip",
+    "magazineCycle": true,
+    "nearFieldScale": 1.12,
+    "nearFieldHipBias": [0.08, 0.02, -0.10],
+    "hipRotationDegrees": [0, -18, -5],
+    "cycleTravelMeters": 0.070
+  },
+  "audio": { "shot": "RifleShot" },
+  "hud": { "killFeedGlyph": "Rifle" }
+}

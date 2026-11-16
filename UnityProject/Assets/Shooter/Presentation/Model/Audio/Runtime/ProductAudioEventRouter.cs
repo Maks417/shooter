@@ -17,10 +17,6 @@ namespace Shooter.Presentation.Audio
         public const float MaxAudibleDistanceMeters = CombatAudioDistance.GunfireMaxMeters;
         /// <summary>Gameplay pose region 1 = head (DamageMath / hit volumes).</summary>
         public const ushort HeadRegionId = 1;
-        public const string RifleWeaponId = "weapons/rifle";
-        public const string PistolWeaponId = "weapons/pistol";
-        public const string KnifeWeaponId = "weapons/knife";
-        public const string GrenadeWeaponId = "weapons/grenade";
 
         private readonly SynthAudioMixer mixer;
         private readonly HashSet<string> consumed = new HashSet<string>(StringComparer.Ordinal);
@@ -197,28 +193,12 @@ namespace Shooter.Presentation.Audio
             }
         }
 
-        private static SynthVoiceKind MapShotVoice(CombatEvent ev)
+        /// <summary>Shot voice from the weapon's visual profile (ADR-077 <c>audio.shot</c>); unknown ids use the rifle voice.</summary>
+        public static SynthVoiceKind MapShotVoice(CombatEvent ev)
         {
-            if (ev.Payload is ShotPayload shot)
-            {
-                if (Shooter.Presentation.View.WeaponVisualProfiles.TryGet(shot.WeaponId, out var profile))
-                {
-                    if (profile.Family == Shooter.Presentation.View.WeaponVisualFamily.Sidearm)
-                        return SynthVoiceKind.PistolShot;
-                    if (profile.Family == Shooter.Presentation.View.WeaponVisualFamily.Melee)
-                        return SynthVoiceKind.KnifeSwing;
-                    if (profile.Family == Shooter.Presentation.View.WeaponVisualFamily.Throwable)
-                        return SynthVoiceKind.GrenadeThrow;
-                    return SynthVoiceKind.RifleShot;
-                }
-                string id = shot.WeaponId.ToString();
-                if (string.Equals(id, PistolWeaponId, StringComparison.Ordinal))
-                    return SynthVoiceKind.PistolShot;
-                if (string.Equals(id, KnifeWeaponId, StringComparison.Ordinal))
-                    return SynthVoiceKind.KnifeSwing;
-                if (string.Equals(id, GrenadeWeaponId, StringComparison.Ordinal))
-                    return SynthVoiceKind.GrenadeThrow;
-            }
+            if (ev.Payload is ShotPayload shot
+                && Shooter.Presentation.View.WeaponVisualProfiles.TryGet(shot.WeaponId, out var profile))
+                return profile.ShotVoice;
             return SynthVoiceKind.RifleShot;
         }
 

@@ -35,40 +35,18 @@ namespace Shooter.Simulation.Combat
     }
 
     /// <summary>
-    /// Closed deterministic catalog keyed by <see cref="DefinitionId"/>. Adding a rifle is a new row, not a slot fork.
+    /// Closed deterministic catalog keyed by <see cref="DefinitionId"/>. Adding a weapon is a new
+    /// <c>Content/Weapons/&lt;name&gt;.weapon.json</c> file plus a generator run, not a slot fork (ADR-072, ADR-077).
     /// </summary>
-    public static class WeaponCatalog
+    public static partial class WeaponCatalog
     {
         private static readonly Dictionary<string, WeaponCatalogEntry> ById;
         private static readonly WeaponCatalogEntry[] AllEntries;
 
         static WeaponCatalog()
         {
-            var rifle = new WeaponDefinition(
-                new DefinitionId("weapons/rifle"), FireMode.Automatic, 6, 144, 24, 30, 90, 30,
-                Deg(1.0f), Deg(0.15f), Deg(0.35f), Deg(0.1f));
-            var carbine = new WeaponDefinition(
-                new DefinitionId("weapons/rifle-carbine"), FireMode.Automatic, 5, 132, 22, 25, 75, 28,
-                Deg(1.15f), Deg(0.18f), Deg(0.40f), Deg(0.12f));
-            var pistol = new WeaponDefinition(
-                new DefinitionId("weapons/pistol"), FireMode.SemiAutomatic, 10, 108, 18, 15, 45, 25,
-                Deg(1.5f), Deg(0.3f), Deg(0.55f), Deg(0.15f));
-            var knife = new WeaponDefinition(
-                new DefinitionId("weapons/knife"), FireMode.Melee, 24, 0, 12, 1, 0, 55,
-                0f, 0f, 0f, 0f, maxRangeMeters: 1.8f, consumesAmmo: false, allowsSprintFire: true);
-            var grenade = new WeaponDefinition(
-                new DefinitionId("weapons/grenade"), FireMode.Throwable, 0, 0, 18, 1, 0, 100,
-                0f, 0f, 0f, 0f, maxRangeMeters: 0f, fuseTicks: 120, throwSpeedMetersPerSecond: 18f,
-                blastRadiusMeters: 5f, consumesAmmo: true, allowsSprintFire: false);
-
-            AllEntries = new[]
-            {
-                new WeaponCatalogEntry(rifle, WeaponFamily.PrimaryGun, "weapons/rifle"),
-                new WeaponCatalogEntry(carbine, WeaponFamily.PrimaryGun, "weapons/rifle-carbine"),
-                new WeaponCatalogEntry(pistol, WeaponFamily.Sidearm, "weapons/pistol"),
-                new WeaponCatalogEntry(knife, WeaponFamily.Melee, "weapons/knife"),
-                new WeaponCatalogEntry(grenade, WeaponFamily.Throwable, "weapons/grenade")
-            };
+            // Rows come from Content/Weapons/*.weapon.json via Tools/generate_weapon_catalog.py (ADR-077).
+            AllEntries = CreateGeneratedEntries();
             ById = new Dictionary<string, WeaponCatalogEntry>(AllEntries.Length, StringComparer.Ordinal);
             for (int i = 0; i < AllEntries.Length; i++)
                 ById.Add(AllEntries[i].Definition.Id.ToString(), AllEntries[i]);

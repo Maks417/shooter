@@ -1,0 +1,32 @@
+{
+  "schemaId": "shooter.weapon.v1",
+  "id": "weapons/pistol",
+  "order": 2,
+  "displayLabel": "Sidearm",
+  "family": "Sidearm",
+  "combat": {
+    "fireMode": "SemiAutomatic",
+    "fireIntervalTicks": 10,
+    "reloadTicks": 108,
+    "equipTicks": 18,
+    "magazineSize": 15,
+    "reserveCapacity": 45,
+    "baseDamage": 25,
+    "hipSpreadDegrees": 1.5,
+    "adsSpreadDegrees": 0.3,
+    "recoilPitchDegrees": 0.55,
+    "recoilYawHalfDegrees": 0.15
+  },
+  "visual": {
+    "meshKey": "pistol",
+    "geometryRecipe": "pistol",
+    "optic": "Irons",
+    "magazineCycle": true,
+    "nearFieldScale": 1.15,
+    "nearFieldHipBias": [0.08, -0.085, 0.11],
+    "hipRotationDegrees": [0, -3, -2],
+    "cycleTravelMeters": 0.038
+  },
+  "audio": { "shot": "PistolShot" },
+  "hud": { "killFeedGlyph": "Pistol" }
+}

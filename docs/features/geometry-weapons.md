@@ -52,6 +52,18 @@ Reload presentation reaches the magazine before removal, keeps support-hand trav
 
 `geometry.weapon` **1.0.4** refines selected large-part bevels and near barrel roundness while retaining LOD ceilings, sockets and collision dimensions. Old 1.0.3 fixtures remain immutable. `GeneratedSky` supplies a 64² six-face RGBAHalf global analytic reflection with seven mips (about 256 KiB), covering arena positions outside the local probe and restoring previous ownership on disposal. Approximate mip filtering does not prove physical reflection accuracy or reference GPU performance. Named in-game visual acceptance remains Pending.
 
+## Adding or tuning a weapon (ADR-077)
+
+Each weapon is one file, `Content/Weapons/<name>.weapon.json`. It holds combat stats, near-field handling, optic, shot voice and kill-feed glyph. After editing, run:
+
+```powershell
+python Tools/generate_weapon_catalog.py
+```
+
+This rewrites `Simulation/Combat/WeaponCatalog.g.cs` and `Presentation/Model/View/WeaponVisualProfiles.g.cs`. Never edit the `.g.cs` files by hand; CI runs `--check`. Then run `./Tools/Test-Simulation.ps1`.
+
+A new weapon whose mesh key already exists (for example another rifle that reuses `rifle-carbine` geometry) needs only its file. A new silhouette still needs a `geometry.weapon` recipe in `Generation/FeatureRecipes`, its mesh paths in `MapVisualClosure`/`MapPackageBuilder`, and the mesh fields in `ProductActorPresentation`, until the weapon package step removes that coupling. A new sound needs a new `SynthVoiceKind` and bank samples.
+
 ## Weapon profiles — geometry.weapon 1.0.5 (ADR-072)
 
 `geometry.weapon` advances **1.0.4 → 1.0.5**. Recipes require `parameters.silhouette` (`standard` | `carbine`; carbine only with `kind=rifle`). Combat remains owned by Simulation `WeaponCatalog` / `WeaponDefinition`; recipes still cannot override damage, fire rate or magazine size. Presentation binds packaged meshes by DefinitionId visual profile (`weapons/rifle`, `weapons/rifle-carbine`, …), not by loadout slot alone. Map visual closure publishes carbine LOD/mag/cycle paths beside the classic rifle. Sockets and collision mechanical dimensions stay on the numeric baseline. Old 1.0.4 fixtures remain immutable and reject regeneration. Named player/installer review remains Pending.

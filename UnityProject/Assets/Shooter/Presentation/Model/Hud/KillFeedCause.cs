@@ -65,15 +65,12 @@ namespace Shooter.Presentation.Hud
             headshot = sawDamage && regionId == HeadRegionId;
         }
 
+        /// <summary>Kill-feed glyph from the weapon's visual profile (ADR-077 <c>hud.killFeedGlyph</c>).</summary>
         public static KillFeedWeapon MapWeapon(DefinitionId weaponId)
         {
             if (!weaponId.IsValid) return KillFeedWeapon.None;
-            string id = weaponId.ToString();
-            if (string.Equals(id, CarbineWeaponId, System.StringComparison.Ordinal)) return KillFeedWeapon.Carbine;
-            if (string.Equals(id, PistolWeaponId, System.StringComparison.Ordinal)) return KillFeedWeapon.Pistol;
-            if (string.Equals(id, KnifeWeaponId, System.StringComparison.Ordinal)) return KillFeedWeapon.Knife;
-            if (string.Equals(id, GrenadeWeaponId, System.StringComparison.Ordinal)) return KillFeedWeapon.Grenade;
-            if (string.Equals(id, RifleWeaponId, System.StringComparison.Ordinal)) return KillFeedWeapon.Rifle;
+            if (Shooter.Presentation.View.WeaponVisualProfiles.TryGet(weaponId, out var profile))
+                return profile.KillFeedGlyph;
             // Unknown gun-like DefinitionId: long-gun silhouette keeps the row readable.
             return KillFeedWeapon.Rifle;
         }
