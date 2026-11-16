@@ -195,7 +195,7 @@ namespace Shooter.Presentation.Session
                     }
                     break;
                 case ShellScreen.Paused:
-                    if (backend.Resume().Succeeded)
+                    if (TryResumeSession())
                     {
                         navigation.ResumePlaying();
                         view.SetGameplayFocus(true);
@@ -237,11 +237,18 @@ namespace Shooter.Presentation.Session
         private void ResumeMatch()
         {
             if (backend == null || view == null) return;
-            if (backend.Resume().Succeeded)
+            if (TryResumeSession())
             {
                 navigation.ResumePlaying();
                 view.SetGameplayFocus(true);
             }
+        }
+
+        /// <summary>Resume the authority, or accept it as already running (never strand the player on the pause menu).</summary>
+        private bool TryResumeSession()
+        {
+            if (session != null && session.PauseState == SessionPauseState.Running) return true;
+            return backend != null && backend.Resume().Succeeded;
         }
 
         private async void StartSelectedMatch()

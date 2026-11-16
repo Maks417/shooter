@@ -41,7 +41,6 @@ namespace Shooter.Bootstrap
         private VerifiedMapPackageStore? productPackageStore;
         private Func<uint, LocalPlayerCommand?> productHumanSampler;
         private bool hasApplicationFocus = true;
-        private bool pausedForFocusLoss;
         private string contentRecoveryDetail = "";
         public bool Ready { get; private set; }
         public bool Failed { get; private set; }
@@ -413,15 +412,16 @@ namespace Shooter.Bootstrap
             if (diagnosticMode || IsServer || productSession == null) return;
             if (!hasFocus)
             {
-                pausedForFocusLoss = productSession.Phase == GameMatchPhase.Playing
-                    && productSession.PauseState == SessionPauseState.Running
-                    && PauseProduct().Succeeded;
+                if (productSession.Phase == GameMatchPhase.Playing
+                    && productSession.PauseState == SessionPauseState.Running)
+                    PauseProduct();
                 SuspendProductClock(true);
             }
             else
             {
-                if (pausedForFocusLoss) ResumeProduct();
-                pausedForFocusLoss = false;
+                // Focus return never auto-resumes: the shell is showing the pause menu for the focus-loss pause, and
+                // the player resumes from it (Resume/Escape). Auto-resuming here left the menu up over a running match
+                // and made Resume fail with not-paused.
                 SuspendProductClock(!CanAdvanceProduct());
             }
         }
