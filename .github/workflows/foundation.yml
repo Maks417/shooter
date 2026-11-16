@@ -51,6 +51,8 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           python Tools/verify_contract_lock.py
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          python Tools/verify_asmdef_graph.py
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
           python Tools/test_contract_lock.py
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           ./Tools/test_smoke.ps1

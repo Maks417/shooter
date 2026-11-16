@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Mirrors UnityProject/Assets/Shooter/Presentation/Model/*.asmdef (Shooter.Presentation.Model); verify_asmdef_graph.py keeps the references equal. -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AssemblyName>Shooter.Presentation.Model</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../UnityProject/Assets/Shooter/Presentation/Model/**/*.cs" />
+    <ProjectReference Include="../Contracts/Shooter.Contracts.csproj" />
+    <ProjectReference Include="../Game.Contracts/Shooter.Game.Contracts.csproj" />
+    <ProjectReference Include="../VectorMath/Shooter.VectorMath.csproj" />
+  </ItemGroup>
+</Project>

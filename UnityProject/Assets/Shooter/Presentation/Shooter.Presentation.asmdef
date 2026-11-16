@@ -10,7 +10,8 @@
     "Shooter.Generation.Core",
     "Shooter.VectorMath",
     "Shooter.Content.Runtime",
-    "Unity.InputSystem"
+    "Unity.InputSystem",
+    "Shooter.Presentation.Model"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

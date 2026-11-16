@@ -20,11 +20,15 @@ Current paths include Game/Contracts, Game/Session, Game/Settings, Simulation/Se
 | Shooter.AssetCompiler.Editor | Unity conversion, LOD/material/nav baking, manifests | Generation.Core, Contracts, Unity Editor |
 | Shooter.Content.Runtime | verified cache loading, residency, async handles | Contracts, BCL-only Generation.Core format helpers; future Unity runtime adapter |
 | Shooter.Simulation | tick orchestration, motor rules, weapons, damage, AI decisions | Contracts; world-query interfaces |
-| Shooter.World.Unity | collision queries, navigation adapter, chunk lifecycle | Simulation, Content.Runtime, Unity |
-| Shooter.Presentation | URP rendering, procedural rig, HUD, sound, feedback | Contracts, Content.Runtime, Unity; reads simulation snapshots |
-| Shooter.Networking | command/snapshot codec, prediction history, authority adapter | Contracts, Simulation; selected transport |
+| Shooter.World.Runtime | pure navigation compile/settings, revisioned path adapter, visual streaming scheduler, fake map runtime (`World/Runtime/**`) | Contracts, Game.Contracts |
+| Shooter.World.Unity | PhysX collision queries, NavMesh adapter, compound map runtime (`World/Foundation`) | World.Runtime, Generation.Core, Content.Maps, Unity |
+| Shooter.Presentation.Model | Unity-free view, HUD, menus, scoreboard, audio mixer and FX pool models (`Presentation/Model/**`); client-only by policy | Contracts, Game.Contracts, VectorMath |
+| Shooter.Presentation | URP rendering, procedural rig, input, Unity audio/FX adapters, product session views | Presentation.Model, Contracts, Content.Runtime, Unity; reads simulation snapshots |
+| Shooter.Networking (parked, ADR-076) | command/snapshot codec, prediction history, authority adapter; no Unity assembly references it while the product is offline-only | Contracts, Bootstrap.Core, Simulation |
 | Shooter.Bootstrap | composition root, mode selection, tick driver | All runtime assemblies |
 | Shooter.Tools / Tests | benchmarks, provenance and verification | Respective public APIs |
+
+Every pure asmdef has a matching `Tools/<Assembly>/Shooter.<Assembly>.csproj` with the same name and references, and `Tools/verify_asmdef_graph.py` (fast CI lane) fails when the two graphs drift. The .NET lane therefore rejects a boundary violation that only Unity used to catch. Test projects reference these projects instead of linking source folders (ADR-076).
 
 Contracts never reference features. Simulation does not reference renderers, animation, Editor APIs or transport packages. Presentation cannot apply damage or mutate authoritative state. Content compiler does not depend on simulation implementation. Server excludes presentation assembly and all graphics cache payloads. Jobs/Burst are optional optimizations after profiling, not a requirement to convert the entire game to ECS.
 

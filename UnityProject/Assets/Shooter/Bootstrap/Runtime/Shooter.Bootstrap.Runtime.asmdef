@@ -10,7 +10,8 @@
     "GUID:ae96b3b368b44fa4a5b96a95107daae8",
     "GUID:4ccd01065ddb43afa1edb586969e90ec",
     "GUID:a8f3c1d92e7b4f6a9d0e1b2c3a4f5e60",
-    "GUID:40a8901f590c5c6881fc43155c168a3e"
+    "GUID:40a8901f590c5c6881fc43155c168a3e",
+    "Shooter.World.Runtime"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

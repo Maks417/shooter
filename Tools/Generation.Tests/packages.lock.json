@@ -91,31 +91,55 @@
         "type": "Project",
         "dependencies": {
           "Shooter.Content.Runtime": "[1.0.0, )",
+          "Shooter.Contracts": "[1.0.0, )",
+          "Shooter.Generation.Core": "[1.0.0, )"
+        }
+      },
+      "shooter.bootstrap.core": {
+        "type": "Project"
+      },
+      "shooter.bootstrap.release": {
+        "type": "Project"
+      },
+      "shooter.content.maps": {
+        "type": "Project",
+        "dependencies": {
+          "Shooter.Contracts": "[1.0.0, )",
+          "Shooter.Game.Contracts": "[1.0.0, )",
           "Shooter.Generation.Core": "[1.0.0, )"
         }
       },
       "shooter.content.runtime": {
         "type": "Project",
         "dependencies": {
+          "Shooter.Contracts": "[1.0.0, )",
           "Shooter.Generation.Core": "[1.0.0, )"
         }
       },
       "shooter.contracts": {
         "type": "Project"
       },
-      "shooter.foundation": {
-        "type": "Project",
-        "dependencies": {
-          "Shooter.Contracts": "[1.0.0, )",
-          "Shooter.Game.Contracts": "[1.0.0, )",
-          "Shooter.Generation.Core": "[1.0.0, )",
-          "Shooter.VectorMath": "[1.0.0, )"
-        }
-      },
       "shooter.game.contracts": {
         "type": "Project",
         "dependencies": {
           "Shooter.Contracts": "[1.0.0, )"
+        }
+      },
+      "shooter.game.session": {
+        "type": "Project",
+        "dependencies": {
+          "Shooter.Content.Maps": "[1.0.0, )",
+          "Shooter.Contracts": "[1.0.0, )",
+          "Shooter.Game.Contracts": "[1.0.0, )",
+          "Shooter.Simulation": "[1.0.0, )",
+          "Shooter.World.Runtime": "[1.0.0, )"
+        }
+      },
+      "shooter.game.settings": {
+        "type": "Project",
+        "dependencies": {
+          "Shooter.Contracts": "[1.0.0, )",
+          "Shooter.Game.Contracts": "[1.0.0, )"
         }
       },
       "shooter.generation.core": {
@@ -125,10 +149,33 @@
           "Shooter.VectorMath": "[1.0.0, )"
         }
       },
+      "shooter.networking": {
+        "type": "Project",
+        "dependencies": {
+          "Shooter.Bootstrap.Core": "[1.0.0, )",
+          "Shooter.Contracts": "[1.0.0, )",
+          "Shooter.Simulation": "[1.0.0, )"
+        }
+      },
+      "shooter.simulation": {
+        "type": "Project",
+        "dependencies": {
+          "Shooter.Contracts": "[1.0.0, )",
+          "Shooter.Game.Contracts": "[1.0.0, )",
+          "Shooter.VectorMath": "[1.0.0, )"
+        }
+      },
       "shooter.vectormath": {
         "type": "Project",
         "dependencies": {
           "Shooter.Contracts": "[1.0.0, )"
+        }
+      },
+      "shooter.world.runtime": {
+        "type": "Project",
+        "dependencies": {
+          "Shooter.Contracts": "[1.0.0, )",
+          "Shooter.Game.Contracts": "[1.0.0, )"
         }
       }
     }

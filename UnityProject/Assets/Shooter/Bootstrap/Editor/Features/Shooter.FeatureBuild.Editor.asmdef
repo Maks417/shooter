@@ -9,7 +9,8 @@
     "Shooter.Presentation",
     "Unity.RenderPipelines.Universal.Runtime",
     "Shooter.Game.Contracts",
-    "Shooter.Game.Session"
+    "Shooter.Game.Session",
+    "Shooter.Presentation.Model"
   ],
   "includePlatforms": [
     "Editor"

@@ -8,7 +8,9 @@
     "GUID:40a8901f590c5c6881fc43155c168a3e",
     "Shooter.Game.Contracts",
     "Shooter.Game.Session",
-    "Shooter.Content.Maps"
+    "Shooter.Content.Maps",
+    "Shooter.Presentation.Model",
+    "Shooter.World.Runtime"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Mirrors UnityProject/Assets/Shooter/Game/Session/*.asmdef (Shooter.Game.Session); verify_asmdef_graph.py keeps the references equal. -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AssemblyName>Shooter.Game.Session</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../UnityProject/Assets/Shooter/Game/Session/**/*.cs" />
+    <ProjectReference Include="../Contracts/Shooter.Contracts.csproj" />
+    <ProjectReference Include="../Game.Contracts/Shooter.Game.Contracts.csproj" />
+    <ProjectReference Include="../Simulation/Shooter.Simulation.csproj" />
+    <ProjectReference Include="../Content.Maps/Shooter.Content.Maps.csproj" />
+    <ProjectReference Include="../World.Runtime/Shooter.World.Runtime.csproj" />
+  </ItemGroup>
+</Project>

@@ -13,9 +13,11 @@ shooter/
       Generation/Editor/             # compiler, build entry points
       Content/Runtime/               # loading and cache adapters
       Simulation/                    # motor, combat, AI
-      World/                         # physics and navigation adapters
-      Presentation/                  # rigs, rendering, UI, audio
-      Networking/                    # codec and transport adapters
+      World/                         # Unity physics and navigation adapters (Shooter.World.Unity)
+      World/Runtime/                 # pure navigation/streaming (Shooter.World.Runtime)
+      Presentation/                  # Unity rigs, rendering, input, audio/FX adapters
+      Presentation/Model/            # Unity-free view/HUD/menu/audio/FX models (Shooter.Presentation.Model)
+      Networking/                    # parked while offline-only (ADR-076)
       Bootstrap/                     # client/server composition
       Shaders/                       # HLSL and URP shader wrappers
       Definitions/                   # reviewed JSON source, no binary art
@@ -28,9 +30,10 @@ shooter/
     Packages/packages-lock.json
     ProjectSettings/ProjectVersion.txt
   Tools/                             # audit, docs check, cache tooling
+  Tools/<Assembly>/                  # one netstandard2.1 project per pure asmdef (verify_asmdef_graph.py)
   Benchmarks/                        # seeds, paths, workload definitions
   Baselines/                         # approved compact metrics and golden hashes
-  Artifacts/                         # ignored local reports and builds
+  Artifacts/                         # ignored; newest run per action only, reports/ keeps JSON history (ADR-076)
   .github/workflows/                 # or equivalent CI, no vendor lock required
 ```
 

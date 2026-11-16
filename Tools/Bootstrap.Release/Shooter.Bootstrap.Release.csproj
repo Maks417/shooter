@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Mirrors UnityProject/Assets/Shooter/Bootstrap/Release/*.asmdef (Shooter.Bootstrap.Release); verify_asmdef_graph.py keeps the references equal. -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AssemblyName>Shooter.Bootstrap.Release</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../UnityProject/Assets/Shooter/Bootstrap/Release/**/*.cs" />
+  </ItemGroup>
+</Project>

@@ -14,14 +14,15 @@
     <PackageReference Include="xunit" Version="[2.9.3]" />
     <PackageReference Include="xunit.runner.visualstudio" Version="[4.0.1]" PrivateAssets="all" />
     <ProjectReference Include="../Generation/Shooter.Generation.Core.csproj" />
-    <ProjectReference Include="../Foundation/Shooter.Foundation.csproj" />
+    <ProjectReference Include="../Bootstrap.Release/Shooter.Bootstrap.Release.csproj" />
+    <ProjectReference Include="../Networking/Shooter.Networking.csproj" />
+    <ProjectReference Include="../Game.Settings/Shooter.Game.Settings.csproj" />
+    <ProjectReference Include="../Game.Session/Shooter.Game.Session.csproj" />
     <ProjectReference Include="../Game.Contracts/Shooter.Game.Contracts.csproj" />
     <ProjectReference Include="../ContentRuntime/Shooter.Content.Runtime.csproj" />
     <ProjectReference Include="../ContentCompiler/Shooter.AssetCompiler.Editor.csproj" />
     <None Include="../../docs/feature-fixtures/*.json" Link="FeatureFixtures/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../../UnityProject/Assets/Shooter/Generation/FeatureRecipes/*.json" Link="FeatureRecipes/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../../docs/fixtures/*" Link="Fixtures/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
-    <Compile Include="../../UnityProject/Assets/Shooter/World/Streaming/**/*.cs" Link="WorldStreaming/%(Filename)%(Extension)" />
-    <Compile Include="../../UnityProject/Assets/Shooter/World/Navigation/**/*.cs" Link="WorldNavigation/%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>

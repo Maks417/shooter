@@ -11,7 +11,8 @@
     "Shooter.Content.Runtime",
     "Shooter.AssetCompiler.Editor",
     "Shooter.Presentation",
-    "Unity.InputSystem"
+    "Unity.InputSystem",
+    "Shooter.Presentation.Model"
   ],
   "includePlatforms": [
     "Editor"
