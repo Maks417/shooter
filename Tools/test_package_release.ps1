@@ -33,6 +33,7 @@ function New-CaseRoot([string]$Name) {
     $caseRoot = Join-Path $evidence $Name
     $null = New-Item -ItemType Directory -Path (Join-Path $caseRoot 'Tools') -Force
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'Package-Release.ps1') -Destination (Join-Path $caseRoot 'Tools/Package-Release.ps1')
+    Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'Unity.Common.ps1') -Destination (Join-Path $caseRoot 'Tools/Unity.Common.ps1')
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'release-package-policy.json') -Destination (Join-Path $caseRoot 'Tools/release-package-policy.json')
     $lockText = '{"schemaVersion":1,"editorVersion":"6000.3.28f1","syntheticTestOnly":true}'
     Write-TestFile (Join-Path $caseRoot 'toolchain-lock.json') $lockText

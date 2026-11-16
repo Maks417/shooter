@@ -63,6 +63,14 @@ Release content uses Unity's own NavMesh bake (T067 C01), published by the locke
 
 `-Native` first publishes pure .NET content, then `ShooterBuild.CompileNativeGameContent` bakes only navigation from that .NET collision and .NET republishes with the staged native bakes ([ADR-043](decisions.md#adr-043--accepted-two-stage-native-navigation-publication)); it writes `nav-provenance.json` (schema `shooter.nav-bake-provenance.v1`) beside `index.json`/`catalog.json`, and reports `nativeUnityNavBake=PASS` only after re-verifying every package's native provenance and nav hash. Without `-Native`, pure tooling keeps the labelled `software-walkable-grid` diagnostic bake. `-RequireNativeNav` makes packaging refuse any software navigation. Installer technology and identity are in [ADR-041](decisions.md#adr-041--accepted-inno-setup-per-user-installer-and-in-place-upgrade-t073); `Tools/test_build_installer.ps1` and `Tools/test_package_release.ps1` are the synthetic regressions. Do not run two SDK wrappers concurrently in one checkout: `Compile-GameContent` builds `Generation.Tests` too and collides with `Test-Maps`/`Test-Generation`.
 
+### Disk policy (ADR-076)
+
+Each wrapper keeps only its newest output. When a build, smoke, benchmark, package or installer run finishes without FAIL, older runs of the same action are deleted. Their small `*.json` reports move to `Artifacts/reports/<action>/<commit>/<run>/`. Set `SHOOTER_KEEP_RUNS=<n>` to keep more. Heavy wrappers refuse to start below `SHOOTER_MIN_FREE_GB` (default 5) of free space. To see where space goes, including the Unity, NuGet and temp caches outside the repository, run:
+
+```powershell
+./Tools/Disk-Report.ps1
+```
+
 ### Reclaiming disk after an installer/milestone build
 
 ```powershell

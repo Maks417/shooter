@@ -51,8 +51,59 @@ function Get-ShooterUnity {
     [pscustomobject]@{ Editor = $editorPath; Lock = $lock; LockHash = Get-ShooterHash $lockPath; Project = Join-Path $root 'UnityProject' }
 }
 
+# Disk policy (ADR-076): a run folder name is <action>-<yyyyMMddTHHmmssfffZ>-<8 hex>. When a run succeeds, older runs of
+# the same action are deleted (players, packages, captures) so each pipeline keeps only its newest output. Their small
+# top-level *.json reports are kept under Artifacts/reports/<action>/ as history. SHOOTER_KEEP_RUNS (default 1) raises
+# the count; SHOOTER_MIN_FREE_GB (default 5) is the free-space floor a heavy run refuses to start below.
+function Get-ShooterRunPattern([string]$Prefix) { '^' + [regex]::Escape($Prefix) + '-\d{8}T\d{9}Z-[0-9a-f]{8}$' }
+
+function Get-ShooterKeepRuns {
+    $value = [Environment]::GetEnvironmentVariable('SHOOTER_KEEP_RUNS')
+    if ($value -match '^\d+$' -and [int]$value -ge 1) { [int]$value } else { 1 }
+}
+
+function Assert-ShooterFreeSpace([string]$Path) {
+    $minimum = [Environment]::GetEnvironmentVariable('SHOOTER_MIN_FREE_GB')
+    $minimumGb = if ($minimum -match '^\d+$') { [int]$minimum } else { 5 }
+    if ($minimumGb -eq 0) { return }
+    $drive = [IO.DriveInfo]::new([IO.Path]::GetPathRoot([IO.Path]::GetFullPath($Path)))
+    $freeGb = [math]::Floor($drive.AvailableFreeSpace / 1GB)
+    if ($freeGb -lt $minimumGb) {
+        throw "Only $freeGb GB free on $($drive.Name) (minimum $minimumGb GB). Run ./Tools/Disk-Report.ps1 and ./Tools/Clean-Artifacts.ps1, or set SHOOTER_MIN_FREE_GB."
+    }
+}
+
+# Deletes <AreaPath>/<commit>/<Prefix>-<run id> folders, keeping $KeepPath plus the newest others up to SHOOTER_KEEP_RUNS.
+function Remove-ShooterStaleRuns([string]$AreaPath, [string]$Prefix, [string]$KeepPath) {
+    if (!(Test-Path -LiteralPath $AreaPath -PathType Container)) { return }
+    $root = [IO.Path]::GetFullPath((Get-ShooterRoot)).TrimEnd('\', '/') + [IO.Path]::DirectorySeparatorChar
+    $keepFull = if ($KeepPath) { [IO.Path]::GetFullPath($KeepPath).TrimEnd('\', '/') } else { '' }
+    $pattern = Get-ShooterRunPattern $Prefix
+    $runs = @(Get-ChildItem -LiteralPath $AreaPath -Directory | Where-Object Name -cmatch '^[0-9a-f]{40}$|^preflight-rejected$' |
+        ForEach-Object { Get-ChildItem -LiteralPath $_.FullName -Directory | Where-Object Name -cmatch $pattern } |
+        Sort-Object { $_.Name.Substring($Prefix.Length + 1) } -Descending)
+    $budget = (Get-ShooterKeepRuns) - $(if ($keepFull) { 1 } else { 0 })
+    foreach ($run in $runs) {
+        $full = $run.FullName.TrimEnd('\', '/')
+        if ($full -ieq $keepFull) { continue }
+        if ($budget -gt 0) { $budget--; continue }
+        if (!$full.StartsWith($root, [StringComparison]::OrdinalIgnoreCase)) { continue }
+        $reports = @(Get-ChildItem -LiteralPath $full -File -Filter '*.json' | Where-Object Length -lt 1MB)
+        if ($reports.Count) {
+            $history = Join-Path $root ("Artifacts/reports/$Prefix/" + $run.Parent.Name + '/' + $run.Name)
+            $null = New-Item -ItemType Directory -Path $history -Force
+            foreach ($report in $reports) { Copy-Item -LiteralPath $report.FullName -Destination (Join-Path $history $report.Name) -Force }
+        }
+        # \\?\ prefix: player and package trees nest deeper than MAX_PATH.
+        [IO.Directory]::Delete('\\?\' + $full, $true)
+        Write-Host "Pruned superseded run: $($run.Parent.Name)/$($run.Name)"
+        if (!(Get-ChildItem -LiteralPath $run.Parent.FullName -Force | Select-Object -First 1)) { Remove-Item -LiteralPath $run.Parent.FullName -Force }
+    }
+}
+
 function New-ShooterRun([string]$Action, $Unity) {
     $root = Get-ShooterRoot
+    Assert-ShooterFreeSpace $root
     $commit = (& git -C $root rev-parse HEAD).Trim()
     if ($LASTEXITCODE -ne 0) { throw 'Cannot determine source commit.' }
     $id = [DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ') + '-' + [Guid]::NewGuid().ToString('N').Substring(0, 8)
@@ -123,4 +174,7 @@ function Invoke-ShooterEditor($Unity, $Run, [string[]]$EditorArguments, [int]$Ti
 function Save-ShooterRun($Run) {
     $Run.Report | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath (Join-Path $Run.Path 'run.json') -Encoding utf8NoBOM
     Write-Host "$($Run.Report.result): $($Run.Report.action); evidence: $($Run.Path)"
+    if ($Run.Report.result -cne 'FAIL' -and $Run.Report.action) {
+        Remove-ShooterStaleRuns (Split-Path -Parent (Split-Path -Parent $Run.Path)) ([string]$Run.Report.action) $Run.Path
+    }
 }

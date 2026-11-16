@@ -86,7 +86,8 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           ./Tools/Test-Unity.ps1 -Mode PlayMode
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          foreach ($target in @('Client', 'Server')) {
+          # ADR-076: offline-only scope; the dedicated server build is parked and not built by CI.
+          foreach ($target in @('Client')) {
             ./Tools/Build.ps1 -Target $target
             if ($LASTEXITCODE) { exit $LASTEXITCODE }
             $base = Join-Path $PWD ('Artifacts/m0-foundation/' + (git rev-parse HEAD).Trim())

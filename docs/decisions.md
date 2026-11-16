@@ -952,3 +952,38 @@ Addendum 2026-11-16 (T093 decision: Animation Rigging → Rejected; corrections 
   - a bounded head/neck look-at toward the aim point.
   - Gates: pure Generation goldens, EditMode, the Client build, reference-laptop CPU and a named visual review.
   - Corrected poses stay cosmetic and must never feed Simulation, hit volumes or AI (ADR-004).
+
+## ADR-076 — Accepted: offline-only scope and bounded local evidence
+
+Date 2026-11-16. The owner accepted this as part of an architecture review. Context: the C: drive filled up (2.9 GB free). Of the repository's 53 GB, `Artifacts/` held 37 GB:
+- 50 full IL2CPP client players (about 1.2 GB each);
+- 31 dedicated-server builds;
+- 27 release packages, each a second copy of a player, plus extract and corrupt rehearsal trees;
+- 22 installers.
+
+Every wrapper created a new `<commit>/<action>-<run id>` folder and nothing pruned it. `Clean-Artifacts.ps1` was manual, and it kept every run cited by any tracked file, which was most of them.
+
+Decision:
+
+1. **Offline scope.** The product is offline TDM against bots until the owner decides on multiplayer.
+   - `Networking` stays in git but is parked: no new code, and no Unity assembly references it.
+   - The Dedicated Server build is not run by CI (`foundation.yml` builds and smokes the Client only) or by the release flow. `Build.ps1 -Target Server` still works on request.
+   - New code adds no `UNITY_SERVER` guards or transport hooks. Simulation stays the single authority and Presentation stays read-only, since that structure also suits offline play.
+   - Server gates in the docs read as Parked (offline scope), not Pending.
+2. **One output per pipeline.**
+   - When a wrapper run finishes with any result other than FAIL, `Save-ShooterRun` (`Tools/Unity.Common.ps1`) deletes older runs of the same action across all commits. `Package-Release.ps1` and `Build-Installer.ps1` do the same for `package-*` and `installer-*`.
+   - Only the newest run is kept, so there is one client player, one package and one last release installer. `SHOOTER_KEEP_RUNS` raises the count.
+   - A failed run never deletes the last good one.
+   - Before a pruned run is deleted, its top-level `*.json` reports under 1 MB are copied to `Artifacts/reports/<action>/<commit>/<run>/`. That small history is what handoffs cite; they do not cite stored players.
+3. **Scratch is deleted.** On success, `Package-Release.ps1` removes its `extract-rehearsal/` and `corrupt-rehearsal/` trees. Their results remain in `validation.json` and `corrupt-rehearsal.json`.
+4. **Free-space floor.** `New-ShooterRun`, `Package-Release.ps1` and `Build-Installer.ps1` refuse to start with less than `SHOOTER_MIN_FREE_GB` free (default 5). `Tools/Disk-Report.ps1` is a read-only report covering the repository, the Artifacts areas and the per-user caches outside the repository.
+5. **One-time cleanup (2026-11-16).** These were deleted, freeing about 33 GB:
+   - all `player/` folders except the newest client build;
+   - all server runs, `package-*` runs and older installers;
+   - the ad-hoc review folders (`weapon-visuals-evidence`, `worker-evidence`, `T08xPreview`, `unity-soldier-tests`, `tooling-tests`).
+
+   The written results in handoffs remain the record of those runs.
+
+Consequences:
+- A milestone handoff can no longer point at a stored player from an older commit. It cites the report under `Artifacts/reports/` and the commit, and a rebuild from that commit reproduces the binary.
+- Two sessions running the same action at once in one checkout may prune each other's older output. Run heavy wrappers one at a time, as the runbook already requires for SDK wrappers.

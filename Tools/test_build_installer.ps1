@@ -21,6 +21,7 @@ function New-Case([string]$Name) {
     $caseRoot = Join-Path $evidence $Name
     $null = New-Item -ItemType Directory -Path (Join-Path $caseRoot 'Tools/installer') -Force
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'Build-Installer.ps1') -Destination (Join-Path $caseRoot 'Tools/Build-Installer.ps1')
+    Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'Unity.Common.ps1') -Destination (Join-Path $caseRoot 'Tools/Unity.Common.ps1')
     foreach ($f in @('installer-policy.json', 'shooter.iss')) {
         Copy-Item -LiteralPath (Join-Path $PSScriptRoot "installer/$f") -Destination (Join-Path $caseRoot "Tools/installer/$f")
     }

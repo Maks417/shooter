@@ -12,6 +12,8 @@ $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
+. (Join-Path $PSScriptRoot 'Unity.Common.ps1')
+Assert-ShooterFreeSpace $repoRoot
 $policyPath = Join-Path $PSScriptRoot 'installer/installer-policy.json'
 $issPath = Join-Path $PSScriptRoot 'installer/shooter.iss'
 if (!(Test-Path -LiteralPath $policyPath -PathType Leaf)) { throw "Missing installer policy: $policyPath" }
@@ -244,4 +246,6 @@ catch {
 
 Save-Report
 Write-Host ($report | ConvertTo-Json -Depth 8)
+# ADR-076: only the last release is kept. Older installers are deleted (their reports move to Artifacts/reports/installer).
+Remove-ShooterStaleRuns (Split-Path -Parent (Split-Path -Parent $outDir)) 'installer' $outDir
 exit 0

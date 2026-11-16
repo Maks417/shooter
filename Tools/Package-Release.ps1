@@ -11,6 +11,8 @@ $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
+. (Join-Path $PSScriptRoot 'Unity.Common.ps1')
+Assert-ShooterFreeSpace $repoRoot
 $policyPath = Join-Path $PSScriptRoot 'release-package-policy.json'
 if (!(Test-Path -LiteralPath $policyPath -PathType Leaf)) { throw "Missing release policy: $policyPath" }
 $policy = Get-Content -LiteralPath $policyPath -Raw | ConvertFrom-Json
@@ -549,4 +551,11 @@ catch {
 
 $report | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $outDir 'validation.json') -Encoding utf8
 Write-Host ($report | ConvertTo-Json -Depth 8)
+# ADR-076: rehearsal trees are scratch (their results are in validation.json / corrupt-rehearsal.json), and only the
+# newest package is kept; Build-Installer consumes it and -PreviousPackageDirectory needs only its rollback-pair.json.
+foreach ($scratch in @('extract-rehearsal', 'corrupt-rehearsal')) {
+    $scratchPath = Join-Path $outDir $scratch
+    if (Test-Path -LiteralPath $scratchPath) { [IO.Directory]::Delete('\\?\' + [IO.Path]::GetFullPath($scratchPath), $true) }
+}
+Remove-ShooterStaleRuns (Split-Path -Parent (Split-Path -Parent $outDir)) 'package' $outDir
 exit 0
