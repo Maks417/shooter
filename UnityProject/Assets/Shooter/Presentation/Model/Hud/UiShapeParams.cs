@@ -18,6 +18,8 @@ namespace Shooter.Presentation.Hud
         Triangle = 4,
         /// <summary>Diamond (rotated square) inscribed in the rect.</summary>
         Diamond = 5,
+        /// <summary>ADR-085 icon from the generated SDF atlas, stretched over the rect.</summary>
+        Glyph = 6,
     }
 
     /// <summary>

@@ -1014,6 +1014,11 @@ namespace Shooter.Presentation.Session
                 _ => ShellUiCopy.Rifle
             };
             combatUi.Label(new Rect(x + 8, y + 4, w - 16, 11), weapon, 9, TacticalUi.Muted, TextAnchor.UpperRight);
+            // ADR-085: mesh-traced silhouette of the weapon actually shown in the hands.
+            var shownProfile = WeaponVisualProfiles.Resolve(
+                actors != null ? actors.LocalVisibleWeaponId : human.ActiveWeaponDefinition,
+                actors != null ? actors.LocalVisibleWeaponSlot : human.ActiveWeaponSlot);
+            TacticalUi.Icon(new Rect(x + 8, y + 3, 64, 13), TacticalUi.WeaponIconName(shownProfile.KillFeedGlyph), TacticalUi.Muted);
             bool knife = human.ActiveWeaponSlot == 2;
             bool grenade = human.ActiveWeaponSlot == 3;
             Color magColor = !knife && human.Magazine == 0 ? TacticalUi.Enemy : TacticalUi.Text;

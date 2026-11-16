@@ -1221,3 +1221,48 @@ Addendum 2026-11-16 (HUD review):
 - **Pending.** The kill ribbon and kill feed during real kills, the scoreboard and results screens, 720p at 150% UI scale, reduced motion/flash, frame cost and a named review.
 
 Rollback: revert the ADR-084 commit and regenerate settings provenance; every primitive falls back to the flat path when the shader is absent.
+
+## ADR-085 — Accepted: generated SDF icon atlas with mesh-traced weapon silhouettes
+
+Date 2026-11-16. Wave 1, step 2 of the owner-approved visual roadmap. Sole integrator owns the icon generator, shader, presentation UI, tests and docs. No C0, Game-v1, content-format, feature-content or toolchain change; no package or content republish; no acceptance waiver.
+
+Context: after ADR-084 the HUD and shell drew every icon as a stack of rounded parts each frame. Kill-feed weapon shapes were guesses rather than the real weapons, and there were no insignia, emblems or category glyphs. ADR-002 forbids painted or imported icons.
+
+Decision:
+- **Pure generator (`Generation/Core/Icons`).** The generator has four parts:
+  - `IconShape` and `IconRecipe` are analytic signed-distance shapes in integer icon units (1000 per cell): circle, ring, rounded box, capsule, polyline stroke and even-odd polygon, combined by union and subtraction. They use IEEE add/sub/mul/div/sqrt only, and the star points are precomputed integers.
+  - `IconLibrary` holds 22 original glyphs:
+    - headshot, elimination, assist, ammo, magazine, health and reload;
+    - objective, ally arrow and enemy marker;
+    - three chevron ranks and a star;
+    - two fictional faction emblems (ally shield, enemy hexagon), which differ in shape and not only in colour;
+    - a medal star and a crown;
+    - four settings-category glyphs.
+  - `MeshSilhouette` traces a weapon's side view (+Z right, +Y up) from its meshes. It uses 4× supersampled triangle coverage and an exact Felzenszwalb distance transform in double precision.
+  - `IconAtlas` packs the glyphs into one R8 signed-distance atlas: 64-px cells, 8-px spread, 1024 px wide, value 128 at the edge. Long guns and the knife take 3 cells, the pistol 2 and the grenade 1.
+- **Weapons match the 3D models.** `ProductActorPresentation` hands the decoded packaged LOD0 mesh, magazine and cycle part of every `WeaponMeshCatalog` row to `UiIconAtlas.RegisterWeapons`. Kill-feed and ammo-plate icons are therefore silhouettes of the same packaged meshes the player sees, including any future 1.1.0 parametric rifle. A repeat registration of identical sources is skipped.
+- **Runtime, not a package.** `UiIconAtlas` builds the atlas in memory at first use and again once weapons arrive. It is uploaded as an R8 linear `Texture2D` and never written to disk or packed as an image, so the player art audit and the content format are unchanged. This replaces the earlier plan for a `ui-icons` package; a package adds identity surface without changing the bytes. A build failure logs `SHOOTER_UI_ICONS unavailable` once and the ADR-084 part-drawn icons stay in use.
+- **Shader.** `Shooter/UiSdf` gains `UiShapeKind.Glyph`, which samples the atlas cell and converts it to logical-pixel distance. Fill, gradients, stroke, shadow, glow and glint all apply to icons. `UiSdf.Icon` fits an icon by aspect, and `TacticalUi.Icon` / `WeaponIconName` wrap it.
+- **Uses:**
+  - kill-feed weapon and headshot icons;
+  - a weapon silhouette on the ammo plate for the weapon shown in the hands;
+  - settings tab glyphs;
+  - scoreboard and results tables with faction emblems on team-tinted gradient headers, rounded zebra rows, a glowing YOU row and a crown on the top scorer (presentation only; it is absent while every score is 0);
+  - an icon library section in the review gallery.
+
+Consequences: there is no new shipped file. The atlas is about 192 KB of texture memory, plus one atlas sample per icon pixel. Ranks have no data model (there is no progression), so the rank glyphs are available but unused. Medal tier art stays the ADR-084 composite.
+
+Evidence on 2026-11-16 (working tree on `41fcdaa`, recorded in the commit that adds this ADR):
+- **Pure tests.** Generation 508 PASS, including five `IconAtlasTests`:
+  - exact shape distances;
+  - every glyph has ink and a clear border;
+  - the encoding;
+  - mesh-traced proportions (rifle 2.87, carbine 2.50, knife 4.86, pistol 1.12, grenade 0.58 ink aspect);
+  - determinism with library golden `22964e2d…98f0`.
+- **EditMode.** 82/82 PASS, including `IconAtlasEditModeTests`: the Mono library hash equals the .NET golden byte for byte, the runtime atlas exposes icons, and glyph mode draws the health cross with clear corners.
+- **Other checks.** Simulation 346, Game 99, source provenance (928 entries) and the feature registry PASS.
+- **Build.** The IL2CPP client built.
+- **Player.** The player logged `SHOOTER_UI_ICONS ready icons=22` (22.4 ms), then `icons=27 weapons=5` (66.9 ms) once the packaged weapons were decoded. Captures in `Artifacts/visual-design/adr-085/20261116/`: gallery, live-match scoreboard (held Tab), settings tabs, ammo-plate icon and an atlas preview.
+- **Pending.** Kill-feed rows during real kills, results with a crowned top scorer, 720p at 150% UI scale, reference-laptop cost and a named review.
+
+Rollback: revert the ADR-085 commit. Every icon call falls back to the ADR-084 shapes or the text it had before.

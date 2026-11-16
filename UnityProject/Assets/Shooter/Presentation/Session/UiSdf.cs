@@ -177,6 +177,45 @@ namespace Shooter.Presentation.Session
             return true;
         }
 
+        private static readonly int GlyphRectId = Shader.PropertyToID("_GlyphRect");
+        private static readonly int GlyphMapId = Shader.PropertyToID("_GlyphMap");
+
+        /// <summary>
+        /// ADR-085 atlas icon fitted (aspect kept, centred) inside <paramref name="r"/>; the style's fill, gradient,
+        /// stroke, shadow and glow apply to the glyph. False when the shader or the icon is unavailable.
+        /// </summary>
+        public static bool Icon(Rect r, string name, in Style style)
+        {
+            var mat = EnsureMaterial();
+            if (mat == null) return false;
+            if (!UiIconAtlas.TryGet(name, out var entry)) return false;
+            var tex = UiIconAtlas.Texture;
+            if (tex == null) return false;
+            if (Event.current == null || Event.current.type != EventType.Repaint) return true;
+            if (r.width <= 0f || r.height <= 0f) return true;
+            float h = Mathf.Min(r.height, r.width / entry.Aspect);
+            float w = h * entry.Aspect;
+            Rect fit = new Rect(r.center.x - w * 0.5f, r.center.y - h * 0.5f, w, h);
+            float shadowSoft = style.ShadowAlpha > 0f ? style.ShadowSoftness : 0f;
+            float shadowOffset = style.ShadowAlpha > 0f ? Mathf.Max(Mathf.Abs(style.ShadowOffset.x), Mathf.Abs(style.ShadowOffset.y)) : 0f;
+            float glow = style.GlowAlpha > 0f ? style.GlowWidth : 0f;
+            float pad = UiShapeParams.Padding(shadowSoft, shadowOffset, glow);
+            Rect quad = new Rect(fit.x - pad, fit.y - pad, fit.width + pad * 2f, fit.height + pad * 2f);
+            mat.SetVector(SizePad, new Vector4(quad.width, quad.height, pad, UiShapeParams.AntiAliasPixels(DeviceScale())));
+            mat.SetVector(ShapeA, new Vector4((float)UiShapeKind.Glyph, 0f, Mathf.Max(0f, style.Stroke), (float)style.Gradient));
+            mat.SetVector(ColorId, Out4(style.Fill));
+            mat.SetVector(Color2Id, Out4(style.Gradient == Gradient.None ? style.Fill : style.Fill2));
+            mat.SetVector(ShadowId, new Vector4(style.ShadowOffset.x, style.ShadowOffset.y, style.ShadowSoftness, Mathf.Clamp01(style.ShadowAlpha)));
+            mat.SetVector(GlowId, new Vector4(glow, Mathf.Clamp01(style.GlowAlpha), style.Glint, Mathf.Clamp01(style.GlintAlpha)));
+            mat.SetVector(GlowColorId, Out4(style.GlowColor));
+            float aw = tex.width, ah = tex.height;
+            // Atlas entry Y is top-down; the texture was flipped on upload.
+            mat.SetVector(GlyphRectId, new Vector4(entry.X / aw, (ah - entry.Y - entry.Height) / ah, entry.Width / aw, entry.Height / ah));
+            mat.SetVector(GlyphMapId, new Vector4(Generation.Icons.IconAtlas.SpreadPixels, fit.height / entry.Height, 0f, 0f));
+            Graphics.DrawTexture(quad, tex, new Rect(0, 0, 1, 1), 0, 0, 0, 0, Color.white, mat);
+            return true;
+        }
+
         /// <summary>Anti-aliased capsule line between two GUI points.</summary>
         public static bool Line(Vector2 a, Vector2 b, Color color, float thickness)
         {

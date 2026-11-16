@@ -24,6 +24,10 @@ Shader "Shooter/UiSdf"
 
             // IMGUI clip mask (same globals the engine's GUI texture shader reads).
             TEXTURE2D(_GUIClipTexture); SAMPLER(sampler_GUIClipTexture);
+            // ADR-085 icon atlas (R8 signed distance, 128 = edge) bound as the DrawTexture texture.
+            TEXTURE2D(_MainTex); SAMPLER(sampler_MainTex);
+            float4 _GlyphRect; // atlas uv x, y, width, height of the icon cell
+            float4 _GlyphMap;  // spread in atlas px, logical px per atlas px, unused, unused
             float4x4 unity_GUIClipTextureMatrix;
 
             float4 _SizePad;   // quad width, quad height (logical px), pad (logical px), anti-alias (logical px)
@@ -92,8 +96,18 @@ Shader "Shooter/UiSdf"
                 return max(ring, ad);
             }
 
+            float Glyph(float2 p, float2 h)
+            {
+                float2 local = float2((p.x + h.x) / (2 * h.x), 1 - (p.y + h.y) / (2 * h.y));
+                float2 uv = _GlyphRect.xy + saturate(local) * _GlyphRect.zw;
+                float s = SAMPLE_TEXTURE2D_LOD(_MainTex, sampler_MainTex, uv, 0).r;
+                float d = (0.5 - s) * 2 * _GlyphMap.x * _GlyphMap.y;
+                return max(d, RoundedBox(p, h, 0));
+            }
+
             float ShapeDistance(float2 p, float2 h, float kind, float radius)
             {
+                if (kind > 5.5) return Glyph(p, h);
                 if (kind < 0.5) return RoundedBox(p, h, radius);
                 if (kind < 1.5) return length(p) - min(h.x, h.y);
                 if (kind < 3.5) return Arc(p, h);           // 2 (EdgeFade) is handled separately

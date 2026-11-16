@@ -9,6 +9,7 @@ using Shooter.Game.Session;
 using Shooter.Generation;
 using Shooter.Generation.Environment;
 using Shooter.Presentation.View;
+using Shooter.Generation.Icons;
 using UnityEngine;
 using EntityId = Shooter.Contracts.EntityId;
 
@@ -250,20 +251,27 @@ namespace Shooter.Presentation.Rig
                 int weaponLod = showcase ? 0 : MapVisualClosure.WeaponLodIndex(visuals.Profile);
                 bodyMesh = Own(Upload(MapVisualClosure.DecodeSoldierLod(visuals, soldierLod), true));
                 weaponMeshes.Clear();
+                var silhouettes = new List<WeaponSilhouetteSource>();
                 foreach (var source in WeaponMeshCatalog.All)
                 {
                     var set = new WeaponMeshSet();
-                    set.Held = Own(Upload(MapVisualClosure.DecodeWeaponLod(visuals, source.MeshKey, weaponLod), false));
+                    var heldData = MapVisualClosure.DecodeWeaponLod(visuals, source.MeshKey, weaponLod);
+                    set.Held = Own(Upload(heldData, false));
                     // The camera sees equipment at arm's length even on Low. Keep world LOD
                     // scalability without replacing the player's sights/grips with distant proxies.
-                    set.Local = weaponLod == 0 ? set.Held : Own(Upload(MapVisualClosure.DecodeWeaponLod(visuals, source.MeshKey, 0), false));
+                    var localData = weaponLod == 0 ? heldData : MapVisualClosure.DecodeWeaponLod(visuals, source.MeshKey, 0);
+                    set.Local = weaponLod == 0 ? set.Held : Own(Upload(localData, false));
+                    var silhouetteParts = new List<MeshData> { localData };
                     var magazine = MapVisualClosure.DecodeWeaponMagazine(visuals, source.MeshKey);
-                    if (magazine != null) set.Magazine = Own(Upload(magazine, false));
+                    if (magazine != null) { set.Magazine = Own(Upload(magazine, false)); silhouetteParts.Add(magazine); }
                     var cycle = MapVisualClosure.DecodeWeaponCycle(visuals, source.MeshKey);
-                    if (cycle != null) set.Cycle = Own(Upload(cycle, false));
+                    if (cycle != null) { set.Cycle = Own(Upload(cycle, false)); silhouetteParts.Add(cycle); }
+                    // ADR-085: HUD weapon icons are traced from these same packaged LOD0 meshes.
+                    silhouettes.Add(new WeaponSilhouetteSource(source.MeshKey, WeaponSilhouetteSource.SpanFor(source.MeshKey), silhouetteParts));
                     if (source.Recipe != null) set.SightSocket = FindSocket(WeaponGeometry.Sockets(source.Recipe), "sight-eye");
                     weaponMeshes[source.MeshKey] = set;
                 }
+                Shooter.Presentation.Session.UiIconAtlas.RegisterWeapons(silhouettes);
                 for (byte slot = 0; slot < 4; slot++)
                     for (int hand = 0; hand < 2; hand++)
                     {

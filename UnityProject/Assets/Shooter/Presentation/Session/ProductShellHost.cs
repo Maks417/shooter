@@ -8,6 +8,7 @@ using Shooter.Game.Settings;
 using Shooter.Presentation.Input;
 using Shooter.Presentation.Menus;
 using Shooter.Presentation.Scoreboard;
+using Shooter.Generation.Icons;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -705,12 +706,18 @@ namespace Shooter.Presentation.Session
             float tw = (a.width - 18) / 4;
             float tabY = a.y + 74;
             ui.Panel(new Rect(a.x, tabY, a.width, 36));
+            string[] tabIcons = { IconLibrary.Audio, IconLibrary.Video, IconLibrary.Controls, IconLibrary.Accessibility };
             for (int i = 0; i < tabs.Length; i++)
-                if (ui.Button(new Rect(a.x + i * (tw + 6), tabY + 1, tw, 34), "settings.tab." + i, tabs[i], selected: settingsTab == i, quiet: true))
+            {
+                Rect tab = new Rect(a.x + i * (tw + 6), tabY + 1, tw, 34);
+                if (ui.Button(tab, "settings.tab." + i, tabs[i], selected: settingsTab == i, quiet: true))
                 {
                     settingsTab = i;
                     settingsScroll = Vector2.zero;
                 }
+                // ADR-085 category glyph on the tab's right edge.
+                TacticalUi.Icon(new Rect(tab.xMax - 34, tab.y + 7, 20, 20), tabIcons[i], settingsTab == i ? TacticalUi.Accent : TacticalUi.Muted);
+            }
 
             var draft = settingsEditor.Draft;
             float master = draft.MasterVolume, effects = draft.EffectsVolume, uiVol = draft.UiVolume;
@@ -945,32 +952,51 @@ namespace Shooter.Presentation.Session
         {
             Rect a = ui.Safe;
             float w = (a.width - 16) * .5f;
+            // Top scorer across both teams wears the crown (presentation only; ties keep the first row).
+            int topRow = -1;
+            uint topScore = 0;
+            for (int i = 0; i < scoreboard.RowCount; i++)
+                if (scoreboard.Rows[i].Score > topScore) { topScore = scoreboard.Rows[i].Score; topRow = i; }
             for (byte team = 1; team <= 2; team++)
             {
                 float x = a.x + (team - 1) * (w + 16);
                 Color color = team == 1 ? TacticalUi.Ally : TacticalUi.Enemy;
                 ui.Panel(new Rect(x, y, w, height - 8));
-                TacticalUi.Fill(new Rect(x, y, w, 2), color);
+                // Header band: team-tinted gradient, faction emblem, name and kills.
+                Rect band = new Rect(x, y, w, 40);
+                TacticalUi.Plate(band, UiSdf.Style.Solid(new Color(color.r, color.g, color.b, .28f), Hud.UiShapeParams.PlateRadius)
+                    .WithGradient(new Color(color.r, color.g, color.b, 0f), UiSdf.Gradient.Horizontal));
+                TacticalUi.Fill(new Rect(x + 4, y, w - 8, 2), color);
+                bool emblem = TacticalUi.Icon(new Rect(x + 10, y + 6, 28, 28), team == 1 ? IconLibrary.EmblemAlly : IconLibrary.EmblemEnemy, color, shadow: true);
+                float tx = emblem ? x + 46 : x + 12;
                 uint kills = team == 1 ? scoreboard.Team1Kills : scoreboard.Team2Kills;
-                ui.Label(new Rect(x + 12, y + 8, w - 92, 24), team == 1 ? "TEAM 1 / ALLIES" : "TEAM 2 / ENEMIES", 14, color);
+                ui.Label(new Rect(tx, y + 10, w - 120, 24), team == 1 ? "TEAM 1 / ALLIES" : "TEAM 2 / ENEMIES", 14, color);
                 ui.Label(new Rect(x + w - 74, y + 4, 62, 30), kills.ToString(), 24, TacticalUi.Text, TextAnchor.UpperRight);
-                float rowY = y + 40;
+                float rowY = y + 46;
                 TacticalUi.Fill(new Rect(x + 10, rowY + 16, w - 20, 1), TacticalUi.Raised);
                 ui.Label(new Rect(x + 12, rowY, w - 148, 16), "OPERATOR", 12, TacticalUi.Muted);
                 ui.Label(new Rect(x + w - 140, rowY, 44, 16), "SCORE", 12, TacticalUi.Muted, TextAnchor.UpperRight);
                 ui.Label(new Rect(x + w - 90, rowY, 32, 16), "K", 12, TacticalUi.Muted, TextAnchor.UpperRight);
                 ui.Label(new Rect(x + w - 44, rowY, 32, 16), "D", 12, TacticalUi.Muted, TextAnchor.UpperRight);
                 int rowIndex = 0;
-                float rh = Mathf.Min(36, (height - 72) / 6);
+                float rh = Mathf.Min(36, (height - 78) / 6);
                 for (int i = 0; i < scoreboard.RowCount; i++)
                 {
                     var row = scoreboard.Rows[i];
                     if (row.Team != team) continue;
                     float ry = rowY + 20 + rowIndex * rh;
-                    TacticalUi.Fill(new Rect(x + 2, ry, w - 4, rh - 3), row.IsLocal ? TacticalUi.Raised : new Color(.04f, .055f, .06f, .55f));
-                    if (row.IsLocal) TacticalUi.Fill(new Rect(x + 2, ry, 3, rh - 3), TacticalUi.Accent);
+                    Rect rowRect = new Rect(x + 4, ry, w - 8, rh - 3);
+                    Color rowFill = row.IsLocal ? new Color(TacticalUi.Accent.r, TacticalUi.Accent.g, TacticalUi.Accent.b, .16f)
+                        : rowIndex % 2 == 0 ? new Color(.05f, .065f, .07f, .7f) : new Color(.035f, .048f, .055f, .55f);
+                    var rowStyle = UiSdf.Style.Solid(rowFill, Hud.UiShapeParams.ChipRadius);
+                    if (row.IsLocal) rowStyle = rowStyle.WithGlow(TacticalUi.Accent, 6f, ui.ReducedFlash ? .1f : .18f);
+                    TacticalUi.Plate(rowRect, rowStyle);
+                    if (row.IsLocal) TacticalUi.Plate(new Rect(x + 4, ry + 3, 3, rh - 9), UiSdf.Style.Solid(TacticalUi.Accent, 1.5f));
+                    float nx = x + 14;
+                    if (i == topRow && TacticalUi.Icon(new Rect(nx, ry + (rh - 3) * .5f - 9, 18, 18), IconLibrary.Crown, TacticalUi.Gold, shadow: true))
+                        nx += 24;
                     string name = (row.IsLocal ? "YOU / " : row.IsHuman ? "OP / " : "BOT / ") + row.DisplayName;
-                    ui.Label(new Rect(x + 14, ry, w - 160, rh - 3), name, 16, TacticalUi.Text, TextAnchor.MiddleLeft);
+                    ui.Label(new Rect(nx, ry, w - 160 - (nx - x - 14), rh - 3), name, 16, TacticalUi.Text, TextAnchor.MiddleLeft);
                     ui.Label(new Rect(x + w - 140, ry, 44, rh - 3), row.Score.ToString(), 16, TacticalUi.Accent, TextAnchor.MiddleRight);
                     ui.Label(new Rect(x + w - 90, ry, 32, rh - 3), row.Kills.ToString(), 16, TacticalUi.Text, TextAnchor.MiddleRight);
                     ui.Label(new Rect(x + w - 44, ry, 32, rh - 3), row.Deaths.ToString(), 16, TacticalUi.Muted, TextAnchor.MiddleRight);

@@ -128,11 +128,31 @@ namespace Shooter.Presentation.Session
         /// <summary>Rounded solid shape part (icons/silhouettes) with flat fallback.</summary>
         private static void Part(Rect r, Color color, float radius) => Plate(r, UiSdf.Style.Solid(color, radius));
 
+        /// <summary>ADR-085 atlas name of the mesh-traced silhouette for a kill-feed weapon.</summary>
+        public static string WeaponIconName(KillFeedWeapon weapon) => weapon switch
+        {
+            KillFeedWeapon.Carbine => "weapon.rifle-carbine",
+            KillFeedWeapon.Pistol => "weapon.pistol",
+            KillFeedWeapon.Knife => "weapon.knife",
+            KillFeedWeapon.Grenade => "weapon.grenade",
+            _ => "weapon.rifle"
+        };
+
+        /// <summary>ADR-085 atlas icon with the given ink; false when unavailable (callers keep text/shape fallbacks).</summary>
+        public static bool Icon(Rect r, string name, Color color, bool shadow = false)
+        {
+            var style = UiSdf.Style.Solid(color);
+            if (shadow) style = style.WithShadow(.45f, 4f, 1.5f);
+            return UiSdf.Icon(r, name, style);
+        }
+
         /// <summary>Procedural kill-feed weapon silhouette (analytic rounded parts; no sprites).</summary>
         public static void KillFeedWeaponIcon(Rect r, KillFeedWeapon weapon, Color color)
         {
             if (weapon == KillFeedWeapon.None || r.width <= 1f || r.height <= 1f) return;
             if (Event.current.type != EventType.Repaint) return;
+            // ADR-085: silhouette traced from the packaged weapon mesh when the atlas has it.
+            if (UiSdf.Icon(r, WeaponIconName(weapon), UiSdf.Style.Solid(color))) return;
             float x = r.x, y = r.y, w = r.width, h = r.height;
             float k = Mathf.Max(0.6f, h * 0.06f);
             switch (weapon)
@@ -203,6 +223,7 @@ namespace Shooter.Presentation.Session
             float cx = r.x + r.width * 0.5f;
             float cy = r.y + r.height * 0.5f;
             float rad = Mathf.Min(r.width, r.height) * 0.42f;
+            if (UiSdf.Icon(new Rect(cx - rad * 1.2f, cy - rad * 1.2f, rad * 2.4f, rad * 2.4f), Generation.Icons.IconLibrary.Headshot, UiSdf.Style.Solid(color))) return;
             var ringStyle = UiSdf.Style.Solid(color);
             ringStyle.Stroke = Mathf.Max(1.2f, rad * 0.24f);
             if (UiSdf.Circle(new Rect(cx - rad, cy - rad, rad * 2f, rad * 2f), ringStyle))
@@ -1058,7 +1079,28 @@ namespace Shooter.Presentation.Session
             CombatPlate(new Rect(x0 + 550, y + 22, 40, 26), strong: true);
             KillFeedHeadshotIcon(new Rect(x0 + 563, y + 28, 14, 14), Accent);
             KillFeedHeadshotIcon(new Rect(x0 + 550, y + 60, 32, 32), Accent);
+            CombatPlate(new Rect(x0 + 610, y + 22, 300, 82), strong: true);
+            Label(new Rect(x0 + 620, y + 26, 290, 14), UiIconAtlas.HasWeapons ? "MESH-TRACED (ADR-085)" : "MESH ICONS PENDING", 10, Muted);
+            if (UiIconAtlas.HasWeapons)
+            {
+                Icon(new Rect(x0 + 618, y + 42, 120, 40), "weapon.rifle", Text, shadow: true);
+                Icon(new Rect(x0 + 744, y + 42, 70, 40), "weapon.pistol", Text, shadow: true);
+                Icon(new Rect(x0 + 818, y + 42, 84, 40), "weapon.knife", Text, shadow: true);
+            }
             y += 112;
+            Label(new Rect(x0, y, 600, 16), "ICON LIBRARY (ADR-085)", 12, Accent);
+            var names = Generation.Icons.IconLibrary.All;
+            for (int i = 0; i < names.Count; i++)
+            {
+                Rect cell = new Rect(x0 + i * 46, y + 22, 40, 40);
+                CombatPlate(cell, strong: true);
+                Color ink = names[i].Name == Generation.Icons.IconLibrary.EmblemAlly ? Ally
+                    : names[i].Name == Generation.Icons.IconLibrary.EmblemEnemy || names[i].Name == Generation.Icons.IconLibrary.EnemyMarker ? Enemy
+                    : names[i].Name.StartsWith("rank", StringComparison.Ordinal) || names[i].Name == Generation.Icons.IconLibrary.Crown
+                        || names[i].Name == Generation.Icons.IconLibrary.MedalStar ? Gold : Text;
+                Icon(new Rect(cell.x + 6, cell.y + 6, 28, 28), names[i].Name, ink);
+            }
+            y += 80;
             Label(new Rect(x0, y, 400, 16), "CONTROLS AND PLATES", 12, Accent);
             Button(new Rect(x0, y + 22, 180, 40), "gallery.a", "DEFAULT");
             Button(new Rect(x0 + 190, y + 22, 180, 40), "gallery.b", "SELECTED", selected: true);
