@@ -154,25 +154,42 @@ namespace Shooter.Presentation.Session
                     break;
                 }
                 case KillFeedWeapon.Pistol:
-                    Part(new Rect(x + w * 0.10f, y + h * 0.20f, w * 0.66f, h * 0.26f), color, k);
-                    Part(new Rect(x + w * 0.14f, y + h * 0.40f, w * 0.22f, h * 0.48f), color, k * 1.5f);
-                    Part(new Rect(x + w * 0.34f, y + h * 0.44f, w * 0.12f, h * 0.14f), color, k);
-                    Part(new Rect(x + w * 0.72f, y + h * 0.27f, w * 0.14f, h * 0.10f), color, k * 0.5f);
+                {
+                    // Long thin slide, frame, angled grip, trigger guard.
+                    Part(new Rect(x + w * 0.08f, y + h * 0.18f, w * 0.80f, h * 0.24f), color, k);
+                    Part(new Rect(x + w * 0.86f, y + h * 0.24f, w * 0.08f, h * 0.10f), color, k * 0.5f);
+                    Part(new Rect(x + w * 0.14f, y + h * 0.38f, w * 0.56f, h * 0.12f), color, k * 0.5f);
+                    float gw = Mathf.Max(1.5f, h * 0.24f);
+                    if (!UiSdf.Line(new Vector2(x + w * 0.24f, y + h * 0.46f), new Vector2(x + w * 0.15f, y + h * 0.84f), color, gw))
+                        Fill(new Rect(x + w * 0.14f, y + h * 0.40f, w * 0.18f, h * 0.48f), color);
+                    var guard = UiSdf.Style.Solid(color, h * 0.1f);
+                    guard.Stroke = Mathf.Max(1f, h * 0.06f);
+                    UiSdf.Rect(new Rect(x + w * 0.30f, y + h * 0.44f, w * 0.16f, h * 0.24f), guard);
                     break;
+                }
                 case KillFeedWeapon.Knife:
-                    Part(new Rect(x + w * 0.06f, y + h * 0.40f, w * 0.30f, h * 0.22f), color, h * 0.11f);
-                    Part(new Rect(x + w * 0.34f, y + h * 0.30f, w * 0.05f, h * 0.42f), color, k);
-                    if (!UiSdf.Shape(new Rect(x + w * 0.38f, y + h * 0.38f, w * 0.58f, h * 0.18f), Hud.UiShapeKind.RoundedRect,
-                            UiSdf.Style.Solid(color, h * 0.09f)))
-                        Fill(new Rect(x + w * 0.38f, y + h * 0.42f, w * 0.56f, h * 0.14f), color);
+                {
+                    // Ridged handle, tall guard, wide blade with a pointed tip.
+                    Part(new Rect(x + w * 0.04f, y + h * 0.40f, w * 0.30f, h * 0.24f), color, h * 0.12f);
+                    Part(new Rect(x + w * 0.32f, y + h * 0.24f, w * 0.05f, h * 0.56f), color, k);
+                    Part(new Rect(x + w * 0.37f, y + h * 0.34f, w * 0.42f, h * 0.30f), color, k * 0.5f);
+                    if (!UiSdf.Shape(new Rect(x + w * 0.66f, y + h * 0.34f, w * 0.30f, h * 0.30f), Hud.UiShapeKind.Diamond, UiSdf.Style.Solid(color)))
+                        Fill(new Rect(x + w * 0.79f, y + h * 0.40f, w * 0.14f, h * 0.18f), color);
                     break;
+                }
                 case KillFeedWeapon.Grenade:
                 {
                     float d = Mathf.Min(w * 0.56f, h * 0.66f);
-                    Rect body = new Rect(x + w * 0.5f - d * 0.5f, y + h * 0.26f, d, d);
-                    if (!UiSdf.Circle(body, UiSdf.Style.Solid(color))) Fill(body, color);
-                    Part(new Rect(x + w * 0.42f, y + h * 0.12f, w * 0.18f, h * 0.18f), color, k);
-                    Part(new Rect(x + w * 0.58f, y + h * 0.08f, w * 0.16f, h * 0.08f), color, k);
+                    Rect body = new Rect(x + w * 0.5f - d * 0.5f, y + h * 0.28f, d, d);
+                    if (!UiSdf.Circle(body, UiSdf.Style.Solid(color))) { Fill(body, color); break; }
+                    // Fuze cap, spoon lever hugging the body, pull ring.
+                    Part(new Rect(body.center.x - d * 0.2f, body.y - h * 0.12f, d * 0.4f, h * 0.16f), color, k);
+                    float lw = Mathf.Max(1.2f, h * 0.08f);
+                    UiSdf.Line(new Vector2(body.center.x + d * 0.18f, body.y - h * 0.08f), new Vector2(body.xMax + d * 0.04f, body.y + d * 0.55f), color, lw);
+                    var ringStyleG = UiSdf.Style.Solid(color);
+                    ringStyleG.Stroke = lw;
+                    float rr = h * 0.22f;
+                    UiSdf.Circle(new Rect(body.center.x - d * 0.2f - rr * 1.6f, body.y - h * 0.14f - rr * 0.6f, rr, rr), ringStyleG);
                     break;
                 }
             }
@@ -278,7 +295,7 @@ namespace Shooter.Presentation.Session
                 edge.Stroke = 1f;
                 UiSdf.Rect(r, edge);
                 if (accentLeft) Plate(new Rect(r.x, r.y + 3, 2, r.height - 6), UiSdf.Style.Solid(Accent, 1f));
-                if (accentBottom) Plate(new Rect(r.x + 4, r.yMax - 2, Mathf.Min(22, r.width - 8), 1.5f), UiSdf.Style.Solid(Accent, .75f));
+                if (accentBottom) Plate(new Rect(r.x + 6, r.yMax - 5, Mathf.Min(22, r.width - 12), 2f), UiSdf.Style.Solid(Accent, 1f));
                 return;
             }
             Fill(r, plate);
@@ -374,17 +391,20 @@ namespace Shooter.Presentation.Session
             float cx = banner.x + banner.width * 0.5f, cy = banner.y + banner.height * 0.5f;
             float spread = reducedMotion ? 1f : Mathf.Lerp(0.55f, 1f, Hud.UiMotion.OutCubic(Hud.UiMotion.Progress(elapsed, Hud.UiMotion.TransitionSeconds * 1.4f)));
             float half = banner.width * 0.5f * spread;
-            Color dark = new Color(0.035f, 0.05f, 0.055f, 0.78f * alpha);
+            Color dark = new Color(0.03f, 0.042f, 0.048f, 0.9f * alpha);
             Color clear = new Color(dark.r, dark.g, dark.b, 0f);
-            Rect left = new Rect(cx - half, banner.y + 6, half, banner.height - 12);
-            Rect right = new Rect(cx, banner.y + 6, half, banner.height - 12);
-            UiSdf.Rect(left, UiSdf.Style.Solid(clear).WithGradient(dark, UiSdf.Gradient.Horizontal));
-            UiSdf.Rect(right, UiSdf.Style.Solid(dark).WithGradient(clear, UiSdf.Gradient.Horizontal));
-            Color line = A(Accent, 0.9f * alpha), lineClear = A(Accent, 0f);
-            UiSdf.Rect(new Rect(left.x, left.y, half, 1.5f), UiSdf.Style.Solid(lineClear).WithGradient(line, UiSdf.Gradient.Horizontal));
-            UiSdf.Rect(new Rect(cx, left.y, half, 1.5f), UiSdf.Style.Solid(line).WithGradient(lineClear, UiSdf.Gradient.Horizontal));
-            UiSdf.Rect(new Rect(left.x, left.yMax - 1.5f, half, 1.5f), UiSdf.Style.Solid(lineClear).WithGradient(A(line, .6f), UiSdf.Gradient.Horizontal));
-            UiSdf.Rect(new Rect(cx, left.yMax - 1.5f, half, 1.5f), UiSdf.Style.Solid(A(line, .6f)).WithGradient(lineClear, UiSdf.Gradient.Horizontal));
+            float top = banner.y + 6, height = banner.height - 12, fadeW = half * 0.6f;
+            UiSdf.Rect(new Rect(cx - half, top, fadeW, height), UiSdf.Style.Solid(clear).WithGradient(dark, UiSdf.Gradient.Horizontal));
+            UiSdf.Rect(new Rect(cx - half + fadeW - 0.5f, top, (half - fadeW) * 2f + 1f, height), UiSdf.Style.Solid(dark));
+            UiSdf.Rect(new Rect(cx + half - fadeW, top, fadeW, height), UiSdf.Style.Solid(dark).WithGradient(clear, UiSdf.Gradient.Horizontal));
+            Color line = A(Accent, alpha), lineClear = A(Accent, 0f);
+            for (int edge = 0; edge < 2; edge++)
+            {
+                float ly = edge == 0 ? top : top + height - 2f;
+                Color l = edge == 0 ? line : A(line, .55f);
+                UiSdf.Rect(new Rect(cx - half, ly, half, 2f), UiSdf.Style.Solid(lineClear).WithGradient(l, UiSdf.Gradient.Horizontal));
+                UiSdf.Rect(new Rect(cx, ly, half, 2f), UiSdf.Style.Solid(l).WithGradient(lineClear, UiSdf.Gradient.Horizontal));
+            }
 
             int tier = Mathf.Clamp(streak, 1, 4);
             float baseSize = Mathf.Min(banner.height - 2f, 30f + 3f * (tier - 1));
@@ -764,7 +784,7 @@ namespace Shooter.Presentation.Session
                 value = Mathf.Clamp(value + (Event.current.keyCode == KeyCode.LeftArrow ? -1 : 1) * (max - min) * .02f, min, max);
                 Event.current.Use();
             }
-            bool sdf = UiSdf.Rect(track, UiSdf.Style.Solid(new Color32(20, 26, 30, 255), 3f).WithGradient(Raised, UiSdf.Gradient.Vertical));
+            bool sdf = UiSdf.Rect(track, UiSdf.Style.Solid(new Color32(52, 62, 68, 255), 3f).WithGradient(new Color32(36, 44, 49, 255), UiSdf.Gradient.Vertical));
             if (sdf)
             {
                 float fillW = Mathf.InverseLerp(min, max, value) * track.width;
@@ -946,8 +966,11 @@ namespace Shooter.Presentation.Session
             float barY = panel.yMax - 36;
             float barX = textX;
             float barW = textW;
-            if (UiSdf.Rect(new Rect(barX, barY, barW, 10), UiSdf.Style.Solid(new Color32(18, 24, 28, 255), 5f).WithGradient(Raised, UiSdf.Gradient.Vertical)))
+            if (UiSdf.Rect(new Rect(barX, barY, barW, 10), UiSdf.Style.Solid(new Color32(48, 58, 64, 255), 5f).WithGradient(new Color32(30, 38, 43, 255), UiSdf.Gradient.Vertical)))
             {
+                var trackRim = UiSdf.Style.Solid(new Color(1f, 1f, 1f, .10f), 5f);
+                trackRim.Stroke = 1f;
+                UiSdf.Rect(new Rect(barX, barY, barW, 10), trackRim);
                 if (reducedMotion)
                 {
                     UiSdf.Rect(new Rect(barX + 2, barY + 2, barW - 4, 6), UiSdf.Style.Solid(Accent, 3f));
@@ -996,6 +1019,60 @@ namespace Shooter.Presentation.Session
             Fill(new Rect(a.x, a.yMax - 24, 16, 1), Accent);
             Label(new Rect(a.x, a.yMax - 16, a.width, 16), footer ?? "", 12, Muted);
             return cancel;
+        }
+
+        /// <summary>
+        /// Review-only UI gallery (<c>-shooterUiGallery 1</c>): medal tiers with looping stamp, kill ribbons,
+        /// kill-feed icons at feed and large size, and control states. Draws nothing gameplay-related.
+        /// </summary>
+        public void DrawUiGallery()
+        {
+            Backdrop();
+            Header("REVIEW / UI GALLERY", "Interface elements", "ADR-084");
+            float t = Time.realtimeSinceStartup;
+            float loop = t % 2.6f;
+            float x0 = Safe.x, y = Safe.y + 84;
+            Label(new Rect(x0, y, 400, 16), "MEDALS  TIER 1-4  (LOOPING STAMP)", 12, Accent);
+            for (int i = 0; i < 4; i++)
+            {
+                float size = 56f * Hud.UiMotion.StampScale(loop, ReducedMotion);
+                Rect c = new Rect(x0 + 40 + i * 150, y + 70, 0, 0);
+                Medal(new Rect(c.x - size * .5f, c.y - size * .5f, size, size), i + 1, Hud.UiMotion.EnterAlpha(loop), Hud.UiMotion.GlintPosition(loop, ReducedFlash));
+            }
+            for (int i = 0; i < 4; i++)
+                Medal(new Rect(x0 + 640 + i * 70 - 16, y + 54, 32, 32), i + 1, 1f);
+            y += 140;
+            Label(new Rect(x0, y, 400, 16), "KILL RIBBON", 12, Accent);
+            ScoreRibbon(new Rect(x0, y + 24, 260, 40), 1f, loop, 1, ReducedMotion, ReducedFlash);
+            ScoreRibbon(new Rect(x0 + 300, y + 24, 260, 40), 1f, loop, 3, ReducedMotion, ReducedFlash);
+            ScoreRibbon(new Rect(x0 + 600, y + 24, 260, 40), 1f, 10f, 4, ReducedMotion, ReducedFlash);
+            y += 90;
+            Label(new Rect(x0, y, 400, 16), "KILL FEED ICONS  (FEED SIZE / LARGE)", 12, Accent);
+            var weapons = new[] { KillFeedWeapon.Rifle, KillFeedWeapon.Carbine, KillFeedWeapon.Pistol, KillFeedWeapon.Knife, KillFeedWeapon.Grenade };
+            for (int i = 0; i < weapons.Length; i++)
+            {
+                CombatPlate(new Rect(x0 + i * 110, y + 22, 100, 26), strong: true);
+                KillFeedWeaponIcon(new Rect(x0 + i * 110 + 30, y + 28, 40, 14), weapons[i], Text);
+                KillFeedWeaponIcon(new Rect(x0 + i * 110 + 4, y + 60, 92, 32), weapons[i], Text);
+            }
+            CombatPlate(new Rect(x0 + 550, y + 22, 40, 26), strong: true);
+            KillFeedHeadshotIcon(new Rect(x0 + 563, y + 28, 14, 14), Accent);
+            KillFeedHeadshotIcon(new Rect(x0 + 550, y + 60, 32, 32), Accent);
+            y += 112;
+            Label(new Rect(x0, y, 400, 16), "CONTROLS AND PLATES", 12, Accent);
+            Button(new Rect(x0, y + 22, 180, 40), "gallery.a", "DEFAULT");
+            Button(new Rect(x0 + 190, y + 22, 180, 40), "gallery.b", "SELECTED", selected: true);
+            Button(new Rect(x0 + 380, y + 22, 180, 40), "gallery.c", "PRIMARY", primary: true);
+            Toggle(new Rect(x0 + 570, y + 22, 260, 40), "gallery.t", "SWITCH", (int)(t / 1.5f) % 2 == 0);
+            Slider(new Rect(x0, y + 74, 360, 24), "gallery.s", "Slider", Mathf.PingPong(t * .3f, 1f), 0f, 1f, "");
+            CombatPlate(new Rect(x0 + 400, y + 74, 200, 52), accentLeft: true, accentBottom: true);
+            Label(new Rect(x0 + 412, y + 86, 180, 30), "30 / 090", 24);
+            float cx = x0 + 680, cy = y + 100;
+            ReticleArm(new Rect(cx - 9.5f, cy - .75f, 6, 1.5f));
+            ReticleArm(new Rect(cx + 3.5f, cy - .75f, 6, 1.5f));
+            ReticleArm(new Rect(cx - .75f, cy - 9.5f, 1.5f, 6));
+            ReticleArm(new Rect(cx - .75f, cy + 3.5f, 1.5f, 6));
+            HitMarker(cx + 70, cy, 1f);
         }
 
         public static string Clock(uint remainingTicks)

@@ -31,6 +31,8 @@ namespace Shooter.Presentation.Session
         private bool scoreboardHeld;
         private bool quitRequested;
         private float uiScale = 1f;
+        // Review-only: -shooterUiGallery 1 replaces Main with the ADR-084 element gallery.
+        private readonly bool uiGallery = System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-shooterUiGallery") >= 0;
         private IUserSettingsStore? settingsStore;
         private UserSettingsEditor? settingsEditor;
         private IClientSettingsApplier? settingsApplier;
@@ -435,7 +437,8 @@ namespace Shooter.Presentation.Session
             switch (navigation.Screen)
             {
                 case ShellScreen.Main:
-                    DrawMain(s);
+                    if (uiGallery) ui.DrawUiGallery();
+                    else DrawMain(s);
                     break;
                 case ShellScreen.Setup:
                     DrawSetup(s);

@@ -1205,4 +1205,15 @@ Evidence on 2026-11-16 (working tree on `fa2cbc9`, recorded in the commit that a
 - **Fixes found during review.** The selected card's square accent border became a rounded stroke, and the caption plate is now rounded. The left scrim's 28 stepped strips (visible banding) became two smooth gradients.
 - **Pending.** The live combat HUD, kill-ribbon medal and loading screen in a running match were not driven: automated key input could not reach START MATCH reliably. Those, 720p at 100%/150% UI scale, reduced motion/flash, reference-laptop frame cost and a named visual review are Pending.
 
+Addendum 2026-11-16 (HUD review):
+- **How it was driven.** A live Oil Depot 6v6 match was started from the player and captured with the loading screen. A review-only `-shooterUiGallery 1` flag (`TacticalUi.DrawUiGallery`, which replaces Main) shows the medal tiers with a looping stamp, the kill ribbons, kill-feed icons at feed and large size, control states, the ammo plate, the reticle and the hit marker. This covers what an idle match cannot trigger. Captures are in `Artifacts/visual-design/adr-084/20261116-hud/`.
+- **Fixes from the review:**
+  - the ribbon banner was too transparent over bright scenes: its middle is now solid at 90% with 2-px rails;
+  - the ammo-plate accent hung off the rounded edge and now sits inside the plate;
+  - the loading track and slider track were too dark to read and are now lighter with a rim;
+  - the pistol, knife and grenade silhouettes were redrawn (angled grip and trigger guard, pointed blade, spoon lever and pull ring);
+  - hip reticle arms went from 1 px to 1.5 px and from 5 px to 6 px long.
+- **Still open, outside the UI.** In hip fire, the rifle muzzle sits under the screen-centre reticle, which hides the arms. That is the T084 hip-framing composition, not the UI layer, and needs its own change.
+- **Pending.** The kill ribbon and kill feed during real kills, the scoreboard and results screens, 720p at 150% UI scale, reduced motion/flash, frame cost and a named review.
+
 Rollback: revert the ADR-084 commit and regenerate settings provenance; every primitive falls back to the flat path when the shader is absent.

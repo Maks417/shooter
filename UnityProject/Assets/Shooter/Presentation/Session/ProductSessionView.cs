@@ -989,11 +989,11 @@ namespace Shooter.Presentation.Session
                 // Hip reticle yields once the optic/irons take the aim picture.
                 if (!AdsOpticVisual.HideHipReticle(adsPresent))
                 {
-                    const float arm = 5f, gap = 3.5f;
-                    TacticalUi.ReticleArm(new Rect(cx - gap - arm, cy - 0.5f, arm, 1));
-                    TacticalUi.ReticleArm(new Rect(cx + gap, cy - 0.5f, arm, 1));
-                    TacticalUi.ReticleArm(new Rect(cx - 0.5f, cy - gap - arm, 1, arm));
-                    TacticalUi.ReticleArm(new Rect(cx - 0.5f, cy + gap, 1, arm));
+                    const float arm = 6f, gap = 3.5f, w = 1.5f;
+                    TacticalUi.ReticleArm(new Rect(cx - gap - arm, cy - w * .5f, arm, w));
+                    TacticalUi.ReticleArm(new Rect(cx + gap, cy - w * .5f, arm, w));
+                    TacticalUi.ReticleArm(new Rect(cx - w * .5f, cy - gap - arm, w, arm));
+                    TacticalUi.ReticleArm(new Rect(cx - w * .5f, cy + gap, w, arm));
                 }
                 float markerAlpha = FirstPersonHitFeedback.HitMarkerAlpha(hitMarkerUntil - Time.unscaledTime);
                 if (markerAlpha > 0.02f) TacticalUi.HitMarker(cx, cy, markerAlpha);
