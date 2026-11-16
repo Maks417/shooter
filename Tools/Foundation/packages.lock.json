@@ -14,6 +14,13 @@
       "shooter.generation.core": {
         "type": "Project",
         "dependencies": {
+          "Shooter.Contracts": "[1.0.0, )",
+          "Shooter.VectorMath": "[1.0.0, )"
+        }
+      },
+      "shooter.vectormath": {
+        "type": "Project",
+        "dependencies": {
           "Shooter.Contracts": "[1.0.0, )"
         }
       }

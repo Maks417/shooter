@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using Shooter.Contracts;
+using static Shooter.VectorMath.VecMath;
 
 namespace Shooter.Simulation.Combat
 {
@@ -45,13 +46,6 @@ namespace Shooter.Simulation.Combat
             Float3 alt = Math.Abs(aim.Y) > 0.999f ? new Float3(1, 0, 0) : new Float3(0, 1, 0);
             right = Normalize(Cross(alt, aim));
             up = Cross(aim, right);
-        }
-
-        private static Float3 Cross(Float3 a, Float3 b) => new Float3(a.Y * b.Z - a.Z * b.Y, a.Z * b.X - a.X * b.Z, a.X * b.Y - a.Y * b.X);
-        private static Float3 Normalize(Float3 a)
-        {
-            double len = Math.Sqrt(a.LengthSquared);
-            return new Float3((float)(a.X / len), (float)(a.Y / len), (float)(a.Z / len));
         }
     }
 }

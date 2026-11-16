@@ -2,6 +2,7 @@
 using System;
 using Shooter.Bootstrap;
 using Shooter.Contracts;
+using Shooter.VectorMath;
 using Shooter.Simulation.Motor;
 using Xunit;
 
@@ -176,7 +177,7 @@ namespace Shooter.Simulation.Tests.Motor
                 state = motor.Step(state, Cmd(t, my: 1), t, world);
             Assert.False(state.SprintActive);
             Assert.True(state.Tightness > 0f);
-            Assert.InRange(MotorMath.Length(MotorMath.Horizontal(state.Velocity)), motor.Config.WalkSpeed - 0.05f, motor.Config.WalkSpeed + 0.05f);
+            Assert.InRange(VecMath.Length(MotorMath.Horizontal(state.Velocity)), motor.Config.WalkSpeed - 0.05f, motor.Config.WalkSpeed + 0.05f);
         }
 
         [Fact]

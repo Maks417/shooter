@@ -25,6 +25,7 @@
     <Compile Include="../../UnityProject/Assets/Shooter/Game/Session/**/*.cs" />
     <ProjectReference Include="../Contracts/Shooter.Contracts.csproj" />
     <ProjectReference Include="../Game.Contracts/Shooter.Game.Contracts.csproj" />
+    <ProjectReference Include="../VectorMath/Shooter.VectorMath.csproj" />
     <ProjectReference Include="../Generation/Shooter.Generation.Core.csproj" />
   </ItemGroup>
 </Project>
