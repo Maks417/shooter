@@ -14,7 +14,7 @@ function Write-TestFile([string]$Root, [string]$Relative, [string]$Text) {
 function Get-TestProof([string]$Root, [string]$Relative) {
     @{ path = $Relative; sha256 = (Get-FileHash -LiteralPath (Join-Path $Root $Relative) -Algorithm SHA256).Hash.ToLowerInvariant() }
 }
-function Invoke-ProvenanceCase([string]$Name, [scriptblock]$Mutate, [string]$ExpectedError = '', [string]$OutputAsset = 'UnityProject/Assets/Shooter/Settings/Test.asset') {
+function Invoke-ProvenanceCase([string]$Name, [scriptblock]$Mutate, [string]$ExpectedError = '', [string]$OutputAsset = 'UnityProject/Assets/Shooter/Settings/Test.asset', [scriptblock]$MutatePolicy = $null) {
     $root = Join-Path $evidence $Name
     $null = New-Item -ItemType Directory -Path (Join-Path $root 'Tools') -Force
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'Test-SourceProvenance.ps1') -Destination (Join-Path $root 'Tools/Test-SourceProvenance.ps1')
@@ -24,6 +24,7 @@ function Invoke-ProvenanceCase([string]$Name, [scriptblock]$Mutate, [string]$Exp
     $manifestRelative = 'UnityProject/Assets/Shooter/Settings/provenance.json'
     Write-TestFile $root $manifestRelative '{}'
     $policy = @{ scope = 'Synthetic wrapper regression only; no art or hardware acceptance'; assetSourceExtensions = @('.cs', '.asmdef', '.meta', '.json'); generatedAssetsManifest = $manifestRelative; nonShippingFixtures = @() }
+    if ($MutatePolicy) { & $MutatePolicy $policy $root }
     Write-TestFile $root 'Tools/provenance-allowlist.json' ($policy | ConvertTo-Json -Depth 8)
     $manifest = @{ schemaVersion = 1; generatorId = 'shooter.foundation.settings'; generatorVersion = '1.0.0'; toolchainHash = (Get-TestProof $root 'toolchain-lock.json').sha256; sources = @((Get-TestProof $root 'UnityProject/Assets/Shooter/Build.cs')); artifacts = @((Get-TestProof $root $OutputAsset)) }
     & $Mutate $manifest $root
@@ -79,6 +80,27 @@ try {
     Invoke-ProvenanceCase 'invalid-second-artifact' { param($m, $r) $m.artifacts += @{ path = ''; sha256 = '0' * 64 } } 'Malformed artifact provenance proof'
     $invalidReport = Get-Content -LiteralPath (Join-Path $evidence 'invalid-second-artifact/Artifacts/source-provenance/result.json') -Raw | ConvertFrom-Json
     if (!(($invalidReport.errors -join "`n").Contains('Unapproved asset source:'))) { throw 'Partially invalid manifest still whitelisted its first artifact' }
+    # ADR-075 third-party code and native binary categories.
+    $vendored = 'UnityProject/Assets/Shooter/Generation/Core/Noise/ThirdParty/Lib.cs'
+    $binaryPath = 'UnityProject/Assets/Plugins/x86_64/lib.dll'
+    $listCode = { param($p, $r, [string]$hash = '', [string]$license = 'MIT')
+        Write-TestFile $r $vendored '// synthetic vendored third-party source'
+        if (!$hash) { $hash = (Get-TestProof $r $vendored).sha256 }
+        $p.namedThirdPartyCodeSources = @(@{ path = $vendored; sha256 = $hash; upstreamSha256 = $hash; upstream = 'https://example.invalid/lib'; tag = 'v1.0.0'; license = $license })
+    }
+    $listBinary = { param($p, $r, [string]$hash = '', [string]$platform = 'Win64')
+        Write-TestFile $r $binaryPath 'synthetic native binary bytes'
+        if (!$hash) { $hash = (Get-TestProof $r $binaryPath).sha256 }
+        $p.namedNativeBinaries = @(@{ path = $binaryPath; sha256 = $hash; upstream = 'https://example.invalid/lib'; tag = 'v1.0.0'; license = 'Apache-2.0'; platform = $platform })
+    }
+    Invoke-ProvenanceCase 'valid-third-party-code' {} '' -MutatePolicy { param($p, $r) & $listCode $p $r }
+    Invoke-ProvenanceCase 'third-party-hash-mismatch' {} 'Third-party code hash mismatch' -MutatePolicy { param($p, $r) & $listCode $p $r ('0' * 64) }
+    Invoke-ProvenanceCase 'third-party-missing-license' {} 'Malformed namedThirdPartyCodeSources entry' -MutatePolicy { param($p, $r) & $listCode $p $r '' ' ' }
+    Invoke-ProvenanceCase 'unlisted-third-party' {} 'Unlisted third-party source' -MutatePolicy { param($p, $r) Write-TestFile $r $vendored '// unlisted vendored source' }
+    Invoke-ProvenanceCase 'valid-native-binary' {} '' -MutatePolicy { param($p, $r) & $listBinary $p $r }
+    Invoke-ProvenanceCase 'native-binary-hash-mismatch' {} 'Native binary hash mismatch' -MutatePolicy { param($p, $r) & $listBinary $p $r ('0' * 64) }
+    Invoke-ProvenanceCase 'native-binary-wrong-platform' {} 'Malformed namedNativeBinaries entry' -MutatePolicy { param($p, $r) & $listBinary $p $r '' 'Linux64' }
+    Invoke-ProvenanceCase 'unlisted-native-binary' {} 'Unapproved asset source' -MutatePolicy { param($p, $r) Write-TestFile $r $binaryPath 'unlisted native binary bytes' }
     $summary = [ordered]@{ result = 'PASS'; testCount = $results.Count; scope = 'Synthetic standalone provenance wrapper regressions only'; cases = @($results) }
     $summary | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $evidence 'results.json') -Encoding utf8NoBOM
     Write-Host "PASS: $($results.Count) provenance wrapper cases; evidence: $evidence"

@@ -20,6 +20,26 @@ foreach ($font in @($policy.namedFontSources | Where-Object { $null -ne $_ })) {
     if ($font.path -isnot [string] -or $font.path -cnotmatch '^UnityProject/Assets/Shooter/Presentation/Fonts/[A-Za-z0-9_./-]+\.ttf$' -or $font.path.Contains('..') -or $font.sha256 -cnotmatch '^[0-9a-f]{64}$') { throw 'Malformed namedFontSources entry' }
     $namedFonts[[IO.Path]::GetFullPath((Join-Path $repoRoot $font.path))] = $font.sha256
 }
+# ADR-075: vendored third-party C# lives only under a ThirdParty/ folder and is hash-pinned with its upstream identity.
+# ADR-075: prebuilt native binaries are hash-pinned per file, Win64 Plugins only. Malformed entries are reported, not thrown.
+$namedThirdParty = @{}
+$namedBinaries = @{}
+function Test-UpstreamFields($Entry) {
+    foreach ($field in @('upstream', 'tag', 'license')) {
+        if ($Entry.$field -isnot [string] -or [string]::IsNullOrWhiteSpace($Entry.$field)) { return $false }
+    }
+    return $Entry.upstream -cmatch '^https://' -and $Entry.sha256 -is [string] -and $Entry.sha256 -cmatch '^[0-9a-f]{64}$'
+}
+foreach ($code in @($policy.PSObject.Properties['namedThirdPartyCodeSources'] | ForEach-Object { $_.Value } | Where-Object { $null -ne $_ })) {
+    if ($code.path -isnot [string] -or $code.path -cnotmatch '^UnityProject/Assets/Shooter/[A-Za-z0-9_./-]+/ThirdParty/[A-Za-z0-9_.-]+\.cs$' -or $code.path.Contains('..') -or
+        !(Test-UpstreamFields $code) -or $code.upstreamSha256 -isnot [string] -or $code.upstreamSha256 -cnotmatch '^[0-9a-f]{64}$') { $failures.Add('Malformed namedThirdPartyCodeSources entry'); continue }
+    $namedThirdParty[[IO.Path]::GetFullPath((Join-Path $repoRoot $code.path))] = $code.sha256
+}
+foreach ($binary in @($policy.PSObject.Properties['namedNativeBinaries'] | ForEach-Object { $_.Value } | Where-Object { $null -ne $_ })) {
+    if ($binary.path -isnot [string] -or $binary.path -cnotmatch '^UnityProject/Assets/Plugins/[A-Za-z0-9_./-]+\.dll$' -or $binary.path.Contains('..') -or
+        !(Test-UpstreamFields $binary) -or $binary.platform -cne 'Win64') { $failures.Add('Malformed namedNativeBinaries entry'); continue }
+    $namedBinaries[[IO.Path]::GetFullPath((Join-Path $repoRoot $binary.path))] = $binary.sha256
+}
 function Test-ProofFile($Proof, [string]$Kind) {
     if ($Proof -isnot [pscustomobject] -or $Proof.path -isnot [string] -or [string]::IsNullOrWhiteSpace($Proof.path) -or
         $Proof.sha256 -isnot [string] -or $Proof.sha256 -cnotmatch '^[0-9a-f]{64}$') { throw "Malformed $Kind provenance proof" }
@@ -64,7 +84,8 @@ else { $failures.Add('Generated settings provenance is missing') }
 $assetFiles = @(Get-ChildItem -LiteralPath $assetRoot -Recurse -Force)
 foreach ($item in $assetFiles) {
     if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) { $failures.Add("Unreviewed reparse point: $($item.FullName)") }
-    if (!$item.PSIsContainer -and $item.Extension -notin $policy.assetSourceExtensions -and !$generated.ContainsKey($item.FullName) -and !$namedNative.ContainsKey($item.FullName) -and !$namedFonts.ContainsKey($item.FullName)) { $failures.Add("Unapproved asset source: $($item.FullName)") }
+    if (!$item.PSIsContainer -and $item.Extension -notin $policy.assetSourceExtensions -and !$generated.ContainsKey($item.FullName) -and !$namedNative.ContainsKey($item.FullName) -and !$namedFonts.ContainsKey($item.FullName) -and !$namedBinaries.ContainsKey($item.FullName)) { $failures.Add("Unapproved asset source: $($item.FullName)") }
+    if (!$item.PSIsContainer -and $item.Extension -ne '.meta' -and $item.FullName -match '[\\/]ThirdParty[\\/]' -and !$namedThirdParty.ContainsKey($item.FullName)) { $failures.Add("Unlisted third-party source: $($item.FullName)") }
     if ($item.Extension -eq '.meta') {
         $target = $item.FullName.Substring(0, $item.FullName.Length - 5)
         if (!(Test-Path -LiteralPath $target)) { $failures.Add("Orphan metadata: $($item.FullName)") }
@@ -86,6 +107,14 @@ foreach ($native in $namedNative.GetEnumerator()) {
 foreach ($font in $namedFonts.GetEnumerator()) {
     if (!(Test-Path -LiteralPath $font.Key -PathType Leaf)) { $failures.Add("Missing named font source: $($font.Key)"); continue }
     if ((Get-FileHash -LiteralPath $font.Key -Algorithm SHA256).Hash.ToLowerInvariant() -cne $font.Value) { $failures.Add("Named font source hash mismatch: $($font.Key)") }
+}
+foreach ($code in $namedThirdParty.GetEnumerator()) {
+    if (!(Test-Path -LiteralPath $code.Key -PathType Leaf)) { $failures.Add("Missing third-party code source: $($code.Key)"); continue }
+    if ((Get-FileHash -LiteralPath $code.Key -Algorithm SHA256).Hash.ToLowerInvariant() -cne $code.Value) { $failures.Add("Third-party code hash mismatch: $($code.Key)") }
+}
+foreach ($binary in $namedBinaries.GetEnumerator()) {
+    if (!(Test-Path -LiteralPath $binary.Key -PathType Leaf)) { $failures.Add("Missing native binary: $($binary.Key)"); continue }
+    if ((Get-FileHash -LiteralPath $binary.Key -Algorithm SHA256).Hash.ToLowerInvariant() -cne $binary.Value) { $failures.Add("Native binary hash mismatch: $($binary.Key)") }
 }
 $reportDirectory = Join-Path $repoRoot 'Artifacts/source-provenance'
 $null = New-Item -ItemType Directory -Path $reportDirectory -Force

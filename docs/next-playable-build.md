@@ -79,6 +79,10 @@ Local sprint slide is implemented and built at 5eaced5; clean Game 56 / EditMode
 | T070 — measurement | Finish/results/replay, cumulative active soak capture and honest counters, included in candidate. | Twelve reference captures + two map soaks PendingHardware; validate on final matching binary/content. |
 | T071 — owner candidate | Clean `7cd7e81` Client/Server, archive/hash/inventory, recorded menu launch. | **Partial:** named manual play matrix, complete matches/results/replay, actual corruption/recovery and prior-pair rollback. |
 | T062 / T065 — final acceptance | Visual inventory/tooling and operator checklist. | P05 FAIL retained; named review, full match/device/reference/soak/delivery exits. REL01–REL06 NotClaimed. |
+| T091 — third-party provenance | ADR-075 `namedThirdPartyCodeSources` / `namedNativeBinaries` allowlist categories, enforced by `Test-SourceProvenance.ps1`, with 8 new wrapper regressions. | Done (2026-11-16); later tasks add their entries. |
+| T092 — noise primitive | FastNoiseLite v1.1.1, double-precision scripted port, `NoiseField` periodic wrapper, cross-lane goldens (.NET + EditMode). | Accepted as a primitive. A proof generator (`material.noise`) and its feature-content lock refreeze are waiting on owner sign-off. |
+| T093 — runtime rig correction | Not started. Spike Animation Rigging 1.4.1 (editor-bundled) on remote soldiers; fallback is runtime `TwoBoneIk`. | Spike, Client/Server builds, CPU and named visual review. |
+| T094 — spatial audio | Not started. Spike the Steam Audio Unity integration as a per-voice spatial pool behind the stereo mixer. | Spike, native-binary allowlist entries, builds, CPU and named headphone review. |
 
 ## Immediate owner path: T071 playtest
 
