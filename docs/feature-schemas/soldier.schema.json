@@ -24,7 +24,10 @@
       "const": "soldier.loft"
     },
     "generatorVersion": {
-      "const": "1.0.2"
+      "enum": [
+        "1.0.2",
+        "1.0.3"
+      ]
     },
     "seed": {
       "type": "string",

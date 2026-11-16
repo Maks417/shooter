@@ -1,0 +1,12 @@
+{
+  "schemaId": "shooter.recipe.fx-flipbook.v1",
+  "generatorId": "fx.flipbook",
+  "generatorVersion": "1.0.0",
+  "recipeId": "fx/smoke",
+  "seed": "460072030",
+  "dependencies": [],
+  "parameters": {
+    "cell": 32,
+    "kind": "Smoke"
+  }
+}

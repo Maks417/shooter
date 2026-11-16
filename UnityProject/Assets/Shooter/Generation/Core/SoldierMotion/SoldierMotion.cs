@@ -98,7 +98,8 @@ namespace Shooter.Generation
         private readonly SoldierPose pose = new SoldierPose();
         private readonly ArmBodyClearance.Context armBody = new ArmBodyClearance.Context();
         private readonly FootState left = new FootState(), right = new FootState();
-        private readonly Float3 grip, support, magazine, stock, sight;
+        private Float3 grip, support, magazine, stock, sight;
+        private readonly bool upgraded;
         private bool initialized, running, wasMoving;
         private double previousDistance;
         private Float3 previousRoot;
@@ -110,8 +111,9 @@ namespace Shooter.Generation
         private Float3 cachedChest;
         private static readonly Float3 Up = new Float3(0, 1, 0), Forward = new Float3(0, 0, 1);
 
-        public SoldierMotion(WeaponRecipe rifle)
+        public SoldierMotion(WeaponRecipe rifle, bool upgraded = false)
         {
+            this.upgraded=upgraded;
             if (rifle == null || rifle.Kind != "rifle") throw new ArgumentException("The M1 motion spike requires the validated baseline rifle.", nameof(rifle));
             foreach (var socket in WeaponGeometry.Sockets(rifle))
             {
@@ -121,6 +123,53 @@ namespace Shooter.Generation
                 else if (socket.Id == "shoulder") stock = socket.Position;
                 else if (socket.Id == "sight-eye") sight = socket.Position;
             }
+        }
+
+        public void SetVisualWeapon(WeaponRecipe recipe)
+        {
+            foreach(var socket in WeaponGeometry.Sockets(recipe))
+            {
+                if(socket.Id=="right-hand-grip")grip=socket.Position;
+                else if(socket.Id=="left-hand-grip")support=socket.Position;
+                else if(socket.Id=="magazine-grip")magazine=socket.Position;
+                else if(socket.Id=="shoulder")stock=socket.Position;
+                else if(socket.Id=="sight-eye")sight=socket.Position;
+            }
+            upperCacheValid=false;
+        }
+        private void AlignHeadToSight(SoldierMotionInput input)
+        {
+            // Bounded two-segment neck look-at; root/chest, weapon and all hit poses stay untouched.
+            var p=pose.Positions;var r=pose.Rotations;
+            var aim=Multiply(AxisAngle(Up,input.YawRadians+input.AimYawRadians),AxisAngle(new Float3(1,0,0),-input.AimPitchRadians));
+            var axis=Rotate(Forward,pose.WeaponRotation);
+            var leftArm=TwoBoneIk.Solve(p[8],pose.LeftHandTarget,Rotate(new Float3(-1,-.65f,.35f),r[4]),.29f,.26f,145*Radians,.98f);
+            var rightArm=TwoBoneIk.Solve(p[12],pose.RightHandTarget,Rotate(new Float3(1,-.65f,.35f),r[4]),.29f,.26f,145*Radians,.98f);
+            Float3 target=p[6];Quat headAim=aim;float best=float.MinValue;
+            const float reach=.272f;
+            for(int yaw=-1;yaw<=1;yaw++)for(int pitch=-1;pitch<=1;pitch++)for(int side=-1;side<=1;side+=2)
+            {
+                var orientation=Multiply(aim,Multiply(AxisAngle(Up,yaw*20*Radians),AxisAngle(new Float3(1,0,0),pitch*15*Radians)));
+                var offset=Rotate(new Float3(.035f,-.005f,.103f),orientation);
+                var line=Sub(Add(pose.WeaponPosition,Rotate(sight,pose.WeaponRotation)),offset);
+                var delta=Sub(line,p[4]);var perpendicular=Sub(delta,Scale(axis,Dot(delta,axis)));
+                float r2=reach*reach-(float)perpendicular.LengthSquared;if(r2<0)continue;
+                var center=Add(p[4],Add(perpendicular,Scale(axis,side*(float)Math.Sqrt(r2))));
+                var inverse=Inverse(orientation);float score=float.MaxValue;
+                for(int arm=0;arm<2;arm++)for(int k=0;k<=6;k++)
+                {
+                    var elbow=arm==0?leftArm.Joint:rightArm.Joint;var hand=arm==0?leftArm.End:rightArm.End;
+                    var q=Rotate(Sub(Lerp(elbow,hand,k/6f),center),inverse);
+                    float distance=((float)Math.Sqrt(q.X*q.X/(.106f*.106f)+q.Y*q.Y/(.145f*.145f)+q.Z*q.Z/(.116f*.116f))-1)*.106f-(.054f-.015f*k/6f);
+                    score=Math.Min(score,distance);
+                }
+                score-=.00002f*(Math.Abs(yaw)+Math.Abs(pitch));
+                if(score>best){best=score;target=center;headAim=orientation;}
+            }
+
+            var neck=TwoBoneIk.Solve(p[4],target,Rotate(new Float3(0,0,-1),r[4]),.16f,.12f,75*Radians,.98f);
+            p[5]=neck.Joint;p[6]=neck.End;
+            r[5]=SegmentRotation(5,6,r[4]);r[6]=headAim;
         }
 
         public SoldierPose Evaluate(SoldierMotionInput input, ISoldierGround ground)
@@ -192,11 +241,12 @@ namespace Shooter.Generation
             pose.RightHandTarget = Add(pose.WeaponPosition, Rotate(grip, pose.WeaponRotation));
             var heldSupport = Add(pose.WeaponPosition, Rotate(support, pose.WeaponRotation));
             var mag = Add(pose.WeaponPosition, Rotate(magazine, pose.WeaponRotation));
-            var belt = Add(p[4], Rotate(PouchContactChestLocal, r[4]));
+            var belt = Add(p[4], Rotate(upgraded?new Float3(-.24f,-.28f,.22f):PouchContactChestLocal, r[4]));
             pose.LeftHandTarget = input.ReloadPhase < 0 ? heldSupport : ReloadTask(input.ReloadPhase, heldSupport, mag, belt,r[4],pose.WeaponRotation);
             // Clavicle protraction follows the equipment target's reach requirement, not a joint-keyframe phase.
             float protraction=SupportProtraction(pose.LeftHandTarget);
             SetChild(7,Multiply(r[4],AxisAngle(Up,protraction)));SetChild(8,r[4]);
+            if(upgraded)AlignHeadToSight(input);
             armBody.Update(pose);
             var leftArm = Arm(8, 9, 10, pose.LeftHandTarget, r[7], -1);
             var rightArm = Arm(12, 13, 14, pose.RightHandTarget, r[11], 1);
@@ -285,6 +335,7 @@ namespace Shooter.Generation
             pose.LeftHandTarget = Add(pose.WeaponPosition, Rotate(support, pose.WeaponRotation));
             float protraction = SupportProtraction(pose.LeftHandTarget);
             SetChild(7, Multiply(r[4], AxisAngle(Up, protraction))); SetChild(8, r[4]);
+            if(upgraded)AlignHeadToSight(input);
             armBody.Update(pose);
             var leftArm = Arm(8, 9, 10, pose.LeftHandTarget, r[7], -1);
             var rightArm = Arm(12, 13, 14, pose.RightHandTarget, r[11], 1);
@@ -380,6 +431,7 @@ namespace Shooter.Generation
             pose.RightHandTarget = Lerp(rightHandStand, rightHandLie, t);
             pose.WeaponRotation = Multiply(yaw, AxisAngle(new Float3(1, 0, 0), -70f * Radians * t));
             pose.WeaponPosition = Add(p[4], Rotate(new Float3(.15f, -.1f, .2f), r[4]));
+            if(upgraded)AlignHeadToSight(input);
             armBody.Update(pose);
             var leftArm = Arm(8, 9, 10, pose.LeftHandTarget, r[7], -1);
             var rightArm = Arm(12, 13, 14, pose.RightHandTarget, r[11], 1);

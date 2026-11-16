@@ -8,6 +8,7 @@ DIRECTORIES = (
     "UnityProject/Assets/Shooter/Generation/Core/Geometry",
     "UnityProject/Assets/Shooter/Generation/Core/Weapons",
     "UnityProject/Assets/Shooter/Generation/Core/Materials",
+    "UnityProject/Assets/Shooter/Generation/Core/Fx",
     "UnityProject/Assets/Shooter/Generation/Core/Compilation",
     "UnityProject/Assets/Shooter/Generation/Core/Soldiers",
     "UnityProject/Assets/Shooter/Generation/Core/SoldierMotion",

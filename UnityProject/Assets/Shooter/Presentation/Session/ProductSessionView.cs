@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Shooter.Contracts;
 using Shooter.Game.Contracts;
 using Shooter.Game.Session;
+using Shooter.Generation;
 using Shooter.Generation.Environment;
 using Shooter.Presentation.Audio;
 using Shooter.Presentation.Fx;
@@ -64,6 +65,8 @@ namespace Shooter.Presentation.Session
         private string subtitleText = "";
         private float subtitleRemaining;
         private readonly TacticalUi combatUi = new TacticalUi();
+        private int presentationBindEpoch;
+        private Float3? enemySpawn;
         private IReadOnlyList<CollisionBox> hudBoxes = System.Array.Empty<CollisionBox>();
         private readonly EventId[] recentDeathIds = new EventId[32];
         private int deathIdCursor;
@@ -84,6 +87,9 @@ namespace Shooter.Presentation.Session
         private float damagePulseUntil;
         private float hitMarkerUntil;
         private bool hitMarkerHeadshot;
+        private float explosionShakeUntil;
+        private readonly ulong[] dustLife=new ulong[12];
+        private readonly float[] dustDistance=new float[12];
         private readonly float[] killFeedY = new float[4];
         private readonly byte[] killFeedKillerTeam = new byte[4];
         private readonly byte[] killFeedVictimTeam = new byte[4];
@@ -336,25 +342,78 @@ namespace Shooter.Presentation.Session
             string mapId,
             PackagedVisualPayloads visuals)
         {
+            presentationBindEpoch++;
+            foreach(var step in BindVerifiedMapSteps(boxes,metadataBytes,mapId,visuals)) { }
+        }
+        private IEnumerable<int> BindVerifiedMapSteps(IReadOnlyList<CollisionBox> boxes,byte[]? metadataBytes,string mapId,PackagedVisualPayloads visuals)
+        {
             if (mapView == null) throw new System.InvalidOperationException("Product map view missing.");
             if (actors == null) throw new System.InvalidOperationException("Product actor presentation missing.");
             if (boxes == null || boxes.Count == 0)
                 throw new System.InvalidOperationException("Verified map package solids missing; refusing silent empty/diagnostic visuals.");
             if (visuals == null)
                 throw new System.InvalidOperationException("Verified visual package missing; refusing generation fallback.");
-            mapView.Install(boxes, metadataBytes, mapId ?? "", visuals);
+            foreach(var step in mapView.InstallSteps(boxes,metadataBytes,mapId??"",visuals))yield return step;
             actors.ClearAll();
-            actors.BindPackagedVisuals(visuals);
+            foreach(var step in actors.BindPackagedVisualSteps(visuals))yield return step;
+            actors.AmbientVisibility=mapView.SampleActorVisibility;
+            actors.CollisionGround=new CollisionSoldierGround(boxes);
+            if(analyticFxPresenter!=null)foreach(var step in analyticFxPresenter.BindVerifiedVisualSteps(visuals))yield return step;
             boundMapId = mapId ?? "";
             hudBoxes = boxes;
+            enemySpawn = null;
+            if (metadataBytes != null)
+            {
+                var root = MapJsonValue.Parse(metadataBytes).Object;
+                if (root.TryGetValue("spawnSlots", out var slots))
+                    foreach (var slot in slots.Array)
+                    {
+                        var v = slot.Object;
+                        if (v["team"].Int32 != 2) continue;
+                        var xyz = v["positionMeters"].Array;
+                        enemySpawn = new Float3((float)xyz[0].Number, (float)xyz[1].Number, (float)xyz[2].Number);
+                        break;
+                    }
+            }
             if (camera != null && mapView.IsInstalled)
                 camera.clearFlags = CameraClearFlags.Skybox;
             visualReview?.SetContext(boundMapId, QualitySettings.names[QualitySettings.GetQualityLevel()], 0);
             Debug.Log("SHOOTER_PRODUCT_MAP_BOUND map=" + boundMapId + " solids=" + mapView.SolidCount + " packagedVisuals=1");
         }
 
+        /// <summary>Cooperative paint points at the existing map/actor binding boundaries.
+        /// One Unity upload cannot be preempted; elapsed overruns are diagnosed rather than hidden by progress.</summary>
+        public async System.Threading.Tasks.Task BindVerifiedMapAsync(IReadOnlyList<CollisionBox> boxes,
+            byte[]? metadata, string mapId, PackagedVisualPayloads visuals, System.Threading.CancellationToken cancel)
+        {
+            int epoch=++presentationBindEpoch;
+            var clock=System.Diagnostics.Stopwatch.StartNew();
+            await System.Threading.Tasks.Task.Run(()=>AtmosphereBaker.Sky(MapRegistry.Require(mapId).SkyPreset),cancel);
+            try
+            {
+                using var phases=BindVerifiedMapSteps(boxes,metadata,mapId,visuals).GetEnumerator();
+                while(true)
+                {
+                    cancel.ThrowIfCancellationRequested();
+                    if(epoch!=presentationBindEpoch)throw new System.OperationCanceledException();
+                    clock.Restart();long before=0;
+                    if(!phases.MoveNext())break;
+                    long phaseMs=clock.ElapsedMilliseconds-before;
+                    if(phaseMs>33)Debug.Log("SHOOTER_PRESENTATION_BIND_INDIVISIBLE_OVERRUN ms="+phaseMs);
+                    await System.Threading.Tasks.Task.Yield();
+                }
+                cancel.ThrowIfCancellationRequested();
+            }
+            catch
+            {
+                if(epoch==presentationBindEpoch)ClearPresentation();
+                throw;
+            }
+        }
+
         public void ClearPresentation()
         {
+            presentationBindEpoch++;
             DetachAudioSession();
             analyticFxPool.Clear();
             grenadeFlight.Clear();
@@ -364,6 +423,7 @@ namespace Shooter.Presentation.Session
             actors?.ClearAll();
             boundMapId = "";
             hudBoxes = System.Array.Empty<CollisionBox>();
+            enemySpawn = null;
             System.Array.Clear(recentDeathIds, 0, recentDeathIds.Length);
             System.Array.Clear(killFeedUntil, 0, killFeedUntil.Length);
             System.Array.Clear(scoreFeedUntil, 0, scoreFeedUntil.Length);
@@ -474,6 +534,11 @@ namespace Shooter.Presentation.Session
                         bobLocal = new Float3(bobLocal.X + shake * 0.35f, bobLocal.Y + shake, bobLocal.Z);
                     }
 
+                    if(!reducedCameraMotion&&!reducedFlash&&explosionShakeUntil>Time.unscaledTime)
+                    {
+                        float strength=(explosionShakeUntil-Time.unscaledTime)*.045f;
+                        bobLocal=new Float3(bobLocal.X+Mathf.Sin(Time.unscaledTime*47)*strength,bobLocal.Y+Mathf.Cos(Time.unscaledTime*39)*strength,bobLocal.Z);
+                    }
                     float cameraYaw = acceptsGameplayInput ? input.Yaw : human.AimYaw;
                     float cameraPitch = acceptsGameplayInput ? input.Pitch : human.AimPitch;
                     var rotation = Quaternion.Euler(cameraPitch * Mathf.Rad2Deg, cameraYaw * Mathf.Rad2Deg, roll);
@@ -551,6 +616,7 @@ namespace Shooter.Presentation.Session
                     subtitleText = "";
                 }
             }
+            ObserveMovementDust();
             analyticFxPool.Tick(dt);
             grenadeFlight.Tick(dt);
             analyticFxPresenter?.Sync(suppressMuzzleFlash: reducedFlash);
@@ -589,6 +655,8 @@ namespace Shooter.Presentation.Session
         /// </summary>
         private void ObserveCombatFx(CombatEvent ev)
         {
+            if(ev.Kind==CombatEventKind.Impact && ev.Payload is ImpactPayload mark && mark.RegionId==0)
+                mapView?.Decals?.Impact(mark.Position,mark.Normal,ProductAudioEventRouter.IsGrenadeBlastImpact(ev));
             if (ev.Kind == CombatEventKind.ProjectileSpawned && ev.Payload is ProjectilePayload projectile)
             {
                 grenadeFlight.TrySpawn(projectile.ProjectileId, projectile.Origin, projectile.Velocity);
@@ -611,20 +679,47 @@ namespace Shooter.Presentation.Session
                 // Knife melee: no muzzle flash / tracer / casing — slash is the FP viewmodel.
                 if (IsKnifeDefinition(shot.WeaponId)) return;
                 // ADR-061: dual flame lobes + tracer + casing. ReducedFlash hides muzzle+tracer only.
-                analyticFxPool.SpawnGunshotFeedback(shot.Origin, shot.UnitDirection, suppressMuzzleAndTracer: reducedFlash);
+                var profile=WeaponVisualProfiles.Require(shot.WeaponId);
+                if(profile.MuzzleFx!="none")analyticFxPool.SpawnGunshotFeedback(shot.Origin, shot.UnitDirection, reducedFlash,
+                    profile.MuzzleFx=="pistol"?(byte)1:profile.MuzzleFx=="carbine"?(byte)2:(byte)0);
+                analyticFxPool.TrySpawn(FxKind.SmokeProxy,shot.Origin,shot.UnitDirection);
                 return;
             }
 
             if (ev.Kind == CombatEventKind.Impact && ev.Payload is ImpactPayload impact)
             {
                 grenadeFlight.ObserveImpact(impact.Position);
-                analyticFxPool.TrySpawn(FxKind.ImpactSpark, impact.Position, impact.Normal);
-                // Body-region impacts get a denser second spark (Warface readable hit feedback).
-                if (impact.RegionId >= 1)
-                    analyticFxPool.TrySpawn(FxKind.ImpactSpark, impact.Position, impact.Normal);
-                // Smoke more often on hits; still capped by MaxSmokeProxies.
-                if (impact.RegionId >= 1 || (ev.Id.Ordinal % 2) == 0)
-                    analyticFxPool.TrySpawn(FxKind.SmokeProxy, impact.Position, impact.Normal);
+                bool blast=ProductAudioEventRouter.IsGrenadeBlastImpact(ev);
+                if(blast)
+                {
+                    if(!reducedFlash){analyticFxPool.TrySpawn(FxKind.Fireball,impact.Position,impact.Normal);analyticFxPool.TrySpawn(FxKind.Shockwave,impact.Position,impact.Normal);}
+                    analyticFxPool.TrySpawn(FxKind.SmokeProxy,impact.Position,new Float3(0,1,0));
+                    analyticFxPool.TrySpawn(FxKind.Debris,impact.Position,impact.Normal);
+                    if(!reducedCameraMotion&&!reducedFlash&&camera!=null&&Vector3.Distance(camera.transform.position,new Vector3(impact.Position.X,impact.Position.Y,impact.Position.Z))<15)explosionShakeUntil=Time.unscaledTime+.45f;
+                }
+                else if(impact.RegionId==0)
+                {
+                    bool metal=impact.SurfaceTag==ArenaBoxBuilder.TagCover;
+                    analyticFxPool.TrySpawn(metal?FxKind.ImpactSpark:FxKind.Dust,impact.Position,impact.Normal);
+                    if(!metal)analyticFxPool.TrySpawn(FxKind.Debris,impact.Position,impact.Normal);
+                }
+            }
+        }
+
+        private void ObserveMovementDust()
+        {
+            if(session?.Lifecycle==null)return;var snapshot=session.TryAcquireSnapshot();if(snapshot==null)return;
+            for(int i=0;i<snapshot.Participants.Count&&i<dustLife.Length;i++)
+            {
+                var participant=snapshot.Participants[i];
+                if(!participant.Alive||!session.TryGetMovementView(participant.EntityId,out var movement)||!session.Lifecycle.TryGetActorState(participant.EntityId,out var state))continue;
+                if(dustLife[i]!=participant.EntityId.Value){dustLife[i]=participant.EntityId.Value;dustDistance[i]=movement.LocomotionDistanceMeters;continue;}
+                float interval=movement.Sliding?.5f:1.4f;
+                if(movement.LocomotionDistanceMeters-dustDistance[i]<interval)continue;
+                dustDistance[i]=movement.LocomotionDistanceMeters;
+                var ground=actors?.CollisionGround;if(ground==null)continue;ground.ReferenceHeight=state.Feet.Y;
+                if(!ground.TrySample(state.Feet.X,state.Feet.Z,out float floor)||Mathf.Abs(floor-state.Feet.Y)>.08f)continue;
+                analyticFxPool.TrySpawn(FxKind.Dust,new Float3(state.Feet.X,floor+.05f,state.Feet.Z),new Float3(0,1,0));
             }
         }
 
@@ -964,13 +1059,13 @@ namespace Shooter.Presentation.Session
                 if (human.Health < lastSeenHealth) damagePulseUntil = Time.unscaledTime + CombatHudVisual.DamagePulseSeconds;
                 lastSeenHealth = human.Health;
                 float flash = FirstPersonHitFeedback.DamageFlashStrength(damageFlashUntil - Time.unscaledTime, reducedFlash);
-                if (flash > 0.01f) TacticalUi.DamagePlateFlash(combatUi.Width, combatUi.Height, flash);
+                // Direction arcs and the bounded health vignette replace the old full edge flash.
                 DrawHealthVignette(human.Health);
                 DrawDamageIndicators(human);
                 DrawTacticalMap(a, human, snap);
                 DrawAmmoPanel(a, human, snap);
                 DrawAmmoScorePopup(a);
-                DrawCompass(a, human.AimYaw);
+                DrawCompass(a, human.AimYaw, human.Feet);
                 DrawKillFeed(a);
                 DrawScoreFeed(a);
                 DrawScoreRibbon(a);
@@ -1042,7 +1137,8 @@ namespace Shooter.Presentation.Session
             else if (!knife && human.Magazine == 0)
             {
                 string reload = input.Bindings.TryGetControl("Reload", out string control) ? TacticalUi.ControlLabel(control) : "R";
-                string hint = grenade ? ShellUiCopy.Empty : (human.Reserve > 0 ? reload + ShellUiCopy.ReloadHint : ShellUiCopy.OutOfAmmo);
+                string hint = grenade ? ShellUiCopy.Empty : (human.Reserve > 0 ? ShellUiCopy.ReloadHint.Trim() : ShellUiCopy.OutOfAmmo);
+                if (!grenade && human.Reserve > 0) combatUi.Keycap(new Rect(x - 24, y - 15, 24, 14), reload, TacticalUi.Accent);
                 combatUi.Label(new Rect(x - 20, y - 14, w + 20, 14), hint, 10, TacticalUi.Accent, TextAnchor.MiddleRight);
             }
         }
@@ -1177,7 +1273,7 @@ namespace Shooter.Presentation.Session
             TacticalUi.MapGlyph(px, py, Generation.Icons.IconLibrary.EnemyMarker,
                 new Color(TacticalUi.Enemy.r, TacticalUi.Enemy.g, TacticalUi.Enemy.b, alpha));
 
-        private void DrawCompass(Rect safe, float yaw)
+        private void DrawCompass(Rect safe, float yaw, Float3 feet)
         {
             // Sit under the shell score/clock strip (BFV-like top hierarchy). Quiet so world stays first.
             float center = combatUi.Width * .5f;
@@ -1186,6 +1282,13 @@ namespace Shooter.Presentation.Session
             TacticalUi.CombatPlate(new Rect(center - w * .5f, y, w, h));
             float degrees = Mathf.Repeat(yaw * Mathf.Rad2Deg, 360f);
             TacticalUi.Fill(new Rect(center - 1, y, 2, 2.5f), TacticalUi.Accent);
+            if (enemySpawn.HasValue)
+            {
+                var p = enemySpawn.Value;
+                float angle = CombatHudVisual.DamageIndicatorAngle(yaw, feet.X, feet.Z, p.X, p.Z) * Mathf.Rad2Deg;
+                float offset = Mathf.Clamp(angle * 1.3f, -w * .5f + 8, w * .5f - 8);
+                TacticalUi.Icon(new Rect(center + offset - 5, y + h + 2, 10, 10), Generation.Icons.IconLibrary.Objective, TacticalUi.Accent);
+            }
             int nearest = Mathf.RoundToInt(degrees / 15f) * 15;
             for (int i = -10; i <= 10; i++)
             {
@@ -1356,7 +1459,9 @@ namespace Shooter.Presentation.Session
                     killFeedY[j] = killFeedY[j - 1];
                     killFeedKillerTeam[j] = killFeedKillerTeam[j - 1]; killFeedVictimTeam[j] = killFeedVictimTeam[j - 1];
                 }
-                killFeedY[0] = 0;
+                float bottom=-CombatHudVisual.KillFeedRowHeight-2;
+                for(int j=1;j<killFeed.Length;j++)if(killFeedUntil[j]>Time.unscaledTime)bottom=Mathf.Max(bottom,killFeedY[j]);
+                killFeedY[0] = bottom+CombatHudVisual.KillFeedRowHeight+2;
                 killFeedKillerTeam[0] = killerTeam; killFeedVictimTeam[0] = victimTeam;
                 killFeed[0] = KillFeedText.Create(killer, victim, weapon, headshot);
                 killFeedUntil[0] = Time.unscaledTime + CombatHudVisual.KillFeedHoldSeconds;
@@ -1370,7 +1475,7 @@ namespace Shooter.Presentation.Session
             const float gap = 2f;
             float rowW = CombatHudVisual.KillFeedRowWidth;
             float targetY = 0f;
-            for (int i = 0; i < killFeed.Length; i++)
+            for (int i = killFeed.Length-1; i >= 0; i--)
             {
                 float remaining = killFeedUntil[i] - now;
                 float alpha = CombatHudVisual.KillFeedAlpha(remaining);
@@ -1380,7 +1485,7 @@ namespace Shooter.Presentation.Session
                 float elapsed = CombatHudVisual.KillFeedHoldSeconds - remaining;
                 if (Event.current.type == EventType.Repaint)
                     killFeedY[i] = UiMotion.Follow(killFeedY[i], targetY, 20f, Time.unscaledDeltaTime, reducedCameraMotion);
-                float offset = UiMotion.SlideOffset(elapsed, 1f, reducedCameraMotion);
+                float offset = UiMotion.SlideOffset(UiMotion.Staggered(elapsed,i,reducedCameraMotion), 1f, reducedCameraMotion);
                 Rect r = new Rect(safe.xMax - rowW + offset, safe.y + 62 + killFeedY[i], rowW, rowH);
                 targetY += (rowH + gap) * UiMotion.Clamp01(remaining / UiMotion.TransitionSeconds);
                 alpha *= UiMotion.EnterAlpha(elapsed);

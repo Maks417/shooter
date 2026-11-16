@@ -39,6 +39,12 @@ def main():
     source = read(ROOT / "UnityProject/Assets/Shooter/Generation/Recipes/box-collision.json")
     manifest = read(options.manifest)
     cases = [("numeric-source", source, recipe_schema, True), ("actual-published-manifest", manifest, manifest_schema, True)]
+    decal_schema=read(ROOT / "docs/content-schemas/visual-decals.schema.json")
+    Draft202012Validator.check_schema(decal_schema)
+    decal_source=read(ROOT / "docs/content-schemas/visual-decals.valid.json")
+    cases.append(("visual-decal-placements",decal_source,decal_schema,True))
+    invalid_decal=copy.deepcopy(decal_source);invalid_decal["decals"][0]["tile"]=8
+    cases.append(("invalid-decal-tile",invalid_decal,decal_schema,False))
     negative = copy.deepcopy(source); negative["parameters"]["widthMm"] = -1
     cases.append(("negative-width", negative, recipe_schema, False))
     for name, mutation in (

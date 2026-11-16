@@ -20,13 +20,17 @@ public sealed class MapRegistryTests
         "ebf442ecd59900d604b581475bfaa09fcd026bd52e6dc625217e3ff8af0703d1", "764fb5808141ef3876d85feed74547c553e13d7f4ebfba6032333025f78d702c")]
     [InlineData("oil-depot", "62017fa929c60f085fdd9e728f43b1a5f01a80b294bebcb75b0d83e0efae58a2", "f6f95df6c1bed8177fe89bb14cc8c847611b679ef653643733ed4b4e5290fb71",
         "4322540497839f0007f7a20aac7b561a3345ed65e91c4f44040948dd4fe8e341", "ef40f57d1d82264b6ddcc00e88dd3fdbb68cb20c422dce32f45520502018a8c4")]
-    public void RegisteredMapsKeepTheirPreRegistryIdentities(string mapId, string collision, string nav, string gameplayRoot, string lowRoot)
+    public void RegisteredMapsRetainGameplayAndIntentionallyMigrateVisualClosures(string mapId, string collision, string nav, string gameplayRoot, string lowRoot)
     {
         var plan = ProductMapPlanner.Generate(mapId);
         Assert.Equal(collision, plan.CollisionHash.ToString());
         Assert.Equal(nav, plan.NavHash.ToString());
         Assert.Equal(gameplayRoot, MapPackageBuilder.Build(mapId, "gameplay", Toolchain).PackageRootHash.ToString());
-        Assert.Equal(lowRoot, MapPackageBuilder.Build(mapId, "low", Toolchain).PackageRootHash.ToString());
+        // ADR-088/090/092/094 intentionally publish new visual bytes; the old golden remains as a migration guard.
+        var visual=MapPackageBuilder.Build(mapId,"low",Toolchain);
+        Assert.NotEqual(lowRoot,visual.PackageRootHash.ToString());
+        Assert.Contains(visual.Dependencies,d=>d.Path==ProceduralDecals.AtlasPath);
+        Assert.Contains(visual.Dependencies,d=>d.Path==Shooter.Generation.Fx.FxFlipbook.Path(Shooter.Generation.Fx.FlipbookKind.Smoke));
     }
 
     [Fact]
@@ -55,7 +59,8 @@ public sealed class MapRegistryTests
         Assert.Equal(CompoundArenaPlanner.GeneratorVersion, document.GeneratorVersion);
         Assert.Equal(CompoundArenaPlanner.StableIdBase, document.StableIdBase);
         Assert.Equal(ArenaSymmetry.Rotate180, document.Layout.Symmetry);
-        Assert.Equal(40, document.OperationCount);
+        Assert.Equal(40, document.OperationCount-document.Decals.Count);
+        Assert.Equal(2,document.DocumentVersion);Assert.Equal(3,document.Decals.Count);
         Assert.False(MapRegistry.Require("depot-yard").HasLayoutDocument);
         Assert.Equal(new[] { "depot-arena", "oil-arena" }, MapRegistry.CodePlannerNames.OrderBy(n => n, StringComparer.Ordinal));
     }

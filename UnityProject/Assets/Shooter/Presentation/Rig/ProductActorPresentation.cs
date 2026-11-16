@@ -10,6 +10,7 @@ using Shooter.Generation;
 using Shooter.Generation.Environment;
 using Shooter.Presentation.View;
 using Shooter.Generation.Icons;
+using Shooter.Presentation.Rendering;
 using UnityEngine;
 using EntityId = Shooter.Contracts.EntityId;
 
@@ -66,6 +67,7 @@ namespace Shooter.Presentation.Rig
             public Float3 LastSightWorld;
             public Float3 LastFeet;
             public bool HasReviewMetrics;
+            public GameObject? Contact;
         }
 
         private sealed class FlatGround : ISoldierGround
@@ -74,6 +76,12 @@ namespace Shooter.Presentation.Rig
             public bool TrySample(float x, float z, out float y) { y = Height; return true; }
         }
 
+        public CollisionSoldierGround? CollisionGround { get; set; }
+        public Func<Float3,float>? AmbientVisibility { get; set; }
+        private MaterialPropertyBlock ambientBlock=null!;
+        private int packagedBindEpoch;
+        private Mesh? contactMesh;private Material? contactMaterial;
+        private Renderer[] localLitRenderers=Array.Empty<Renderer>();
         private readonly Dictionary<ulong, Avatar> avatars = new Dictionary<ulong, Avatar>();
         private readonly ProductActorBinder binder = new ProductActorBinder();
         private readonly ProductAuthorityActionView actions = new ProductAuthorityActionView();
@@ -178,7 +186,8 @@ namespace Shooter.Presentation.Rig
 
         private void InitializeShared()
         {
-            var shader = Shader.Find("Universal Render Pipeline/Lit");
+            ambientBlock=new MaterialPropertyBlock();
+            var shader = Shader.Find("Shooter/MapSurface");
             if (shader == null || !shader.isSupported)
                 throw new InvalidOperationException("Required locked URP Lit shader missing; no art fallback.");
 
@@ -214,6 +223,7 @@ namespace Shooter.Presentation.Rig
             localWeapon.localPosition = new Vector3(0.08f, -0.10f, 0.40f);
             localWeapon.localRotation = Quaternion.identity;
             localWeapon.gameObject.SetActive(false);
+            localLitRenderers=localWeapon.GetComponentsInChildren<Renderer>(true);
             ready = true;
             visualsBound = false;
             Debug.Log("SHOOTER_PRODUCT_ACTOR_VIEW awaiting packaged visuals");
@@ -223,12 +233,19 @@ namespace Shooter.Presentation.Rig
         /// Upload verified packaged soldier/rifle/pistol meshes and materials. Missing deps fail recoverably; no generation fallback.
         /// </summary>
         public void BindPackagedVisuals(PackagedVisualPayloads visuals, bool showcase = false)
+        {foreach(var step in BindPackagedVisualSteps(visuals,showcase)) { }}
+        public IEnumerable<int> BindPackagedVisualSteps(PackagedVisualPayloads visuals, bool showcase = false)
         {
+            int epoch=++packagedBindEpoch;
+            ClearAll();
+            foreach(var value in owned)DestroyObject(value);owned.Clear();
+            bodyMesh=null;contactMesh=null;contactMaterial=null;weaponMeshes.Clear();weaponPalettes.Clear();
             if (visuals == null) throw new ArgumentNullException(nameof(visuals));
-            var shader = Shader.Find("Universal Render Pipeline/Lit");
+            var shader = Shader.Find("Shooter/MapSurface");
             if (shader == null || !shader.isSupported)
                 throw new InvalidOperationException("Required locked URP Lit shader missing; no art fallback.");
 
+            bool complete=false;
             try
             {
                 var shaderRoot = MapJsonValue.Parse(visuals.Bytes(MapVisualClosure.ShaderPath(visuals.Profile))).Object;
@@ -270,6 +287,7 @@ namespace Shooter.Presentation.Rig
                     silhouettes.Add(new WeaponSilhouetteSource(source.MeshKey, WeaponSilhouetteSource.SpanFor(source.MeshKey), silhouetteParts));
                     if (source.Recipe != null) set.SightSocket = FindSocket(WeaponGeometry.Sockets(source.Recipe), "sight-eye");
                     weaponMeshes[source.MeshKey] = set;
+                    yield return 0;
                 }
                 Shooter.Presentation.Session.UiIconAtlas.RegisterWeapons(silhouettes);
                 for (byte slot = 0; slot < 4; slot++)
@@ -278,6 +296,7 @@ namespace Shooter.Presentation.Rig
                         var cameraSkeleton = MapVisualClosure.DecodeFirstPersonHandSkeleton(visuals,slot,hand==1);
                         handSkeletons[slot*2+hand]=cameraSkeleton;
                         firstPersonHandMeshes[slot*2+hand]=Own(Upload(MapVisualClosure.DecodeFirstPersonHand(visuals,slot,hand==1),false,cameraSkeleton));
+                        yield return 0;
                     }
 
 
@@ -286,15 +305,21 @@ namespace Shooter.Presentation.Rig
                     FromPackaged(shader, visuals, MapVisualClosure.SoldierMaterialPaths[0], "Team1 uniform"),
                     FromPackaged(shader, visuals, MapVisualClosure.SoldierMaterialPaths[1], "Team1 gear"),
                     FromPackaged(shader, visuals, MapVisualClosure.SoldierMaterialPaths[2], "Team1 skin"),
-                    FromPackaged(shader, visuals, MapVisualClosure.SoldierMaterialPaths[3], "Team1 goggles", 0.3f, 0.55f)
+                    FromPackaged(shader, visuals, MapVisualClosure.SoldierMaterialPaths[3], "Team1 goggles", 0.3f, 0.55f),
+                    FromPackaged(shader,visuals,MapVisualClosure.SoldierBandPath(1),"Team1 armband"),
+                    FromPackaged(shader,visuals,MapVisualClosure.SoldierPatchPath(1),"Team1 shoulder patch")
                 };
+                yield return 0;
                 team2Palette = new[]
                 {
                     FromPackaged(shader, visuals, MapVisualClosure.SoldierMaterialPaths[4], "Team2 uniform"),
                     FromPackaged(shader, visuals, MapVisualClosure.SoldierMaterialPaths[5], "Team2 gear"),
                     FromPackaged(shader, visuals, MapVisualClosure.SoldierMaterialPaths[6], "Team2 skin"),
-                    FromPackaged(shader, visuals, MapVisualClosure.SoldierMaterialPaths[7], "Team2 goggles", 0.3f, 0.55f)
+                    FromPackaged(shader, visuals, MapVisualClosure.SoldierMaterialPaths[7], "Team2 goggles", 0.3f, 0.55f),
+                    FromPackaged(shader,visuals,MapVisualClosure.SoldierBandPath(2),"Team2 armband"),
+                    FromPackaged(shader,visuals,MapVisualClosure.SoldierPatchPath(2),"Team2 shoulder patch")
                 };
+                yield return 0;
                 // Presentation-only numeric polish: team kits must read in sun/shade without touching generators.
                 ApplyPresentationSoldierPalette(team1Palette, team1: true);
                 ApplyPresentationSoldierPalette(team2Palette, team1: false);
@@ -305,9 +330,13 @@ namespace Shooter.Presentation.Rig
                     MapVisualClosure.DecodeMapMaterial(visuals, MapVisualClosure.MaterialCompanionPath(path, "mask")),
                     label, 1f / FirstPersonSurfaceBaker.TileMeters, value => owned.Add(value));
                 rifleMetal = NearFieldSurface(MapVisualClosure.FirstPersonSurfacePaths[0], "Product coated weapon metal");
+                yield return 0;
                 riflePolymer = NearFieldSurface(MapVisualClosure.FirstPersonSurfacePaths[1], "Product stippled polymer");
+                yield return 0;
                 var sleeve = NearFieldSurface(MapVisualClosure.FirstPersonSurfacePaths[2], "Product woven sleeve");
+                yield return 0;
                 var glove = NearFieldSurface(MapVisualClosure.FirstPersonSurfacePaths[3], "Product glove grain");
+                yield return 0;
                 weaponMaterials = Shooter.Presentation.Rendering.ProductSurfaceMaterial.WeaponFinishes(
                     rifleMetal, riflePolymer,
                     NearFieldSurface(MapVisualClosure.FirstPersonSurfacePaths[4], "Machined steel bevels and fasteners"),
@@ -315,18 +344,12 @@ namespace Shooter.Presentation.Rig
                     NearFieldSurface(MapVisualClosure.FirstPersonSurfacePaths[6], "Olive enamel grenade shell"));
                 firstPersonHandMaterials = new[] { sleeve, glove, riflePolymer };
 
-                visualsBound = true;
+                visualsBound = true;complete=true;
                 ApplyLocalWeaponVisual(WeaponVisualProfiles.DefaultIdForSlot(ProductAuthorityActionView.RifleSlot), ProductAuthorityActionView.RifleSlot);
                 Debug.Log("SHOOTER_PRODUCT_ACTOR_VIEW packaged visuals ready profile=" + visuals.Profile +
                           " soldierLod=" + soldierLod + " weaponLod=" + weaponLod);
             }
-            catch (Exception error)
-            {
-                visualsBound = false;
-                bodyMesh = null;
-                weaponMeshes.Clear();
-                throw new InvalidOperationException("Required packaged actor visuals missing/corrupt; refusing generation fallback: " + error.Message, error);
-            }
+            finally { if(!complete&&epoch==packagedBindEpoch){visualsBound=false;bodyMesh=null;weaponMeshes.Clear();} }
         }
 
         public void ClearAll()
@@ -524,6 +547,7 @@ namespace Shooter.Presentation.Rig
             if (localWeapon != null) localWeapon.gameObject.SetActive(showLocalWeapon);
             if (showLocalWeapon)
             {
+                float visibility=AmbientVisibility?.Invoke(human.Feet)??1f;foreach(var renderer in localLitRenderers)ApplyAmbient(renderer,visibility);
                 byte slot = human.ActiveWeaponSlot;
                 DefinitionId weaponId = human.ActiveWeaponDefinition.IsValid
                     ? human.ActiveWeaponDefinition
@@ -598,6 +622,7 @@ namespace Shooter.Presentation.Rig
                 if (AdsOpticVisual.HideRifleViewModel(profile, adsPresent)
                     || localView.HideHeldGrenade(human.Magazine))
                     localWeapon.gameObject.SetActive(false);
+            localLitRenderers=localWeapon.GetComponentsInChildren<Renderer>(true);
             }
             else if (localViewHuman.IsValid)
             {
@@ -645,7 +670,7 @@ namespace Shooter.Presentation.Rig
                 Root = new GameObject("Actor " + state.EntityId.Value).transform,
                 Bones = new Transform[SoldierSkeleton.JointCount],
                 // Generation SoldierMotion spike validates rifle sockets; pistol mesh shares the bind.
-                Motion = new SoldierMotion(motionRecipe),
+                Motion = new SoldierMotion(motionRecipe,upgraded:System.Array.IndexOf(System.Environment.GetCommandLineArgs(),"-shooterP05Candidate")>=0),
                 PreviousFeet = state.Feet,
                 DisplayedFeet = state.Feet,
                 PreviousHealth = state.Health
@@ -790,7 +815,13 @@ namespace Shooter.Presentation.Rig
                 dying ? avatar.DeathPhase : -1f,
                 slide);
             avatar.Root.position = V(displayFeet);
-            var pose = avatar.Motion.Evaluate(input, ground);
+            float visibility=AmbientVisibility?.Invoke(displayFeet)??1f;
+            ApplyAmbient(avatar.Body,visibility);ApplyAmbient(avatar.WeaponRenderer,visibility);ApplyAmbient(avatar.MagazineRenderer,visibility);ApplyAmbient(avatar.CycleRenderer,visibility);
+            if(avatar.Contact==null)avatar.Contact=CreateContact(avatar.Root);
+            avatar.Contact.SetActive(QualitySettings.GetQualityLevel()==0&&!dying);
+            avatar.Contact.transform.position=V(new Float3(displayFeet.X,displayFeet.Y+.025f,displayFeet.Z));
+            if(CollisionGround!=null)CollisionGround.ReferenceHeight=state.Feet.Y;
+            var pose = avatar.Motion.Evaluate(input, CollisionGround??(ISoldierGround)ground);
             for (int j = 0; j < SoldierSkeleton.JointCount; j++)
                 avatar.Bones[j].SetPositionAndRotation(V(pose.WorldPositions[j]), Q(pose.WorldRotations[j]));
 
@@ -831,6 +862,8 @@ namespace Shooter.Presentation.Rig
         private void ApplyHeldWeaponVisual(Avatar avatar, DefinitionId weaponId, byte slot)
         {
             var profile = WeaponVisualProfiles.Resolve(weaponId, slot);
+            var meshDefinition=WeaponMeshCatalog.Require(profile.MeshAssetKey);
+            if(meshDefinition.Recipe!=null)avatar.Motion.SetVisualWeapon(meshDefinition.Recipe);
             avatar.Weapon.name = WeaponDisplayName(profile, false);
             avatar.WeaponFilter.sharedMesh = HeldMeshForProfile(profile);
             avatar.WeaponRenderer.sharedMaterials = WeaponPalette(avatar.WeaponFilter.sharedMesh);
@@ -1057,6 +1090,21 @@ namespace Shooter.Presentation.Rig
             return mesh;
         }
 
+        private void ApplyAmbient(Renderer? renderer,float visibility)
+        {
+            if(renderer==null)return;renderer.GetPropertyBlock(ambientBlock);ambientBlock.SetFloat("_ShooterActorMode",1);ambientBlock.SetFloat("_ShooterActorAo",visibility);renderer.SetPropertyBlock(ambientBlock);
+        }
+        private GameObject CreateContact(Transform parent)
+        {
+            if(contactMesh==null)
+            {
+                contactMesh=Own(new Mesh{name="Numeric contact footprint"});contactMesh.vertices=new[]{new Vector3(-.42f,0,-.34f),new Vector3(-.42f,0,.34f),new Vector3(.42f,0,.34f),new Vector3(.42f,0,-.34f)};
+                contactMesh.uv=new[]{new Vector2(0,0),new Vector2(0,1),new Vector2(1,1),new Vector2(1,0)};contactMesh.normals=new[]{Vector3.up,Vector3.up,Vector3.up,Vector3.up};contactMesh.tangents=new[]{new Vector4(1,0,0,1),new Vector4(1,0,0,1),new Vector4(1,0,0,1),new Vector4(1,0,0,1)};contactMesh.triangles=new[]{0,1,2,0,2,3};contactMesh.RecalculateBounds();
+                contactMaterial=Own(new Material(Shader.Find("Shooter/ContactShadow")??throw new InvalidOperationException("Contact shadow shader missing.")));
+            }
+            var go=new GameObject("Low contact shadow"){layer=11};go.transform.SetParent(parent,false);go.AddComponent<MeshFilter>().sharedMesh=contactMesh;var renderer=go.AddComponent<MeshRenderer>();renderer.sharedMaterial=contactMaterial;renderer.shadowCastingMode=UnityEngine.Rendering.ShadowCastingMode.Off;return go;
+        }
+
         private Material FromPackaged(
             Shader shader,
             PackagedVisualPayloads visuals,
@@ -1066,6 +1114,15 @@ namespace Shooter.Presentation.Rig
             float smoothness = 0.2f)
         {
             var data = MapVisualClosure.DecodeMapMaterial(visuals, path);
+            if(data.Width>1)
+            {
+                MaterialData? Companion(string plane)
+                {
+                    string companion=MapVisualClosure.MaterialCompanionPath(path,plane);
+                    return visuals.Has(companion)?MapVisualClosure.DecodeMapMaterial(visuals,companion):null;
+                }
+                return ProductSurfaceMaterial.Create(shader,data,Companion("normal"),Companion("mask"),label,label.Contains("uniform")?4f:1f,value=>owned.Add(value),metallic,smoothness);
+            }
             var material = Own(new Material(shader) { name = label });
             var mip0 = data.MipBytes[0];
             material.SetColor("_BaseColor", new Color(mip0[0] / 255f, mip0[1] / 255f, mip0[2] / 255f, mip0[3] / 255f));
@@ -1085,7 +1142,7 @@ namespace Shooter.Presentation.Rig
             if (team1)
             {
                 // Olive/slate field kit with a cool cyan lean — readable allies without monochrome blue.
-                SetLit(palette[0], new Color(0.22f, 0.30f, 0.27f), 0.05f, 0.28f); // uniform
+                SetLit(palette[0], new Color(.38f,.44f,.38f), 0.05f, 0.28f); // uniform
                 SetLit(palette[1], new Color(0.10f, 0.14f, 0.15f), 0.28f, 0.40f); // gear / straps
                 SetLit(palette[2], new Color(0.52f, 0.38f, 0.28f), 0f, 0.36f);    // skin
                 SetLit(palette[3], new Color(0.08f, 0.18f, 0.20f), 0.58f, 0.76f); // goggles
@@ -1093,7 +1150,7 @@ namespace Shooter.Presentation.Rig
             else
             {
                 // Desert/ochre opposing kit with coral warmth — readable enemies in sun and shade.
-                SetLit(palette[0], new Color(0.50f, 0.34f, 0.22f), 0.05f, 0.26f); // uniform
+                SetLit(palette[0], new Color(1f,.85f,.65f), 0.05f, 0.26f); // uniform
                 SetLit(palette[1], new Color(0.16f, 0.10f, 0.07f), 0.24f, 0.34f); // gear
                 SetLit(palette[2], new Color(0.50f, 0.36f, 0.26f), 0f, 0.34f);    // skin
                 SetLit(palette[3], new Color(0.20f, 0.09f, 0.06f), 0.52f, 0.70f); // goggles

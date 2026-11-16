@@ -40,3 +40,10 @@ If spike fails after bounded two implementation iterations, keep generator const
 ## Concrete starting recipe and ownership
 
 Use [soldier baseline](../soldier-baseline.md) for fixed anatomy, joint IDs/bind transforms, frame/limit rules, loft counts, gait and reload task trajectories. M1 drives phases with test fixtures, independent of M2 weapon mechanics. [T028/T032](../task-supplement.md) own hit-overlay validation and collapse/ragdoll behavior; no unassigned full physics feature is implied.
+
+
+## ADR-094 visual roadmap implementation — 2026-11-17
+
+`soldier.loft` 1.0.3 adds contoured carrier/pouch lofts, sleeve folds, numeric finger forms, camo/fabric normal-mask materials and a team armband plus rasterised numeric emblem patch. Skeleton, gameplay hit volumes and the explicit 1.0.2 recipe remain unchanged. The new mesh version canonicalises numeric samples and publishes a 10-micrometre lattice; legacy recipe output keeps its original arithmetic. `CollisionSoldierGround` reads verified gameplay boxes and the foundation plane for cosmetic foot support. `WeaponVisualProfiles` supplies per-profile support sockets. Actor-root AO is read-only lighting.
+
+The bounded P05 search stopped after three measured candidates. Minimum clearance remained negative (-0.055602 / -0.057712 / -0.011462 m). The numerical eye line closes but arm penetration does not. Product presentation retains the baseline solver; failed bounded head/arm correction is opt-in via `-shooterP05Candidate`. Artifacts remain under `Artifacts/visual-design/adr-094/`. P05 is FAIL, including D01/D03; no named visual review or reference eight-soldier CPU pass is inferred. Further correction search needs a new owner decision under ADR-094.

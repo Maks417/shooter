@@ -14,11 +14,15 @@ namespace Shooter.Generation.Environment
         private readonly Lazy<ArenaLayoutDocument>? layout;
 
         internal MapDefinition(string id, int order, string displayName, string description, ulong seed, string recipeGenerator,
-            string planner, string? layoutJson, string skyPreset, string groundSurface)
+            string planner, string? layoutJson, string skyPreset, string groundSurface, string[]? materialRoles = null, MapGrade? grade = null, string? visualLayoutJson = null)
         {
             if (string.IsNullOrEmpty(id)) throw new ArgumentException("Map id required.", nameof(id));
             Id = id; Order = order; DisplayName = displayName; Description = description; Seed = seed;
             RecipeGenerator = recipeGenerator; Planner = planner; SkyPreset = skyPreset; GroundSurface = groundSurface;
+            Grade=grade??new MapGrade();
+            AdditionalDecals=visualLayoutJson==null?Array.Empty<ArenaDecal>():ArenaLayoutDocument.ParseVisualLayout(visualLayoutJson);
+            MaterialRoles = materialRoles ?? new[] { "concrete", "painted-steel", "gravel", "asphalt" };
+            if (MaterialRoles.Count != 4) throw new ArgumentException("Exactly four map material roles required.");
             this.layoutJson = layoutJson;
             if (planner == "layout")
             {
@@ -43,6 +47,9 @@ namespace Shooter.Generation.Environment
         public string SkyPreset { get; }
         /// <summary>Presentation yard surface: <c>soil</c> or <c>asphalt</c>.</summary>
         public string GroundSurface { get; }
+        public IReadOnlyList<string> MaterialRoles { get; }
+        public MapGrade Grade { get; }
+        public IReadOnlyList<ArenaDecal> AdditionalDecals { get; }
         public bool HasLayoutDocument => layout != null;
         public ArenaLayoutDocument LayoutDocument => layout?.Value ?? throw new InvalidOperationException(Id + " uses a code planner.");
 

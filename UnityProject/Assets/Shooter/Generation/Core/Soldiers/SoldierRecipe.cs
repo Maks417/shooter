@@ -11,7 +11,9 @@ namespace Shooter.Generation
     {
         public const string Schema = "shooter.soldier.v1";
         public const string GeneratorId = "soldier.loft";
-        public const string GeneratorVersion = "1.0.2";
+        public const string GeneratorVersion = "1.0.3";
+        public const string LegacyVersion = "1.0.2";
+        public static bool Supports(string version)=>version==GeneratorVersion||version==LegacyVersion;
         public const string ParametersJson = "{\"heightMm\":1800,\"hipWidthMm\":280,\"nearLimbSegments\":12,\"nearTorsoSegments\":16,\"runCycleMm\":2200,\"runDutyPpm\":350000,\"shoulderWidthMm\":420,\"uniformOffsetMm\":6,\"walkCycleMm\":1400,\"walkDutyPpm\":500000}";
         public RecipeDocument Document { get; }
         public ContentId SourceHash { get; }
@@ -25,7 +27,7 @@ namespace Shooter.Generation
             string[] fields = {"schemaId","recipeId","generatorId","generatorVersion","seed","parameters","dependencies"};
             if (root.Count != fields.Length) throw new FormatException("Missing/unknown soldier recipe field.");
             foreach (var field in fields) if (!root.ContainsKey(field)) throw new FormatException("Missing soldier field: " + field);
-            if (root["schemaId"].String != Schema || root["generatorId"].String != GeneratorId || root["generatorVersion"].String != GeneratorVersion)
+            if (root["schemaId"].String != Schema || root["generatorId"].String != GeneratorId || !Supports(root["generatorVersion"].String))
                 throw new FormatException("Unsupported soldier schema/generator.");
             var parameters = root["parameters"].Object; var fixedParameters = JsonValue.Parse(Encoding.UTF8.GetBytes(ParametersJson)).Object;
             if (parameters.Count != fixedParameters.Count) throw new FormatException("Soldier spike uses fixed baseline parameters.");
@@ -35,7 +37,7 @@ namespace Shooter.Generation
             try
             {
                 ContentIdentity.ParseSeed(root["seed"].String);
-                var document = new RecipeDocument(new DefinitionId(root["recipeId"].String), Schema, GeneratorId, GeneratorVersion,
+                var document = new RecipeDocument(new DefinitionId(root["recipeId"].String), Schema, GeneratorId, root["generatorVersion"].String,
                     root["seed"].String, Encoding.UTF8.GetBytes(ParametersJson), Array.Empty<ContentId>());
                 return new SoldierRecipe(document, canonical);
             }
@@ -44,7 +46,7 @@ namespace Shooter.Generation
         internal static void Validate(RecipeDocument recipe)
         {
             if (recipe == null) throw new ArgumentNullException(nameof(recipe));
-            if (!recipe.RecipeId.IsValid || recipe.SchemaId != Schema || recipe.GeneratorId != GeneratorId || recipe.GeneratorVersion != GeneratorVersion)
+            if (!recipe.RecipeId.IsValid || recipe.SchemaId != Schema || recipe.GeneratorId != GeneratorId || !Supports(recipe.GeneratorVersion))
                 throw new FormatException("Unsupported soldier identity/schema/generator.");
             ContentIdentity.ParseSeed(recipe.Seed);
             if (!recipe.Parameters.SequenceEqual(Encoding.UTF8.GetBytes(ParametersJson)) || recipe.Dependencies.Count != 0)

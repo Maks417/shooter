@@ -152,9 +152,17 @@ public sealed class MapPackageSurfaceTests : IDisposable
             var low = PackagedVisualPayloads.FromBuild(MapPackageBuilder.Build(mapId, "low", toolchain));
             foreach (string path in MapVisualClosure.MapMaterialPaths)
             {
-                Assert.Equal(low.Bytes(path), payloads.Bytes(path));
-                Assert.Equal(low.Bytes(MapVisualClosure.MaterialCompanionPath(path, "normal")), payloads.Bytes(MapVisualClosure.MaterialCompanionPath(path, "normal")));
-                Assert.Equal(low.Bytes(MapVisualClosure.MaterialCompanionPath(path, "mask")), payloads.Bytes(MapVisualClosure.MaterialCompanionPath(path, "mask")));
+                foreach(string planePath in new[]{path,MapVisualClosure.MaterialCompanionPath(path,"normal"),MapVisualClosure.MaterialCompanionPath(path,"mask")})
+                {
+                    if(profile!="high")Assert.Equal(low.Bytes(planePath),payloads.Bytes(planePath));
+                    else
+                    {
+                        // ADR-088 deliberately adds 256px High presentation; gameplay equality above is unchanged.
+                        var data=MapVisualClosure.DecodeMapMaterial(payloads,planePath);
+                        Assert.Equal(256,data.Width);Assert.Equal(256,data.Height);Assert.Equal(9,data.MipBytes.Count);
+                        Assert.NotEqual(low.Bytes(planePath),payloads.Bytes(planePath));
+                    }
+                }
             }
         }
     }

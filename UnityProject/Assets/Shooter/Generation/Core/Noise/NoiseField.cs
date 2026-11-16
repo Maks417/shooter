@@ -110,6 +110,15 @@ namespace Shooter.Generation.Noise
             return noise.GetNoise(x, y);
         }
 
+        /// <summary>3D FBm/domain-warp sample for volume FX and spherical sky fields.</summary>
+        public double Raw3D(double x,double y,double z)
+        {
+            if(double.IsNaN(x)||double.IsNaN(y)||double.IsNaN(z)||double.IsInfinity(x)||double.IsInfinity(y)||double.IsInfinity(z))
+                throw new ArgumentException("Noise coordinates must be finite.");
+            if(warp!=null)warp.DomainWarp(ref x,ref y,ref z);
+            return noise.GetNoise(x,y,z);
+        }
+
         private static FastNoiseLite Configure(int seed)
         {
             var value = new FastNoiseLite(seed);

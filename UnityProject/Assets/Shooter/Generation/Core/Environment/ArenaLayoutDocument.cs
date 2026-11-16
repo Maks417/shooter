@@ -27,13 +27,39 @@ namespace Shooter.Generation.Environment
             GeneratorId = generatorId; GeneratorVersion = generatorVersion; StableIdBase = idBase; Layout = layout; this.ops = ops;
         }
 
+        public static IReadOnlyList<ArenaDecal> ParseVisualLayout(string json)
+        {
+            var root=MapJsonValue.Parse(Encoding.UTF8.GetBytes(json)).Object;
+            Exact(root,"visualLayout",new[]{"documentVersion","ops"});
+            if(root["documentVersion"].Int32!=2||root["ops"].Array.Count>256)throw new FormatException("Unsupported visual layout version/count.");
+            var list=new List<ArenaDecal>();
+            foreach(var value in root["ops"].Array)
+            {
+                var op=value.Object;Exact(op,"visualLayout.decal",new[]{"op","position","width","height","yaw","tile"});
+                if(op["op"].String!="decal"||M(op["width"])<=0||M(op["height"])<=0||op["tile"].Int32<0||op["tile"].Int32>7||Math.Abs(op["yaw"].Int32)>360)throw new FormatException("Invalid visual decal operation.");
+                list.Add(new ArenaDecal(Point(op["position"]),M(op["width"]),M(op["height"]),op["yaw"].Int32,op["tile"].Int32));
+            }
+            return list;
+        }
         public int OperationCount => ops.Count;
+        public int DocumentVersion { get; private set; } = 1;
+        public IReadOnlyList<ArenaDecal> Decals
+        {
+            get
+            {
+                var list=new List<ArenaDecal>();
+                foreach(var op in ops) if(op["op"].String=="decal") list.Add(new ArenaDecal(Point(op["position"]),M(op["width"]),M(op["height"]),op["yaw"].Int32,op["tile"].Int32));
+                return list;
+            }
+        }
 
         public static ArenaLayoutDocument Parse(string json)
         {
             if (string.IsNullOrEmpty(json)) throw new ArgumentException("Layout document required.", nameof(json));
             var root = MapJsonValue.Parse(Encoding.UTF8.GetBytes(json)).Object;
-            Exact(root, "layout", new[] { "planner", "arena", "ops" });
+            Exact(root, "layout", new[] { "planner", "arena", "ops" }, "documentVersion");
+            int documentVersion=root.ContainsKey("documentVersion")?root["documentVersion"].Int32:1;
+            if(documentVersion!=1&&documentVersion!=2)throw new FormatException("Unsupported arena layout document version.");
             var planner = root["planner"].Object;
             Exact(planner, "layout.planner", new[] { "id", "version", "idBase" });
             var arena = root["arena"].Object;
@@ -52,6 +78,7 @@ namespace Shooter.Generation.Environment
             var list = new List<IReadOnlyDictionary<string, MapJsonValue>>();
             foreach (var op in root["ops"].Array) list.Add(op.Object);
             var document = new ArenaLayoutDocument(planner["id"].String, planner["version"].String, (ulong)idBase, layout, list);
+            document.DocumentVersion=documentVersion;
             document.Run(new ArenaBoxBuilder((ulong)idBase, layout.Symmetry)); // validate every op once
             return document;
         }
@@ -73,6 +100,13 @@ namespace Shooter.Generation.Environment
                 string name = op["op"].String;
                 switch (name)
                 {
+                    case "decal":
+                        if(DocumentVersion<2)throw new FormatException("Decal operation requires documentVersion 2.");
+                        Exact(op,where,new[]{"op","position","width","height","yaw","tile"});
+                        _=Point(op["position"]);
+                        if(M(op["width"])<=0 || M(op["height"])<=0 || op["tile"].Int32<0 || op["tile"].Int32>7 || Math.Abs(op["yaw"].Int32)>360)
+                            throw new FormatException("Invalid decal dimensions, yaw or tile.");
+                        break;
                     case "perimeter":
                         Exact(op, where, new[] { "op", "height", "thickness" });
                         b.Perimeter(Layout, M(op["height"]), M(op["thickness"]));

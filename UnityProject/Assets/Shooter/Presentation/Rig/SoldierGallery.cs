@@ -68,7 +68,7 @@ namespace Shooter.Presentation
             if (plan["schema"].String != "shooter.soldier-gallery.v1" || new ContentId(plan["toolchainHash"].String) != toolchain)
                 throw new InvalidDataException("Soldier gallery identity mismatch.");
             var id = new ContentId(plan["soldierVisual"].String); var manifest = files.ReadManifest(id);
-            if (manifest.GeneratorId != SoldierRecipe.GeneratorId || manifest.GeneratorVersion != SoldierRecipe.GeneratorVersion || manifest.RecipeId != "soldiers/baseline")
+            if (manifest.GeneratorId != SoldierRecipe.GeneratorId || !SoldierRecipe.Supports(manifest.GeneratorVersion) || manifest.RecipeId != "soldiers/baseline")
                 throw new InvalidDataException("Unsupported soldier generator identity.");
             using var store = new FileContentStore(files);
             byte[] Body(ContentId content, ContentKind kind, string variant)

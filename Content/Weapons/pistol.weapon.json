@@ -23,10 +23,23 @@
     "optic": "Irons",
     "magazineCycle": true,
     "nearFieldScale": 1.15,
-    "nearFieldHipBias": [0.08, -0.085, 0.11],
-    "hipRotationDegrees": [0, -3, -2],
-    "cycleTravelMeters": 0.038
+    "nearFieldHipBias": [
+      0.08,
+      -0.085,
+      0.11
+    ],
+    "hipRotationDegrees": [
+      0,
+      -3,
+      -2
+    ],
+    "cycleTravelMeters": 0.038,
+    "muzzleFx": "pistol"
   },
-  "audio": { "shot": "PistolShot" },
-  "hud": { "killFeedGlyph": "Pistol" }
+  "audio": {
+    "shot": "PistolShot"
+  },
+  "hud": {
+    "killFeedGlyph": "Pistol"
+  }
 }

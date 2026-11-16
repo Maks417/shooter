@@ -28,10 +28,23 @@
     "optic": "None",
     "magazineCycle": false,
     "nearFieldScale": 1.08,
-    "nearFieldHipBias": [0.09, -0.09, 0.14],
-    "hipRotationDegrees": [0, -3, -2],
-    "cycleTravelMeters": 0
+    "nearFieldHipBias": [
+      0.09,
+      -0.09,
+      0.14
+    ],
+    "hipRotationDegrees": [
+      0,
+      -3,
+      -2
+    ],
+    "cycleTravelMeters": 0,
+    "muzzleFx": "none"
   },
-  "audio": { "shot": "GrenadeThrow" },
-  "hud": { "killFeedGlyph": "Grenade" }
+  "audio": {
+    "shot": "GrenadeThrow"
+  },
+  "hud": {
+    "killFeedGlyph": "Grenade"
+  }
 }

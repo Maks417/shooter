@@ -94,6 +94,7 @@ public static class ShooterPostProcessingBuild
             }
             renderer.postProcessData = data;
             ConfigureSsao(renderer, Ssao[tier]);
+            ConfigureDecals(renderer);
             renderers[tier] = renderer;
         }
 
@@ -122,6 +123,23 @@ public static class ShooterPostProcessingBuild
 
         // SSAO uses InterleavedGradient, so URP's ScreenSpaceAmbientOcclusionDynamicResourcesStripper removes its stock
         // blue-noise images from players; the build's imported-art audit fails if that ever stops being true.
+    }
+
+    private static void ConfigureDecals(UniversalRendererData renderer)
+    {
+        var feature=renderer.rendererFeatures.OfType<DecalRendererFeature>().FirstOrDefault();
+        if(feature==null)
+        {
+            feature=ScriptableObject.CreateInstance<DecalRendererFeature>();feature.name="Procedural screen-space decals";
+            AssetDatabase.AddObjectToAsset(feature,renderer);renderer.rendererFeatures.Add(feature);
+        }
+        var serialized=new SerializedObject(feature);
+        serialized.FindProperty("m_Settings.technique").enumValueIndex=2;
+        serialized.FindProperty("m_Settings.maxDrawDistance").floatValue=80;
+        serialized.ApplyModifiedPropertiesWithoutUndo();feature.SetActive(true);EditorUtility.SetDirty(feature);
+        var data=new SerializedObject(renderer);var ids=data.FindProperty("m_RendererFeatureMap");ids.arraySize=renderer.rendererFeatures.Count;
+        for(int i=0;i<renderer.rendererFeatures.Count;i++){AssetDatabase.TryGetGUIDAndLocalFileIdentifier(renderer.rendererFeatures[i],out string guid,out long id);ids.GetArrayElementAtIndex(i).longValue=id;}
+        data.ApplyModifiedPropertiesWithoutUndo();EditorUtility.SetDirty(renderer);
     }
 
     private static void ConfigureSsao(UniversalRendererData renderer, SsaoTier tier)

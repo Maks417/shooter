@@ -11,8 +11,8 @@ Authoritative stop: [ADR-024](decisions.md#adr-024--accepted-p05-soldier-visual-
 | Gate | P05 |
 | Visual acceptance | **FAIL** |
 | ADR | ADR-024 |
-| Fourth clearance/parameter search | **Not authorized** |
-| Soldier identity under review | `soldier.loft1.0.2` / `soldier.motion.spike.v5` (non-accepted diagnostic) |
+| Further clearance/parameter search | ADR-094 bounded owner assignment exhausted three candidates; **no further search authorized** |
+| Soldier identity under review | Historical 1.0.2 / baseline motion remains non-accepted; 1.0.3 kit is software-only, failed correction is diagnostic-only |
 | FIX11 software disposition | ToolingReady |
 | REL03 | Open until named review attaches captures with defects resolved/unresolved |
 
@@ -39,6 +39,13 @@ Do not delete failed M1 artifacts, do not relabel FAIL as PASS, and do not inher
 | VD-D10 | icons | SoftFixedPendingReview | ADR-085 generated SDF icon atlas: mesh-traced weapon silhouettes, faction emblems, category glyphs, crown; scoreboard/settings/ammo plate observed in player; kill-feed during kills, results and 150% review Pending |
 | VD-D11 | motion | SoftFixedPendingReview | ADR-086 animated debrief (banner sweep, score count-up, award medals, staggered cards), screen enter veil/rise, menu camera drift/push-in/parallax; preview and menu observed in player, real end-of-match debrief and reduced-motion pass Pending |
 | VD-D12 | combat HUD craft | SoftFixedPendingReview | ADR-087 first tranche: SDF damage/reload arcs, bounded round glyphs, rotated minimap shapes, entering team-plated elimination rows and headshot pop; gameplay/150%/reference review Pending |
+| VD-D13 | noise materials | SoftFixedPendingReview | ADR-088 new versioned periodic roles and per-map material selection; paired byte proofs, render/reference review remains required |
+| VD-D14 | surface detail | SoftFixedPendingReview | ADR-089 AO grime, height dirt, triplanar detail and macro shading; Low diagnostic/reference review required |
+| VD-D15 | decals | SoftFixedPendingReview | ADR-090 packaged numeric atlas/layout paint and 64 impact marks; projected higher tiers / Low quads; runtime review Pending |
+| VD-D16 | atmosphere | SoftFixedPendingReview | ADR-091 clouded sky, sun presets, reflected environment, height fog, map LUT, actor AO/contact shadows; transition review Pending |
+| VD-D17 | particle FX | SoftFixedPendingReview | ADR-092/093 five numeric flipbooks, bounded particle adaptation, weapon/impact/explosion/movement cues; live/reduced-flash/reference review Pending |
+| VD-D18 | soldier kit | SoftFixedPendingReview | ADR-094 1.0.3 contoured carrier/pouches, camo, bands/patches, collision support and per-profile grips; P05 correction failed and stays disabled by default |
+| VD-D19 | insertion/menu craft | SoftFixedPendingReview | ADR-087 blueprint, tips, wordmark/cards/keycaps, sliced loading with stale-epoch fencing; 720p/150% and indivisible upload review Pending |
 | VD-D06 | reference | PendingOwner | Exact Bodycam/Warface comparison frames/timecodes not yet selected (BFV chat screenshots establish direction only) |
 
 VD gaps are tracked for the [VD0–VD9](design-milestones.md) track and the [art brief](visual-art-brief.md). Closing a VD-D* row requires evidence and owner/technical review; software merges alone do not mark them resolved.
@@ -79,3 +86,8 @@ Packages land under ignored `Artifacts/m8-runtime-composition/<commit>/visual-de
 - No REL03 / RUN05 PASS claim; unresolved required defects keep release visual acceptance open
 
 [Release remediation plan](release-remediation-plan.md) · [Validation matrix](release-remediation-validation.md) · [M8 handoff](milestones/m8-runtime-composition/handoff.md) · [M11 handoff](milestones/m11-playable-release/handoff.md).
+
+
+## ADR-094 bounded correction disposition
+
+The full roadmap owner assignment reopened the ADR-024 stop only for three measured candidates / 90 minutes. All three failed the unchanged conservative arm-clearance gate; the search stopped at the candidate limit. Candidate 3 closes the numeric eye line but retains -11.46 mm worst arm clearance and is available only by diagnostic CLI. The product keeps the baseline solver (-1.94 mm fresh clearance / 127.03 mm worst eye-line residual); P05-D01–D03 remain unresolved. Raw failed candidates and source snapshots are retained under `Artifacts/visual-design/adr-094/`; [roadmap disposition](visual-roadmap.md#bounded-p05-disposition).

@@ -159,6 +159,8 @@ Shader "Shooter/MapSurface"
             SAMPLER(sampler_ShooterAoVolume);
             float4 _ShooterAoVolumeMin;      // xyz = volume minimum corner (m)
             float4 _ShooterAoVolumeInvSize;  // xyz = 1 / volume extent (m)
+            float _ShooterActorMode;float _ShooterActorAo;
+            float4 _ShooterHeightFog; float4 _ShooterFogTint;
             float _ShooterAoVolumeStrength;  // 0 = off (no map bound or tier off)
 
             half ShooterAmbientOcclusion(float3 positionWS, half3 normalWS)
@@ -180,7 +182,32 @@ Shader "Shooter/MapSurface"
 
                 SurfaceData surfaceData;
                 InitializeStandardLitSurfaceData(input.uv, surfaceData);
-                surfaceData.occlusion *= ShooterAmbientOcclusion(input.positionWS, normalize(input.normalWS));
+
+                half ao = _ShooterActorMode>.5 ? _ShooterActorAo : ShooterAmbientOcclusion(input.positionWS, normalize(input.normalWS));
+                surfaceData.occlusion *= ao;
+                float3 world = input.positionWS;
+                half3 detailWorld=normalize(input.normalWS);
+                if(_ShooterActorMode<.5)
+                {
+                // Numeric macro variation: no texture fetch, approximately twenty-metre features.
+
+                // Smooth low-frequency spatial modulation avoids a visible grid at cell edges.
+                float variation = .96 + .04 * sin(world.x * .19 + sin(world.z * .13));
+                half dirt = saturate(1-world.y/1.25) * .16h + (1-ao)*.24h;
+                surfaceData.albedo *= variation * lerp(half3(1,1,1), half3(.59,.51,.39), dirt);
+                surfaceData.smoothness *= 1-dirt*.65h;
+                #ifdef _NORMALMAP
+                half3 weights = pow(abs(normalize(input.normalWS)), 4); weights /= max(dot(weights,half3(1,1,1)),.001h);
+                half3 nx = SampleNormal(world.zy * 1.7, TEXTURE2D_ARGS(_BumpMap,sampler_BumpMap));
+                half3 ny = SampleNormal(world.xz * 1.7, TEXTURE2D_ARGS(_BumpMap,sampler_BumpMap));
+                half3 nz = SampleNormal(world.xy * 1.7, TEXTURE2D_ARGS(_BumpMap,sampler_BumpMap));
+                half3 baseNormal=normalize(input.normalWS);
+                half3 xWorld=half3(nx.z*sign(baseNormal.x),nx.y,nx.x);
+                half3 yWorld=half3(ny.x,ny.z*sign(baseNormal.y),ny.y);
+                half3 zWorld=half3(nz.x,nz.y,nz.z*sign(baseNormal.z));
+                detailWorld=normalize(xWorld*weights.x+yWorld*weights.y+zWorld*weights.z);
+                #endif
+                }
 
             #ifdef LOD_FADE_CROSSFADE
                 LODFadeCrossFade(input.positionCS);
@@ -188,6 +215,7 @@ Shader "Shooter/MapSurface"
 
                 InputData inputData;
                 InitializeInputData(input, surfaceData.normalTS, inputData);
+                if(_ShooterActorMode<.5)inputData.normalWS=normalize(inputData.normalWS+(detailWorld-normalize(input.normalWS))*.18h);
                 SETUP_DEBUG_TEXTURE_DATA(inputData, UNDO_TRANSFORM_TEX(input.uv, _BaseMap));
 
             #if defined(_DBUFFER)
@@ -198,6 +226,9 @@ Shader "Shooter/MapSurface"
 
                 half4 color = UniversalFragmentPBR(inputData, surfaceData);
                 color.rgb = MixFog(color.rgb, inputData.fogCoord);
+                float heightDensity=_ShooterHeightFog.x*exp(-max(0,world.y)*_ShooterHeightFog.y);
+                float heightFog=saturate(1-exp(-distance(world,_WorldSpaceCameraPos)*heightDensity));
+                color.rgb=lerp(color.rgb,_ShooterFogTint.rgb,heightFog*.35);
                 color.a = OutputAlpha(color.a, IsSurfaceTypeTransparent(_Surface));
                 outColor = color;
 

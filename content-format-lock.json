@@ -54,6 +54,8 @@
     "docs/content-schemas/release-catalog.invalid.json": "b49a8b11ad06c88f5ef48e9b8ec4a520b3a48108def292230f00be6b9a36fbb1",
     "docs/content-schemas/release-catalog.schema.json": "e0f69dd719225ebb19df37cfb07de7288cd983995a6df249921b002c85c59ff5",
     "docs/content-schemas/release-catalog.valid.json": "7abce49881d8714616dcaeb9c08bc96f94377f0b371733011664e007c8255d74",
+    "docs/content-schemas/visual-decals.schema.json": "03c1ca9158e69cdff8eb0340bdbb9fc1d92bdf643b7b615a68a35fb06ba6a80d",
+    "docs/content-schemas/visual-decals.valid.json": "c74882fd0d838c0a71f17a1d0c7564fec0794aa29cb6ba641131007966c83049",
     "Tools/Generation.Tests/CodecFixtures/generate_vectors.py": "5ef90986cc65590226deec5e35dcfd0d6b0fafa26cb181d49ba6d67870b96489",
     "Tools/Generation.Tests/CodecTests.cs": "ab606b851ca802673d6c8891185beb78d3eebde8901d68ca9fec82ddb4c20d48",
     "UnityProject/Assets/Shooter/Generation/Core/Canonical/CanonicalJson.cs": "64bc7ea7f4bcf1ecde9dfaec40a71b4cd575e3c0ae59b957614fc4e1498aecc9",
@@ -109,5 +111,6 @@
     "fileName": "catalog.json",
     "decision": "docs/decisions.md#adr-038--accepted-persisted-release-catalog-t067--b03",
     "status": "RegisteredWithPublication"
-  }
+  },
+  "visualSchemaDecision": "ADR-090; ArenaLayoutDocument v2 visual decal op, SGAF and gameplay formats unchanged"
 }

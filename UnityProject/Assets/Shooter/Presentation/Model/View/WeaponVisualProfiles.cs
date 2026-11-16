@@ -41,6 +41,7 @@ namespace Shooter.Presentation.View
         public Float3 HipRotationDegrees { get; }
         public float CycleTravelMeters { get; }
         public string DisplayLabel { get; }
+        public string MuzzleFx { get; }
 
         public WeaponVisualProfile(
             DefinitionId definitionId,
@@ -54,7 +55,7 @@ namespace Shooter.Presentation.View
             Float3 nearFieldHipBias,
             Float3 hipRotationDegrees,
             float cycleTravelMeters,
-            string displayLabel)
+            string displayLabel, string muzzleFx = "rifle")
         {
             if (!definitionId.IsValid) throw new ArgumentException("Definition id required.", nameof(definitionId));
             if (string.IsNullOrEmpty(meshAssetKey)) throw new ArgumentException("Mesh asset key required.", nameof(meshAssetKey));
@@ -71,6 +72,8 @@ namespace Shooter.Presentation.View
             HipRotationDegrees = hipRotationDegrees;
             CycleTravelMeters = cycleTravelMeters;
             DisplayLabel = displayLabel ?? string.Empty;
+            if(muzzleFx!="rifle"&&muzzleFx!="pistol"&&muzzleFx!="carbine"&&muzzleFx!="none")throw new ArgumentException("Unknown muzzle FX profile.");
+            MuzzleFx=muzzleFx;
         }
     }
 

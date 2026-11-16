@@ -22,12 +22,12 @@ namespace Shooter.Generation
             if (recipe == null) throw new ArgumentNullException(nameof(recipe));
             SoldierRecipe.Validate(recipe.Document);
             var lods = new MeshData[3];
-            for (int lod=0; lod<3; lod++) lods[lod] = BuildLod(lod);
+            for (int lod=0; lod<3; lod++) lods[lod] = BuildLod(lod,recipe.Document.GeneratorVersion==SoldierRecipe.GeneratorVersion);
             return new SoldierBuild(lods, BindBounds);
         }
-        private static MeshData BuildLod(int lod)
+        private static MeshData BuildLod(int lod,bool upgraded)
         {
-            var b = new SkinBuilder(lod); int torso = new[]{16,12,8}[lod], radial = new[]{12,8,6}[lod];
+            var b = new SkinBuilder(lod,upgraded); int torso = new[]{16,12,8}[lod], radial = new[]{12,8,6}[lod];
             // Ring stations derive from semantic pelvis/waist/chest/neck measures; no stored surface vertices.
             b.Loft(new Float3(0,.88f,0), new Float3(0,1.48f,0), new Float3(1,0,0), torso, 8,
                 t => { float width = t < .35f ? Lerp(.156f,.156f,t/.35f) : t < .8f ? Lerp(.156f,.216f,(t-.35f)/.45f) : Lerp(.216f,.12f,(t-.8f)/.2f); return new Float2(width, t<.8f ? Lerp(.106f,.126f,t/.8f) : Lerp(.126f,.09f,(t-.8f)/.2f)); },
@@ -50,13 +50,13 @@ namespace Shooter.Generation
                 ushort upper=(ushort)(side<0?8:12), lower=(ushort)(upper+1), hand=(ushort)(upper+2);
                 // Sleeve root lies inside the torso; its first rings inherit the chest before transitioning to humerus.
                 b.Loft(new Float3(side*.145f,1.45f,0),new Float3(side*.76f,1.45f,0),new Float3(0,1,0),radial,10,
-                    t=>new Float2(ArmRadius(t),(ArmRadius(t))*.94f),
+                    t=>new Float2(ArmRadius(t,upgraded)*(upgraded?(1f+.025f*(1-Math.Abs(2*(t*5-(float)Math.Floor(t*5))-1))):1f),(ArmRadius(t,upgraded))*.94f),
                     t=>t<.17f?new Skin(4,upper,Smooth(t/.17f)):LimbSkin(t,.355f/.615f,upper,lower,hand),0,-1,
                     new[]{0f,.065f/.615f,.17f,.30f,.45f,.355f/.615f,.67f,.78f,.88f,.95f,1f});
                 b.Box(new Float3(.09f,.07f,.045f),new Float3(side*.797f,1.45f,.008f),hand,1,.008f); // covered palm/grouped fingers
                 ushort thigh=(ushort)(side<0?15:19),calf=(ushort)(thigh+1),foot=(ushort)(thigh+2);
                 b.Loft(new Float3(side*.10f,.98f,0),new Float3(side*.10f,.08f,.02f),new Float3(1,0,0),radial,10,
-                    t=>new Float2(LegRadius(t),LegRadius(t)*.96f),
+                    t=>new Float2(LegRadius(t,upgraded),LegRadius(t,upgraded)*.96f),
                     t=>t<.16f?new Skin(1,thigh,Smooth(t/.16f)):LimbSkin(t,.51f/.90f,thigh,calf,foot),0,-1,
                     new[]{0f,.06f/.90f,.16f,.29f,.43f,.51f/.90f,.68f,.78f,.88f,.95f,1f});
                 // Rounded toe/heel and a tall cuff overlap trouser ends instead of a detached cuboid foot.
@@ -64,7 +64,26 @@ namespace Shooter.Generation
                 b.Loft(new Float3(side*.10f,.045f,.015f),new Float3(side*.10f,.185f,.015f),new Float3(1,0,0),radial,4,
                     t=>new Float2(Lerp(.059f,.052f,t),Lerp(.075f,.063f,t)),t=>new Skin(foot),1);
             }
-            b.Box(new Float3(.31f,.30f,.045f),new Float3(0,1.255f,.153f),4,1,.012f); // plate +12mm clearance
+            if(upgraded)
+            {
+                // Contoured plate carrier with bounded edge roll; enclosed by the old plate proxy.
+                b.Loft(new Float3(0,1.105f,.143f),new Float3(0,1.405f,.143f),new Float3(1,0,0),torso,6,
+                    t=>new Float2(.149f-(t>.72f?(t-.72f)*.10f:0),.026f),t=>new Skin(4),1);
+                for(int pouch=0;pouch<3;pouch++)
+                    b.Loft(new Float3(-.09f+pouch*.09f,1.115f,.158f),new Float3(-.09f+pouch*.09f,1.245f,.158f),new Float3(1,0,0),radial,4,
+                        t=>new Float2(.038f,.013f*(.8f+.2f*(1-Math.Abs(2*t-1)))),t=>new Skin(4),1);
+                foreach(int side in new[]{-1,1})
+                {
+                    ushort arm=(ushort)(side<0?8:12);
+                    b.Loft(new Float3(side*.275f,1.45f,0),new Float3(side*.305f,1.45f,0),new Float3(0,1,0),radial,2,
+                        t=>new Float2(.075f,.072f),t=>new Skin(arm),4);
+                    b.Box(new Float3(.048f,.004f,.058f),new Float3(side*.27f,1.525f,0),arm,5,.001f);
+                    for(int finger=0;finger<4;finger++)
+                        b.Loft(new Float3(side*.80f,1.439f,-.011f+finger*.012f),new Float3(side*.845f,1.439f,-.011f+finger*.012f),new Float3(0,1,0),6,3,
+                            t=>new Float2(.008f*(1-t*.25f),.005f),t=>new Skin((ushort)(arm+2)),1);
+                }
+            }
+            else b.Box(new Float3(.31f,.30f,.045f),new Float3(0,1.255f,.153f),4,1,.012f); // plate +12mm clearance
             // Versioned exterior reload task: the +Z grab face is chest-local(-.24,-.28,.20).
             b.Box(new Float3(.10f,.13f,.05f),new Float3(-.24f,1.10f,.175f),4,1,.006f);
             b.Box(new Float3(.05f,.08f,.025f),new Float3(-.178f,1.12f,.16f),4,0,.004f);
@@ -78,18 +97,25 @@ namespace Shooter.Generation
                     throw new InvalidOperationException("Soldier escaped bind bounds.");
             return mesh;
         }
-        private static float ArmRadius(float t)
+        private static float ArmRadius(float t,bool deterministic)
         {
             const float elbow=.355f/.615f;
             float radius=t<elbow?Lerp(.080f,.054f,t/elbow):Lerp(.054f,.039f,(t-elbow)/(1-elbow));
-            return radius+.006f*(float)Math.Sin(Math.PI*Math.Min(1,t/elbow));
+            return radius+.006f*(deterministic?(float)StableSin(Math.PI*Math.Min(1,t/elbow)):(float)Math.Sin(Math.PI*Math.Min(1,t/elbow)));
         }
-        private static float LegRadius(float t)
+        private static float LegRadius(float t,bool deterministic)
         {
             const float knee=.51f/.90f;
             float radius=t<knee?Lerp(.108f,.073f,t/knee):Lerp(.073f,.054f,(t-knee)/(1-knee));
             // Broad analytic cloth fullness, not image displacement or authored folds.
-            return radius+.010f*(float)Math.Sin(Math.PI*Math.Min(1,t/knee));
+            return radius+.010f*(deterministic?(float)StableSin(Math.PI*Math.Min(1,t/knee)):(float)Math.Sin(Math.PI*Math.Min(1,t/knee)));
+        }
+        private static double StableSin(double angle)
+        {
+            double tau=6.2831853071795864769;angle-=Math.Floor((angle+3.14159265358979323846)/tau)*tau;
+            double square=angle*angle,term=angle,sum=angle;
+            for(int i=1;i<=13;i++){term=term*(-square)/((2*i)*(2*i+1));sum=sum+term;}
+            return sum;
         }
         private static float Smooth(float t) {t=Math.Max(0,Math.Min(1,t));return t*t*(3-2*t);}
         private static float Lerp(float a,float c,float t)=>a+(c-a)*t;
@@ -122,13 +148,13 @@ namespace Shooter.Generation
         }
         private sealed class SkinBuilder
         {
-            private readonly int lod;
+            private readonly int lod;private readonly bool deterministic;
             private readonly List<Float3> positions=new List<Float3>(),normals=new List<Float3>();
             private readonly List<Float4> tangents=new List<Float4>(),weights=new List<Float4>();
             private readonly List<Float2> uv=new List<Float2>();
             private readonly List<UInt16x4> joints=new List<UInt16x4>();
             private readonly SortedDictionary<ushort,List<uint>> groups=new SortedDictionary<ushort,List<uint>>();
-            internal SkinBuilder(int lod){this.lod=lod;}
+            internal SkinBuilder(int lod,bool deterministic){this.lod=lod;this.deterministic=deterministic;}
             private ushort Remap(ushort id)
             {
                 if(lod<2)return id;
@@ -138,10 +164,18 @@ namespace Shooter.Generation
             }
             private uint Vertex(Float3 p,Float3 n,Float3 tangent,Float2 tex,Skin skin)
             {
+                // Version 1.0.3 publishes a numeric 10-micrometre lattice. Intermediate
+                // radius samples use the same lattice before finite differences, avoiding
+                // runtime float contraction magnification in surface normals. Legacy bytes stay frozen.
+                if(deterministic){p=Canonical(p);n=Canonical(n);tangent=Canonical(tangent);tex=new Float2(Canonical(tex.X),Canonical(tex.Y));}
                 uint index=(uint)positions.Count; positions.Add(p);normals.Add(n);tangents.Add(new Float4(tangent.X,tangent.Y,tangent.Z,1));uv.Add(tex);
                 ushort a=Remap(skin.A),c=Remap(skin.B); float blend=Math.Max(0,Math.Min(1,skin.Blend));
+                if(deterministic)blend=Canonical(blend);
                 joints.Add(new UInt16x4(a,c,0,0)); weights.Add(new Float4(1-blend,blend,0,0)); return index;
             }
+            private static float Canonical(float value){double rounded=Math.Round((double)value*100000,MidpointRounding.ToEven);return rounded==0?0f:(float)(rounded/100000);}
+            private static Float3 Canonical(Float3 value)=>new Float3(Canonical(value.X),Canonical(value.Y),Canonical(value.Z));
+            private static Float2 Canonical(Float2 value)=>new Float2(Canonical(value.X),Canonical(value.Y));
             private void Triangle(ushort slot,uint a,uint c,uint d)
             {if(!groups.TryGetValue(slot,out var g)){g=new List<uint>();groups.Add(slot,g);}g.Add(a);g.Add(c);g.Add(d);}
             internal void Box(Float3 size,Float3 center,ushort joint,ushort slot,float bevel=0)
@@ -159,17 +193,28 @@ namespace Shooter.Generation
                 for(int ring=0;ring<=rings;ring++)
                 {
                     float t=stations!=null?stations[ring]:seam<0?ring/(float)rings:ring<=rings/2?seam*ring/(rings/2):seam+(1-seam)*(ring-rings/2)/(rings-rings/2);var r=radius(t);float lo=Math.Max(0,t-.001f),hi=Math.Min(1,t+.001f);var ra=radius(lo);var rb=radius(hi);
+                    if(deterministic){r=Canonical(r);ra=Canonical(ra);rb=Canonical(rb);}
                     float dx=(rb.X-ra.X)/((hi-lo)*length),dz=(rb.Y-ra.Y)/((hi-lo)*length);
                     var center=GeometryMath.Add(start,GeometryMath.Scale(delta,t));
                     for(int i=0;i<=radial;i++)
                     {
-                        double angle=i==radial?0:2*Math.PI*i/radial;float cos=(float)Math.Cos(angle),sin=(float)Math.Sin(angle);
+                        double angle=i==radial?0:2*Math.PI*i/radial;float cos=(float)(deterministic?StableSin(angle+Math.PI*.5):Math.Cos(angle)),sin=(float)(deterministic?StableSin(angle):Math.Sin(angle));
                         Float3 normal=GeometryMath.Add(GeometryMath.Scale(u,cos/r.X),GeometryMath.Scale(v,sin/r.Y));
                         normal=GeometryMath.Normalize(GeometryMath.Sub(normal,GeometryMath.Scale(axis,dx*cos*cos/r.X+dz*sin*sin/r.Y)));
                         Float3 tangent=GeometryMath.Add(GeometryMath.Scale(u,-r.X*sin),GeometryMath.Scale(v,r.Y*cos));
-                        tangent=GeometryMath.Normalize(GeometryMath.Sub(tangent,GeometryMath.Scale(normal,GeometryMath.Dot(tangent,normal))));
+                        if(deterministic)
+                        {
+                            // Calculate the projected frame in explicit double precision, then
+                            // publish the same lattice as positions/normals; no runtime SIMD/FMA drift.
+                            var nn=Canonical(normal);double x=(double)u.X*(-(double)r.X*sin)+(double)v.X*r.Y*cos;
+                            double y=(double)u.Y*(-(double)r.X*sin)+(double)v.Y*r.Y*cos;
+                            double z=(double)u.Z*(-(double)r.X*sin)+(double)v.Z*r.Y*cos;
+                            double dot=x*nn.X+y*nn.Y+z*nn.Z;x-=nn.X*dot;y-=nn.Y*dot;z-=nn.Z*dot;
+                            double norm=Math.Sqrt(x*x+y*y+z*z);tangent=new Float3((float)(x/norm),(float)(y/norm),(float)(z/norm));
+                        }
+                        else tangent=GeometryMath.Normalize(GeometryMath.Sub(tangent,GeometryMath.Scale(normal,GeometryMath.Dot(tangent,normal))));
                         Float3 p=GeometryMath.Add(center,GeometryMath.Add(GeometryMath.Scale(u,r.X*cos),GeometryMath.Scale(v,r.Y*sin)));
-                        Vertex(p,normal,tangent,new Float2((float)(2*Math.PI*i/radial*Math.Sqrt((r.X*r.X+r.Y*r.Y)*.5)),t*length),skin(t));
+                        Vertex(p,normal,tangent,new Float2((float)(2*Math.PI*i/radial*Math.Sqrt(deterministic?((double)r.X*r.X+(double)r.Y*r.Y)*.5:(r.X*r.X+r.Y*r.Y)*.5)),deterministic?(float)((double)Canonical(t)*Canonical(length)):t*length),skin(t));
                     }
                 }
                 for(int ring=0;ring<rings;ring++)for(int i=0;i<radial;i++)
@@ -179,7 +224,7 @@ namespace Shooter.Generation
                     float t=cap; var center=cap==0?start:end; var r=radius(t);var n=GeometryMath.Scale(axis,cap==0?-1:1);
                     uint mid=Vertex(center,n,u,new Float2(0,0),skin(t));uint rim=(uint)positions.Count;
                     for(int i=0;i<=radial;i++)
-                    {double a=i==radial?0:2*Math.PI*i/radial;float x=r.X*(float)Math.Cos(a),z=r.Y*(float)Math.Sin(a);Vertex(GeometryMath.Add(center,GeometryMath.Add(GeometryMath.Scale(u,x),GeometryMath.Scale(v,z))),n,u,new Float2(x,z),skin(t));}
+                    {double a=i==radial?0:2*Math.PI*i/radial;float x=r.X*(float)(deterministic?StableSin(a+Math.PI*.5):Math.Cos(a)),z=r.Y*(float)(deterministic?StableSin(a):Math.Sin(a));Vertex(GeometryMath.Add(center,GeometryMath.Add(GeometryMath.Scale(u,x),GeometryMath.Scale(v,z))),n,u,new Float2(x,z),skin(t));}
                     for(int i=0;i<radial;i++)if(cap==0)Triangle(slot,mid,rim+(uint)i,rim+(uint)i+1);else Triangle(slot,mid,rim+(uint)i+1,rim+(uint)i);
                 }
             }

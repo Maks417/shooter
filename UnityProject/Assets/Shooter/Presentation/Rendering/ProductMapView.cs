@@ -43,12 +43,24 @@ namespace Shooter.Presentation.Rendering
         private Material? apron;
         private Material[] architecturalAccents = Array.Empty<Material>();
         private GeneratedSky? sky;
+        private Light? productSun;private Quaternion priorSunRotation;private Color priorSunColor;private float priorSunIntensity;
         private GeneratedReflectionProbe? probe;
         private string mapId = "";
         private int solidCount;
         private int coverCount;
         private bool visualsBound;
 
+        private int visualBindEpoch;
+        private byte[]? actorAoVolume;
+        public float SampleActorVisibility(Float3 feet)
+        {
+            if(actorAoVolume==null)return 1f;
+            int x=Mathf.Clamp((int)((feet.X-MapAmbientOcclusionVolume.MinX)/MapAmbientOcclusionVolume.CellXZ),0,MapAmbientOcclusionVolume.SizeX-1);
+            int y=Mathf.Clamp((int)((feet.Y+1.1-MapAmbientOcclusionVolume.MinY)/MapAmbientOcclusionVolume.CellY),0,MapAmbientOcclusionVolume.SizeY-1);
+            int z=Mathf.Clamp((int)((feet.Z-MapAmbientOcclusionVolume.MinZ)/MapAmbientOcclusionVolume.CellXZ),0,MapAmbientOcclusionVolume.SizeZ-1);
+            return Mathf.Lerp(.55f,1f,actorAoVolume[MapAmbientOcclusionVolume.Index(x,y,z)]/255f);
+        }
+        public ProductDecals? Decals { get; private set; }
         public string MapId => mapId;
         public int SolidCount => solidCount;
         public int CoverCount => coverCount;
@@ -75,6 +87,8 @@ namespace Shooter.Presentation.Rendering
         }
 
         public void Install(IReadOnlyList<CollisionBox> boxes, byte[]? metadataBytes, string installedMapId, PackagedVisualPayloads visuals)
+        { foreach(var step in InstallSteps(boxes,metadataBytes,installedMapId,visuals)) { } }
+        public IEnumerable<int> InstallSteps(IReadOnlyList<CollisionBox> boxes, byte[]? metadataBytes, string installedMapId, PackagedVisualPayloads visuals)
         {
             if (boxes == null) throw new ArgumentNullException(nameof(boxes));
             if (visuals == null) throw new ArgumentNullException(nameof(visuals));
@@ -86,7 +100,7 @@ namespace Shooter.Presentation.Rendering
                 throw new InvalidOperationException("Visual package mapId mismatch.");
 
             ClearVisuals();
-            BindVisuals(visuals);
+            foreach(var step in BindVisualSteps(visuals))yield return step;
             mapId = installedMapId ?? visuals.MapId;
 
             HashSet<ulong> coverIds = ParseCoverIds(metadataBytes);
@@ -119,11 +133,26 @@ namespace Shooter.Presentation.Rendering
             if (metadataBytes != null && metadataBytes.Length > 0)
                 PlaceMetadataCovers(metadataBytes, coverIds, placedMetalCovers);
             PlaceCoverOverlaysFromBoxes(boxes, coverIds, placedMetalCovers);
+            yield return 0;
 
+            Decals=ProductDecals.Create(transform,visuals);
+            yield return 0;
             // Atmosphere after materials/meshes so Trilight + one-shot probe sample the installed surfaces.
             GeneratedSkyMath.ResolveProductPalette(mapId, out var zenith, out var horizon, out var groundRgb, out float fogStart, out float fogEnd, out float fogDensity);
             sky = GeneratedSky.Apply(transform, zenith, horizon, groundRgb, true, fogStart, fogEnd, fogDensity,
                 GeneratedSky.ProductAmbientIntensity);
+            sky.ApplyMap(mapId);
+            yield return 0;
+            productSun=RenderSettings.sun;
+            if(productSun!=null)
+            {
+                priorSunRotation=productSun.transform.rotation;priorSunColor=productSun.color;priorSunIntensity=productSun.intensity;
+                string preset=MapRegistry.Require(mapId).SkyPreset;
+                productSun.transform.rotation=Quaternion.Euler(preset=="petroleum"?12:preset=="dusty-yard"?48:28,-32,0);
+                productSun.color=preset=="petroleum"?new Color(1,.76f,.51f):preset=="dusty-yard"?new Color(.83f,.89f,1):new Color(1,.94f,.83f);
+                productSun.intensity=preset=="dusty-yard"?.65f:1.15f;
+            }
+            ProductPostProcessing.SetMapGrade(mapId);
             probe = GeneratedReflectionProbe.Apply(
                 transform,
                 GeneratedReflectionProbe.ProductMapBoxSizeMeters,
@@ -132,9 +161,11 @@ namespace Shooter.Presentation.Rendering
             Debug.Log("SHOOTER_PRODUCT_MAP_VIEW map=" + mapId + " solids=" + solidCount + " covers=" + coverCount + " packaged=1");
         }
 
-        private void BindVisuals(PackagedVisualPayloads visuals)
+        private IEnumerable<int> BindVisualSteps(PackagedVisualPayloads visuals)
         {
+            int epoch=++visualBindEpoch;
             ReleaseBoundVisuals();
+            bool complete=false;
             try
             {
                 var shaderRoot = MapJsonValue.Parse(visuals.Bytes(MapVisualClosure.ShaderPath(visuals.Profile))).Object;
@@ -144,39 +175,44 @@ namespace Shooter.Presentation.Rendering
 
                 solidsMeshData = MapVisualClosure.DecodeMapMesh(visuals, MapVisualClosure.MapSolidsMeshPath);
                 mapSolids = Own(UploadMesh(solidsMeshData, "Product map solids"));
+                yield return 0;
                 unitBox = Own(UploadMesh(MapVisualClosure.DecodeMapMesh(visuals, MapVisualClosure.UnitBoxMeshPath), "Product unit box", true));
                 // Combined map solids retain metric UVs, so .5 repeats/m matches the two-metre recipe.
                 // Scaled unit boxes receive metric UVs too: all families repeat every two metres.
                 // Scalar metallic/smoothness only apply when packaged mask planes are absent; T075 masks own response.
+                yield return 0;
                 concrete = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[0], "Numeric concrete",
                     ProductSurfaceResponse.Concrete, .5f);
                 // Trim reuses packaged concrete planes with a warmer plaster response (no extra material path).
+                yield return 0;
                 trim = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[0], "Numeric trim plaster",
                     ProductSurfaceResponse.TrimPlaster, .5f);
+                yield return 0;
                 cover = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[1], "Numeric cover",
                     ProductSurfaceResponse.CoverMetal, .5f);
                 architecturalAccents = ProductSurfaceMaterial.ArchitecturalAccents(concrete, cover, value => owned.Add(value));
+                yield return 0;
                 ground = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[2], "Numeric soil ground",
                     ProductSurfaceResponse.Soil, .5f);
+                yield return 0;
                 asphalt = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[3], "Numeric asphalt",
                     ProductSurfaceResponse.Asphalt, .5f);
                 // Apron reuses asphalt albedo/normal/mask planes with a darker BaseColor response.
+                yield return 0;
                 apron = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[3], "Numeric apron asphalt",
                     ProductSurfaceResponse.Apron, .5f);
+                yield return 0;
                 BindAmbientOcclusion(visuals);
-                visualsBound = true;
+                visualsBound = true;complete=true;
             }
-            catch (Exception error)
-            {
-                ReleaseBoundVisuals();
-                throw new InvalidOperationException("Required packaged map visuals missing/corrupt; refusing generation fallback: " + error.Message, error);
-            }
+            finally { if(!complete&&epoch==visualBindEpoch)ReleaseBoundVisuals(); }
         }
 
         /// <summary>Upload the packaged ADR-081 volume as a Texture3D (R8, trilinear, clamped) and publish its transform.</summary>
         private void BindAmbientOcclusion(PackagedVisualPayloads visuals)
         {
             byte[] volume = MapVisualClosure.DecodeAmbientOcclusionVolume(visuals);
+            actorAoVolume=volume;
             var texture = new Texture3D(MapAmbientOcclusionVolume.SizeX, MapAmbientOcclusionVolume.SizeY, MapAmbientOcclusionVolume.SizeZ,
                 TextureFormat.R8, false)
             {
@@ -199,6 +235,10 @@ namespace Shooter.Presentation.Rendering
 
         public void ClearVisuals()
         {
+            visualBindEpoch++;
+            if(Decals!=null) DestroyObject(Decals.gameObject);
+            Decals=null;
+            actorAoVolume=null;
             for (int i = 0; i < solids.Count; i++)
                 if (solids[i] != null) DestroyObject(solids[i]);
             solids.Clear();
@@ -209,6 +249,10 @@ namespace Shooter.Presentation.Rendering
             probe = null;
             sky?.Dispose();
             sky = null;
+            if(productSun!=null){productSun.transform.rotation=priorSunRotation;productSun.color=priorSunColor;productSun.intensity=priorSunIntensity;}
+            productSun=null;
+            Shader.SetGlobalVector("_ShooterHeightFog",Vector4.zero);
+            ProductPostProcessing.SetMapGrade(null);
             ReleaseBoundVisuals();
         }
 

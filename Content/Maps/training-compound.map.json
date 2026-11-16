@@ -9,7 +9,27 @@
   "planner": "layout",
   "presentation": {
     "sky": "compound",
-    "groundSurface": "soil"
+    "groundSurface": "soil",
+    "materials": [
+      "plaster",
+      "painted-steel",
+      "gravel",
+      "asphalt"
+    ],
+    "grade": {
+      "gain": [
+        980,
+        1000,
+        1040
+      ],
+      "lift": [
+        0,
+        0,
+        3
+      ],
+      "contrast": 1040,
+      "saturation": 940
+    }
   },
   "layout": {
     "planner": {
@@ -638,7 +658,44 @@
       {
         "op": "visualDetail",
         "set": "compound"
+      },
+      {
+        "op": "decal",
+        "position": [
+          -6000,
+          65,
+          -10000
+        ],
+        "width": 3000,
+        "height": 1500,
+        "yaw": 0,
+        "tile": 0
+      },
+      {
+        "op": "decal",
+        "position": [
+          6000,
+          65,
+          10000
+        ],
+        "width": 2400,
+        "height": 2400,
+        "yaw": 180,
+        "tile": 4
+      },
+      {
+        "op": "decal",
+        "position": [
+          -9000,
+          65,
+          4000
+        ],
+        "width": 2500,
+        "height": 2500,
+        "yaw": 0,
+        "tile": 1
       }
-    ]
+    ],
+    "documentVersion": 2
   }
 }

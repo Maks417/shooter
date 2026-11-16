@@ -327,6 +327,9 @@ namespace Shooter.Presentation.Session
             }
 
             backend.WireMapActors();
+            await AwaitLoadingPaintAsync().ConfigureAwait(true);
+            if (!coordinator.SameLoadEpoch(epoch)) return;
+            if(loadCancel.IsCancellationRequested){coordinator.CompleteStartFailure();navigation.CancelLoad();return;}
             if (!backend.TryGetVerifiedMap(out var boxes, out var metadata, out var mapId))
             {
                 session.RequestAbort();
@@ -344,16 +347,23 @@ namespace Shooter.Presentation.Session
 
             try
             {
-                view.BindVerifiedMap(boxes, metadata, mapId, visuals);
+                await view.BindVerifiedMapAsync(boxes, metadata, mapId, visuals, loadCancel.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                if(!coordinator.SameLoadEpoch(epoch))return;
+                session.RequestAbort();coordinator.CompleteStartFailure();navigation.CancelLoad();return;
             }
             catch (Exception ex)
             {
+                if(!coordinator.SameLoadEpoch(epoch))return;
                 session.RequestAbort();
                 coordinator.CompleteStartFailure();
                 navigation.FailLoad(ex.Message);
                 return;
             }
 
+            if(!coordinator.SameLoadEpoch(epoch))return;
             var ready = session.SignalReady();
             if (!ready.Succeeded)
             {
@@ -575,6 +585,20 @@ namespace Shooter.Presentation.Session
             Texture? card = menuScene?.MapCard(setup!.SelectedMapId.Value);
             bool reducedMotion = settingsEditor != null && settingsEditor.Applied.ReducedCameraMotion;
             string mapName = InsertionScreenCopy.DisplayNameOrFallback(setup.SelectedDisplayName, setup.SelectedMapId.Value);
+            System.Collections.Generic.IReadOnlyList<Shooter.Generation.Environment.CollisionBox>? blueprint = null;
+            Shooter.Contracts.Float3? spawn1 = null, spawn2 = null;
+            if (backend != null && backend.TryGetVerifiedMap(out var verifiedBoxes, out var meta, out var verifiedMap) && verifiedMap == setup.SelectedMapId.Value)
+            {
+                blueprint = verifiedBoxes;
+                if (meta != null)
+                    foreach (var slot in Shooter.Generation.Environment.MapJsonValue.Parse(meta).Object["spawnSlots"].Array)
+                    {
+                        var v = slot.Object; var p = v["positionMeters"].Array;
+                        var point = new Shooter.Contracts.Float3((float)p[0].Number, (float)p[1].Number, (float)p[2].Number);
+                        if (v["team"].Int32 == 1 && !spawn1.HasValue) spawn1 = point;
+                        if (v["team"].Int32 == 2 && !spawn2.HasValue) spawn2 = point;
+                    }
+            }
             if (ui.DrawInsertionScreen(
                     mapName,
                     InsertionScreenCopy.MatchTitle,
@@ -584,7 +608,7 @@ namespace Shooter.Presentation.Session
                     card,
                     showCancel: true,
                     reducedMotion,
-                    InsertionScreenCopy.MatchFooter(setup.SelectedTeamSize)))
+                    InsertionScreenCopy.MatchFooter(setup.SelectedTeamSize), blueprint, spawn1, spawn2))
                 CancelLoading();
         }
 
@@ -878,10 +902,15 @@ namespace Shooter.Presentation.Session
                 ui.Label(new Rect(0, y, width * .5f, 34), action, 18, TacticalUi.Text, TextAnchor.MiddleLeft);
                 if (pause) ui.Label(new Rect(width * .5f, y, width * .5f, 34), "Escape / reserved", 18, TacticalUi.Muted, TextAnchor.MiddleLeft);
                 else if (ui.Button(new Rect(width * .5f, y, width * .5f, 34), "binding." + binding.Action,
-                    bindingEditor.IsListening && bindingEditor.ListeningAction == binding.Action ? "LISTENING..." : TacticalUi.ControlLabel(binding.Control)))
+                    bindingEditor.IsListening && bindingEditor.ListeningAction == binding.Action ? "LISTENING..." : ""))
                 {
                     bindingEditor.TryBeginListen(binding.Action);
                     bindingListenAfterFrame = Time.frameCount;
+                }
+                if(!pause && !(bindingEditor.IsListening&&bindingEditor.ListeningAction==binding.Action))
+                {
+                    string key=TacticalUi.ControlLabel(binding.Control);float keyWidth=Mathf.Min(width*.45f,Mathf.Max(40,key.Length*6+14));
+                    ui.Keycap(new Rect(width*.5f+(width*.5f-keyWidth)*.5f,y+8,keyWidth,18),key,TacticalUi.Text);
                 }
                 y += 40;
             }

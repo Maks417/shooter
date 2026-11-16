@@ -6,11 +6,11 @@
     "sources": [
         {
             "path": "UnityProject/Assets/Shooter/Bootstrap/Editor/ShooterBuild.cs",
-            "sha256": "9b066dfe7b35f2470ed5dc77fe5a72bd3bd2b1263917f922bdb6f39748476e5b"
+            "sha256": "20a3bba1caf79b6ff357893ea7d66732b8b78065029131c4734a24131d817eb1"
         },
         {
             "path": "UnityProject/Assets/Shooter/Bootstrap/Editor/ShooterPostProcessingBuild.cs",
-            "sha256": "1438392b32f1cf9517b8b2cbc8704663b94a3025c8028a9e41e1777f6b411334"
+            "sha256": "9eebe11620b72154f414c551e020d2bf03379c609ef9303abb62aaf2cf797073"
         }
     ],
     "artifacts": [
@@ -32,11 +32,11 @@
         },
         {
             "path": "UnityProject/Assets/Shooter/Settings/FoundationRendererBalanced.asset",
-            "sha256": "1eda6a60c67aae99b97b11f3bbd416f3be5c6096a9b8177f598b17aaaede0150"
+            "sha256": "09a37c16417d88b9d2ac2fbc8d61c0f5112a6faf6762332ba7919c2fa4799348"
         },
         {
             "path": "UnityProject/Assets/Shooter/Settings/FoundationRendererHigh.asset",
-            "sha256": "b7ce78ed8f4f4cb4340f60c69933fa7aabc0091450a139d269d04704b483b206"
+            "sha256": "483662ff04c45becf7bfe6da44e7637d8572fa73f474dcf8d6fb7266c9b36ac6"
         },
         {
             "path": "UnityProject/Assets/Shooter/Settings/HarnessMaterial.mat",
@@ -64,7 +64,7 @@
         },
         {
             "path": "UnityProject/Assets/Shooter/Settings/ProductMapSurfaceNormalMask.mat",
-            "sha256": "cddd5f6a922924628f02b9483ab1274f24e12e7e3e5076987ad227164c7e8c9a"
+            "sha256": "6a87dcef4579943b18fc1e0ca555b2080369a1f5310e8a1d1ea2551a09b01934"
         },
         {
             "path": "UnityProject/Assets/Shooter/Settings/ProductPostProcessData.asset",

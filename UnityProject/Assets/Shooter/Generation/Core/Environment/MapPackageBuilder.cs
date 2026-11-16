@@ -183,12 +183,21 @@ namespace Shooter.Generation.Environment
             AddSgaf(dependencies, "skeleton", MapVisualClosure.SoldierSkeletonPath, ContentKind.Skeleton,
                 GeometryCodec.EncodeSkeleton(SoldierSkeleton.Definition), soldierFp, toolchainHash);
             var soldierRecipe = SoldierRecipe.Parse(Encoding.ASCII.GetBytes(
-                "{\"schemaId\":\"shooter.soldier.v1\",\"recipeId\":\"soldiers/baseline\",\"generatorId\":\"soldier.loft\",\"generatorVersion\":\"1.0.2\",\"seed\":\"460072030\",\"parameters\":{\"heightMm\":1800,\"shoulderWidthMm\":420,\"hipWidthMm\":280,\"uniformOffsetMm\":6,\"nearTorsoSegments\":16,\"nearLimbSegments\":12,\"walkCycleMm\":1400,\"runCycleMm\":2200,\"walkDutyPpm\":500000,\"runDutyPpm\":350000},\"dependencies\":[]}"));
+                "{\"schemaId\":\"shooter.soldier.v1\",\"recipeId\":\"soldiers/baseline\",\"generatorId\":\"soldier.loft\",\"generatorVersion\":\"1.0.3\",\"seed\":\"460072030\",\"parameters\":{\"heightMm\":1800,\"shoulderWidthMm\":420,\"hipWidthMm\":280,\"uniformOffsetMm\":6,\"nearTorsoSegments\":16,\"nearLimbSegments\":12,\"walkCycleMm\":1400,\"runCycleMm\":2200,\"walkDutyPpm\":500000,\"runDutyPpm\":350000},\"dependencies\":[]}"));
             var soldierBuild = SoldierGeometry.Build(soldierRecipe);
             for (int lod = 0; lod < MapVisualClosure.SoldierLodPaths.Length; lod++)
                 AddSgaf(dependencies, "mesh", MapVisualClosure.SoldierLodPaths[lod], ContentKind.Mesh,
                     GeometryCodec.EncodeMesh(soldierBuild.Lods[lod]), soldierFp, toolchainHash);
 
+            foreach(Shooter.Generation.Fx.FlipbookKind kind in Enum.GetValues(typeof(Shooter.Generation.Fx.FlipbookKind)))
+                AddSgaf(dependencies,"material",Shooter.Generation.Fx.FxFlipbook.Path(kind),ContentKind.Material,
+                    GeometryCodec.EncodeMaterial(Shooter.Generation.Fx.FxFlipbook.Bake(kind,profile=="high"?64:32)),Shooter.Generation.Fx.FxFlipbook.Fingerprint,toolchainHash);
+            AddSgaf(dependencies,"material",ProceduralDecals.AtlasPath,ContentKind.Material,
+                GeometryCodec.EncodeMaterial(ProceduralDecals.Bake()),ProceduralDecals.Fingerprint,toolchainHash);
+            var definition=MapRegistry.Require(mapId);
+            var decals=new List<ArenaDecal>(definition.AdditionalDecals);
+            if(definition.HasLayoutDocument)decals.AddRange(definition.LayoutDocument.Decals);
+            AddJson(dependencies,"shader",ProceduralDecals.PlacementsPath,ProceduralDecals.EncodePlacements(decals));
             // Weapon meshes live in the shared weapon package (ADR-078), not in map packages.
             // ADR-081 baked ambient-occlusion volume from the plan's collision boxes (deterministic, cached per map).
             byte[] occlusion = MapAmbientOcclusionVolume.Bake(mapId + ":" + plan.CollisionHash, plan.CollisionBoxes);
@@ -198,12 +207,13 @@ namespace Shooter.Generation.Environment
             for (int i = 0; i < MapVisualClosure.MapMaterialPaths.Length; i++)
             {
                 string path = MapVisualClosure.MapMaterialPaths[i];
-                MaterialBake bake = surfaceBakes.Value[i];
-                AddSgaf(dependencies, "material", path, ContentKind.Material, GeometryCodec.EncodeMaterial(bake.Albedo), mapFingerprint, toolchainHash);
+                MaterialBake bake = NoiseSurface(mapId, profile, i);
+                var surfaceFingerprint = GeneratorFingerprint.Compute(NoiseMaterialRecipe.Generator, NoiseMaterialRecipe.Version);
+                AddSgaf(dependencies, "material", path, ContentKind.Material, GeometryCodec.EncodeMaterial(bake.Albedo), surfaceFingerprint, toolchainHash);
                 AddSgaf(dependencies, "material", MapVisualClosure.MaterialCompanionPath(path, "normal"), ContentKind.Material,
-                    GeometryCodec.EncodeMaterial(bake.Normal), mapFingerprint, toolchainHash);
+                    GeometryCodec.EncodeMaterial(bake.Normal), surfaceFingerprint, toolchainHash);
                 AddSgaf(dependencies, "material", MapVisualClosure.MaterialCompanionPath(path, "mask"), ContentKind.Material,
-                    GeometryCodec.EncodeMaterial(bake.Mask), mapFingerprint, toolchainHash);
+                    GeometryCodec.EncodeMaterial(bake.Mask), surfaceFingerprint, toolchainHash);
             }
             for (int family = 0; family < MapVisualClosure.FirstPersonSurfacePaths.Length; family++)
             {
@@ -215,11 +225,16 @@ namespace Shooter.Generation.Environment
                 AddSgaf(dependencies, "material", MapVisualClosure.MaterialCompanionPath(path, "mask"), ContentKind.Material,
                     GeometryCodec.EncodeMaterial(bake.Mask), mapFingerprint, toolchainHash);
             }
-            AddSolidMaterial(dependencies, MapVisualClosure.SoldierMaterialPaths[0], 41, 71, 107, 255, mapFingerprint, toolchainHash);
+            AddSoldierUniform(dependencies,MapVisualClosure.SoldierMaterialPaths[0],1,toolchainHash);
             AddSolidMaterial(dependencies, MapVisualClosure.SoldierMaterialPaths[1], 15, 20, 31, 255, mapFingerprint, toolchainHash);
             AddSolidMaterial(dependencies, MapVisualClosure.SoldierMaterialPaths[2], 122, 82, 56, 255, mapFingerprint, toolchainHash);
             AddSolidMaterial(dependencies, MapVisualClosure.SoldierMaterialPaths[3], 10, 20, 31, 255, mapFingerprint, toolchainHash);
-            AddSolidMaterial(dependencies, MapVisualClosure.SoldierMaterialPaths[4], 107, 56, 31, 255, mapFingerprint, toolchainHash);
+            AddSoldierUniform(dependencies,MapVisualClosure.SoldierMaterialPaths[4],2,toolchainHash);
+            foreach(byte team in new byte[]{1,2})
+            {
+                AddSolidMaterial(dependencies,MapVisualClosure.SoldierBandPath(team),team==1?(byte)55:(byte)160,team==1?(byte)135:(byte)72,team==1?(byte)160:(byte)48,255,mapFingerprint,toolchainHash);
+                AddSgaf(dependencies,"material",MapVisualClosure.SoldierPatchPath(team),ContentKind.Material,GeometryCodec.EncodeMaterial(SoldierInsignia.Bake(team)),mapFingerprint,toolchainHash);
+            }
             AddSolidMaterial(dependencies, MapVisualClosure.SoldierMaterialPaths[5], 31, 18, 13, 255, mapFingerprint, toolchainHash);
             AddSolidMaterial(dependencies, MapVisualClosure.SoldierMaterialPaths[6], 122, 82, 56, 255, mapFingerprint, toolchainHash);
             AddSolidMaterial(dependencies, MapVisualClosure.SoldierMaterialPaths[7], 26, 10, 8, 255, mapFingerprint, toolchainHash);
@@ -265,6 +280,19 @@ namespace Shooter.Generation.Environment
             dependencies.Add(new MapPackageDependency(role, ContentIdentity.Hash(json), path, json));
         }
 
+        private static readonly Dictionary<string, MaterialBake> noiseBakes = new Dictionary<string, MaterialBake>(StringComparer.Ordinal);
+        private static MaterialBake NoiseSurface(string mapId, string profile, int slot)
+        {
+            string role = MapRegistry.Require(mapId).MaterialRoles[slot]; int n = profile == "high" ? 256 : 128;
+            string key = role + ":" + n;
+            lock (noiseBakes)
+            {
+                if (!noiseBakes.TryGetValue(key, out var bake))
+                    noiseBakes.Add(key, bake = NoiseMaterialBaker.Bake(new NoiseMaterialRecipe(role, n, MapSurfaceSeed)));
+                return bake;
+            }
+        }
+
         private static MaterialBake[] CreateSurfaceBakes()
         {
             string[] names = { "concrete", "cover", "ground", "asphalt" };
@@ -282,6 +310,15 @@ namespace Shooter.Generation.Environment
                 bakes[i] = MaterialBaker.Bake(MaterialRecipe.Parse(Encoding.ASCII.GetBytes(source)));
             }
             return bakes;
+        }
+
+        private static void AddSoldierUniform(List<MapPackageDependency> dependencies,string path,byte team,ContentId toolchain)
+        {
+            var bake=NoiseMaterialBaker.Bake(new NoiseMaterialRecipe("camo-fabric",128,460072030UL+team,250));
+            var fp=GeneratorFingerprint.Compute(NoiseMaterialRecipe.Generator,NoiseMaterialRecipe.Version);
+            AddSgaf(dependencies,"material",path,ContentKind.Material,GeometryCodec.EncodeMaterial(bake.Albedo),fp,toolchain);
+            AddSgaf(dependencies,"material",MapVisualClosure.MaterialCompanionPath(path,"normal"),ContentKind.Material,GeometryCodec.EncodeMaterial(bake.Normal),fp,toolchain);
+            AddSgaf(dependencies,"material",MapVisualClosure.MaterialCompanionPath(path,"mask"),ContentKind.Material,GeometryCodec.EncodeMaterial(bake.Mask),fp,toolchain);
         }
 
         private static void AddSolidMaterial(
@@ -341,6 +378,13 @@ namespace Shooter.Generation.Environment
             for (int i = 0; i < MapVisualClosure.SoldierLodPaths.Length; i++)
                 RequireMesh(MapVisualClosure.SoldierLodPaths[i], soldierFingerprint);
 
+            var decalAtlas=MapVisualClosure.DecodeMaterial(payloads,ProceduralDecals.AtlasPath,ProceduralDecals.Fingerprint);
+            if(decalAtlas.Width!=256||decalAtlas.Height!=128||decalAtlas.ChannelFormat!="rgba8-linear")throw new InvalidOperationException("Invalid numeric decal atlas.");
+            foreach(Shooter.Generation.Fx.FlipbookKind kind in Enum.GetValues(typeof(Shooter.Generation.Fx.FlipbookKind)))
+            {
+                var fx=MapVisualClosure.DecodeMaterial(payloads,Shooter.Generation.Fx.FxFlipbook.Path(kind),Shooter.Generation.Fx.FxFlipbook.Fingerprint);
+                if(fx.Width!=(profile=="high"?512:256)||fx.Height!=fx.Width||fx.ChannelFormat!="rgba8-linear")throw new InvalidOperationException("Invalid numeric FX atlas.");
+            }
             var occlusionAtlas = MapVisualClosure.DecodeMapMaterial(payloads, MapAmbientOcclusionVolume.Path);
             MapAmbientOcclusionVolume.FromAtlas(occlusionAtlas);
 
@@ -354,8 +398,8 @@ namespace Shooter.Generation.Environment
             {
                 RequireMaterial(path);
                 var albedo = MapVisualClosure.DecodeMapMaterial(payloads, path);
-                if (albedo.Width != MapSurfaceResolution || albedo.Height != MapSurfaceResolution ||
-                    albedo.ChannelFormat != "rgba8-srgb" || albedo.MipBytes.Count != 8)
+                if (albedo.Width != (profile=="high"?256:128) || albedo.Height != albedo.Width ||
+                    albedo.ChannelFormat != "rgba8-srgb" || albedo.MipBytes.Count != (profile=="high"?9:8))
                     throw new InvalidOperationException("Map surface albedo is not a complete production plane: " + path);
                 foreach (string plane in new[] { "normal", "mask" })
                 {

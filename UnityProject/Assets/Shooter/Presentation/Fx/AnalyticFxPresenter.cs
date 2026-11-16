@@ -1,269 +1,88 @@
 #if UNITY_5_3_OR_NEWER
 #nullable enable
-using UnityEngine;
-using UnityEngine.Rendering;
-
+using System;using System.Collections.Generic;using Shooter.Generation;using Shooter.Generation.Environment;using Shooter.Generation.Fx;using UnityEngine;using UnityEngine.Rendering;
 namespace Shooter.Presentation.Fx
 {
-    /// <summary>
-    /// World-space mesh proxies for <see cref="AnalyticFxPool"/> (muzzle / spark / smoke).
-    /// Primitive meshes + URP Lit/Unlit colors only; no sprites or particle packs.
-    /// </summary>
-    public sealed class AnalyticFxPresenter : MonoBehaviour
+    /// <summary>Bounded code-only particle adaptation of the pure lifetime pool. Simulation is advanced from pool age.</summary>
+    public sealed class AnalyticFxPresenter:MonoBehaviour
     {
-        public const int VisualLayer = 11;
-
-        private AnalyticFxPool? pool;
-        private Transform[] slots = System.Array.Empty<Transform>();
-        private MeshRenderer[] renderers = System.Array.Empty<MeshRenderer>();
-        private MeshFilter[] filters = System.Array.Empty<MeshFilter>();
-        private Material? muzzleMaterial;
-        private Material? sparkMaterial;
-        private Material? smokeMaterial;
-        private Material? casingMaterial;
-        private Material? tracerMaterial;
-        private Mesh? quadMesh;
-        private Mesh? sphereMesh;
-        private Mesh? capsuleMesh;
-        private readonly MaterialPropertyBlock propertyBlock = new MaterialPropertyBlock();
-
-        public static AnalyticFxPresenter Create(Transform parent, AnalyticFxPool pool)
+        public const int VisualLayer=11;
+        private AnalyticFxPool? pool;private readonly List<UnityEngine.Object> owned=new List<UnityEngine.Object>();
+        private ParticleSystem[] systems=Array.Empty<ParticleSystem>();private ParticleSystemRenderer[] renderers=Array.Empty<ParticleSystemRenderer>();
+        private readonly Material[] materials=new Material[5];private float[] age=Array.Empty<float>();private bool[] active=Array.Empty<bool>();private FxKind[] kind=Array.Empty<FxKind>();
+        private bool bound;private int tier=-1;private Material? ringMaterial;
+        private AnimationCurve FadeSize=null!;
+        private AnimationCurve SmokeSize=null!;
+        private AnimationCurve RingSize=null!;
+        private Gradient FadeColor=null!;
+        private static Gradient MakeFade(){var g=new Gradient();g.SetKeys(new[]{new GradientColorKey(Color.white,0),new GradientColorKey(Color.white,1)},new[]{new GradientAlphaKey(1,0),new GradientAlphaKey(0,1)});return g;}
+        public static AnalyticFxPresenter Create(Transform parent,AnalyticFxPool pool)
         {
-            if (parent == null) throw new System.ArgumentNullException(nameof(parent));
-            if (pool == null) throw new System.ArgumentNullException(nameof(pool));
-            var root = new GameObject("Analytic combat FX");
-            root.transform.SetParent(parent, false);
-            root.layer = VisualLayer;
-            var presenter = root.AddComponent<AnalyticFxPresenter>();
-            presenter.Initialize(pool);
-            return presenter;
+            var go=new GameObject("Procedural combat particles"){layer=VisualLayer};go.transform.SetParent(parent,false);var result=go.AddComponent<AnalyticFxPresenter>();result.Initialize(pool);return result;
         }
-
         private void Initialize(AnalyticFxPool pool)
         {
-            this.pool = pool;
-            AcquireMeshes();
-            CreateMaterials();
-            slots = new Transform[AnalyticFxPool.MaxInstances];
-            renderers = new MeshRenderer[AnalyticFxPool.MaxInstances];
-            filters = new MeshFilter[AnalyticFxPool.MaxInstances];
-            for (int i = 0; i < AnalyticFxPool.MaxInstances; i++)
+            FadeSize=AnimationCurve.Linear(0,1,1,.2f);SmokeSize=AnimationCurve.Linear(0,.3f,1,1.7f);RingSize=AnimationCurve.Linear(0,.1f,1,1.8f);FadeColor=MakeFade();
+            this.pool=pool;int n=AnalyticFxPool.MaxInstances;systems=new ParticleSystem[n];renderers=new ParticleSystemRenderer[n];age=new float[n];active=new bool[n];kind=new FxKind[n];
+            for(int i=0;i<n;i++)
             {
-                var go = new GameObject("Fx " + i) { layer = VisualLayer };
-                go.transform.SetParent(transform, false);
-                go.SetActive(false);
-                filters[i] = go.AddComponent<MeshFilter>();
-                renderers[i] = go.AddComponent<MeshRenderer>();
-                renderers[i].shadowCastingMode = ShadowCastingMode.Off;
-                renderers[i].receiveShadows = false;
-                renderers[i].lightProbeUsage = LightProbeUsage.Off;
-                renderers[i].reflectionProbeUsage = ReflectionProbeUsage.Off;
-                slots[i] = go.transform;
+                var go=new GameObject("Pooled FX "+i){layer=VisualLayer};go.transform.SetParent(transform,false);var ps=go.AddComponent<ParticleSystem>();ps.Stop(true,ParticleSystemStopBehavior.StopEmittingAndClear);
+                var main=ps.main;main.playOnAwake=false;main.loop=false;main.maxParticles=24;main.simulationSpace=ParticleSystemSimulationSpace.World;main.useUnscaledTime=false;
+                var emission=ps.emission;emission.enabled=false;var shape=ps.shape;shape.enabled=false;var sheet=ps.textureSheetAnimation;sheet.enabled=true;sheet.numTilesX=8;sheet.numTilesY=8;sheet.cycleCount=1;sheet.frameOverTime=new ParticleSystem.MinMaxCurve(1,AnimationCurve.Linear(0,0,1,1));
+                var renderer=ps.GetComponent<ParticleSystemRenderer>();renderer.renderMode=ParticleSystemRenderMode.Billboard;renderer.shadowCastingMode=ShadowCastingMode.Off;renderer.receiveShadows=false;renderer.lightProbeUsage=LightProbeUsage.Off;renderer.reflectionProbeUsage=ReflectionProbeUsage.Off;
+                systems[i]=ps;renderers[i]=renderer;ps.useAutoRandomSeed=false;ps.randomSeed=(uint)i+1;ps.Pause();
             }
         }
-
-        /// <param name="suppressMuzzleFlash">
-        /// Accessibility: hide muzzle mesh proxies (and leave impact/smoke readable).
-        /// </param>
-        public void Sync(bool suppressMuzzleFlash = false)
+        public void BindVerifiedVisuals(PackagedVisualPayloads visuals){foreach(var step in BindVerifiedVisualSteps(visuals)) { }}
+        public IEnumerable<int> BindVerifiedVisualSteps(PackagedVisualPayloads visuals)
         {
-            if (pool == null) return;
-            for (int i = 0; i < AnalyticFxPool.MaxInstances; i++)
+            ClearVisuals();ReleaseMaterials();var shader=Shader.Find("Shooter/CombatParticle")??throw new InvalidOperationException("Required combat particle shader missing.");
+            for(int i=0;i<5;i++)
             {
-                var fx = pool.Get(i);
-                var slot = slots[i];
-                bool hide = !fx.Active
-                    || (suppressMuzzleFlash && (fx.Kind == FxKind.MuzzleFlash || fx.Kind == FxKind.Tracer));
-                if (hide)
+                var data=MapVisualClosure.DecodeMaterial(visuals,FxFlipbook.Path((FlipbookKind)i),FxFlipbook.Fingerprint);
+                var texture=new Texture2D(data.Width,data.Height,TextureFormat.RGBA32,false,true){name="Verified "+(FlipbookKind)i+" flipbook",wrapMode=TextureWrapMode.Clamp,filterMode=FilterMode.Bilinear};owned.Add(texture);
+                var bytes=new byte[data.MipBytes[0].Count];for(int j=0;j<bytes.Length;j++)bytes[j]=data.MipBytes[0][j];texture.LoadRawTextureData(bytes);texture.Apply(false,true);
+                var material=new Material(shader){name="Numeric "+(FlipbookKind)i};owned.Add(material);material.SetTexture("_BaseMap",texture);bool additive=i>=2;material.SetFloat("_DstBlend",additive?(float)BlendMode.One:(float)BlendMode.OneMinusSrcAlpha);material.SetFloat("_Brightness",additive?5f:1f);materials[i]=material;
+                yield return 0;
+            }
+            ringMaterial=new Material(materials[2]){name="Numeric shockwave ring"};ringMaterial.SetFloat("_Ring",1);owned.Add(ringMaterial);
+            bound=true;tier=-1;
+        }
+        public void Sync(bool suppressMuzzleFlash=false)
+        {
+            if(pool==null||!bound)return;
+            int quality=QualitySettings.GetQualityLevel();
+            if(tier!=quality){tier=quality;foreach(var material in materials)material.SetFloat("_SoftParticles",quality>0?1:0);}
+            for(int i=0;i<systems.Length;i++)
+            {
+                var fx=pool.Get(i);var ps=systems[i];bool hide=!fx.Active||suppressMuzzleFlash&&(fx.Kind==FxKind.MuzzleFlash||fx.Kind==FxKind.Tracer||fx.Kind==FxKind.Fireball);
+                if(hide){if(active[i])ps.Stop(false,ParticleSystemStopBehavior.StopEmittingAndClear);active[i]=false;continue;}
+                bool born=!active[i]||fx.Age<age[i]||kind[i]!=fx.Kind;
+                if(born)
                 {
-                    if (slot.gameObject.activeSelf) slot.gameObject.SetActive(false);
-                    continue;
+                    ps.Stop(false,ParticleSystemStopBehavior.StopEmittingAndClear);
+                    int texture=fx.Kind==FxKind.MuzzleFlash?3:fx.Kind==FxKind.SmokeProxy?0:fx.Kind==FxKind.Dust?1:fx.Kind==FxKind.Fireball?2:4;
+                    renderers[i].sharedMaterial=fx.Kind==FxKind.Shockwave?ringMaterial:materials[texture];
+                    renderers[i].renderMode=fx.Kind==FxKind.Shockwave?ParticleSystemRenderMode.HorizontalBillboard:fx.Kind==FxKind.Tracer?ParticleSystemRenderMode.Stretch:ParticleSystemRenderMode.Billboard;
+                    renderers[i].velocityScale=.03f;renderers[i].lengthScale=2;
+                    int count=fx.Kind==FxKind.SmokeProxy||fx.Kind==FxKind.Dust?(tier==0?3:8):fx.Kind==FxKind.ImpactSpark?(tier==0?4:12):fx.Kind==FxKind.Debris?(tier==0?3:7):1;
+                    var main=ps.main;main.gravityModifier=fx.Kind==FxKind.ShellCasing||fx.Kind==FxKind.Debris?.7f:0;
+                    var size=ps.sizeOverLifetime;size.enabled=true;size.size=new ParticleSystem.MinMaxCurve(1,fx.Kind==FxKind.Shockwave?RingSize:fx.Kind==FxKind.SmokeProxy?SmokeSize:FadeSize);
+                    var color=ps.colorOverLifetime;color.enabled=true;color.color=FadeColor;
+                    Vector3 normal=new Vector3(fx.Normal.X,fx.Normal.Y,fx.Normal.Z);
+                    for(int p=0;p<count;p++)
+                    {
+                        float turn=(p*2.399963f+i*.31f);Vector3 spread=new Vector3(Mathf.Cos(turn),.3f+(p%3)*.22f,Mathf.Sin(turn));
+                        var emit=new ParticleSystem.EmitParams{position=new Vector3(fx.Position.X,fx.Position.Y,fx.Position.Z),velocity=fx.Kind==FxKind.SmokeProxy?Vector3.up*.25f:fx.Kind==FxKind.Tracer?normal*70:normal*.5f+spread*(fx.Kind==FxKind.Dust?.25f:1.7f),startLifetime=Mathf.Max(.02f,fx.Lifetime-fx.Age),startSize=fx.Kind==FxKind.Fireball?3f:fx.Kind==FxKind.Shockwave?4f:fx.Kind==FxKind.SmokeProxy?1.1f:fx.Kind==FxKind.Dust?.55f:fx.Kind==FxKind.MuzzleFlash?(fx.Variant==1?.42f:fx.Variant==2?.54f:.65f):fx.Kind==FxKind.Tracer?.18f:.08f,startColor=Color.white,rotation=turn};ps.Emit(emit,1);
+                    }
                 }
-
-                float scale = AnalyticFxPool.EvaluateScale(fx.Kind, fx.Age, fx.Lifetime);
-                float opacity = AnalyticFxPool.EvaluateOpacity(fx.Kind, fx.Age, fx.Lifetime);
-                var world = AnalyticFxPool.EvaluateWorldPosition(fx.Kind, fx.Position, fx.Normal, fx.Age, fx.Lifetime);
-                Vector3 pos = new Vector3(world.X, world.Y, world.Z);
-                Vector3 normal = new Vector3(fx.Normal.X, fx.Normal.Y, fx.Normal.Z);
-                if (normal.sqrMagnitude < 1e-6f) normal = Vector3.up;
-                else normal.Normalize();
-
-                Mesh? mesh;
-                Material? material;
-                Vector3 localScale;
-                Quaternion rotation;
-                switch (fx.Kind)
-                {
-                    case FxKind.MuzzleFlash:
-                        // Thin emissive capsule along the shot/cross axis — reads as muzzle flame, not a bubble.
-                        mesh = capsuleMesh;
-                        material = muzzleMaterial;
-                        localScale = new Vector3(scale * 0.28f, scale * 1.95f, scale * 0.28f);
-                        rotation = Quaternion.FromToRotation(Vector3.up, normal);
-                        pos += normal * (scale * 0.85f);
-                        break;
-                    case FxKind.ImpactSpark:
-                        mesh = capsuleMesh;
-                        material = sparkMaterial;
-                        localScale = new Vector3(scale * 0.52f, scale * 2.25f, scale * 0.52f);
-                        rotation = Quaternion.FromToRotation(Vector3.up, normal);
-                        pos += normal * (scale * 0.65f);
-                        break;
-                    case FxKind.ShellCasing:
-                        mesh = capsuleMesh;
-                        material = casingMaterial;
-                        localScale = new Vector3(scale * 0.55f, scale * 2.4f, scale * 0.55f);
-                        rotation = Quaternion.FromToRotation(Vector3.up, normal) *
-                                   Quaternion.Euler(fx.Age * 420f, fx.Age * 180f, 0f);
-                        break;
-                    case FxKind.Tracer:
-                        mesh = capsuleMesh;
-                        material = tracerMaterial;
-                        localScale = new Vector3(scale * 0.55f, AnalyticFxPool.TracerLengthMeters * 0.5f, scale * 0.55f);
-                        rotation = Quaternion.FromToRotation(Vector3.up, normal);
-                        break;
-                    default:
-                        mesh = sphereMesh != null ? sphereMesh : quadMesh;
-                        material = smokeMaterial;
-                        localScale = new Vector3(scale * 1.22f, scale * 0.98f, scale * 1.22f);
-                        rotation = Quaternion.identity;
-                        pos += normal * (scale * 0.28f);
-                        break;
-                }
-
-                filters[i].sharedMesh = mesh;
-                renderers[i].sharedMaterial = material;
-                ApplyInstanceVisual(i, fx.Kind, opacity);
-                slot.SetPositionAndRotation(pos, rotation);
-                slot.localScale = localScale;
-                if (!slot.gameObject.activeSelf) slot.gameObject.SetActive(true);
+                else if(fx.Age>age[i])ps.Simulate(fx.Age-age[i],false,false,false);
+                active[i]=true;age[i]=fx.Age;kind[i]=fx.Kind;
             }
         }
-
-        public void ClearVisuals()
-        {
-            for (int i = 0; i < slots.Length; i++)
-            {
-                if (slots[i] != null && slots[i].gameObject.activeSelf)
-                    slots[i].gameObject.SetActive(false);
-            }
-        }
-
-        private void ApplyInstanceVisual(int index, FxKind kind, float opacity)
-        {
-            propertyBlock.Clear();
-            switch (kind)
-            {
-                case FxKind.MuzzleFlash:
-                    // Hot white core with orange rim via emissive punch (dual lobes supply the star shape).
-                    propertyBlock.SetColor("_BaseColor", new Color(1f, 0.94f, 0.72f, opacity));
-                    if (muzzleMaterial != null && muzzleMaterial.HasProperty("_EmissionColor"))
-                        propertyBlock.SetColor("_EmissionColor", new Color(14f, 7.2f, 1.6f) * opacity);
-                    break;
-                case FxKind.ImpactSpark:
-                    propertyBlock.SetColor("_BaseColor", new Color(1f, 0.96f, 0.7f, opacity));
-                    if (sparkMaterial != null && sparkMaterial.HasProperty("_EmissionColor"))
-                        propertyBlock.SetColor("_EmissionColor", new Color(5.4f, 3.0f, 0.7f) * opacity);
-                    break;
-                case FxKind.ShellCasing:
-                    propertyBlock.SetColor("_BaseColor", new Color(0.78f, 0.62f, 0.28f, opacity));
-                    break;
-                case FxKind.Tracer:
-                    propertyBlock.SetColor("_BaseColor", new Color(1f, 0.55f, 0.18f, opacity));
-                    if (tracerMaterial != null && tracerMaterial.HasProperty("_EmissionColor"))
-                        propertyBlock.SetColor("_EmissionColor", new Color(7.5f, 2.4f, 0.35f) * opacity);
-                    break;
-                default:
-                    // Warm-grey smoke so impacts read against cool outdoor fill.
-                    propertyBlock.SetColor("_BaseColor", new Color(0.62f, 0.60f, 0.56f, opacity));
-                    break;
-            }
-            renderers[index].SetPropertyBlock(propertyBlock);
-        }
-
-        private void CreateMaterials()
-        {
-            var lit = Shader.Find("Universal Render Pipeline/Lit");
-            var unlit = Shader.Find("Universal Render Pipeline/Unlit");
-            if (lit == null && unlit == null)
-                throw new System.InvalidOperationException("Required locked URP Lit/Unlit shader missing; no art fallback");
-
-            muzzleMaterial = BuildEmissive(lit != null ? lit : unlit!, "Analytic muzzle flash", new Color(1f, 0.94f, 0.72f, 1f), new Color(14f, 7.2f, 1.6f));
-            sparkMaterial = BuildEmissive(lit != null ? lit : unlit!, "Analytic impact spark", new Color(1f, 0.95f, 0.55f, 1f), new Color(4.5f, 2.6f, 0.6f));
-            smokeMaterial = BuildTransparent(unlit != null ? unlit : lit!, "Analytic smoke proxy", new Color(0.62f, 0.60f, 0.56f, 0.45f));
-            casingMaterial = BuildEmissive(lit != null ? lit : unlit!, "Analytic shell casing", new Color(0.78f, 0.62f, 0.28f, 1f), new Color(0.4f, 0.25f, 0.05f));
-            tracerMaterial = BuildEmissive(lit != null ? lit : unlit!, "Analytic tracer", new Color(1f, 0.55f, 0.18f, 1f), new Color(7.5f, 2.4f, 0.35f));
-        }
-
-        private static Material BuildEmissive(Shader shader, string name, Color baseColor, Color emission)
-        {
-            var mat = new Material(shader) { name = name };
-            mat.SetColor("_BaseColor", baseColor);
-            mat.SetFloat("_Smoothness", 0.15f);
-            mat.SetFloat("_Metallic", 0f);
-            if (mat.HasProperty("_EmissionColor"))
-            {
-                mat.EnableKeyword("_EMISSION");
-                mat.SetColor("_EmissionColor", emission);
-                mat.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
-            }
-            return mat;
-        }
-
-        private static Material BuildTransparent(Shader shader, string name, Color color)
-        {
-            var mat = new Material(shader) { name = name };
-            mat.SetColor("_BaseColor", color);
-            mat.SetFloat("_Surface", 1f);
-            mat.SetFloat("_Blend", 0f);
-            mat.SetOverrideTag("RenderType", "Transparent");
-            mat.SetInt("_SrcBlend", (int)BlendMode.SrcAlpha);
-            mat.SetInt("_DstBlend", (int)BlendMode.OneMinusSrcAlpha);
-            mat.SetInt("_ZWrite", 0);
-            mat.renderQueue = (int)RenderQueue.Transparent;
-            mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
-            mat.DisableKeyword("_ALPHATEST_ON");
-            mat.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-            return mat;
-        }
-
-        private void AcquireMeshes()
-        {
-            quadMesh = ExtractPrimitiveMesh(PrimitiveType.Quad, out var q);
-            sphereMesh = ExtractPrimitiveMesh(PrimitiveType.Sphere, out var s);
-            capsuleMesh = ExtractPrimitiveMesh(PrimitiveType.Capsule, out var c);
-            if (q != null) Destroy(q);
-            if (s != null) Destroy(s);
-            if (c != null) Destroy(c);
-        }
-
-        private static Mesh ExtractPrimitiveMesh(PrimitiveType type, out GameObject host)
-        {
-            host = GameObject.CreatePrimitive(type);
-            host.hideFlags = HideFlags.HideAndDontSave;
-            var filter = host.GetComponent<MeshFilter>();
-            var mesh = filter != null ? filter.sharedMesh : null;
-            var col = host.GetComponent<Collider>();
-            if (col != null) Destroy(col);
-            if (mesh == null) throw new System.InvalidOperationException("Primitive mesh missing for " + type);
-            return mesh;
-        }
-
-        private void OnDestroy()
-        {
-            ClearVisuals();
-            if (muzzleMaterial != null) Destroy(muzzleMaterial);
-            if (sparkMaterial != null) Destroy(sparkMaterial);
-            if (smokeMaterial != null) Destroy(smokeMaterial);
-            if (casingMaterial != null) Destroy(casingMaterial);
-            if (tracerMaterial != null) Destroy(tracerMaterial);
-            muzzleMaterial = null;
-            sparkMaterial = null;
-            smokeMaterial = null;
-            casingMaterial = null;
-            tracerMaterial = null;
-            pool = null;
-        }
+        public void ClearVisuals(){for(int i=0;i<systems.Length;i++){if(systems[i]!=null)systems[i].Stop(false,ParticleSystemStopBehavior.StopEmittingAndClear);active[i]=false;}}
+        private void ReleaseMaterials(){foreach(var value in owned)if(value!=null){if(Application.isPlaying)Destroy(value);else DestroyImmediate(value);}owned.Clear();bound=false;}
+        private void OnDestroy(){ClearVisuals();ReleaseMaterials();}
     }
 }
 #endif

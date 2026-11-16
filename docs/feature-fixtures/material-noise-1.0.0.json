@@ -1,0 +1,13 @@
+{
+  "schemaId": "shooter.recipe.material-noise.v1",
+  "recipeId": "materials/noise-concrete",
+  "generatorId": "material.noise",
+  "generatorVersion": "1.0.0",
+  "seed": "460072030",
+  "parameters": {
+    "resolution": 128,
+    "role": "concrete",
+    "tileMm": 2000
+  },
+  "dependencies": []
+}

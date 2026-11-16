@@ -25,10 +25,23 @@
     "optic": "None",
     "magazineCycle": false,
     "nearFieldScale": 1.08,
-    "nearFieldHipBias": [0.10, -0.10, 0.16],
-    "hipRotationDegrees": [0, -3, -2],
-    "cycleTravelMeters": 0
+    "nearFieldHipBias": [
+      0.1,
+      -0.1,
+      0.16
+    ],
+    "hipRotationDegrees": [
+      0,
+      -3,
+      -2
+    ],
+    "cycleTravelMeters": 0,
+    "muzzleFx": "none"
   },
-  "audio": { "shot": "KnifeSwing" },
-  "hud": { "killFeedGlyph": "Knife" }
+  "audio": {
+    "shot": "KnifeSwing"
+  },
+  "hud": {
+    "killFeedGlyph": "Knife"
+  }
 }

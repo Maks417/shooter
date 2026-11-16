@@ -83,3 +83,14 @@ Acceptance: 720p screenshots of HUD/menu/loading and maximum scale readable with
 ## ADR-087 combat HUD tokens
 
 Damage direction uses a 118 logical-pixel radius, 64-pixel arc length and 5-pixel stroke. Reduced flash halves arc alpha. Ammo retains numeric counts and adds up to 30 cartridge glyphs; oversized magazines use a compact bar. Reload is a 20-pixel ring from the existing authority-tick phase. Allies/self use north-oriented arrow glyphs rotated by copied yaw; enemy gunfire uses the hollow diamond under ADR-058 expiry/range rules. A head hit uses a gold marker 1.25 times the ordinary size; the 0.14-second pop snaps to final size under reduced motion. Low-health vignette strength stays within the existing maximum; the slow pulse stops under either reduced flash or reduced motion. Elimination names have faint team plates, a 24-pixel entry slide and smoothly following rows; reduced motion fixes positions immediately. These are presentation tokens, not visual acceptance.
+
+
+## Full roadmap visual recipes — ADR-088 through ADR-094
+
+Map surfaces opt into seeded concrete/plaster, chipped coated steel, oxide, asphalt, gravel and corrugation from `material.noise` 1.0.0. Physical repeat is 2 m, with 128 px Low/Balanced and 256 px High; uniform camo repeats every 0.25 m. Keep grime subordinate to structural mass and readable combat silhouettes. Surface dirt is concentrated low on walls and in occluded regions.
+
+Compound uses morning haze, Depot overcast and Oil Depot a low golden-hour sun; clouds and reflected sky come from the same original numeric cube recipe. Per-map grade uses bounded gain/lift/contrast/saturation integers; Low stays LDR with ColorAdjustments only. Contact shadows and sampled body visibility ground the soldiers without changing collision or hit volumes.
+
+Paint uses numeric stencil marks, warning stripes, unit chevrons and bounded stains. Combat FX use five packaged 8x8 FBm/curl flipbooks and a capped particle pool; Low reduces count and skips depth softening. Reduced flash suppresses muzzle, tracer and explosion fire/flash; reduced motion suppresses camera shake.
+
+The 1.0.3 uniform adds contoured carrier/pouch construction, sleeve detail, grouped numeric digits, faction armbands and shoulder patches from the existing emblem recipes. Legacy 1.0.2 remains reproducible. The bounded P05 correction failed; its candidate pose is diagnostic-only and the product retains the baseline solver. None of these changes establishes reference-game parity or visual acceptance.

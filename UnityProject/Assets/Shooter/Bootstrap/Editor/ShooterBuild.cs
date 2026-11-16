@@ -364,6 +364,14 @@ public static class ShooterBuild
                     AssetDatabase.LoadAssetAtPath<Shader>("Assets/Shooter/Shaders/ProceduralSurface.shader"),
                     AssetDatabase.LoadAssetAtPath<Shader>("Assets/Shooter/Shaders/AdsScopePip.shader")
                         ?? throw new InvalidOperationException("Missing AdsScopePip shader"),
+                    AssetDatabase.LoadAssetAtPath<Shader>("Assets/Shooter/Shaders/CombatParticle.shader")
+                        ?? throw new InvalidOperationException("Missing combat particle shader"),
+                    AssetDatabase.LoadAssetAtPath<Shader>("Assets/Shooter/Shaders/ContactShadow.shader")
+                        ?? throw new InvalidOperationException("Missing contact shadow shader"),
+                    AssetDatabase.LoadAssetAtPath<Shader>("Assets/Shooter/Shaders/AnalyticSky.shader")
+                        ?? throw new InvalidOperationException("Missing analytic sky shader"),
+                    AssetDatabase.LoadAssetAtPath<Shader>("Assets/Shooter/Shaders/ProceduralDecal.shader")
+                        ?? throw new InvalidOperationException("Missing procedural decal shader"),
                     AssetDatabase.LoadAssetAtPath<Shader>("Assets/Shooter/Shaders/UiSdf.shader")
                         ?? throw new InvalidOperationException("Missing UiSdf shader"),
                     AssetDatabase.LoadAssetAtPath<Shader>(ShooterPostProcessingBuild.MapSurfaceShaderPath)

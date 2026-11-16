@@ -13,13 +13,13 @@ namespace Shooter.Generation
         {
             if(cancel.IsCancellationRequested)return Fail(ErrorCode.Cancelled,"Soldier generation cancelled.");
             if(request==null)return Fail(ErrorCode.InvalidInput,"Soldier generation request is required.");
-            if(request.Recipe.SchemaId!=SoldierRecipe.Schema || request.Recipe.GeneratorId!=SoldierRecipe.GeneratorId || request.Recipe.GeneratorVersion!=SoldierRecipe.GeneratorVersion)
+            if(request.Recipe.SchemaId!=SoldierRecipe.Schema || request.Recipe.GeneratorId!=SoldierRecipe.GeneratorId || !SoldierRecipe.Supports(request.Recipe.GeneratorVersion))
                 return Fail(ErrorCode.UnsupportedVersion,"Unsupported soldier schema/generator version.");
             if(request.VisualProfile!="Low" && request.VisualProfile!="Balanced" && request.VisualProfile!="High")
                 return Fail(ErrorCode.InvalidInput,"Unknown soldier profile.");
             try{SoldierRecipe.Validate(request.Recipe);}
             catch(Exception error)when(error is ArgumentException || error is FormatException){return Fail(ErrorCode.InvalidInput,error.Message);}
-            var artifacts=new List<GeneratedArtifact>();ContentId fingerprint=GeneratorFingerprint.Compute(SoldierRecipe.GeneratorId,SoldierRecipe.GeneratorVersion);
+            var artifacts=new List<GeneratedArtifact>();ContentId fingerprint=GeneratorFingerprint.Compute(SoldierRecipe.GeneratorId,request.Recipe.GeneratorVersion);
             void Add(ContentKind kind,string variant,byte[] body)
             {
                 byte[] bytes=ArtifactCodec.Encode(kind,body,fingerprint,request.ToolchainHash);
@@ -27,7 +27,7 @@ namespace Shooter.Generation
             }
             Add(ContentKind.Skeleton,"main",GeometryCodec.EncodeSkeleton(SoldierSkeleton.Definition));
             {
-                var source=Encoding.UTF8.GetBytes("{\"schemaId\":\""+SoldierRecipe.Schema+"\",\"recipeId\":\""+request.Recipe.RecipeId+"\",\"generatorId\":\""+SoldierRecipe.GeneratorId+"\",\"generatorVersion\":\""+SoldierRecipe.GeneratorVersion+"\",\"seed\":\""+request.Recipe.Seed+"\",\"parameters\":"+SoldierRecipe.ParametersJson+",\"dependencies\":[]}");
+                var source=Encoding.UTF8.GetBytes("{\"schemaId\":\""+SoldierRecipe.Schema+"\",\"recipeId\":\""+request.Recipe.RecipeId+"\",\"generatorId\":\""+SoldierRecipe.GeneratorId+"\",\"generatorVersion\":\""+request.Recipe.GeneratorVersion+"\",\"seed\":\""+request.Recipe.Seed+"\",\"parameters\":"+SoldierRecipe.ParametersJson+",\"dependencies\":[]}");
                 var build=SoldierGeometry.Build(SoldierRecipe.Parse(source));
                 for(int lod=0;lod<build.Lods.Count;lod++)
                 {if(cancel.IsCancellationRequested)return Fail(ErrorCode.Cancelled,"Soldier generation cancelled.");Add(ContentKind.Mesh,"lod"+lod,GeometryCodec.EncodeMesh(build.Lods[lod]));}

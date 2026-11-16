@@ -23,10 +23,23 @@
     "optic": "ScopedPip",
     "magazineCycle": true,
     "nearFieldScale": 1.12,
-    "nearFieldHipBias": [0.08, -0.01, -0.10],
-    "hipRotationDegrees": [0, -12, -5],
-    "cycleTravelMeters": 0.070
+    "nearFieldHipBias": [
+      0.08,
+      -0.01,
+      -0.1
+    ],
+    "hipRotationDegrees": [
+      0,
+      -12,
+      -5
+    ],
+    "cycleTravelMeters": 0.07,
+    "muzzleFx": "rifle"
   },
-  "audio": { "shot": "RifleShot" },
-  "hud": { "killFeedGlyph": "Rifle" }
+  "audio": {
+    "shot": "RifleShot"
+  },
+  "hud": {
+    "killFeedGlyph": "Rifle"
+  }
 }

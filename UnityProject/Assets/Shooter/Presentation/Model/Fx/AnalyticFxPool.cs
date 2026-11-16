@@ -5,7 +5,7 @@ using static Shooter.VectorMath.VecMath;
 
 namespace Shooter.Presentation.Fx
 {
-    public enum FxKind : byte { MuzzleFlash = 1, ImpactSpark = 2, SmokeProxy = 3, ShellCasing = 4, Tracer = 5 }
+    public enum FxKind : byte { MuzzleFlash = 1, ImpactSpark = 2, SmokeProxy = 3, ShellCasing = 4, Tracer = 5, Dust = 6, Fireball = 7, Shockwave = 8, Debris = 9 }
 
     public struct FxInstance
     {
@@ -15,6 +15,7 @@ namespace Shooter.Presentation.Fx
         public float Age;
         public float Lifetime;
         public bool Active;
+        public byte Variant;
     }
 
     /// <summary>Capped analytic mesh FX proxies. No sprites/images; bounded pool.</summary>
@@ -47,6 +48,7 @@ namespace Shooter.Presentation.Fx
             FxKind.SmokeProxy => SmokeProxyLifetime,
             FxKind.ShellCasing => ShellCasingLifetime,
             FxKind.Tracer => TracerLifetime,
+            FxKind.Dust => .9f, FxKind.Fireball => .65f, FxKind.Shockwave => .5f, FxKind.Debris => 1.3f,
             _ => ImpactSparkLifetime
         };
 
@@ -122,7 +124,7 @@ namespace Shooter.Presentation.Fx
             return spawn;
         }
 
-        public bool TrySpawn(FxKind kind, Float3 position, Float3 normal)
+        public bool TrySpawn(FxKind kind, Float3 position, Float3 normal, byte variant = 0)
         {
             if (kind == FxKind.SmokeProxy && SmokeCount >= MaxSmokeProxies) { Rejected++; return false; }
             if (kind == FxKind.ShellCasing && ShellCount >= MaxShellCasings) { Rejected++; return false; }
@@ -137,7 +139,7 @@ namespace Shooter.Presentation.Fx
                     Normal = normal.IsUnit ? normal : new Float3(0, 1, 0),
                     Age = 0,
                     Lifetime = LifetimeFor(kind),
-                    Active = true
+                    Active = true, Variant=variant
                 };
                 ActiveCount++;
                 if (kind == FxKind.SmokeProxy) SmokeCount++;
@@ -154,7 +156,7 @@ namespace Shooter.Presentation.Fx
         /// Product-path gunshot FX (ADR-061): dual muzzle lobes + tracer + ejected casing.
         /// <paramref name="suppressMuzzleAndTracer"/> mirrors ReducedFlash — casings still spawn.
         /// </summary>
-        public int SpawnGunshotFeedback(Float3 origin, Float3 unitDirection, bool suppressMuzzleAndTracer)
+        public int SpawnGunshotFeedback(Float3 origin, Float3 unitDirection, bool suppressMuzzleAndTracer, byte muzzleProfile = 0)
         {
             Float3 dir = unitDirection.IsUnit ? unitDirection : new Float3(0f, 0f, 1f);
             Float3 eject = EjectionAxis(dir);
@@ -166,7 +168,7 @@ namespace Shooter.Presentation.Fx
                     origin.X + dir.X * MuzzleFlashForwardPushMeters,
                     origin.Y + dir.Y * MuzzleFlashForwardPushMeters,
                     origin.Z + dir.Z * MuzzleFlashForwardPushMeters);
-                if (TrySpawn(FxKind.MuzzleFlash, primary, dir)) spawned++;
+                if (TrySpawn(FxKind.MuzzleFlash, primary, dir, muzzleProfile)) spawned++;
 
                 // Cross lobe: vertical relative to the shot so the flash reads as a star, not a marble.
                 Float3 cross = CrossLobeAxis(dir);
@@ -174,7 +176,7 @@ namespace Shooter.Presentation.Fx
                     primary.X + dir.X * MuzzleFlashSecondaryPushMeters,
                     primary.Y + dir.Y * MuzzleFlashSecondaryPushMeters,
                     primary.Z + dir.Z * MuzzleFlashSecondaryPushMeters);
-                if (TrySpawn(FxKind.MuzzleFlash, secondary, cross)) spawned++;
+                if (TrySpawn(FxKind.MuzzleFlash, secondary, cross, muzzleProfile)) spawned++;
 
                 if (TrySpawn(FxKind.Tracer, primary, dir)) spawned++;
             }

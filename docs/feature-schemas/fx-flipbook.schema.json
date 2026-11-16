@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaId": {
+      "const": "shooter.recipe.fx-flipbook.v1"
+    },
+    "generatorId": {
+      "const": "fx.flipbook"
+    },
+    "generatorVersion": {
+      "const": "1.0.0"
+    },
+    "recipeId": {
+      "type": "string"
+    },
+    "seed": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]{0,19})$"
+    },
+    "dependencies": {
+      "type": "array",
+      "maxItems": 0
+    },
+    "parameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "Smoke",
+            "Dust",
+            "Fireball",
+            "Muzzle",
+            "Spark"
+          ]
+        },
+        "cell": {
+          "enum": [
+            32,
+            64
+          ]
+        }
+      },
+      "required": [
+        "kind",
+        "cell"
+      ]
+    }
+  },
+  "required": [
+    "schemaId",
+    "generatorId",
+    "generatorVersion",
+    "recipeId",
+    "seed",
+    "dependencies",
+    "parameters"
+  ]
+}

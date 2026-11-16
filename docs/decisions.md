@@ -1339,3 +1339,99 @@ Checks on the implementation working tree (not a clean release candidate): Simul
 - Remaining: full-match event review (including headshot/kill-feed/reload), reduced-motion/flash player pass, native 720p 100%/150% captures, named review, reference costs, P05/VD/REL and a future clean installer. The current shipped installer remains 0.3.17; no installer was rebuilt for this partial Wave 1b step.
 
 Rollback: revert this tranche; no save/content migration.
+
+
+### ADR-087 second tranche — 2026-11-16
+
+Owner assigned the full remaining visual roadmap. Compass chevron reads team-2 spawn coordinates from verified map metadata, never live enemy poses. Insertion draws collision footprints and both spawn markers only once verified map data is available; cold boot has no invented map. Media pans slowly, tips rotate every seven seconds, reduced motion freezes both. Wordmark has numeric stencil cuts; operation cards lift by four logical pixels and carry the objective glyph; Controls/reload hints use outlined keycaps. Verified binding is split into cancellable map mesh/material, weapon, soldier, FX and final session phases with a paint yield after each work unit. Indivisible Unity uploads exceeding 33 ms emit an overrun diagnostic; real player overruns remain Pending measurement. No fake percentages or shortened match rules. Checks and remaining slice work are recorded in the final roadmap handoff.
+
+
+## ADR-088 — Accepted: seeded noise material family
+
+Date 2026-11-16. Context: owner assigned the complete visual roadmap after `08eb4de`. Sole integrator; no gameplay or acceptance waiver.
+
+Decision: Add material.noise 1.0.0 / shooter.recipe.material-noise.v1 with concrete, plaster, rust, painted-steel, asphalt, gravel, corrugated-metal and camo-fabric roles. Named NoiseField streams supply periodic cellular cracks, broad staining, warped streaks, chipped coating, aggregate/tar and cloth patterns. Bake physically scaled normals and linear RGBA albedo/mask mip chains offline at 128 pixels (256 on High). Existing material.surface 1.0.1/1.1.0 remains frozen. Extend map presentation metadata with opt-in material roles; retain collision/nav/spawn identities. Refreeze only the new registry inventory and explicitly add the generator row, schema and fixture.
+
+Consequences: procedural numeric sources only, presentation read-only, quality-independent gameplay and the pinned toolchain remain binding. New visual bytes are republished under their stated identities.
+
+Evidence: required pure/cross-lane/provenance/build checks and limitations are recorded in the visual-roadmap handoff before delivery. Missing player, reference and owner evidence remains Pending.
+
+Rollback: revert this ADR implementation and republish matching source/content; retained old packages keep their original identities.
+
+
+## ADR-089 — Accepted: weathered map surface shading
+
+Date 2026-11-16. Context: owner assigned the complete visual roadmap after `08eb4de`. Sole integrator; no gameplay or acceptance waiver.
+
+Decision: Retain the URP Lit forward/shadow/depth paths and the one normal/mask keyword set. Add AO-linked grime/roughness, low height-band dirt, 20 m macro variation and triplanar detail normal sampling. All additions are visual only; measure Low cost in the release player. The detail uses already packaged numeric normal maps; no new imported textures or geometry.
+
+Consequences: procedural numeric sources only, presentation read-only, quality-independent gameplay and the pinned toolchain remain binding. New visual bytes are republished under their stated identities.
+
+Evidence: required pure/cross-lane/provenance/build checks and limitations are recorded in the visual-roadmap handoff before delivery. Missing player, reference and owner evidence remains Pending.
+
+Rollback: revert this ADR implementation and republish matching source/content; retained old packages keep their original identities.
+
+
+## ADR-090 — Accepted: packaged procedural decals and versioned visual layout operations
+
+Date 2026-11-16. Context: owner assigned the complete visual roadmap after `08eb4de`. Sole integrator; no gameplay or acceptance waiver.
+
+Decision: Bake an eight-cell numeric decal atlas (stencil letters/numbers, hazard stripe, unit marking, oil, scorch and bullet damage) into SGAF. Arena layout documentVersion 2 adds visual-only decal operations and retains version-1 parsing; ignored visual operations never advance collision stable IDs or change navigation/spawns. Publish static decal placements in the verified map closure. Balanced/High configure the locked URP screen-space Decal renderer feature and projectors; Low uses depth-biased mesh quads. Impact marks use a bounded 64-slot pool and authority Impact events; no new collision queries. New shader passes use only the generated atlas. Refreeze the affected format registry source inventory explicitly without changing SGAF v1.
+
+Consequences: procedural numeric sources only, presentation read-only, quality-independent gameplay and the pinned toolchain remain binding. New visual bytes are republished under their stated identities.
+
+Evidence: required pure/cross-lane/provenance/build checks and limitations are recorded in the visual-roadmap handoff before delivery. Missing player, reference and owner evidence remains Pending.
+
+Rollback: revert this ADR implementation and republish matching source/content; retained old packages keep their original identities.
+
+
+## ADR-091 — Accepted: numeric sky atmospheres, map grades and actor grounding light
+
+Date 2026-11-16. Context: owner assigned the complete visual roadmap after `08eb4de`. Sole integrator; no gameplay or acceptance waiver.
+
+Decision: Add a code-only cube sky with a once-per-map NoiseField cloud bake, morning haze / overcast / golden-hour presets from registry sky hints, matching reflected environment and height fog. Per-map integer grade parameters generate a 32-cube linear lookup for Balanced/High; Low uses only ColorAdjustments in LDR. Actor root samples of the verified AO volume drive one cosmetic visibility value per actor, plus a code-only contact shadow on Low. New sky/grade bytes have matching .NET and Mono goldens; no gameplay light/visibility changes or runtime geometry generation is introduced.
+
+Consequences: procedural numeric sources only, presentation read-only, quality-independent gameplay and the pinned toolchain remain binding. New visual bytes are republished under their stated identities.
+
+Evidence: required pure/cross-lane/provenance/build checks and limitations are recorded in the visual-roadmap handoff before delivery. Missing player, reference and owner evidence remains Pending.
+
+Rollback: revert this ADR implementation and republish matching source/content; retained old packages keep their original identities.
+
+
+## ADR-092 — Accepted: numeric volume-noise combat flipbooks
+
+Date 2026-11-16. Context: owner assigned the complete visual roadmap after `08eb4de`. Sole integrator; no gameplay or acceptance waiver.
+
+Decision: Add fx.flipbook 1.0.0: an 8 by 8 frame sequence for smoke puff, dust puff, fireball, muzzle star and spark streak. Integrate three-dimensional FBm and finite-difference curl advection along a volume ray with polynomial density envelopes; use IEEE operations only in hashed output. Store complete linear RGBA atlas mip chains through SGAF, cache immutable offline bakes and verify matching .NET/Mono aggregate goldens. No images or sprites are imported.
+
+Consequences: procedural numeric sources only, presentation read-only, quality-independent gameplay and the pinned toolchain remain binding. New visual bytes are republished under their stated identities.
+
+Evidence: required pure/cross-lane/provenance/build checks and limitations are recorded in the visual-roadmap handoff before delivery. Missing player, reference and owner evidence remains Pending.
+
+Rollback: revert this ADR implementation and republish matching source/content; retained old packages keep their original identities.
+
+
+## ADR-093 — Accepted: bounded particle combat presentation
+
+Date 2026-11-16. Context: owner assigned the complete visual roadmap after `08eb4de`. Sole integrator; no gameplay or acceptance waiver.
+
+Decision: Replace combat mesh proxies with code-built manually advanced ParticleSystems using verified SGAF flipbooks. Keep the existing bounded AnalyticFxPool and event timing; Low emits fewer particles and skips depth softening. Surface-tag impacts choose sparks, dust or chips. Weapon definitions gain a validated muzzleFx profile; gunfire adds a smoke wisp and HDR tracers. Grenades add flash/fire/smoke/shockwave/debris/scorch plus reduced-motion-gated cosmetic camera shake. Copied movement produces bounded footstep/slide dust without new physics/sensing. ReducedFlash suppresses flash/fire/tracers while readable dust/smoke remains. No simulation, damage, shot or hit-volume behavior changes.
+
+Consequences: procedural numeric sources only, presentation read-only, quality-independent gameplay and the pinned toolchain remain binding. New visual bytes are republished under their stated identities.
+
+Evidence: required pure/cross-lane/provenance/build checks and limitations are recorded in the visual-roadmap handoff before delivery. Missing player, reference and owner evidence remains Pending.
+
+Rollback: revert this ADR implementation and republish matching source/content; retained old packages keep their original identities.
+
+
+## ADR-094 — Accepted: bounded soldier presentation revision and P05 reopening
+
+Date 2026-11-16. Context: owner assigned the complete visual roadmap after `08eb4de`. Sole integrator; no gameplay or acceptance waiver.
+
+Decision: The owner roadmap reopens ADR-024 only for this assignment. Bound: at most three measured candidate parameter sets and 90 minutes of P05 clearance/eye solver work after the first candidate measurement; retain all failed JSON/captures. Stop the search when either bound is reached. P05-D01 forearm/strap clearance, D02 eye/sight line and D03 trigger-arm penetration must be measured with the unchanged conservative proxy; no acceptance waiver or narrower measurement envelope. Add soldier.loft 1.0.3 with a 10-micrometre output lattice, canonical radius finite differences and explicit double frame arithmetic to make Mono/.NET publication portable, while retaining explicit 1.0.2 generation and the historical failing solver default for regression evidence. Current product uses the baseline pose solver; the failed correction is opt-in diagnostics only via `-shooterP05Candidate`. It uses lofted uniform/equipment modules, camo/fabric and numeric faction insignia. Cosmetic ground reads installed gameplay collision boxes, grip targets come from each weapon profile and head look-at is bounded. None feeds Simulation, hit volumes, AI or authoritative root motion. If the bounded correction still fails, keep P05 FAIL and deliver the implemented visual improvements with those residuals explicit.
+
+Consequences: procedural numeric sources only, presentation read-only, quality-independent gameplay and the pinned toolchain remain binding. New visual bytes are republished under their stated identities.
+
+Evidence: required pure/cross-lane/provenance/build checks and limitations are recorded in the visual-roadmap handoff before delivery. Missing player, reference and owner evidence remains Pending.
+
+Rollback: revert this ADR implementation and republish matching source/content; retained old packages keep their original identities.

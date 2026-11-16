@@ -243,6 +243,29 @@ namespace Shooter.Presentation
             }
         }
 
+        /// <summary>Product map sky: numeric 3D-noise cloud layer uploaded once; reflection uses the same cube.</summary>
+        public void ApplyMap(string mapId)
+        {
+            var definition=Shooter.Generation.Environment.MapRegistry.Require(mapId);
+            var data=Shooter.Generation.Environment.AtmosphereBaker.Sky(definition.SkyPreset);
+            const int n=Shooter.Generation.Environment.AtmosphereBaker.CubeSize;
+            var cube=new Cubemap(n,TextureFormat.RGBAHalf,true){name="Numeric "+definition.SkyPreset+" atmosphere",filterMode=FilterMode.Trilinear};
+            var bytes=data.MipBytes[0];
+            for(int face=0;face<6;face++)
+            {
+                var pixels=new Color[n*n];
+                for(int y=0;y<n;y++)for(int x=0;x<n;x++){int p=(y*n*6+face*n+x)*4;pixels[y*n+x]=new Color(bytes[p]/255f,bytes[p+1]/255f,bytes[p+2]/255f,1);}
+                cube.SetPixels(pixels,(CubemapFace)face);
+            }
+            cube.Apply(true,false);DestroyOwned(environment);environment=cube;
+            RenderSettings.customReflectionTexture=cube;RenderSettings.defaultReflectionMode=DefaultReflectionMode.Custom;
+            DestroyOwned(skybox);
+            skybox=new Material(Shader.Find("Shooter/AnalyticSky")??throw new InvalidOperationException("Required analytic sky shader missing.")){name="Numeric map atmosphere"};
+            skybox.SetTexture("_Environment",cube);RenderSettings.skybox=skybox;
+            Shader.SetGlobalVector("_ShooterHeightFog",new Vector4(.009f,definition.SkyPreset=="petroleum"?.08f:.15f,1,0));
+            Shader.SetGlobalColor("_ShooterFogTint",Horizon);
+        }
+
         public Color SampleBackground(float elevation) =>
             ToColor(GeneratedSkyMath.SampleGradient(FromColor(Zenith), FromColor(Horizon), FromColor(Ground), elevation));
 

@@ -66,7 +66,7 @@ def validate(root: Path, path: Path, doc, planners) -> dict:
     keys = set(doc)
     required = set(TOP_KEYS)
     missing = sorted(required - keys)
-    unknown = sorted(keys - required - {"layout"})
+    unknown = sorted(keys - required - {"layout", "visualLayout"})
     if missing or unknown:
         raise DefinitionError(where + ": missing " + ", ".join(missing) + " unknown " + ", ".join(unknown))
     if doc["schemaId"] != SCHEMA_ID:
@@ -104,15 +104,27 @@ def validate(root: Path, path: Path, doc, planners) -> dict:
     else:
         raise DefinitionError(where + ".planner: layout or code:<name>")
     presentation = doc["presentation"]
-    if not isinstance(presentation, dict) or set(presentation) != {"sky", "groundSurface"}:
+    if not isinstance(presentation, dict) or not {"sky", "groundSurface"}.issubset(presentation) or set(presentation) - {"sky", "groundSurface", "materials", "grade"}:
         raise DefinitionError(where + ".presentation: exactly sky and groundSurface")
     if presentation["sky"] not in SKIES:
         raise DefinitionError(where + ".presentation.sky: one of " + ", ".join(sorted(SKIES)))
     if presentation["groundSurface"] not in GROUNDS:
         raise DefinitionError(where + ".presentation.groundSurface: one of " + ", ".join(sorted(GROUNDS)))
+    roles = presentation.get("materials", ["concrete", "painted-steel", "gravel", "asphalt"])
+    valid_roles = {"concrete", "plaster", "rust", "painted-steel", "asphalt", "gravel", "corrugated-metal", "camo-fabric"}
+    if not isinstance(roles, list) or len(roles) != 4 or any(r not in valid_roles for r in roles):
+        raise DefinitionError(where + ".presentation.materials: four material.noise roles required")
+    grade = presentation.get("grade", {"gain":[1000,1000,1000], "lift":[0,0,0], "contrast":1000, "saturation":1000})
+    if not isinstance(grade, dict) or set(grade) != {"gain", "lift", "contrast", "saturation"}:
+        raise DefinitionError(where + ".presentation.grade: gain/lift/contrast/saturation required")
+    for name, lo, hi in (("gain",700,1400),("lift",-100,100)):
+        if not isinstance(grade[name], list) or len(grade[name]) != 3 or any(type(v) is not int or not lo <= v <= hi for v in grade[name]):
+            raise DefinitionError(where + ".presentation.grade." + name + ": three bounded integers required")
+    if any(type(grade[k]) is not int or not 800 <= grade[k] <= 1200 for k in ("contrast", "saturation")):
+        raise DefinitionError(where + ".presentation.grade: contrast/saturation out of range")
     return {"source": where, "id": map_id, "order": order, "displayName": doc["displayName"], "description": doc["description"],
             "seed": seed, "recipe": recipe, "planner": planner, "layout": layout_json,
-            "sky": presentation["sky"], "ground": presentation["groundSurface"]}
+            "sky": presentation["sky"], "ground": presentation["groundSurface"], "materials": roles, "grade": grade, "visualLayout": json.dumps(doc["visualLayout"], separators=(",", ":")) if "visualLayout" in doc else None}
 
 
 def load(root: Path) -> list:
@@ -151,7 +163,7 @@ def render(maps) -> str:
                     "                " + cs(m["description"]) + ",\n"
                     "                " + m["seed"] + "UL, " + cs(m["recipe"]) + ", " + cs(m["planner"]) + ",\n"
                     "                " + ("null" if m["layout"] is None else cs(m["layout"])) + ",\n"
-                    "                " + cs(m["sky"]) + ", " + cs(m["ground"]) + ")")
+                    "                " + cs(m["sky"]) + ", " + cs(m["ground"]) + ", new[] { " + ", ".join(cs(r) for r in m["materials"]) + " }, new MapGrade(" + ", ".join(str(v) for v in m["grade"]["gain"] + m["grade"]["lift"] + [m["grade"]["contrast"], m["grade"]["saturation"]]) + "), " + ("null" if m["visualLayout"] is None else cs(m["visualLayout"])) + ")")
     return (HEADER + "#nullable enable\n\nnamespace Shooter.Generation.Environment\n{\n"
             "    public static partial class MapRegistry\n    {\n"
             "        private static MapDefinition[] CreateGeneratedDefinitions() => new[]\n        {\n"

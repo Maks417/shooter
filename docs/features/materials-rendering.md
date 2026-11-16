@@ -54,3 +54,14 @@ To change a value, edit `PostProcessingTier` (volume numbers) or `ShooterPostPro
 
 Each map visual package carries `lighting-ambient-occlusion.bin`, a sky-visibility volume (160 × 16 × 192 cells, 0.5 m × 1 m × 0.5 m) baked by `MapAmbientOcclusionVolume` from the collision boxes at compile time. `ProductMapView` uploads it as a `Texture3D`, and the `Shooter/MapSurface` shader (URP Lit plus the volume on indirect light) draws every map surface. Strength is 1.0 on Low and 0.8 on Balanced/High (`PostProcessingTier.AoVolumeStrength`). To change the bake (ray length, weights, grid), edit `MapAmbientOcclusionVolume`, update the golden hashes in `AmbientOcclusionVolumeTests` and `AmbientOcclusionVolumeEditModeTests` together, and republish content. Actors are not occluded yet.
 
+
+
+## Owner-assigned visual roadmap — ADR-088 to ADR-093
+
+`Generation/Core/Materials/NoiseMaterial.cs` adds `material.noise` 1.0.0 without changing either frozen `material.surface` version. The map registry's four material roles choose periodic 128/256 px albedo/normal/mask triplets at 2 m. `NumericPlanes` supplies complete rectangular SGAF mip chains. New recipe schemas/fixtures and the explicitly refrozen feature/content inventories identify these bytes. `MapSurface` adds bounded grime, dirt, macro variation and triplanar detail using the existing normal/mask keyword set. The later owner-assigned roadmap explicitly authorizes that detail path; measured Low cost remains required.
+
+`ProceduralDecals` bakes an original atlas and verified placement JSON. Arena layout documentVersion 2 adds visual-only decal operations; code planners can supply a separate visual layout. Removing the decal ops must reproduce the original collision/nav/spawn identities. `ProductDecals` uses the locked URP screen-space decal feature on Balanced/High and depth-biased quads on Low, with 64 pooled impact marks. No gameplay collider is created.
+
+`AtmosphereBaker` builds numeric cloud cubes and 32-cube map grades. `GeneratedSky.ApplyMap` installs the matching sky/reflection and sun preset; map shading adds height fog. Low uses LDR ColorAdjustments, higher tiers the generated lookup. Actor visibility reads the packaged AO volume at the body root; Low has code-only contact shadows.
+
+`Generation/Core/Fx/FxFlipbook` emits five 8x8 sequences from 3D FBm/curl fields into SGAF. `AnalyticFxPresenter` keeps the original capped lifetime pool and adapts it into manually advanced ParticleSystems. Surface tags choose impact response; weapon definitions own muzzle FX profiles. Explosion parts, scorch and movement dust remain cosmetic. No imported sprite or texture, authored clip or engine/package upgrade is introduced; only the pinned editor's built-in Particle System module is enabled. Exact checks/identities and unresolved player/reference evidence are recorded in the [roadmap](../visual-roadmap.md).

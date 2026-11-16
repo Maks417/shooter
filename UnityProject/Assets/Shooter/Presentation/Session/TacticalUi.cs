@@ -656,6 +656,8 @@ namespace Shooter.Presentation.Session
         {
             Fill(new Rect(r.x, r.y + 6, 4, r.height - 12), Accent);
             Label(new Rect(r.x + 14, r.y, r.width - 14, r.height), title, 24);
+            // Numeric stencil cuts across the condensed bold wordmark, not a bitmap logo.
+            Fill(new Rect(r.x + 14, r.y + r.height * .47f, r.width - 14, 1.5f), Background);
         }
 
         /// <summary>
@@ -777,6 +779,7 @@ namespace Shooter.Presentation.Session
         {
             // Operation tile: charcoal well, inset media plate, caption bar — still draws real map RTTs.
             float lift = UiSdf.Available ? Emphasis(id + "#card", selected || r.Contains(Event.current.mousePosition)) : 0f;
+            r.y -= ReducedMotion ? 0f : 4f * lift;
             var well = UiSdf.Style.Solid(new Color(.02f, .03f, .035f, .98f), Hud.UiShapeParams.CardRadius)
                 .WithShadow(.35f + .15f * lift, 10f + 6f * lift, 3f + 2f * lift);
             if (selected) well = well.WithGlow(Accent, 10f, .22f * (ReducedFlash ? .6f : 1f));
@@ -806,6 +809,7 @@ namespace Shooter.Presentation.Session
             Plate(plate, UiSdf.Style.Solid(new Color(.025f, .035f, .04f, .96f), Hud.UiShapeParams.CardRadius)
                 .WithGradient(new Color(.015f, .02f, .025f, .98f), UiSdf.Gradient.Vertical));
             Fill(new Rect(plate.x, plate.y, plate.width, 1), new Color(1f, 1f, 1f, .10f));
+            Icon(new Rect(plate.xMax - 27, plate.y + 12, 16, 16), Generation.Icons.IconLibrary.Objective, selected ? Accent : Muted);
             AccentBar(new Rect(plate.x + 14, plate.y + 10, 20, 2), Accent);
             bool clicked = Button(r, id, "", selected: selected, quiet: true);
             Label(new Rect(r.x + 14, r.yMax - 48, r.width - 28, 22), title, 18);
@@ -978,7 +982,9 @@ namespace Shooter.Presentation.Session
             Texture? media,
             bool showCancel,
             bool reducedMotion,
-            string footer)
+            string footer,
+            System.Collections.Generic.IReadOnlyList<Shooter.Generation.Environment.CollisionBox>? blueprint = null,
+            Shooter.Contracts.Float3? spawn1 = null, Shooter.Contracts.Float3? spawn2 = null)
         {
             Backdrop();
             Header(ShellUiCopy.EyebrowInsertion, headerTitle);
@@ -989,7 +995,7 @@ namespace Shooter.Presentation.Session
             Panel(panel, accentTop: true, rail: true);
 
             float mediaW = 0f;
-            if (media != null)
+            if (media != null || blueprint != null)
             {
                 mediaW = Mathf.Min(280, panel.width * .34f);
                 Rect mediaRect = new Rect(panel.x + 14, panel.y + 16, mediaW, panel.height - 32);
@@ -997,8 +1003,12 @@ namespace Shooter.Presentation.Session
                 Edge(mediaRect);
                 Rect inset = new Rect(mediaRect.x + 3, mediaRect.y + 3, mediaRect.width - 6, mediaRect.height - 6);
                 Fill(inset, Surface);
-                if (Event.current.type == EventType.Repaint)
-                    GUI.DrawTexture(inset, media, ScaleMode.ScaleAndCrop);
+                if (blueprint != null) DrawBlueprint(inset, blueprint, spawn1, spawn2, reducedMotion);
+                else if (media != null && Event.current.type == EventType.Repaint)
+                {
+                    float pan = reducedMotion ? 0f : Mathf.Sin(Time.unscaledTime * .08f) * .025f;
+                    GUI.DrawTextureWithTexCoords(inset, media, new Rect(.04f + pan, .04f, .92f, .92f));
+                }
                 for (int i = 0; i < 7; i++)
                 {
                     float u = i / 6f;
@@ -1077,6 +1087,8 @@ namespace Shooter.Presentation.Session
                 }
             }
 
+            Label(new Rect(a.x, panel.yMax + 16, panelW, 38),
+                InsertionScreenCopy.TipAt(Time.unscaledTime, reducedMotion), 14, Muted);
             bool cancel = false;
             if (showCancel)
                 cancel = Button(new Rect(a.x, a.yMax - 66, 180, 44), "load.cancel", "CANCEL");
@@ -1085,6 +1097,45 @@ namespace Shooter.Presentation.Session
             Fill(new Rect(a.x, a.yMax - 24, 16, 1), Accent);
             Label(new Rect(a.x, a.yMax - 16, a.width, 16), footer ?? "", 12, Muted);
             return cancel;
+        }
+
+        public void Keycap(Rect r, string label, Color? ink = null)
+        {
+            var style = UiSdf.Style.Solid(ink ?? Text, 3f); style.Stroke = 1f;
+            UiSdf.Rect(r, UiSdf.Style.Solid(Raised, 3f));
+            UiSdf.Rect(r, style);
+            Label(r, label, 11, ink ?? Text, TextAnchor.MiddleCenter);
+        }
+
+        private void DrawBlueprint(Rect r, System.Collections.Generic.IReadOnlyList<Shooter.Generation.Environment.CollisionBox> boxes,
+            Shooter.Contracts.Float3? spawn1, Shooter.Contracts.Float3? spawn2, bool reducedMotion)
+        {
+            float extent = 1f;
+            for (int i = 0; i < boxes.Count; i++)
+                extent = Mathf.Max(extent, Mathf.Abs(boxes[i].Center.X) + boxes[i].Size.X * .5f,
+                    Mathf.Abs(boxes[i].Center.Z) + boxes[i].Size.Z * .5f);
+            float scale = Mathf.Min(r.width, r.height) / (extent * 2.2f);
+            GUI.BeginGroup(r);
+            try
+            {
+                Color grid = new Color(.25f, .65f, .72f, .14f);
+                for (int i = 0; i <= 10; i++)
+                {
+                    Fill(new Rect(i * r.width / 10, 0, 1, r.height), grid);
+                    Fill(new Rect(0, i * r.height / 10, r.width, 1), grid);
+                }
+                for (int i = 0; i < boxes.Count; i++)
+                {
+                    var box = boxes[i]; if (!box.Gameplay || box.Size.Y < .3f) continue;
+                    float x = r.width * .5f + box.Center.X * scale, y = r.height * .5f - box.Center.Z * scale;
+                    var q = new Rect(x - box.Size.X * scale * .5f, y - box.Size.Z * scale * .5f, box.Size.X * scale, box.Size.Z * scale);
+                    Fill(q, new Color(.15f, .48f, .56f, .32f)); Edge(q);
+                }
+                if (spawn1.HasValue) MapGlyph(r.width * .5f + spawn1.Value.X * scale, r.height * .5f - spawn1.Value.Z * scale, Generation.Icons.IconLibrary.AllyArrow, Ally);
+                if (spawn2.HasValue) MapGlyph(r.width * .5f + spawn2.Value.X * scale, r.height * .5f - spawn2.Value.Z * scale, Generation.Icons.IconLibrary.EnemyMarker, Enemy);
+                if (!reducedMotion) Fill(new Rect(0, Mathf.Repeat(Time.unscaledTime * 14f, r.height), r.width, 1), new Color(.5f, .9f, 1f, .35f));
+            }
+            finally { GUI.EndGroup(); }
         }
 
         /// <summary>

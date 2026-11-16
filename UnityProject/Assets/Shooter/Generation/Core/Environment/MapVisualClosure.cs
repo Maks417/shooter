@@ -73,6 +73,8 @@ namespace Shooter.Generation.Environment
             "material-soldier-team2-goggles.bin"
         };
 
+        public static string SoldierBandPath(byte team)=>"material-soldier-team"+team+"-armband.bin";
+        public static string SoldierPatchPath(byte team)=>"material-soldier-team"+team+"-patch.bin";
         public static string MaterialCompanionPath(string albedoPath, string plane)
         {
             if (plane != "normal" && plane != "mask") throw new ArgumentOutOfRangeException(nameof(plane));
@@ -121,7 +123,12 @@ namespace Shooter.Generation.Environment
                 list.Add(MaterialCompanionPath(path, "mask"));
             }
             list.AddRange(SoldierMaterialPaths);
+            foreach(byte team in new byte[]{1,2}){list.Add(SoldierBandPath(team));list.Add(SoldierPatchPath(team));}
+            foreach(int i in new[]{0,4}){list.Add(MaterialCompanionPath(SoldierMaterialPaths[i],"normal"));list.Add(MaterialCompanionPath(SoldierMaterialPaths[i],"mask"));}
             list.Add(MapAmbientOcclusionVolume.Path);
+            foreach(Shooter.Generation.Fx.FlipbookKind kind in Enum.GetValues(typeof(Shooter.Generation.Fx.FlipbookKind)))list.Add(Shooter.Generation.Fx.FxFlipbook.Path(kind));
+            list.Add(ProceduralDecals.AtlasPath);
+            list.Add(ProceduralDecals.PlacementsPath);
             return list;
         }
 
@@ -309,7 +316,8 @@ namespace Shooter.Generation.Environment
         }
 
         public static MaterialData DecodeMapMaterial(PackagedVisualPayloads payloads, string path) =>
-            DecodeMaterial(payloads, path, MapFingerprint(payloads.MapId));
+            DecodeMaterial(payloads, path, (path.StartsWith("material-map-", StringComparison.Ordinal) || path.Contains("-uniform")) && path != MapAmbientOcclusionVolume.Path
+                ? GeneratorFingerprint.Compute(NoiseMaterialRecipe.Generator, NoiseMaterialRecipe.Version) : MapFingerprint(payloads.MapId));
 
         /// <summary>ADR-081 baked ambient-occlusion volume (Texture3D layout, see <see cref="MapAmbientOcclusionVolume.Index"/>).</summary>
         public static byte[] DecodeAmbientOcclusionVolume(PackagedVisualPayloads payloads) =>

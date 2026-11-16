@@ -18,6 +18,17 @@ namespace Shooter.Presentation.Rendering
         private static int appliedTier = -1;
         private static readonly List<Camera> Cameras = new List<Camera>();
 
+        private static Shooter.Generation.Environment.MapGrade mapGrade=new Shooter.Generation.Environment.MapGrade();
+        private static Texture2D? mapLookup;
+        public static void SetMapGrade(string? mapId)
+        {
+            mapGrade=mapId!=null?Shooter.Generation.Environment.MapRegistry.Require(mapId).Grade:new Shooter.Generation.Environment.MapGrade();
+            if(mapLookup!=null) { if(Application.isPlaying)Object.Destroy(mapLookup);else Object.DestroyImmediate(mapLookup); }
+            var data=Shooter.Generation.Environment.AtmosphereBaker.Grade(mapGrade);
+            mapLookup=new Texture2D(data.Width,data.Height,TextureFormat.RGBA32,false,true){name="Numeric map grade",filterMode=FilterMode.Bilinear,wrapMode=TextureWrapMode.Clamp};
+            var bytes=new byte[data.MipBytes[0].Count];for(int i=0;i<bytes.Length;i++)bytes[i]=data.MipBytes[0][i];mapLookup.LoadRawTextureData(bytes);mapLookup.Apply(false,true);
+            if(profile!=null)Configure(profile,PostProcessingTier.For(Mathf.Max(0,appliedTier)));
+        }
         public static int AppliedTier => appliedTier;
 
         private static readonly int AoStrengthId = Shader.PropertyToID("_ShooterAoVolumeStrength");
@@ -99,6 +110,10 @@ namespace Shooter.Presentation.Rendering
             color.postExposure.Override(tier.PostExposure);
             color.contrast.Override(tier.Contrast);
             color.saturation.Override(tier.Saturation);
+            var lookup=Get<ColorLookup>(target);lookup.active=tier.Tier>0 && mapLookup!=null;
+            lookup.texture.Override(mapLookup);lookup.contribution.Override(lookup.active?1f:0f);
+            color.colorFilter.Override(tier.Tier==0?new Color(mapGrade.Red/1000f,mapGrade.Green/1000f,mapGrade.Blue/1000f):Color.white);
+            if(tier.Tier==0){color.contrast.Override(tier.Contrast+(mapGrade.Contrast-1000)/10f);color.saturation.Override(tier.Saturation+(mapGrade.Saturation-1000)/10f);}
 
             var bloom = Get<Bloom>(target);
             bloom.active = tier.Bloom;

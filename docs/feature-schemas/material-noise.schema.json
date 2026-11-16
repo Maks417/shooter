@@ -1,0 +1,72 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaId": {
+      "const": "shooter.recipe.material-noise.v1"
+    },
+    "recipeId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "generatorId": {
+      "const": "material.noise"
+    },
+    "generatorVersion": {
+      "const": "1.0.0"
+    },
+    "seed": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]{0,19})$"
+    },
+    "parameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "resolution": {
+          "enum": [
+            128,
+            256
+          ]
+        },
+        "tileMm": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 8000
+        },
+        "role": {
+          "enum": [
+            "concrete",
+            "plaster",
+            "rust",
+            "painted-steel",
+            "asphalt",
+            "gravel",
+            "corrugated-metal",
+            "camo-fabric"
+          ]
+        }
+      },
+      "required": [
+        "role",
+        "resolution",
+        "tileMm"
+      ]
+    },
+    "dependencies": {
+      "type": "array",
+      "maxItems": 0
+    }
+  },
+  "required": [
+    "schemaId",
+    "recipeId",
+    "generatorId",
+    "generatorVersion",
+    "seed",
+    "parameters",
+    "dependencies"
+  ],
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}
