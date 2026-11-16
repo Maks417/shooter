@@ -1223,6 +1223,21 @@ Clean binary/content source **`7e54be9ae8ff720baccf5aab221bf5cabfb6bc9b`**. It a
 
 Package ZIP SHA256 `4d9326ae4e43ab9e348c567ecffca59dc245c5ec1826101395fdddba686f2ec1`; source hash `e27dcaf30098f88b2c3a9ec7154a687db12e10e971e56b7d32a85eabd1b49032`; content closure `10162c185d48bbd1491df5c5f9370e323b2d21dbf5057bd1282a5cdac1a4e6f4`; index `89fc582497d8d2c70b0f2db09d3aa6d823cc06a23c0589b6dfbfc0b220980e8b`. No release, visual or performance acceptance is claimed.
 
+### Delivery 0.3.17
+
+Clean binary/content source **`1676ff88a0a0dffeabbb7859d441f5fd66293751`**. It adds everything merged since 0.3.16: ADR-075 third-party provenance and FastNoiseLite surfaces, ADR-076 offline-only scope, code-built InputActionMap, Shooter.VectorMath, ADR-077/078 weapon definition files and the shared weapon package, ADR-079 engine toolchain lock, ADR-080 code-built post-processing/HDR/SSAO tiers, ADR-081 baked AO volumes, ADR-082 parametric rifle parts, ADR-083 map registry and `map.arena` layouts, ADR-084 SDF UI primitives and HUD fixes, rifle hip framing, ADR-085 SDF icon atlas and ADR-086 animated debrief/front-end motion. Windows installer **0.3.17**, **36,541,803 bytes**, SHA256 **`7701fdd83cb387ec0a8cbb8f4c28108afb224c081980284fb2d06363e7df166b`**. Convenient delivery: `Artifacts/deliveries/Shooter-Setup-0.3.17.exe`. Stable per-user AppId `B01E0F69-2123-4D91-AB59-88864A944E39` is unchanged; predecessor is 0.3.16 (monotonic check against its installer report PASS). Locked Unity 6000.3.28f1 / 8f082d2fe476; Inno Setup 6.7.3.
+
+| Check | Actual result / retained run |
+|---|---|
+| Pure lanes | Game **99/99**, Maps **72**, Generation **508**, SourceProvenance **932/466** PASS at clean `91dfaef` (`m8-runtime-composition/91dfaef…/20261116T202847191Z-2f697849`, `test-maps-20261116T202926393Z-dcbf318d`; `m1-procedural-feasibility/91dfaef…/20261116T203043273Z-942d3993`). `1676ff8` only adds docs and `Tools/Capture-UiReview.ps1`; no linked source changed. |
+| Native packages | **12 PASS** (3 maps × 4 profiles), `nativeUnityNavBake=PASS`, `sourceDirty=false`; `m8-runtime-composition/1676ff8…/compile-gamecontent-20261116T203423312Z-180f9090/`. An earlier identical compile at `91dfaef` recorded `sourceDirty=true` because commit `1676ff8` was being made in the checkout when it started; it is not used. |
+| Clean IL2CPP Client | PASS, `sourceDirty=false`; `m0-foundation/1676ff8…/build-client-20261116T203628981Z-02287b71/`. |
+| Release smoke | PASS; `m0-foundation/1676ff8…/smoke-client-20261116T203705716Z-640b7b3d/`. Boot/shutdown only, not manual gameplay. |
+| Package / installer | PASS, native navigation required, 760 inventory files; `m11-playable-release/1676ff8…/package-20261116T203714090Z-20f733d9/` and `installer-20261116T203731483Z-0cee3ad7/`. Extraction and corrupt-content rehearsals PASS; rollback `SkippedNoPrevious`. |
+| Not run | Unity EditMode/PlayMode, Server build (postponed, ADR-076), benchmarks/reference captures, actual install/upgrade/settings preservation, playtest of this build. All remain Pending / NotClaimed. |
+
+Package ZIP SHA256 `8988cc140bccc374f53d64c80a86d6051fb2570cffd7774893837b58a3e51090`; source hash `aaa2fdc7e370c5906a9dd156b701e86a0b6c80c40046cb16c20d1a41bf56bc41`; content closure `222d46cdd928e086c5b41e082a88ed2bd9194840a0975aae6d133068f18c4cab`; index `d84e129d6ef00bc4511338dba084070bef745e6518b1f60b51db556452e63483`. No release, visual or performance acceptance is claimed.
+
 ## Workspace cleanup evidence loss — 2026-11-15
 
 A manual disk cleanup deleted 40 ignored per-commit run folders under `Artifacts/m0-foundation/` and `Artifacts/m11-playable-release/` (≈5.5 GB). Its reference check matched only full 40-character hashes, so runs cited in docs by 7-character short hash were deleted too. The deletion bypassed the Recycle Bin; the raw files are **unrecoverable** and can only be rebuilt from their source commits. The recorded results, hashes and run IDs in the handoffs stand as written, but their raw files no longer exist:
