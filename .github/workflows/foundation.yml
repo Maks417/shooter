@@ -57,6 +57,10 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           python Tools/test_generate_weapon_catalog.py
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          python Tools/generate_map_registry.py --check
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          python Tools/test_generate_map_registry.py
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
           python Tools/test_contract_lock.py
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           ./Tools/test_smoke.ps1

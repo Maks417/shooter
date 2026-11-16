@@ -1122,3 +1122,34 @@ Decision:
 Consequences: a new rifle shape is one `Content/Weapons/*.weapon.json` file plus a content republish. All shipped recipes stay on 1.0.5, and the published catalog, map index and weapon index were byte-identical after republishing. New module types (other stocks, optics, muzzle devices, magazines that change collision) would be a later generator version. No new product weapon is added: choosing one is a gameplay and balance decision.
 
 Validation on 2026-11-16: `WeaponPartsTests` 13/13 (byte identity, modules, ranges, canonical key order, asset generator fingerprint), generator tests 22/22, Simulation 329, Game 98, Generation 488, Test-Maps, source provenance, C0/format/feature registry and fixture verifiers, `verify_feature_schemas.py` 23/23 and Unity EditMode all PASS. A pure `Compile-GameContent.ps1` republish left `catalog.json`, `index.json` and `weapons.json` byte-identical. At `132f0a9` the IL2CPP client built, Smoke PASS, and a diagnostic `TDM-5v5-v1` Low run reached `packaged visuals ready` with no exceptions. No new product weapon was added, so in-game review of a 1.1.0 shape is Pending. Rollback: revert the ADR-082 commit; 1.0.5 content is unaffected.
+
+## ADR-083 — Accepted: map registry, arena layout documents and the generic map.arena recipe
+
+Date 2026-11-16. Step 6 of the owner-approved architecture review. The owner asked for this step, including its reviewed refreeze of `content-format-lock.json`. Sole integrator owns map generation, recipes, tooling, presentation hints, tests and docs. No C0, Game-v1, feature-content or toolchain change; every map's collision, navigation and package identity is unchanged; no acceptance waiver.
+
+Context: the arena planners already composed a reusable kit (`ArenaBoxBuilder`: shells, vehicles, covers, sandbags, walls), but a map id was hard-coded in about fifteen places:
+
+- `MapRecipe` seed, generator, schema, name and description switches
+- the `ProductMapPlanner` switch
+- release catalog and release policy lists
+- `MapContent` and `Compile-GameContent` map selections
+- sky, yard-surface and menu-card checks in presentation.
+
+The frozen map-recipe schema also bound one generator to each of the three maps. Adding a map therefore meant code in many layers plus a content-format refreeze.
+
+Decision:
+- **Registry.** `Content/Maps/<id>.map.json` (`shooter.map-definition.v1`) holds a map's id, order, display name, description, seed, recipe generator, planner and presentation hints (`sky`, `groundSurface`). `Tools/generate_map_registry.py` validates the files and writes `MapRegistry.g.cs`. Unknown or duplicate fields, ids, orders and seeds are rejected, as are legacy recipes on the wrong map and unknown code planners. `--check` runs in the fast CI lane.
+- **Everything reads it.** `MapRecipe` identity and `IsApprovedMapId`, `ProductMapPlanner.Generate`, `ReleaseCatalogDocument.RequiredMaps`, `MapContent` (`all`, the aliases, or any registered id) and `Compile-GameContent -Map` all read the registry. So do the presentation hints: `GeneratedSky` presets, `ProductMapView.UsesAsphaltYard` and menu cards for every registered map in catalog order. `MapRecipe.Parse` also requires the map to be registered with the recipe's generator. The release policy lists stay deliberate, and `MapRegistryReleasePolicyTests` fails until they match the registry.
+- **Layout documents.** `ArenaLayoutDocument` interprets a planner written as data: identity, `ArenaLayout`, and ordered kit operations that map one-to-one onto `ArenaBoxBuilder` calls:
+  - `perimeter`, `shell`
+  - `cover`, `vehicle`, `feature`
+  - `sandbags`, `fence`, `grounded`, `box`
+  - `wallX`, `wallZ`
+  - `visualDetail`
+
+  All lengths are integer millimetres, converted with an exact int → float division, so documents parse identically in every runtime. Training Compound is converted: `CompoundArenaPlanner` is now a thin wrapper over its 40-operation document. Depot Yard and Oil Depot remain registered code planners (`code:depot-arena`, `code:oil-arena`).
+- **Generic recipe.** `map.arena` / `shooter.recipe.map-arena.v1` is for every map registered after the three frozen ones. `docs/content-schemas/map-recipe.schema.json` and `docs/content-format.md` gained it, and `content-format-lock.json` was refrozen (source hashes only).
+
+Consequences: a new arena is one definition file with a layout document, plus content compilation, native nav and a playtest. Layouts that need new kit primitives (stairs and catwalks are code-only today) still need code. An editor preview window that re-plans a layout live is a possible follow-up.
+
+Rollback: revert the ADR-083 commit; map content is unaffected.

@@ -5,20 +5,14 @@ using Shooter.Contracts;
 
 namespace Shooter.Generation.Environment
 {
-    /// <summary>Dispatches catalog map ids to the T076 compact-arena planners (approved seeds from <see cref="MapRecipe"/>).</summary>
+    /// <summary>Dispatches registered map ids (<see cref="MapRegistry"/>) to their layout document or code planner.</summary>
     public static class ProductMapPlanner
     {
+        /// <summary>Plan a registered map with its layout document or named code planner (ADR-083).</summary>
         public static CompoundPlan Generate(string mapId)
         {
             if (mapId == null) throw new ArgumentNullException(nameof(mapId));
-            ulong seed = MapRecipe.ApprovedSeed(mapId);
-            switch (mapId)
-            {
-                case "training-compound": return CompoundArenaPlanner.Generate(seed);
-                case "depot-yard": return DepotArenaPlanner.Generate(seed);
-                case "oil-depot": return OilArenaPlanner.Generate(seed);
-                default: throw new ArgumentOutOfRangeException(nameof(mapId));
-            }
+            return MapRegistry.Require(mapId).Generate();
         }
 
         /// <summary>Validates an arena plan with <see cref="ArenaRules"/> and <see cref="MapTopologyValidation"/>; throws on failure.</summary>

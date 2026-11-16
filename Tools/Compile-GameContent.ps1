@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param(
-    [ValidateSet('compound','depot','oil','all')][string]$Map = 'all',
+    # 'all', the short aliases compound/depot/oil, or any map id registered in Content/Maps (ADR-083).
+    [ValidatePattern('^[a-z0-9]+(-[a-z0-9]+)*$')][string]$Map = 'all',
     [ValidateSet('all','gameplay','server','low','balanced','high')][string]$Profile = 'all',
     [string]$CacheRoot = '',
     [switch]$Force,

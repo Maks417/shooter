@@ -1,0 +1,14 @@
+{
+  "schemaId": "shooter.map-definition.v1",
+  "id": "depot-yard",
+  "order": 1,
+  "displayName": "Depot Yard",
+  "description": "Steel yards, cargo lanes, and hard cover for local TDM.",
+  "seed": "460072031",
+  "recipe": "map.depot",
+  "planner": "code:depot-arena",
+  "presentation": {
+    "sky": "dusty-yard",
+    "groundSurface": "asphalt"
+  }
+}

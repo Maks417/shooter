@@ -205,12 +205,14 @@ internal static class Program
         return "";
     }
 
+    // ADR-083: "all" is every registered map; compound/depot/oil stay as short aliases; any registered id works.
     private static List<string> SelectMaps(string map) => map switch
     {
-        "all" => new List<string> { "training-compound", "depot-yard", "oil-depot" },
+        "all" => new List<string>(MapRegistry.MapIds),
         "compound" => new List<string> { "training-compound" },
         "depot" => new List<string> { "depot-yard" },
         "oil" => new List<string> { "oil-depot" },
+        _ when MapRegistry.TryGet(map, out _) => new List<string> { map },
         _ => throw new ArgumentException("Unknown map selection: " + map)
     };
 

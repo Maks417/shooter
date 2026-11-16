@@ -29,3 +29,37 @@ The shipped catalog references verified packaged manifest roots only. All three 
 Validate all three approved recipes (compound `460072030`, depot `460072031`, oil `460072032`) plus the existing boundary seed corpus (1, 42, 460072030, uint64 max) where the generator supports seed variation; alternate seeds including historical `42` are generator robustness tests, not extra catalog entries. Check real collision/native nav reachability (including oil catwalk climb and underpass), doorway/step/capsule clearance, covered flanks, initial LOS, spawn pressure, cross-chunk collision continuity and complete dependency manifests. A clean checkout with empty content cache must reproduce approved identities; any generator change includes intended old/new identity evidence.
 
 Play all three maps with both roster sizes through death/respawn, score finish and time finish. Compare Low/Balanced/High gameplay hashes and scripted authoritative outcomes. Perform 20 alternating map loads, cancellations during each install stage, and 100 traversal/stream lifecycle cycles with bounded residency. Capture readable 720p views and measured release-player workload counters for each map. Geometry/connectivity tests do not establish enjoyable combat or performance; M11 records human route/spawn review and hardware results separately.
+
+## Adding a map (ADR-083)
+
+Each map is one file, `Content/Maps/<id>.map.json`, with this structure:
+
+- **Identity:** `id`, catalog `order`, `displayName`, `description` and an unused `seed`.
+- **`recipe`:** `map.arena` for new maps. `map.compound`/`map.depot`/`map.oil` are frozen to the three original maps.
+- **`planner`:** `layout` plus an inline `layout` document, or `code:<name>` for a planner registered in `MapRegistry.CodePlanners`.
+- **`presentation`:** `sky` (`default`, `compound`, `dusty-yard` or `petroleum`) and `groundSurface` (`soil` or `asphalt`).
+
+A layout document gives the planner identity (`id`, `version`, `idBase`), the arena (`halfExtentX/Z`, `staging`, `team1Anchor`, `team1Exits`, `lanePoints`, `symmetry`) and ordered kit operations:
+
+- `perimeter`, `shell`
+- `cover`, `vehicle`, `feature`
+- `sandbags`, `fence`, `grounded`, `box`
+- `wallX`, `wallZ`
+- `visualDetail`
+
+Every length is integer millimetres, and team 2 is derived by the symmetry. `training-compound.map.json` is a complete example: its 40 operations rebuild the former C# planner byte for byte.
+
+After editing, run these, in order:
+
+```powershell
+python Tools/generate_map_registry.py
+```
+```powershell
+./Tools/Test-Generation.ps1
+```
+```powershell
+./Tools/Compile-GameContent.ps1 -Map <id>
+```
+
+The release catalog, menu cards, sky and yard surface follow the registry. `Tools/release-package-policy.json` and `ReleasePackagePolicy.RequiredMaps` list the shipped maps on purpose; a test fails until they match the registry. A new map must still pass `ArenaRules` and `MapTopologyValidation`, and needs native nav and a playtest before release.
+

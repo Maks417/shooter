@@ -24,8 +24,8 @@ namespace Shooter.Presentation
         public const float DefaultFogDensity = .007f;
 
         /// <summary>
-        /// Map-id atmosphere variants (presentation only). Does not change collision, nav, or authority.
-        /// training-compound: cooler plaster/concrete air; depot-yard: warmer dusty yard haze; oil-depot: petroleum haze.
+        /// Registry atmosphere presets (presentation only). Does not change collision, nav, or authority.
+        /// compound: cooler plaster/concrete air; dusty-yard: warmer dusty yard haze; petroleum: petroleum haze.
         /// </summary>
         public static void ResolveProductPalette(
             string mapId,
@@ -39,7 +39,9 @@ namespace Shooter.Presentation
             fogStartMeters = DefaultFogStartMeters;
             fogEndMeters = DefaultFogEndMeters;
             fogDensity = DefaultFogDensity;
-            if (string.Equals(mapId, "training-compound", StringComparison.Ordinal))
+            // ADR-083: the atmosphere preset comes from the map registry (presentation.sky).
+            string preset = Shooter.Generation.Environment.MapRegistry.TryGet(mapId, out var definition) ? definition.SkyPreset : "default";
+            if (preset == "compound")
             {
                 // Cooler outdoor compound: deeper blue zenith, clean cool horizon, modest depth fog.
                 zenith = new Rgb(.20f, .34f, .50f);
@@ -50,7 +52,7 @@ namespace Shooter.Presentation
                 fogDensity = .0068f;
                 return;
             }
-            if (string.Equals(mapId, "depot-yard", StringComparison.Ordinal))
+            if (preset == "dusty-yard")
             {
                 // Warmer dusty yard: muted zenith, amber haze, earlier fog without washing silhouettes.
                 zenith = new Rgb(.30f, .38f, .44f);
@@ -61,7 +63,7 @@ namespace Shooter.Presentation
                 fogDensity = .008f;
                 return;
             }
-            if (string.Equals(mapId, "oil-depot", StringComparison.Ordinal))
+            if (preset == "petroleum")
             {
                 // Petroleum yard: cooler industrial zenith, oily amber horizon, denser mid fog.
                 zenith = new Rgb(.22f, .30f, .36f);

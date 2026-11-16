@@ -15,7 +15,8 @@ namespace Shooter.Generation.Environment
     {
         public const string Schema = "shooter.release-catalog.v1";
         public const string FileName = "catalog.json";
-        public static readonly string[] RequiredMaps = { "training-compound", "depot-yard", "oil-depot" };
+        /// <summary>Every registered map, in catalog order (ADR-083).</summary>
+        public static IReadOnlyList<string> RequiredMaps => MapRegistry.MapIds;
         public static readonly string[] RequiredProfiles = { "gameplay", "low", "balanced", "high" };
 
         public static string CatalogPath(string cacheRoot) =>

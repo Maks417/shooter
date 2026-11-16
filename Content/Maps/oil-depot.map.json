@@ -1,0 +1,14 @@
+{
+  "schemaId": "shooter.map-definition.v1",
+  "id": "oil-depot",
+  "order": 2,
+  "displayName": "Oil Depot",
+  "description": "Petroleum tanks, pump house, and elevated catwalks for local TDM.",
+  "seed": "460072032",
+  "recipe": "map.oil",
+  "planner": "code:oil-arena",
+  "presentation": {
+    "sky": "petroleum",
+    "groundSurface": "asphalt"
+  }
+}

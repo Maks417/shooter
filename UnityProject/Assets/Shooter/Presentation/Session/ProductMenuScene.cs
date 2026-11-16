@@ -48,7 +48,10 @@ namespace Shooter.Presentation.Session
             scene.transform.SetParent(parent, false);
             scene.load = Task.Run(() =>
             {
-                var maps = new[] { WellKnownMaps.TrainingCompound, WellKnownMaps.DepotYard, WellKnownMaps.OilDepot };
+                // ADR-083: one map card per registered map, in catalog order.
+                var ids = Shooter.Generation.Environment.MapRegistry.MapIds;
+                var maps = new MapId[ids.Count];
+                for (int m = 0; m < maps.Length; m++) maps[m] = new MapId(ids[m]);
                 var result = new PackagedVisualPayloads[maps.Length];
                 for (int i = 0; i < maps.Length; i++)
                 {
@@ -121,11 +124,11 @@ namespace Shooter.Presentation.Session
 
         private void BuildVerified(PackagedVisualPayloads[] visuals)
         {
-            if (visuals == null || visuals.Length != 3
-                || visuals[0].MapId != "training-compound"
-                || visuals[1].MapId != "depot-yard"
-                || visuals[2].MapId != "oil-depot")
-                throw new InvalidOperationException("All three approved menu visual packages are required.");
+            var registered = Shooter.Generation.Environment.MapRegistry.MapIds;
+            bool complete = visuals != null && visuals.Length == registered.Count && visuals.Length > 0;
+            for (int i = 0; complete && i < visuals!.Length; i++) complete = visuals[i].MapId == registered[i];
+            if (!complete)
+                throw new InvalidOperationException("Every registered menu visual package is required, in catalog order.");
             var shader = Shader.Find("Universal Render Pipeline/Lit");
             if (shader == null || !shader.isSupported) throw new InvalidOperationException("Locked URP Lit is required.");
             for (int i = 0; i < visuals.Length; i++) ValidateShader(visuals[i]);
@@ -140,7 +143,7 @@ namespace Shooter.Presentation.Session
             Material steelMatte = Variant(cover, "Stage steel matte", new Color(.72f, .83f, .86f));
             steelMatte.SetFloat("_Smoothness", .42f);
             Material soil = PackagedMaterial(visuals[0], shader, MapVisualClosure.MapMaterialPaths[2], "Stage soil", .5f);
-            Material asphalt = PackagedMaterial(visuals[1], shader, MapVisualClosure.MapMaterialPaths[3], "Stage asphalt", .5f);
+            Material asphalt = PackagedMaterial(visuals[Math.Min(1, visuals.Length - 1)], shader, MapVisualClosure.MapMaterialPaths[3], "Stage asphalt", .5f);
             Material apron = Variant(asphalt, "Stage apron", new Color(.62f, .64f, .60f));
             Material apronWarm = Variant(asphalt, "Stage apron warm", new Color(.70f, .66f, .58f));
             Material contact = Material(shader, "Stage contact", new Color(.03f, .035f, .04f), .05f);
@@ -332,7 +335,7 @@ namespace Shooter.Presentation.Session
             Bounds bounds = mesh.bounds;
             Vector3 center = bounds.center + new Vector3(offset, 0, 0);
             float width = bounds.size.x + 8f, depth = bounds.size.z + 8f;
-            int groundFamily = visuals.MapId == "depot-yard" || visuals.MapId == "oil-depot" ? 3 : 2;
+            int groundFamily = ProductMapView.UsesAsphaltYard(visuals.MapId) ? 3 : 2;
             Material ground = PackagedMaterial(visuals, shader, MapVisualClosure.MapMaterialPaths[groundFamily],
                 "Map card ground " + visuals.MapId, .5f);
             Place("Map card ground " + visuals.MapId, new Vector3(center.x, -.05f, center.z), new Vector3(width, .1f, depth), ground);

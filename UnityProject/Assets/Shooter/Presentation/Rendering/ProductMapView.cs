@@ -96,7 +96,7 @@ namespace Shooter.Presentation.Rendering
             // Presentation-only unit boxes; no colliders.
             Place("Product apron", new Vector3(0f, -0.06f, 0f), new Vector3(full, 0.1f, full), apron!, unitBox!);
             float inner = full * InnerYardExtentFraction;
-            Material yardSurface = PreferDepotYardAsphalt(mapId) ? asphalt! : ground!;
+            Material yardSurface = UsesAsphaltYard(mapId) ? asphalt! : ground!;
             Place("Product ground", new Vector3(0f, -0.02f, 0f), new Vector3(inner, 0.1f, inner), yardSurface, unitBox!);
 
             // Packaged combined solids mesh encodes gameplay + visual boxes with MaterialSlot roles
@@ -347,9 +347,9 @@ namespace Shooter.Presentation.Rendering
                 value => owned.Add(value), response);
         }
 
-        private static bool PreferDepotYardAsphalt(string installedMapId) =>
-            string.Equals(installedMapId, "depot-yard", StringComparison.Ordinal)
-            || string.Equals(installedMapId, "oil-depot", StringComparison.Ordinal);
+        /// <summary>ADR-083 registry hint (<c>presentation.groundSurface</c>); unknown maps use soil.</summary>
+        public static bool UsesAsphaltYard(string installedMapId) =>
+            Shooter.Generation.Environment.MapRegistry.TryGet(installedMapId, out var definition) && definition.GroundSurface == "asphalt";
 
         private static MaterialData? DecodeCompanionPlane(PackagedVisualPayloads visuals, string albedoPath, string plane)
         {

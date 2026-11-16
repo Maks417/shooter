@@ -15,6 +15,9 @@ namespace Shooter.Generation.Environment
         public const string CompoundGenerator = "map.compound";
         public const string DepotGenerator = "map.depot";
         public const string OilGenerator = "map.oil";
+        /// <summary>ADR-083 generic arena recipe for maps registered after the three frozen per-map recipes.</summary>
+        public const string ArenaSchema = "shooter.recipe.map-arena.v1";
+        public const string ArenaGenerator = "map.arena";
         public const string PackageSchema = "shooter.map-package.v1";
         public const string MetadataSchema = "shooter.map-metadata.v1";
         public const string GeneratorVersion = "1.0.1";
@@ -54,6 +57,9 @@ namespace Shooter.Generation.Environment
             if (generator == CompoundGenerator && mapId != "training-compound") throw new FormatException("map.compound requires training-compound.");
             if (generator == DepotGenerator && mapId != "depot-yard") throw new FormatException("map.depot requires depot-yard.");
             if (generator == OilGenerator && mapId != "oil-depot") throw new FormatException("map.oil requires oil-depot.");
+            // ADR-083: every map id must be registered, with this recipe generator.
+            if (!MapRegistry.TryGet(mapId, out var registered) || registered.RecipeGenerator != generator)
+                throw new FormatException("Map " + mapId + " is not registered with generator " + generator + ".");
             var dependencyValues = root["dependencies"].Array;
             if (dependencyValues.Count > 256) throw new FormatException("dependencies: maximum count is 256.");
             var dependencies = new ContentId[dependencyValues.Count];
@@ -82,48 +88,26 @@ namespace Shooter.Generation.Environment
             return CanonicalJson.Encode(Encoding.UTF8.GetBytes(json));
         }
 
-        public static ulong ApprovedSeed(string mapId) => mapId switch
+        public static ulong ApprovedSeed(string mapId) => MapRegistry.Require(mapId).Seed;
+
+        public static string GeneratorIdFor(string mapId) => MapRegistry.Require(mapId).RecipeGenerator;
+
+        public static string SchemaFor(string mapId) => MapRegistry.Require(mapId).RecipeSchema;
+
+        public static string SchemaForGenerator(string generator) => generator switch
         {
-            "training-compound" => 460072030UL,
-            "depot-yard" => 460072031UL,
-            "oil-depot" => 460072032UL,
-            _ => throw new ArgumentOutOfRangeException(nameof(mapId))
+            CompoundGenerator => CompoundSchema,
+            DepotGenerator => DepotSchema,
+            OilGenerator => OilSchema,
+            ArenaGenerator => ArenaSchema,
+            _ => throw new ArgumentOutOfRangeException(nameof(generator), generator, "Unknown map recipe generator.")
         };
 
-        public static string GeneratorIdFor(string mapId) => mapId switch
-        {
-            "training-compound" => CompoundGenerator,
-            "depot-yard" => DepotGenerator,
-            "oil-depot" => OilGenerator,
-            _ => throw new ArgumentOutOfRangeException(nameof(mapId))
-        };
+        public static string DisplayName(string mapId) => MapRegistry.Require(mapId).DisplayName;
 
-        public static string SchemaFor(string mapId) => mapId switch
-        {
-            "training-compound" => CompoundSchema,
-            "depot-yard" => DepotSchema,
-            "oil-depot" => OilSchema,
-            _ => throw new ArgumentOutOfRangeException(nameof(mapId))
-        };
+        public static string Description(string mapId) => MapRegistry.Require(mapId).Description;
 
-        public static string DisplayName(string mapId) => mapId switch
-        {
-            "training-compound" => "Training Compound",
-            "depot-yard" => "Depot Yard",
-            "oil-depot" => "Oil Depot",
-            _ => throw new ArgumentOutOfRangeException(nameof(mapId))
-        };
-
-        public static string Description(string mapId) => mapId switch
-        {
-            "training-compound" => "Tight courtyards and training lanes for local TDM.",
-            "depot-yard" => "Steel yards, cargo lanes, and hard cover for local TDM.",
-            "oil-depot" => "Petroleum tanks, pump house, and elevated catwalks for local TDM.",
-            _ => throw new ArgumentOutOfRangeException(nameof(mapId))
-        };
-
-        public static bool IsApprovedMapId(string mapId)
-            => mapId == "training-compound" || mapId == "depot-yard" || mapId == "oil-depot";
+        public static bool IsApprovedMapId(string mapId) => MapRegistry.TryGet(mapId, out _);
 
         private static void ValidateIdentity(string schema, string generator, string version)
         {
@@ -138,6 +122,10 @@ namespace Shooter.Generation.Environment
             else if (schema == OilSchema)
             {
                 if (generator != OilGenerator) throw new FormatException("generatorId mismatch for oil schema.");
+            }
+            else if (schema == ArenaSchema)
+            {
+                if (generator != ArenaGenerator) throw new FormatException("generatorId mismatch for arena schema.");
             }
             else throw new FormatException("Unsupported map recipe schema.");
             if (version != GeneratorVersion) throw new FormatException("Unsupported map generator version.");
