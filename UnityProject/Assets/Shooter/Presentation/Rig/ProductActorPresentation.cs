@@ -998,8 +998,10 @@ namespace Shooter.Presentation.Rig
             }
         }
 
+        // Scene-object names key on the stable MeshAssetKey ("rifle", "rifle-carbine", "pistol", "knife", "grenade"), not on
+        // DisplayLabel UI copy. This keeps the pre-ADR-072 hierarchy names that tests and diagnostics Find() by.
         private static string WeaponDisplayName(in WeaponVisualProfile profile, bool local) =>
-            (local ? "Local FP " : "Held ") + (string.IsNullOrEmpty(profile.DisplayLabel) ? profile.MeshAssetKey : profile.DisplayLabel);
+            (local ? "Local FP " : "Held ") + profile.MeshAssetKey;
 
         private Float3 SightSocketForProfile(in WeaponVisualProfile profile) => profile.MeshAssetKey switch
         {
