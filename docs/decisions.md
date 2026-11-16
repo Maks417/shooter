@@ -1096,4 +1096,6 @@ Decision:
 
 Consequences: covered, indoor and wall-adjacent areas lose sky ambient while direct sun and shadows are unchanged. Each visual package grows by about 160 KB. One 3D texture sample is added per map pixel. Dynamic actors don't receive the volume yet; probe-based actor AO is a possible follow-up. The values (ray length, weights, strengths) are tuning that still needs a named visual review.
 
+Evidence on 2026-11-16 at `de6f8b6`: Simulation 329, Game 98, Generation 475 (including six `AmbientOcclusionVolumeTests`), Test-Maps, source provenance and the lock/asmdef/fixture verifiers PASS. Unity EditMode passed 75/75, and the three Mono goldens matched the .NET bake byte for byte. `Compile-GameContent.ps1` and `-Native` PASS. The IL2CPP client built with `MapSurface.shader` and its variant material and zero packed image files; Smoke PASS. A diagnostic `TDM-5v5-v1` Low run bound the packaged map (`SHOOTER_PRODUCT_MAP_VIEW … packaged=1`) with frame p95 4.73 ms (diagnostic, not a reference capture). `Package-Release.ps1 -RequireNativeNav` PASS. A named visual review of the occlusion on all three maps and Balanced/High player runs are Pending.
+
 Rollback: revert the ADR-081 commit and republish content; map surfaces return to URP Lit.
