@@ -5,7 +5,7 @@
   "contractVersion": "C0-v1",
   "date": "2026-11-15",
   "decision": "docs/decisions.md#adr-071--accepted-oil-depot-third-map-and-limited-elevated-routes",
-  "toolchainHash": "9ac31fe82117043e2bba3bfb843dd1ca32834b15425188e96d6f3369e2c627a8",
+  "toolchainHash": "a8331fe2bc5b4293773762d829dc293c8aa5185024bd1a771543ac4eda840500",
   "generatorRegistry": [
     {
       "id": "collision.box",

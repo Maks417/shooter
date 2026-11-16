@@ -18,6 +18,7 @@ $buildRoot = (Resolve-Path -LiteralPath $BuildRunDirectory).Path
 $buildManifest = Join-Path $buildRoot 'build-manifest.json'
 $build = Get-Content -LiteralPath $buildManifest -Raw | ConvertFrom-Json
 if ($build.result -cne 'Succeeded' -or $build.target -cne 'Client' -or $build.backend -cne 'IL2CPP' -or $build.development -or $build.toolchainHash -cne $unity.LockHash) { throw 'A matching release IL2CPP client build is required.' }
+if ($build.PSObject.Properties['buildLockHash'] -and [string]$build.buildLockHash -cne $unity.BuildLockHash) { throw 'Build was made with a different build-lock.json (ADR-079).' }
 if ((Get-ShooterHash (Join-Path $buildRoot 'harness-manifest.json')) -cne $build.contentManifestHash) { throw 'Harness content manifest hash mismatch.' }
 if ($Workload -eq 'B01-materials-v1') {
     if (!$MaterialCacheRoot) { throw 'B01-materials-v1 requires -MaterialCacheRoot from a verified Low compilation.' }

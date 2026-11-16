@@ -9,7 +9,7 @@
   "settingsSchema": 2,
   "simulationHz": 60,
   "dependsOnContract": "C0-v1",
-  "toolchainHash": "9ac31fe82117043e2bba3bfb843dd1ca32834b15425188e96d6f3369e2c627a8",
+  "toolchainHash": "a8331fe2bc5b4293773762d829dc293c8aa5185024bd1a771543ac4eda840500",
   "sources": {
     "UnityProject/Assets/Shooter/Game/Contracts/GameData.cs": "9e0e2c6fb7a6ac1429c3308ef50ae63c1d48b9c2d655856b988860fad8847fe6",
     "UnityProject/Assets/Shooter/Game/Contracts/GameData.cs.meta": "da2d99bee98c3ea0a1088ded28a27e5b7e7a7da3e5df1edff7afd0239ae0d61b",

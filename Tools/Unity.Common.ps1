@@ -15,6 +15,29 @@ function Assert-ShooterPackedProvenance($Manifest) {
     if ($unexpected.Count) { throw ('Unapproved built-in visual payload: ' + ($unexpected -join ', ')) }
 }
 
+# ADR-079: direct UPM dependencies must match toolchain-lock.json (engine/content packages) or build-lock.json (all others).
+function Assert-ShooterLockedPackages([string]$Root, $Lock, $BuildLock) {
+    $manifest = Get-Content -LiteralPath (Join-Path $root 'UnityProject/Packages/manifest.json') -Raw | ConvertFrom-Json
+    $packageLock = Get-Content -LiteralPath (Join-Path $root 'UnityProject/Packages/packages-lock.json') -Raw | ConvertFrom-Json
+    $expectedPackages = @{
+        'com.unity.render-pipelines.universal' = $lock.urpVersion
+        'com.unity.ai.navigation' = $lock.aiNavigationVersion
+    }
+    foreach ($entry in @($buildLock.packages)) {
+        if ($expectedPackages.ContainsKey([string]$entry.name)) { throw "build-lock.json must not repeat engine package $($entry.name)." }
+        $expectedPackages[[string]$entry.name] = [string]$entry.version
+    }
+    foreach ($package in $expectedPackages.Keys) {
+        if ($manifest.dependencies.$package -cne $expectedPackages[$package] -or $packageLock.dependencies.$package.version -cne $expectedPackages[$package]) { throw "Package differs from toolchain/build lock: $package" }
+    }
+    # Every direct manifest dependency must be locked: engine modules and the curated Core RP tarball excepted.
+    foreach ($property in $manifest.dependencies.PSObject.Properties) {
+        $name = $property.Name
+        if ($name -like 'com.unity.modules.*' -or $name -ceq 'com.unity.render-pipelines.core') { continue }
+        if (-not $expectedPackages.ContainsKey($name)) { throw "Unlocked package in manifest.json: $name (add it to build-lock.json)." }
+    }
+}
+
 function Get-ShooterUnity {
     $root = Get-ShooterRoot
     & python (Join-Path $PSScriptRoot 'verify_contract_lock.py') | Out-Host
@@ -22,7 +45,12 @@ function Get-ShooterUnity {
     $lockPath = Join-Path $root 'toolchain-lock.json'
     if (!(Test-Path -LiteralPath $lockPath -PathType Leaf)) { throw 'F01 pending: toolchain-lock.json is missing. Install/select the editor before running Unity checks.' }
     $lock = Get-Content -LiteralPath $lockPath -Raw | ConvertFrom-Json
-    if ($lock.schemaVersion -ne 1) { throw 'Unsupported toolchain lock schema.' }
+    if ($lock.schemaVersion -ne 2) { throw 'Unsupported toolchain lock schema.' }
+    # ADR-079: packages and build settings that do not shape generated content live in build-lock.json.
+    $buildLockPath = Join-Path $root 'build-lock.json'
+    if (!(Test-Path -LiteralPath $buildLockPath -PathType Leaf)) { throw 'Missing build-lock.json (ADR-079).' }
+    $buildLock = Get-Content -LiteralPath $buildLockPath -Raw | ConvertFrom-Json
+    if ($buildLock.schemaVersion -ne 1 -or $buildLock.lockSchema -cne 'shooter.build-lock.v1') { throw 'Unsupported build lock schema.' }
     $localPath = Join-Path $root '.local/unity.json'
     if (!(Test-Path -LiteralPath $localPath -PathType Leaf)) { throw 'Missing .local/unity.json; use Tools/Configure-Unity.ps1 -EditorPath <locked Unity.exe>.' }
     $local = Get-Content -LiteralPath $localPath -Raw | ConvertFrom-Json
@@ -36,19 +64,9 @@ function Get-ShooterUnity {
     $version = Get-Content -LiteralPath (Join-Path $root 'UnityProject/ProjectSettings/ProjectVersion.txt') -Raw
     if ($version -notmatch "(?m)^m_EditorVersion: $([regex]::Escape($lock.editorVersion))\r?$" -or
         $version -notmatch "(?m)^m_EditorVersionWithRevision: $([regex]::Escape($lock.editorVersion)) \($([regex]::Escape($lock.editorRevision))\)\r?$") { throw 'ProjectVersion.txt differs from toolchain-lock.json.' }
-    $manifest = Get-Content -LiteralPath (Join-Path $root 'UnityProject/Packages/manifest.json') -Raw | ConvertFrom-Json
-    $packageLock = Get-Content -LiteralPath (Join-Path $root 'UnityProject/Packages/packages-lock.json') -Raw | ConvertFrom-Json
-    $expectedPackages = @{
-        'com.unity.render-pipelines.universal' = $lock.urpVersion
-        'com.unity.inputsystem' = $lock.inputSystemVersion
-        'com.unity.test-framework' = $lock.testFrameworkVersion
-        'com.unity.ai.navigation' = $lock.aiNavigationVersion
-    }
-    foreach ($package in $expectedPackages.Keys) {
-        if ($manifest.dependencies.$package -cne $expectedPackages[$package] -or $packageLock.dependencies.$package.version -cne $expectedPackages[$package]) { throw "Package differs from toolchain lock: $package" }
-    }
+    Assert-ShooterLockedPackages -Root $root -Lock $lock -BuildLock $buildLock
     Write-Host "Locked Unity: $($lock.editorVersion) ($($lock.editorRevision)) at $editorPath"
-    [pscustomobject]@{ Editor = $editorPath; Lock = $lock; LockHash = Get-ShooterHash $lockPath; Project = Join-Path $root 'UnityProject' }
+    [pscustomobject]@{ Editor = $editorPath; Lock = $lock; LockHash = Get-ShooterHash $lockPath; BuildLock = $buildLock; BuildLockHash = Get-ShooterHash $buildLockPath; Project = Join-Path $root 'UnityProject' }
 }
 
 # Disk policy (ADR-076): a run folder name is <action>-<yyyyMMddTHHmmssfffZ>-<8 hex>. When a run succeeds, older runs of

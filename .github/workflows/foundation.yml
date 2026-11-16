@@ -61,6 +61,8 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           ./Tools/test_smoke.ps1
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          ./Tools/test_build_lock.ps1
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
           ./Tools/test_unity_results.ps1
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           ./Tools/test_source_provenance.ps1

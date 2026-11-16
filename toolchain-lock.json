@@ -1,23 +1,12 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
+  "scope": "Engine and content toolchain only (ADR-079). Its SHA-256 is the toolchainHash embedded in generated content, package roots and the C0/format/Game-v1 locks. Runtime/test packages and build settings live in build-lock.json.",
   "editorVersion": "6000.3.28f1",
   "editorRevision": "8f082d2fe476",
   "urpVersion": "17.3.0",
-  "inputSystemVersion": "1.20.1",
-  "testFrameworkVersion": "1.6.0",
   "aiNavigationVersion": "2.0.0",
   "graphicsApi": "Direct3D11",
-  "clientBackend": "IL2CPP",
-  "serverBackend": "Mono",
-  "clientTarget": "Windows64",
-  "serverTarget": "Windows64Server",
   "dotnetSdk": "10.0.301",
-  "requiredModules": [
-    "windows-il2cpp",
-    "windows-server"
-  ],
-  "provenanceAllowlistVersion": 1,
-  "transportVersion": null,
   "corePackageCuration": {
     "schemaVersion": 2,
     "package": "com.unity.render-pipelines.core",

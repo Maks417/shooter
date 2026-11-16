@@ -18,6 +18,8 @@ public static class ShooterBuild
 {
     public static string RepositoryRoot => Path.GetFullPath(Path.Combine(Application.dataPath, "../.."));
     public static string LockPath => Path.Combine(RepositoryRoot, "toolchain-lock.json");
+    /// <summary>ADR-079 build-only packages and settings; not part of toolchainHash.</summary>
+    public static string BuildLockPath => Path.Combine(RepositoryRoot, "build-lock.json");
     public static string HashFile(string path)
     {
         using var hash = SHA256.Create();
@@ -34,15 +36,27 @@ public static class ShooterBuild
         }
         return fallback;
     }
+    /// <summary>Merged view of toolchain-lock.json (engine/content) and build-lock.json (build-only), ADR-079.</summary>
     [Serializable]
     public sealed class Toolchain
     {
         public int schemaVersion;
-        public string editorVersion, editorRevision, urpVersion, inputSystemVersion, testFrameworkVersion, aiNavigationVersion;
-        public string graphicsApi, clientBackend, serverBackend, clientTarget, serverTarget, dotnetSdk;
+        public string editorVersion, editorRevision, urpVersion, aiNavigationVersion, graphicsApi, dotnetSdk;
+        public string clientBackend, serverBackend, clientTarget, serverTarget;
         public string[] requiredModules;
         public int provenanceAllowlistVersion;
         public string transportVersion;
+        public LockedPackage[] packages;
+    }
+    [Serializable] public sealed class LockedPackage { public string name, version; }
+    [Serializable]
+    public sealed class BuildLock
+    {
+        public int schemaVersion;
+        public string lockSchema, clientBackend, serverBackend, clientTarget, serverTarget, transportVersion;
+        public string[] requiredModules;
+        public int provenanceAllowlistVersion;
+        public LockedPackage[] packages;
     }
     [Serializable]
     public sealed class ToolchainProof
@@ -53,8 +67,15 @@ public static class ShooterBuild
     public static Toolchain CheckToolchain()
     {
         var expected = JsonUtility.FromJson<Toolchain>(File.ReadAllText(LockPath));
+        var build = JsonUtility.FromJson<BuildLock>(File.ReadAllText(BuildLockPath));
+        if (build.schemaVersion != 1 || build.lockSchema != "shooter.build-lock.v1" || build.packages == null)
+            throw new InvalidOperationException("Unsupported build-lock.json schema");
+        expected.clientBackend = build.clientBackend; expected.serverBackend = build.serverBackend;
+        expected.clientTarget = build.clientTarget; expected.serverTarget = build.serverTarget;
+        expected.requiredModules = build.requiredModules; expected.provenanceAllowlistVersion = build.provenanceAllowlistVersion;
+        expected.transportVersion = build.transportVersion; expected.packages = build.packages;
         string actual = FileVersionInfo.GetVersionInfo(EditorApplication.applicationPath).ProductVersion;
-        if (expected.schemaVersion != 1 || Application.unityVersion != expected.editorVersion || actual != expected.editorVersion + "_" + expected.editorRevision)
+        if (expected.schemaVersion != 2 || Application.unityVersion != expected.editorVersion || actual != expected.editorVersion + "_" + expected.editorRevision)
             throw new InvalidOperationException("Editor does not match toolchain lock: " + actual);
         var packages = UnityEditor.PackageManager.PackageInfo.GetAllRegisteredPackages();
         void RequirePackage(string name, string version)
@@ -63,9 +84,8 @@ public static class ShooterBuild
         }
         RequirePackage("com.unity.render-pipelines.universal", expected.urpVersion);
         RequirePackage("com.unity.render-pipelines.core", expected.urpVersion);
-        RequirePackage("com.unity.inputsystem", expected.inputSystemVersion);
-        RequirePackage("com.unity.test-framework", expected.testFrameworkVersion);
         RequirePackage("com.unity.ai.navigation", expected.aiNavigationVersion);
+        foreach (var locked in build.packages) RequirePackage(locked.name, locked.version);
         var core = packages.Single(p => p.name == "com.unity.render-pipelines.core");
         if (core.source.ToString() != "LocalTarball" || !core.packageId.Replace('\\', '/').EndsWith("/com.unity.render-pipelines.core-" + expected.urpVersion + "-shooter.tgz", StringComparison.Ordinal))
             throw new InvalidOperationException("Core RP must resolve the pinned immutable archive; no mutable folder or stock debug-UI fallback is permitted");
@@ -273,7 +293,7 @@ public static class ShooterBuild
     [Serializable] public sealed class BuildManifest
     {
         public int schemaVersion = 1;
-        public string result, target, sourceCommit, sourceHash, toolchainHash, contentManifestHash, editorVersion, editorRevision, backend;
+        public string result, target, sourceCommit, sourceHash, toolchainHash, buildLockHash, contentManifestHash, editorVersion, editorRevision, backend;
         public bool sourceDirty, development;
         public string[] graphicsSourceAssets;
         public string[] sourceAssetPaths;
@@ -354,7 +374,7 @@ public static class ShooterBuild
             string[] importedArt = sourceAssets.Where(p => artExtensions.Contains(Path.GetExtension(p).ToLowerInvariant())).ToArray();
             string[] graphics = sourceAssets.Where(p => p.EndsWith(".shader", StringComparison.OrdinalIgnoreCase) || p.EndsWith(".mat", StringComparison.OrdinalIgnoreCase) || importedArt.Contains(p)).ToArray();
             var manifest = new BuildManifest { result = report.summary.result.ToString(), target = server ? "Server" : "Client", sourceCommit = sourceCommitAtRequest,
-                sourceDirty = sourceDirtyAtRequest, sourceHash = sourceHash, toolchainHash = HashFile(LockPath), contentManifestHash = HashFile(contentPath), editorVersion = toolchain.editorVersion, editorRevision = toolchain.editorRevision,
+                sourceDirty = sourceDirtyAtRequest, sourceHash = sourceHash, toolchainHash = HashFile(LockPath), buildLockHash = HashFile(BuildLockPath), contentManifestHash = HashFile(contentPath), editorVersion = toolchain.editorVersion, editorRevision = toolchain.editorRevision,
                 backend = server ? toolchain.serverBackend : toolchain.clientBackend, development = false, totalBytes = report.summary.totalSize, graphicsSourceAssets = graphics, sourceAssetPaths = sourceAssets };
             WriteJson(Argument("-shooterReport"), manifest);
             if (report.summary.result != BuildResult.Succeeded) throw new InvalidOperationException("Build failed: " + report.summary.result);

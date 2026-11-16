@@ -177,6 +177,7 @@ $report = [ordered]@{
     sourceCommit = $sourceCommit
     sourceHash = $null
     toolchainHash = $null
+    buildLockHash = $null
     buildContentManifestHash = $null
     contentClosureHash = $null
     contentIndexSha256 = $null
@@ -249,6 +250,12 @@ try {
     if (!(Test-Path -LiteralPath $lockPath -PathType Leaf)) { throw "Missing toolchain-lock.json: $lockPath" }
     $toolchainHash = Get-Sha256File $lockPath
     $report.toolchainHash = $toolchainHash
+    # ADR-079: builds made after the split also record build-lock.json; it must match when present.
+    $buildLockPath = Join-Path $repoRoot 'build-lock.json'
+    if ($build.PSObject.Properties['buildLockHash'] -and (Test-Path -LiteralPath $buildLockPath -PathType Leaf)) {
+        $report.buildLockHash = Get-Sha256File $buildLockPath
+        if ([string]$build.buildLockHash -cne $report.buildLockHash) { throw "Build/build-lock mismatch: build=$($build.buildLockHash) lock=$($report.buildLockHash)" }
+    }
     if ($build.toolchainHash -cne $toolchainHash) {
         throw "Build/toolchain mismatch: build=$($build.toolchainHash) lock=$toolchainHash"
     }
@@ -314,6 +321,7 @@ try {
     }
     if ((Get-Sha256File (Join-Path $weaponDstDir 'package.json')) -cne $content.WeaponPackageRoot) { throw 'Shipped weapon package root hash mismatch' }
     Copy-Item -LiteralPath $lockPath -Destination (Join-Path $stage 'toolchain-lock.json') -Force
+    if ($report.buildLockHash) { Copy-Item -LiteralPath (Join-Path $repoRoot 'build-lock.json') -Destination (Join-Path $stage 'build-lock.json') -Force }
     foreach ($name in @('game-contract-lock.json', 'content-format-lock.json', 'contract-lock.json')) {
         $src = Join-Path $repoRoot $name
         if (Test-Path -LiteralPath $src -PathType Leaf) {

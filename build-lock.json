@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "lockSchema": "shooter.build-lock.v1",
+  "scope": "Build-time packages and settings that do not change generated content bytes (ADR-079). Changing this file does not change toolchainHash; builds record its hash as buildLockHash.",
+  "packages": [
+    {
+      "name": "com.unity.inputsystem",
+      "version": "1.20.1"
+    },
+    {
+      "name": "com.unity.test-framework",
+      "version": "1.6.0"
+    }
+  ],
+  "clientBackend": "IL2CPP",
+  "serverBackend": "Mono",
+  "clientTarget": "Windows64",
+  "serverTarget": "Windows64Server",
+  "requiredModules": [
+    "windows-il2cpp",
+    "windows-server"
+  ],
+  "provenanceAllowlistVersion": 1,
+  "transportVersion": null
+}

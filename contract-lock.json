@@ -7,7 +7,7 @@
   "scope": "C0-v1 with ADR-057 prediction schema 2: four weapon slots (rifle/pistol/knife/grenade), Slot 0..3, WeaponAction.Cooking. Geometry codecs and network wire protocol remain separate. Milestone hardware/final acceptance is separate.",
   "predictionSchema": 2,
   "simulationHz": 60,
-  "toolchainHash": "9ac31fe82117043e2bba3bfb843dd1ca32834b15425188e96d6f3369e2c627a8",
+  "toolchainHash": "a8331fe2bc5b4293773762d829dc293c8aa5185024bd1a771543ac4eda840500",
   "sources": {
     "UnityProject/Assets/Shooter/Contracts/Commands.cs": "3e54b8f5559a695cbb6cb246307e1559afe6f69e98969ba7184cef1ac735ffdb",
     "UnityProject/Assets/Shooter/Contracts/Commands.cs.meta": "73e98bcb51ce41854da9279373e5e80c860f41f5a34ef9c1fa93f39d60ad7ce8",
