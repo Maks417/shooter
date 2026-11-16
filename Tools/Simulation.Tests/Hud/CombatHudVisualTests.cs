@@ -7,6 +7,37 @@ namespace Shooter.Simulation.Tests.Hud
     public sealed class CombatHudVisualTests
     {
         [Fact]
+        public void Round_glyphs_are_bounded_and_empty_magazines_have_no_rounds()
+        {
+            Assert.Equal(0, CombatHudVisual.RoundGlyphCount(-1));
+            Assert.Equal(0, CombatHudVisual.RoundGlyphCount(0));
+            Assert.Equal(12, CombatHudVisual.RoundGlyphCount(12));
+            Assert.Equal(30, CombatHudVisual.RoundGlyphCount(int.MaxValue));
+        }
+
+        [Fact]
+        public void Hit_pop_settles_and_accessibility_removes_travel()
+        {
+            Assert.Equal(.75f, CombatHudVisual.HitScale(0, false, false));
+            Assert.Equal(1f, CombatHudVisual.HitScale(.2f, false, false), 4);
+            Assert.Equal(1.25f, CombatHudVisual.HitScale(.2f, true, false), 4);
+            Assert.Equal(1f, CombatHudVisual.HitScale(0, false, true));
+            Assert.Equal(1.25f, CombatHudVisual.HitScale(0, true, true));
+            Assert.True(CombatHudVisual.HitScale(.1f, false, false) > 1f);
+        }
+
+        [Fact]
+        public void Vignette_never_exceeds_existing_strength_and_accessibility_is_steady()
+        {
+            for (int i = 0; i < 200; i++)
+            {
+                Assert.InRange(CombatHudVisual.VignetteModulation(i * .03f, false, false), .65f, 1f);
+                Assert.Equal(1f, CombatHudVisual.VignetteModulation(i, true, false));
+                Assert.Equal(1f, CombatHudVisual.VignetteModulation(i, false, true));
+            }
+        }
+
+        [Fact]
         public void Damage_indicator_points_at_the_attacker_relative_to_the_view()
         {
             const float Pi = 3.14159265f;

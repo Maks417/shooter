@@ -161,6 +161,22 @@ namespace Shooter.Presentation.Hud
             return 1f;
         }
 
+        /// <summary>Bound draw cost for oversized magazines; use a bar above this cap.</summary>
+        public const int MaxRoundGlyphs = 30;
+        public static int RoundGlyphCount(int rounds) => Math.Max(0, Math.Min(MaxRoundGlyphs, rounds));
+
+        /// <summary>Brief outward hit pop settling inside the existing hit window.</summary>
+        public static float HitScale(float elapsed, bool headshot, bool reducedMotion)
+        {
+            float size = headshot ? 1.25f : 1f;
+            return reducedMotion ? size : size * UiMotion.Lerp(0.75f, 1f,
+                UiMotion.OutBack(UiMotion.Progress(elapsed, 0.14f)));
+        }
+
+        /// <summary>Bounded modulation of existing strength; accessibility holds the original cue.</summary>
+        public static float VignetteModulation(float time, bool reducedFlash, bool reducedMotion) =>
+            reducedFlash || reducedMotion ? 1f : 0.65f + 0.35f * UiMotion.Pulse(time, 1.4f, false);
+
         public static bool IsCardinal(int bearingDegrees)
         {
             int b = ((bearingDegrees % 360) + 360) % 360;

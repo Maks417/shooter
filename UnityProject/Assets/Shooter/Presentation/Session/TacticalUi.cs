@@ -355,11 +355,12 @@ namespace Shooter.Presentation.Session
         }
 
         /// <summary>Warface-style X hit marker at screen center. Alpha is presentation-only.</summary>
-        public static void HitMarker(float centerX, float centerY, float alpha)
+        public static void HitMarker(float centerX, float centerY, float alpha, float scale = 1f, bool headshot = false)
         {
             if (alpha <= 0.02f || Event.current.type != EventType.Repaint) return;
-            const float arm = 5.5f, gap = 3.5f, thick = 1.25f;
-            Color ink = new Color(Text.r, Text.g, Text.b, alpha);
+            float arm = 5.5f * scale, gap = 3.5f * scale, thick = 1.25f;
+            Color tint = headshot ? Accent : Text;
+            Color ink = new Color(tint.r, tint.g, tint.b, alpha);
             Color under = new Color(0.02f, 0.03f, 0.035f, alpha * 0.9f);
             DrawDiagonal(centerX - gap - arm, centerY - gap - arm, centerX - gap, centerY - gap, under, thick + 1.2f);
             DrawDiagonal(centerX + gap, centerY - gap - arm, centerX + gap + arm, centerY - gap, under, thick + 1.2f);
@@ -369,6 +370,38 @@ namespace Shooter.Presentation.Session
             DrawDiagonal(centerX + gap, centerY - gap - arm, centerX + gap + arm, centerY - gap, ink, thick);
             DrawDiagonal(centerX - gap - arm, centerY + gap + arm, centerX - gap, centerY + gap, ink, thick);
             DrawDiagonal(centerX + gap, centerY + gap + arm, centerX + gap + arm, centerY + gap, ink, thick);
+        }
+
+        /// <summary>Shared gallery/tactical glyph path; yaw is clockwise from north, radians.</summary>
+        public static void MapGlyph(float x, float y, string name, Color ink, float yaw = 0f, float size = 12f)
+        {
+            Matrix4x4 prior = GUI.matrix;
+            try
+            {
+                GUI.matrix = prior * Matrix4x4.TRS(new Vector3(x, y, 0), Quaternion.Euler(0, 0, yaw * Mathf.Rad2Deg), Vector3.one);
+                Icon(new Rect(-size * .5f, -size * .5f, size, size), name, ink, shadow: true);
+            }
+            finally { GUI.matrix = prior; }
+        }
+
+        public static void DamageArc(float x, float y, float angle, float alpha)
+        {
+            const float radius = CombatHudVisual.DamageIndicatorRadius;
+            float half = CombatHudVisual.DamageIndicatorLength / radius * .5f;
+            UiSdf.Arc(new Rect(x - radius, y - radius, radius * 2, radius * 2), angle - half, angle + half, 5f,
+                UiSdf.Style.Solid(new Color(Enemy.r, Enemy.g, Enemy.b, alpha)));
+        }
+
+        public static void AmmoRounds(Rect track, int rounds, Color ink)
+        {
+            if (rounds > CombatHudVisual.MaxRoundGlyphs)
+            {
+                AccentBar(new Rect(track.x, track.y + track.height * .3f, track.width, track.height * .4f), ink);
+                return;
+            }
+            float pitch = track.width / CombatHudVisual.MaxRoundGlyphs;
+            for (int i = 0; i < CombatHudVisual.RoundGlyphCount(rounds); i++)
+                Icon(new Rect(track.x + i * pitch, track.y, pitch - .5f, track.height), Generation.Icons.IconLibrary.Ammo, ink);
         }
 
         /// <summary>
@@ -1126,7 +1159,13 @@ namespace Shooter.Presentation.Session
             ReticleArm(new Rect(cx + 3.5f, cy - .75f, 6, 1.5f));
             ReticleArm(new Rect(cx - .75f, cy - 9.5f, 1.5f, 6));
             ReticleArm(new Rect(cx - .75f, cy + 3.5f, 1.5f, 6));
-            HitMarker(cx + 70, cy, 1f);
+            HitMarker(cx + 70, cy, 1f, CombatHudVisual.HitScale(t % 1.5f, true, ReducedMotion), true);
+            DamageArc(cx + 70, cy, -.6f, ReducedFlash ? .4f : .8f);
+            AmmoRounds(new Rect(x0 + 410, y + 114, 180, 8), 24, Text);
+            UiSdf.Arc(new Rect(x0 + 602, y + 82, 24, 24), 0, Mathf.PI * 2 * (ReducedMotion ? .65f : t % 2f / 2f), 2,
+                UiSdf.Style.Solid(Accent));
+            MapGlyph(cx + 122, cy, Generation.Icons.IconLibrary.AllyArrow, Ally, ReducedMotion ? .7f : t * .4f);
+            MapGlyph(cx + 148, cy, Generation.Icons.IconLibrary.EnemyMarker, Enemy);
         }
 
         public static string Clock(uint remainingTicks)

@@ -1316,3 +1316,26 @@ Evidence on 2026-11-16 (working tree on `170fb8d`, recorded in the commit that a
 - **Pending.** A debrief after a real finished match, the defeat and draw tones, 720p at 150% UI scale, a reduced motion/flash pass, and a named review.
 
 Rollback: revert the ADR-086 commit; the debrief returns to the plain tables and screens appear instantly.
+
+
+## ADR-087 — Accepted: tactical HUD craft, first tranche
+
+Date 2026-11-16. Context: owner requested continuation of the visual roadmap at `1676ff8`. This bounded Wave 1b tranche covers combat HUD presentation. Wave 1 verification debt remains open; no authority, sensing, gameplay, settings, content or toolchain identities change.
+
+Decision: use SDF arcs for damage direction and authority-tick reload progress, up to 30 round glyphs (a compact bar above 30), rotated ally/self arrows and enemy gunfire glyphs under unchanged ADR-058 rules, entering elimination rows with team plates and smooth row placement, a hit-marker pop and a gold headshot variant from DamageApplied region 1. The low-health vignette modulates the existing strength with a slow bounded pulse. Reduced motion removes pop/slide/row travel; reduced flash holds the vignette steady and softens damage arcs. Pure helpers stay in CombatHudVisual. No shader mode or generated payload is added.
+
+Consequences: compass objective bearing, insertion blueprint/load scheduling, wordmark, cards and keycaps remain the next Wave 1b tranche. No enemy centroid is sampled for a compass marker. Full-match, 150% scale, named visual review and reference cost remain Pending until observed.
+
+Evidence:
+
+Checks on the implementation working tree (not a clean release candidate): Simulation **356**, Generation **508**, Game **99**, Contracts **79**, Unity EditMode **82**, source provenance **932 entries / 466 GUIDs**, specification fixtures and documentation verification PASS. No maps, generator bytes, shader modes, package settings or frozen contracts changed; Maps and native republishing are not required for this HUD-only tranche.
+
+- Pure evidence: `Artifacts/m2-combat-harness/1676ff88…/20261116T204610705Z-dc41535e`, `Artifacts/m1-procedural-feasibility/1676ff88…/20261116T204730964Z-3668d6a7`, `Artifacts/m8-runtime-composition/1676ff88…/20261116T204912772Z-04114e0d`, `Artifacts/m0-foundation/1676ff88…/20261116T205002218Z-16af2f26`.
+- Unity: `Artifacts/m0-foundation/1676ff88…/tests-editmode-20261116T204711784Z-23200cbf` PASS. Initial sandboxed SDK restore exited before tests; initial sandboxed Unity startup crashed (-536870911). Installed-environment retries pass. Wrapper pruning retains the failed editor run's small report under `Artifacts/reports/tests-editmode/`.
+- Client IL2CPP build: `Artifacts/m0-foundation/1676ff88…/build-client-20261116T205153588Z-df48c5d9` PASS; manifest remains `sourceCommit=1676ff88a0a0dffeabbb7859d441f5fd66293751`, `sourceDirty=true`, source hash `392b0a5fbaf239cee9ba04f82e2144ee87d5969c9caf4d7104426b5f742d7494`. It includes the concurrent focus fixes later committed by the owner as `edbefa7`. Do not relabel it as a clean build of this delivery commit. The first build attempt was rejected because another Unity session had this project open; retry occurred after that process exited.
+- Smoke PASS: `Artifacts/m0-foundation/f3a69461…/smoke-client-20261116T205435509Z-edc0faea`.
+- Low TDM-5v5 short diagnostic PASS: `Artifacts/m0-foundation/f3a69461…/benchmark-diagnostic-20261116T205447453Z-70dc40c3`: 1,532 frames / 300 ticks, frame p95 **5.1296 ms**, p99 **6.5061 ms**. The recent roadmap diagnostic range was 4.7–5.5 ms, not a controlled paired reference baseline. `gateStatus=PendingHardware`; no full-product or reference-performance PASS.
+- Gallery launch log: `Artifacts/visual-design/adr-087/20261116/gallery-player.log` reaches `SHOOTER_READY_CLIENT`, SDF/icon readiness and menu stage readiness. Computer-use app approval timed out before a screenshot could be inspected. The diagnostic player was closed; gallery/live HUD appearance is **Pending**, not observed. No screenshots or acceptance are claimed.
+- Remaining: full-match event review (including headshot/kill-feed/reload), reduced-motion/flash player pass, native 720p 100%/150% captures, named review, reference costs, P05/VD/REL and a future clean installer. The current shipped installer remains 0.3.17; no installer was rebuilt for this partial Wave 1b step.
+
+Rollback: revert this tranche; no save/content migration.

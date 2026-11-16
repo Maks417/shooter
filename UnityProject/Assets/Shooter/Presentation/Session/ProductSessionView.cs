@@ -83,6 +83,10 @@ namespace Shooter.Presentation.Session
         private int lastSeenHealth = 100;
         private float damagePulseUntil;
         private float hitMarkerUntil;
+        private bool hitMarkerHeadshot;
+        private readonly float[] killFeedY = new float[4];
+        private readonly byte[] killFeedKillerTeam = new byte[4];
+        private readonly byte[] killFeedVictimTeam = new byte[4];
         private float damageFlashUntil;
         // T085 incoming-damage direction markers: attacker position at the hit, held in world space so the
         // marker swings as the player turns toward it.
@@ -647,6 +651,7 @@ namespace Shooter.Presentation.Session
             else if (FirstPersonHitFeedback.IsDamageDealt(ev.Kind, ev.Instigator, local))
             {
                 hitMarkerUntil = Time.unscaledTime + FirstPersonHitFeedback.HitMarkerSeconds;
+                hitMarkerHeadshot = ev.Payload is DamagePayload dealt && dealt.RegionId == 1;
             }
         }
 
@@ -713,15 +718,7 @@ namespace Shooter.Presentation.Session
                 float alpha = CombatHudVisual.DamageIndicatorAlpha(damageSourceUntil[i] - now);
                 if (alpha <= 0.02f) continue;
                 float angle = CombatHudVisual.DamageIndicatorAngle(human.AimYaw, human.Feet.X, human.Feet.Z, damageSourceX[i], damageSourceZ[i]);
-                var dir = new Vector2(Mathf.Sin(angle), -Mathf.Cos(angle));
-                var tangent = new Vector2(-dir.y, dir.x);
-                var c = new Vector2(cx, cy) + dir * CombatHudVisual.DamageIndicatorRadius;
-                float half = CombatHudVisual.DamageIndicatorLength * .5f;
-                var color = new Color(TacticalUi.Enemy.r, TacticalUi.Enemy.g, TacticalUi.Enemy.b, alpha);
-                // Slightly curved: two chords meeting at the outer middle read as an arc pointing outward.
-                var outer = c + dir * 4f;
-                TacticalUi.Line(c - tangent * half - dir * 2f, outer, color, 5f);
-                TacticalUi.Line(outer, c + tangent * half - dir * 2f, color, 5f);
+                TacticalUi.DamageArc(cx, cy, angle, alpha * (reducedFlash ? .5f : 1f));
             }
         }
 
@@ -996,7 +993,9 @@ namespace Shooter.Presentation.Session
                     TacticalUi.ReticleArm(new Rect(cx - w * .5f, cy + gap, w, arm));
                 }
                 float markerAlpha = FirstPersonHitFeedback.HitMarkerAlpha(hitMarkerUntil - Time.unscaledTime);
-                if (markerAlpha > 0.02f) TacticalUi.HitMarker(cx, cy, markerAlpha);
+                if (markerAlpha > 0.02f) TacticalUi.HitMarker(cx, cy, markerAlpha,
+                    CombatHudVisual.HitScale(FirstPersonHitFeedback.HitMarkerSeconds - (hitMarkerUntil - Time.unscaledTime),
+                        hitMarkerHeadshot, reducedCameraMotion), hitMarkerHeadshot);
             }
             finally { combatUi.End(); }
         }
@@ -1025,20 +1024,20 @@ namespace Shooter.Presentation.Session
             // Mag dominates; reserve stays quieter (BFV/Warface hierarchy). Knife shows an em dash; grenade is 1/0.
             string magText = knife ? "--" : (grenade ? human.Magazine.ToString() : human.Magazine.ToString("00"));
             string reserveText = knife ? "--" : (grenade ? human.Reserve.ToString() : human.Reserve.ToString("000"));
-            combatUi.Label(new Rect(x + 6, y + 14, 72, 32), magText, 30, magColor, TextAnchor.MiddleRight);
+            combatUi.Label(new Rect(x + 28, y + 14, 50, 32), magText, 30, magColor, TextAnchor.MiddleRight);
             combatUi.Label(new Rect(x + 80, y + 20, 12, 14), "/", 11, TacticalUi.Muted, TextAnchor.MiddleCenter);
             combatUi.Label(new Rect(x + 92, y + 28, 50, 16), reserveText, 13, TacticalUi.Muted, TextAnchor.MiddleLeft);
             bool reloading = !knife && !grenade && actors != null && actors.Actions.IsReloading(session!.HumanEntityId);
-            float trackX = x + 8, trackY = y + h - 7, trackW = w - 16, trackH = 2.5f;
-            TacticalUi.Fill(new Rect(trackX, trackY, trackW, trackH), new Color(.06f, .08f, .09f, .65f));
-            TacticalUi.Edge(new Rect(trackX, trackY, trackW, trackH));
+            float trackX = x + 8, trackW = w - 16;
+            if (!knife && !grenade)
+                TacticalUi.AmmoRounds(new Rect(trackX, y + h - 13, trackW, 8), human.Magazine, magColor);
             if (reloading)
             {
                 float phase = Mathf.Clamp01(actors!.Actions.ReloadPhaseAtTick(session.HumanEntityId, snapshot?.CompletedSimulationTick ?? 0));
                 combatUi.Label(new Rect(x, y - 14, w, 14), ShellUiCopy.Reloading, 10, TacticalUi.Accent, TextAnchor.MiddleRight);
-                float fillW = trackW * phase;
-                TacticalUi.AccentBar(new Rect(trackX, trackY, fillW, trackH), TacticalUi.Accent);
-                if (fillW > 2f) TacticalUi.Fill(new Rect(trackX + fillW - 2f, trackY - 1, 2, trackH + 2), TacticalUi.Text);
+                Rect ring = new Rect(x + 7, y + 23, 20, 20);
+                UiSdf.Arc(ring, 0, Mathf.PI * 2, 2, UiSdf.Style.Solid(TacticalUi.HudEdge));
+                if (phase > 0f) UiSdf.Arc(ring, 0, Mathf.PI * 2 * phase, 2, UiSdf.Style.Solid(TacticalUi.Accent));
             }
             else if (!knife && human.Magazine == 0)
             {
@@ -1168,50 +1167,15 @@ namespace Shooter.Presentation.Session
             combatUi.Label(new Rect(hx + barW + 4, tightY - 2, 28, 10), "STA", 8, TacticalUi.Muted, TextAnchor.MiddleLeft);
         }
 
-        private static void DrawAllyMarker(float px, float py, float aimYaw)
-        {
-            // Outlined ally pip + Fill facing tick (no Line inside BeginGroup — IMGUI matrix clip).
-            TacticalUi.Fill(new Rect(px - 3.5f, py - 3.5f, 7, 7), new Color(0.02f, 0.03f, 0.035f, 0.9f));
-            TacticalUi.Fill(new Rect(px - 2f, py - 2f, 4, 4), TacticalUi.Ally);
-            TacticalUi.Fill(new Rect(px - 0.5f, py - 0.5f, 1, 1), TacticalUi.Text);
-            DrawFacingTick(px, py, aimYaw, TacticalUi.Ally, TacticalUi.Text, 6f);
-        }
+        private static void DrawAllyMarker(float px, float py, float aimYaw) =>
+            TacticalUi.MapGlyph(px, py, Generation.Icons.IconLibrary.AllyArrow, TacticalUi.Ally, aimYaw);
 
-        /// <summary>Local player at map center: Fill pip + facing tick (visible inside BeginGroup).</summary>
-        private static void DrawSelfMarker(float center, float aimYaw)
-        {
-            TacticalUi.Fill(new Rect(center - 4.5f, center - 4.5f, 9, 9), new Color(0.02f, 0.03f, 0.035f, 0.95f));
-            TacticalUi.Fill(new Rect(center - 3f, center - 3f, 6, 6), TacticalUi.Accent);
-            TacticalUi.Fill(new Rect(center - 1.5f, center - 1.5f, 3, 3), TacticalUi.Text);
-            DrawFacingTick(center, center, aimYaw, TacticalUi.Text, TacticalUi.Accent, 8f);
-        }
+        private static void DrawSelfMarker(float center, float aimYaw) =>
+            TacticalUi.MapGlyph(center, center, Generation.Icons.IconLibrary.AllyArrow, TacticalUi.Accent, aimYaw, 15f);
 
-        /// <summary>Enemy gunfire reveal: plus/diamond made of Fills so it stays distinct from ally squares.</summary>
-        private static void DrawGunfireRevealMarker(float px, float py, float alpha)
-        {
-            var outline = new Color(0.02f, 0.03f, 0.035f, 0.9f * alpha);
-            var ink = new Color(TacticalUi.Enemy.r, TacticalUi.Enemy.g, TacticalUi.Enemy.b, alpha);
-            var core = new Color(TacticalUi.Text.r, TacticalUi.Text.g, TacticalUi.Text.b, alpha);
-            TacticalUi.Fill(new Rect(px - 1.5f, py - 4.5f, 3, 9), outline);
-            TacticalUi.Fill(new Rect(px - 4.5f, py - 1.5f, 9, 3), outline);
-            TacticalUi.Fill(new Rect(px - 1f, py - 3.5f, 2, 7), ink);
-            TacticalUi.Fill(new Rect(px - 3.5f, py - 1f, 7, 2), ink);
-            TacticalUi.Fill(new Rect(px - 1f, py - 1f, 2, 2), core);
-        }
-
-        private static void DrawFacingTick(float px, float py, float aimYaw, Color outer, Color inner, float length)
-        {
-            Vector2 fwd = new Vector2(Mathf.Sin(aimYaw), -Mathf.Cos(aimYaw));
-            int steps = Mathf.Max(3, Mathf.CeilToInt(length));
-            for (int s = 2; s <= steps; s++)
-            {
-                float t = s;
-                float x = px + fwd.x * t;
-                float y = py + fwd.y * t;
-                float w = s >= steps - 1 ? 2f : 1.5f;
-                TacticalUi.Fill(new Rect(x - w * .5f, y - w * .5f, w, w), s >= steps - 1 ? inner : outer);
-            }
-        }
+        private static void DrawGunfireRevealMarker(float px, float py, float alpha) =>
+            TacticalUi.MapGlyph(px, py, Generation.Icons.IconLibrary.EnemyMarker,
+                new Color(TacticalUi.Enemy.r, TacticalUi.Enemy.g, TacticalUi.Enemy.b, alpha));
 
         private void DrawCompass(Rect safe, float yaw)
         {
@@ -1246,6 +1210,8 @@ namespace Shooter.Presentation.Session
             // Accessibility: reducedFlash softens peak/pulse; muzzle overlay stays fully suppressed separately.
             float strength = CombatHudVisual.HealthVignette(health, damagePulseUntil > Time.unscaledTime, reducedFlash);
             if (strength <= 0.01f) return;
+            if (CombatHudVisual.IsHealthWarning(health) || CombatHudVisual.IsHealthDanger(health))
+                strength *= CombatHudVisual.VignetteModulation(Time.unscaledTime, reducedFlash, reducedCameraMotion);
             TacticalUi.EdgeVignette(combatUi.Width, combatUi.Height, strength, TacticalUi.Enemy);
         }
 
@@ -1374,16 +1340,24 @@ namespace Shooter.Presentation.Session
                 for (int j = 0; j < recentDeathIds.Length; j++) if (recentDeathIds[j].Equals(ev.Id)) { seen = true; break; }
                 if (seen) continue;
                 recentDeathIds[deathIdCursor++ % recentDeathIds.Length] = ev.Id;
+                byte killerTeam = 0, victimTeam = 0;
                 string? killer = null;
                 string victim = "Operator";
                 for (int j = 0; j < snapshot.Participants.Count; j++)
                 {
                     var p = snapshot.Participants[j];
-                    if (ev.Instigator.IsValid && p.EntityId.Equals(ev.Instigator)) killer = p.IsHuman ? KillFeedText.LocalOperator : p.DisplayName;
-                    if (p.EntityId.Equals(ev.Target)) victim = p.IsHuman ? KillFeedText.LocalOperator : p.DisplayName;
+                    if (ev.Instigator.IsValid && p.EntityId.Equals(ev.Instigator)) { killer = p.IsHuman ? KillFeedText.LocalOperator : p.DisplayName; killerTeam = p.Team; }
+                    if (p.EntityId.Equals(ev.Target)) { victim = p.IsHuman ? KillFeedText.LocalOperator : p.DisplayName; victimTeam = p.Team; }
                 }
                 KillFeedCause.Resolve(events, i, out KillFeedWeapon weapon, out bool headshot);
-                for (int j = killFeed.Length - 1; j > 0; j--) { killFeed[j] = killFeed[j - 1]; killFeedUntil[j] = killFeedUntil[j - 1]; }
+                for (int j = killFeed.Length - 1; j > 0; j--)
+                {
+                    killFeed[j] = killFeed[j - 1]; killFeedUntil[j] = killFeedUntil[j - 1];
+                    killFeedY[j] = killFeedY[j - 1];
+                    killFeedKillerTeam[j] = killFeedKillerTeam[j - 1]; killFeedVictimTeam[j] = killFeedVictimTeam[j - 1];
+                }
+                killFeedY[0] = 0;
+                killFeedKillerTeam[0] = killerTeam; killFeedVictimTeam[0] = victimTeam;
                 killFeed[0] = KillFeedText.Create(killer, victim, weapon, headshot);
                 killFeedUntil[0] = Time.unscaledTime + CombatHudVisual.KillFeedHoldSeconds;
             }
@@ -1395,6 +1369,7 @@ namespace Shooter.Presentation.Session
             float rowH = CombatHudVisual.KillFeedRowHeight;
             const float gap = 2f;
             float rowW = CombatHudVisual.KillFeedRowWidth;
+            float targetY = 0f;
             for (int i = 0; i < killFeed.Length; i++)
             {
                 float remaining = killFeedUntil[i] - now;
@@ -1402,7 +1377,13 @@ namespace Shooter.Presentation.Session
                 if (alpha <= 0.02f) continue;
                 KillFeedEntry entry = killFeed[i];
                 if (string.IsNullOrEmpty(entry.Victim) && !entry.HasKiller) continue;
-                Rect r = new Rect(safe.xMax - rowW, safe.y + 62 + i * (rowH + gap), rowW, rowH);
+                float elapsed = CombatHudVisual.KillFeedHoldSeconds - remaining;
+                if (Event.current.type == EventType.Repaint)
+                    killFeedY[i] = UiMotion.Follow(killFeedY[i], targetY, 20f, Time.unscaledDeltaTime, reducedCameraMotion);
+                float offset = UiMotion.SlideOffset(elapsed, 1f, reducedCameraMotion);
+                Rect r = new Rect(safe.xMax - rowW + offset, safe.y + 62 + killFeedY[i], rowW, rowH);
+                targetY += (rowH + gap) * UiMotion.Clamp01(remaining / UiMotion.TransitionSeconds);
+                alpha *= UiMotion.EnterAlpha(elapsed);
                 Color plate = TacticalUi.HudPlate;
                 plate.a *= alpha * 0.8f;
                 TacticalUi.Fill(r, plate);
@@ -1411,6 +1392,12 @@ namespace Shooter.Presentation.Session
                 Color rail = localKiller ? TacticalUi.Ally : (localVictim ? TacticalUi.Enemy : TacticalUi.HudEdge);
                 rail.a *= alpha;
                 TacticalUi.AccentBar(new Rect(r.x, r.y + 2, 2, r.height - 4), rail);
+
+                Color killerPlate = killFeedKillerTeam[i] == 1 ? TacticalUi.Ally : TacticalUi.Enemy;
+                Color victimPlate = killFeedVictimTeam[i] == 1 ? TacticalUi.Ally : TacticalUi.Enemy;
+                killerPlate.a = killFeedKillerTeam[i] == 0 ? 0f : alpha * .12f;
+                victimPlate.a = killFeedVictimTeam[i] == 0 ? 0f : alpha * .12f;
+                TacticalUi.Fill(new Rect(r.x + 4, r.y + 1, CombatHudVisual.KillFeedNameWidth + 4, r.height - 2), killerPlate);
 
                 string left = entry.LeftLabel;
                 string right = entry.RightLabel;
@@ -1452,6 +1439,7 @@ namespace Shooter.Presentation.Session
                 float rightX = iconX;
                 float rightW = r.xMax - 6f - rightX;
                 if (rightW < 40f) rightW = 40f;
+                TacticalUi.Fill(new Rect(rightX, r.y + 1, rightW, r.height - 2), victimPlate);
                 combatUi.Label(new Rect(rightX, r.y, rightW, r.height), right, 11, rightInk, TextAnchor.MiddleLeft);
             }
         }
