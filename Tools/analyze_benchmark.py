@@ -11,13 +11,8 @@ from external_gpu import gpu_samples
 from render_budget import render_budget_samples
 import material_benchmark
 import render_counters
+from shooterlib import percentile, sha, utc
 
-
-def percentile(values, probability):
-    if not values or not 0 < probability <= 1 or any(not math.isfinite(x) or x < 0 for x in values):
-        raise ValueError("Invalid percentile sample set")
-    values = sorted(values)
-    return values[math.ceil(probability * len(values)) - 1]
 
 
 def read_rows(path):
@@ -25,12 +20,6 @@ def read_rows(path):
         return list(csv.DictReader(stream))
 
 
-def sha(path):
-    return hashlib.sha256(path.read_bytes()).hexdigest()
-
-
-def utc(text):
-    return datetime.fromisoformat(text.replace("Z", "+00:00"))
 
 
 def analyze(capture_path, build_path, hardware_path, run_index, evidence_path=None, application_path=None, external_gpu_path=None, gpu_application_path=None, render_application_path=None):

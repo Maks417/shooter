@@ -7,17 +7,13 @@ import json
 import math
 from pathlib import Path
 import re
-
-
-def sha(path):
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+from shooterlib import sha, utc as _utc
 
 
 def utc(value):
-    result = datetime.fromisoformat(value.replace("Z", "+00:00"))
-    if result.tzinfo is None:
-        raise ValueError("Evidence review time must include its timezone")
-    return result
+    return _utc(value, require_timezone=True)
+
+
 
 
 def review(value):

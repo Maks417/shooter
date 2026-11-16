@@ -5,10 +5,8 @@ import json
 import math
 from collections import Counter
 from pathlib import Path
+from shooterlib import sha
 
-
-def sha(path):
-    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def gpu_samples(manifest_path, capture_path, frames):

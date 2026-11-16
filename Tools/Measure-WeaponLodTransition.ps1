@@ -56,36 +56,9 @@ $report = [ordered]@{
     failure = $null
     commands = @()
 }
+. (Join-Path $PSScriptRoot 'TestResults.ps1')
 function Invoke-CheckedProcess([string]$Name, [string]$Executable, [string[]]$ProcessArguments) {
-    $logPath = Join-Path $reportDirectory "$Name.log"
-    $report.commands += [ordered]@{ executable = $Executable; arguments = $ProcessArguments; log = $logPath }
-    $start = [Diagnostics.ProcessStartInfo]::new()
-    $start.FileName = $Executable
-    $start.WorkingDirectory = $repoRoot
-    $start.UseShellExecute = $false
-    $start.CreateNoWindow = $true
-    $start.RedirectStandardOutput = $true
-    $start.RedirectStandardError = $true
-    foreach ($argument in $ProcessArguments) { $start.ArgumentList.Add($argument) }
-    $process = [Diagnostics.Process]::new()
-    $process.StartInfo = $start
-    try {
-        if (!$process.Start()) { throw "Cannot start $Name" }
-        $stdout = $process.StandardOutput.ReadToEndAsync()
-        $stderr = $process.StandardError.ReadToEndAsync()
-        if (!$process.WaitForExit($TimeoutSeconds * 1000)) {
-            $process.Kill($true)
-            $process.WaitForExit()
-            [IO.File]::WriteAllText($logPath, $stdout.GetAwaiter().GetResult() + $stderr.GetAwaiter().GetResult())
-            throw "$Name timed out after $TimeoutSeconds seconds. See $logPath"
-        }
-        $output = $stdout.GetAwaiter().GetResult() + $stderr.GetAwaiter().GetResult()
-        [IO.File]::WriteAllText($logPath, $output)
-        Write-Host $output
-        if ($process.ExitCode -ne 0) { throw "$Name exited $($process.ExitCode). See $logPath" }
-        return $output
-    }
-    finally { $process.Dispose() }
+    Invoke-ShooterCheckedProcess -Name $Name -Executable $Executable -ProcessArguments $ProcessArguments -ReportDirectory $reportDirectory -Report $report -WorkingDirectory $repoRoot -TimeoutSeconds $TimeoutSeconds
 }
 try {
     Write-Host "Weapon LOD transition evidence: $reportDirectory"

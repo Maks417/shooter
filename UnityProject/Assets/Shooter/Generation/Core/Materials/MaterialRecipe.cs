@@ -11,7 +11,11 @@ namespace Shooter.Generation
     {
         public const string Schema = "shooter.recipe.material.v1";
         public const string Generator = "material.surface";
+        /// <summary>Default generator: hand-rolled periodic value noise. Frozen; every shipped recipe uses it.</summary>
         public const string Version = "1.0.1";
+        /// <summary>ADR-075/076: same families, sampled through <see cref="Noise.NoiseField"/> (FastNoiseLite). Opt-in per recipe.</summary>
+        public const string NoiseVersion = "1.1.0";
+        public static bool IsSupportedVersion(string? version) => version == Version || version == NoiseVersion;
         private readonly byte[] source;
         public RecipeDocument Document { get; }
         public byte[] CanonicalSource => (byte[])source.Clone();
@@ -20,6 +24,7 @@ namespace Shooter.Generation
         public int Resolution { get; }
         public int TileMm { get; }
         public float MetersPerTile => TileMm / 1000f;
+        public string GeneratorVersion => Document.GeneratorVersion;
 
         private MaterialRecipe(RecipeDocument document, byte[] canonicalSource, string family, int resolution, int tileMm)
         {
@@ -32,7 +37,8 @@ namespace Shooter.Generation
             byte[] canonical = CanonicalJson.Encode(source);
             var root = JsonValue.Parse(canonical).Object;
             Exact(root, "schemaId", "recipeId", "generatorId", "generatorVersion", "seed", "parameters", "dependencies");
-            if (root["schemaId"].String != Schema || root["generatorId"].String != Generator || root["generatorVersion"].String != Version)
+            string version = root["generatorVersion"].String;
+            if (root["schemaId"].String != Schema || root["generatorId"].String != Generator || !IsSupportedVersion(version))
                 throw new FormatException("Unsupported material recipe schema/generator/version.");
             if (root["dependencies"].Array.Count != 0) throw new FormatException("Material recipe has no dependency artifacts.");
             string seed = root["seed"].String;
@@ -41,7 +47,7 @@ namespace Shooter.Generation
             ReadParameters(root["parameters"], out string family, out int resolution, out int tileMm);
             try
             {
-                var document = new RecipeDocument(new DefinitionId(root["recipeId"].String), Schema, Generator, Version, seed,
+                var document = new RecipeDocument(new DefinitionId(root["recipeId"].String), Schema, Generator, version, seed,
                     Parameters(family, resolution, tileMm), Array.Empty<ContentId>());
                 return new MaterialRecipe(document, canonical, family, resolution, tileMm);
             }
@@ -51,7 +57,7 @@ namespace Shooter.Generation
         internal static MaterialRecipe FromDocument(RecipeDocument document)
         {
             if (document == null) throw new ArgumentNullException(nameof(document));
-            if (document.SchemaId != Schema || document.GeneratorId != Generator || document.GeneratorVersion != Version)
+            if (document.SchemaId != Schema || document.GeneratorId != Generator || !IsSupportedVersion(document.GeneratorVersion))
                 throw new FormatException("Unsupported material recipe schema/generator/version.");
             if (!document.RecipeId.IsValid || document.Dependencies.Count != 0) throw new FormatException("Invalid material recipe identity/dependencies.");
             ContentIdentity.ParseSeed(document.Seed);
@@ -59,7 +65,7 @@ namespace Shooter.Generation
             byte[] parameters = Parameters(family, resolution, tileMm);
             if (!document.Parameters.SequenceEqual(parameters)) throw new FormatException("Expected canonical material parameters.");
             string source = "{\"schemaId\":\"" + Schema + "\",\"recipeId\":\"" + document.RecipeId + "\",\"generatorId\":\"" + Generator +
-                "\",\"generatorVersion\":\"" + Version + "\",\"seed\":\"" + document.Seed + "\",\"parameters\":" + Encoding.UTF8.GetString(parameters) + ",\"dependencies\":[]}";
+                "\",\"generatorVersion\":\"" + document.GeneratorVersion + "\",\"seed\":\"" + document.Seed + "\",\"parameters\":" + Encoding.UTF8.GetString(parameters) + ",\"dependencies\":[]}";
             return new MaterialRecipe(document, CanonicalJson.Encode(Encoding.UTF8.GetBytes(source)), family, resolution, tileMm);
         }
 

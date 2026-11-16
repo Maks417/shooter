@@ -11,14 +11,14 @@ namespace Shooter.Generation
         {
             if (cancel.IsCancellationRequested) return Failure(ErrorCode.Cancelled, "Material generation cancelled.");
             if (request == null) return Failure(ErrorCode.InvalidInput, "Material generation requires a request.");
-            if (request.Recipe.SchemaId != MaterialRecipe.Schema || request.Recipe.GeneratorId != MaterialRecipe.Generator || request.Recipe.GeneratorVersion != MaterialRecipe.Version)
+            if (request.Recipe.SchemaId != MaterialRecipe.Schema || request.Recipe.GeneratorId != MaterialRecipe.Generator || !MaterialRecipe.IsSupportedVersion(request.Recipe.GeneratorVersion))
                 return Failure(ErrorCode.UnsupportedVersion, "Unsupported material schema/generator/version.");
             if (request.VisualProfile != "Low" && request.VisualProfile != "Balanced" && request.VisualProfile != "High") return Failure(ErrorCode.InvalidInput, "Materials require a supported visual profile.");
             try
             {
                 MaterialRecipe recipe = MaterialRecipe.FromDocument(request.Recipe);
                 MaterialBake bake = MaterialBaker.Bake(recipe, cancel);
-                var generator = GeneratorFingerprint.Compute(MaterialRecipe.Generator, MaterialRecipe.Version);
+                var generator = GeneratorFingerprint.Compute(MaterialRecipe.Generator, recipe.GeneratorVersion);
                 GeneratedArtifact Plane(MaterialData data, string variant)
                 {
                     cancel.ThrowIfCancellationRequested();

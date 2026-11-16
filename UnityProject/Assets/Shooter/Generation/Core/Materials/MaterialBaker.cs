@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using Shooter.Contracts;
+using Shooter.Generation.Noise;
 
 namespace Shooter.Generation
 {
@@ -157,6 +158,8 @@ namespace Shooter.Generation
             private readonly MaterialFamilyDefinition definition;
             private readonly uint macroSeed, grainSeed, wearSeed;
             private readonly double phase;
+            // Generator 1.1.0 only: FastNoiseLite-backed bases (ADR-075). Null for the frozen 1.0.1 value-noise path.
+            private readonly NoiseField? broadField, mediumField, grainField, wearField, poreField;
             public Field(MaterialRecipe recipe)
             {
                 definition = MaterialFamilyDefinition.For(recipe.Family);
@@ -164,11 +167,26 @@ namespace Shooter.Generation
                 grainSeed = NamedRandomStream.Derive(recipe.Document.SeedValue, recipe.Document.RecipeId.ToString(), "material/" + recipe.Family + "/grain").CreateGenerator().NextUInt();
                 wearSeed = NamedRandomStream.Derive(recipe.Document.SeedValue, recipe.Document.RecipeId.ToString(), "material/" + recipe.Family + "/wear").CreateGenerator().NextUInt();
                 phase = wearSeed / 4294967296.0;
+                if (recipe.GeneratorVersion == MaterialRecipe.NoiseVersion)
+                {
+                    ulong seed = recipe.Document.SeedValue; string id = recipe.Document.RecipeId.ToString(), key = "material/" + recipe.Family + "/noise-1.1/";
+                    broadField = NoiseField.Create(NoiseBasis.DomainWarpedFbm, NamedRandomStream.Derive(seed, id, key + "broad"), 4, 3);
+                    mediumField = NoiseField.Create(NoiseBasis.Gradient, NamedRandomStream.Derive(seed, id, key + "medium"), 16, 2);
+                    grainField = NoiseField.Create(NoiseBasis.Gradient, NamedRandomStream.Derive(seed, id, key + "grain"), 64, 1);
+                    wearField = NoiseField.Create(NoiseBasis.RidgedFbm, NamedRandomStream.Derive(seed, id, key + "wear"), 32, 3);
+                    poreField = NoiseField.Create(NoiseBasis.Cellular, NamedRandomStream.Derive(seed, id, key + "pores"), 128, 1);
+                }
             }
+            private double Broad(double u, double v) => broadField?.SamplePeriodic(u, v) ?? Noise(u, v, 4, macroSeed);
+            private double Medium(double u, double v) => mediumField?.SamplePeriodic(u, v) ?? Noise(u, v, 16, macroSeed ^ 0x9e3779b9U);
+            private double Grain(double u, double v) => grainField?.SamplePeriodic(u, v) ?? Noise(u, v, 64, grainSeed);
+            private double Wear(double u, double v) => wearField?.SamplePeriodic(u, v) ?? Noise(u, v, 32, wearSeed);
+            // Cellular distance is small at feature points, so 1 - distance places pores on cell centres.
+            private double Pores(double u, double v) => poreField != null ? 1 - poreField.SamplePeriodic(u, v) : Noise(u, v, 128, grainSeed ^ 0xa511e9b3U);
             public MaterialSample Evaluate(double u, double v)
             {
                 u -= Math.Floor(u); v -= Math.Floor(v);
-                double broad = Noise(u, v, 4, macroSeed), medium = Noise(u, v, 16, macroSeed ^ 0x9e3779b9U), grain = Noise(u, v, 64, grainSeed);
+                double broad = Broad(u, v), medium = Medium(u, v), grain = Grain(u, v);
                 double h = .45 * (broad - .5) + .3 * (medium - .5) + .25 * (grain - .5);
                 double brightness = .9 + .2 * broad, rough = definition.Roughness + .1 * (grain - .5), metal = 0, occlusion = .96 - .12 * Math.Max(0, .45 - grain);
                 Float3 baseColor = definition.LinearAlbedo;
@@ -179,7 +197,7 @@ namespace Shooter.Generation
                         // Broad value-noise threshold islands read as camouflage instead of wear.
                         double scratchDistance = Math.Abs(Math.Sin(Tau * (u * 24 + phase + .06 * Math.Sin(Tau * (v * 2 + phase)))));
                         double scratch = 1 - Smooth(.05, .16, scratchDistance);
-                        double exposed = scratch * Smooth(.68, .88, Noise(u, v, 32, wearSeed)); metal = exposed;
+                        double exposed = scratch * Smooth(.68, .88, Wear(u, v)); metal = exposed;
                         baseColor = Mix(baseColor, new Float3(.13f, .14f, .145f), exposed);
                         rough = .5 - .18 * exposed + .08 * (grain - .5);
                         h = .12 * Math.Sin(Tau * (u * 48 + phase)) + .35 * (grain - .5) + .15 * (broad - .5);
@@ -187,7 +205,7 @@ namespace Shooter.Generation
                         break;
                     case "polymer": h = .7 * (grain - .5) + .15 * (medium - .5); brightness = .96 + .08 * broad; break;
                     case "concrete":
-                        double pores = Smooth(.7, .92, Noise(u, v, 128, grainSeed ^ 0xa511e9b3U));
+                        double pores = Smooth(.7, .92, Pores(u, v));
                         h -= pores * .45; occlusion -= pores * .13; brightness -= pores * .1; break;
                     case "plaster": h = .55 * (broad - .5) + .25 * (medium - .5) + .1 * (grain - .5); brightness = .97 + .06 * broad; break;
                     case "asphalt":

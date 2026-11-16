@@ -2,6 +2,7 @@
 import hashlib
 import json
 from pathlib import Path
+from shooterlib import sha
 
 ROOT = Path(__file__).resolve().parents[1]
 DIRECTORIES = (
@@ -17,9 +18,6 @@ FILES = ("docs/content-format.md", "Tools/Generation.Tests/CodecTests.cs",
          "Tools/Generation.Tests/CodecFixtures/generate_vectors.py",
          "UnityProject/Assets/Shooter/Generation/Recipes/box-collision.json")
 
-
-def sha(path):
-    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def inventory(root):

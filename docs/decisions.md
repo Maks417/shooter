@@ -987,3 +987,20 @@ Decision:
 Consequences:
 - A milestone handoff can no longer point at a stored player from an older commit. It cites the report under `Artifacts/reports/` and the commit, and a rebuild from that commit reproduces the binary.
 - Two sessions running the same action at once in one checkout may prune each other's older output. Run heavy wrappers one at a time, as the runbook already requires for SDK wrappers.
+
+Addendum 2026-11-16 (Phase 2 of the architecture review):
+- **FastNoiseLite is wired into materials.** `material.surface` **1.1.0** is added next to the frozen 1.0.1, and `MaterialRecipe.IsSupportedVersion` accepts both. In 1.1.0 the baker samples its broad, medium, grain, wear and pore fields through `NoiseField`: domain-warped FBm, gradient, gradient, ridged FBm and cellular respectively. Each field gets its own `NamedRandomStream` key (`material/<family>/noise-1.1/<field>`). The family shading formulas are unchanged.
+  - Every shipped recipe stays on 1.0.1, so no content hash or material look changes.
+  - Moving a recipe to 1.1.0 is a per-recipe change that needs a named visual review and the cross-lane golden check required by ADR-075.
+  - `feature-content-lock.json` was refrozen with owner approval: the material sources, a schema whose `generatorVersion` is now `enum ["1.0.1", "1.1.0"]`, and a second `material.surface` generator entry.
+- **`TwoBoneIk` is final.** It stays the only IK solver, and Animation Rigging won't be revisited. IK runs inside the pure, deterministic motion generator, whose output is baked into hashed content, and the product uses no Animator or Playables.
+- **The JSON readers stay separate, on purpose.** Each enforces a different policy:
+  - `JsonValue`: the canonical, integer-only subset used for hashing.
+  - `MapJsonValue`: printable-ASCII map documents.
+  - `UserSettingsJson`: tolerant user files with diagnostics.
+  - `CombatAudioManifest`: Unicode provenance text.
+
+  Merging them would weaken a validation rule, so they are not merged.
+- **Tool helpers are shared.**
+  - The pure SDK wrappers call `Invoke-ShooterCheckedProcess` and `Get-ShooterRestoreArguments` in `Tools/TestResults.ps1` instead of five private copies.
+  - The Python analyzers import `sha`, `utc` and `percentile` from `Tools/shooterlib.py`.
