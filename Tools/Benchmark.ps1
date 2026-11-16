@@ -93,7 +93,7 @@ try {
             ConvertTo-Json | Set-Content -LiteralPath (Join-Path $run.Path 'external-gpu.json') -Encoding utf8NoBOM
     }
     if (!(Test-Path -LiteralPath $log) -or !(Select-String -LiteralPath $log -SimpleMatch 'SHOOTER_BENCHMARK_COMPLETE' -Quiet) -or (Select-String -LiteralPath $log -SimpleMatch 'SHOOTER_FAILURE' -Quiet)) {
-        # Surface the player's own abort reason (failure.json), e.g. the focus watchdog, instead of a generic message.
+        # Surface the player's own abort reason (failure.json), e.g. the progress watchdog, instead of a generic message.
         $failurePath = Join-Path $run.Path 'failure.json'
         $reason = if (Test-Path -LiteralPath $failurePath) { ((Get-Content -LiteralPath $failurePath -Raw | ConvertFrom-Json).reason -split "`n")[0] } else { '' }
         throw ('Player capture failed or did not finish.' + $(if ($reason) { ' ' + $reason } else { '' }))
@@ -114,11 +114,15 @@ try {
 }
 catch {
     $message = $_.Exception.Message
-    # The player exits non-zero after an abort; attach its failure.json reason (e.g. the focus watchdog) when not already present.
+    # Name the player's own abort reason (failure.json, e.g. the progress watchdog) or, after a timeout, its last marker.
     $failurePath = Join-Path $run.Path 'failure.json'
-    if ((Test-Path -LiteralPath $failurePath) -and $message -notmatch 'focus') {
+    if (Test-Path -LiteralPath $failurePath) {
         $reason = ((Get-Content -LiteralPath $failurePath -Raw | ConvertFrom-Json).reason -split "`n")[0]
-        if ($reason) { $message += ' Player abort: ' + $reason }
+        if ($reason -and !$message.Contains($reason)) { $message += ' Player abort: ' + $reason }
+    }
+    elseif (($playerLog = Get-Variable -Name log -ValueOnly -ErrorAction SilentlyContinue) -and (Test-Path -LiteralPath $playerLog)) {
+        $marker = Select-String -LiteralPath $playerLog -Pattern '^SHOOTER_[A-Z_]+' | Select-Object -Last 1
+        if ($marker) { $message += ' Last player marker: ' + $marker.Line }
     }
     $run.Report.error = $message
     Write-Warning $run.Report.error

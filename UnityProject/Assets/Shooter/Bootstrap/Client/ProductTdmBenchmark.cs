@@ -100,8 +100,7 @@ namespace Shooter.Bootstrap
         private bool previousValid, diagnostic, validated, captureStarted, complete, recordersDisposed;
         private DateTime previousUtc, endUtc, startUtc;
         private bool mainAvailable, renderAvailable;
-        private readonly BenchmarkFocusWatchdog focusWatchdog = new BenchmarkFocusWatchdog();
-        private bool everFocused;
+        private readonly BenchmarkProgressWatchdog progressWatchdog = new BenchmarkProgressWatchdog();
 
         public void Initialize(FoundationEntry entry, ProductTdmHost host, ProductTdmWorkloads.Definition workload)
         {
@@ -207,11 +206,9 @@ namespace Shooter.Bootstrap
             if (authority == null || complete || authority.Failed) return;
             try
             {
-                // The product clock holds while unfocused; fail fast instead of stalling until the wrapper timeout.
-                bool focused = Application.isFocused;
-                everFocused |= focused;
-                if (focusWatchdog.Observe(focused, Time.realtimeSinceStartupAsDouble))
-                    throw new InvalidOperationException(focusWatchdog.Reason(everFocused));
+                // A stalled match would otherwise run until the wrapper timeout with no explanation (ADR-083 evidence).
+                if (validated && progressWatchdog.Observe(authority.CompletedTicks, Time.realtimeSinceStartupAsDouble))
+                    throw new InvalidOperationException(StallReport());
                 if (host != null) host.ReportAuthorityClockTicks(authority.CompletedTicks);
                 long now = Stopwatch.GetTimestamp(), allocated = AllocationMeter.TotalBytes;
                 DateTime utc = DateTime.UtcNow;
@@ -271,6 +268,16 @@ namespace Shooter.Bootstrap
             if (hasFocus || complete || authority == null || !validated) return;
             authority.Fail(new InvalidOperationException(
                 "Benchmark window lost focus during capture; the product match paused, so the timing window is invalid."));
+        }
+
+        private string StallReport()
+        {
+            var session = authority!.ProductSession;
+            return "Benchmark match stopped advancing for " + N(progressWatchdog.StalledSeconds) + " s at tick " + authority.CompletedTicks +
+                   " (frames=" + frameCount + " focused=" + Application.isFocused + " ready=" + authority.Ready +
+                   " phase=" + (session != null ? session.Phase.ToString() : "none") +
+                   " pause=" + (session != null ? session.PauseState.ToString() : "none") +
+                   " contentRecovery=" + authority.ContentRecoveryRequired + ").";
         }
 
         private void PollTimings(long now)
