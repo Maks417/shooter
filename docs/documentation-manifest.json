@@ -89,7 +89,7 @@
     "gameplay-baseline.md": "24dddbabc643390b34b07d63d2d27b58ccf4881783e998423eee793342aea891",
     "generation.md": "cc5cc6694582400ed7b283d911ccfa79a7ef31270b426fe23c315f38796f9edd",
     "implementation-start.md": "eb934149538a425552d1ef6b07414a7bc8fc5930a608494d4805e31cd5f32aab",
-    "index.md": "4879139606cf2baa59285b7454c1277a0bb1eb29603468771ee798caf3181e58",
+    "index.md": "8c96227eb5f08e8dd26e38e5c563fc86476de1aeba2d876ba1f7c93446b93014",
     "milestones/index.md": "a35bf9107dbdd5b27d6cc2834264bbde1f03e36606e24d980bca090aaaf3f138",
     "milestones/m0-foundation/agent-assignments.md": "60d2977f48cf4432d6690e85dcecbd15cb3462f25b23bfcf2a758bdc5ec9cc79",
     "milestones/m0-foundation/contracts-integration.md": "fe206c991a7a1061772a000d95dd735b690c304fc6df5d51c400f54dd62cbeb7",
@@ -185,6 +185,7 @@
     "vision.md": "d34284b7ae1b3defa6695430ef8ec173f85d21b5738333c22ccb78168688db1c",
     "visual-art-brief.md": "97e6b57cd77b36a0140b15ac4a01d20deed956f76a6e335267655408ea514c28",
     "visual-defect-inventory.md": "444c6b796a5f644237d2c4942fadc8d48da21f095ca4aa84fbbb63e57e503ac4",
+    "visual-roadmap.md": "7210a8fd6f10d9a59d95f54a899d5a9477bb26af423483ab902eaa0b44e9a73e",
     "weapon-recipe-baseline.md": "60a24cc8ca14a84c963f29e006cf53a7f62ee004065961223aa600c7457c5745"
   }
 }

@@ -42,6 +42,7 @@ Use the [remaining T067/T071 work](next-playable-build.md): play the existing ar
 | [Release remediation validation](release-remediation-validation.md) | FIX01–FIX14, real-player acceptance and evidence requirements |
 | [Product visual defect inventory](visual-defect-inventory.md) | T062/FIX11 capture-overlay tooling pointer; P05 FAIL retained (ADR-024); VD presentation gaps |
 | [VD0 visual art brief](visual-art-brief.md) | Working art direction, comparison register, gaps and presentation ownership (draft until owner approval) |
+| [Visual roadmap — next steps](visual-roadmap.md) | Handoff plan after ADR-084–086: conventions, pitfalls, Wave 1 verification, HUD/loading craft, world materials/lighting, combat FX, bounded P05 soldiers, delivery |
 | [Relocated view EditMode note](notes/procedural-viewmodel-editmode.md) | Historical RUN00 source-layout note |
 | [Planning validation record](planning-validation.md) | Actual documentation/fixture/tool/source audit outcomes and remaining baseline blockers |
 | [Game session contract plan](game-session-contracts.md) | Frozen Game-v1 ports, intended semantics and documented integration gaps |
