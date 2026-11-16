@@ -26,8 +26,19 @@ namespace Shooter.Presentation.Session
         public static readonly Color HudEdge = new Color(1f, 1f, 1f, .09f);
         public static readonly Color HudEdgeSoft = new Color(1f, 1f, 1f, .05f);
 
+        public static readonly Color SurfaceTop = new Color32(35, 44, 49, 255);
+        public static readonly Color Gold = new Color32(232, 196, 104, 255);
+        public static readonly Color GoldDeep = new Color32(150, 108, 42, 255);
+
         private readonly List<string> controls = new List<string>(48);
         private readonly Dictionary<int, GUIStyle> labels = new Dictionary<int, GUIStyle>();
+        private readonly Dictionary<string, Vector2> emphasis = new Dictionary<string, Vector2>();
+
+        /// <summary>Applied reduced-camera-motion preference: UI transitions snap instead of easing.</summary>
+        public bool ReducedMotion { get; set; }
+
+        /// <summary>Applied reduced-flash preference: no glints, softer glows.</summary>
+        public bool ReducedFlash { get; set; }
         private GUIStyle? buttonStyle;
         private GUIStyle? sliderThumb;
         private Matrix4x4 savedMatrix;
@@ -105,46 +116,69 @@ namespace Shooter.Presentation.Session
             GUI.color = prior;
         }
 
-        /// <summary>Procedural kill-feed weapon silhouette (fills only; no sprites).</summary>
+        /// <summary>
+        /// ADR-084 rounded plate: SDF when available (anti-aliased corners, optional shadow/gradient),
+        /// otherwise the flat white-texture fill.
+        /// </summary>
+        public static void Plate(Rect r, in UiSdf.Style style)
+        {
+            if (!UiSdf.Rect(r, style)) Fill(r, style.Fill);
+        }
+
+        /// <summary>Rounded solid shape part (icons/silhouettes) with flat fallback.</summary>
+        private static void Part(Rect r, Color color, float radius) => Plate(r, UiSdf.Style.Solid(color, radius));
+
+        /// <summary>Procedural kill-feed weapon silhouette (analytic rounded parts; no sprites).</summary>
         public static void KillFeedWeaponIcon(Rect r, KillFeedWeapon weapon, Color color)
         {
             if (weapon == KillFeedWeapon.None || r.width <= 1f || r.height <= 1f) return;
             if (Event.current.type != EventType.Repaint) return;
             float x = r.x, y = r.y, w = r.width, h = r.height;
+            float k = Mathf.Max(0.6f, h * 0.06f);
             switch (weapon)
             {
                 case KillFeedWeapon.Rifle:
-                    // Stock + receiver + long barrel.
-                    Fill(new Rect(x, y + h * 0.28f, w * 0.22f, h * 0.44f), color);
-                    Fill(new Rect(x + w * 0.18f, y + h * 0.22f, w * 0.38f, h * 0.40f), color);
-                    Fill(new Rect(x + w * 0.52f, y + h * 0.36f, w * 0.46f, h * 0.16f), color);
-                    Fill(new Rect(x + w * 0.28f, y + h * 0.58f, w * 0.10f, h * 0.28f), color);
-                    break;
                 case KillFeedWeapon.Carbine:
-                    Fill(new Rect(x, y + h * 0.30f, w * 0.20f, h * 0.40f), color);
-                    Fill(new Rect(x + w * 0.16f, y + h * 0.24f, w * 0.42f, h * 0.38f), color);
-                    Fill(new Rect(x + w * 0.54f, y + h * 0.36f, w * 0.34f, h * 0.16f), color);
-                    Fill(new Rect(x + w * 0.30f, y + h * 0.58f, w * 0.10f, h * 0.26f), color);
+                {
+                    bool carbine = weapon == KillFeedWeapon.Carbine;
+                    float barrelEnd = carbine ? 0.88f : 0.98f;
+                    // Stock (tapered by two parts), receiver, handguard, barrel, magazine, grip, optic.
+                    Part(new Rect(x, y + h * 0.30f, w * 0.20f, h * 0.30f), color, k);
+                    Part(new Rect(x + w * 0.04f, y + h * 0.40f, w * 0.18f, h * 0.18f), color, k);
+                    Part(new Rect(x + w * 0.18f, y + h * 0.28f, w * 0.30f, h * 0.30f), color, k);
+                    Part(new Rect(x + w * 0.46f, y + h * 0.31f, w * (carbine ? 0.24f : 0.30f), h * 0.22f), color, k);
+                    Part(new Rect(x + w * 0.46f, y + h * 0.37f, w * (barrelEnd - 0.46f), h * 0.09f), color, k * 0.5f);
+                    Part(new Rect(x + w * 0.36f, y + h * 0.52f, w * 0.09f, h * 0.36f), color, k);
+                    Part(new Rect(x + w * 0.22f, y + h * 0.52f, w * 0.07f, h * 0.28f), color, k);
+                    Part(new Rect(x + w * 0.26f, y + h * 0.14f, w * 0.18f, h * 0.12f), color, k);
                     break;
+                }
                 case KillFeedWeapon.Pistol:
-                    Fill(new Rect(x + w * 0.08f, y + h * 0.22f, w * 0.62f, h * 0.28f), color);
-                    Fill(new Rect(x + w * 0.18f, y + h * 0.48f, w * 0.22f, h * 0.40f), color);
-                    Fill(new Rect(x + w * 0.66f, y + h * 0.30f, w * 0.22f, h * 0.14f), color);
+                    Part(new Rect(x + w * 0.10f, y + h * 0.20f, w * 0.66f, h * 0.26f), color, k);
+                    Part(new Rect(x + w * 0.14f, y + h * 0.40f, w * 0.22f, h * 0.48f), color, k * 1.5f);
+                    Part(new Rect(x + w * 0.34f, y + h * 0.44f, w * 0.12f, h * 0.14f), color, k);
+                    Part(new Rect(x + w * 0.72f, y + h * 0.27f, w * 0.14f, h * 0.10f), color, k * 0.5f);
                     break;
                 case KillFeedWeapon.Knife:
-                    Fill(new Rect(x + w * 0.08f, y + h * 0.38f, w * 0.28f, h * 0.24f), color);
-                    Fill(new Rect(x + w * 0.32f, y + h * 0.42f, w * 0.58f, h * 0.14f), color);
-                    Fill(new Rect(x + w * 0.86f, y + h * 0.34f, w * 0.08f, h * 0.30f), color);
+                    Part(new Rect(x + w * 0.06f, y + h * 0.40f, w * 0.30f, h * 0.22f), color, h * 0.11f);
+                    Part(new Rect(x + w * 0.34f, y + h * 0.30f, w * 0.05f, h * 0.42f), color, k);
+                    if (!UiSdf.Shape(new Rect(x + w * 0.38f, y + h * 0.38f, w * 0.58f, h * 0.18f), Hud.UiShapeKind.RoundedRect,
+                            UiSdf.Style.Solid(color, h * 0.09f)))
+                        Fill(new Rect(x + w * 0.38f, y + h * 0.42f, w * 0.56f, h * 0.14f), color);
                     break;
                 case KillFeedWeapon.Grenade:
-                    Fill(new Rect(x + w * 0.22f, y + h * 0.22f, w * 0.52f, h * 0.62f), color);
-                    Fill(new Rect(x + w * 0.36f, y + h * 0.08f, w * 0.24f, h * 0.18f), color);
-                    Fill(new Rect(x + w * 0.58f, y + h * 0.04f, w * 0.14f, h * 0.12f), color);
+                {
+                    float d = Mathf.Min(w * 0.56f, h * 0.66f);
+                    Rect body = new Rect(x + w * 0.5f - d * 0.5f, y + h * 0.26f, d, d);
+                    if (!UiSdf.Circle(body, UiSdf.Style.Solid(color))) Fill(body, color);
+                    Part(new Rect(x + w * 0.42f, y + h * 0.12f, w * 0.18f, h * 0.18f), color, k);
+                    Part(new Rect(x + w * 0.58f, y + h * 0.08f, w * 0.16f, h * 0.08f), color, k);
                     break;
+                }
             }
         }
 
-        /// <summary>AAA-style headshot mark: circle with cross, fills only.</summary>
+        /// <summary>Headshot mark: anti-aliased ring with crosshair ticks (flat fallback).</summary>
         public static void KillFeedHeadshotIcon(Rect r, Color color)
         {
             if (r.width <= 1f || r.height <= 1f) return;
@@ -152,6 +186,18 @@ namespace Shooter.Presentation.Session
             float cx = r.x + r.width * 0.5f;
             float cy = r.y + r.height * 0.5f;
             float rad = Mathf.Min(r.width, r.height) * 0.42f;
+            var ringStyle = UiSdf.Style.Solid(color);
+            ringStyle.Stroke = Mathf.Max(1.2f, rad * 0.24f);
+            if (UiSdf.Circle(new Rect(cx - rad, cy - rad, rad * 2f, rad * 2f), ringStyle))
+            {
+                float tick = Mathf.Max(1.1f, rad * 0.22f);
+                UiSdf.Line(new Vector2(cx - rad * 1.15f, cy), new Vector2(cx - rad * 0.35f, cy), color, tick);
+                UiSdf.Line(new Vector2(cx + rad * 0.35f, cy), new Vector2(cx + rad * 1.15f, cy), color, tick);
+                UiSdf.Line(new Vector2(cx, cy - rad * 1.15f), new Vector2(cx, cy - rad * 0.35f), color, tick);
+                UiSdf.Line(new Vector2(cx, cy + rad * 0.35f), new Vector2(cx, cy + rad * 1.15f), color, tick);
+                Part(new Rect(cx - tick * 0.6f, cy - tick * 0.6f, tick * 1.2f, tick * 1.2f), color, tick * 0.6f);
+                return;
+            }
             // Approximate circle with a cross of fills (readable at ~12 px).
             float t = Mathf.Max(1.2f, rad * 0.28f);
             Fill(new Rect(cx - rad, cy - t * 0.5f, rad * 2f, t), color);
@@ -166,6 +212,7 @@ namespace Shooter.Presentation.Session
         public static void Line(Vector2 a, Vector2 b, Color color, float thickness = 1)
         {
             if (Event.current.type != EventType.Repaint) return;
+            if (UiSdf.Line(a, b, color, thickness)) return;
             Matrix4x4 prior = GUI.matrix;
             GUI.matrix = prior * Matrix4x4.TRS(new Vector3(a.x, a.y, 0),
                 Quaternion.Euler(0, 0, Mathf.Atan2(b.y - a.y, b.x - a.x) * Mathf.Rad2Deg), Vector3.one);
@@ -198,6 +245,18 @@ namespace Shooter.Presentation.Session
 
         public void Panel(Rect r, bool accentTop = false, bool rail = false)
         {
+            var style = UiSdf.Style.Solid(SurfaceTop, Hud.UiShapeParams.PlateRadius)
+                .WithGradient(Surface, UiSdf.Gradient.Vertical)
+                .WithShadow();
+            if (UiSdf.Rect(r, style))
+            {
+                var edge = UiSdf.Style.Solid(new Color(1f, 1f, 1f, .07f), Hud.UiShapeParams.PlateRadius);
+                edge.Stroke = 1f;
+                UiSdf.Rect(r, edge);
+                if (accentTop) Plate(new Rect(r.x + 6, r.y, r.width - 12, 2), UiSdf.Style.Solid(Accent, 1f));
+                if (rail) Plate(new Rect(r.x, r.y + 6, 3, r.height - 12), UiSdf.Style.Solid(Accent, 1.5f));
+                return;
+            }
             Fill(r, Surface);
             Fill(new Rect(r.x, r.y, r.width, 1), PanelEdge);
             Fill(new Rect(r.x, r.yMax - 1, r.width, 1), new Color(0, 0, 0, .35f));
@@ -209,7 +268,20 @@ namespace Shooter.Presentation.Session
         /// <summary>Compact in-match plate: translucent charcoal + 1px edge, optional accent hairline.</summary>
         public static void CombatPlate(Rect r, bool strong = false, bool accentLeft = false, bool accentBottom = false)
         {
-            Fill(r, strong ? HudPlateStrong : HudPlate);
+            Color plate = strong ? HudPlateStrong : HudPlate;
+            var style = UiSdf.Style.Solid(new Color(plate.r + .025f, plate.g + .03f, plate.b + .032f, plate.a), Hud.UiShapeParams.HudPlateRadius)
+                .WithGradient(new Color(plate.r, plate.g, plate.b, Mathf.Min(1f, plate.a + .08f)), UiSdf.Gradient.Vertical)
+                .WithShadow(.22f, 6f, 1.5f);
+            if (UiSdf.Rect(r, style))
+            {
+                var edge = UiSdf.Style.Solid(HudEdge, Hud.UiShapeParams.HudPlateRadius);
+                edge.Stroke = 1f;
+                UiSdf.Rect(r, edge);
+                if (accentLeft) Plate(new Rect(r.x, r.y + 3, 2, r.height - 6), UiSdf.Style.Solid(Accent, 1f));
+                if (accentBottom) Plate(new Rect(r.x + 4, r.yMax - 2, Mathf.Min(22, r.width - 8), 1.5f), UiSdf.Style.Solid(Accent, .75f));
+                return;
+            }
+            Fill(r, plate);
             Edge(r);
             if (accentLeft) AccentBar(new Rect(r.x, r.y + 1, 2, r.height - 2), Accent);
             if (accentBottom) AccentBar(new Rect(r.x + 2, r.yMax - 2, Mathf.Min(22, r.width - 4), 1), Accent);
@@ -230,6 +302,13 @@ namespace Shooter.Presentation.Session
         /// <summary>Outlined reticle arm (dark understroke + ivory stroke) for hip-fire readability.</summary>
         public static void ReticleArm(Rect rect)
         {
+            float rr = Mathf.Min(rect.width, rect.height) * .5f;
+            if (UiSdf.Rect(new Rect(rect.x - 0.9f, rect.y - 0.9f, rect.width + 1.8f, rect.height + 1.8f),
+                    UiSdf.Style.Solid(new Color(0.02f, 0.03f, 0.035f, 0.8f), rr + .9f)))
+            {
+                UiSdf.Rect(rect, UiSdf.Style.Solid(Text, rr));
+                return;
+            }
             Fill(new Rect(rect.x - 0.75f, rect.y - 0.75f, rect.width + 1.5f, rect.height + 1.5f), new Color(0.02f, 0.03f, 0.035f, 0.85f));
             Fill(rect, Text);
         }
@@ -254,9 +333,14 @@ namespace Shooter.Presentation.Session
         /// <summary>
         /// Procedural kill ribbon (ADR-059): striped banner + center disk. No imported sprites.
         /// </summary>
-        public static void ScoreRibbon(Rect banner, float alpha)
+        public static void ScoreRibbon(Rect banner, float alpha, float elapsed = 10f, int streak = 1, bool reducedMotion = false, bool reducedFlash = false)
         {
             if (alpha <= 0.02f || Event.current.type != EventType.Repaint) return;
+            if (UiSdf.Available)
+            {
+                ScoreRibbonSdf(banner, alpha, elapsed, streak, reducedMotion, reducedFlash);
+                return;
+            }
             Fill(banner, new Color(0.04f, 0.055f, 0.06f, 0.72f * alpha));
             // Alternating amber/green stripes (Battlefield-style composition reference only).
             float stripe = Mathf.Max(6f, banner.width / 18f);
@@ -279,6 +363,82 @@ namespace Shooter.Presentation.Session
             AccentBar(new Rect(banner.x, banner.yMax - 2, banner.width, 2), new Color(Accent.r, Accent.g, Accent.b, 0.7f * alpha));
         }
 
+        private static Color A(Color c, float alpha) => new Color(c.r, c.g, c.b, c.a * alpha);
+
+        /// <summary>ADR-084 kill ribbon: feathered banner, stamped medal, streak pips and one glint.</summary>
+        private static void ScoreRibbonSdf(Rect banner, float alpha, float elapsed, int streak, bool reducedMotion, bool reducedFlash)
+        {
+            float enter = Hud.UiMotion.EnterAlpha(elapsed);
+            alpha *= enter;
+            if (alpha <= 0.02f) return;
+            float cx = banner.x + banner.width * 0.5f, cy = banner.y + banner.height * 0.5f;
+            float spread = reducedMotion ? 1f : Mathf.Lerp(0.55f, 1f, Hud.UiMotion.OutCubic(Hud.UiMotion.Progress(elapsed, Hud.UiMotion.TransitionSeconds * 1.4f)));
+            float half = banner.width * 0.5f * spread;
+            Color dark = new Color(0.035f, 0.05f, 0.055f, 0.78f * alpha);
+            Color clear = new Color(dark.r, dark.g, dark.b, 0f);
+            Rect left = new Rect(cx - half, banner.y + 6, half, banner.height - 12);
+            Rect right = new Rect(cx, banner.y + 6, half, banner.height - 12);
+            UiSdf.Rect(left, UiSdf.Style.Solid(clear).WithGradient(dark, UiSdf.Gradient.Horizontal));
+            UiSdf.Rect(right, UiSdf.Style.Solid(dark).WithGradient(clear, UiSdf.Gradient.Horizontal));
+            Color line = A(Accent, 0.9f * alpha), lineClear = A(Accent, 0f);
+            UiSdf.Rect(new Rect(left.x, left.y, half, 1.5f), UiSdf.Style.Solid(lineClear).WithGradient(line, UiSdf.Gradient.Horizontal));
+            UiSdf.Rect(new Rect(cx, left.y, half, 1.5f), UiSdf.Style.Solid(line).WithGradient(lineClear, UiSdf.Gradient.Horizontal));
+            UiSdf.Rect(new Rect(left.x, left.yMax - 1.5f, half, 1.5f), UiSdf.Style.Solid(lineClear).WithGradient(A(line, .6f), UiSdf.Gradient.Horizontal));
+            UiSdf.Rect(new Rect(cx, left.yMax - 1.5f, half, 1.5f), UiSdf.Style.Solid(A(line, .6f)).WithGradient(lineClear, UiSdf.Gradient.Horizontal));
+
+            int tier = Mathf.Clamp(streak, 1, 4);
+            float baseSize = Mathf.Min(banner.height - 2f, 30f + 3f * (tier - 1));
+            float size = baseSize * Hud.UiMotion.StampScale(elapsed, reducedMotion);
+            float glint = Hud.UiMotion.GlintPosition(elapsed, reducedFlash);
+            Medal(new Rect(cx - size * 0.5f, cy - size * 0.5f, size, size), tier, alpha, glint);
+        }
+
+        /// <summary>
+        /// ADR-084 procedural medal: shadowed gold rim, enamel disk, diamond emblem and <paramref name="tier"/> pips.
+        /// Shapes only (no texture); tier 1..4.
+        /// </summary>
+        public static void Medal(Rect r, int tier, float alpha, float glint = -1f)
+        {
+            if (alpha <= 0.01f || r.width <= 2f) return;
+            float s = Mathf.Min(r.width, r.height);
+            Rect disk = new Rect(r.center.x - s * 0.5f, r.center.y - s * 0.5f, s, s);
+            // Wings: three short swept strokes each side (laurel suggestion), more with higher tiers.
+            int wings = Mathf.Clamp(tier + 1, 2, 4);
+            for (int i = 0; i < wings; i++)
+            {
+                float t = i / (float)Mathf.Max(1, wings - 1);
+                float yy = disk.center.y - s * 0.18f + t * s * 0.42f;
+                float len = s * (0.36f - 0.06f * t);
+                UiSdf.Line(new Vector2(disk.x - s * 0.04f, yy), new Vector2(disk.x - s * 0.04f - len, yy - len * 0.45f), A(Gold, 0.85f * alpha), Mathf.Max(1.4f, s * 0.07f));
+                UiSdf.Line(new Vector2(disk.xMax + s * 0.04f, yy), new Vector2(disk.xMax + s * 0.04f + len, yy - len * 0.45f), A(Gold, 0.85f * alpha), Mathf.Max(1.4f, s * 0.07f));
+            }
+            UiSdf.Circle(disk, UiSdf.Style.Solid(A(Gold, alpha)).WithGradient(A(GoldDeep, alpha), UiSdf.Gradient.Vertical)
+                .WithShadow(0.45f * alpha, s * 0.18f, s * 0.06f).WithGlint(glint, 0.6f * alpha));
+            float inset = s * 0.14f;
+            Rect enamel = new Rect(disk.x + inset, disk.y + inset, s - inset * 2f, s - inset * 2f);
+            Color enamelTop = tier >= 3 ? new Color32(122, 42, 36, 255) : new Color32(30, 62, 52, 255);
+            Color enamelBottom = tier >= 3 ? new Color32(70, 20, 18, 255) : new Color32(16, 34, 30, 255);
+            UiSdf.Circle(enamel, UiSdf.Style.Solid(A(enamelTop, alpha)).WithGradient(A(enamelBottom, alpha), UiSdf.Gradient.Radial));
+            var ring = UiSdf.Style.Solid(A(new Color(1f, .92f, .7f, .55f), alpha));
+            ring.Stroke = Mathf.Max(0.8f, s * 0.035f);
+            UiSdf.Circle(enamel, ring);
+            float e = enamel.width * 0.52f;
+            UiSdf.Shape(new Rect(enamel.center.x - e * 0.5f, enamel.center.y - e * 0.5f, e, e), Hud.UiShapeKind.Diamond,
+                UiSdf.Style.Solid(A(new Color(.98f, .9f, .66f, 1f), alpha)).WithGradient(A(Gold, alpha), UiSdf.Gradient.Vertical));
+            // Streak pips above the medal.
+            if (tier > 1)
+            {
+                float pip = Mathf.Max(3f, s * 0.16f);
+                float total = tier * pip + (tier - 1) * pip * 0.45f;
+                float px = disk.center.x - total * 0.5f;
+                for (int i = 0; i < tier; i++)
+                {
+                    UiSdf.Shape(new Rect(px + i * pip * 1.45f, disk.y - pip * 1.35f, pip, pip), Hud.UiShapeKind.Diamond,
+                        UiSdf.Style.Solid(A(Accent, alpha)));
+                }
+            }
+        }
+
         /// <summary>Brief full-frame coral flash when damage is taken (analytic fill).</summary>
         public static void DamagePlateFlash(float width, float height, float strength)
         {
@@ -294,6 +454,7 @@ namespace Shooter.Presentation.Session
         public static void EdgeVignette(float width, float height, float strength, Color tint)
         {
             if (strength <= 0f || Event.current.type != EventType.Repaint) return;
+            if (UiSdf.EdgeFade(new Rect(0, 0, width, height), tint, Mathf.Max(40f, height * .16f), strength)) return;
             float band = Mathf.Max(26f, height * .11f);
             int steps = 11;
             for (int i = 0; i < steps; i++)
@@ -420,30 +581,100 @@ namespace Shooter.Presentation.Session
             Label(new Rect(r.x + 14, r.y, r.width - 14, r.height), title, 24);
         }
 
+        /// <summary>
+        /// Eased 0..1 emphasis for a control (hover/focus/selection), advanced once per Repaint.
+        /// Reduced motion snaps to the target.
+        /// </summary>
+        public float Emphasis(string id, bool on)
+        {
+            float target = on ? 1f : 0f;
+            float now = Time.unscaledTime;
+            if (!emphasis.TryGetValue(id, out var state)) state = new Vector2(target, now);
+            if (Event.current.type == EventType.Repaint)
+            {
+                float dt = Mathf.Clamp(now - state.y, 0f, 0.1f);
+                state = new Vector2(Hud.UiMotion.Follow(state.x, target, Hud.UiMotion.FocusFollowRate, dt, ReducedMotion), now);
+                emphasis[id] = state;
+            }
+            return state.x;
+        }
+
+        private bool ButtonSdf(Rect r, string id, bool primary, bool selected, bool quiet, bool focus, bool hover)
+        {
+            if (!UiSdf.Available) return false;
+            if (Event.current.type != EventType.Repaint)
+            {
+                Emphasis(id, hover || focus || selected);
+                return true;
+            }
+            float e = Emphasis(id, hover || focus || selected);
+            float f = Emphasis(id + "#focus", focus);
+            const float radius = Hud.UiShapeParams.ButtonRadius;
+            if (!GUI.enabled)
+            {
+                UiSdf.Rect(r, UiSdf.Style.Solid(quiet ? new Color(1, 1, 1, 0) : Surface, radius));
+                return true;
+            }
+            if (quiet)
+            {
+                if (e > 0.01f)
+                {
+                    UiSdf.Rect(r, UiSdf.Style.Solid(new Color(1, 1, 1, .10f * e), radius)
+                        .WithGradient(new Color(1, 1, 1, .02f * e), UiSdf.Gradient.Horizontal));
+                }
+                float rail = Mathf.Max(e * (focus || selected ? 1f : 0.45f), f);
+                if (rail > 0.01f)
+                {
+                    float h = r.height * Mathf.Lerp(0.35f, 1f, rail);
+                    UiSdf.Rect(new Rect(r.x, r.center.y - h * 0.5f, 3, h), UiSdf.Style.Solid(A(Accent, rail), 1.5f));
+                }
+                return true;
+            }
+            Color baseTop = primary ? Color.Lerp(Accent, new Color(1f, .9f, .62f, 1f), .35f * e) : Color.Lerp(SurfaceTop, new Color32(56, 68, 74, 255), e);
+            Color baseBottom = primary ? Color.Lerp(new Color32(196, 160, 72, 255), Accent, .3f * e) : Color.Lerp(Surface, Raised, e);
+            var style = UiSdf.Style.Solid(baseTop, radius).WithGradient(baseBottom, UiSdf.Gradient.Vertical).WithShadow(.3f, 6f, 2f);
+            if (f > 0.01f) style = style.WithGlow(primary ? new Color(1f, .9f, .6f, 1f) : Accent, Hud.UiShapeParams.FocusGlowWidth,
+                Hud.UiShapeParams.FocusGlowAlpha * f * (ReducedFlash ? .6f : 1f));
+            UiSdf.Rect(r, style);
+            var edge = UiSdf.Style.Solid(primary ? new Color(1f, .95f, .8f, .35f) : new Color(1f, 1f, 1f, .06f + .08f * e), radius);
+            edge.Stroke = 1f;
+            UiSdf.Rect(r, edge);
+            float sel = Mathf.Max(f, selected ? 1f : 0f);
+            if (sel > 0.01f)
+            {
+                float h = r.height * Mathf.Lerp(0.4f, 0.7f, sel);
+                UiSdf.Rect(new Rect(r.x + 5, r.center.y - h * 0.5f, 3, h), UiSdf.Style.Solid(A(primary ? Background : Accent, sel), 1.5f));
+            }
+            return true;
+        }
+
         public bool Button(Rect r, string id, string text, bool primary = false, bool selected = false, bool quiet = false)
         {
             if (GUI.enabled && Event.current.type == EventType.MouseDown && r.Contains(Event.current.mousePosition)) focused = id;
             bool focus = focused == id;
             if (focus && focusMoved) GUI.ScrollTo(r);
             bool hover = r.Contains(Event.current.mousePosition);
-            Color fill = quiet
-                ? new Color(1, 1, 1, hover || selected || focus ? .12f : 0)
-                : primary ? Accent : (hover || selected ? Raised : Surface);
-            Fill(r, GUI.enabled ? fill : Surface);
-            if (quiet && (focus || selected))
+            if (!ButtonSdf(r, id, primary, selected, quiet, focus, hover))
             {
-                Fill(new Rect(r.x, r.y, 3, r.height), Accent);
-                Fill(new Rect(r.x + 3, r.y, r.width - 3, r.height), new Color(1, 1, 1, .06f));
-            }
-            else if (focus || selected)
-            {
-                Fill(new Rect(r.x, r.y, 3, r.height), primary ? Background : Accent);
-            }
-            if (focus && !quiet)
-            {
-                Color edge = primary ? Background : Accent;
-                Fill(new Rect(r.x + 4, r.y + 3, r.width - 8, 1), edge);
-                Fill(new Rect(r.x + 4, r.yMax - 4, r.width - 8, 1), edge);
+                Color fill = quiet
+                    ? new Color(1, 1, 1, hover || selected || focus ? .12f : 0)
+                    : primary ? Accent : (hover || selected ? Raised : Surface);
+                Fill(r, GUI.enabled ? fill : Surface);
+                if (quiet && (focus || selected))
+                {
+                    Fill(new Rect(r.x, r.y, 3, r.height), Accent);
+                    Fill(new Rect(r.x + 3, r.y, r.width - 3, r.height), new Color(1, 1, 1, .06f));
+                }
+                else if (focus || selected)
+                {
+                    Fill(new Rect(r.x, r.y, 3, r.height), primary ? Background : Accent);
+                }
+                if (focus && !quiet)
+                {
+                    Color edge = primary ? Background : Accent;
+                    Fill(new Rect(r.x + 4, r.y + 3, r.width - 8, 1), edge);
+                    Fill(new Rect(r.x + 4, r.yMax - 4, r.width - 8, 1), edge);
+                }
             }
             if (buttonStyle == null)
             {
@@ -468,8 +699,21 @@ namespace Shooter.Presentation.Session
         public bool MapCard(Rect r, string id, Texture? image, string title, string subtitle, bool selected = false)
         {
             // Operation tile: charcoal well, inset media plate, caption bar — still draws real map RTTs.
-            Fill(r, new Color(.02f, .03f, .035f, .98f));
-            Edge(r);
+            float lift = UiSdf.Available ? Emphasis(id + "#card", selected || r.Contains(Event.current.mousePosition)) : 0f;
+            var well = UiSdf.Style.Solid(new Color(.02f, .03f, .035f, .98f), Hud.UiShapeParams.CardRadius)
+                .WithShadow(.35f + .15f * lift, 10f + 6f * lift, 3f + 2f * lift);
+            if (selected) well = well.WithGlow(Accent, 10f, .22f * (ReducedFlash ? .6f : 1f));
+            if (UiSdf.Rect(r, well))
+            {
+                var rim = UiSdf.Style.Solid(new Color(1f, 1f, 1f, .08f + .08f * lift), Hud.UiShapeParams.CardRadius);
+                rim.Stroke = 1f;
+                UiSdf.Rect(r, rim);
+            }
+            else
+            {
+                Fill(r, new Color(.02f, .03f, .035f, .98f));
+                Edge(r);
+            }
             Rect media = new Rect(r.x + 3, r.y + 3, r.width - 6, r.height - 66);
             Fill(media, Surface);
             if (image != null && Event.current.type == EventType.Repaint)
@@ -481,13 +725,23 @@ namespace Shooter.Presentation.Session
                 Fill(new Rect(media.x, media.y + i * 3f, media.width, 4f), new Color(0f, 0f, 0f, .16f * (1f - u)));
             }
             Rect plate = new Rect(r.x, r.yMax - 62, r.width, 62);
-            Fill(plate, new Color(.02f, .03f, .035f, .94f));
+            // Rounded so the card's lower corners stay round; the plate's top corners blend into the dark well.
+            Plate(plate, UiSdf.Style.Solid(new Color(.025f, .035f, .04f, .96f), Hud.UiShapeParams.CardRadius)
+                .WithGradient(new Color(.015f, .02f, .025f, .98f), UiSdf.Gradient.Vertical));
             Fill(new Rect(plate.x, plate.y, plate.width, 1), new Color(1f, 1f, 1f, .10f));
             AccentBar(new Rect(plate.x + 14, plate.y + 10, 20, 2), Accent);
             bool clicked = Button(r, id, "", selected: selected, quiet: true);
             Label(new Rect(r.x + 14, r.yMax - 48, r.width - 28, 22), title, 18);
             Label(new Rect(r.x + 14, r.yMax - 24, r.width - 28, 16), subtitle, 12, Muted);
-            if (selected)
+            if (selected && UiSdf.Available)
+            {
+                var ring = UiSdf.Style.Solid(Accent, Hud.UiShapeParams.CardRadius);
+                ring.Stroke = 2f;
+                UiSdf.Rect(r, ring);
+                UiSdf.Rect(new Rect(r.xMax - 22, r.y + 8, 14, 2), UiSdf.Style.Solid(Accent, 1f));
+                UiSdf.Rect(new Rect(r.xMax - 10, r.y + 8, 2, 14), UiSdf.Style.Solid(Accent, 1f));
+            }
+            else if (selected)
             {
                 AccentBar(new Rect(r.x, r.y, 3, r.height), Accent);
                 AccentBar(new Rect(r.x, r.y, r.width, 2), Accent);
@@ -510,8 +764,19 @@ namespace Shooter.Presentation.Session
                 value = Mathf.Clamp(value + (Event.current.keyCode == KeyCode.LeftArrow ? -1 : 1) * (max - min) * .02f, min, max);
                 Event.current.Use();
             }
-            Fill(track, Raised);
-            Fill(new Rect(track.x, track.y, Mathf.InverseLerp(min, max, value) * track.width, 6), Accent);
+            bool sdf = UiSdf.Rect(track, UiSdf.Style.Solid(new Color32(20, 26, 30, 255), 3f).WithGradient(Raised, UiSdf.Gradient.Vertical));
+            if (sdf)
+            {
+                float fillW = Mathf.InverseLerp(min, max, value) * track.width;
+                if (fillW > 0.5f)
+                    UiSdf.Rect(new Rect(track.x, track.y, Mathf.Max(6f, fillW), 6), UiSdf.Style.Solid(new Color32(196, 160, 72, 255), 3f)
+                        .WithGradient(Accent, UiSdf.Gradient.Horizontal));
+            }
+            else
+            {
+                Fill(track, Raised);
+                Fill(new Rect(track.x, track.y, Mathf.InverseLerp(min, max, value) * track.width, 6), Accent);
+            }
             // Use a transparent native slider to retain dragging and keyboard semantics without built-in artwork.
             controls.Add(id);
             GUI.SetNextControlName(id);
@@ -519,6 +784,17 @@ namespace Shooter.Presentation.Session
             if (sliderThumb == null) sliderThumb = new GUIStyle(empty) { fixedWidth = 18, fixedHeight = 24 };
             if (focused == id && focusMoved) GUI.ScrollTo(hit);
             float next = GUI.HorizontalSlider(new Rect(track.x, track.y - 9, track.width, 24), value, min, max, empty, sliderThumb);
+            if (sdf)
+            {
+                float f = Emphasis(id + "#thumb", focused == id || hit.Contains(Event.current.mousePosition));
+                float tx = track.x + Mathf.InverseLerp(min, max, next) * track.width;
+                float d = 14f + 4f * f;
+                var thumb = UiSdf.Style.Solid(Text).WithGradient(new Color32(206, 210, 204, 255), UiSdf.Gradient.Vertical).WithShadow(.4f, 5f, 1.5f);
+                if (f > 0.01f) thumb = thumb.WithGlow(Accent, 7f, .3f * f);
+                UiSdf.Circle(new Rect(tx - d * 0.5f, track.center.y - d * 0.5f, d, d), thumb);
+                UiSdf.Circle(new Rect(tx - 3f, track.center.y - 3f, 6f, 6f), UiSdf.Style.Solid(Accent));
+                return next;
+            }
             float x = track.x + Mathf.InverseLerp(min, max, next) * (track.width - 4);
             Fill(new Rect(x, track.y - 4, 4, 14), focused == id ? Text : Accent);
             return next;
@@ -526,7 +802,23 @@ namespace Shooter.Presentation.Session
 
         public bool Toggle(Rect r, string id, string text, bool value)
         {
-            if (Button(r, id, text + (value ? "   [ ON ]" : "   [ OFF ]"), selected: value)) value = !value;
+            if (!UiSdf.Available)
+            {
+                if (Button(r, id, text + (value ? "   [ ON ]" : "   [ OFF ]"), selected: value)) value = !value;
+                return value;
+            }
+            if (Button(r, id, text, selected: value)) value = !value;
+            // Switch pill on the right edge; knob eases between OFF and ON.
+            float on = Emphasis(id + "#switch", value);
+            Rect pill = new Rect(r.xMax - 56, r.center.y - 10, 42, 20);
+            UiSdf.Rect(pill, UiSdf.Style.Solid(Color.Lerp(new Color32(20, 26, 30, 255), new Color32(196, 160, 72, 255), on), 10f)
+                .WithGradient(Color.Lerp(Raised, Accent, on), UiSdf.Gradient.Vertical));
+            var rim = UiSdf.Style.Solid(new Color(1f, 1f, 1f, .12f), 10f);
+            rim.Stroke = 1f;
+            UiSdf.Rect(pill, rim);
+            float kx = Mathf.Lerp(pill.x + 3, pill.xMax - 17, on);
+            UiSdf.Circle(new Rect(kx, pill.y + 3, 14, 14), UiSdf.Style.Solid(Text).WithShadow(.35f, 3f, 1f));
+            Label(new Rect(pill.x - 50, r.y, 44, r.height), value ? "ON" : "OFF", 12, value ? Accent : Muted, TextAnchor.MiddleRight);
             return value;
         }
 
@@ -536,6 +828,18 @@ namespace Shooter.Presentation.Session
             {
                 if (Event.current.type == EventType.Repaint) GUI.DrawTexture(new Rect(0, 0, Width, Height), SceneTexture, ScaleMode.ScaleAndCrop);
                 // Compact left rail scrim + soft bottom fade so nav/cards stay readable over the live stage.
+                if (UiSdf.Available)
+                {
+                    // Two smooth gradient spans approximate the eased falloff without banding.
+                    Color deep = new Color(.02f, .03f, .035f, .9f), mid = new Color(.02f, .03f, .035f, .38f), none = new Color(.02f, .03f, .035f, 0f);
+                    float spanA = Width * .2f, spanB = Width * .38f;
+                    UiSdf.Rect(new Rect(0, 0, spanA, Height), UiSdf.Style.Solid(deep).WithGradient(mid, UiSdf.Gradient.Horizontal));
+                    UiSdf.Rect(new Rect(spanA, 0, spanB, Height), UiSdf.Style.Solid(mid).WithGradient(none, UiSdf.Gradient.Horizontal));
+                    float fade = Height * .26f;
+                    UiSdf.Rect(new Rect(0, Height - fade, Width, fade), UiSdf.Style.Solid(new Color(.015f, .025f, .03f, 0f))
+                        .WithGradient(new Color(.015f, .025f, .03f, .5f), UiSdf.Gradient.Vertical));
+                    return;
+                }
                 for (int i = 0; i < 28; i++)
                 {
                     float u = i / 27f;
@@ -642,28 +946,46 @@ namespace Shooter.Presentation.Session
             float barY = panel.yMax - 36;
             float barX = textX;
             float barW = textW;
-            Fill(new Rect(barX, barY, barW, 10), Raised);
-            Fill(new Rect(barX, barY, barW, 1), PanelEdge);
-            Fill(new Rect(barX, barY + 9, barW, 1), new Color(0f, 0f, 0f, .35f));
-            AccentBar(new Rect(barX, barY - 4, 10, 2), Accent);
-            AccentBar(new Rect(barX, barY - 4, 2, 10), Accent);
-            AccentBar(new Rect(barX + barW - 10, barY - 4, 10, 2), Accent);
-            AccentBar(new Rect(barX + barW - 2, barY - 4, 2, 10), Accent);
-            AccentBar(new Rect(barX, barY + 12, 10, 2), Accent);
-            AccentBar(new Rect(barX, barY + 4, 2, 10), Accent);
-            AccentBar(new Rect(barX + barW - 10, barY + 12, 10, 2), Accent);
-            AccentBar(new Rect(barX + barW - 2, barY + 4, 2, 10), Accent);
-            if (reducedMotion)
+            if (UiSdf.Rect(new Rect(barX, barY, barW, 10), UiSdf.Style.Solid(new Color32(18, 24, 28, 255), 5f).WithGradient(Raised, UiSdf.Gradient.Vertical)))
             {
-                Fill(new Rect(barX, barY + 3, barW, 4), Accent);
+                if (reducedMotion)
+                {
+                    UiSdf.Rect(new Rect(barX + 2, barY + 2, barW - 4, 6), UiSdf.Style.Solid(Accent, 3f));
+                }
+                else
+                {
+                    float seg = Mathf.Max(48f, barW * .22f);
+                    float travel = Mathf.Max(1f, barW - 4f - seg);
+                    float offset = Hud.UiMotion.InOutCubic(Mathf.PingPong(Time.realtimeSinceStartup * .42f, 1f)) * travel;
+                    UiSdf.Rect(new Rect(barX + 2 + offset, barY + 2, seg, 6), UiSdf.Style.Solid(new Color(Accent.r, Accent.g, Accent.b, .25f), 3f)
+                        .WithGradient(Accent, UiSdf.Gradient.Horizontal).WithGlow(Accent, 8f, ReducedFlash ? .12f : .3f));
+                }
             }
             else
             {
-                float seg = Mathf.Max(48f, barW * .22f);
-                float travel = Mathf.Max(1f, barW - seg);
-                float offset = Mathf.PingPong(Time.realtimeSinceStartup * .42f, 1f) * travel;
-                Fill(new Rect(barX + offset, barY + 2, seg, 6), Accent);
-                Fill(new Rect(barX + offset, barY + 2, 3, 6), Text);
+                Fill(new Rect(barX, barY, barW, 10), Raised);
+                Fill(new Rect(barX, barY, barW, 1), PanelEdge);
+                Fill(new Rect(barX, barY + 9, barW, 1), new Color(0f, 0f, 0f, .35f));
+                AccentBar(new Rect(barX, barY - 4, 10, 2), Accent);
+                AccentBar(new Rect(barX, barY - 4, 2, 10), Accent);
+                AccentBar(new Rect(barX + barW - 10, barY - 4, 10, 2), Accent);
+                AccentBar(new Rect(barX + barW - 2, barY - 4, 2, 10), Accent);
+                AccentBar(new Rect(barX, barY + 12, 10, 2), Accent);
+                AccentBar(new Rect(barX, barY + 4, 2, 10), Accent);
+                AccentBar(new Rect(barX + barW - 10, barY + 12, 10, 2), Accent);
+                AccentBar(new Rect(barX + barW - 2, barY + 4, 2, 10), Accent);
+                if (reducedMotion)
+                {
+                    Fill(new Rect(barX, barY + 3, barW, 4), Accent);
+                }
+                else
+                {
+                    float seg = Mathf.Max(48f, barW * .22f);
+                    float travel = Mathf.Max(1f, barW - seg);
+                    float offset = Mathf.PingPong(Time.realtimeSinceStartup * .42f, 1f) * travel;
+                    Fill(new Rect(barX + offset, barY + 2, seg, 6), Accent);
+                    Fill(new Rect(barX + offset, barY + 2, 3, 6), Text);
+                }
             }
 
             bool cancel = false;

@@ -364,6 +364,8 @@ public static class ShooterBuild
                     AssetDatabase.LoadAssetAtPath<Shader>("Assets/Shooter/Shaders/ProceduralSurface.shader"),
                     AssetDatabase.LoadAssetAtPath<Shader>("Assets/Shooter/Shaders/AdsScopePip.shader")
                         ?? throw new InvalidOperationException("Missing AdsScopePip shader"),
+                    AssetDatabase.LoadAssetAtPath<Shader>("Assets/Shooter/Shaders/UiSdf.shader")
+                        ?? throw new InvalidOperationException("Missing UiSdf shader"),
                     AssetDatabase.LoadAssetAtPath<Shader>(ShooterPostProcessingBuild.MapSurfaceShaderPath)
                         ?? throw new InvalidOperationException("Missing MapSurface shader"),
                     AssetDatabase.LoadAssetAtPath<Material>(ShooterPostProcessingBuild.MapSurfaceVariantPath)

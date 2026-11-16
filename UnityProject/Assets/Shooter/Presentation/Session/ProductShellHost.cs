@@ -424,6 +424,11 @@ namespace Shooter.Presentation.Session
             }
             float s = 1f;
             ui.SceneTexture = menuScene != null && menuScene.gameObject.activeInHierarchy ? menuScene.Frame : null;
+            if (settingsEditor != null)
+            {
+                ui.ReducedMotion = settingsEditor.Applied.ReducedCameraMotion;
+                ui.ReducedFlash = settingsEditor.Applied.ReducedFlash;
+            }
             ui.Begin(uiScale, navigation.Screen.ToString(), bindingEditor == null || !bindingEditor.IsListening);
             try
             {

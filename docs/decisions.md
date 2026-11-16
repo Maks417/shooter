@@ -1164,3 +1164,45 @@ Consequences: a new arena is one definition file with a layout document, plus co
 Evidence on 2026-11-16 at `6509f82`: `MapRegistryTests` 12/12, release-policy test, map generator tests 7/7, Simulation 329, Game 99, Generation 500, Test-Maps, source provenance, C0/format/feature/asmdef/fixture verifiers, and Unity EditMode and PlayMode all PASS. A pure `Compile-GameContent.ps1` republish left `catalog.json`, `index.json` and `weapons.json` byte-identical. The IL2CPP client built and Smoke PASS. Two diagnostic `TDM-5v5-v1` runs stalled after workload validation while the machine was in interactive use. A third run completed: `SHOOTER_BENCHMARK_COMPLETE`, 1605 frames, p95 4.80 ms. Later runs completed with the player minimised and with Notepad holding the foreground, which rules out window focus. The stall's cause is not established. `BenchmarkProgressWatchdog` now aborts a stalled capture after 10 s with a state snapshot, and `Benchmark.ps1` reports that snapshot or the last player marker, so the next occurrence records its cause. A new map authored only as a document has not been built or played yet (Pending).
 
 Rollback: revert the ADR-083 commit; map content is unaffected.
+
+## ADR-084 — Accepted: analytic SDF UI primitives and UI motion model
+
+Date 2026-11-16. Wave 1, step 1 of the owner-approved visual roadmap (UI, icons, badges first; the IMGUI shell stays, with an SDF layer added). Sole integrator owns the shader, presentation UI, build preload, tests and docs. No C0, Game-v1, content-format, feature-content or toolchain change; gameplay is untouched; no acceptance waiver.
+
+Context: `TacticalUi` drew every menu, HUD, loading screen and scoreboard as `Texture2D.whiteTexture` rectangles and 1-px rotated quads. There were no anti-aliased edges, rounded corners, gradients, shadows or glows. Icons were stacks of rectangles, and the only motion was alpha fades. ADR-002 rules out sprite or skin art, so the polish has to come from code.
+
+Decision:
+- **Shader.** `Shaders/UiSdf.shader` (`Shooter/UiSdf`) evaluates analytic signed distances per pixel:
+  - shapes: rounded rect, circle/ring, arc, triangle, diamond and an edge-fade vignette;
+  - styling: fill or stroke, a vertical/horizontal/radial two-colour gradient, a soft drop shadow, an outer glow, and a one-pass diagonal glint.
+  - It outputs premultiplied alpha and multiplies by IMGUI's own clip mask (`_GUIClipTexture` / `unity_GUIClipTextureMatrix`), so groups and scroll views clip as before.
+  - It samples no other texture, so the player art audit is unchanged.
+- **Drawer.** `Presentation/Session/UiSdf.cs` draws one padded quad per shape with `Graphics.DrawTexture` during Repaint, in the caller's GUI space (UI scale, groups, rotation). Anti-aliasing stays one device pixel at any UI scale. Brand colours stay sRGB-authored and are converted for the linear colour space. If the shader is missing or unsupported, every call returns false, logs `SHOOTER_UI_SDF unavailable` once, and `TacticalUi` keeps its previous flat path. That fallback is still code-drawn, never imported art.
+- **TacticalUi.** These keep their signatures and use SDF when it is available:
+  - rounded shadowed panels, HUD plates, buttons, map cards and anti-aliased lines;
+  - capsule reticle arms, a ring headshot mark and rounded-part weapon silhouettes;
+  - pill sliders with a round thumb, switch-style toggles (replacing `[ ON ]` text), a glowing indeterminate loading segment and a single-draw vignette.
+  - Hover, focus and selection ease through a per-control emphasis value.
+  - The kill ribbon becomes a feathered banner with a stamped procedural medal (`TacticalUi.Medal`: gold rim, enamel, diamond emblem, laurel strokes, streak pips by tier 1–4) and one glint.
+- **Motion model.** Pure `Presentation/Model/Hud/UiMotion.cs` provides:
+  - easing (OutCubic, InOutCubic, OutBack) and a frame-rate-independent critically damped `Follow`;
+  - the stamp scale, slide, stagger and count-up envelopes, the glint sweep and a pulse.
+  - Reduced camera motion collapses movement to a snap or fade; reduced flash removes the glint, holds pulses and softens glows.
+  - `TacticalUi.ReducedMotion` and `ReducedFlash` are set from applied settings by `ProductShellHost` and `ProductSessionView`.
+- **Shape tokens.** Pure `UiShapeParams` holds radii, shadow, glow and hairline tokens, plus the rounded-box distance and coverage math the shader mirrors.
+- **Build.** `ShooterBuild` preloads `UiSdf.shader` in client players next to `AdsScopePip`.
+
+Consequences:
+- Each SDF shape is one extra material-bound draw. The HUD issues a few dozen per frame, and the menu more; the cost is presentation only and must be measured on the reference laptop.
+- Map-card media images keep square corners inside the rounded card.
+- Icons are still procedural parts drawn per frame. ADR-085 (planned) moves them into a generated SDF icon atlas.
+
+Evidence on 2026-11-16 (working tree on `fa2cbc9`, recorded in the commit that adds this ADR):
+- **Pure tests.** Simulation 344 PASS (15 new `UiMotionTests` and `UiShapeParamsTests`). Source provenance PASS after `ShooterBuild.WriteSettingsProvenance` regenerated `Settings/provenance.json` for the preload change.
+- **EditMode.** 79/79 PASS, including four `UiSdfEditModeTests`: the shader is supported, rounded corners are cut, rings are hollow and output is premultiplied.
+- **Build.** The IL2CPP client built with `UiSdf.shader` in the packed graphics list and no imported art. Smoke PASS.
+- **Player review.** The player logged `SHOOTER_UI_SDF ready`. Captures from the live 1080p window (`Artifacts/visual-design/adr-084/20261116-menu/`) show the recovery, main menu, setup and settings screens, including SDF controls inside the clipped settings scroll view.
+- **Fixes found during review.** The selected card's square accent border became a rounded stroke, and the caption plate is now rounded. The left scrim's 28 stepped strips (visible banding) became two smooth gradients.
+- **Pending.** The live combat HUD, kill-ribbon medal and loading screen in a running match were not driven: automated key input could not reach START MATCH reliably. Those, 720p at 100%/150% UI scale, reduced motion/flash, reference-laptop frame cost and a named visual review are Pending.
+
+Rollback: revert the ADR-084 commit and regenerate settings provenance; every primitive falls back to the flat path when the shader is absent.

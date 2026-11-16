@@ -74,6 +74,8 @@ namespace Shooter.Presentation.Session
         private readonly float[] scoreFeedUntil = new float[ScoreBadgeVisual.MaxFeedRows];
         private readonly List<LocalScoreAward> scoreAwardDrain = new List<LocalScoreAward>(8);
         private float scoreRibbonUntil;
+        private float scoreRibbonStart;
+        private byte scoreRibbonStreak;
         private uint scoreRibbonPoints;
         private string scoreRibbonLabel = ScoreBadgeVisual.KillLabel;
         private float ammoScoreUntil;
@@ -919,6 +921,8 @@ namespace Shooter.Presentation.Session
         private void DrawCombatHud()
         {
             if (session == null) return;
+            combatUi.ReducedMotion = reducedCameraMotion;
+            combatUi.ReducedFlash = reducedFlash;
             combatUi.Begin(hud.Settings.UiScale, "combat", keyboardNavigation: false);
             try
             {
@@ -1268,6 +1272,8 @@ namespace Shooter.Presentation.Session
                     scoreRibbonLabel = label;
                     scoreRibbonPoints = award.Points;
                     scoreRibbonUntil = now + ScoreBadgeVisual.RibbonHoldDuration(reducedFlash);
+                    scoreRibbonStart = now;
+                    scoreRibbonStreak = award.KillStreak;
                 }
             }
         }
@@ -1290,16 +1296,16 @@ namespace Shooter.Presentation.Session
             float remaining = scoreRibbonUntil - Time.unscaledTime;
             float alpha = ScoreBadgeVisual.RibbonAlpha(remaining, reducedFlash);
             if (alpha <= 0.02f) return;
-            float w = 220f, h = 36f;
+            float w = 260f, h = 40f;
             float x = safe.x + (safe.width - w) * 0.5f;
             float y = safe.y + 78f;
             var banner = new Rect(x, y, w, h);
-            TacticalUi.ScoreRibbon(banner, alpha);
+            TacticalUi.ScoreRibbon(banner, alpha, Time.unscaledTime - scoreRibbonStart, scoreRibbonStreak, reducedCameraMotion, reducedFlash);
             Color ink = TacticalUi.Text;
             ink.a = alpha;
             Color pts = TacticalUi.Accent;
             pts.a = alpha;
-            combatUi.Label(new Rect(x, y - 16, w, 16), scoreRibbonLabel, 12, ink, TextAnchor.MiddleCenter);
+            combatUi.Label(new Rect(x, y - 22, w, 16), scoreRibbonLabel, 12, ink, TextAnchor.MiddleCenter);
             combatUi.Label(new Rect(x, y + h + 2, w, 20), ScoreBadgeVisual.FormatPoints(scoreRibbonPoints), 18, pts, TextAnchor.MiddleCenter);
         }
 
