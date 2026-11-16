@@ -100,6 +100,8 @@ namespace Shooter.Bootstrap
         private bool previousValid, diagnostic, validated, captureStarted, complete, recordersDisposed;
         private DateTime previousUtc, endUtc, startUtc;
         private bool mainAvailable, renderAvailable;
+        private readonly BenchmarkFocusWatchdog focusWatchdog = new BenchmarkFocusWatchdog();
+        private bool everFocused;
 
         public void Initialize(FoundationEntry entry, ProductTdmHost host, ProductTdmWorkloads.Definition workload)
         {
@@ -205,6 +207,11 @@ namespace Shooter.Bootstrap
             if (authority == null || complete || authority.Failed) return;
             try
             {
+                // The product clock holds while unfocused; fail fast instead of stalling until the wrapper timeout.
+                bool focused = Application.isFocused;
+                everFocused |= focused;
+                if (focusWatchdog.Observe(focused, Time.realtimeSinceStartupAsDouble))
+                    throw new InvalidOperationException(focusWatchdog.Reason(everFocused));
                 if (host != null) host.ReportAuthorityClockTicks(authority.CompletedTicks);
                 long now = Stopwatch.GetTimestamp(), allocated = AllocationMeter.TotalBytes;
                 DateTime utc = DateTime.UtcNow;

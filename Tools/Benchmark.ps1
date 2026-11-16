@@ -92,7 +92,12 @@ try {
             csvSha256=Get-ShooterHash (Join-Path $run.Path 'presentmon.csv'); logSha256=Get-ShooterHash $traceLog } |
             ConvertTo-Json | Set-Content -LiteralPath (Join-Path $run.Path 'external-gpu.json') -Encoding utf8NoBOM
     }
-    if (!(Test-Path -LiteralPath $log) -or !(Select-String -LiteralPath $log -SimpleMatch 'SHOOTER_BENCHMARK_COMPLETE' -Quiet) -or (Select-String -LiteralPath $log -SimpleMatch 'SHOOTER_FAILURE' -Quiet)) { throw 'Player capture failed or did not finish.' }
+    if (!(Test-Path -LiteralPath $log) -or !(Select-String -LiteralPath $log -SimpleMatch 'SHOOTER_BENCHMARK_COMPLETE' -Quiet) -or (Select-String -LiteralPath $log -SimpleMatch 'SHOOTER_FAILURE' -Quiet)) {
+        # Surface the player's own abort reason (failure.json), e.g. the focus watchdog, instead of a generic message.
+        $failurePath = Join-Path $run.Path 'failure.json'
+        $reason = if (Test-Path -LiteralPath $failurePath) { ((Get-Content -LiteralPath $failurePath -Raw | ConvertFrom-Json).reason -split "`n")[0] } else { '' }
+        throw ('Player capture failed or did not finish.' + $(if ($reason) { ' ' + $reason } else { '' }))
+    }
     $output = Join-Path $run.Path $(if ($Diagnostic) { 'diagnostic-result.json' } else { 'benchmark-result.json' })
     $analyzer = if ($productTdm) { 'analyze_tdm_benchmark.py' } else { 'analyze_benchmark.py' }
     $analysisArgs = @((Join-Path $PSScriptRoot $analyzer), '--capture', $run.Path, '--build-manifest', $buildManifest, '--hardware', $hardwarePath, '--run-index', $RunIndex, '--output', $output, '--render-application', (Join-Path $run.Path 'render-budget-proof.json'))
@@ -107,7 +112,17 @@ try {
     $run.Report.result = 'PASS'
     if (!$Diagnostic -and $result.gateStatus -ne 'ComputedPass') { $run.Report.result = $result.gateStatus }
 }
-catch { $run.Report.error = $_.Exception.Message; Write-Warning $run.Report.error }
+catch {
+    $message = $_.Exception.Message
+    # The player exits non-zero after an abort; attach its failure.json reason (e.g. the focus watchdog) when not already present.
+    $failurePath = Join-Path $run.Path 'failure.json'
+    if ((Test-Path -LiteralPath $failurePath) -and $message -notmatch 'focus') {
+        $reason = ((Get-Content -LiteralPath $failurePath -Raw | ConvertFrom-Json).reason -split "`n")[0]
+        if ($reason) { $message += ' Player abort: ' + $reason }
+    }
+    $run.Report.error = $message
+    Write-Warning $run.Report.error
+}
 finally {
     if ($null -ne $trace) {
         if (!$trace.HasExited) {
