@@ -28,7 +28,8 @@ namespace Shooter.Generation.Environment
         public bool HasMagazineCycle => Recipe != null;
 
         /// <summary>SGAF generator fingerprint the package stores this source's meshes under.</summary>
-        public ContentId Fingerprint => IsProp ? WeaponMeshCatalog.PropFingerprint : WeaponMeshCatalog.GunFingerprint;
+        public ContentId Fingerprint => IsProp ? WeaponMeshCatalog.PropFingerprint
+            : GeneratorFingerprint.Compute(WeaponRecipe.GeneratorId, Recipe!.Version);
 
         internal static WeaponMeshSource FromRecipe(string meshKey, string recipeJson) =>
             new WeaponMeshSource(meshKey, WeaponRecipe.Parse(Encoding.ASCII.GetBytes(recipeJson)));

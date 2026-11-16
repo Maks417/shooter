@@ -64,7 +64,14 @@ This rewrites `Simulation/Combat/WeaponCatalog.g.cs`, `Presentation/Model/View/W
 
 `visual.meshKey` names the packaged mesh set and `visual.geometryRecipe` names the `geometry.weapon` recipe it is built from. Several weapons may share one mesh key (for example another rifle that reuses `rifle-carbine` geometry); a key always maps to one recipe. `knife` and `grenade` are built-in props without a recipe, magazine or cycle part.
 
-A new silhouette needs a `geometry.weapon` recipe in `Generation/FeatureRecipes` (a frozen registry, so adding one is a reviewed lock refresh) and, while recipes only offer `standard`/`carbine`, a `geometry.weapon` change. Nothing else is per weapon: meshes are published in the shared weapon package and presentation binds every catalog mesh key. A new sound needs a new `SynthVoiceKind` and bank samples.
+A new rifle shape needs no code since ADR-082: give the definition `visual.geometryParts` (geometry.weapon 1.1.0 parts, see the [recipe baseline](../weapon-recipe-baseline.md)) instead of `visual.geometryRecipe`, with a new `meshKey`. For example, a stockless short rifle without an optic:
+
+```json
+"geometryParts": { "handguardFrontMm": 320, "barrelFrontMm": 430, "topRailTeeth": 8, "gasBlockZMm": 320,
+                   "gasTubeZMm": 280, "gasTubeLengthMm": 60, "frontSightZMm": 330, "stock": "none", "optic": "none" }
+```
+
+`optic: none` cannot be combined with the `ScopedPip` profile optic. Run the generator, `./Tools/Test-Simulation.ps1` and `./Tools/Test-Generation.ps1` (the C# recipe parser enforces every range when the catalog loads), then republish content. Meshes are published in the shared weapon package and presentation binds every catalog mesh key. A new sound needs a new `SynthVoiceKind` and bank samples.
 
 ## Shared weapon package (ADR-078)
 

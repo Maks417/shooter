@@ -14,33 +14,17 @@
       "const": "geometry.weapon"
     },
     "generatorVersion": {
-      "const": "1.0.5"
+      "enum": [
+        "1.0.5",
+        "1.1.0"
+      ]
     },
     "seed": {
       "type": "string",
       "pattern": "^(0|[1-9][0-9]{0,19})$"
     },
     "parameters": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "kind": {
-          "enum": [
-            "rifle",
-            "pistol"
-          ]
-        },
-        "silhouette": {
-          "enum": [
-            "standard",
-            "carbine"
-          ]
-        }
-      },
-      "required": [
-        "kind",
-        "silhouette"
-      ]
+      "type": "object"
     },
     "dependencies": {
       "type": "array",
@@ -55,6 +39,158 @@
     "seed",
     "parameters",
     "dependencies"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "generatorVersion": {
+            "const": "1.0.5"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "parameters": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "enum": [
+                  "rifle",
+                  "pistol"
+                ]
+              },
+              "silhouette": {
+                "enum": [
+                  "standard",
+                  "carbine"
+                ]
+              }
+            },
+            "required": [
+              "kind",
+              "silhouette"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "generatorVersion": {
+            "const": "1.1.0"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "parameters": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "enum": [
+                  "rifle",
+                  "pistol"
+                ]
+              },
+              "parts": {
+                "type": "object"
+              }
+            },
+            "required": [
+              "kind",
+              "parts"
+            ],
+            "if": {
+              "properties": {
+                "kind": {
+                  "const": "pistol"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "parts": {
+                  "type": "object",
+                  "maxProperties": 0
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "parts": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "handguardFrontMm": {
+                      "type": "integer",
+                      "minimum": 300,
+                      "maximum": 485
+                    },
+                    "barrelFrontMm": {
+                      "type": "integer",
+                      "minimum": 340,
+                      "maximum": 640
+                    },
+                    "topRailTeeth": {
+                      "type": "integer",
+                      "minimum": 4,
+                      "maximum": 15
+                    },
+                    "gasBlockZMm": {
+                      "type": "integer",
+                      "minimum": 300,
+                      "maximum": 540
+                    },
+                    "gasTubeZMm": {
+                      "type": "integer",
+                      "minimum": 245,
+                      "maximum": 520
+                    },
+                    "gasTubeLengthMm": {
+                      "type": "integer",
+                      "minimum": 40,
+                      "maximum": 160
+                    },
+                    "frontSightZMm": {
+                      "type": "integer",
+                      "minimum": 200,
+                      "maximum": 590
+                    },
+                    "stock": {
+                      "enum": [
+                        "fixed",
+                        "none"
+                      ]
+                    },
+                    "optic": {
+                      "enum": [
+                        "compact",
+                        "none"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "handguardFrontMm",
+                    "barrelFrontMm",
+                    "topRailTeeth",
+                    "gasBlockZMm",
+                    "gasTubeZMm",
+                    "gasTubeLengthMm",
+                    "frontSightZMm",
+                    "stock",
+                    "optic"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   ],
   "$schema": "https://json-schema.org/draft/2020-12/schema"
 }

@@ -1,0 +1,22 @@
+{
+  "schemaId": "shooter.recipe.weapon.v1",
+  "recipeId": "weapons/rifle-carbine",
+  "generatorId": "geometry.weapon",
+  "generatorVersion": "1.1.0",
+  "seed": "460072030",
+  "parameters": {
+    "kind": "rifle",
+    "parts": {
+      "handguardFrontMm": 380,
+      "barrelFrontMm": 520,
+      "topRailTeeth": 10,
+      "gasBlockZMm": 360,
+      "gasTubeZMm": 300,
+      "gasTubeLengthMm": 80,
+      "frontSightZMm": 400,
+      "stock": "fixed",
+      "optic": "compact"
+    }
+  },
+  "dependencies": []
+}

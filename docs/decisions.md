@@ -1099,3 +1099,26 @@ Consequences: covered, indoor and wall-adjacent areas lose sky ambient while dir
 Evidence on 2026-11-16 at `de6f8b6`: Simulation 329, Game 98, Generation 475 (including six `AmbientOcclusionVolumeTests`), Test-Maps, source provenance and the lock/asmdef/fixture verifiers PASS. Unity EditMode passed 75/75, and the three Mono goldens matched the .NET bake byte for byte. `Compile-GameContent.ps1` and `-Native` PASS. The IL2CPP client built with `MapSurface.shader` and its variant material and zero packed image files; Smoke PASS. A diagnostic `TDM-5v5-v1` Low run bound the packaged map (`SHOOTER_PRODUCT_MAP_VIEW … packaged=1`) with frame p95 4.73 ms (diagnostic, not a reference capture). `Package-Release.ps1 -RequireNativeNav` PASS. A named visual review of the occlusion on all three maps and Balanced/High player runs are Pending.
 
 Rollback: revert the ADR-081 commit and republish content; map surfaces return to URP Lit.
+
+## ADR-082 — Accepted: geometry.weapon 1.1.0 parametric rifle parts
+
+Date 2026-11-16. Step 5 of the owner-approved architecture review. The owner asked for this step, including its reviewed refreeze of `feature-content-lock.json`. Sole integrator owns the weapon generator, recipe schema, fixtures, baseline, registry, the weapon definition generator, tests and docs. No C0, Game-v1, content-format or toolchain lock change; shipped content is unchanged; no acceptance waiver.
+
+Context: after ADR-077/078 a new weapon that reuses an existing mesh is one definition file, but a new rifle shape needed `WeaponGeometry` code. The 1.0.5 generator only knew `standard` and `carbine`, written as about ten `carbine ? a : b` constants.
+
+Decision:
+- **Parts, not silhouettes.** geometry.weapon **1.1.0** sits next to the frozen 1.0.5 (`WeaponRecipe.IsSupportedVersion`). A 1.1.0 rifle states `parameters.parts` in integer millimetres and counts:
+  - `handguardFrontMm`, `barrelFrontMm`, `topRailTeeth`
+  - `gasBlockZMm`, `gasTubeZMm`, `gasTubeLengthMm`, `frontSightZMm`
+  - two modules, `stock` (`fixed`/`none`) and `optic` (`compact`/`none`).
+
+  A pistol states `parts: {}`. `WeaponParts` checks every range and the front-to-back order, so a recipe cannot escape the frozen construction envelope.
+- **Exact migration.** 1.0.5 `standard`/`carbine` resolve to the `WeaponParts.Standard`/`Carbine` presets. Rail, under-rail and forward-fastener counts are now derived by stopping at the handguard front, which reproduces both presets. `WeaponPartsTests` proves that a 1.1.0 recipe with the preset values builds byte-identical LODs, magazine, cycle part, collision and sockets, and that the 1.1.0 empty-parts pistol matches the 1.0.5 pistol.
+- **Gameplay stays put.** Sockets, collision, magazine and cycle part keep the numeric baseline for every part combination, as ADR-072 requires.
+- **Versioned fingerprints.** `WeaponAssetGenerator` and `WeaponMeshSource.Fingerprint` use the recipe's own generator version, so existing 1.0.5 artifacts keep their bytes.
+- **One-file rifles.** A weapon definition may give `visual.geometryParts` instead of `visual.geometryRecipe`. `Tools/generate_weapon_catalog.py` embeds an inline 1.1.0 recipe (id = weapon id) in `WeaponMeshCatalog.g.cs`, and the C# parser enforces the ranges when the catalog loads. `optic: none` cannot be combined with the `ScopedPip` profile optic.
+- **Registry.** `weapon.schema.json` accepts both versions (the parameter shape is tied to the version), `docs/feature-fixtures/rifle-1.1.0.json` is added, and `docs/weapon-recipe-baseline.md` documents the parts. `feature-content-lock.json` is refrozen with a `geometry.weapon` 1.1.0 generator row. `Tools/verify_feature_schemas.py` had been failing since 1.0.5 because it hard-coded 1.0.4 and 20 cases; it now checks the accepted version sets.
+
+Consequences: a new rifle shape is one `Content/Weapons/*.weapon.json` file plus a content republish. All shipped recipes stay on 1.0.5, and the published catalog, map index and weapon index were byte-identical after republishing. New module types (other stocks, optics, muzzle devices, magazines that change collision) would be a later generator version. No new product weapon is added: choosing one is a gameplay and balance decision.
+
+Validation on 2026-11-16: `WeaponPartsTests` 13/13 (byte identity, modules, ranges, canonical key order, asset generator fingerprint), generator tests 22/22, Simulation 329, Game 98, Generation 488, Test-Maps, source provenance, C0/format/feature registry and fixture verifiers, `verify_feature_schemas.py` 23/23 and Unity EditMode all PASS. A pure `Compile-GameContent.ps1` republish left `catalog.json`, `index.json` and `weapons.json` byte-identical. No new product weapon was added, so in-game review of a 1.1.0 shape is Pending. Rollback: revert the ADR-082 commit; 1.0.5 content is unaffected.

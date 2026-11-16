@@ -12,22 +12,20 @@ namespace Shooter.Generation
         {
             if (cancel.IsCancellationRequested) return Fail(ErrorCode.Cancelled, "Weapon generation cancelled.");
             if (request == null) return Fail(ErrorCode.InvalidInput, "Weapon generation request is required.");
-            if (request.Recipe.SchemaId != WeaponRecipe.Schema || request.Recipe.GeneratorId != WeaponRecipe.GeneratorId || request.Recipe.GeneratorVersion != WeaponRecipe.GeneratorVersion)
+            if (request.Recipe.SchemaId != WeaponRecipe.Schema || request.Recipe.GeneratorId != WeaponRecipe.GeneratorId || !WeaponRecipe.IsSupportedVersion(request.Recipe.GeneratorVersion))
                 return Fail(ErrorCode.UnsupportedVersion, "Unsupported weapon schema/generator version.");
             if (request.VisualProfile != "gameplay" && request.VisualProfile != "Low" && request.VisualProfile != "Balanced" && request.VisualProfile != "High")
                 return Fail(ErrorCode.InvalidInput, "Unknown weapon visual profile.");
             if (request.Recipe.Dependencies.Count != 0) return Fail(ErrorCode.InvalidInput, "Initial numeric weapon generator has no dependency inputs.");
             string kind;
-            string silhouette;
             try
             {
-                var parsed = WeaponRecipe.Validate(request.Recipe);
-                kind = parsed.kind;
-                silhouette = parsed.silhouette;
+                kind = WeaponRecipe.Validate(request.Recipe).kind;
             }
             catch (Exception error) when (error is FormatException || error is ArgumentException) { return Fail(ErrorCode.InvalidInput, error.Message); }
             var artifacts = new List<GeneratedArtifact>();
-            ContentId generator = GeneratorFingerprint.Compute(WeaponRecipe.GeneratorId, WeaponRecipe.GeneratorVersion);
+            string version = request.Recipe.GeneratorVersion;
+            ContentId generator = GeneratorFingerprint.Compute(WeaponRecipe.GeneratorId, version);
             void Add(ContentKind contentKind, string variant, byte[] body)
             {
                 byte[] payload = ArtifactCodec.Encode(contentKind, body, generator, request.ToolchainHash);
@@ -37,7 +35,8 @@ namespace Shooter.Generation
             if (request.VisualProfile == "gameplay") Add(ContentKind.Collision, "main", GeometryCodec.EncodeCollision(WeaponGeometry.BuildCollision(kind)));
             else
             {
-                string source = "{\"schemaId\":\"" + WeaponRecipe.Schema + "\",\"recipeId\":\"" + request.Recipe.RecipeId + "\",\"generatorId\":\"" + WeaponRecipe.GeneratorId + "\",\"generatorVersion\":\"" + WeaponRecipe.GeneratorVersion + "\",\"seed\":\"" + request.Recipe.Seed + "\",\"parameters\":{\"kind\":\"" + kind + "\",\"silhouette\":\"" + silhouette + "\"},\"dependencies\":[]}";
+                // The validated canonical parameter bytes carry either the 1.0.5 silhouette or the 1.1.0 parts (ADR-082).
+                string source = "{\"schemaId\":\"" + WeaponRecipe.Schema + "\",\"recipeId\":\"" + request.Recipe.RecipeId + "\",\"generatorId\":\"" + WeaponRecipe.GeneratorId + "\",\"generatorVersion\":\"" + version + "\",\"seed\":\"" + request.Recipe.Seed + "\",\"parameters\":" + System.Text.Encoding.UTF8.GetString(request.Recipe.Parameters) + ",\"dependencies\":[]}";
                 var build = WeaponGeometry.Build(WeaponRecipe.Parse(System.Text.Encoding.UTF8.GetBytes(source)));
                 for (int i = 0; i < build.Lods.Count; i++)
                 {

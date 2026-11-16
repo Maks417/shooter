@@ -51,7 +51,10 @@ COMBAT_REQUIRED = ["fireMode", "fireIntervalTicks", "reloadTicks", "equipTicks",
 
 VISUAL_REQUIRED = ["meshKey", "optic", "magazineCycle", "nearFieldScale", "nearFieldHipBias", "hipRotationDegrees",
                    "cycleTravelMeters"]
-VISUAL_OPTIONAL = {"geometryRecipe"}
+VISUAL_OPTIONAL = {"geometryRecipe", "geometryParts"}
+# ADR-082 geometry.weapon 1.1.0 numeric rifle parts (millimetres or counts).
+GEOMETRY_PART_NUMBERS = ["handguardFrontMm", "barrelFrontMm", "topRailTeeth", "gasBlockZMm", "gasTubeZMm",
+                         "gasTubeLengthMm", "frontSightZMm"]
 FAMILY_FIRE_MODES = {
     "PrimaryGun": {"Automatic", "SemiAutomatic"},
     "Sidearm": {"Automatic", "SemiAutomatic"},
@@ -193,9 +196,29 @@ def validate(root: Path, path: Path, doc, enums) -> dict:
     if family in ("Melee", "Throwable") and (optic != "None" or magazine_cycle):
         raise DefinitionError(v + family + " weapons need optic None and magazineCycle false")
     recipe_source = None
-    if "geometryRecipe" not in visual:
+    if "geometryRecipe" in visual and "geometryParts" in visual:
+        raise DefinitionError(v + "use geometryRecipe or geometryParts, not both")
+    if "geometryParts" in visual:
+        # ADR-082: inline geometry.weapon 1.1.0 rifle parts; the C# recipe parser enforces every range.
+        if mesh_key in PROP_MESH_KEYS:
+            raise DefinitionError(v + "meshKey: " + mesh_key + " is reserved for the built-in prop")
+        if family not in ("PrimaryGun", "Sidearm"):
+            raise DefinitionError(v + "geometryParts: only guns have rifle parts")
+        parts = visual["geometryParts"]
+        keys(parts, v + "geometryParts", GEOMETRY_PART_NUMBERS + ["stock", "optic"])
+        resolved = {name: int(number(parts[name], v + "geometryParts." + name, maximum=1000, integer=True))
+                    for name in GEOMETRY_PART_NUMBERS}
+        resolved["stock"] = choice(parts["stock"], v + "geometryParts.stock", {"fixed", "none"})
+        resolved["optic"] = choice(parts["optic"], v + "geometryParts.optic", {"compact", "none"})
+        if resolved["optic"] == "none" and optic == "ScopedPip":
+            raise DefinitionError(v + "optic: ScopedPip needs geometryParts.optic compact")
+        recipe = {"schemaId": "shooter.recipe.weapon.v1", "recipeId": weapon_id, "generatorId": "geometry.weapon",
+                  "generatorVersion": "1.1.0", "seed": "460072030",
+                  "parameters": {"kind": "rifle", "parts": {k: resolved[k] for k in sorted(resolved)}}, "dependencies": []}
+        recipe_source = json.dumps(recipe, separators=(",", ":"), ensure_ascii=True)
+    elif "geometryRecipe" not in visual:
         if mesh_key not in PROP_MESH_KEYS:
-            raise DefinitionError(v + "geometryRecipe: required unless meshKey is a built-in prop ("
+            raise DefinitionError(v + "geometryRecipe or geometryParts: required unless meshKey is a built-in prop ("
                                   + ", ".join(sorted(PROP_MESH_KEYS)) + ")")
         if magazine_cycle:
             raise DefinitionError(v + "magazineCycle: prop meshes have no magazine or cycle part")

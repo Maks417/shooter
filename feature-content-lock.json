@@ -14,12 +14,18 @@
     "ADR-068",
     "ADR-069",
     "ADR-072",
-    "ADR-076"
+    "ADR-076",
+    "ADR-082"
   ],
   "generators": [
     {
       "id": "geometry.weapon",
       "version": "1.0.5",
+      "schema": "shooter.recipe.weapon.v1"
+    },
+    {
+      "id": "geometry.weapon",
+      "version": "1.1.0",
       "schema": "shooter.recipe.weapon.v1"
     },
     {
@@ -47,14 +53,15 @@
     "docs/feature-fixtures/rifle-1.0.3.json": "3ba8a98fabca9eada96a9220b06d7963357c9c25eff85a931f7fdb8e863d5f69",
     "docs/feature-fixtures/rifle-1.0.4.json": "02ec046fe18a7c3f3236ca478e6bbc76ededce14f971f01c3a665e16665b7346",
     "docs/feature-fixtures/rifle-1.0.5.json": "b60020b0b88dd472a5d60b7a0bc0b915c0f779833a3fcdf1431ce643baa4ee2c",
+    "docs/feature-fixtures/rifle-1.1.0.json": "25c7d6c93e71d0d34f5ccf70398b2ad731521737b11174c2f500376d25e53ea9",
     "docs/feature-fixtures/soldier-1.0.0.json": "e0ff283e23e829171d940c0b3f91c5117bdbe51451c05e3ae68bc004cd964314",
     "docs/feature-fixtures/soldier-1.0.1.json": "d451390ecad776e4b676929e121baab2e227dfdc02bbdddf9640f6b1a8ffccb4",
     "docs/feature-fixtures/soldier-1.0.2.json": "e0f291b94e52bb25148091e102ec2cdc8586e70179d7a5cd6d612c409e1b85cd",
     "docs/feature-schemas/material.schema.json": "c2ff53e7e1ad1cd4f50a577b1c531c53601e02c362522315aef49341b3db33d2",
     "docs/feature-schemas/soldier.schema.json": "122520ca7030949ce90e73e815317f5f65412ba8390f87bc049b995f2c3cbe9d",
-    "docs/feature-schemas/weapon.schema.json": "37112c84291d8ee6ade72feaa4a93057bb89025d77cc2c840ec20820c74d59e8",
+    "docs/feature-schemas/weapon.schema.json": "332600ba49702ff91d53f7105fd07e884322902e02b8536dbdfffa63ccf8b8c0",
     "docs/soldier-baseline.md": "27f73bd9f55ed551fb811aa62b798a25cdb547e7f85552b50dafdf29c1546477",
-    "docs/weapon-recipe-baseline.md": "0e560943c4386152e3febf98038a91325b08233694a8bf2f39e004ffb68b07ee",
+    "docs/weapon-recipe-baseline.md": "60a24cc8ca14a84c963f29e006cf53a7f62ee004065961223aa600c7457c5745",
     "UnityProject/Assets/Shooter/Generation/Core/Compilation/ValidatedRecipe.cs": "9fd953887e489ddcb8946318243e154671ac95e088d9a6c6a9fd1516cacdc019",
     "UnityProject/Assets/Shooter/Generation/Core/Geometry/MeshAssembly.cs": "b645bbf86612e19e9d01fc6e439a4ac1b161a211a439a19a2b02359288a82c95",
     "UnityProject/Assets/Shooter/Generation/Core/Geometry/MeshValidation.cs": "9e15759d3f536c985087f5bb7b1083796fb2205790e2ffb1c3f940bae692d4d3",
@@ -72,9 +79,9 @@
     "UnityProject/Assets/Shooter/Generation/Core/Soldiers/SoldierSkeleton.cs": "f3dab186647fbae93ffe531e641ca91b401b4bb1c051c4cbf4c41cd66caf29af",
     "UnityProject/Assets/Shooter/Generation/Core/Weapons/BoredMuzzle.cs": "d8b74b0b987f197f1f240459fc3c38af983defb22c654d0fda0fe27784614c12",
     "UnityProject/Assets/Shooter/Generation/Core/Weapons/LoadoutPropGeometry.cs": "e997af36b313a96690d6d094ad0978f215c033d6b86dc670e437083af3ebfbe9",
-    "UnityProject/Assets/Shooter/Generation/Core/Weapons/WeaponAssetGenerator.cs": "4e0d657b49587e53786473ed3aabe93be6ab3fe238f78a2fd2cbc61a576673b9",
-    "UnityProject/Assets/Shooter/Generation/Core/Weapons/WeaponGeometry.cs": "da63ae5055e92bf28e078fe31863a9bd77a3d50e8875936825314a61e87ddeda",
-    "UnityProject/Assets/Shooter/Generation/Core/Weapons/WeaponRecipe.cs": "e812d8039c1e49032f78dae237f9f612eaf83614ffd74028d3faafc7306de6e5",
+    "UnityProject/Assets/Shooter/Generation/Core/Weapons/WeaponAssetGenerator.cs": "6f802705310c963ffba33395419c6bd05a8fa733853c49ca91b9073c03134d75",
+    "UnityProject/Assets/Shooter/Generation/Core/Weapons/WeaponGeometry.cs": "5a3e99c72c40f0fbad86797048f7f4c29abb44ca1c56bc701422a2c3018b9d64",
+    "UnityProject/Assets/Shooter/Generation/Core/Weapons/WeaponRecipe.cs": "e6d830ed2d06985268f98a02a2022ef0224818720f5a0decfff0ad8835af6cac",
     "UnityProject/Assets/Shooter/Generation/FeatureRecipes/asphalt.json": "f21e74aab471c4eedd83fb31d8faa7713c7aeaa98327fac1a393d54f9993d967",
     "UnityProject/Assets/Shooter/Generation/FeatureRecipes/concrete.json": "2fbfa8e87cbc2571dcdfa653287d61602f4ad1e614a6d76913b8162e130112fd",
     "UnityProject/Assets/Shooter/Generation/FeatureRecipes/fabric.json": "b80ff9f4abcc15643bf5faaa7d98892422eb2617631e7e1d66cbdf95e4794404",

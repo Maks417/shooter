@@ -156,6 +156,33 @@ class GeneratorTests(unittest.TestCase):
         self.repo.edit("pistol.weapon.json", lambda d: d["visual"].update(meshKey="grenade"))
         self.rejects("reserved for the built-in prop")
 
+    def test_inline_geometry_parts_make_a_new_shape_from_one_file(self):
+        doc = json.loads(self.repo.path("rifle-carbine.weapon.json").read_text(encoding="utf-8"))
+        doc.update(id="weapons/pdw", order=9, displayLabel="PDW")
+        del doc["visual"]["geometryRecipe"]
+        doc["visual"]["meshKey"] = "pdw"
+        doc["visual"]["optic"] = "Irons"
+        doc["visual"]["geometryParts"] = {"handguardFrontMm": 320, "barrelFrontMm": 430, "topRailTeeth": 8,
+                                          "gasBlockZMm": 320, "gasTubeZMm": 280, "gasTubeLengthMm": 60,
+                                          "frontSightZMm": 330, "stock": "none", "optic": "none"}
+        self.repo.write_raw("pdw.weapon.json", json.dumps(doc, indent=2) + "\n")
+        gen.run(self.repo.root, check=False)
+        meshes = (self.repo.root / gen.MESHES_OUT).read_text(encoding="utf-8")
+        self.assertIn('WeaponMeshSource.FromRecipe("pdw"', meshes)
+        self.assertIn('\\"generatorVersion\\":\\"1.1.0\\"', meshes)
+        self.assertIn('\\"barrelFrontMm\\":430', meshes)
+
+    def test_geometry_parts_validation(self):
+        self.repo.edit("rifle.weapon.json", lambda d: d["visual"].update(geometryParts={}))
+        self.rejects("not both")
+        def scoped_without_optic(d):
+            del d["visual"]["geometryRecipe"]
+            d["visual"]["geometryParts"] = {"handguardFrontMm": 380, "barrelFrontMm": 520, "topRailTeeth": 10,
+                                            "gasBlockZMm": 360, "gasTubeZMm": 300, "gasTubeLengthMm": 80,
+                                            "frontSightZMm": 400, "stock": "fixed", "optic": "none"}
+        self.repo.edit("rifle.weapon.json", scoped_without_optic)
+        self.rejects("ScopedPip needs geometryParts.optic compact")
+
     def test_mesh_catalog_embeds_compact_recipes(self):
         gen.run(self.repo.root, check=False)
         meshes = (self.repo.root / gen.MESHES_OUT).read_text(encoding="utf-8")
