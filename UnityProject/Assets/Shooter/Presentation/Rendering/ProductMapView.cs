@@ -28,6 +28,10 @@ namespace Shooter.Presentation.Rendering
         private readonly List<UnityEngine.Object> owned = new List<UnityEngine.Object>();
         private readonly List<GameObject> solids = new List<GameObject>();
         private Shader? litShader;
+        private Shader? mapShader;
+        private static readonly int AoVolumeId = Shader.PropertyToID("_ShooterAoVolume");
+        private static readonly int AoVolumeMinId = Shader.PropertyToID("_ShooterAoVolumeMin");
+        private static readonly int AoVolumeInvSizeId = Shader.PropertyToID("_ShooterAoVolumeInvSize");
         private Mesh? unitBox;
         private Mesh? mapSolids;
         private MeshData? solidsMeshData;
@@ -64,6 +68,10 @@ namespace Shooter.Presentation.Rendering
             litShader = Shader.Find("Universal Render Pipeline/Lit");
             if (litShader == null || !litShader.isSupported)
                 throw new InvalidOperationException("Required locked URP Lit shader missing; no art fallback.");
+            // ADR-081 map surfaces: URP Lit shading plus the baked ambient-occlusion volume.
+            mapShader = Shader.Find("Shooter/MapSurface");
+            if (mapShader == null || !mapShader.isSupported)
+                throw new InvalidOperationException("Required Shooter/MapSurface shader missing; no art fallback.");
         }
 
         public void Install(IReadOnlyList<CollisionBox> boxes, byte[]? metadataBytes, string installedMapId, PackagedVisualPayloads visuals)
@@ -155,6 +163,7 @@ namespace Shooter.Presentation.Rendering
                 // Apron reuses asphalt albedo/normal/mask planes with a darker BaseColor response.
                 apron = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[3], "Numeric apron asphalt",
                     ProductSurfaceResponse.Apron, .5f);
+                BindAmbientOcclusion(visuals);
                 visualsBound = true;
             }
             catch (Exception error)
@@ -162,6 +171,30 @@ namespace Shooter.Presentation.Rendering
                 ReleaseBoundVisuals();
                 throw new InvalidOperationException("Required packaged map visuals missing/corrupt; refusing generation fallback: " + error.Message, error);
             }
+        }
+
+        /// <summary>Upload the packaged ADR-081 volume as a Texture3D (R8, trilinear, clamped) and publish its transform.</summary>
+        private void BindAmbientOcclusion(PackagedVisualPayloads visuals)
+        {
+            byte[] volume = MapVisualClosure.DecodeAmbientOcclusionVolume(visuals);
+            var texture = new Texture3D(MapAmbientOcclusionVolume.SizeX, MapAmbientOcclusionVolume.SizeY, MapAmbientOcclusionVolume.SizeZ,
+                TextureFormat.R8, false)
+            {
+                name = "Product baked AO volume " + visuals.MapId,
+                wrapMode = TextureWrapMode.Clamp,
+                filterMode = FilterMode.Bilinear
+            };
+            texture.SetPixelData(volume, 0);
+            texture.Apply(false, true);
+            owned.Add(texture);
+            Shader.SetGlobalTexture(AoVolumeId, texture);
+            Shader.SetGlobalVector(AoVolumeMinId, new Vector4(
+                (float)MapAmbientOcclusionVolume.MinX, (float)MapAmbientOcclusionVolume.MinY, (float)MapAmbientOcclusionVolume.MinZ, 0f));
+            Shader.SetGlobalVector(AoVolumeInvSizeId, new Vector4(
+                (float)(1.0 / (MapAmbientOcclusionVolume.SizeX * MapAmbientOcclusionVolume.CellXZ)),
+                (float)(1.0 / (MapAmbientOcclusionVolume.SizeY * MapAmbientOcclusionVolume.CellY)),
+                (float)(1.0 / (MapAmbientOcclusionVolume.SizeZ * MapAmbientOcclusionVolume.CellXZ)), 0f));
+            ProductPostProcessing.AoVolumeBound = true;
         }
 
         public void ClearVisuals()
@@ -310,7 +343,7 @@ namespace Shooter.Presentation.Rendering
             var albedo = MapVisualClosure.DecodeMapMaterial(visuals, path);
             MaterialData? normal = DecodeCompanionPlane(visuals, path, "normal");
             MaterialData? mask = DecodeCompanionPlane(visuals, path, "mask");
-            return ProductSurfaceMaterial.Create(litShader!, albedo, normal, mask, label, tileRepeats,
+            return ProductSurfaceMaterial.Create(mapShader!, albedo, normal, mask, label, tileRepeats,
                 value => owned.Add(value), response);
         }
 
@@ -361,6 +394,7 @@ namespace Shooter.Presentation.Rendering
 
         private void ReleaseBoundVisuals()
         {
+            if (ProductPostProcessing.AoVolumeBound) ProductPostProcessing.AoVolumeBound = false;
             visualsBound = false;
             mapSolids = null;
             solidsMeshData = null;

@@ -363,7 +363,11 @@ public static class ShooterBuild
                     AssetDatabase.LoadAssetAtPath<Material>("Assets/Shooter/Settings/HarnessMaterial.mat"),
                     AssetDatabase.LoadAssetAtPath<Shader>("Assets/Shooter/Shaders/ProceduralSurface.shader"),
                     AssetDatabase.LoadAssetAtPath<Shader>("Assets/Shooter/Shaders/AdsScopePip.shader")
-                        ?? throw new InvalidOperationException("Missing AdsScopePip shader")
+                        ?? throw new InvalidOperationException("Missing AdsScopePip shader"),
+                    AssetDatabase.LoadAssetAtPath<Shader>(ShooterPostProcessingBuild.MapSurfaceShaderPath)
+                        ?? throw new InvalidOperationException("Missing MapSurface shader"),
+                    AssetDatabase.LoadAssetAtPath<Material>(ShooterPostProcessingBuild.MapSurfaceVariantPath)
+                        ?? throw new InvalidOperationException("Missing MapSurface variant material; run ShooterPostProcessingBuild.Configure")
                 }).Concat(surfaceVariants).ToArray());
             }
             QualitySettings.SetQualityLevel(0, false);

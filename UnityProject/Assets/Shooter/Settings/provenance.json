@@ -6,11 +6,11 @@
     "sources": [
         {
             "path": "UnityProject/Assets/Shooter/Bootstrap/Editor/ShooterBuild.cs",
-            "sha256": "80f5a36f94ba9a9fe482146de87a2872c2c8be59cd529dc130920ec2c9223db0"
+            "sha256": "4cf228b09b6c037b5d76cb4c04fdc48826c31f1deac8d38bc75a7020ef29f60d"
         },
         {
             "path": "UnityProject/Assets/Shooter/Bootstrap/Editor/ShooterPostProcessingBuild.cs",
-            "sha256": "b004773190abf583852b123504278e8f8df3cfb8bb3017421424df1b532be11f"
+            "sha256": "1438392b32f1cf9517b8b2cbc8704663b94a3025c8028a9e41e1777f6b411334"
         }
     ],
     "artifacts": [
@@ -61,6 +61,10 @@
         {
             "path": "UnityProject/Assets/Shooter/Settings/PostDither16.asset",
             "sha256": "b97ad04e1f2aded27fd956543318307676bfc885e14c563ab4e66e2ee35fa7d5"
+        },
+        {
+            "path": "UnityProject/Assets/Shooter/Settings/ProductMapSurfaceNormalMask.mat",
+            "sha256": "cddd5f6a922924628f02b9483ab1274f24e12e7e3e5076987ad227164c7e8c9a"
         },
         {
             "path": "UnityProject/Assets/Shooter/Settings/ProductPostProcessData.asset",

@@ -190,6 +190,10 @@ namespace Shooter.Generation.Environment
                     GeometryCodec.EncodeMesh(soldierBuild.Lods[lod]), soldierFp, toolchainHash);
 
             // Weapon meshes live in the shared weapon package (ADR-078), not in map packages.
+            // ADR-081 baked ambient-occlusion volume from the plan's collision boxes (deterministic, cached per map).
+            byte[] occlusion = MapAmbientOcclusionVolume.Bake(mapId + ":" + plan.CollisionHash, plan.CollisionBoxes);
+            AddSgaf(dependencies, "material", MapAmbientOcclusionVolume.Path, ContentKind.Material,
+                GeometryCodec.EncodeMaterial(MapAmbientOcclusionVolume.ToAtlas(occlusion)), mapFingerprint, toolchainHash);
 
             for (int i = 0; i < MapVisualClosure.MapMaterialPaths.Length; i++)
             {
@@ -336,6 +340,9 @@ namespace Shooter.Generation.Environment
             }
             for (int i = 0; i < MapVisualClosure.SoldierLodPaths.Length; i++)
                 RequireMesh(MapVisualClosure.SoldierLodPaths[i], soldierFingerprint);
+
+            var occlusionAtlas = MapVisualClosure.DecodeMapMaterial(payloads, MapAmbientOcclusionVolume.Path);
+            MapAmbientOcclusionVolume.FromAtlas(occlusionAtlas);
 
             void RequireMaterial(string path)
             {

@@ -14,6 +14,8 @@ public static class ShooterPostProcessingBuild
 {
     private const string Settings = "Assets/Shooter/Settings";
     public const string PostProcessDataPath = Settings + "/ProductPostProcessData.asset";
+    public const string MapSurfaceShaderPath = "Assets/Shooter/Shaders/MapSurface.shader";
+    public const string MapSurfaceVariantPath = Settings + "/ProductMapSurfaceNormalMask.mat";
     public static readonly string[] RendererPaths =
     {
         Settings + "/FoundationRenderer.asset",
@@ -108,6 +110,15 @@ public static class ShooterPostProcessingBuild
             serialized.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(pipeline);
         }
+
+        // ADR-081: keep the one Shooter/MapSurface keyword set map materials use (normal + mask) in players.
+        var mapShader = AssetDatabase.LoadAssetAtPath<Shader>(MapSurfaceShaderPath)
+            ?? throw new InvalidOperationException("Missing " + MapSurfaceShaderPath);
+        var variant = AssetDatabase.LoadAssetAtPath<Material>(MapSurfaceVariantPath);
+        if (variant == null) { variant = new Material(mapShader); AssetDatabase.CreateAsset(variant, MapSurfaceVariantPath); }
+        variant.shader = mapShader;
+        variant.shaderKeywords = new[] { "_NORMALMAP", "_METALLICSPECGLOSSMAP", "_OCCLUSIONMAP" };
+        EditorUtility.SetDirty(variant);
 
         // SSAO uses InterleavedGradient, so URP's ScreenSpaceAmbientOcclusionDynamicResourcesStripper removes its stock
         // blue-noise images from players; the build's imported-art audit fails if that ever stops being true.

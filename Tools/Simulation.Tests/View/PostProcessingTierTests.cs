@@ -16,6 +16,7 @@ namespace Shooter.Simulation.Tests.View
             Assert.False(low.Bloom);
             Assert.False(low.Ssao);
             Assert.Equal(0f, low.PostExposure);
+            Assert.Equal(1f, low.AoVolumeStrength); // Low relies on the baked AO volume alone (ADR-081).
         }
 
         [Fact]
@@ -34,6 +35,8 @@ namespace Shooter.Simulation.Tests.View
             Assert.True(high.BloomIntensity >= balanced.BloomIntensity);
             Assert.True(high.BloomHighQualityFiltering);
             Assert.False(balanced.BloomHighQualityFiltering);
+            Assert.InRange(balanced.AoVolumeStrength, 0.5f, 1f);
+            Assert.InRange(high.AoVolumeStrength, 0.5f, 1f);
         }
 
         [Fact]

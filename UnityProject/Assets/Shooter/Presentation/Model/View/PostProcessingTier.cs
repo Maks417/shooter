@@ -24,15 +24,18 @@ namespace Shooter.Presentation.View
         public float VignetteIntensity { get; }
         public float VignetteSmoothness { get; }
         public bool Ssao { get; }
+        /// <summary>ADR-081 baked ambient-occlusion volume weight on indirect light (SSAO adds contact detail on top).</summary>
+        public float AoVolumeStrength { get; }
 
         private PostProcessingTier(int tier, bool hdr, bool neutralTonemapping, float postExposure, float contrast, float saturation,
             bool bloom, float bloomThreshold, float bloomIntensity, float bloomScatter, bool bloomHighQualityFiltering,
-            float vignetteIntensity, float vignetteSmoothness, bool ssao)
+            float vignetteIntensity, float vignetteSmoothness, bool ssao, float aoVolumeStrength)
         {
             Tier = tier; Hdr = hdr; NeutralTonemapping = neutralTonemapping; PostExposure = postExposure;
             Contrast = contrast; Saturation = saturation; Bloom = bloom; BloomThreshold = bloomThreshold;
             BloomIntensity = bloomIntensity; BloomScatter = bloomScatter; BloomHighQualityFiltering = bloomHighQualityFiltering;
             VignetteIntensity = vignetteIntensity; VignetteSmoothness = vignetteSmoothness; Ssao = ssao;
+            AoVolumeStrength = aoVolumeStrength;
         }
 
         public const int TierCount = 3;
@@ -44,13 +47,13 @@ namespace Shooter.Presentation.View
             {
                 0 => new PostProcessingTier(0, hdr: false, neutralTonemapping: false, postExposure: 0f, contrast: 6f, saturation: -4f,
                     bloom: false, bloomThreshold: 0f, bloomIntensity: 0f, bloomScatter: 0f, bloomHighQualityFiltering: false,
-                    vignetteIntensity: 0.16f, vignetteSmoothness: 0.4f, ssao: false),
+                    vignetteIntensity: 0.16f, vignetteSmoothness: 0.4f, ssao: false, aoVolumeStrength: 1.0f),
                 1 => new PostProcessingTier(1, hdr: true, neutralTonemapping: true, postExposure: 0.25f, contrast: 10f, saturation: -6f,
                     bloom: true, bloomThreshold: 1.0f, bloomIntensity: 0.25f, bloomScatter: 0.55f, bloomHighQualityFiltering: false,
-                    vignetteIntensity: 0.2f, vignetteSmoothness: 0.4f, ssao: true),
+                    vignetteIntensity: 0.2f, vignetteSmoothness: 0.4f, ssao: true, aoVolumeStrength: 0.8f),
                 _ => new PostProcessingTier(2, hdr: true, neutralTonemapping: true, postExposure: 0.25f, contrast: 10f, saturation: -6f,
                     bloom: true, bloomThreshold: 1.0f, bloomIntensity: 0.35f, bloomScatter: 0.65f, bloomHighQualityFiltering: true,
-                    vignetteIntensity: 0.2f, vignetteSmoothness: 0.4f, ssao: true)
+                    vignetteIntensity: 0.2f, vignetteSmoothness: 0.4f, ssao: true, aoVolumeStrength: 0.8f)
             };
         }
     }

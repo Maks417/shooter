@@ -48,4 +48,9 @@ URP post-processing is code-built: `ShooterPostProcessingBuild` creates the post
 | Balanced | on | Neutral | 0.25 | half-res, 4 samples | exposure +0.25, contrast +10, saturation −6, vignette 0.2 |
 | High | on | Neutral | 0.35, HQ filter | full-res, 8 samples | as Balanced |
 
-To change a value, edit `PostProcessingTier` (volume numbers) or `ShooterPostProcessingBuild` (SSAO and HDR), then run `ShooterPostProcessingBuild.Configure` in the locked editor so settings provenance is regenerated. Baked GI/AO is a planned follow-up (see ADR-080). Low cost on the reference laptop and a named visual review of all tiers are Pending.
+To change a value, edit `PostProcessingTier` (volume numbers) or `ShooterPostProcessingBuild` (SSAO and HDR), then run `ShooterPostProcessingBuild.Configure` in the locked editor so settings provenance is regenerated. Baked ambient occlusion is ADR-081 (next section). Low cost on the reference laptop and a named visual review of all tiers are Pending.
+
+## Baked ambient-occlusion volume (ADR-081)
+
+Each map visual package carries `lighting-ambient-occlusion.bin`, a sky-visibility volume (160 × 16 × 192 cells, 0.5 m × 1 m × 0.5 m) baked by `MapAmbientOcclusionVolume` from the collision boxes at compile time. `ProductMapView` uploads it as a `Texture3D`, and the `Shooter/MapSurface` shader (URP Lit plus the volume on indirect light) draws every map surface. Strength is 1.0 on Low and 0.8 on Balanced/High (`PostProcessingTier.AoVolumeStrength`). To change the bake (ray length, weights, grid), edit `MapAmbientOcclusionVolume`, update the golden hashes in `AmbientOcclusionVolumeTests` and `AmbientOcclusionVolumeEditModeTests` together, and republish content. Actors are not occluded yet.
+

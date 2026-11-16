@@ -121,6 +121,7 @@ namespace Shooter.Generation.Environment
                 list.Add(MaterialCompanionPath(path, "mask"));
             }
             list.AddRange(SoldierMaterialPaths);
+            list.Add(MapAmbientOcclusionVolume.Path);
             return list;
         }
 
@@ -309,6 +310,10 @@ namespace Shooter.Generation.Environment
 
         public static MaterialData DecodeMapMaterial(PackagedVisualPayloads payloads, string path) =>
             DecodeMaterial(payloads, path, MapFingerprint(payloads.MapId));
+
+        /// <summary>ADR-081 baked ambient-occlusion volume (Texture3D layout, see <see cref="MapAmbientOcclusionVolume.Index"/>).</summary>
+        public static byte[] DecodeAmbientOcclusionVolume(PackagedVisualPayloads payloads) =>
+            MapAmbientOcclusionVolume.FromAtlas(DecodeMapMaterial(payloads, MapAmbientOcclusionVolume.Path));
 
         private static string Trim(string message) => message.Length <= 200 ? message : message.Substring(0, 200);
     }

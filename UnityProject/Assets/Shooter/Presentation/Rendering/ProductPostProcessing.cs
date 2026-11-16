@@ -20,6 +20,22 @@ namespace Shooter.Presentation.Rendering
 
         public static int AppliedTier => appliedTier;
 
+        private static readonly int AoStrengthId = Shader.PropertyToID("_ShooterAoVolumeStrength");
+        private static bool aoVolumeBound;
+
+        /// <summary>ADR-081: set by the map view while a baked AO volume is bound; the tier sets its weight.</summary>
+        public static bool AoVolumeBound
+        {
+            get => aoVolumeBound;
+            set { aoVolumeBound = value; ApplyAoStrength(); }
+        }
+
+        private static void ApplyAoStrength()
+        {
+            int tier = appliedTier >= 0 ? appliedTier : Mathf.Clamp(QualitySettings.GetQualityLevel(), 0, PostProcessingTier.TierCount - 1);
+            Shader.SetGlobalFloat(AoStrengthId, aoVolumeBound ? PostProcessingTier.For(tier).AoVolumeStrength : 0f);
+        }
+
         /// <summary>Opt a product camera into post-processing; it follows the active quality tier.</summary>
         public static void Attach(Camera camera)
         {
@@ -43,6 +59,7 @@ namespace Shooter.Presentation.Rendering
                           + " bloom=" + tier.Bloom + " ssao=" + tier.Ssao + " pipelineHdr=" + PipelineHdr());
             }
             appliedTier = tier.Tier;
+            ApplyAoStrength();
             Cameras.RemoveAll(c => c == null);
             foreach (var camera in Cameras)
             {
