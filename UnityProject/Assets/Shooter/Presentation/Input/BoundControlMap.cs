@@ -1,19 +1,33 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.Security.Cryptography;
+using System.Text;
 using Shooter.Game.Contracts;
 using UnityEngine.InputSystem;
 using InputBinding = Shooter.Game.Contracts.InputBinding;
+using UnityInputBinding = UnityEngine.InputSystem.InputBinding;
 
 namespace Shooter.Presentation.Input
 {
     /// <summary>
-    /// Resolves ADR-036 control tokens (Key.*/Mouse.*) against the Input System for applied bindings.
+    /// ADR-036 gameplay bindings on a code-built Input System <see cref="InputActionMap"/>.
+    /// Each ADR-036 action is one Button action whose single binding uses the schema-2 default control;
+    /// applied user controls become Input System binding overrides. No .inputactions asset is used.
     /// </summary>
-    public sealed class BoundControlMap
+    public sealed class BoundControlMap : IDisposable
     {
+        public const string MapName = "Gameplay";
+
+        private static InteractiveRebind? sharedCapture;
+        private static int sharedCaptureLastPollFrame = int.MinValue;
+
         private readonly Dictionary<string, string> actionToControl =
             new Dictionary<string, string>(StringComparer.Ordinal);
+        private InputActionMap? map;
+
+        /// <summary>The code-built action map; created and enabled on first use.</summary>
+        public InputActionMap Map => EnsureMap();
 
         public void Apply(IReadOnlyList<InputBinding> bindings)
         {
@@ -21,6 +35,7 @@ namespace Shooter.Presentation.Input
             actionToControl.Clear();
             for (int i = 0; i < bindings.Count; i++)
                 actionToControl[bindings[i].Action] = bindings[i].Control;
+            if (map != null) SyncOverrides(map);
         }
 
         public void ApplyDefaults() => Apply(UserSettings.DefaultBindings());
@@ -30,116 +45,146 @@ namespace Shooter.Presentation.Input
 
         public bool IsPressed(string action)
         {
-            if (!actionToControl.TryGetValue(action, out string? control) || control == null)
-                return false;
-            return IsControlPressed(control);
+            InputAction? found = FindAction(action);
+            return found != null && found.IsPressed();
         }
 
         public bool WasPressedThisFrame(string action)
         {
-            if (!actionToControl.TryGetValue(action, out string? control) || control == null)
-                return false;
-            return WasControlPressedThisFrame(control);
+            InputAction? found = FindAction(action);
+            return found != null && found.WasPressedThisFrame();
+        }
+
+        /// <summary>Input System override JSON for every binding that differs from the schema-2 default.</summary>
+        public string SaveOverridesJson() => EnsureMap().SaveBindingOverridesAsJson();
+
+        /// <summary>
+        /// Replace all overrides with <paramref name="json"/> (empty restores defaults) and refresh the
+        /// ADR-036 token view from the resulting effective paths.
+        /// </summary>
+        public void LoadOverridesJson(string? json)
+        {
+            InputActionMap built = EnsureMap();
+            built.LoadBindingOverridesFromJson(json ?? string.Empty, removeExisting: true);
+            actionToControl.Clear();
+            foreach (InputAction action in built.actions)
+            {
+                string? token = ControlTokens.FromPath(action.bindings[0].effectivePath);
+                if (token != null) actionToControl[action.name] = token;
+            }
+        }
+
+        /// <summary>Current ADR-036 bindings in default-action order.</summary>
+        public InputBinding[] ToBindings()
+        {
+            var defaults = UserSettings.DefaultBindings();
+            var result = new List<InputBinding>(defaults.Count);
+            for (int i = 0; i < defaults.Count; i++)
+            {
+                if (actionToControl.TryGetValue(defaults[i].Action, out string? control) && !string.IsNullOrEmpty(control))
+                    result.Add(new InputBinding(defaults[i].Action, control));
+            }
+            return result.ToArray();
+        }
+
+        public void Dispose()
+        {
+            if (map == null) return;
+            map.Disable();
+            map.Dispose();
+            map = null;
         }
 
         public static bool IsControlPressed(string control)
         {
-            if (string.IsNullOrEmpty(control)) return false;
-            if (control.StartsWith("Key.", StringComparison.OrdinalIgnoreCase))
-            {
-                var keyboard = Keyboard.current;
-                if (keyboard == null) return false;
-                Key parsed = ParseKey(control.Substring(4));
-                if (parsed == Key.None) return false;
-                var key = keyboard[parsed];
-                return key != null && key.isPressed;
-            }
-            if (control.StartsWith("Mouse.", StringComparison.OrdinalIgnoreCase))
-            {
-                var mouse = Mouse.current;
-                if (mouse == null) return false;
-                return ParseMouseButton(control.Substring(6)) switch
-                {
-                    0 => mouse.leftButton.isPressed,
-                    1 => mouse.rightButton.isPressed,
-                    2 => mouse.middleButton.isPressed,
-                    _ => false
-                };
-            }
-            return false;
+            var button = ControlTokens.FindCurrentControl(control);
+            return button != null && button.isPressed;
         }
 
         public static bool WasControlPressedThisFrame(string control)
         {
-            if (string.IsNullOrEmpty(control)) return false;
-            if (control.StartsWith("Key.", StringComparison.OrdinalIgnoreCase))
-            {
-                var keyboard = Keyboard.current;
-                if (keyboard == null) return false;
-                Key parsed = ParseKey(control.Substring(4));
-                if (parsed == Key.None) return false;
-                var key = keyboard[parsed];
-                return key != null && key.wasPressedThisFrame;
-            }
-            if (control.StartsWith("Mouse.", StringComparison.OrdinalIgnoreCase))
-            {
-                var mouse = Mouse.current;
-                if (mouse == null) return false;
-                return ParseMouseButton(control.Substring(6)) switch
-                {
-                    0 => mouse.leftButton.wasPressedThisFrame,
-                    1 => mouse.rightButton.wasPressedThisFrame,
-                    2 => mouse.middleButton.wasPressedThisFrame,
-                    _ => false
-                };
-            }
-            return false;
+            var button = ControlTokens.FindCurrentControl(control);
+            return button != null && button.wasPressedThisFrame;
         }
 
-        /// <summary>Capture the first pressed Key.*/Mouse.* token this frame, or null.</summary>
+        /// <summary>
+        /// Poll an Input System interactive rebind for the first pressed Key.*/Mouse.* token, or null.
+        /// The first poll of a listening period starts a <see cref="InteractiveRebind"/>; a gap of more than one
+        /// frame between polls discards the old operation. Escape returns the reserved token so callers cancel.
+        /// </summary>
         public static string? TryCapturePressedControlThisFrame()
         {
-            var keyboard = Keyboard.current;
-            if (keyboard != null)
+            int frame = UnityEngine.Time.frameCount;
+            if (sharedCapture != null && frame > sharedCaptureLastPollFrame + 1)
             {
-                foreach (var key in keyboard.allKeys)
+                sharedCapture.Dispose();
+                sharedCapture = null;
+            }
+            sharedCaptureLastPollFrame = frame;
+
+            if (WasControlPressedThisFrame(UserSettings.ReservedEscapeControl))
+            {
+                sharedCapture?.Dispose();
+                sharedCapture = null;
+                return UserSettings.ReservedEscapeControl;
+            }
+
+            sharedCapture ??= InteractiveRebind.Begin();
+            if (!sharedCapture.TryTakeResult(out string? token)) return null;
+            sharedCapture.Dispose();
+            sharedCapture = null;
+            return token;
+        }
+
+        /// <summary>Stable binding id per ADR-036 action so persisted override JSON survives map rebuilds.</summary>
+        public static Guid BindingId(string action)
+        {
+            using var md5 = MD5.Create();
+            byte[] hash = md5.ComputeHash(Encoding.UTF8.GetBytes("shooter.input.gameplay.v1/" + action));
+            return new Guid(hash);
+        }
+
+        private InputAction? FindAction(string action)
+        {
+            if (string.IsNullOrEmpty(action)) return null;
+            return EnsureMap().FindAction(action, throwIfNotFound: false);
+        }
+
+        private InputActionMap EnsureMap()
+        {
+            if (map != null) return map;
+            var built = new InputActionMap(MapName);
+            var defaults = UserSettings.DefaultBindings();
+            for (int i = 0; i < defaults.Count; i++)
+            {
+                var action = built.AddAction(defaults[i].Action, InputActionType.Button);
+                // Match device-level isPressed when a key is already held as the map enables.
+                action.wantsInitialStateCheck = true;
+                action.AddBinding(new UnityInputBinding
                 {
-                    if (key == null || !key.wasPressedThisFrame) continue;
-                    if (key.keyCode == Key.Escape) return UserSettings.ReservedEscapeControl;
-                    return "Key." + key.keyCode;
-                }
+                    path = ControlTokens.ToPath(defaults[i].Control) ?? string.Empty,
+                    id = BindingId(defaults[i].Action)
+                });
             }
+            SyncOverrides(built);
+            built.Enable();
+            map = built;
+            return built;
+        }
 
-            var mouse = Mouse.current;
-            if (mouse != null)
+        private void SyncOverrides(InputActionMap target)
+        {
+            foreach (InputAction action in target.actions)
             {
-                if (mouse.leftButton.wasPressedThisFrame) return "Mouse.Left";
-                if (mouse.rightButton.wasPressedThisFrame) return "Mouse.Right";
-                if (mouse.middleButton.wasPressedThisFrame) return "Mouse.Middle";
+                string defaultPath = action.bindings[0].path;
+                string overridePath = actionToControl.TryGetValue(action.name, out string? control)
+                    ? ControlTokens.ToPath(control) ?? string.Empty
+                    : string.Empty; // Unbound or unsupported token: disabled binding, never pressed.
+                if (string.Equals(overridePath, defaultPath, StringComparison.OrdinalIgnoreCase))
+                    action.RemoveBindingOverride(0);
+                else
+                    action.ApplyBindingOverride(0, overridePath);
             }
-            return null;
-        }
-
-        private static Key ParseKey(string token)
-        {
-            if (string.Equals(token, "Digit1", StringComparison.OrdinalIgnoreCase)) return Key.Digit1;
-            if (string.Equals(token, "Digit2", StringComparison.OrdinalIgnoreCase)) return Key.Digit2;
-            if (string.Equals(token, "LeftShift", StringComparison.OrdinalIgnoreCase)) return Key.LeftShift;
-            if (string.Equals(token, "RightShift", StringComparison.OrdinalIgnoreCase)) return Key.RightShift;
-            if (string.Equals(token, "LeftCtrl", StringComparison.OrdinalIgnoreCase)) return Key.LeftCtrl;
-            if (string.Equals(token, "RightCtrl", StringComparison.OrdinalIgnoreCase)) return Key.RightCtrl;
-            if (string.Equals(token, "LeftAlt", StringComparison.OrdinalIgnoreCase)) return Key.LeftAlt;
-            if (string.Equals(token, "RightAlt", StringComparison.OrdinalIgnoreCase)) return Key.RightAlt;
-            if (Enum.TryParse(token, ignoreCase: true, out Key parsed)) return parsed;
-            return Key.None;
-        }
-
-        private static int ParseMouseButton(string token)
-        {
-            if (string.Equals(token, "Left", StringComparison.OrdinalIgnoreCase)) return 0;
-            if (string.Equals(token, "Right", StringComparison.OrdinalIgnoreCase)) return 1;
-            if (string.Equals(token, "Middle", StringComparison.OrdinalIgnoreCase)) return 2;
-            return -1;
         }
     }
 }

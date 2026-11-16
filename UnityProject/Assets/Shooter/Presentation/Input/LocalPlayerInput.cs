@@ -83,7 +83,7 @@ namespace Shooter.Presentation.Input
     /// tick consumption retains edges across zero-tick frames and consumes each edge once.
     /// Applied ADR-036 bindings drive gameplay sampling; Escape remains reserved for shell recovery.
     /// </summary>
-    public sealed class LocalPlayerInput
+    public sealed class LocalPlayerInput : System.IDisposable
     {
         // Largest convenient float below the exact Game-v1 +/-89 degree double boundary.
         public const float MaxPitchRadians = 1.5533429f;
@@ -162,6 +162,9 @@ namespace Shooter.Presentation.Input
         {
             bindings.Apply(map ?? throw new System.ArgumentNullException(nameof(map)));
         }
+
+        /// <summary>Disable and release the code-built Input System action map.</summary>
+        public void Dispose() => bindings.Dispose();
 
         /// <summary>Call after the local human's grenade leaves the hand this life.</summary>
         public void NotifyGrenadeSpent()
