@@ -403,6 +403,7 @@ namespace Shooter.Presentation.Session
             float dt = reducedMotion ? 0 : Mathf.Min(Time.unscaledDeltaTime, .05f);
             sceneTime += dt;
             actors?.TickMenuShowcase(dt);
+            ApplyCameraDrift();
             if (!reducedMotion)
             {
                 for (int i = 0; i < motes.Count; i++)
@@ -414,6 +415,42 @@ namespace Shooter.Presentation.Session
                 }
             }
             RenderStage();
+        }
+
+        private float openedAt = -1f;
+        private Vector2 parallax;
+
+        // The establishing push-in plays once; re-enabling the stage (focus changes, returning from a match) does not replay it.
+        private void OnEnable()
+        {
+            if (openedAt < 0f) openedAt = Time.unscaledTime;
+        }
+
+        /// <summary>ADR-086 slow stage camera drift, short push-in after opening and gentle pointer parallax.</summary>
+        private void ApplyCameraDrift()
+        {
+            if (stageCamera == null) return;
+            if (openedAt < 0f) openedAt = Time.unscaledTime;
+            Vector3 basePos = MenuStagingComposition.CameraPosition;
+            Quaternion baseRot = Quaternion.LookRotation(MenuStagingComposition.CameraLookAt - basePos);
+            // Real elapsed time: the stage renders at 30 Hz, so per-frame sceneTime under-counts.
+            float sinceOpen = Time.unscaledTime - openedAt;
+            var drift = Menus.ShellMotion.CameraDrift(sinceOpen, sinceOpen, reducedMotion);
+            Vector2 target = Vector2.zero;
+            var mouse = UnityEngine.InputSystem.Mouse.current;
+            if (mouse != null && Screen.width > 0 && Screen.height > 0)
+            {
+                Vector2 m = mouse.position.ReadValue();
+                var p = Menus.ShellMotion.PointerParallax(m.x / Screen.width * 2f - 1f, m.y / Screen.height * 2f - 1f, reducedMotion);
+                target = new Vector2(p.X, p.Y);
+            }
+            float k = reducedMotion ? 1f : 1f - Mathf.Exp(-3f / 30f);
+            parallax = Vector2.Lerp(parallax, target, k);
+            Vector3 right = baseRot * Vector3.right, up = baseRot * Vector3.up, forward = baseRot * Vector3.forward;
+            Vector3 offset = right * (drift.X + parallax.x) + up * (drift.Y + parallax.y) + forward * drift.Z;
+            stageCamera.transform.position = basePos + offset;
+            // Look target moves less than the eye, which reads as depth parallax on the staged layers.
+            stageCamera.transform.LookAt(MenuStagingComposition.CameraLookAt + right * (drift.X + parallax.x) * .35f);
         }
 
         private void CaptureMapCards()

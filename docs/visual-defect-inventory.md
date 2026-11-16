@@ -37,6 +37,7 @@ Do not delete failed M1 artifacts, do not relabel FAIL as PASS, and do not inher
 | VD-D08 | first-person hands | SoftFixedPendingReview | T083 packaged trigger/support gloves and sleeves; rifle observed, live pistol/reload/ADS and articulated fingers/full magazine exchange remain Pending |
 | VD-D09 | ui craft | SoftFixedPendingReview | ADR-084 SDF UI layer: anti-aliased rounded plates/buttons/cards, gradients, shadows, focus glow, eased emphasis, pill sliders/switch toggles, procedural kill medal; menu/setup/settings observed in player, combat HUD/ribbon/loading and 720p/150% review Pending |
 | VD-D10 | icons | SoftFixedPendingReview | ADR-085 generated SDF icon atlas: mesh-traced weapon silhouettes, faction emblems, category glyphs, crown; scoreboard/settings/ammo plate observed in player; kill-feed during kills, results and 150% review Pending |
+| VD-D11 | motion | SoftFixedPendingReview | ADR-086 animated debrief (banner sweep, score count-up, award medals, staggered cards), screen enter veil/rise, menu camera drift/push-in/parallax; preview and menu observed in player, real end-of-match debrief and reduced-motion pass Pending |
 | VD-D06 | reference | PendingOwner | Exact Bodycam/Warface comparison frames/timecodes not yet selected (BFV chat screenshots establish direction only) |
 
 VD gaps are tracked for the [VD0–VD9](design-milestones.md) track and the [art brief](visual-art-brief.md). Closing a VD-D* row requires evidence and owner/technical review; software merges alone do not mark them resolved.

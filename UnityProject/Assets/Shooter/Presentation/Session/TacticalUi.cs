@@ -52,15 +52,18 @@ namespace Shooter.Presentation.Session
         public float Height { get; private set; }
         public Rect Safe { get; private set; }
         public Texture? SceneTexture { get; set; }
+        private float enterOffset;
 
         public static Rect SafeArea(float width, float height) => new Rect(width * .05f, height * .05f, width * .9f, height * .9f);
 
-        public void Begin(float scale, string screenId, bool keyboardNavigation = true)
+        public void Begin(float scale, string screenId, bool keyboardNavigation = true, float offsetY = 0f)
         {
             savedMatrix = GUI.matrix;
             savedColor = GUI.color;
             GUI.color = Color.white;
-            GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(scale, scale, 1));
+            // ADR-086: optional enter offset (logical px) moves the whole screen; input follows the matrix.
+            GUI.matrix = Matrix4x4.TRS(new Vector3(0f, offsetY * scale, 0f), Quaternion.identity, new Vector3(scale, scale, 1));
+            enterOffset = offsetY;
             Width = Screen.width / scale;
             Height = Screen.height / scale;
             Safe = SafeArea(Width, Height);
@@ -864,6 +867,15 @@ namespace Shooter.Presentation.Session
         }
 
         public void Backdrop(bool overlay = false)
+        {
+            // The backdrop stays put while page content rises in (ADR-086 enter offset).
+            Matrix4x4 contentMatrix = GUI.matrix;
+            GUI.matrix = contentMatrix * Matrix4x4.Translate(new Vector3(0f, -enterOffset, 0f));
+            try { DrawBackdrop(overlay); }
+            finally { GUI.matrix = contentMatrix; }
+        }
+
+        private void DrawBackdrop(bool overlay)
         {
             if (!overlay && SceneTexture != null)
             {

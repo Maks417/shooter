@@ -116,6 +116,22 @@ namespace Shooter.Presentation.Scoreboard
             rows.Sort(CompareRows);
         }
 
+        /// <summary>
+        /// Review-only binding (UI gallery): shows supplied rows through the same debrief path. Never used by the
+        /// match flow, which binds live snapshots or immutable <see cref="MatchResults"/>.
+        /// </summary>
+        public void BindPreview(IReadOnlyList<ScoreboardRow> previewRows, uint team1Kills, uint team2Kills, MatchOutcome outcome, FinishReason reason)
+        {
+            if (previewRows == null) throw new ArgumentNullException(nameof(previewRows));
+            rows.Clear();
+            Team1Kills = team1Kills;
+            Team2Kills = team2Kills;
+            Outcome = outcome;
+            Reason = reason;
+            for (int i = 0; i < previewRows.Count && rows.Count < MaxRows; i++) rows.Add(previewRows[i]);
+            rows.Sort(CompareRows);
+        }
+
         public string LocalOutcomeLabel(byte localTeam)
         {
             if (Outcome == MatchOutcome.Draw) return "Draw";

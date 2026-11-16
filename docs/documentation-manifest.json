@@ -26,7 +26,7 @@
     "content-schemas/release-catalog.valid.json": "7abce49881d8714616dcaeb9c08bc96f94377f0b371733011664e007c8255d74",
     "contract-details.md": "bc0a0d7f6862da5522f1e021b73d980c410df789e3a03ad4a002a6e53aa2b78d",
     "contracts.md": "f515ffe6ae134461648849d42016b1ce1f24c515fd961c0e288a622d86172e54",
-    "decisions.md": "c571c0689f5b63fbb5f90d357ae71166d974530e36df9d81d547e469183a7fee",
+    "decisions.md": "78511f6dc1c047f7d9a6a2e96cdb7e807cfdd141d6fab099fb1f7ad5decdd686",
     "design-milestones.md": "d8218f039cbeb79fc5e486d9a8f0cafa5f944c3f32c889ad17935ed8c74ed1b8",
     "deterministic-format.md": "7f3a9be8b9c128ea2803064b649f3a23f0051b1501109d2032b6f2bc6134c7d1",
     "domain-model.md": "099efc93c03aeb920efd3428df1d824d04faa89bca8e951954ca72d40544baff",
@@ -184,7 +184,7 @@
     "verify_docs.py": "b213b88e001c2fba0ab82d1d400c0b4903716a9a6ae3496c7bcc0540c34bda97",
     "vision.md": "d34284b7ae1b3defa6695430ef8ec173f85d21b5738333c22ccb78168688db1c",
     "visual-art-brief.md": "97e6b57cd77b36a0140b15ac4a01d20deed956f76a6e335267655408ea514c28",
-    "visual-defect-inventory.md": "1344628aca9be221d79c87dd2ec43ec5088efb5819071c43b35a8272461eaafa",
+    "visual-defect-inventory.md": "444c6b796a5f644237d2c4942fadc8d48da21f095ca4aa84fbbb63e57e503ac4",
     "weapon-recipe-baseline.md": "60a24cc8ca14a84c963f29e006cf53a7f62ee004065961223aa600c7457c5745"
   }
 }

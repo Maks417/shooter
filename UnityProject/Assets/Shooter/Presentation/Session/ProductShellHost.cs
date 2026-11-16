@@ -32,8 +32,19 @@ namespace Shooter.Presentation.Session
         private bool scoreboardHeld;
         private bool quitRequested;
         private float uiScale = 1f;
+        private ShellScreen enteredScreen = (ShellScreen)255;
+        private float enteredAt;
         // Review-only: -shooterUiGallery 1 replaces Main with the ADR-084 element gallery.
         private readonly bool uiGallery = System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-shooterUiGallery") >= 0;
+        // "-shooterUiGallery results" shows the debrief preview instead of the element gallery.
+        private readonly string uiGalleryMode = GalleryMode();
+
+        private static string GalleryMode()
+        {
+            var args = System.Environment.GetCommandLineArgs();
+            int i = System.Array.IndexOf(args, "-shooterUiGallery");
+            return i >= 0 && i + 1 < args.Length ? args[i + 1] : "";
+        }
         private IUserSettingsStore? settingsStore;
         private UserSettingsEditor? settingsEditor;
         private IClientSettingsApplier? settingsApplier;
@@ -432,13 +443,21 @@ namespace Shooter.Presentation.Session
                 ui.ReducedMotion = settingsEditor.Applied.ReducedCameraMotion;
                 ui.ReducedFlash = settingsEditor.Applied.ReducedFlash;
             }
-            ui.Begin(uiScale, navigation.Screen.ToString(), bindingEditor == null || !bindingEditor.IsListening);
+            if (navigation.Screen != enteredScreen)
+            {
+                enteredScreen = navigation.Screen;
+                enteredAt = Time.unscaledTime;
+            }
+            float sinceEnter = Time.unscaledTime - enteredAt;
+            ui.Begin(uiScale, navigation.Screen.ToString(), bindingEditor == null || !bindingEditor.IsListening,
+                ShellMotion.EnterOffset(navigation.Screen, sinceEnter, ui.ReducedMotion));
             try
             {
             switch (navigation.Screen)
             {
                 case ShellScreen.Main:
-                    if (uiGallery) ui.DrawUiGallery();
+                    if (uiGalleryMode == "results") DrawDebriefPreview();
+                    else if (uiGallery) ui.DrawUiGallery();
                     else DrawMain(s);
                     break;
                 case ShellScreen.Setup:
@@ -467,6 +486,11 @@ namespace Shooter.Presentation.Session
                     if (scoreboardHeld) DrawScoreboard(s);
                     break;
             }
+            // ADR-086: freshly entered pages rise out of a short dark veil.
+            float veil = ShellMotion.EnterVeil(navigation.Screen, sinceEnter, ui.ReducedMotion);
+            if (veil > 0.005f)
+                TacticalUi.Fill(new Rect(-40, -60, ui.Width + 80, ui.Height + 120),
+                    new Color(TacticalUi.Background.r, TacticalUi.Background.g, TacticalUi.Background.b, veil * .85f));
             }
             finally { ui.End(); }
         }
@@ -932,12 +956,101 @@ namespace Shooter.Presentation.Session
                 return;
             }
             scoreboard.BindResults(results);
-            ui.Header(ShellUiCopy.EyebrowDebrief, scoreboard.LocalOutcomeLabel(1).ToUpperInvariant(), ShellUiCopy.TeamDeathmatch);
-            DrawTeamTables(ui.Safe.y + 78, ui.Safe.height - 150);
-            float y = ui.Safe.yMax - 52;
-            if (ui.Button(new Rect(ui.Safe.x, y, 180, 40), "results.replay", ShellUiCopy.ResultsPlayAgain, primary: true)) RestartMatch();
-            if (ui.Button(new Rect(ui.Safe.x + 192, y, 180, 40), "results.menu", ShellUiCopy.ResultsMain)) LeaveMatch(abort: false);
-            ui.Label(new Rect(ui.Safe.x + 392, y, ui.Safe.width - 392, 40), results.Reason == FinishReason.ScoreLimit ? "SCORE LIMIT REACHED" : "TIME LIMIT REACHED", 12, TacticalUi.Muted, TextAnchor.MiddleRight);
+            DrawDebrief(Time.unscaledTime - enteredAt);
+        }
+
+        /// <summary>Review-only debrief preview with sample rows (<c>-shooterUiGallery results</c>); loops every 7 s.</summary>
+        private void DrawDebriefPreview()
+        {
+            ui.Backdrop();
+            var rows = new[]
+            {
+                new ScoreboardRow(new ParticipantId(1), "Player", 1, true, 1450, 14, 5, true, true),
+                new ScoreboardRow(new ParticipantId(2), "Nora", 1, false, 1200, 12, 9, false, true),
+                new ScoreboardRow(new ParticipantId(3), "Elena", 1, false, 900, 9, 3, false, true),
+                new ScoreboardRow(new ParticipantId(4), "Cole", 2, false, 1300, 15, 11, false, true),
+                new ScoreboardRow(new ParticipantId(5), "Omar", 2, false, 700, 7, 12, false, true),
+                new ScoreboardRow(new ParticipantId(6), "Aya", 2, false, 400, 4, 13, false, true),
+            };
+            scoreboard.BindPreview(rows, 150, 132, MatchOutcome.Team1, FinishReason.ScoreLimit);
+            DrawDebrief((Time.unscaledTime - enteredAt) % 7f);
+        }
+
+        private void DrawDebrief(float t)
+        {
+            bool reduced = ui.ReducedMotion;
+            Rect a = ui.Safe;
+            ui.Header(ShellUiCopy.EyebrowDebrief, "Match debrief", ShellUiCopy.TeamDeathmatch);
+
+            // Outcome banner: sweeps in from the left, team emblems flank counting scores.
+            string outcome = scoreboard.LocalOutcomeLabel(1).ToUpperInvariant();
+            Color tone = scoreboard.Outcome == MatchOutcome.Team1 ? TacticalUi.Ally
+                : scoreboard.Outcome == MatchOutcome.Team2 ? TacticalUi.Enemy : TacticalUi.Muted;
+            Rect band = new Rect(a.x, a.y + 74, a.width, 92);
+            float reveal = ResultsPresentation.BannerReveal(t, reduced);
+            TacticalUi.Plate(new Rect(band.x, band.y, Mathf.Max(8f, band.width * reveal), band.height),
+                UiSdf.Style.Solid(new Color(tone.r * .35f, tone.g * .35f, tone.b * .35f, .92f), Hud.UiShapeParams.PlateRadius)
+                    .WithGradient(new Color(.03f, .04f, .045f, .9f), UiSdf.Gradient.Horizontal).WithShadow());
+            TacticalUi.Plate(new Rect(band.x, band.y, Mathf.Max(8f, band.width * reveal), 2f), UiSdf.Style.Solid(tone, 1f));
+            float textAlpha = reduced ? 1f : Hud.UiMotion.EnterAlpha(t - .2f);
+            Color ink = new Color(TacticalUi.Text.r, TacticalUi.Text.g, TacticalUi.Text.b, textAlpha);
+            ui.Label(new Rect(band.x, band.y + 8, band.width, 56), outcome, 52, ink, TextAnchor.MiddleCenter);
+            string reason = scoreboard.Reason == FinishReason.ScoreLimit ? "SCORE LIMIT REACHED" : "TIME LIMIT REACHED";
+            ui.Label(new Rect(band.x, band.y + 62, band.width, 20), reason, 12, new Color(TacticalUi.Muted.r, TacticalUi.Muted.g, TacticalUi.Muted.b, textAlpha), TextAnchor.MiddleCenter);
+            for (byte team = 1; team <= 2; team++)
+            {
+                Color c = team == 1 ? TacticalUi.Ally : TacticalUi.Enemy;
+                c.a = textAlpha;
+                int shown = ResultsPresentation.TeamScore(team == 1 ? scoreboard.Team1Kills : scoreboard.Team2Kills, t, reduced);
+                float ex = team == 1 ? band.x + 24 : band.xMax - 24 - 56;
+                TacticalUi.Icon(new Rect(ex, band.y + 18, 56, 56), team == 1 ? IconLibrary.EmblemAlly : IconLibrary.EmblemEnemy, c, shadow: true);
+                Rect score = team == 1 ? new Rect(ex + 68, band.y + 14, 160, 64) : new Rect(ex - 172, band.y + 14, 160, 64);
+                ui.Label(score, shown.ToString(), 48, c, team == 1 ? TextAnchor.MiddleLeft : TextAnchor.MiddleRight);
+            }
+
+            // Award cards: medal stamps in, card rises, staggered left to right.
+            float y = band.yMax + 16;
+            var awards = ResultsPresentation.Awards(scoreboard.Rows);
+            if (awards.Count > 0)
+            {
+                const float gap = 14f, ch = 104f;
+                float cw = (a.width - gap * (ResultsPresentation.MaxAwards - 1)) / ResultsPresentation.MaxAwards;
+                for (int i = 0; i < awards.Count; i++)
+                {
+                    var award = awards[i];
+                    float e = ResultsPresentation.AwardElapsed(t, i);
+                    float alpha = reduced ? 1f : Hud.UiMotion.EnterAlpha(e);
+                    if (alpha <= 0.01f) continue;
+                    float rise = reduced ? 0f : (1f - Hud.UiMotion.OutCubic(Hud.UiMotion.Progress(e, .3f))) * 14f;
+                    Rect card = new Rect(a.x + i * (cw + gap), y + rise, cw, ch);
+                    var plate = UiSdf.Style.Solid(new Color(.05f, .065f, .072f, .94f * alpha), Hud.UiShapeParams.CardRadius)
+                        .WithGradient(new Color(.03f, .04f, .045f, .94f * alpha), UiSdf.Gradient.Vertical).WithShadow(.35f * alpha);
+                    if (award.IsLocal) plate = plate.WithGlow(TacticalUi.Accent, 8f, (ui.ReducedFlash ? .14f : .26f) * alpha);
+                    TacticalUi.Plate(card, plate);
+                    // Medal centre leaves room for its laurel strokes (about 0.4 × size each side) inside the card.
+                    float medal = 50f * Hud.UiMotion.StampScale(e, reduced);
+                    TacticalUi.Medal(new Rect(card.x + 52 - medal * .5f, card.center.y - medal * .5f + 6, medal, medal), award.Tier, alpha,
+                        Hud.UiMotion.GlintPosition(e, ui.ReducedFlash));
+                    float tx = card.x + 110;
+                    Color team = award.Team == 1 ? TacticalUi.Ally : TacticalUi.Enemy;
+                    ui.Label(new Rect(tx, card.y + 14, cw - 118, 16), award.Title, 12, new Color(TacticalUi.Accent.r, TacticalUi.Accent.g, TacticalUi.Accent.b, alpha));
+                    ui.Label(new Rect(tx, card.y + 34, cw - 118, 28), (award.IsLocal ? "YOU / " : "") + award.DisplayName, 22, new Color(team.r, team.g, team.b, alpha));
+                    ui.Label(new Rect(tx, card.y + 66, cw - 118, 20), award.Stat, 14, new Color(TacticalUi.Muted.r, TacticalUi.Muted.g, TacticalUi.Muted.b, alpha));
+                }
+                y += ch + 18;
+            }
+
+            // Team tables fade in last.
+            float tableHeight = a.yMax - 64 - y;
+            DrawTeamTables(y, tableHeight);
+            float tablesVeil = 1f - ResultsPresentation.TablesAlpha(t, reduced);
+            if (tablesVeil > .005f)
+                TacticalUi.Fill(new Rect(a.x - 4, y - 4, a.width + 8, tableHeight + 8),
+                    new Color(TacticalUi.Background.r, TacticalUi.Background.g, TacticalUi.Background.b, tablesVeil));
+
+            float by = a.yMax - 52;
+            if (ui.Button(new Rect(a.x, by, 180, 40), "results.replay", ShellUiCopy.ResultsPlayAgain, primary: true)) RestartMatch();
+            if (ui.Button(new Rect(a.x + 192, by, 180, 40), "results.menu", ShellUiCopy.ResultsMain)) LeaveMatch(abort: false);
         }
 
         private void DrawScoreboard(float s)

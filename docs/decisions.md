@@ -1266,3 +1266,53 @@ Evidence on 2026-11-16 (working tree on `41fcdaa`, recorded in the commit that a
 - **Pending.** Kill-feed rows during real kills, results with a crowned top scorer, 720p at 150% UI scale, reference-laptop cost and a named review.
 
 Rollback: revert the ADR-085 commit. Every icon call falls back to the ADR-084 shapes or the text it had before.
+
+## ADR-086 — Accepted: animated debrief and front-end motion
+
+Date 2026-11-16. Wave 1, step 3 of the owner-approved visual roadmap (results and menu motion). Sole integrator owns presentation models, shell, menu stage, tests and docs. No C0, Game-v1, content-format, feature-content or toolchain change; scores and statistics are read only; no acceptance waiver.
+
+Decision:
+- **Debrief model.** Pure `Presentation/Model/Scoreboard/ResultsPresentation` derives up to four award cards from the immutable final rows:
+  - MVP: highest score;
+  - Top Fragger: most kills;
+  - Survivor: fewest deaths among operators with at least one kill;
+  - Sharpest: best K/D, with at least two kills.
+
+  Ties go to the earlier row in authority order, and a scoreless match has no awards. The same model owns the reveal timeline: banner sweep 0.55 s, team score count-up 1.1 s, awards staggered by 0.16 s from 0.65 s, tables fading in from 1.0 s. Reduced motion shows the final state at once.
+- **Results screen** (`ProductShellHost.DrawDebrief`):
+  - an outcome banner tinted by the winning team that sweeps in from the left;
+  - faction emblems flanking counting team scores;
+  - award cards that rise in with a stamped `TacticalUi.Medal` (tier per award) and a glow on the local player's own awards;
+  - the ADR-085 team tables, including the top-scorer crown, fading in last.
+
+  The previous outcome/reason lines are folded into the banner.
+- **Screen transitions.** Pure `ShellMotion` handles screen entry:
+  - Full-screen pages (Main, Setup, Settings, Results, Loading, Content recovery) rise 18 px out of a short dark veil over 0.26 s. The backdrop stays fixed while the content moves.
+  - Under reduced motion they only fade, over 0.12 s.
+  - Gameplay and the pause/confirm overlays never veil, so they never flash over the live match. `TacticalUi.Begin` takes an enter offset; input follows the GUI matrix.
+- **Menu stage camera.** `ProductMenuScene.ApplyCameraDrift` adds:
+  - two slow sideways sways (23 s and 37 s periods, at most about 0.09 m) and a vertical sway (29 s, 0.018 m);
+  - a one-time 0.35 m push-in over 3.2 s when the menu first opens;
+  - smoothed pointer parallax (0.04 m by 0.02 m).
+
+  The look target moves 35% as far as the eye, which reads as depth. Drift uses real elapsed time, because the stage renders at 30 Hz and the per-frame `sceneTime` under-counts about 3×. That pre-existing pacing still drives the dust motes and is unchanged. Reduced motion holds the camera still.
+- **Review preview.** `-shooterUiGallery results` replaces Main with the debrief over clearly sample rows, through `ScoreboardTable.BindPreview` (review only, never used by the match flow), looping every 7 s.
+
+Consequences: no new assets or allocations per frame beyond the existing UI draws. The real debrief needs a finished match, so it was reviewed through the preview, which uses the same drawing code. There is no kill timeline in `MatchResults`, so a kills-over-time graph would need a Game-v1 change and is not attempted.
+
+Evidence on 2026-11-16 (working tree on `170fb8d`, recorded in the commit that adds this ADR):
+- **Pure tests.** Simulation 353 PASS, including seven `ResultsAndShellMotionTests`:
+  - award choice and tie-break;
+  - the scoreless case;
+  - ratio formatting;
+  - preview sorting;
+  - the timeline under reduced motion;
+  - the veil not touching gameplay or overlays;
+  - drift bounds and the push-in settling.
+- **Other checks.** Game 99, EditMode 82/82, source provenance (932 entries) and the IL2CPP client build PASS.
+- **Player review.** Debrief preview captures show the mid-reveal frame (banner sweeping, scores counting, tables veiled) and the settled frame (four awards, crowned MVP). An earlier layout let the medal's laurel strokes overrun the card edge; the medal was moved inward and resized.
+- **Drift diagnostic.** A temporary player log showed the drift was smooth and bounded (0.05–0.085 m sideways) with no push-in replay. The apparent framing differences between menu captures come from the existing showcase idle moving the soldiers, not from the camera. The background holds still.
+- Captures are in `Artifacts/visual-design/adr-086/20261116/`.
+- **Pending.** A debrief after a real finished match, the defeat and draw tones, 720p at 150% UI scale, a reduced motion/flash pass, and a named review.
+
+Rollback: revert the ADR-086 commit; the debrief returns to the plain tables and screens appear instantly.
