@@ -882,3 +882,43 @@ Consequences:
 - Rule validation proves geometry only. Time to first contact, spawn pressure, bot routing on the new topologies and the named 5v5/6v6 playtest of all three maps remain Pending.
 
 Rollback: revert the ADR-074 merge and republish the ADR-071 packages.
+
+## ADR-075 — Provisional: third-party code libraries for noise, runtime rigging and spatial audio
+
+Date 2026-11-16. Draft for owner review. The owner asked which existing frameworks could cover textures, movement and sound without breaking the art policy. Status is Provisional in the ADR-008 sense: each library may be adopted only after its own pinned-version spike passes the gate below. Until then nothing is vendored, and `UnityProject/Packages/manifest.json` and `toolchain-lock.json` stay unchanged. The sole integrator owns package/settings changes (root `AGENTS.md`).
+
+Context:
+- ADR-002 bans imported visual *content* (meshes, photos, painted textures, rigs, mocap, hand-keyed clips). It does not ban third-party *code* that turns numeric recipes into output. ADR-062 and ADR-066 already ship licensed non-geometry media with license, hash and provenance records.
+- `MaterialBaker` uses a hand-rolled periodic value noise (`Noise`/`Cell`). That limits surface variety: there are no gradient, cellular, ridged or domain-warp bases for camo, rust, concrete, cracks or terrain blends.
+- Soldier motion bakes deterministic gait/IK in `Generation/Core/SoldierMotion` (`TwoBoneIk`, ADR-007). Presentation has no runtime correction for hands on weapons, foot contact on uneven or elevated ground (ADR-071 catwalks), or aim/look-at on remote actors.
+- Audio is one 2D `AudioSource` fed by `OnAudioFilterRead` (ADR-055/062): stereo pan, distance attenuation and high-frequency rolloff. There is no HRTF, occlusion or room reverb, so it is hard to place sounds above or below, behind cover, or indoors vs outdoors.
+- Constraints that rule out alternatives: `Simulation`, `Generation/Core` and `Contracts` must stay C# 9 / .NET Standard 2.1, Unity-free and linked by `Tools/*` projects. That excludes .NET 6+ physics (BepuPhysics v2, Jitter2) and MonoBehaviour movement assets (Kinematic Character Controller). Those stay reference reading only. The authoritative kinematic motor (ADR-006) and PhysX world collision are unchanged.
+
+Decision:
+
+1. **FastNoiseLite (C#, MIT) → `Generation/Core` noise source.**
+   - Vendor the single upstream C# file at an exact release tag under `Generation/Core/Noise/ThirdParty/`, unmodified except namespace wrapping. Keep its MIT header in the file and record its upstream URL, tag and SHA-256 in a new `namedThirdPartyCodeSources` list in `Tools/provenance-allowlist.json`. The file is linked by `Tools/Generation` like the rest of `Generation/Core`.
+   - It is only a sampling primitive. Seeds come from existing PCG32 named streams (ADR-009). Recipes still own every parameter, and no texture, image or preset ships with it.
+   - Tiling: FastNoiseLite has no built-in periodic mode. Tileable bakes must use an explicit wrap (for example torus mapping onto 3D, or seam cross-fade) implemented in our code and covered by seam tests.
+   - Existing material recipes and their content hashes are **not** migrated. Only new recipe versions may select FastNoiseLite bases, so current packages and `feature-content-lock.json` stay valid until a recipe deliberately bumps.
+
+2. **Unity Animation Rigging (`com.unity.animation.rigging`) → Presentation-only runtime correction.**
+   - Allowed constraints: two-bone IK (hands to weapon sockets, feet to ground probes), multi-aim (head/spine look-at) and multi-parent (weapon hand-off). Rigs and constraint targets are created from code on the generated skeleton. No authored rig prefabs, animation clips or package samples are used.
+   - The baked `SoldierMotion` pose stays the source. Rigging only applies bounded, weighted corrections after it, and is never read by Simulation, hit volumes or AI (ADR-004). Hit poses keep using the fixed gameplay pose evaluator.
+   - The package and every reference stay out of `UNITY_SERVER` and out of the pure test lane.
+
+3. **Steam Audio (Valve, Apache-2.0, Unity integration) → Presentation-only spatialization.**
+   - Scope: HRTF binaural rendering, distance and air absorption, and geometry occlusion/transmission against the **gameplay collision mesh** (not render meshes). This keeps results identical across quality tiers. Baked reverb or reflections are optional and come only after a CPU measurement.
+   - The current mixer must move from one mixed 2D source to per-voice spatialized sources (≤24 voices, ADR-055 limit unchanged), or feed Steam Audio's spatializer per voice. The sample bank, its manifest and its hashes are unchanged.
+   - Steam Audio ships prebuilt native binaries. They are a new provenance category: record each binary's path, SHA-256, upstream release and license under a new `namedNativeBinaries` allowlist entry, Win64 client only. The default HRTF dataset ships as data with its license recorded. No SOFA files from other sources.
+   - Excluded under `UNITY_SERVER`. The current stereo mixer stays as the runtime fallback when the plugin fails to load, and as a Low-profile option.
+
+Spike gates (all required before a library moves to Accepted):
+- Exact version or tag resolved against the locked editor 6000.3.28f1 / URP 17.3.0 and recorded in `toolchain-lock.json` (packages) or the allowlist (vendored code and binaries). No version is chosen in this ADR.
+- `Test-SourceProvenance.ps1` PASS with the new allowlist categories, plus `.meta` completeness.
+- Pure suites (`Test-Generation`, `Test-Simulation`, `Test-Game`) PASS. For FastNoiseLite, add golden-value tests across the `Tools` .NET lane and the Unity editor, so float determinism matches between lanes.
+- Client IL2CPP and Server builds PASS. The Server build must not contain Animation Rigging or Steam Audio assemblies or binaries.
+- CPU cost measured on the reference laptop at TDM-5v5 Low/High against the 0.5 ms audio mix target and the existing presentation budget. A missing measurement is Pending, not PASS.
+- A named listen/visual review for the audio and rigging spikes, recorded in the milestone handoff.
+
+Consequences: the allowlist schema grows (third-party code and native binaries). Client build size grows by the Steam Audio binaries. The audio mixer and remote-actor presentation take on new code paths with fallbacks. Gameplay authority, contracts, locks and current content identities are unaffected unless a later recipe bump opts in. Rejected: Substance Designer / Material Maker (GUI-authored graphs exported as bitmaps, unclear under ADR-002), FMOD/Wwise (heavier than needed; licensing outside the non-commercial scope), BepuPhysics/Jitter2 (target framework and determinism envelope). Rollback per library: remove the vendored file or package entry and its allowlist record. The prior noise, pose and stereo mixer paths remain in place throughout.
