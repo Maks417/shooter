@@ -224,6 +224,45 @@ namespace Shooter.Simulation.Tests.View
             Assert.True(view.Pose.RightHand.Y+pistol.Y<0);
         }
 
+        /// <summary>
+        /// Hip framing must keep the muzzle clear of the screen-centre reticle (ADR-084 HUD review).
+        /// Mirrors ProductActorPresentation: hand + hip bias, Unity Euler (Z, then X, then Y) applied to the
+        /// scaled muzzle socket. The rifle muzzle socket is (0, 80, 640) mm in geometry.weapon; every rifle
+        /// parts combination keeps the numeric socket baseline (ADR-072/082).
+        /// </summary>
+        [Theory]
+        [InlineData("weapons/rifle")]
+        [InlineData("weapons/rifle-carbine")]
+        public void HipMuzzleStaysBelowAndOffTheReticle(string id)
+        {
+            var profile = WeaponVisualProfiles.Require(new DefinitionId(id));
+            var view = new ProceduralViewModel();
+            view.ResetForLife(0);
+            Float3 bias = profile.NearFieldHipBias;
+            double hx = view.Pose.RightHand.X + bias.X, hy = view.Pose.RightHand.Y + bias.Y, hz = view.Pose.RightHand.Z + bias.Z;
+            double s = profile.NearFieldScale;
+            double mx = 0, my = .080 * s, mz = .640 * s;
+            var r = profile.HipRotationDegrees;
+            double Rad(float d) => d * Math.PI / 180.0;
+            // Z roll.
+            double cz = Math.Cos(Rad(r.Z)), sz = Math.Sin(Rad(r.Z));
+            (mx, my) = (mx * cz - my * sz, mx * sz + my * cz);
+            // X pitch.
+            double cx = Math.Cos(Rad(r.X)), sx = Math.Sin(Rad(r.X));
+            (my, mz) = (my * cx - mz * sx, my * sx + mz * cx);
+            // Y yaw.
+            double cy = Math.Cos(Rad(r.Y)), sy = Math.Sin(Rad(r.Y));
+            (mx, mz) = (mx * cy + mz * sy, -mx * sy + mz * cy);
+            double px = hx + mx, py = hy + my, pz = hz + mz;
+            Assert.True(pz > .3, "muzzle stays in front of the lens");
+            double right = Math.Atan2(px, pz) * 180 / Math.PI;
+            double up = Math.Atan2(py, pz) * 180 / Math.PI;
+            Assert.True(up < -1.5, $"{id} muzzle sits below the reticle (up {up:0.00} deg)");
+            Assert.True(right > 0.5, $"{id} muzzle sits right of the reticle (right {right:0.00} deg)");
+            Assert.True(Math.Sqrt(right * right + up * up) >= 2.5, $"{id} muzzle clears the reticle arms");
+            Assert.True(right < 8 && up > -8, $"{id} barrel still points into the scene");
+        }
+
         [Fact]
         public void CameraBobAppearsWhenMovingAndIsKilledByReducedMotionAdsDeathOrReset()
         {

@@ -23,8 +23,8 @@
     "optic": "ScopedPip",
     "magazineCycle": true,
     "nearFieldScale": 1.12,
-    "nearFieldHipBias": [0.08, 0.02, -0.10],
-    "hipRotationDegrees": [0, -18, -5],
+    "nearFieldHipBias": [0.08, -0.01, -0.10],
+    "hipRotationDegrees": [0, -12, -5],
     "cycleTravelMeters": 0.070
   },
   "audio": { "shot": "RifleShot" },

@@ -17,14 +17,14 @@ namespace Shooter.Presentation.View
             new WeaponVisualProfile(
                 new DefinitionId("weapons/rifle"), WeaponVisualFamily.PrimaryGun, "rifle",
                 WeaponOpticMode.ScopedPip, hasMagazineCycle: true, shotVoice: SynthVoiceKind.RifleShot, killFeedGlyph: KillFeedWeapon.Rifle,
-                nearFieldScale: 1.12f, nearFieldHipBias: new Float3(0.08f, 0.02f, -0.10f),
-                hipRotationDegrees: new Float3(0f, -18f, -5f), cycleTravelMeters: 0.070f, displayLabel: "Rifle"),
+                nearFieldScale: 1.12f, nearFieldHipBias: new Float3(0.08f, -0.01f, -0.10f),
+                hipRotationDegrees: new Float3(0f, -12f, -5f), cycleTravelMeters: 0.070f, displayLabel: "Rifle"),
             // Content/Weapons/rifle-carbine.weapon.json
             new WeaponVisualProfile(
                 new DefinitionId("weapons/rifle-carbine"), WeaponVisualFamily.PrimaryGun, "rifle-carbine",
                 WeaponOpticMode.ScopedPip, hasMagazineCycle: true, shotVoice: SynthVoiceKind.RifleShot, killFeedGlyph: KillFeedWeapon.Carbine,
-                nearFieldScale: 1.10f, nearFieldHipBias: new Float3(0.08f, 0.02f, -0.09f),
-                hipRotationDegrees: new Float3(0f, -16f, -4f), cycleTravelMeters: 0.060f, displayLabel: "Carbine"),
+                nearFieldScale: 1.10f, nearFieldHipBias: new Float3(0.08f, -0.01f, -0.09f),
+                hipRotationDegrees: new Float3(0f, -11f, -4f), cycleTravelMeters: 0.060f, displayLabel: "Carbine"),
             // Content/Weapons/pistol.weapon.json
             new WeaponVisualProfile(
                 new DefinitionId("weapons/pistol"), WeaponVisualFamily.Sidearm, "pistol",

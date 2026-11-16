@@ -1213,7 +1213,11 @@ Addendum 2026-11-16 (HUD review):
   - the loading track and slider track were too dark to read and are now lighter with a rim;
   - the pistol, knife and grenade silhouettes were redrawn (angled grip and trigger guard, pointed blade, spoon lever and pull ring);
   - hip reticle arms went from 1 px to 1.5 px and from 5 px to 6 px long.
-- **Still open, outside the UI.** In hip fire, the rifle muzzle sits under the screen-centre reticle, which hides the arms. That is the T084 hip-framing composition, not the UI layer, and needs its own change.
+- **Hip framing (fixed in a follow-up).** In hip fire, the rifle muzzle projected about 0.7° below and 3° left of centre, right under the reticle. The T084 composition yawed the rifle 18° across the view from a hip offset that sat slightly high.
+  - `Content/Weapons/rifle.weapon.json` now uses `hipRotationDegrees [0, -12, -5]` and `nearFieldHipBias [0.08, -0.01, -0.10]`; the carbine uses `[0, -11, -4]` and `[0.08, -0.01, -0.09]`. `WeaponVisualProfiles.g.cs` was regenerated.
+  - ADS is unchanged, because the hip rotation still fades to identity and the ADS position uses the sight socket. Gameplay catalogs and packages are byte-identical.
+  - The new `FirstPersonHandlingTests.HipMuzzleStaysBelowAndOffTheReticle` projects the muzzle socket the way `ProductActorPresentation` does and requires it to sit at least 1.5° below, 0.5° right of and 2.5° away from the centre. It fails on the old values (0.65° below) and passes on the new ones.
+  - Player capture: `hud-hip-framing-after.png`. Live ADS capture and a named feel review are Pending.
 - **Pending.** The kill ribbon and kill feed during real kills, the scoreboard and results screens, 720p at 150% UI scale, reduced motion/flash, frame cost and a named review.
 
 Rollback: revert the ADR-084 commit and regenerate settings provenance; every primitive falls back to the flat path when the shader is absent.
