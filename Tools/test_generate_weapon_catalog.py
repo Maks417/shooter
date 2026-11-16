@@ -23,7 +23,7 @@ class SyntheticRepo:
         for source in gen.ENUM_SOURCES.values():
             (self.root / source).parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(REPO / source, self.root / source)
-        for out in (gen.CATALOG_OUT, gen.PROFILES_OUT):
+        for out in (gen.CATALOG_OUT, gen.PROFILES_OUT, gen.MESHES_OUT):
             (self.root / out).parent.mkdir(parents=True, exist_ok=True)
 
     def path(self, name):
@@ -58,7 +58,7 @@ class GeneratorTests(unittest.TestCase):
 
     def test_write_then_check_is_clean_and_deterministic(self):
         written = gen.run(self.repo.root, check=False)
-        self.assertEqual(4, len(written))
+        self.assertEqual(6, len(written))
         self.assertEqual([], gen.run(self.repo.root, check=True))
         first = (self.repo.root / gen.CATALOG_OUT).read_bytes()
         gen.run(self.repo.root, check=False)
@@ -76,7 +76,6 @@ class GeneratorTests(unittest.TestCase):
         doc["order"] = 9
         doc["displayLabel"] = "DMR"
         doc["combat"]["fireMode"] = "SemiAutomatic"
-        del doc["visual"]["geometryRecipe"]
         self.repo.write_raw("dmr.weapon.json", json.dumps(doc, indent=2) + "\n")
         gen.run(self.repo.root, check=False)
         catalog = (self.repo.root / gen.CATALOG_OUT).read_text(encoding="utf-8")
@@ -130,11 +129,38 @@ class GeneratorTests(unittest.TestCase):
         self.repo.write_raw("pistol.weapon.json", text.replace('"reloadTicks": 108', '"reloadTicks": 108.0'))
         self.rejects("integer")
 
-    def test_geometry_recipe_must_exist_and_match(self):
-        self.repo.edit("pistol.weapon.json", lambda d: d["visual"].update(geometryRecipe="rifle"))
-        self.rejects("recipeId weapons/rifle != weapons/pistol")
+    def test_geometry_recipe_must_exist_and_be_a_weapon_recipe(self):
         self.repo.edit("pistol.weapon.json", lambda d: d["visual"].update(geometryRecipe="missing"))
         self.rejects("not found")
+        self.repo.edit("pistol.weapon.json", lambda d: d["visual"].update(geometryRecipe="metal"))
+        self.rejects("not a geometry.weapon recipe")
+
+    def test_one_mesh_key_one_recipe(self):
+        self.repo.edit("pistol.weapon.json", lambda d: d["visual"].update(meshKey="rifle"))
+        self.rejects("meshKey rifle is built from a different recipe")
+
+    def test_new_weapon_can_reuse_existing_geometry(self):
+        doc = json.loads(self.repo.path("rifle-carbine.weapon.json").read_text(encoding="utf-8"))
+        doc.update(id="weapons/smg", order=9, displayLabel="SMG")
+        self.repo.write_raw("smg.weapon.json", json.dumps(doc, indent=2) + "\n")
+        gen.run(self.repo.root, check=False)
+        meshes = (self.repo.root / gen.MESHES_OUT).read_text(encoding="utf-8")
+        self.assertEqual(1, meshes.count('WeaponMeshSource.FromRecipe("rifle-carbine"'))
+
+    def test_props_and_recipes_are_exclusive(self):
+        self.repo.edit("knife.weapon.json", lambda d: d["visual"].update(meshKey="machete"))
+        self.rejects("required unless meshKey is a built-in prop")
+        self.repo.edit("knife.weapon.json", lambda d: d["visual"].update(meshKey="knife", magazineCycle=True))
+        self.rejects("optic None and magazineCycle false")
+        self.repo.edit("knife.weapon.json", lambda d: d["visual"].update(magazineCycle=False))
+        self.repo.edit("pistol.weapon.json", lambda d: d["visual"].update(meshKey="grenade"))
+        self.rejects("reserved for the built-in prop")
+
+    def test_mesh_catalog_embeds_compact_recipes(self):
+        gen.run(self.repo.root, check=False)
+        meshes = (self.repo.root / gen.MESHES_OUT).read_text(encoding="utf-8")
+        self.assertIn('WeaponMeshSource.Prop("knife")', meshes)
+        self.assertIn('\\"silhouette\\":\\"carbine\\"', meshes)
 
     def test_melee_cannot_have_optic(self):
         self.repo.edit("knife.weapon.json", lambda d: d["visual"].update(optic="Irons"))
@@ -150,9 +176,9 @@ class GeneratorTests(unittest.TestCase):
         self.rejects("LF line endings")
 
     def test_meta_guid_is_stable_and_unique(self):
-        a = gen.meta_for(gen.CATALOG_OUT)
-        self.assertEqual(a, gen.meta_for(gen.CATALOG_OUT))
-        self.assertNotEqual(a, gen.meta_for(gen.PROFILES_OUT))
+        guids = {gen.meta_for(p) for p in (gen.CATALOG_OUT, gen.PROFILES_OUT, gen.MESHES_OUT)}
+        self.assertEqual(3, len(guids))
+        self.assertEqual(gen.meta_for(gen.CATALOG_OUT), gen.meta_for(gen.CATALOG_OUT))
 
 
 if __name__ == "__main__":

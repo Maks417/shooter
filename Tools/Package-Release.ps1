@@ -103,6 +103,20 @@ function Assert-RequiredContent([string]$CacheRoot, [string]$ExpectedToolchainHa
             if (-not $found.ContainsKey($key)) { throw "Content closure missing required package: $key" }
         }
     }
+    # ADR-078: shared weapon package named by weapons.json (weapon meshes are no longer inside map packages).
+    $weaponIndexPath = Join-Path $CacheRoot 'weapons.json'
+    if (!(Test-Path -LiteralPath $weaponIndexPath -PathType Leaf)) { throw "Missing weapon package index: $weaponIndexPath" }
+    $weaponIndex = Get-Content -LiteralPath $weaponIndexPath -Raw | ConvertFrom-Json
+    if ($weaponIndex.indexSchema -cne 'shooter.weapon-package-index.v1') { throw "Unexpected weapon package index schema: $($weaponIndex.indexSchema)" }
+    if ($weaponIndex.toolchainHash -cne $ExpectedToolchainHash) { throw 'Weapon package index toolchain mismatch' }
+    $weaponRoot = [string]$weaponIndex.packageRootSha256
+    $weaponJson = Join-Path $CacheRoot ($weaponRoot.Substring(0, 2) + '/' + $weaponRoot + '/package.json')
+    if (!(Test-Path -LiteralPath $weaponJson -PathType Leaf)) { throw "Missing weapon package root: $weaponJson" }
+    if ((Get-Sha256File $weaponJson) -cne $weaponRoot) { throw 'Weapon package root hash mismatch' }
+    $weaponPackage = Get-Content -LiteralPath $weaponJson -Raw | ConvertFrom-Json
+    if ($weaponPackage.packageSchema -cne 'shooter.weapon-package.v1') { throw "Unexpected weapon package schema: $($weaponPackage.packageSchema)" }
+    if ($weaponPackage.toolchainHash -cne $ExpectedToolchainHash) { throw 'Weapon package toolchain mismatch' }
+    $lines.Add("weapons:$weaponRoot") | Out-Null
     $navSource = 'software-walkable-grid'
     $navTool = ''
     $sidecarPath = Join-Path $CacheRoot 'nav-provenance.json'
@@ -133,6 +147,7 @@ function Assert-RequiredContent([string]$CacheRoot, [string]$ExpectedToolchainHa
         IndexPath = $indexPath
         IndexSha256 = (Get-Sha256File $indexPath)
         Packages = @($index.packages)
+        WeaponPackageRoot = $weaponRoot
         ContentClosureHash = (Get-Sha256Text ($sorted -join "`n"))
         ClosureLines = $sorted
     }
@@ -288,6 +303,16 @@ try {
         $shippedRoot = Join-Path $dstDir 'package.json'
         if ((Get-Sha256File $shippedRoot) -cne $pkg.packageRootSha256) { throw "Shipped package root hash mismatch for $($pkg.mapId)/$($pkg.visualProfile)" }
     }
+    # ADR-078 shared weapon package and its index.
+    Copy-Item -LiteralPath (Join-Path $MapCacheRoot 'weapons.json') -Destination (Join-Path $contentDest 'weapons.json') -Force
+    $relWeapon = Join-Path $content.WeaponPackageRoot.Substring(0, 2) $content.WeaponPackageRoot
+    $weaponSrcDir = Join-Path $MapCacheRoot $relWeapon
+    $weaponDstDir = Join-Path $contentDest $relWeapon
+    $null = New-Item -ItemType Directory -Path $weaponDstDir -Force
+    Get-ChildItem -LiteralPath $weaponSrcDir -Force -File | ForEach-Object {
+        Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $weaponDstDir $_.Name) -Force
+    }
+    if ((Get-Sha256File (Join-Path $weaponDstDir 'package.json')) -cne $content.WeaponPackageRoot) { throw 'Shipped weapon package root hash mismatch' }
     Copy-Item -LiteralPath $lockPath -Destination (Join-Path $stage 'toolchain-lock.json') -Force
     foreach ($name in @('game-contract-lock.json', 'content-format-lock.json', 'contract-lock.json')) {
         $src = Join-Path $repoRoot $name
@@ -416,7 +441,7 @@ REM Independent offline launch: relative content + toolchain lock only.
         if (Test-ExcludedRelativePath $rel $policy) { throw "Excluded path leaked into staged package: $rel" }
         [pscustomobject]@{ path = $rel; sha256 = (Get-Sha256File $_.FullName) }
     }
-    $requiredDocs = @('CONTROLS.txt', 'LICENSES.txt', 'KNOWN_ISSUES.txt', 'identities.json', 'rollback-pair.json', 'toolchain-lock.json', 'Content/map-packages/index.json', 'Content/map-packages/catalog.json', 'launch-offline.cmd', 'Shooter.exe')
+    $requiredDocs = @('CONTROLS.txt', 'LICENSES.txt', 'KNOWN_ISSUES.txt', 'identities.json', 'rollback-pair.json', 'toolchain-lock.json', 'Content/map-packages/index.json', 'Content/map-packages/catalog.json', 'Content/map-packages/weapons.json', 'launch-offline.cmd', 'Shooter.exe')
     $inventoryPaths = @($hashes | ForEach-Object { $_.path })
     foreach ($required in $requiredDocs) {
         if ($inventoryPaths -notcontains $required) { throw "Inventory missing required path: $required" }
@@ -452,6 +477,7 @@ REM Independent offline launch: relative content + toolchain lock only.
     if (!(Test-Path -LiteralPath $extractExe -PathType Leaf)) { throw 'Extract rehearsal missing Shooter.exe' }
     if (!(Test-Path -LiteralPath $extractContent -PathType Leaf)) { throw 'Extract rehearsal missing content index' }
     if (!(Test-Path -LiteralPath $extractCatalog -PathType Leaf)) { throw 'Extract rehearsal missing release catalog' }
+    if (!(Test-Path -LiteralPath (Join-Path $extractRoot 'Content/map-packages/weapons.json') -PathType Leaf)) { throw 'Extract rehearsal missing weapon package index' }
     if (!(Test-Path -LiteralPath $extractLock -PathType Leaf)) { throw 'Extract rehearsal missing toolchain-lock.json' }
     if ((Get-Sha256File $extractLock) -cne $toolchainHash) { throw 'Extracted toolchain-lock hash mismatch' }
     $extractLeak = Get-ChildItem -LiteralPath $extractRoot -Recurse -Force -File | Where-Object {

@@ -34,6 +34,7 @@ function New-Case([string]$Name) {
     Write-TestFile (Join-Path $stage 'LICENSES.txt') 'licenses'
     Write-TestFile (Join-Path $stage 'Content/map-packages/index.json') '{}'
     Write-TestFile (Join-Path $stage 'Content/map-packages/catalog.json') '{}'
+    Write-TestFile (Join-Path $stage 'Content/map-packages/weapons.json') '{}'
     Write-TestFile (Join-Path $stage 'toolchain-lock.json') '{"syntheticTestOnly":true}'
     $tc = Sha (Join-Path $stage 'toolchain-lock.json')
     $ids = [ordered]@{ binaryCommit = $commit; sourceHash = 'b' * 64; toolchainHash = $tc; buildContentManifestHash = 'c' * 64; contentClosureHash = 'd' * 64; contentIndexSha256 = 'e' * 64 }

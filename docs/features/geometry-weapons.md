@@ -60,9 +60,17 @@ Each weapon is one file, `Content/Weapons/<name>.weapon.json`. It holds combat s
 python Tools/generate_weapon_catalog.py
 ```
 
-This rewrites `Simulation/Combat/WeaponCatalog.g.cs` and `Presentation/Model/View/WeaponVisualProfiles.g.cs`. Never edit the `.g.cs` files by hand; CI runs `--check`. Then run `./Tools/Test-Simulation.ps1`.
+This rewrites `Simulation/Combat/WeaponCatalog.g.cs`, `Presentation/Model/View/WeaponVisualProfiles.g.cs` and `Generation/Core/Environment/WeaponMeshCatalog.g.cs`. Never edit the `.g.cs` files by hand; CI runs `--check`. Then run `./Tools/Test-Simulation.ps1` and `./Tools/Test-Generation.ps1`, and republish content with `./Tools/Compile-GameContent.ps1` (add `-Native` for a release).
 
-A new weapon whose mesh key already exists (for example another rifle that reuses `rifle-carbine` geometry) needs only its file. A new silhouette still needs a `geometry.weapon` recipe in `Generation/FeatureRecipes`, its mesh paths in `MapVisualClosure`/`MapPackageBuilder`, and the mesh fields in `ProductActorPresentation`, until the weapon package step removes that coupling. A new sound needs a new `SynthVoiceKind` and bank samples.
+`visual.meshKey` names the packaged mesh set and `visual.geometryRecipe` names the `geometry.weapon` recipe it is built from. Several weapons may share one mesh key (for example another rifle that reuses `rifle-carbine` geometry); a key always maps to one recipe. `knife` and `grenade` are built-in props without a recipe, magazine or cycle part.
+
+A new silhouette needs a `geometry.weapon` recipe in `Generation/FeatureRecipes` (a frozen registry, so adding one is a reviewed lock refresh) and, while recipes only offer `standard`/`carbine`, a `geometry.weapon` change. Nothing else is per weapon: meshes are published in the shared weapon package and presentation binds every catalog mesh key. A new sound needs a new `SynthVoiceKind` and bank samples.
+
+## Shared weapon package (ADR-078)
+
+Weapon meshes are no longer inside map packages. `WeaponPackage` publishes one `shooter.weapon-package.v1` package beside the map packages, under its content-addressed directory, and `weapons.json` (`shooter.weapon-package-index.v1`) names its root hash. It holds four LODs per mesh key plus magazine and cycle parts for recipe-backed guns, at `mesh-<key>-lod<n>.bin`, `mesh-<key>-magazine.bin` and `mesh-<key>-cycle.bin`. Guns are encoded under the `geometry.weapon` fingerprint and props under `geometry.loadout-prop` 1.0.0.
+
+`VerifiedMapPackageStore.TryLoadVisual` loads and hash-checks the weapon package once and attaches it to every map's `PackagedVisualPayloads` (`WithWeapons`); a missing or corrupt package fails the visual load with no regeneration fallback. Editor and test paths that use `PackagedVisualPayloads.FromBuild` attach an in-memory build. `Package-Release.ps1` verifies and ships `weapons.json` and the package, and adds `weapons:<root>` to the content closure.
 
 ## Weapon profiles — geometry.weapon 1.0.5 (ADR-072)
 

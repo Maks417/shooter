@@ -197,7 +197,27 @@ try {
             if ($pkg.navigationSha256 -ceq $pure.navigationSha256) { throw "Non-nav guard FAIL ${key}: native navigation equals the software grid; native bake was not injected." }
             $guardRows += [ordered]@{ mapId = $pkg.mapId; visualProfile = $pkg.visualProfile; nonNavFilesCompared = $compared; nativeNavigationSha256 = $pkg.navigationSha256; pureNavigationSha256 = $pure.navigationSha256 }
         }
-        $report.nonNavByteIdentityGuard = [ordered]@{ result = 'PASS'; purePackageCache = $purePackageCache; packages = $guardRows }
+        # ADR-078: the shared weapon package carries no navigation, so native and pure caches must hold identical bytes.
+        $weaponGuard = $null
+        $nativeWeaponIndex = Join-Path $CacheRoot 'weapons.json'
+        $pureWeaponIndex = Join-Path $purePackageCache 'weapons.json'
+        if ((Test-Path -LiteralPath $nativeWeaponIndex) -or (Test-Path -LiteralPath $pureWeaponIndex)) {
+            if (!(Test-Path -LiteralPath $nativeWeaponIndex) -or !(Test-Path -LiteralPath $pureWeaponIndex)) { throw 'Non-nav guard FAIL weapons: weapons.json present in only one cache.' }
+            $nw = Get-Content -LiteralPath $nativeWeaponIndex -Raw | ConvertFrom-Json
+            $pw = Get-Content -LiteralPath $pureWeaponIndex -Raw | ConvertFrom-Json
+            if ([string]$nw.packageRootSha256 -cne [string]$pw.packageRootSha256) { throw 'Non-nav guard FAIL weapons: weapon package roots differ between native and pure caches.' }
+            $wRel = ([string]$nw.packageRootSha256).Substring(0, 2) + '/' + [string]$nw.packageRootSha256
+            $nativeWeaponDir = Join-Path $CacheRoot $wRel
+            $pureWeaponDir = Join-Path $purePackageCache $wRel
+            $weaponFiles = @(Get-ChildItem -LiteralPath $pureWeaponDir -File | ForEach-Object { $_.Name } | Sort-Object)
+            foreach ($name in $weaponFiles) {
+                $nh = (Get-FileHash -LiteralPath (Join-Path $nativeWeaponDir $name) -Algorithm SHA256).Hash
+                $ph = (Get-FileHash -LiteralPath (Join-Path $pureWeaponDir $name) -Algorithm SHA256).Hash
+                if ($nh -cne $ph) { throw "Non-nav guard FAIL weapons: $name differs between native and pure caches." }
+            }
+            $weaponGuard = [ordered]@{ packageRootSha256 = [string]$nw.packageRootSha256; filesCompared = $weaponFiles.Count }
+        }
+        $report.nonNavByteIdentityGuard = [ordered]@{ result = 'PASS'; purePackageCache = $purePackageCache; packages = $guardRows; weaponPackage = $weaponGuard }
         Write-Host "Non-navigation byte-identity guard PASS for $($guardRows.Count) native packages against $purePackageCache"
     }
     # Generation tests covering compound/depot package builders (not a substitute for publication).

@@ -257,8 +257,8 @@ namespace Shooter.Tests
                     var weapon = camera.transform.Find(slot == 0 ? "Local FP rifle" : "Local FP pistol");
                     Assert.That(weapon.GetComponent<MeshFilter>().sharedMesh.vertexCount,
                         Is.EqualTo(slot == 0
-                            ? MapVisualClosure.DecodeRifleLod(visuals, 0).Positions.Count
-                            : MapVisualClosure.DecodePistolLod(visuals, 0).Positions.Count),
+                            ? MapVisualClosure.DecodeWeaponLod(visuals, "rifle", 0).Positions.Count
+                            : MapVisualClosure.DecodeWeaponLod(visuals, "pistol", 0).Positions.Count),
                         "Low must retain near-field first-person weapon detail independently of world LOD.");
                     float scale = FirstPersonHandling.NearFieldScale(slot);
                     Assert.That(weapon.localScale.x, Is.EqualTo(scale).Within(1e-5f));

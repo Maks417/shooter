@@ -84,38 +84,20 @@ namespace Shooter.Presentation.Rig
         private readonly List<UnityEngine.Object> owned = new List<UnityEngine.Object>();
         private readonly FlatGround ground = new FlatGround();
         private Mesh? bodyMesh;
-        private Mesh? rifleMesh;
-        private Mesh? pistolMesh;
-        private Mesh? knifeMesh;
-        private Mesh? grenadeMesh;
-        private Mesh? firstPersonRifleMesh;
-        private Mesh? firstPersonPistolMesh;
-        private Mesh? firstPersonKnifeMesh;
-        private Mesh? firstPersonGrenadeMesh;
-        private Mesh? rifleMagazineMesh;
-        private Mesh? pistolMagazineMesh;
-        private Mesh? rifleCycleMesh;
-        private Mesh? pistolCycleMesh;
-        private Mesh? firstPersonRifleMagazineMesh;
-        private Mesh? firstPersonPistolMagazineMesh;
-        private Mesh? firstPersonRifleCycleMesh;
-        private Mesh? firstPersonPistolCycleMesh;
-        private Mesh? rifleCarbineMesh;
-        private Mesh? rifleCarbineMagazineMesh;
-        private Mesh? rifleCarbineCycleMesh;
-        private Mesh? firstPersonRifleCarbineMesh;
-        private Mesh? firstPersonRifleCarbineMagazineMesh;
-        private Mesh? firstPersonRifleCarbineCycleMesh;
+        /// <summary>Uploaded packaged weapon meshes keyed by visual profile MeshAssetKey (ADR-078).</summary>
+        private sealed class WeaponMeshSet
+        {
+            public Mesh? Held, Local, Magazine, Cycle;
+            public Float3 SightSocket;
+        }
+        private readonly Dictionary<string, WeaponMeshSet> weaponMeshes = new Dictionary<string, WeaponMeshSet>(StringComparer.Ordinal);
         private Material[]? team1Palette;
         private Material[]? team2Palette;
         private Material? rifleMetal;
         private Material? riflePolymer;
         private Material[] weaponMaterials = Array.Empty<Material>();
         private readonly Dictionary<Mesh, Material[]> weaponPalettes = new Dictionary<Mesh, Material[]>();
-        private WeaponRecipe? rifleRecipe;
-        private WeaponRecipe? rifleCarbineRecipe;
-        private WeaponRecipe? pistolRecipe;
-        private Float3 rifleCarbineSightSocketLocal;
+        private WeaponRecipe? motionRecipe;
         private DefinitionId localVisibleWeaponId;
         private DefinitionId localPrimaryWeaponId = new DefinitionId("weapons/rifle");
         private EntityId localHuman;
@@ -136,8 +118,6 @@ namespace Shooter.Presentation.Rig
         private float localAdsPresentation;
         private byte localVisibleWeaponSlot;
         private EntityId localViewHuman;
-        private Float3 rifleSightSocketLocal;
-        private Float3 pistolSightSocketLocal;
         private bool ready;
         private bool visualsBound;
         private string reviewMapId = "";
@@ -201,13 +181,9 @@ namespace Shooter.Presentation.Rig
             if (shader == null || !shader.isSupported)
                 throw new InvalidOperationException("Required locked URP Lit shader missing; no art fallback.");
 
-            // Recipes for motion/sockets only — no SoldierGeometry/WeaponGeometry mesh generation on the product path.
-            rifleRecipe = WeaponRecipe.Parse(Encoding.ASCII.GetBytes(
-                "{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/rifle\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.0.5\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"rifle\",\"silhouette\":\"standard\"},\"dependencies\":[]}"));
-            rifleCarbineRecipe = WeaponRecipe.Parse(Encoding.ASCII.GetBytes(
-                "{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/rifle-carbine\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.0.5\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"rifle\",\"silhouette\":\"carbine\"},\"dependencies\":[]}"));
-            pistolRecipe = WeaponRecipe.Parse(Encoding.ASCII.GetBytes(
-                "{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/pistol\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.0.5\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"pistol\",\"silhouette\":\"standard\"},\"dependencies\":[]}"));
+            // Recipe for soldier motion sockets only — no WeaponGeometry mesh generation on the product path.
+            motionRecipe = WeaponMeshCatalog.Require(WeaponVisualProfiles.MeshKeyRifle).Recipe
+                ?? throw new InvalidOperationException("Rifle mesh source must be recipe-backed.");
 
             localWeapon = new GameObject("Local FP weapon").transform;
             localWeapon.SetParent(fpsCamera!.transform, false);
@@ -273,30 +249,21 @@ namespace Shooter.Presentation.Rig
                 int soldierLod = showcase ? 0 : MapVisualClosure.SoldierLodIndex(visuals.Profile);
                 int weaponLod = showcase ? 0 : MapVisualClosure.WeaponLodIndex(visuals.Profile);
                 bodyMesh = Own(Upload(MapVisualClosure.DecodeSoldierLod(visuals, soldierLod), true));
-                rifleMesh = Own(Upload(MapVisualClosure.DecodeRifleLod(visuals, weaponLod), false));
-                rifleCarbineMesh = Own(Upload(MapVisualClosure.DecodeRifleCarbineLod(visuals, weaponLod), false));
-                pistolMesh = Own(Upload(MapVisualClosure.DecodePistolLod(visuals, weaponLod), false));
-                knifeMesh = Own(Upload(MapVisualClosure.DecodeKnifeLod(visuals, weaponLod), false));
-                grenadeMesh = Own(Upload(MapVisualClosure.DecodeGrenadeLod(visuals, weaponLod), false));
-                rifleMagazineMesh = Own(Upload(MapVisualClosure.DecodeRifleMagazine(visuals), false));
-                rifleCarbineMagazineMesh = Own(Upload(MapVisualClosure.DecodeRifleCarbineMagazine(visuals), false));
-                pistolMagazineMesh = Own(Upload(MapVisualClosure.DecodePistolMagazine(visuals), false));
-                rifleCycleMesh = Own(Upload(MapVisualClosure.DecodeRifleCycle(visuals), false));
-                rifleCarbineCycleMesh = Own(Upload(MapVisualClosure.DecodeRifleCarbineCycle(visuals), false));
-                pistolCycleMesh = Own(Upload(MapVisualClosure.DecodePistolCycle(visuals), false));
-                // The camera sees equipment at arm's length even on Low. Keep world LOD
-                // scalability without replacing the player's sights/grips with distant proxies.
-                firstPersonRifleMesh = weaponLod == 0 ? rifleMesh : Own(Upload(MapVisualClosure.DecodeRifleLod(visuals, 0), false));
-                firstPersonRifleCarbineMesh = weaponLod == 0 ? rifleCarbineMesh : Own(Upload(MapVisualClosure.DecodeRifleCarbineLod(visuals, 0), false));
-                firstPersonPistolMesh = weaponLod == 0 ? pistolMesh : Own(Upload(MapVisualClosure.DecodePistolLod(visuals, 0), false));
-                firstPersonKnifeMesh = weaponLod == 0 ? knifeMesh : Own(Upload(MapVisualClosure.DecodeKnifeLod(visuals, 0), false));
-                firstPersonGrenadeMesh = weaponLod == 0 ? grenadeMesh : Own(Upload(MapVisualClosure.DecodeGrenadeLod(visuals, 0), false));
-                firstPersonRifleMagazineMesh = rifleMagazineMesh;
-                firstPersonRifleCarbineMagazineMesh = rifleCarbineMagazineMesh;
-                firstPersonPistolMagazineMesh = pistolMagazineMesh;
-                firstPersonRifleCycleMesh = rifleCycleMesh;
-                firstPersonRifleCarbineCycleMesh = rifleCarbineCycleMesh;
-                firstPersonPistolCycleMesh = pistolCycleMesh;
+                weaponMeshes.Clear();
+                foreach (var source in WeaponMeshCatalog.All)
+                {
+                    var set = new WeaponMeshSet();
+                    set.Held = Own(Upload(MapVisualClosure.DecodeWeaponLod(visuals, source.MeshKey, weaponLod), false));
+                    // The camera sees equipment at arm's length even on Low. Keep world LOD
+                    // scalability without replacing the player's sights/grips with distant proxies.
+                    set.Local = weaponLod == 0 ? set.Held : Own(Upload(MapVisualClosure.DecodeWeaponLod(visuals, source.MeshKey, 0), false));
+                    var magazine = MapVisualClosure.DecodeWeaponMagazine(visuals, source.MeshKey);
+                    if (magazine != null) set.Magazine = Own(Upload(magazine, false));
+                    var cycle = MapVisualClosure.DecodeWeaponCycle(visuals, source.MeshKey);
+                    if (cycle != null) set.Cycle = Own(Upload(cycle, false));
+                    if (source.Recipe != null) set.SightSocket = FindSocket(WeaponGeometry.Sockets(source.Recipe), "sight-eye");
+                    weaponMeshes[source.MeshKey] = set;
+                }
                 for (byte slot = 0; slot < 4; slot++)
                     for (int hand = 0; hand < 2; hand++)
                     {
@@ -305,9 +272,6 @@ namespace Shooter.Presentation.Rig
                         firstPersonHandMeshes[slot*2+hand]=Own(Upload(MapVisualClosure.DecodeFirstPersonHand(visuals,slot,hand==1),false,cameraSkeleton));
                     }
 
-                rifleSightSocketLocal = FindSocket(WeaponGeometry.Sockets(rifleRecipe!), "sight-eye");
-                rifleCarbineSightSocketLocal = FindSocket(WeaponGeometry.Sockets(rifleCarbineRecipe!), "sight-eye");
-                pistolSightSocketLocal = FindSocket(WeaponGeometry.Sockets(pistolRecipe!), "sight-eye");
 
                 team1Palette = new[]
                 {
@@ -352,22 +316,7 @@ namespace Shooter.Presentation.Rig
             {
                 visualsBound = false;
                 bodyMesh = null;
-                rifleMesh = null;
-                pistolMesh = null;
-                knifeMesh = null;
-                grenadeMesh = null;
-                rifleMagazineMesh = null;
-                pistolMagazineMesh = null;
-                rifleCycleMesh = null;
-                pistolCycleMesh = null;
-                firstPersonRifleMesh = null;
-                firstPersonPistolMesh = null;
-                firstPersonKnifeMesh = null;
-                firstPersonGrenadeMesh = null;
-                firstPersonRifleMagazineMesh = null;
-                firstPersonPistolMagazineMesh = null;
-                firstPersonRifleCycleMesh = null;
-                firstPersonPistolCycleMesh = null;
+                weaponMeshes.Clear();
                 throw new InvalidOperationException("Required packaged actor visuals missing/corrupt; refusing generation fallback: " + error.Message, error);
             }
         }
@@ -673,8 +622,7 @@ namespace Shooter.Presentation.Rig
         private void CreateAvatar(ActorLifecycleState state, bool corpse)
         {
             if (avatars.ContainsKey(state.EntityId.Value)) return;
-            if (!visualsBound || rifleRecipe == null || bodyMesh == null || rifleMesh == null || pistolMesh == null
-                || knifeMesh == null || grenadeMesh == null) return;
+            if (!visualsBound || motionRecipe == null || bodyMesh == null || weaponMeshes.Count == 0) return;
 
             byte slot = state.ActiveWeaponSlot;
             actions.SyncLifecycle(state.EntityId, slot, state.Alive && !corpse);
@@ -689,7 +637,7 @@ namespace Shooter.Presentation.Rig
                 Root = new GameObject("Actor " + state.EntityId.Value).transform,
                 Bones = new Transform[SoldierSkeleton.JointCount],
                 // Generation SoldierMotion spike validates rifle sockets; pistol mesh shares the bind.
-                Motion = new SoldierMotion(rifleRecipe),
+                Motion = new SoldierMotion(motionRecipe),
                 PreviousFeet = state.Feet,
                 DisplayedFeet = state.Feet,
                 PreviousHealth = state.Health
@@ -1004,59 +952,20 @@ namespace Shooter.Presentation.Rig
         private static string WeaponDisplayName(in WeaponVisualProfile profile, bool local) =>
             (local ? "Local FP " : "Held ") + profile.MeshAssetKey;
 
-        private Float3 SightSocketForProfile(in WeaponVisualProfile profile) => profile.MeshAssetKey switch
-        {
-            WeaponVisualProfiles.MeshKeyRifleCarbine => rifleCarbineSightSocketLocal,
-            WeaponVisualProfiles.MeshKeyPistol => pistolSightSocketLocal,
-            WeaponVisualProfiles.MeshKeyRifle => rifleSightSocketLocal,
-            _ => default
-        };
+        // Unknown mesh keys fall back to the rifle set, as the pre-ADR-078 switches did.
+        private WeaponMeshSet? MeshSetForProfile(in WeaponVisualProfile profile) =>
+            weaponMeshes.TryGetValue(profile.MeshAssetKey, out var set) ? set
+            : weaponMeshes.TryGetValue(WeaponVisualProfiles.MeshKeyRifle, out var rifle) ? rifle : null;
 
-        private Mesh? HeldMeshForProfile(in WeaponVisualProfile profile) => profile.MeshAssetKey switch
-        {
-            WeaponVisualProfiles.MeshKeyRifleCarbine => rifleCarbineMesh,
-            WeaponVisualProfiles.MeshKeyPistol => pistolMesh,
-            WeaponVisualProfiles.MeshKeyKnife => knifeMesh,
-            WeaponVisualProfiles.MeshKeyGrenade => grenadeMesh,
-            _ => rifleMesh
-        };
+        private Float3 SightSocketForProfile(in WeaponVisualProfile profile) =>
+            weaponMeshes.TryGetValue(profile.MeshAssetKey, out var set) ? set.SightSocket : default;
 
-        private Mesh? LocalMeshForProfile(in WeaponVisualProfile profile) => profile.MeshAssetKey switch
-        {
-            WeaponVisualProfiles.MeshKeyRifleCarbine => firstPersonRifleCarbineMesh,
-            WeaponVisualProfiles.MeshKeyPistol => firstPersonPistolMesh,
-            WeaponVisualProfiles.MeshKeyKnife => firstPersonKnifeMesh,
-            WeaponVisualProfiles.MeshKeyGrenade => firstPersonGrenadeMesh,
-            _ => firstPersonRifleMesh
-        };
-
-        private Mesh? HeldMagazineForProfile(in WeaponVisualProfile profile) => profile.MeshAssetKey switch
-        {
-            WeaponVisualProfiles.MeshKeyRifleCarbine => rifleCarbineMagazineMesh,
-            WeaponVisualProfiles.MeshKeyPistol => pistolMagazineMesh,
-            _ => rifleMagazineMesh
-        };
-
-        private Mesh? LocalMagazineForProfile(in WeaponVisualProfile profile) => profile.MeshAssetKey switch
-        {
-            WeaponVisualProfiles.MeshKeyRifleCarbine => firstPersonRifleCarbineMagazineMesh,
-            WeaponVisualProfiles.MeshKeyPistol => firstPersonPistolMagazineMesh,
-            _ => firstPersonRifleMagazineMesh
-        };
-
-        private Mesh? HeldCycleForProfile(in WeaponVisualProfile profile) => profile.MeshAssetKey switch
-        {
-            WeaponVisualProfiles.MeshKeyRifleCarbine => rifleCarbineCycleMesh,
-            WeaponVisualProfiles.MeshKeyPistol => pistolCycleMesh,
-            _ => rifleCycleMesh
-        };
-
-        private Mesh? LocalCycleForProfile(in WeaponVisualProfile profile) => profile.MeshAssetKey switch
-        {
-            WeaponVisualProfiles.MeshKeyRifleCarbine => firstPersonRifleCarbineCycleMesh,
-            WeaponVisualProfiles.MeshKeyPistol => firstPersonPistolCycleMesh,
-            _ => firstPersonRifleCycleMesh
-        };
+        private Mesh? HeldMeshForProfile(in WeaponVisualProfile profile) => MeshSetForProfile(profile)?.Held;
+        private Mesh? LocalMeshForProfile(in WeaponVisualProfile profile) => MeshSetForProfile(profile)?.Local;
+        private Mesh? HeldMagazineForProfile(in WeaponVisualProfile profile) => MeshSetForProfile(profile)?.Magazine;
+        private Mesh? LocalMagazineForProfile(in WeaponVisualProfile profile) => MeshSetForProfile(profile)?.Magazine;
+        private Mesh? HeldCycleForProfile(in WeaponVisualProfile profile) => MeshSetForProfile(profile)?.Cycle;
+        private Mesh? LocalCycleForProfile(in WeaponVisualProfile profile) => MeshSetForProfile(profile)?.Cycle;
 
         private static MeshFilter CreateWeaponChild(Transform parent, string name, out Transform child)
         {

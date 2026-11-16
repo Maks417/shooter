@@ -18,6 +18,8 @@ namespace Shooter.Content.Maps
         private readonly Dictionary<string, ContentId> lowVisualRoots = new Dictionary<string, ContentId>(StringComparer.Ordinal);
         private readonly Dictionary<string, ContentId> balancedVisualRoots = new Dictionary<string, ContentId>(StringComparer.Ordinal);
         private readonly Dictionary<string, ContentId> highVisualRoots = new Dictionary<string, ContentId>(StringComparer.Ordinal);
+        private readonly object weaponLock = new object();
+        private WeaponVisualPayloads? weapons;
 
         public VerifiedMapPackageStore(string cacheRoot, ContentId toolchainHash, IReadOnlyDictionary<string, ContentId> gameplayRootHashes)
             : this(cacheRoot, toolchainHash, gameplayRootHashes, null, null, null)
@@ -109,8 +111,35 @@ namespace Shooter.Content.Maps
                 diagnostic = "visual-package-identity-mismatch";
                 return false;
             }
+            // ADR-078: weapon meshes come from the shared weapon package named by weapons.json; no regeneration fallback.
+            if (!TryLoadWeapons(out var weaponPayloads, out diagnostic))
+            {
+                visuals = default!;
+                return false;
+            }
+            visuals = visuals.WithWeapons(weaponPayloads);
             diagnostic = "ok";
             return true;
+        }
+
+        /// <summary>Verified shared weapon package; loaded once per store and reused for every map and profile.</summary>
+        public bool TryLoadWeapons(out WeaponVisualPayloads payloads, out string diagnostic)
+        {
+            lock (weaponLock)
+            {
+                if (weapons == null)
+                {
+                    if (!WeaponPackage.TryLoad(cacheRoot, toolchainHash, out var loaded, out diagnostic))
+                    {
+                        payloads = null!;
+                        return false;
+                    }
+                    weapons = loaded;
+                }
+                payloads = weapons;
+                diagnostic = "ok";
+                return true;
+            }
         }
 
         private static void CopyOptional(IReadOnlyDictionary<string, ContentId>? source, Dictionary<string, ContentId> destination)

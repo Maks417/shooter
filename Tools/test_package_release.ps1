@@ -51,6 +51,15 @@ function New-CaseRoot([string]$Name) {
     # ADR-038: Package-Release requires the persisted release catalog beside the index.
     $catalog = [ordered]@{ catalogSchema = 'shooter.release-catalog.v1'; toolchainHash = $toolchainHash; syntheticTestOnly = $true }
     Write-TestFile (Join-Path $caseRoot 'Artifacts/map-packages/catalog.json') ($catalog | ConvertTo-Json -Depth 4)
+    # ADR-078 shared weapon package beside the map packages.
+    $weaponPayload = '{"packageSchema":"shooter.weapon-package.v1","toolchainHash":"' + $toolchainHash + '","dependencies":[]}'
+    $weaponTmp = Join-Path $caseRoot ('tmp-' + [Guid]::NewGuid().ToString('N'))
+    Write-TestFile $weaponTmp $weaponPayload
+    $weaponSha = (Get-FileHash -LiteralPath $weaponTmp -Algorithm SHA256).Hash.ToLowerInvariant()
+    Remove-Item -LiteralPath $weaponTmp -Force
+    Write-TestFile (Join-Path $caseRoot "Artifacts/map-packages/$($weaponSha.Substring(0,2))/$weaponSha/package.json") $weaponPayload
+    $weaponIndex = [ordered]@{ indexSchema = 'shooter.weapon-package-index.v1'; toolchainHash = $toolchainHash; packageRootSha256 = $weaponSha }
+    Write-TestFile (Join-Path $caseRoot 'Artifacts/map-packages/weapons.json') ($weaponIndex | ConvertTo-Json -Depth 4)
     # T089 combat audio bank required by Package-Release.
     $audioDir = Join-Path $caseRoot 'Content/Audio/combat'
     Write-TestFile (Join-Path $audioDir 'manifest.json') '{"bankId":"combat-audio-bank-v3-stereo","sampleRate":48000,"channels":2,"clips":[]}'

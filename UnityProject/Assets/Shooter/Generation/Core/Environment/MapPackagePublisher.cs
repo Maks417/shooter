@@ -108,6 +108,11 @@ namespace Shooter.Generation.Environment
                     }
                 }
                 WriteIndex(root, built);
+                // ADR-078: the shared weapon package is published beside the map packages whenever visuals are.
+                bool anyVisual = false;
+                foreach (string profile in profiles) anyVisual |= profile != "gameplay";
+                if (anyVisual && !WeaponPackage.TryPublish(root, toolchainHash, out _, out string weaponDiagnostic))
+                    return MapPackagePublishResult.Fail(ErrorCode.InternalError, "weapon-package:" + weaponDiagnostic);
                 // ADR-038: persist release catalog/gameplay sidecars beside packages (compile-time only).
                 var catalogMaps = DistinctMapIds(built);
                 ReleaseCatalogDocument.WriteAtomic(root, toolchainHash, catalogMaps);

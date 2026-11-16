@@ -1,10 +1,11 @@
 """Generate the frozen in-process weapon catalogs from Content/Weapons/*.weapon.json (ADR-077).
 
 One definition file per weapon holds its combat stats, visual/handling profile, audio voice and kill-feed glyph.
-This script validates every file and writes two C# partial classes:
+This script validates every file and writes three C# partial classes:
 
   UnityProject/Assets/Shooter/Simulation/Combat/WeaponCatalog.g.cs              (combat rows, Simulation)
   UnityProject/Assets/Shooter/Presentation/Model/View/WeaponVisualProfiles.g.cs (presentation rows)
+  UnityProject/Assets/Shooter/Generation/Core/Environment/WeaponMeshCatalog.g.cs (meshes for the weapon package, ADR-078)
 
 The catalogs stay compiled C# (ADR-072 forbids runtime JSON combat tables). Numbers are emitted with the exact
 literal text from the JSON file, so the generated expressions are bit-identical to hand-written ones.
@@ -24,8 +25,11 @@ DEFINITIONS = Path("Content/Weapons")
 ASSETS = Path("UnityProject/Assets/Shooter")
 CATALOG_OUT = ASSETS / "Simulation/Combat/WeaponCatalog.g.cs"
 PROFILES_OUT = ASSETS / "Presentation/Model/View/WeaponVisualProfiles.g.cs"
+MESHES_OUT = ASSETS / "Generation/Core/Environment/WeaponMeshCatalog.g.cs"
 FEATURE_RECIPES = ASSETS / "Generation/FeatureRecipes"
 SCHEMA_ID = "shooter.weapon.v1"
+# Mesh keys built by LoadoutPropGeometry instead of a geometry.weapon recipe (no magazine or cycle part).
+PROP_MESH_KEYS = {"knife", "grenade"}
 
 # Enum names are read from the C# sources so the generator can never drift from the code it feeds.
 ENUM_SOURCES = {
@@ -188,7 +192,16 @@ def validate(root: Path, path: Path, doc, enums) -> dict:
     magazine_cycle = boolean(visual["magazineCycle"], v + "magazineCycle")
     if family in ("Melee", "Throwable") and (optic != "None" or magazine_cycle):
         raise DefinitionError(v + family + " weapons need optic None and magazineCycle false")
-    if "geometryRecipe" in visual:
+    recipe_source = None
+    if "geometryRecipe" not in visual:
+        if mesh_key not in PROP_MESH_KEYS:
+            raise DefinitionError(v + "geometryRecipe: required unless meshKey is a built-in prop ("
+                                  + ", ".join(sorted(PROP_MESH_KEYS)) + ")")
+        if magazine_cycle:
+            raise DefinitionError(v + "magazineCycle: prop meshes have no magazine or cycle part")
+    else:
+        if mesh_key in PROP_MESH_KEYS:
+            raise DefinitionError(v + "meshKey: " + mesh_key + " is reserved for the built-in prop")
         recipe_name = visual["geometryRecipe"]
         if not isinstance(recipe_name, str) or not KEY_PATTERN.match(recipe_name):
             raise DefinitionError(v + "geometryRecipe: expected a recipe file stem")
@@ -196,8 +209,9 @@ def validate(root: Path, path: Path, doc, enums) -> dict:
         if not recipe_path.is_file():
             raise DefinitionError(v + "geometryRecipe: " + str(FEATURE_RECIPES / (recipe_name + ".json")) + " not found")
         recipe = json.loads(recipe_path.read_text(encoding="utf-8"))
-        if recipe.get("recipeId") != weapon_id:
-            raise DefinitionError(v + "geometryRecipe: recipeId " + str(recipe.get("recipeId")) + " != " + weapon_id)
+        if recipe.get("generatorId") != "geometry.weapon":
+            raise DefinitionError(v + "geometryRecipe: " + recipe_name + " is not a geometry.weapon recipe")
+        recipe_source = json.dumps(recipe, separators=(",", ":"), ensure_ascii=True)
 
     audio = doc["audio"]
     keys(audio, where + ".audio", ["shot"])
@@ -214,6 +228,7 @@ def validate(root: Path, path: Path, doc, enums) -> dict:
         "cycleTravelMeters": number(visual["cycleTravelMeters"], v + "cycleTravelMeters", maximum=0.5),
         "shotVoice": choice(audio["shot"], where + ".audio.shot", enums["SynthVoiceKind"]),
         "glyph": glyph,
+        "recipeSource": recipe_source,
     }
 
 
@@ -234,6 +249,12 @@ def load(root: Path) -> list:
             if weapon[attr] in seen:
                 raise DefinitionError(weapon["source"] + ": " + attr + " also used by " + seen[weapon[attr]])
             seen[weapon[attr]] = weapon["source"]
+    meshes = {}
+    for weapon in weapons:
+        previous = meshes.setdefault(weapon["meshKey"], weapon)
+        if previous["recipeSource"] != weapon["recipeSource"]:
+            raise DefinitionError(weapon["source"] + ": meshKey " + weapon["meshKey"] + " is built from a different recipe in "
+                                  + previous["source"])
     families = {w["family"] for w in weapons}
     for required in sorted(FAMILY_FIRE_MODES):
         if required not in families:
@@ -306,6 +327,29 @@ def render_profiles(weapons) -> str:
             + ",\n".join(rows) + "\n        };\n    }\n}\n")
 
 
+def csharp_string(value: str) -> str:
+    return '"' + value.replace("\\", "\\\\").replace('"', '\\"') + '"'
+
+
+def render_meshes(weapons) -> str:
+    rows, seen = [], set()
+    for w in weapons:
+        if w["meshKey"] in seen:
+            continue
+        seen.add(w["meshKey"])
+        if w["recipeSource"] is None:
+            rows.append("            // " + w["source"] + "\n"
+                        "            WeaponMeshSource.Prop(\"" + w["meshKey"] + "\")")
+        else:
+            rows.append("            // " + w["source"] + "\n"
+                        "            WeaponMeshSource.FromRecipe(\"" + w["meshKey"] + "\",\n"
+                        "                " + csharp_string(w["recipeSource"]) + ")")
+    return (HEADER + "#nullable enable\n\nnamespace Shooter.Generation.Environment\n{\n"
+            "    public static partial class WeaponMeshCatalog\n    {\n"
+            "        private static WeaponMeshSource[] CreateGeneratedSources() => new[]\n        {\n"
+            + ",\n".join(rows) + "\n        };\n    }\n}\n")
+
+
 def meta_for(relative: Path) -> str:
     guid = hashlib.md5(("shooter.weapon-catalog:" + relative.as_posix()).encode("ascii")).hexdigest()
     return META_TEMPLATE.format(guid=guid)
@@ -314,7 +358,8 @@ def meta_for(relative: Path) -> str:
 def outputs(root: Path) -> dict:
     weapons = load(root)
     result = {}
-    for relative, text in ((CATALOG_OUT, render_catalog(weapons)), (PROFILES_OUT, render_profiles(weapons))):
+    for relative, text in ((CATALOG_OUT, render_catalog(weapons)), (PROFILES_OUT, render_profiles(weapons)),
+                           (MESHES_OUT, render_meshes(weapons))):
         result[relative] = text
         result[Path(str(relative) + ".meta")] = meta_for(relative)
     return result

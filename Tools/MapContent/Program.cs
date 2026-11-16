@@ -177,6 +177,9 @@ internal static class Program
                     pathSpawnToObjective = navFacts.TryGetValue(p.MapId + "/" + p.VisualProfile, out var fact2) && fact2.path
                 }).ToArray(),
                 reproduction,
+                weaponPackage = WeaponPackage.TryLoad(cache, toolchain, out var weapons, out string weaponDiagnostic)
+                    ? new { packageRootSha256 = weapons.PackageRootHash.ToString(), verified = true, diagnostic = "ok" }
+                    : new { packageRootSha256 = "", verified = false, diagnostic = weaponDiagnostic },
                 corruptRecovery = new { retained = true, diagnostic = corruptDiagnostic },
                 cancelRecovery = new { published = false },
                 serverGameplayOnly = serverOnly,

@@ -15,7 +15,8 @@
     "toolchain-lock.json",
     "LICENSES.txt",
     "Content/map-packages/index.json",
-    "Content/map-packages/catalog.json"
+    "Content/map-packages/catalog.json",
+    "Content/map-packages/weapons.json"
   ],
   "notes": [
     "AppId is frozen forever; changing it creates an unrelated second installation.",
