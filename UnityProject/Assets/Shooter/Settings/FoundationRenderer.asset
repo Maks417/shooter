@@ -27,7 +27,7 @@ MonoBehaviour:
   m_RendererFeatures: []
   m_RendererFeatureMap: 
   m_UseNativeRenderPass: 0
-  postProcessData: {fileID: 0}
+  postProcessData: {fileID: 11400000, guid: fd56bc42acbbc704f81028e0b10fa7de, type: 2}
   m_AssetVersion: 3
   m_PrepassLayerMask:
     serializedVersion: 2

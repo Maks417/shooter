@@ -167,9 +167,10 @@ namespace Shooter.Presentation.Session
             camera.farClipPlane = 400f;
             camera.clearFlags = CameraClearFlags.SolidColor;
             camera.backgroundColor = new Color(0.35f, 0.55f, 0.85f, 1f);
-            camera.allowHDR = false;
             camera.allowMSAA = QualitySettings.GetQualityLevel() == 2;
             camera.cullingMask &= ~(1 << ProductMenuScene.StageLayer);
+            // ADR-080: code-built post stack; HDR follows the quality tier.
+            Shooter.Presentation.Rendering.ProductPostProcessing.Attach(camera);
             scopePip = AdsScopePipPresenter.Attach(camera);
 
             // Bodycam daylight key: warm hard sun. GeneratedSky trilight owns outdoor fill after map install.

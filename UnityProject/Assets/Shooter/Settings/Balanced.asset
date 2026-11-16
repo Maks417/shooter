@@ -17,13 +17,13 @@ MonoBehaviour:
   m_RendererType: 1
   m_RendererData: {fileID: 0}
   m_RendererDataList:
-  - {fileID: 11400000, guid: 6b49d98d4c5f27b4d9d38699754733a5, type: 2}
+  - {fileID: 11400000, guid: e92a00cdb65d6a649bf679968a05afa5, type: 2}
   m_DefaultRendererIndex: 0
   m_RequireDepthTexture: 0
   m_RequireOpaqueTexture: 0
   m_OpaqueDownsampling: 1
   m_SupportsTerrainHoles: 1
-  m_SupportsHDR: 0
+  m_SupportsHDR: 1
   m_HDRColorBufferPrecision: 0
   m_MSAA: 1
   m_RenderScale: 1

@@ -37,3 +37,15 @@ Material generator1.0.1 reduces broad bright wear patches to sparse bounded scuf
 ## T075 product surface publication
 
 [ADR-044](../decisions.md#adr-044--accepted-versioned-procedural-map-surface-publication) map generators 1.0.1 publish four fixed 128px, two-metre albedo/normal/mask triplets through the unchanged CPU MaterialBaker. `MapVisualClosure.RequiredPaths` retains all companions through verified in-memory/disk extraction. `ProductSurfaceMaterial` converts metallic/occlusion/roughness to URP Lit channels while retaining full mips and spatial response; normals retain opaque-alpha XYZ packing. Metric combined map UVs use 0.5 repeats/metre, while the 256m unit-box ground uses 128 repeats. Map resource replacement releases prior uploads. Numeric generated variant materials are preloaded only by Client builds. Menu stage variants share texture planes; static map cards capture after URP startup and have rendered-pixel regressions. [T075 delivery and limits](../milestones/m11-playable-release/handoff.md#t075--procedural-presentation-preview-034). Reference performance and named material/visual acceptance remain Pending.
+
+## Post-processing per quality tier (ADR-080)
+
+URP post-processing is code-built: `ShooterPostProcessingBuild` creates the post-process data with generated lookups only and gives Balanced and High their own renderer with SSAO (InterleavedGradient, so no stock noise images ship). `ProductPostProcessing` creates the global volume at runtime from `PostProcessingTier`:
+
+| Tier | HDR | Tonemapping | Bloom | SSAO | Grading |
+|---|---|---|---|---|---|
+| Low | off | none | off | off | contrast +6, saturation −4, vignette 0.16 |
+| Balanced | on | Neutral | 0.25 | half-res, 4 samples | exposure +0.25, contrast +10, saturation −6, vignette 0.2 |
+| High | on | Neutral | 0.35, HQ filter | full-res, 8 samples | as Balanced |
+
+To change a value, edit `PostProcessingTier` (volume numbers) or `ShooterPostProcessingBuild` (SSAO and HDR), then run `ShooterPostProcessingBuild.Configure` in the locked editor so settings provenance is regenerated. Baked GI/AO is a planned follow-up (see ADR-080). Low cost on the reference laptop and a named visual review of all tiers are Pending.

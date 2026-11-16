@@ -6,7 +6,11 @@
     "sources": [
         {
             "path": "UnityProject/Assets/Shooter/Bootstrap/Editor/ShooterBuild.cs",
-            "sha256": "e91fcee8475434813eb7b92f8e09f5795e21258f2529f33c1ba2e99ce80def4b"
+            "sha256": "80f5a36f94ba9a9fe482146de87a2872c2c8be59cd529dc130920ec2c9223db0"
+        },
+        {
+            "path": "UnityProject/Assets/Shooter/Bootstrap/Editor/ShooterPostProcessingBuild.cs",
+            "sha256": "b004773190abf583852b123504278e8f8df3cfb8bb3017421424df1b532be11f"
         }
     ],
     "artifacts": [
@@ -16,7 +20,7 @@
         },
         {
             "path": "UnityProject/Assets/Shooter/Settings/Balanced.asset",
-            "sha256": "6d5b983aa65ab126fbd2816f8e2a07b153f4d6100a99339978eccfe5b23900d2"
+            "sha256": "5d03eadb6f40af34301ed4511d8aedeb3e5d0d6b4e6411df5f0c815c33746898"
         },
         {
             "path": "UnityProject/Assets/Shooter/Settings/DefaultVolumeProfile.asset",
@@ -24,7 +28,15 @@
         },
         {
             "path": "UnityProject/Assets/Shooter/Settings/FoundationRenderer.asset",
-            "sha256": "314a580ceaf6dff9f1d815b5e0726e7c731a1899a12f84a212bce5528b99f561"
+            "sha256": "d63ef5c234da1ea4b0fa41bc7b940b2a2dbb287a34dad391d59c41c649bf6d9c"
+        },
+        {
+            "path": "UnityProject/Assets/Shooter/Settings/FoundationRendererBalanced.asset",
+            "sha256": "1eda6a60c67aae99b97b11f3bbd416f3be5c6096a9b8177f598b17aaaede0150"
+        },
+        {
+            "path": "UnityProject/Assets/Shooter/Settings/FoundationRendererHigh.asset",
+            "sha256": "b7ce78ed8f4f4cb4340f60c69933fa7aabc0091450a139d269d04704b483b206"
         },
         {
             "path": "UnityProject/Assets/Shooter/Settings/HarnessMaterial.mat",
@@ -32,7 +44,7 @@
         },
         {
             "path": "UnityProject/Assets/Shooter/Settings/High.asset",
-            "sha256": "7f48700c27fea0771daf99864361a51e880d941b8788e2a9d40db0412c008a14"
+            "sha256": "469e432463d15cd824806b09f0fe1f67383439e7aab3bf42b0b225f75a07a630"
         },
         {
             "path": "UnityProject/Assets/Shooter/Settings/Low.asset",
@@ -45,6 +57,14 @@
         {
             "path": "UnityProject/Assets/Shooter/Settings/OrderedDither8.asset",
             "sha256": "55ce01887fc96100235227decd4d3dbf5b6036629ab5f780a2e7b18379dafff6"
+        },
+        {
+            "path": "UnityProject/Assets/Shooter/Settings/PostDither16.asset",
+            "sha256": "b97ad04e1f2aded27fd956543318307676bfc885e14c563ab4e66e2ee35fa7d5"
+        },
+        {
+            "path": "UnityProject/Assets/Shooter/Settings/ProductPostProcessData.asset",
+            "sha256": "1498c5136781ef33b13976f915d0f0f1b41da638fa7fab039ee58ca5c34cbd0a"
         },
         {
             "path": "UnityProject/Assets/Shooter/Settings/ProductSurfaceMask.mat",
@@ -65,6 +85,10 @@
         {
             "path": "UnityProject/Assets/Shooter/Settings/UnusedDebugLookup.asset",
             "sha256": "a08b13e109af5715b3188319d71b8fbf868375885cd7c794e84e04629995d39f"
+        },
+        {
+            "path": "UnityProject/Assets/Shooter/Settings/UnusedPostLookup.asset",
+            "sha256": "3b9d6bd9682bffd47217ee012a309fb414569f9e1139f88eade861553144aaaa"
         }
     ],
     "artPolicy": "Code/numeric settings and code-owned bootstrap scene only; no imported art. Source .meta GUIDs are retained across regeneration."

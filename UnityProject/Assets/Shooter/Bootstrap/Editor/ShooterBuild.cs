@@ -251,12 +251,15 @@ public static class ShooterBuild
         string timeYaml = File.ReadAllText(timePath);
         timeYaml = System.Text.RegularExpressions.Regex.Replace(timeYaml, "(?m)^  Fixed Timestep: .*$", "  Fixed Timestep: 0.016666668");
         File.WriteAllText(timePath, timeYaml);
+        // ADR-080: post-processing data, per-tier renderers and HDR flags are code-built on top of the base pipelines.
+        ShooterPostProcessingBuild.ConfigureAssets();
+        AssetDatabase.SaveAssets();
         WriteSettingsProvenance();
         VerifyToolchain();
         Debug.Log("SHOOTER_FOUNDATION_INITIALIZED");
     });
 
-    private static Texture2D BakeOrderedDither(string path, int size)
+    internal static Texture2D BakeOrderedDither(string path, int size)
     {
         var texture = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
         if (texture == null) { texture = new Texture2D(size, size, TextureFormat.R8, false, true) { name = "Analytic ordered dither " + size }; AssetDatabase.CreateAsset(texture, path); }
@@ -281,11 +284,11 @@ public static class ShooterBuild
     }
     public static void WriteSettingsProvenance()
     {
-        const string source = "UnityProject/Assets/Shooter/Bootstrap/Editor/ShooterBuild.cs";
+        string[] sourcePaths = { "UnityProject/Assets/Shooter/Bootstrap/Editor/ShooterBuild.cs", "UnityProject/Assets/Shooter/Bootstrap/Editor/ShooterPostProcessingBuild.cs" };
         var artifacts = Directory.GetFiles("Assets/Shooter/Settings", "*.asset").Concat(Directory.GetFiles("Assets/Shooter/Settings", "*.mat")).Concat(new[] { "Assets/Shooter/Bootstrap/Scenes/Bootstrap.unity" });
         WriteJson("Assets/Shooter/Settings/provenance.json", new SettingsProvenance
         {
-            toolchainHash = HashFile(LockPath), sources = new[] { new FileProof { path = source, sha256 = HashFile(Path.Combine(RepositoryRoot, source)) } },
+            toolchainHash = HashFile(LockPath), sources = sourcePaths.Select(source => new FileProof { path = source, sha256 = HashFile(Path.Combine(RepositoryRoot, source)) }).ToArray(),
             artifacts = artifacts.OrderBy(p => p, StringComparer.Ordinal).Select(p => new FileProof { path = "UnityProject/" + p.Replace('\\', '/'), sha256 = HashFile(p) }).ToArray()
         });
         AssetDatabase.ImportAsset("Assets/Shooter/Settings/provenance.json");

@@ -135,6 +135,7 @@ namespace Shooter.Presentation.Session
         {
             int tier = Mathf.Clamp(settings.QualityTier, 0, QualitySettings.names.Length - 1);
             QualitySettings.SetQualityLevel(tier, true);
+            Shooter.Presentation.Rendering.ProductPostProcessing.Apply(tier);
             QualitySettings.vSyncCount = settings.VSync ? 1 : 0;
             Application.targetFrameRate = settings.FpsCap <= 0 ? -1 : settings.FpsCap;
             Screen.SetResolution(settings.ResolutionWidth, settings.ResolutionHeight, ToFullScreenMode(settings.DisplayMode));
