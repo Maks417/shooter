@@ -20,7 +20,7 @@
         },
         {
             "path": "UnityProject/Assets/Shooter/Settings/Balanced.asset",
-            "sha256": "5d03eadb6f40af34301ed4511d8aedeb3e5d0d6b4e6411df5f0c815c33746898"
+            "sha256": "acd316d558e6d1c753ccb8aed53b8bc46efa7c65ee57b272d94fc04d0420fd64"
         },
         {
             "path": "UnityProject/Assets/Shooter/Settings/DefaultVolumeProfile.asset",
@@ -44,7 +44,7 @@
         },
         {
             "path": "UnityProject/Assets/Shooter/Settings/High.asset",
-            "sha256": "469e432463d15cd824806b09f0fe1f67383439e7aab3bf42b0b225f75a07a630"
+            "sha256": "23e5611ed1f7dd2b13bde69e779d92b9426617e64838259f080a42035eabb874"
         },
         {
             "path": "UnityProject/Assets/Shooter/Settings/Low.asset",
@@ -80,7 +80,7 @@
         },
         {
             "path": "UnityProject/Assets/Shooter/Settings/UniversalRenderPipelineGlobalSettings.asset",
-            "sha256": "077404b926db56d58d29ecbfbc377f409f5eb5fcdd4e32bf3b349673b1d0200b"
+            "sha256": "762029f067dbebcc270f757b62647eac3fd7c4746e1e02a063fa332cd8a83116"
         },
         {
             "path": "UnityProject/Assets/Shooter/Settings/UnusedDebugLookup.asset",

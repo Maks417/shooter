@@ -36,7 +36,12 @@ namespace Shooter.Presentation.Rendering
         {
             var tier = PostProcessingTier.For(Mathf.Clamp(qualityTier, 0, PostProcessingTier.TierCount - 1));
             EnsureVolume();
-            if (tier.Tier != appliedTier) Configure(profile!, tier);
+            if (tier.Tier != appliedTier)
+            {
+                Configure(profile!, tier);
+                Debug.Log("SHOOTER_POST_PROCESSING tier=" + tier.Tier + " hdr=" + tier.Hdr + " tonemap=" + tier.NeutralTonemapping
+                          + " bloom=" + tier.Bloom + " ssao=" + tier.Ssao + " pipelineHdr=" + PipelineHdr());
+            }
             appliedTier = tier.Tier;
             Cameras.RemoveAll(c => c == null);
             foreach (var camera in Cameras)
@@ -48,6 +53,9 @@ namespace Shooter.Presentation.Rendering
                 data.requiresDepthOption = CameraOverrideOption.UsePipelineSettings;
             }
         }
+
+        private static bool PipelineHdr() =>
+            GraphicsSettings.currentRenderPipeline is UniversalRenderPipelineAsset urp && urp.supportsHDR;
 
         private static void EnsureVolume()
         {
