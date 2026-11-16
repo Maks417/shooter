@@ -106,10 +106,11 @@ namespace Shooter.Tests
         [Test]
         public void KeyboardShiftFAndAppliedSlideRebindReachLocalCommand()
         {
+            using var playerUpdates = PlayerInputUpdatesInEditMode.Enable();
             var keyboard = UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Keyboard>();
             try
             {
-                var input = new LocalPlayerInput();
+                using var input = new LocalPlayerInput();
                 input.CaptureFrame(true);
                 UnityEngine.InputSystem.InputSystem.QueueStateEvent(keyboard,
                     new UnityEngine.InputSystem.LowLevel.KeyboardState(UnityEngine.InputSystem.Key.W,
@@ -242,5 +243,39 @@ namespace Shooter.Tests
             Assert.That(command.Buttons & InputButtons.ReloadPressed, Is.Not.EqualTo(InputButtons.None));
         }
 
+    }
+
+    /// <summary>
+    /// Input System actions ignore Editor-type updates, so outside play mode an EditMode test only reaches the
+    /// player action path when the manager runs player updates. The flag is internal to the pinned package
+    /// (no public setter and no InputTestFixture without a manifest testables entry), so set it reflectively.
+    /// </summary>
+    internal sealed class PlayerInputUpdatesInEditMode : System.IDisposable
+    {
+        private readonly object manager;
+        private readonly System.Reflection.PropertyInfo flag;
+        private readonly bool previous;
+
+        private PlayerInputUpdatesInEditMode(object manager, System.Reflection.PropertyInfo flag)
+        {
+            this.manager = manager;
+            this.flag = flag;
+            previous = (bool)flag.GetValue(manager);
+            flag.SetValue(manager, true);
+        }
+
+        public static PlayerInputUpdatesInEditMode Enable()
+        {
+            const System.Reflection.BindingFlags any = System.Reflection.BindingFlags.Public
+                | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static
+                | System.Reflection.BindingFlags.Instance;
+            object manager = typeof(UnityEngine.InputSystem.InputSystem).GetProperty("manager", any)?.GetValue(null)
+                ?? throw new System.InvalidOperationException("InputSystem.manager not found");
+            System.Reflection.PropertyInfo flag = manager.GetType().GetProperty("runPlayerUpdatesInEditMode", any)
+                ?? throw new System.InvalidOperationException("runPlayerUpdatesInEditMode not found");
+            return new PlayerInputUpdatesInEditMode(manager, flag);
+        }
+
+        public void Dispose() => flag.SetValue(manager, previous);
     }
 }
