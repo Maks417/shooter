@@ -81,8 +81,8 @@ Local sprint slide is implemented and built at 5eaced5; clean Game 56 / EditMode
 | T062 / T065 — final acceptance | Visual inventory/tooling and operator checklist. | P05 FAIL retained; named review, full match/device/reference/soak/delivery exits. REL01–REL06 NotClaimed. |
 | T091 — third-party provenance | ADR-075 `namedThirdPartyCodeSources` / `namedNativeBinaries` allowlist categories, enforced by `Test-SourceProvenance.ps1`, with 8 new wrapper regressions. | Done (2026-11-16); later tasks add their entries. |
 | T092 — noise primitive | FastNoiseLite v1.1.1, double-precision scripted port, `NoiseField` periodic wrapper, cross-lane goldens (.NET + EditMode). | Accepted as a primitive. A proof generator (`material.noise`) and its feature-content lock refreeze are waiting on owner sign-off. |
-| T093 — runtime rig correction | Not started. Spike Animation Rigging 1.4.1 (editor-bundled) on remote soldiers; fallback is runtime `TwoBoneIk`. | Spike, Client/Server builds, CPU and named visual review. |
-| T094 — spatial audio | Not started. Spike the Steam Audio Unity integration as a per-voice spatial pool behind the stereo mixer. | Spike, native-binary allowlist entries, builds, CPU and named headphone review. |
+| T093 — runtime rig correction | Animation Rigging **Rejected** 2026-11-16: the owner declined the toolchain-lock refreeze, and the spike was removed unmerged (ADR-075 addendum). Corrections stay in pure `SoldierMotion`/`TwoBoneIk`, which already solves the arms and legs. | Collision-backed cosmetic `ISoldierGround` for remote soldiers, per-profile support grip and a bounded head look-at. Then EditMode, the Client build, reference-laptop CPU and a named visual review. Server checks deferred (local-only scope). |
+| T094 — spatial audio | Not started. Spike the Steam Audio Unity integration as a per-voice spatial pool behind the stereo mixer. | Spike, native-binary allowlist entries, client build, CPU and named headphone review. |
 
 ## Immediate owner path: T071 playtest
 
