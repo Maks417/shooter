@@ -2,7 +2,8 @@
   "name": "Shooter.Generation.Core",
   "rootNamespace": "Shooter.Generation",
   "references": [
-    "Shooter.Contracts"
+    "Shooter.Contracts",
+    "Shooter.VectorMath"
   ],
   "autoReferenced": true,
   "noEngineReferences": true

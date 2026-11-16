@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using Shooter.Contracts;
+using Shooter.VectorMath;
 
 namespace Shooter.Generation.Environment
 {
@@ -82,7 +83,7 @@ namespace Shooter.Generation.Environment
                 {
                     double angle = 2 * Math.PI * i / radial;
                     float c = i == radial ? 1f : (float)Math.Cos(angle), sine = i == radial ? 0f : (float)Math.Sin(angle);
-                    var normal = GeometryMath.Normalize(new Float3(c, sine, (float)(-(slope + bendSlope * sine) / length)));
+                    var normal = VecMath.Normalize(new Float3(c, sine, (float)(-(slope + bendSlope * sine) / length)));
                     mesh.Vertex(new Float3(radius * c, radius * sine + bend, (float)t * length - length * .5f), normal,
                         new Float4(-sine, c, 0, 1), new Float2((float)(2 * Math.PI * .055 * i / radial), (float)t * length));
                 }

@@ -1,4 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><TargetFramework>netstandard2.1</TargetFramework><LangVersion>9.0</LangVersion><Nullable>enable</Nullable><EnableDefaultCompileItems>false</EnableDefaultCompileItems><TreatWarningsAsErrors>true</TreatWarningsAsErrors><AssemblyName>Shooter.Generation.Core</AssemblyName></PropertyGroup>
-  <ItemGroup><ProjectReference Include="../Contracts/Shooter.Contracts.csproj" /><Compile Include="../../UnityProject/Assets/Shooter/Generation/Core/**/*.cs" /></ItemGroup>
+  <ItemGroup><ProjectReference Include="../Contracts/Shooter.Contracts.csproj" /><ProjectReference Include="../VectorMath/Shooter.VectorMath.csproj" /><Compile Include="../../UnityProject/Assets/Shooter/Generation/Core/**/*.cs" /><Compile Remove="../../UnityProject/Assets/Shooter/Generation/Core/Math/**/*.cs" /></ItemGroup>
 </Project>

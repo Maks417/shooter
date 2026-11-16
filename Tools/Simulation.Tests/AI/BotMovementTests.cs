@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using Shooter.Contracts;
+using Shooter.VectorMath;
 using Shooter.Simulation;
 using Shooter.Simulation.AI;
 using Shooter.Simulation.Motor;
@@ -314,7 +315,7 @@ namespace Shooter.Simulation.Tests.AI
                 if (ai.WantsSlide(id)) slideIds.Add(id);
                 sim.StepWithSlideActors(t, new[] { cmd }, slideIds);
                 Assert.True(sim.TryGetMotorState(id, out var after));
-                maxSpeed = Math.Max(maxSpeed, MotorMath.Length(MotorMath.Horizontal(after.Velocity)));
+                maxSpeed = Math.Max(maxSpeed, VecMath.Length(MotorMath.Horizontal(after.Velocity)));
                 slid |= after.SlideActive;
             }
             Assert.True(maxSpeed >= MotorConfig.BaselineV1.SprintSpeed - 0.5f, "max speed " + maxSpeed);

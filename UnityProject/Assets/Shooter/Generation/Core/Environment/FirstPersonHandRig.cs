@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using Shooter.Contracts;
+using static Shooter.VectorMath.VecMath;
 
 namespace Shooter.Generation.Environment
 {
@@ -73,6 +74,5 @@ namespace Shooter.Generation.Environment
             double radians = degrees * (support ? -1 : 1) * Math.PI / 360;
             return new Quat(0, (float)Math.Sin(radians), 0, (float)Math.Cos(radians));
         }
-        private static Float3 Sub(Float3 a, Float3 b) => new Float3(a.X-b.X,a.Y-b.Y,a.Z-b.Z);
     }
 }

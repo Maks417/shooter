@@ -859,7 +859,8 @@ namespace Shooter.Presentation.Rig
             avatar.LastAimPitch = pitch;
             avatar.LastRightEye = pose.RightEyePosition;
             avatar.LastWeaponPosition = weaponPosition;
-            avatar.LastSightWorld = Add(weaponPosition, Rotate(sightLocal, weaponRotation));
+            Vector3 sightWorld = V(weaponPosition) + Q(weaponRotation) * V(sightLocal);
+            avatar.LastSightWorld = new Float3(sightWorld.x, sightWorld.y, sightWorld.z);
             avatar.LastFeet = state.Feet;
             avatar.HasReviewMetrics = true;
 
@@ -1071,20 +1072,6 @@ namespace Shooter.Presentation.Rig
             for (int i = 0; i < sockets.Count; i++)
                 if (sockets[i].Id == id) return sockets[i].Position;
             return default;
-        }
-
-        private static Float3 Add(Float3 a, Float3 b) => new Float3(a.X + b.X, a.Y + b.Y, a.Z + b.Z);
-        private static Float3 Rotate(Float3 v, Quat q)
-        {
-            // Match Generation MotionMath quaternion rotation without pulling private helpers.
-            float x2 = q.X + q.X, y2 = q.Y + q.Y, z2 = q.Z + q.Z;
-            float xx = q.X * x2, yy = q.Y * y2, zz = q.Z * z2;
-            float xy = q.X * y2, xz = q.X * z2, yz = q.Y * z2;
-            float wx = q.W * x2, wy = q.W * y2, wz = q.W * z2;
-            return new Float3(
-                (1f - (yy + zz)) * v.X + (xy - wz) * v.Y + (xz + wy) * v.Z,
-                (xy + wz) * v.X + (1f - (xx + zz)) * v.Y + (yz - wx) * v.Z,
-                (xz - wy) * v.X + (yz + wx) * v.Y + (1f - (xx + yy)) * v.Z);
         }
 
         private void DestroyAvatar(EntityId id)

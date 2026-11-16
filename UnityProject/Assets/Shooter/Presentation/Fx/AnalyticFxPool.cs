@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using Shooter.Contracts;
+using static Shooter.VectorMath.VecMath;
 
 namespace Shooter.Presentation.Fx
 {
@@ -212,9 +213,6 @@ namespace Shooter.Presentation.Fx
             float inv = 1f / (float)Math.Sqrt(lenSq);
             return new Float3(up.X * inv, up.Y * inv, up.Z * inv);
         }
-
-        private static Float3 Cross(Float3 a, Float3 b) =>
-            new Float3(a.Y * b.Z - a.Z * b.Y, a.Z * b.X - a.X * b.Z, a.X * b.Y - a.Y * b.X);
 
         public void Tick(float dt)
         {

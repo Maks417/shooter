@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using Shooter.Contracts;
+using static Shooter.VectorMath.VecMath;
 
 namespace Shooter.Simulation.Pose
 {
@@ -98,8 +99,5 @@ namespace Shooter.Simulation.Pose
 
         private static Float3 Offset(Float3 feet, Float3 right, float amount) =>
             new Float3(feet.X + right.X * amount, feet.Y, feet.Z + right.Z * amount);
-
-        private static Float3 Cross(Float3 a, Float3 b) =>
-            new Float3(a.Y * b.Z - a.Z * b.Y, a.Z * b.X - a.X * b.Z, a.X * b.Y - a.Y * b.X);
     }
 }

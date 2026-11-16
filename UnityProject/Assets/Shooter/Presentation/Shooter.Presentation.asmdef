@@ -8,6 +8,7 @@
     "GUID:2cffb7e6764c44dd85a06be34be39cdf",
     "GUID:4ccd01065ddb43afa1edb586969e90ec",
     "Shooter.Generation.Core",
+    "Shooter.VectorMath",
     "Shooter.Content.Runtime",
     "Unity.InputSystem"
   ],

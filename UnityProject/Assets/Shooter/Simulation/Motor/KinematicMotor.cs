@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using Shooter.Contracts;
+using Shooter.VectorMath;
 
 namespace Shooter.Simulation.Motor
 {
@@ -94,7 +95,7 @@ namespace Shooter.Simulation.Motor
                 && slideTicks == 0 && previous.Grounded && previous.SprintActive && wantSprint
                 && !wantsJump && command.MoveY > 0f
                 && tightness >= MotorConfig.TightnessSlideCost
-                && MotorMath.Length(MotorMath.Horizontal(previous.Velocity)) >= MotorConfig.SlideMinEntrySpeed;
+                && VecMath.Length(MotorMath.Horizontal(previous.Velocity)) >= MotorConfig.SlideMinEntrySpeed;
             if (startSlide)
             {
                 slideTicks = MotorConfig.SlideDurationTicks;
@@ -134,19 +135,19 @@ namespace Shooter.Simulation.Motor
             float speed = stance == Stance.Crouching ? config.CrouchSpeed : canSprint ? config.SprintSpeed : config.WalkSpeed;
             if (wantAim) speed *= config.AdsSpeedMultiplier;
 
-            Float3 wish = MotorMath.Add(
-                MotorMath.Scale(MotorMath.YawForward(yaw), ClampAxis(command.MoveY)),
-                MotorMath.Scale(MotorMath.YawRight(yaw), ClampAxis(command.MoveX)));
-            float wishLen = MotorMath.Length(wish);
-            if (wishLen > 1f) wish = MotorMath.Scale(wish, 1f / wishLen);
-            Float3 wishVel = MotorMath.Scale(wish, speed);
+            Float3 wish = VecMath.Add(
+                VecMath.Scale(MotorMath.YawForward(yaw), ClampAxis(command.MoveY)),
+                VecMath.Scale(MotorMath.YawRight(yaw), ClampAxis(command.MoveX)));
+            float wishLen = VecMath.Length(wish);
+            if (wishLen > 1f) wish = VecMath.Scale(wish, 1f / wishLen);
+            Float3 wishVel = VecMath.Scale(wish, speed);
 
             Float3 horizontal = MotorMath.Horizontal(velocity);
             if (sliding)
             {
                 // Only authority supplies the entry boost; held input/turning cannot accelerate or steer a slide.
                 horizontal = startSlide
-                    ? MotorMath.Scale(MotorMath.NormalizeOrZero(horizontal), MotorConfig.SlideEntrySpeed)
+                    ? VecMath.Scale(VecMath.NormalizeOrZero(horizontal), MotorConfig.SlideEntrySpeed)
                     : Accelerate(horizontal, default, MotorConfig.SlideDeceleration, MotorMath.TickSeconds);
             }
             else
@@ -171,7 +172,7 @@ namespace Shooter.Simulation.Motor
             if (velocity.Y < config.TerminalFall) velocity = new Float3(velocity.X, config.TerminalFall, velocity.Z);
 
             Float3 feet = previous.Feet;
-            Float3 displacement = MotorMath.Scale(velocity, MotorMath.TickSeconds);
+            Float3 displacement = VecMath.Scale(velocity, MotorMath.TickSeconds);
             // A grounded actor that is not jumping follows the ground: contact projection (ramps) must not leave it
             // with upward velocity, which would suppress the ground probe and launch it off the ramp.
             bool followGround = previous.Grounded && !jumpEdge;
@@ -189,7 +190,7 @@ namespace Shooter.Simulation.Motor
             if (!ascendingJump || previous.Grounded && jumpEdge == false)
             {
                 // Downhill snap: the ground can fall away by up to movedHorizontal * tan(MaxSlope) in one tick.
-                float movedHorizontal = MotorMath.Length(MotorMath.Horizontal(MotorMath.Sub(feet, previous.Feet)));
+                float movedHorizontal = VecMath.Length(MotorMath.Horizontal(VecMath.Sub(feet, previous.Feet)));
                 float extraProbe = followGround ? movedHorizontal * (float)Math.Tan(config.MaxSlopeRadians) : 0f;
                 ProbeGround(feet, height, velocity.Y, extraProbe, world, out grounded, out groundId, out groundNormal, out feet);
                 if (!grounded && stepped)
@@ -208,7 +209,7 @@ namespace Shooter.Simulation.Motor
             if (sliding)
             {
                 slideTicks--;
-                if (!grounded || MotorMath.Length(MotorMath.Horizontal(velocity)) < 0.1f) slideTicks = 0;
+                if (!grounded || VecMath.Length(MotorMath.Horizontal(velocity)) < 0.1f) slideTicks = 0;
             }
 
             bool sprintApplied = canSprint && !sliding && stance == Stance.Standing && grounded;
@@ -220,7 +221,7 @@ namespace Shooter.Simulation.Motor
             if (tightness < 0f) tightness = 0f;
             else if (tightness > MotorConfig.TightnessMax) tightness = MotorConfig.TightnessMax;
 
-            float moved = MotorMath.Length(MotorMath.Horizontal(MotorMath.Sub(feet, previous.Feet)));
+            float moved = VecMath.Length(MotorMath.Horizontal(VecMath.Sub(feet, previous.Feet)));
             return new MotorBodyState(
                 feet, velocity, yaw, pitch, stance, height, grounded, groundId, groundNormal,
                 lastGrounded, jumpConsumed, previous.LocomotionDistanceMeters + moved,
@@ -255,9 +256,9 @@ namespace Shooter.Simulation.Motor
                 }
                 if (!found) return true;
                 if (pass == config.MaxOverlapRecovery) return false;
-                feet = MotorMath.Add(feet, MotorMath.Scale(bestNormal, bestDepth + config.Skin));
-                float into = MotorMath.Dot(velocity, bestNormal);
-                if (into < 0f) velocity = MotorMath.Sub(velocity, MotorMath.Scale(bestNormal, into));
+                feet = VecMath.Add(feet, VecMath.Scale(bestNormal, bestDepth + config.Skin));
+                float into = VecMath.Dot(velocity, bestNormal);
+                if (into < 0f) velocity = VecMath.Sub(velocity, VecMath.Scale(bestNormal, into));
             }
             return false;
         }
@@ -271,11 +272,11 @@ namespace Shooter.Simulation.Motor
 
         private static Float3 Accelerate(Float3 current, Float3 wish, float accel, float dt)
         {
-            Float3 delta = MotorMath.Sub(wish, current);
+            Float3 delta = VecMath.Sub(wish, current);
             float maxDelta = accel * dt;
-            float len = MotorMath.Length(delta);
+            float len = VecMath.Length(delta);
             if (len <= maxDelta || len < 1e-8f) return wish;
-            return MotorMath.Add(current, MotorMath.Scale(delta, maxDelta / len));
+            return VecMath.Add(current, VecMath.Scale(delta, maxDelta / len));
         }
 
         private bool TryResize(Float3 feet, float fromHeight, float toHeight, IWorldQueries world, out float height)
@@ -309,14 +310,14 @@ namespace Shooter.Simulation.Motor
                 var sweep = world.SweepCapsule(capsule, displacement, motorFilter);
                 if (sweep.Status != QueryStatus.Hit)
                 {
-                    feet = MotorMath.Add(feet, displacement);
+                    feet = VecMath.Add(feet, displacement);
                     break;
                 }
                 var hit = sweep.Hit;
                 float travel = Math.Max(0f, hit.DistanceMeters - config.Skin);
-                Float3 unit = MotorMath.NormalizeOrZero(displacement);
-                feet = MotorMath.Add(feet, MotorMath.Scale(unit, travel));
-                Float3 remaining = MotorMath.Sub(displacement, MotorMath.Scale(unit, travel));
+                Float3 unit = VecMath.NormalizeOrZero(displacement);
+                feet = VecMath.Add(feet, VecMath.Scale(unit, travel));
+                Float3 remaining = VecMath.Sub(displacement, VecMath.Scale(unit, travel));
                 // Step-up: a grounded actor blocked by a non-walkable contact lifts by step height, spends only the
                 // remaining horizontal travel and snaps down. The whole remaining displacement is consumed.
                 float walkableY = (float)Math.Cos(config.MaxSlopeRadians);
@@ -351,12 +352,12 @@ namespace Shooter.Simulation.Motor
             var upCapsule = MotorMath.BodyCapsule(feet, height, config.Radius);
             var upSweep = world.SweepCapsule(upCapsule, up, motorFilter);
             if (upSweep.Status == QueryStatus.Hit) return false;
-            Float3 raised = MotorMath.Add(feet, up);
-            float hLen = MotorMath.Length(horizontal);
+            Float3 raised = VecMath.Add(feet, up);
+            float hLen = VecMath.Length(horizontal);
             if (hLen <= 1e-6f) return false;
             // Measure the real obstacle height with a ray just past the capsule rim: edge contacts of a rounded
             // capsule must not let it climb obstacles taller than a step one rolled edge at a time.
-            Float3 ahead = MotorMath.Scale(horizontal, 1f / hLen);
+            Float3 ahead = VecMath.Scale(horizontal, 1f / hLen);
             const float rayLift = 0.3f;
             var rayOrigin = new Float3(
                 feet.X + ahead.X * (config.Radius + 0.02f), feet.Y + lift + rayLift, feet.Z + ahead.Z * (config.Radius + 0.02f));
@@ -368,7 +369,7 @@ namespace Shooter.Simulation.Motor
             var forward = world.SweepCapsule(forwardCapsule, horizontal, motorFilter);
             if (forward.Status == QueryStatus.Hit && forward.Hit.DistanceMeters < hLen - config.Skin)
                 return false;
-            Float3 over = MotorMath.Add(raised, horizontal);
+            Float3 over = VecMath.Add(raised, horizontal);
             // Snap down onto the step top (or its edge): at most the lift plus the usual snap distance.
             var downCapsule = MotorMath.BodyCapsule(over, height, config.Radius);
             var down = world.SweepCapsule(downCapsule, new Float3(0, -(lift + config.Snap + config.Skin), 0), motorFilter);
