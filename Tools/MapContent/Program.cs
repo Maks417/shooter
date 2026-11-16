@@ -121,6 +121,13 @@ internal static class Program
                 if (cancelled.Error != ErrorCode.Cancelled)
                     throw new InvalidOperationException("Expected cancelled publish, got " + cancelled.Error);
             }
+            // The probe only proves that cancellation publishes nothing; do not leave its scratch folder behind.
+            if (Directory.Exists(cancelProbe))
+            {
+                if (Directory.GetFiles(cancelProbe, "*", SearchOption.AllDirectories).Length != 0)
+                    throw new InvalidOperationException("Cancelled publish left files in " + cancelProbe);
+                Directory.Delete(cancelProbe, true);
+            }
 
             // Corrupt recovery: retain corrupt bytes, do not silent-substitute.
             var sample = MapPackageBuilder.Build(mapIds[0], "gameplay", toolchain);
@@ -161,6 +168,7 @@ internal static class Program
                 profiles,
                 force,
                 reused = published.Reused,
+                prunedSupersededPackages = published.PrunedPackages,
                 elapsedMilliseconds = clock.Elapsed.TotalMilliseconds,
                 packages = published.Packages.Select(p => new
                 {
@@ -187,7 +195,7 @@ internal static class Program
                 releasePlayerLoad = "Pending"
             };
             File.WriteAllText(report, JsonSerializer.Serialize(proof, new JsonSerializerOptions { WriteIndented = true }) + "\n");
-            Console.WriteLine("Verified map packages=" + published.Packages.Count + "; " + clock.Elapsed.TotalMilliseconds.ToString("F2", CultureInfo.InvariantCulture) + "ms");
+            Console.WriteLine("Verified map packages=" + published.Packages.Count + " pruned=" + published.PrunedPackages + "; " + clock.Elapsed.TotalMilliseconds.ToString("F2", CultureInfo.InvariantCulture) + "ms");
             return 0;
         }
         catch (Exception error)

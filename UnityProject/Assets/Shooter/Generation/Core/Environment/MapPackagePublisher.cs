@@ -14,6 +14,8 @@ namespace Shooter.Generation.Environment
         public string Diagnostic { get; }
         public IReadOnlyList<MapPackageBuild> Packages { get; }
         public bool Reused { get; }
+        /// <summary>Superseded package directories removed after a successful publish (ADR-076 addendum).</summary>
+        public int PrunedPackages { get; internal set; }
         public MapPackagePublishResult(ErrorCode error, string diagnostic, IReadOnlyList<MapPackageBuild> packages, bool reused)
         {
             Error = error;
@@ -111,14 +113,17 @@ namespace Shooter.Generation.Environment
                 // ADR-078: the shared weapon package is published beside the map packages whenever visuals are.
                 bool anyVisual = false;
                 foreach (string profile in profiles) anyVisual |= profile != "gameplay";
-                if (anyVisual && !WeaponPackage.TryPublish(root, toolchainHash, out _, out string weaponDiagnostic))
+                WeaponPackageBuild? weapons = null;
+                if (anyVisual && !WeaponPackage.TryPublish(root, toolchainHash, out weapons, out string weaponDiagnostic))
                     return MapPackagePublishResult.Fail(ErrorCode.InternalError, "weapon-package:" + weaponDiagnostic);
                 // ADR-038: persist release catalog/gameplay sidecars beside packages (compile-time only).
                 var catalogMaps = DistinctMapIds(built);
                 ReleaseCatalogDocument.WriteAtomic(root, toolchainHash, catalogMaps);
                 // T067: provenance sidecar (outside frozen package bytes) distinguishes software grid from native bake.
                 NavBakeProvenanceDocument.WriteAtomic(root, built, NavBakePublication.NativeToolIdentity);
-                return MapPackagePublishResult.Ok(built, allReused && built.Count > 0);
+                var result = MapPackagePublishResult.Ok(built, allReused && built.Count > 0);
+                result.PrunedPackages = PruneSuperseded(root, built, mapIds, profiles, weapons);
+                return result;
             }
             catch (OperationCanceledException)
             {
@@ -342,6 +347,58 @@ namespace Shooter.Generation.Environment
         {
             using var stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None);
             stream.Write(bytes, 0, bytes.Length);
+        }
+
+        /// <summary>
+        /// ADR-076 addendum: delete content-addressed package directories this publish superseded, so repeated
+        /// republishing does not accumulate stale packages. Only an unreferenced map package whose map id and profile
+        /// were both part of this publish is removed (other maps and profiles keep their packages), plus older weapon
+        /// packages when a weapon package was published. Staging (<c>.tmp</c>) directories, unreadable roots and
+        /// anything still referenced are retained. Deletion failures are ignored, never fatal.
+        /// </summary>
+        internal static int PruneSuperseded(string root, IReadOnlyList<MapPackageBuild> built, IReadOnlyList<string> mapIds,
+            IReadOnlyList<string> profiles, WeaponPackageBuild? weapons)
+        {
+            var keep = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var package in built) keep.Add(package.PackageRootHash.ToString());
+            if (weapons != null) keep.Add(weapons.PackageRootHash.ToString());
+            var maps = new HashSet<string>(mapIds, StringComparer.Ordinal);
+            var publishedProfiles = new HashSet<string>(profiles, StringComparer.Ordinal);
+            int pruned = 0;
+            foreach (string shard in Directory.GetDirectories(root))
+            {
+                string shardName = Path.GetFileName(shard);
+                if (shardName.Length != 2 || !IsHex(shardName)) continue;
+                foreach (string dir in Directory.GetDirectories(shard))
+                {
+                    string name = Path.GetFileName(dir);
+                    if (name.Length != 64 || !IsHex(name) || keep.Contains(name)) continue;
+                    try
+                    {
+                        var package = MapJsonValue.Parse(File.ReadAllBytes(Path.Combine(dir, "package.json"))).Object;
+                        string schema = package["packageSchema"].String;
+                        bool superseded = schema == MapRecipe.PackageSchema
+                            ? maps.Contains(package["mapId"].String) && publishedProfiles.Contains(package["visualProfile"].String)
+                            : schema == WeaponPackage.Schema && weapons != null;
+                        if (!superseded) continue;
+                        Directory.Delete(dir, true);
+                        pruned++;
+                    }
+                    catch (Exception)
+                    {
+                        // Unreadable or locked: retain for inspection/repair.
+                    }
+                }
+                try { if (Directory.GetFileSystemEntries(shard).Length == 0) Directory.Delete(shard); } catch (Exception) { }
+            }
+            return pruned;
+        }
+
+        private static bool IsHex(string value)
+        {
+            foreach (char c in value)
+                if (!(c >= '0' && c <= '9' || c >= 'a' && c <= 'f')) return false;
+            return true;
         }
 
         private static void TryDeleteDirectory(string path)

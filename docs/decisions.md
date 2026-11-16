@@ -1014,6 +1014,15 @@ Addendum 2026-11-16 (Phase 3 of the architecture review: structure):
   - splitting the large classes (`CombatAiDirector`, `ProductSessionView`, `ProductShellHost`);
   - moving map packaging (`MapPackageBuilder`, `UnityNavMeshBakeCodec`, the map document reader and writer) out of `Generation/Core/Environment`. That code is not lock-hashed, but `MapRecipe` and the Editor asset compiler both depend on the nav-bake codec, so a move first needs that dependency split. Otherwise Content.Maps, Generation.Core and AssetCompiler.Editor would have to reference each other in a circle.
 
+Addendum 2026-11-16 (superseded content packages are pruned):
+- **Problem.** Every content republish (ADR-078 weapon split, ADR-079 hash change, ADR-081 AO volume) added new content-addressed package directories, and nothing ever deleted the old ones. The two map caches grew by about 700 MB per republish; 254 stale directories (about 1.5 GB) were deleted by hand.
+- **Decision.** After a successful publish, `MapPackagePublisher.PruneSuperseded` deletes package directories that the new index no longer references, under these rules:
+  - A map package is deleted only when its map id and profile were both part of this publish, so a partial publish (`-Map oil`, `-Profile low`) never touches other maps or profiles.
+  - Older weapon packages are deleted only when a weapon package was published.
+  - Staging `.tmp` directories, unreadable roots and anything still referenced are kept. A failed deletion is never fatal.
+  - `MapContent` deletes its `cancel-probe` scratch folder after the cancellation check and reports `prunedSupersededPackages` in its proof.
+- **Validation.** `MapPackagePruneTests` (3).
+
 ## ADR-077 — Accepted: weapon definition files generate both weapon catalogs
 
 Date 2026-11-16. The owner asked for an easier way to add weapons and their weapon-specific settings, sounds and animation, as step 1 of the architecture review. Sole integrator owns the generator, the two catalogs, routing, tests, CI and docs. No C0, Game-v1, PredictionSchema, content-format or feature-content lock change; no acceptance waiver.
