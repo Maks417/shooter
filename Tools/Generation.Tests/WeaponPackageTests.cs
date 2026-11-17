@@ -33,7 +33,8 @@ public sealed class WeaponPackageTests : IDisposable
                 Assert.True(GeometryCodec.DecodeMesh(ArtifactCodec.Decode(bytes[path], ContentKind.Mesh, source.Fingerprint, toolchain)).Positions.Count > 0, path);
             Assert.Equal(source.HasMagazineCycle, WeaponMeshCatalog.MagazinePath(source.MeshKey) != null);
         }
-        Assert.Equal(new[] { "rifle", "rifle-carbine", "pistol", "knife", "grenade" }, WeaponMeshCatalog.All.Select(s => s.MeshKey));
+        Assert.Equal(new[] { "rifle", "rifle-carbine", "pistol", "knife", "grenade", "ak47", "ak102", "m16", "mk14", "mtac338", "g17", "golden-eagle" },
+            WeaponMeshCatalog.All.Select(s => s.MeshKey));
         Assert.Equal("mesh-rifle-carbine-lod2.bin", WeaponMeshCatalog.LodPath("rifle-carbine", 2));
     }
 
@@ -44,8 +45,9 @@ public sealed class WeaponPackageTests : IDisposable
         foreach (var source in WeaponMeshCatalog.All.Where(s => !s.IsProp))
         {
             var gun = WeaponGeometry.Build(source.Recipe!);
+            // Meshes carry their recipe's own generator version (ADR-082; 1.2.0 arsenal recipes under ADR-102).
             byte[] expected = ArtifactCodec.Encode(ContentKind.Mesh, GeometryCodec.EncodeMesh(gun.Lods[0]),
-                GeneratorFingerprint.Compute(WeaponRecipe.GeneratorId, WeaponRecipe.GeneratorVersion), toolchain);
+                GeneratorFingerprint.Compute(WeaponRecipe.GeneratorId, source.Recipe!.Version), toolchain);
             Assert.Equal(expected, bytes[WeaponMeshCatalog.LodPath(source.MeshKey, 0)]);
         }
     }
