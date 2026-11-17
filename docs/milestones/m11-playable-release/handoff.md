@@ -535,3 +535,30 @@ Not done / Pending:
 - Picks were made from waveform analysis without listening, so the owner listening review decides the takes.
 - Provisional: flyby (built from gunshot transients plus a whoosh, no real whiz recording), defeat stinger (no dedicated somber track yet) and ambience (still the v4 render; no outdoor recording downloaded).
 - Client build, package and named listening review (FIX10/SET02) are Pending.
+
+## Delivery 0.3.18
+
+Owner requested a new version/installer containing the committed changes, followed by project disk cleanup (2026-11-17). Clean binary/content source **`cbf12e5f8cdc3263c0d38ddc595c9c7d0fc7136b`** includes ADR-087–095 visual integration and ADR-096 audio/music/UI sound. Windows installer **0.3.18**, **62,149,268 bytes**, SHA256 **`941670d575ae0aa7178fd0825fc7db24e0b3705a0ca10cd59d971f866c42489f`**. Delivery copy: `Artifacts/deliveries/Shooter-Setup-0.3.18.exe`, with hash sidecar and `installer-report-0.3.18.json`. The delivery copy was independently rehashed before and after cleanup. Stable AppId `B01E0F69-2123-4D91-AB59-88864A944E39` is unchanged; monotonic check against the preserved 0.3.17 report PASS. Unity 6000.3.28f1 / 8f082d2fe476, IL2CPP, Inno Setup 6.7.3; C0-v1 and Game-v1 unchanged.
+
+All paths below are beneath `Artifacts/`; commit roots use the full source hash above.
+
+| Check | Actual result / retained run |
+|---|---|
+| Contracts | **79/79 PASS**, `m0-foundation/cbf12e5…/20261117T093944374Z-73e49754/`. |
+| Generation | **517/517 PASS**, `m1-procedural-feasibility/cbf12e5…/20261117T094009415Z-7e5ca203/`. |
+| Game / Simulation | **100/100** and **390/390 PASS**, `m8-runtime-composition/cbf12e5…/20261117T094235264Z-df9af860/` and `m2-combat-harness/cbf12e5…/20261117T094330925Z-630f7e48/`. Offline advisory lookup remains PendingNetwork. |
+| Unity | EditMode **87/87**, `m0-foundation/cbf12e5…/tests-editmode-20261117T094010157Z-9523bd33/`; PlayMode **21/21**, `tests-playmode-20261117T094257166Z-8ab38a37/` in the same root. |
+| Clean Client | PASS, `sourceDirty=false`, `m0-foundation/cbf12e5…/build-client-20261117T094423319Z-aa2d49a6/`. |
+| Native packages | **12 PASS**, `sourceDirty=false`, `nativeUnityNavBake=PASS`; non-navigation byte-identity guard PASS; focused package tests **54/54**. `m8-runtime-composition/cbf12e5…/compile-gamecontent-20261117T094529495Z-a36a864a/`. |
+| Release smoke | PASS, `m0-foundation/cbf12e5…/smoke-client-20261117T094804779Z-696c87db/`; boot/shutdown only. |
+| Package | PASS, native navigation required, **966 inventory files**, extraction/corrupt-content/previous-pair rehearsal PASS; `m11-playable-release/cbf12e5…/package-20261117T094837573Z-090ef37b/`. Previous-pair identity/artifact rehearsal is not an installed rollback test. |
+| Installer | PASS, `workspaceDirty=false`; `m11-playable-release/cbf12e5…/installer-20261117T094908942Z-c244dc72/`. |
+| Provenance / specification | Source provenance **972 entries / 486 GUIDs**, fixture **35 assertions**, documentation verification PASS. These are separate from game acceptance. |
+
+Source hash `a6be203ef00fe1351458850be7e82d74a7eb37a7d00c790b67e7b393b5ddb556`; toolchain hash `a8331fe2bc5b4293773762d829dc293c8aa5185024bd1a771543ac4eda840500`; build-content manifest `563d0cdae816c9d9a21cabd464d0f373031c6e3fcc1120b96fb88b5a9e620933`; native content closure `d296ce45194461345719de76055b09c5c9de065fca58c54ca9a17428cc40d4b6`; index `ce7105ca6a61a7a135e0fbebf5c2452a64e7a0154fe0e906d61d358bf669bb1c`; internal ZIP `f79d33e659e68bb606494218ca7bd2ee8c31b3a5b494f35dad17624c75db1c2e`.
+
+Initial sandbox attempts failed: Contracts restore exited 1 without a diagnostic error; Unity exited -536870911. The single-node restore diagnostic succeeded; the standard wrappers then passed outside the sandbox. Initial Contracts evidence remains at `m0-foundation/cbf12e5…/20261117T093810346Z-c06e401a/`; failed Unity summary is retained by the existing ADR-076 policy under `reports/tests-editmode/cbf12e5…/tests-editmode-20261117T093831441Z-cfaf97ad/`. `restore-diagnostic.log` retains the single-node experiment. No test assertion or generated golden was changed.
+
+**Post-installer cleanup:** dry run reviewed, then `Tools/Clean-Artifacts.ps1 -Apply -IncludeBuildCaches` freed **106,807,395 bytes**, zero failures, preserving cited/recent evidence; report `workspace-cleanup/20261117T095112342Z/cleanup-report.json`. After confirming no Unity editor was running and verifying the exact absolute target was ignored, untracked and within this repository, removed regenerable `UnityProject/Library` (**5,493,198,243 bytes**). Report `deliveries/cleanup-0.3.18-library.json`. Total explicit cleanup **5,600,005,638 bytes (5.22 GiB)**, additional to automatic wrapper retention. Source, `.local` pinned tools, content caches, current evidence and delivery installers are preserved. Next Unity launch will regenerate Library; no post-cleanup Unity import is claimed.
+
+**Pending / NotClaimed:** actual 0.3.18 installation/upgrade/settings preservation, formal T071 gameplay, named audio/visual/device reviews, provisional ADR-096 cue replacements, reference benchmarks/soaks and REL/VD acceptance. P05 named visual acceptance remains FAIL pending review. Networking and Dedicated Server build are Parked (offline scope). Building the installer does not close these gates.

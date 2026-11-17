@@ -1,6 +1,6 @@
 # Launch and playtest the current build
 
-This guide gets a tester from the installer to a match and defines what to record. Which installer is current, and what it contains, is tracked only in [next playable build](next-playable-build.md#current-build); exact hashes and evidence are in the [M11 handoff](milestones/m11-playable-release/handoff.md#delivery-0317). At the time of writing that is **0.3.17** (`Artifacts/deliveries/Shooter-Setup-0.3.17.exe`, source `1676ff8`, SHA256 `7701fdd83cb387ec0a8cbb8f4c28108afb224c081980284fb2d06363e7df166b`).
+This guide gets a tester from the installer to a match and defines what to record. Which installer is current, and what it contains, is tracked only in [next playable build](next-playable-build.md#current-build); exact hashes and evidence are in the [M11 handoff](milestones/m11-playable-release/handoff.md#delivery-0318).
 
 ## This version runs locally
 

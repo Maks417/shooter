@@ -167,6 +167,8 @@ Retain every failed artifact.
 
 ## Step 6 — Delivery
 
+Delivered on 2026-11-17 from clean source `cbf12e5`, including ADR-087–096: [delivery evidence](milestones/m11-playable-release/handoff.md#delivery-0318). EditMode 87/87, PlayMode 21/21, Client, native packages, smoke, package and installer builders PASS. Actual installed upgrade and named gameplay/visual/listening/reference acceptance remain Pending.
+
 After each wave, build a clean installer per the [playtest guide](playtest-guide.md) and the T073 installer docs. That means a clean commit, then `Build.ps1 -Target Client`, `Compile-GameContent.ps1 -Native` and `Package-Release.ps1 -RequireNativeNav`, followed by the installer builder. Record the identities in the M11 handoff. Installed upgrade, named playtest and REL/VD acceptance stay owner-run.
 
 
