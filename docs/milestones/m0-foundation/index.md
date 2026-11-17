@@ -12,9 +12,7 @@ No implementation prerequisite. Inspect the installed editor and create a clean 
 
 | Document | Purpose |
 |---|---|
-| [Implementation plan](implementation.md) | Ordered changes, dependencies and completion checks |
-| [Contracts and integration](contracts-integration.md) | Shared interfaces, artifacts and merge checkpoints |
-| [Agent assignments](agent-assignments.md) | Bounded ownership and parallel work |
+| [Archived planning pack](../../archive/index.md#m0-foundation) | Pre-work implementation plan, contracts/integration and agent assignments (historical; outcomes are in the handoff) |
 | [Validation and acceptance](validation-acceptance.md) | Exact scenarios, evidence and gate checklist |
 | [Handoff record](handoff.md) | Fill-in implementation status and next-milestone artifacts |
 | [Shared specification](../../index.md) | Single shared baseline in the docs root |

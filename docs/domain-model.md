@@ -25,7 +25,7 @@ erDiagram
 
 These entities are specifications until T035–T047 compile/implement them. Exact ports, thread/lease ownership, versioning and fixtures stay in the shared contract plan. Existing motor units, team filtering and content lease invariants below continue to apply.
 
-Normative field shapes are in [contracts](contracts.md); deterministic identity is in [generation](generation.md).
+Normative field shapes are in [contracts](contract-details.md); deterministic identity is in [generation](generation.md).
 
 | Entity/value | Identity and contents | Owner / invariant |
 |---|---|---|

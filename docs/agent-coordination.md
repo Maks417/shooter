@@ -1,6 +1,6 @@
 # Parallel implementation and agent rules
 
-This is a future implementation protocol, not authorization for this documentation task to start coding agents. Work packages in [backlog](backlog.md) use the [contracts](contracts.md), [layout](repo-layout.md) and [milestones](milestones.md).
+This is a future implementation protocol, not authorization for this documentation task to start coding agents. Work packages in [backlog](backlog.md) use the [contracts](contract-details.md), [layout](repo-layout.md) and [milestones](milestones.md).
 
 ## Entry rules for repository AGENTS.md
 

@@ -1,6 +1,6 @@
 # Feature: combat AI
 
-Owner WP-07, proposed `Simulation/AI`; uses [world/navigation contracts](../contracts.md) and emits [combat commands](combat.md). No direct Animator/renderer access and no privileged damage calls.
+Owner WP-07, proposed `Simulation/AI`; uses [world/navigation contracts](../contract-details.md) and emits [combat commands](combat.md). No direct Animator/renderer access and no privileged damage calls.
 
 Current pure implementation exists at `UnityProject/Assets/Shooter/Simulation/AI/CombatAiDirector.cs` and `PerceptionSystem.cs`, with the T082 aim/fire/cover helpers listed under [Combat behaviour](#combat-behaviour-t082-2026-11-15): capacity eight, one optional player target. M9 extends this under [Team Deathmatch](team-deathmatch.md#team-bot-behavior-and-capacity) to 9/11 bots and both teams; the initial global 16-ray/2-path limits remain shared. T042 explicitly tests real path corners, authoritative reload/state, persistent sequences, sensing fairness and stale-visibility cleanup. Historical eight-bot pure acceptance is not evidence for this new runtime capacity.
 
@@ -59,7 +59,7 @@ Queue path requests with priority, max two new path solves/tick initially; poll 
 
 New counters on `AiCounters`: `CoverProbeRays`, `CoverProbesFailed`, `BurstsStarted`, `StimuliHeard`, `DamageReactions`, `Callouts`, `Retreats`, `TacticalReloads`, `TargetSwitches`. `VisionRaysThisTick` includes cover-probe rays.
 
-Known limits (narrowed by [T090](#bot-tactics-cover-peek-wall-hearing-ledge-strafe-route-spread-t090-2026-11-15)): probe reachability is still only via the normal path request. Real-player feel is Pending; see the [M11 handoff](../milestones/m11-playable-release/handoff.md#t082--solid-fps-bot-combat-behaviour).
+Known limits (narrowed by [T090](#bot-tactics-cover-peek-wall-hearing-ledge-strafe-route-spread-t090-2026-11-15)): probe reachability is still only via the normal path request. Real-player feel is Pending; see the [M11 handoff](../milestones/m11-playable-release/handoff-archive.md#t082--solid-fps-bot-combat-behaviour).
 
 ## Awareness, team spread and lethality (T085, 2026-11-15)
 

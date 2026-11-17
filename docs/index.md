@@ -1,14 +1,14 @@
 # Procedural military FPS — implementation documentation
 
-**Current T075 design preview — 2026-11-15:** Windows installer **0.3.4**, clean binary source `7407bc4`, implements procedural PBR map surfaces, textured menu staging, working actual-map cards and analytic first-person handling with LOD0 equipment on Low. Unity **43 EditMode / 17 PlayMode**, clean Client/Server, eight native packages, provenance and package/installer builders PASS. Automated player review observed both map cards and Compound 5v5 / Depot 6v6 loads; this is not full gameplay or comparative visual acceptance. P05 FAIL, reference performance and M8–M11/VD exits remain open. [Identities, evidence and limitations](milestones/m11-playable-release/handoff.md#t075--procedural-presentation-preview-034).
+**Current T075 design preview — 2026-11-15:** Windows installer **0.3.4**, clean binary source `7407bc4`, implements procedural PBR map surfaces, textured menu staging, working actual-map cards and analytic first-person handling with LOD0 equipment on Low. Unity **43 EditMode / 17 PlayMode**, clean Client/Server, eight native packages, provenance and package/installer builders PASS. Automated player review observed both map cards and Compound 5v5 / Depot 6v6 loads; this is not full gameplay or comparative visual acceptance. P05 FAIL, reference performance and M8–M11/VD exits remain open. [Identities, evidence and limitations](milestones/m11-playable-release/handoff-archive.md#t075--procedural-presentation-preview-034).
 
 **Visual design goal:** quality comparable to Battlefield V, Bodycam and Warface. [VD0–VD9 design milestones](design-milestones.md) define concrete deliverables, dependencies, comparison evidence and owner/technical exit gates. Begin with art direction and one representative art slice; current software does not establish visual parity.
 
-**Prior T074 visual preview — 2026-11-14:** [T074 Windows installer 0.3.1 and handoff](milestones/m11-playable-release/handoff.md#t074--scene-led-menu-and-tactical-hud-preview), binary source b531da9, includes the scene-led menu/map cards and compact tactical HUD. Clean Unity 29/16 and Client/Server/package/installer checks pass. Final interactive review was stopped by the owner; gameplay/device/reference/P05 acceptance stays open. This entry supersedes the older candidate references below.
+**Prior T074 visual preview — 2026-11-14:** [T074 Windows installer 0.3.1 and handoff](milestones/m11-playable-release/handoff-archive.md#t074--scene-led-menu-and-tactical-hud-preview), binary source b531da9, includes the scene-led menu/map cards and compact tactical HUD. Clean Unity 29/16 and Client/Server/package/installer checks pass. Final interactive review was stopped by the owner; gameplay/device/reference/P05 acceptance stays open. This entry supersedes the older candidate references below.
 
 Unity 6 URP / C# / HLSL design for a realistic modern-world shooter generated from code and numeric recipes. No imported/manual meshes, painted textures, sprites or authored animation. Initial hardware target: Ryzen 5 4600H integrated Radeon, 16 GB DDR4-3200, NVMe; native 720p Low at 30 FPS, 60 FPS stretch.
 
-**Latest, 2026-11-14:** slide-enabled `5eaced5` preview is built/packaged, hash-verified and starts independently to Main; see [guide](playtest-guide.md) and [M11 delivery](milestones/m11-playable-release/handoff.md#t072--slide-enabled-playtest-delivery). Manual game/device/performance acceptance remains pending; final installer/upgrades are planned T073. **Earlier review from 84befb9 / a54ed83:** a clean `7cd7e81` Windows playtest archive exists; its SHA256 and 245 inventoried file hashes were rechecked. T066 baseline and T068/T069/T070 software repairs are landed. Manual gameplay is still Pending, and T067 native-navigation publication is incomplete. M8–M10 integration validation and M11 acceptance remain open; M0–M7 waivers and P05 FAIL remain. Start with the [launch/playtest guide](playtest-guide.md), [current audit](product-state-audit.md) and [remaining-work queue](next-playable-build.md).
+**Latest, 2026-11-14:** slide-enabled `5eaced5` preview is built/packaged, hash-verified and starts independently to Main; see [guide](playtest-guide.md) and [M11 delivery](milestones/m11-playable-release/handoff-archive.md#t072--slide-enabled-playtest-delivery). Manual game/device/performance acceptance remains pending; final installer/upgrades are planned T073. **Earlier review from 84befb9 / a54ed83:** a clean `7cd7e81` Windows playtest archive exists; its SHA256 and 245 inventoried file hashes were rechecked. T066 baseline and T068/T069/T070 software repairs are landed. Manual gameplay is still Pending, and T067 native-navigation publication is incomplete. M8–M10 integration validation and M11 acceptance remain open; M0–M7 waivers and P05 FAIL remain. Start with the [launch/playtest guide](playtest-guide.md), [current audit](product-state-audit.md) and [remaining-work queue](next-playable-build.md).
 
 First-version owner priority: **play locally with bots; no online multiplayer or server purchase/hosting required**. Existing network/server architecture is retained, with online delivery deferred. See [scope](vision.md#first-version-scope-local-bots-only).
 
@@ -18,12 +18,12 @@ First-version owner priority: **play locally with bots; no online multiplayer or
 
 ## Next development
 
-Use the [remaining T067/T071 work](next-playable-build.md): play the existing archive, finish native-navigation publication/query validation, repair observed blockers and complete independent recovery/rollback handoff. T068/T069 need player/device evidence; T070 hardware and T062/T065 visual/final acceptance remain open. Original [T052–T065 cards](release-remediation-plan.md) and [FIX01–FIX14](release-remediation-validation.md) remain applicable. This docs review creates no leases.
+Use the [remaining T067/T071 work](next-playable-build.md): play the existing archive, finish native-navigation publication/query validation, repair observed blockers and complete independent recovery/rollback handoff. T068/T069 need player/device evidence; T070 hardware and T062/T065 visual/final acceptance remain open. Original [T052–T065 cards](archive/release-remediation-plan.md) and [FIX01–FIX14](release-remediation-validation.md) remain applicable. This docs review creates no leases.
 
 ## Reading order
 
 1. [Implementation start](implementation-start.md), then [vision and requirements](vision.md)
-2. [Architecture](architecture.md), [domain model](domain-model.md), [contracts](contracts.md)
+2. [Architecture](architecture.md), [domain model](domain-model.md), [contracts](contract-details.md)
 3. [Generation/compiler](generation.md) and [performance](performance.md)
 4. [Agent coordination](agent-coordination.md), [backlog](backlog.md), [milestones](milestones.md)
 5. Assigned feature page, [validation](validation.md), [build/CI](build-ci.md)
@@ -34,22 +34,22 @@ Use the [remaining T067/T071 work](next-playable-build.md): play the existing ar
 |---|---|
 | [Vision, scope and requirements](vision.md) | Scope, requirements, art constraint and non-goals |
 | [Visual design milestones](design-milestones.md) | Battlefield V / Bodycam / Warface quality target; VD0–VD9 deliverables, dependencies, review rubric and evidence |
-| [Playable release review and order](playable-release-plan.md) | Committed software, remaining build queue and deliverable boundary |
+| [Playable release review and order](next-playable-build.md) | Committed software, remaining build queue and deliverable boundary |
 | [Next playable build](next-playable-build.md) | Remaining T066–T071 cards, owner-playtest handoff and final acceptance boundary |
 | [Launch and playtest guide](playtest-guide.md) | Verified archive location/hash, menu steps, controls, limits and manual test record |
 | [Current product state audit](product-state-audit.md) | Findings, actual source/evidence and current milestone disposition |
-| [Release remediation implementation](release-remediation-plan.md) | Bounded tasks T052–T065, ownership, dependencies and compatibility |
+| [Release remediation implementation](archive/release-remediation-plan.md) | Bounded tasks T052–T065, ownership, dependencies and compatibility |
 | [Release remediation validation](release-remediation-validation.md) | FIX01–FIX14, real-player acceptance and evidence requirements |
 | [Product visual defect inventory](visual-defect-inventory.md) | T062/FIX11 capture-overlay tooling pointer; P05 FAIL retained (ADR-024); VD presentation gaps |
 | [VD0 visual art brief](visual-art-brief.md) | Working art direction, comparison register, gaps and presentation ownership (draft until owner approval) |
 | [Visual roadmap — next steps](visual-roadmap.md) | Handoff plan after ADR-084–086: conventions, pitfalls, Wave 1 verification, HUD/loading craft, world materials/lighting, combat FX, bounded P05 soldiers, delivery |
-| [Relocated view EditMode note](notes/procedural-viewmodel-editmode.md) | Historical RUN00 source-layout note |
-| [Planning validation record](planning-validation.md) | Actual documentation/fixture/tool/source audit outcomes and remaining baseline blockers |
+| [Relocated view EditMode note](archive/procedural-viewmodel-editmode.md) | Historical RUN00 source-layout note |
+| [Planning validation record](archive/planning-validation.md) | Actual documentation/fixture/tool/source audit outcomes and remaining baseline blockers |
 | [Game session contract plan](game-session-contracts.md) | Frozen Game-v1 ports, intended semantics and documented integration gaps |
 | [Architecture](architecture.md) | Boundaries, dependency rules and lifecycle |
 | [Proposed repository and toolchain](repo-layout.md) | Proposed paths and exact-version pinning procedure |
 | [Domain model](domain-model.md) | Entities, units and invariants |
-| [Shared interfaces and data contracts — version 1 proposal](contracts.md) | Shared DTOs, ports, disk/wire formats and lifetimes |
+| [Shared interfaces and data contracts — version 1 proposal](contract-details.md) | Shared DTOs, ports, disk/wire formats and lifetimes |
 | [Deterministic generation, compilation and caches](generation.md) | Seeds, compiler, LODs, hashing and caches |
 | [Quality profiles, budgets and measurement](performance.md) | Profiles, allocations and real-hardware benchmark gates |
 | [Feature: procedural materials and rendering](features/materials-rendering.md) | Feature implementation, edge cases and acceptance |
@@ -101,4 +101,4 @@ Begin with [implementation start](implementation-start.md), then the assigned mi
 - [Additional task cards and ownership](task-supplement.md)
 - [Machine-readable fixture catalog](fixtures/index.md)
 
-- [Readiness review closure and remaining evidence](readiness-review.md)
+- [Readiness review closure and remaining evidence](archive/readiness-review.md)

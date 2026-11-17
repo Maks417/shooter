@@ -31,7 +31,7 @@ Likelihood/impact H/M/L are planning judgments, not statistical forecasts. Owner
 | RSK20 Clean build omits a map/dependency | Developer cache hides packaging gap; empty-cache compile and extracted offline launch | Release / M11 |
 | RSK21 Historical waivers silently inherited | Required player/P05/reference checks missing; preserve old reports and keep new exit Pending until actual evidence | Integrator / M8–M11 |
 
-Editor/URP versions are already locked, not an unresolved T001 choice. M5 selected UTP but its remote package version remains pending locked-editor verification; offline M8–M11 does not depend on it. Soldier P05 remains FAIL under ADR-024; new live remediation/review is T039/T049. Actual reference driver/counters/thermal acceptance remains empirical. External sounds/fonts and public authentication stay outside this release. No temporary screenshot memory usage is a requirement. See [playable release review](playable-release-plan.md) for the new dependency order.
+Editor/URP versions are already locked, not an unresolved T001 choice. M5 selected UTP but its remote package version remains pending locked-editor verification; offline M8–M11 does not depend on it. Soldier P05 remains FAIL under ADR-024; new live remediation/review is T039/T049. Actual reference driver/counters/thermal acceptance remains empirical. External sounds/fonts and public authentication stay outside this release. No temporary screenshot memory usage is a requirement. See [playable release review](next-playable-build.md) for the new dependency order.
 
 ## Observed product defects — 2026-11-14
 

@@ -74,7 +74,7 @@ Deliver spatial packaged PBR channel binding with correct URP conversion and res
 
 T075 publication extension: [ADR-044](decisions.md#adr-044--accepted-versioned-procedural-map-surface-publication) versions both map generators to 1.0.1 for four actual MaterialBaker surface sets and required normal/mask companions. Integrator owns strict schemas/examples/registry/catalog labels, numeric variant material generation and native republishing. Decoded gameplay remains unchanged; package/envelope/catalog identities change and must be rebuilt. Prior binary/content pairs remain historical rollback artifacts.
 
-T075 delivery (2026-11-15): bounded presentation implementation merged to main, clean source `7407bc4`, installer 0.3.4; [actual results and remaining gates](milestones/m11-playable-release/handoff.md#t075--procedural-presentation-preview-034). Root also corrected the stale input/ceiling test fixtures without runtime input/motor changes, and moved real resource teardown/card-pixel coverage into PlayMode. Full VD/REL acceptance remains open.
+T075 delivery (2026-11-15): bounded presentation implementation merged to main, clean source `7407bc4`, installer 0.3.4; [actual results and remaining gates](milestones/m11-playable-release/handoff-archive.md#t075--procedural-presentation-preview-034). Root also corrected the stale input/ceiling test fixtures without runtime input/motor changes, and moved real resource teardown/card-pixel coverage into PlayMode. Full VD/REL acceptance remains open.
 
 ## T076 — Compact TDM map layouts
 
@@ -100,7 +100,7 @@ Owner requested review and implementation after the T079 / 0.3.8 preview. Sole i
 
 Review found fixed per-object texture repeats on nonuniformly scaled boxes, eightfold denser cover texture than neighbouring metric solids, old 256 m operation-card staging and loss of material submeshes in card renderers. Implement metric face UV adaptation of the verified unit box at upload, consistent two-metre repeats for all map/menu surface families, actual-mesh-bounds card framing, concrete/metal/plaster card roles and scoped card ambient light. Clones preserve source positions/indices/tangents and are owned/released alongside existing uploads. No new texture bytes or runtime procedural content fallback.
 
-Validation: existing source/frozen guards, Contracts/Generation/Game, Unity EditMode/PlayMode including projected bounds/material roles/UV preservation/lifetime, Client/Server isolation, native-content package validation, source-matched upgrading installer, docs/fixtures. Evidence/actual limitations belong in the [M11 handoff](milestones/m11-playable-release/handoff.md#t080--visual-review-and-material-scale-correction). Rollback the presentation commit and rebuild against retained native content; prior 0.3.8 remains a distinct rollback pair. P05 FAIL and all VD/REL acceptance remain open.
+Validation: existing source/frozen guards, Contracts/Generation/Game, Unity EditMode/PlayMode including projected bounds/material roles/UV preservation/lifetime, Client/Server isolation, native-content package validation, source-matched upgrading installer, docs/fixtures. Evidence/actual limitations belong in the [M11 handoff](milestones/m11-playable-release/handoff-archive.md#t080--visual-review-and-material-scale-correction). Rollback the presentation commit and rebuild against retained native content; prior 0.3.8 remains a distinct rollback pair. P05 FAIL and all VD/REL acceptance remain open.
 
 ## T081 — Architectural surface and place identity
 

@@ -45,4 +45,4 @@ Historical 2026-11-13 software closeout (retained; superseded for current produc
 | T042 Team AI | **PASS** (software; 9/11 capacity) |
 | T043 Prove whole match | Partial — software binding PASS; full player matrix Pending |
 
-[Release roadmap](../../playable-release-plan.md) · [Previous](../m8-runtime-composition/index.md) · [Next](../m10-maps-shell/index.md).
+[Release roadmap](../../next-playable-build.md) · [Previous](../m8-runtime-composition/index.md) · [Next](../m10-maps-shell/index.md).

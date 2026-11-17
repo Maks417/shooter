@@ -16,7 +16,7 @@ Expensive geometry/material/LOD/nav/weight generation runs in tools; runtime loa
 
 ## ADR-004 — Accepted: gameplay independent of visual quality
 
-Canonical collision/nav/hit profiles and weapon definitions identical across profiles. No render-mesh hit detection or AI visibility derived from absent low-tier foliage. Consequence: maintain separate gameplay artifact hash and fixed gameplay pose evaluator. [Contracts](contracts.md).
+Canonical collision/nav/hit profiles and weapon definitions identical across profiles. No render-mesh hit detection or AI visibility derived from absent low-tier foliage. Consequence: maintain separate gameplay artifact hash and fixed gameplay pose evaluator. [Contracts](contract-details.md).
 
 ## ADR-005 — Accepted: 60 Hz authoritative simulation
 
@@ -333,7 +333,7 @@ Decision: plan M8 runtime composition → M9 Team Deathmatch → M10 two maps an
 
 Introduce a separate proposed pure Game-v1 boundary for product/session/participant/results/settings semantics; keep frozen C0-v1/content-v1/N1-v1 intact. Actual Game-v1 method signatures, source/schema locks and executable fixtures must be implemented/frozen by T035 under the sole integrator, with a follow-up implementation ADR for any encoding/compatibility decisions. Workers may not invent interfaces or patch shared authority/Bootstrap concurrently. This planning ADR does not itself freeze unimplemented C# or a binary format.
 
-Offline play needs no remote transport, LAN/public UI, extra human-player capacity, T025 weapons/penetration, package upgrade, new asset source or imported art. It retains authoritative 60Hz simulation, presentation-only quality options, procedural provenance and native720p Low30 reference requirements. Old waivers and the P05 FAIL stay intact; new milestone exits require actual player/visual/hardware evidence where specified and cannot automatically inherit waivers. This task prepares docs only; M8–M11 remain unassigned until future implementation assignment. See [ordered review](playable-release-plan.md) and [packs](milestones/index.md).
+Offline play needs no remote transport, LAN/public UI, extra human-player capacity, T025 weapons/penetration, package upgrade, new asset source or imported art. It retains authoritative 60Hz simulation, presentation-only quality options, procedural provenance and native720p Low30 reference requirements. Old waivers and the P05 FAIL stay intact; new milestone exits require actual player/visual/hardware evidence where specified and cannot automatically inherit waivers. This task prepares docs only; M8–M11 remain unassigned until future implementation assignment. See [ordered review](next-playable-build.md) and [packs](milestones/index.md).
 
 ## ADR-034 — Accepted: initial Game-v1 freeze (T035)
 
@@ -597,7 +597,7 @@ Decision:
 - **Lethality envelope.** Accuracy recovery starts at the end of the reaction delay. Kept as a regression test on the real combat harness, against a still standing target (median from sighting): 1.25–2.3 s at 8 m, 1.8–4 s at 20 m, 2.7–7 s at 40 m, and no kill sooner than 0.67 s after the bot's first shot.
 - **Team spread.** Destinations are chosen by a deterministic spread score instead of an id-ordered walk of the route. At most 2 allies investigate one noise. Allied gunfire never points at the ally.
 
-Consequences: bots are slower to kill and harder to sneak up on at a run, but still blind to slow or crouched movement behind them beyond 5 m. Hearing through walls is possible, as it already was for gunfire. No contract, fixture, budget, content or weapon change. Rollback: revert T085. The previous constants are recorded in the [M11 handoff](milestones/m11-playable-release/handoff.md#t085--bot-rear-awareness-team-spread-and-readable-time-to-kill).
+Consequences: bots are slower to kill and harder to sneak up on at a run, but still blind to slow or crouched movement behind them beyond 5 m. Hearing through walls is possible, as it already was for gunfire. No contract, fixture, budget, content or weapon change. Rollback: revert T085. The previous constants are recorded in the [M11 handoff](milestones/m11-playable-release/handoff-archive.md#t085--bot-rear-awareness-team-spread-and-readable-time-to-kill).
 
 ## ADR-055 — Accepted: generated PCM combat sample banks (T086)
 

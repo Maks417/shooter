@@ -10,7 +10,7 @@ Test through public ports with small deterministic fixtures; add integration/har
 
 | Suite | Method | Pass condition / owner |
 |---|---|---|
-| V01 Contracts/schema | Compile pure assembly, roundtrip fixtures, invalid/overflow input | [Contracts](contracts.md) invariants and codec tolerances; integrator |
+| V01 Contracts/schema | Compile pure assembly, roundtrip fixtures, invalid/overflow input | [Contracts](contract-details.md) invariants and codec tolerances; integrator |
 | V02 Deterministic compiler | PCG known vectors, seed boundary corpus, parallel/cold/warm runs | Stable canonical hashes pinned toolchain, no same-key/different-bytes; content |
 | V03 Geometry/material | Bounds/index/winding/normal tests, seams, tangent orientation, recipe extremes | No NaN/invalid topology; declared open surfaces; reviewed silhouettes; geometry/render |
 | V04 Cache resilience | Truncate/corrupt manifest/payload, traversal paths, bomb lengths, cancel/concurrent build | Reject safely, atomic publish, no leaked locks/leases/files outside cache; content |

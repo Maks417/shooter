@@ -1,6 +1,6 @@
 # Deterministic generation, compilation and caches
 
-See [contracts](contracts.md), [materials](features/materials-rendering.md), [environment](features/environment.md) and [CI](build-ci.md).
+See [contracts](contract-details.md), [materials](features/materials-rendering.md), [environment](features/environment.md) and [CI](build-ci.md).
 
 ## P01 implementation status (2026-11-12)
 

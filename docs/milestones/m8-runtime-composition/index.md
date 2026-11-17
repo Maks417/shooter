@@ -10,7 +10,7 @@ Complete a real one-map player connecting procedural content, authority, buffere
 
 M0–M7 closure dispositions have been reviewed without promoting waived evidence to PASS. The integrator can verify the locked editor/modules or records the exact missing tool and confines work to independent pure tasks. Existing C0/content/network locks and previous regression outputs are retained.
 
-The [historical planning audit](../../planning-validation.md) metadata failure was repaired before f3d9954, and T052 repaired its later NU1004 failure in 59316d3. The later 19-metadata/cancellation failures at 59316d3 were repaired under T066; latest pure/provenance checks pass. Preserve GUID/contract/provenance guards and historical failures. T067 native publication and actual player integration validation remain open.
+The [historical planning audit](../../archive/planning-validation.md) metadata failure was repaired before f3d9954, and T052 repaired its later NU1004 failure in 59316d3. The later 19-metadata/cancellation failures at 59316d3 were repaired under T066; latest pure/provenance checks pass. Preserve GUID/contract/provenance guards and historical failures. T067 native publication and actual player integration validation remain open.
 
 ## Execute
 
@@ -24,4 +24,4 @@ The [historical planning audit](../../planning-validation.md) metadata failure w
 
 Exit requires the real artifacts and validation in this pack, reviewed by the integrator. Missing tools/hardware remain Pending; historical owner waivers are not inherited. Future implementation needs an explicit assignment and actual base commit.
 
-[Release roadmap](../../playable-release-plan.md) · [Shared documentation](../../index.md) · [Previous pack](../m7-hardening-stretch/index.md) · [Next pack](../m9-team-deathmatch/index.md).
+[Release roadmap](../../next-playable-build.md) · [Shared documentation](../../index.md) · [Previous pack](../m7-hardening-stretch/index.md) · [Next pack](../m9-team-deathmatch/index.md).

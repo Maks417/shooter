@@ -1,6 +1,6 @@
 # Visual design milestones — Battlefield V / Bodycam / Warface quality goal
 
-**T075 implementation update — 2026-11-15:** source `7407bc4` / installer 0.3.4 extends the earlier T074 baseline with real procedural surface triplets, scene material reuse, working map overviews and near-field weapon handling. Player captures still show blockout environments/soldiers. All VD exits, exact comparison approval and P05 disposition remain unchanged. [Implementation/evidence](milestones/m11-playable-release/handoff.md#t075--procedural-presentation-preview-034).
+**T075 implementation update — 2026-11-15:** source `7407bc4` / installer 0.3.4 extends the earlier T074 baseline with real procedural surface triplets, scene material reuse, working map overviews and near-field weapon handling. Player captures still show blockout environments/soldiers. All VD exits, exact comparison approval and P05 disposition remain unchanged. [Implementation/evidence](milestones/m11-playable-release/handoff-archive.md#t075--procedural-presentation-preview-034).
 
 Owner direction, 2026-11-14: **the finished visual design should be as good as Battlefield V, Bodycam and Warface**. This is the target for perceived quality, coherence, physical credibility and presentation. Current parity is **unproven**. The b531da9 / 0.3.1 preview is an implementation baseline, with final interactive visual review Pending; it does not close these milestones.
 
@@ -68,7 +68,7 @@ Dependencies describe integration order. Any future parallel work needs explicit
 
 Capture the current source-matched menu, HUD, both maps, one soldier, both weapons and an action sequence. Record concrete gaps in [visual defects](visual-defect-inventory.md), including existing P05 defects. Define component owners, permitted paths, versions, comparison views and evidence locations. Identify any required new schema/socket/hit-pose change before dependent work. Establish the explicit scope needed for P05 work without changing its historical disposition.
 
-**Exit:** owner approves one coherent visual brief and the comparison set; a technical reviewer records constraints/budgets and the gap inventory. Exact reference frames, art approval and new coding assignments remain Pending until supplied/reviewed. Current source is b531da9 / 0.3.1, with details in the [M11 handoff](milestones/m11-playable-release/handoff.md#t074--scene-led-menu-and-tactical-hud-preview).
+**Exit:** owner approves one coherent visual brief and the comparison set; a technical reviewer records constraints/budgets and the gap inventory. Exact reference frames, art approval and new coding assignments remain Pending until supplied/reviewed. Current source is b531da9 / 0.3.1, with details in the [M11 handoff](milestones/m11-playable-release/handoff-archive.md#t074--scene-led-menu-and-tactical-hud-preview).
 
 ## VD1 — representative art slice and feasibility
 

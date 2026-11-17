@@ -2,7 +2,7 @@
 
 Status: **tooling + inventory only**, 2026-11-14. This page records the honest product visual defect inventory against the integrated T056 client presentation path. It does **not** accept P05, does **not** authorize a fourth clearance/parameter search, and does **not** change generator/recipe sources.
 
-Authoritative stop: [ADR-024](decisions.md#adr-024--accepted-p05-soldier-visual-scope-stop-after-exhausted-clearance-iterations). Historical residuals: [soldier baseline](soldier-baseline.md#third-bounded-clearance-candidate). Repair task: [T062](release-remediation-plan.md). Exit gate: [FIX11](release-remediation-validation.md).
+Authoritative stop: [ADR-024](decisions.md#adr-024--accepted-p05-soldier-visual-scope-stop-after-exhausted-clearance-iterations). Historical residuals: [soldier baseline](soldier-baseline.md#third-bounded-clearance-candidate). Repair task: [T062](archive/release-remediation-plan.md). Exit gate: [FIX11](release-remediation-validation.md).
 
 ## Immutable gate
 
@@ -85,7 +85,7 @@ Packages land under ignored `Artifacts/m8-runtime-composition/<commit>/visual-de
 - No Benchmark* or Package-Release* ownership changes
 - No REL03 / RUN05 PASS claim; unresolved required defects keep release visual acceptance open
 
-[Release remediation plan](release-remediation-plan.md) · [Validation matrix](release-remediation-validation.md) · [M8 handoff](milestones/m8-runtime-composition/handoff.md) · [M11 handoff](milestones/m11-playable-release/handoff.md).
+[Release remediation plan](archive/release-remediation-plan.md) · [Validation matrix](release-remediation-validation.md) · [M8 handoff](milestones/m8-runtime-composition/handoff.md) · [M11 handoff](milestones/m11-playable-release/handoff.md).
 
 
 ## ADR-094 bounded correction disposition

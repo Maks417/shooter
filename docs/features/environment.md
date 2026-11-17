@@ -1,6 +1,6 @@
 # Feature: generated environments and streaming
 
-Owner WP-06; paths `Generation/Core/Environment`, `World/Streaming`, `World/Navigation`. Shared content pipeline is [generation](../generation.md); AI consumes [navigation port](../contracts.md).
+Owner WP-06; paths `Generation/Core/Environment`, `World/Streaming`, `World/Navigation`. Shared content pipeline is [generation](../generation.md); AI consumes [navigation port](../contract-details.md).
 
 ## World recipe
 

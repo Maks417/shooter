@@ -1,6 +1,6 @@
 # Build, CI and release strategy
 
-Depends on [toolchain layout](repo-layout.md), [compiler](generation.md) and [validation](validation.md). Existing client/server/diagnostic/test wrappers and pure M0–M7 feature tools have evidence in the historical handoffs; later real Unity/player/hardware checks remain pending. [M8–M11](playable-release-plan.md) adds genuine two-map team-match compilation, launch/acceptance and local release packaging; diagnostic content/workloads cannot substitute for the game.
+Depends on [toolchain layout](repo-layout.md), [compiler](generation.md) and [validation](validation.md). Existing client/server/diagnostic/test wrappers and pure M0–M7 feature tools have evidence in the historical handoffs; later real Unity/player/hardware checks remain pending. [M8–M11](next-playable-build.md) adds genuine two-map team-match compilation, launch/acceptance and local release packaging; diagnostic content/workloads cannot substitute for the game.
 
 ## Pipelines
 

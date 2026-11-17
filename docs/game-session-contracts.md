@@ -4,7 +4,7 @@
 
 The source freeze is real; complete device/player coverage is not. ADR-036 extends UserSettings to schema 2 with the full [shell](features/game-shell.md) audio/display/FOV/input/accessibility inventory, bounded JSON migration and `IClientSettingsApplier` Keep/Revert staging. MatchViewSnapshot remains a bounded copied object, not a leased Game-v1 publication API; C0 leases remain unchanged. T053 lifecycle seams remain separate. T063/ADR-037 adds reviewed depot measurement workload IDs and product counters without silently aliasing compound fixtures. T069 software connects editable applied bindings and ReducedFlash/Subtitles/ReducedCameraMotion consumers; named SET02/audible/720p device review and 20-cycle soak remain Pending.
 
-Status: **implemented and frozen** (ADR-034, T035). Owner: sole M8 integrator. Existing C0-v1, SGAF/content v1 and N1-v1 remain unchanged. Read [contract details](contract-details.md), [simulation order](simulation-protocol.md) and [release plan](playable-release-plan.md). Workers consume the compiling freeze on `main` (`UnityProject/Assets/Shooter/Game/Contracts/`, `game-contract-lock.json`, `docs/game-fixtures/`).
+Status: **implemented and frozen** (ADR-034, T035). Owner: sole M8 integrator. Existing C0-v1, SGAF/content v1 and N1-v1 remain unchanged. Read [contract details](contract-details.md), [simulation order](simulation-protocol.md) and [release plan](next-playable-build.md). Workers consume the compiling freeze on `main` (`UnityProject/Assets/Shooter/Game/Contracts/`, `game-contract-lock.json`, `docs/game-fixtures/`).
 
 ## Placement and compatibility
 
