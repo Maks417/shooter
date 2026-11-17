@@ -37,14 +37,16 @@ The deliverable is a source-matched Windows x64 installer with [in-place upgrade
 | T092 — noise primitive | FastNoiseLite port, `NoiseField`, cross-lane goldens; `material.noise` generator landed under ADR-088. | Done. |
 | T093 — runtime rig correction | Animation Rigging rejected (ADR-075 addendum); corrections stay in pure `SoldierMotion`/`TwoBoneIk`. | Collision-backed `ISoldierGround` for remote soldiers, per-profile support grip, bounded head look-at; EditMode, Client build, CPU and named review. |
 | T094 — spatial audio | Not started. | Steam Audio spike behind the stereo mixer, native-binary allowlist, Client build, CPU and named headphone review. |
+| T096 — named arsenal | [ADR-102](decisions.md#adr-102--accepted-named-real-world-arsenal-random-spawn-loadouts-and-muzzle-flash-fix): AK-47, AK-102, M16A4 (burst), Mk 14 EBR, M-TAC 338 (bolt sniper), G17 and Golden Eagle .50 with geometry.weapon 1.2.0 meshes, per-gun stats/falloff, AK and bolt-action choreography, scope zoom, bank v6 reports, random spawn loadouts; muzzle flash playback and placement fixed. Branch `weapons-roster`. | Republish content, Unity EditMode/PlayMode, client build and installer; owner look/sound/feel and balance review in a packaged build. |
 | T095 — audio overhaul | ADR-096 bank v5 (real reload/knife/grenade Foley, flybys, hit/kill confirm, menu UI sound) and music (menu, calm/tension bed, stingers, results) with a Music slider; commit `43adaca`. | Replace three placeholders after one more small download batch (owner approves the files): bullet flyby, defeat stinger, outdoor ambience. Then owner listening review of all takes. Steps: [audio follow-up](features/audio.md#follow-up-placeholders). |
 
 ## Order of remaining work
 
 1. **Install 0.3.19.** The source-matched installer and locked-editor EditMode/PlayMode checks are delivered ([delivery](milestones/m11-playable-release/handoff.md#delivery-0319)); actual installed upgrade and the in-game feel check of ADR-098–100 remain Pending.
 2. **T071 formal playtest on that installer.** Follow the [guide](playtest-guide.md): all three maps × 5v5/8v8/10v10/15v15, at least one complete normal match per map, results and replay, missing/corrupt content recovery and a real prior-version upgrade. Record named reviewer, identities, logs and every blocker; route defects to their owning cards.
-3. **T093, T094 and the T095 audio placeholders** when the owner assigns them.
-4. **T070 + T062 + T065 on the final stable pair.** Reference captures and soaks on the idle reference laptop, named visual/UI/audio/display reviews, eight full matches, draw fixture, provenance/regressions and the remaining installer INS checks. Missing reviewers/hardware/counters stay Pending/PendingHardware.
+3. **T096 named arsenal (ADR-102):** merge, republish content, build the next installer and review every gun in play.
+4. **T093, T094 and the T095 audio placeholders** when the owner assigns them.
+5. **T070 + T062 + T065 on the final stable pair.** Reference captures and soaks on the idle reference laptop, named visual/UI/audio/display reviews, eight full matches, draw fixture, provenance/regressions and the remaining installer INS checks. Missing reviewers/hardware/counters stay Pending/PendingHardware.
 
 One integrator owns Bootstrap, Contracts, settings, locks, workloads and `coordination.json`. Keep Unity 6000.3.28f1 / URP 17.3.0, C0-v1 and Game-v1; boundary changes need an ADR plus migration/fixtures before consumers.
 

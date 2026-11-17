@@ -101,3 +101,15 @@ Weapon meshes are no longer inside map packages. `WeaponPackage` publishes one `
 `geometry.weapon` advances **1.0.4 → 1.0.5**. Recipes require `parameters.silhouette` (`standard` | `carbine`; carbine only with `kind=rifle`). Combat remains owned by Simulation `WeaponCatalog` / `WeaponDefinition`; recipes still cannot override damage, fire rate or magazine size. Presentation binds packaged meshes by DefinitionId visual profile (`weapons/rifle`, `weapons/rifle-carbine`, …), not by loadout slot alone. Map visual closure publishes carbine LOD/mag/cycle paths beside the classic rifle. Sockets and collision mechanical dimensions stay on the numeric baseline. Old 1.0.4 fixtures remain immutable and reject regeneration. Named player/installer review remains Pending.
 
 `ShooterFeatureBuild.CaptureHandling` renders ready/reach/extract/seat source diagnostics (ADR-099 adds empty-reload fresh/release, knife slash, grenade pin and throw frames) using verified map visual payloads and copied authority fixtures. The fixture adapter is Editor-only and cannot ship. Diagnostics do not substitute for actual gameplay or the comparative visual gate.
+
+## Named arsenal — geometry.weapon 1.2.0 (ADR-102)
+
+[ADR-102](../decisions.md#adr-102--accepted-named-real-world-arsenal-random-spawn-loadouts-and-muzzle-flash-fix) replaces the generic guns in play with seven named weapons: AK-47, AK-102, M16A4, Mk 14 EBR, M-TAC 338 (bolt-action sniper), G17 and Golden Eagle .50. Each has its own recipe under `Generation/FeatureRecipes/`, built by `ArsenalGeometry` from one of six archetype kinds (`ak`, `ar`, `dmr`, `bolt`, `pistol-striker`, `pistol-eagle`) and the parts `barrelFrontMm`, `furniture`, `muzzle`, `optic` and `stock`. Wood furniture uses material slot 5 and gold plating slot 6.
+
+Definition files may also set:
+- `combat.burstCount` / `combat.burstIntervalTicks` with `fireMode: Burst`;
+- `combat.falloffStartMeters` / `falloffEndMeters` / `falloffMinScale` for range falloff;
+- `combat.moveSpeedScale` and `combat.spawnWeight` (0 keeps a weapon out of random loadouts);
+- `visual.handlingStyle` (`Rifle`, `Ak`, `Bolt`, `Pistol`), `visual.adsFovDegrees`, `visual.muzzleFlashScale` and `visual.muzzleFlashSideJets`.
+
+Every life draws a random primary and sidearm in product sessions. The generic rifle, carbine and pistol remain catalogued with `spawnWeight 0` as the fixed test loadout.

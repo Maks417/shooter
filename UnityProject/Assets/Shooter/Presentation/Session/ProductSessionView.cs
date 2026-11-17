@@ -1221,18 +1221,20 @@ namespace Shooter.Presentation.Session
             const float w = 152f, h = 62f;
             float x = safe.xMax - w, y = safe.yMax - h;
             TacticalUi.CombatPlate(new Rect(x, y, w, h), accentBottom: true);
-            string weapon = human.ActiveWeaponSlot switch
-            {
-                1 => ShellUiCopy.Sidearm,
-                2 => ShellUiCopy.Knife,
-                3 => ShellUiCopy.Grenade,
-                _ => ShellUiCopy.Rifle
-            };
-            combatUi.Label(new Rect(x + 8, y + 4, w - 16, 11), weapon, 9, TacticalUi.Muted, TextAnchor.UpperRight);
             // ADR-085: mesh-traced silhouette of the weapon actually shown in the hands.
             var shownProfile = WeaponVisualProfiles.Resolve(
                 actors != null ? actors.LocalVisibleWeaponId : human.ActiveWeaponDefinition,
                 actors != null ? actors.LocalVisibleWeaponSlot : human.ActiveWeaponSlot);
+            // ADR-102: guns show their own name (AK-47, G17, ...); knife and grenade keep the shell copy.
+            string weapon = human.ActiveWeaponSlot switch
+            {
+                2 => ShellUiCopy.Knife,
+                3 => ShellUiCopy.Grenade,
+                _ => string.IsNullOrEmpty(shownProfile.DisplayLabel)
+                    ? (human.ActiveWeaponSlot == 1 ? ShellUiCopy.Sidearm : ShellUiCopy.Rifle)
+                    : shownProfile.DisplayLabel.ToUpperInvariant()
+            };
+            combatUi.Label(new Rect(x + 8, y + 4, w - 16, 11), weapon, 9, TacticalUi.Muted, TextAnchor.UpperRight);
             TacticalUi.Icon(new Rect(x + 8, y + 3, 64, 13), TacticalUi.WeaponIconName(shownProfile.KillFeedGlyph), TacticalUi.Muted);
             bool knife = human.ActiveWeaponSlot == 2;
             bool grenade = human.ActiveWeaponSlot == 3;

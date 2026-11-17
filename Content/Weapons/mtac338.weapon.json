@@ -1,0 +1,51 @@
+{
+  "schemaId": "shooter.weapon.v1",
+  "id": "weapons/mtac338",
+  "order": 9,
+  "displayLabel": "M-TAC 338",
+  "family": "PrimaryGun",
+  "combat": {
+    "fireMode": "SemiAutomatic",
+    "fireIntervalTicks": 72,
+    "reloadTicks": 210,
+    "equipTicks": 34,
+    "magazineSize": 5,
+    "reserveCapacity": 25,
+    "baseDamage": 120,
+    "hipSpreadDegrees": 4.0,
+    "adsSpreadDegrees": 0.02,
+    "recoilPitchDegrees": 2.5,
+    "recoilYawHalfDegrees": 0.4,
+    "moveSpeedScale": 0.85,
+    "spawnWeight": 2
+  },
+  "visual": {
+    "meshKey": "mtac338",
+    "geometryRecipe": "mtac338",
+    "magazineCycle": true,
+    "nearFieldScale": 1.12,
+    "nearFieldHipBias": [
+      0.08,
+      -0.01,
+      -0.1
+    ],
+    "hipRotationDegrees": [
+      0,
+      -12,
+      -5
+    ],
+    "optic": "ScopedPip",
+    "adsFovDegrees": 10,
+    "cycleTravelMeters": 0.09,
+    "adsSeconds": 0.34,
+    "handlingStyle": "Bolt",
+    "muzzleFlashScale": 1.4,
+    "muzzleFlashSideJets": true
+  },
+  "audio": {
+    "shot": "Tac338Shot"
+  },
+  "hud": {
+    "killFeedGlyph": "Mtac338"
+  }
+}

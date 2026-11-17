@@ -22,7 +22,7 @@ namespace Shooter.Simulation.Combat
                     maxRangeMeters: 300f, fuseTicks: 0, throwSpeedMetersPerSecond: 0f,
                     blastRadiusMeters: 0f, consumesAmmo: true, allowsSprintFire: false,
                     burstCount: 0, burstIntervalTicks: 0, falloffStartMeters: 0f, falloffEndMeters: 0f,
-                    falloffMinScale: 1f, moveSpeedScale: 1f, spawnWeight: 1),
+                    falloffMinScale: 1f, moveSpeedScale: 1f, spawnWeight: 0),
                 WeaponFamily.PrimaryGun, "weapons/rifle"),
             // Content/Weapons/rifle-carbine.weapon.json
             new WeaponCatalogEntry(
@@ -35,7 +35,7 @@ namespace Shooter.Simulation.Combat
                     maxRangeMeters: 300f, fuseTicks: 0, throwSpeedMetersPerSecond: 0f,
                     blastRadiusMeters: 0f, consumesAmmo: true, allowsSprintFire: false,
                     burstCount: 0, burstIntervalTicks: 0, falloffStartMeters: 0f, falloffEndMeters: 0f,
-                    falloffMinScale: 1f, moveSpeedScale: 1f, spawnWeight: 1),
+                    falloffMinScale: 1f, moveSpeedScale: 1f, spawnWeight: 0),
                 WeaponFamily.PrimaryGun, "weapons/rifle-carbine"),
             // Content/Weapons/pistol.weapon.json
             new WeaponCatalogEntry(
@@ -48,7 +48,7 @@ namespace Shooter.Simulation.Combat
                     maxRangeMeters: 300f, fuseTicks: 0, throwSpeedMetersPerSecond: 0f,
                     blastRadiusMeters: 0f, consumesAmmo: true, allowsSprintFire: false,
                     burstCount: 0, burstIntervalTicks: 0, falloffStartMeters: 0f, falloffEndMeters: 0f,
-                    falloffMinScale: 1f, moveSpeedScale: 1f, spawnWeight: 1),
+                    falloffMinScale: 1f, moveSpeedScale: 1f, spawnWeight: 0),
                 WeaponFamily.Sidearm, "weapons/pistol"),
             // Content/Weapons/knife.weapon.json
             new WeaponCatalogEntry(
@@ -75,7 +75,98 @@ namespace Shooter.Simulation.Combat
                     blastRadiusMeters: 5f, consumesAmmo: true, allowsSprintFire: false,
                     burstCount: 0, burstIntervalTicks: 0, falloffStartMeters: 0f, falloffEndMeters: 0f,
                     falloffMinScale: 1f, moveSpeedScale: 1f, spawnWeight: 1),
-                WeaponFamily.Throwable, "weapons/grenade")
+                WeaponFamily.Throwable, "weapons/grenade"),
+            // Content/Weapons/ak47.weapon.json
+            new WeaponCatalogEntry(
+                new WeaponDefinition(
+                    new DefinitionId("weapons/ak47"), FireMode.Automatic,
+                    fireIntervalTicks: 6, reloadTicks: 150, equipTicks: 26,
+                    magazineSize: 30, reserveCapacity: 90, baseDamage: 36,
+                    hipSpreadRadians: Deg(1.3f), adsSpreadRadians: Deg(0.22f),
+                    recoilPitchRadians: Deg(0.5f), recoilYawHalfRadians: Deg(0.18f),
+                    maxRangeMeters: 300f, fuseTicks: 0, throwSpeedMetersPerSecond: 0f,
+                    blastRadiusMeters: 0f, consumesAmmo: true, allowsSprintFire: false,
+                    burstCount: 0, burstIntervalTicks: 0, falloffStartMeters: 25f, falloffEndMeters: 60f,
+                    falloffMinScale: 0.75f, moveSpeedScale: 0.95f, spawnWeight: 3),
+                WeaponFamily.PrimaryGun, "weapons/ak47"),
+            // Content/Weapons/ak102.weapon.json
+            new WeaponCatalogEntry(
+                new WeaponDefinition(
+                    new DefinitionId("weapons/ak102"), FireMode.Automatic,
+                    fireIntervalTicks: 5, reloadTicks: 132, equipTicks: 22,
+                    magazineSize: 30, reserveCapacity: 90, baseDamage: 28,
+                    hipSpreadRadians: Deg(1.15f), adsSpreadRadians: Deg(0.2f),
+                    recoilPitchRadians: Deg(0.42f), recoilYawHalfRadians: Deg(0.16f),
+                    maxRangeMeters: 300f, fuseTicks: 0, throwSpeedMetersPerSecond: 0f,
+                    blastRadiusMeters: 0f, consumesAmmo: true, allowsSprintFire: false,
+                    burstCount: 0, burstIntervalTicks: 0, falloffStartMeters: 15f, falloffEndMeters: 40f,
+                    falloffMinScale: 0.7f, moveSpeedScale: 1f, spawnWeight: 3),
+                WeaponFamily.PrimaryGun, "weapons/ak102"),
+            // Content/Weapons/m16.weapon.json
+            new WeaponCatalogEntry(
+                new WeaponDefinition(
+                    new DefinitionId("weapons/m16"), FireMode.Burst,
+                    fireIntervalTicks: 18, reloadTicks: 144, equipTicks: 24,
+                    magazineSize: 30, reserveCapacity: 90, baseDamage: 32,
+                    hipSpreadRadians: Deg(1.0f), adsSpreadRadians: Deg(0.12f),
+                    recoilPitchRadians: Deg(0.3f), recoilYawHalfRadians: Deg(0.08f),
+                    maxRangeMeters: 300f, fuseTicks: 0, throwSpeedMetersPerSecond: 0f,
+                    blastRadiusMeters: 0f, consumesAmmo: true, allowsSprintFire: false,
+                    burstCount: 3, burstIntervalTicks: 4, falloffStartMeters: 35f, falloffEndMeters: 80f,
+                    falloffMinScale: 0.8f, moveSpeedScale: 0.95f, spawnWeight: 3),
+                WeaponFamily.PrimaryGun, "weapons/m16"),
+            // Content/Weapons/mk14.weapon.json
+            new WeaponCatalogEntry(
+                new WeaponDefinition(
+                    new DefinitionId("weapons/mk14"), FireMode.SemiAutomatic,
+                    fireIntervalTicks: 9, reloadTicks: 168, equipTicks: 28,
+                    magazineSize: 20, reserveCapacity: 60, baseDamage: 55,
+                    hipSpreadRadians: Deg(2.0f), adsSpreadRadians: Deg(0.08f),
+                    recoilPitchRadians: Deg(0.9f), recoilYawHalfRadians: Deg(0.2f),
+                    maxRangeMeters: 300f, fuseTicks: 0, throwSpeedMetersPerSecond: 0f,
+                    blastRadiusMeters: 0f, consumesAmmo: true, allowsSprintFire: false,
+                    burstCount: 0, burstIntervalTicks: 0, falloffStartMeters: 60f, falloffEndMeters: 150f,
+                    falloffMinScale: 0.85f, moveSpeedScale: 0.9f, spawnWeight: 2),
+                WeaponFamily.PrimaryGun, "weapons/mk14"),
+            // Content/Weapons/mtac338.weapon.json
+            new WeaponCatalogEntry(
+                new WeaponDefinition(
+                    new DefinitionId("weapons/mtac338"), FireMode.SemiAutomatic,
+                    fireIntervalTicks: 72, reloadTicks: 210, equipTicks: 34,
+                    magazineSize: 5, reserveCapacity: 25, baseDamage: 120,
+                    hipSpreadRadians: Deg(4.0f), adsSpreadRadians: Deg(0.02f),
+                    recoilPitchRadians: Deg(2.5f), recoilYawHalfRadians: Deg(0.4f),
+                    maxRangeMeters: 300f, fuseTicks: 0, throwSpeedMetersPerSecond: 0f,
+                    blastRadiusMeters: 0f, consumesAmmo: true, allowsSprintFire: false,
+                    burstCount: 0, burstIntervalTicks: 0, falloffStartMeters: 0f, falloffEndMeters: 0f,
+                    falloffMinScale: 1f, moveSpeedScale: 0.85f, spawnWeight: 2),
+                WeaponFamily.PrimaryGun, "weapons/mtac338"),
+            // Content/Weapons/g17.weapon.json
+            new WeaponCatalogEntry(
+                new WeaponDefinition(
+                    new DefinitionId("weapons/g17"), FireMode.SemiAutomatic,
+                    fireIntervalTicks: 7, reloadTicks: 96, equipTicks: 16,
+                    magazineSize: 17, reserveCapacity: 51, baseDamage: 24,
+                    hipSpreadRadians: Deg(1.4f), adsSpreadRadians: Deg(0.3f),
+                    recoilPitchRadians: Deg(0.45f), recoilYawHalfRadians: Deg(0.14f),
+                    maxRangeMeters: 300f, fuseTicks: 0, throwSpeedMetersPerSecond: 0f,
+                    blastRadiusMeters: 0f, consumesAmmo: true, allowsSprintFire: false,
+                    burstCount: 0, burstIntervalTicks: 0, falloffStartMeters: 10f, falloffEndMeters: 30f,
+                    falloffMinScale: 0.6f, moveSpeedScale: 1f, spawnWeight: 3),
+                WeaponFamily.Sidearm, "weapons/g17"),
+            // Content/Weapons/golden-eagle.weapon.json
+            new WeaponCatalogEntry(
+                new WeaponDefinition(
+                    new DefinitionId("weapons/golden-eagle"), FireMode.SemiAutomatic,
+                    fireIntervalTicks: 22, reloadTicks: 120, equipTicks: 22,
+                    magazineSize: 7, reserveCapacity: 28, baseDamage: 55,
+                    hipSpreadRadians: Deg(2.2f), adsSpreadRadians: Deg(0.35f),
+                    recoilPitchRadians: Deg(1.6f), recoilYawHalfRadians: Deg(0.35f),
+                    maxRangeMeters: 300f, fuseTicks: 0, throwSpeedMetersPerSecond: 0f,
+                    blastRadiusMeters: 0f, consumesAmmo: true, allowsSprintFire: false,
+                    burstCount: 0, burstIntervalTicks: 0, falloffStartMeters: 15f, falloffEndMeters: 40f,
+                    falloffMinScale: 0.7f, moveSpeedScale: 1f, spawnWeight: 2),
+                WeaponFamily.Sidearm, "weapons/golden-eagle")
         };
     }
 }

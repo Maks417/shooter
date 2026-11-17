@@ -22,7 +22,10 @@ namespace Shooter.Simulation.Tests.Combat
             Assert.Equal(25, carbine.Definition.MagazineSize);
             Assert.Equal("weapons/rifle-carbine", carbine.VisualProfileId);
 
-            Assert.Equal(2, WeaponCatalog.Primaries().Count());
+            // ADR-102: five named primaries join the two retired generic ones (kept for tests, spawn weight 0).
+            Assert.Equal(7, WeaponCatalog.Primaries().Count());
+            Assert.Equal(0, rifle.Definition.SpawnWeight);
+            Assert.Equal(0, carbine.Definition.SpawnWeight);
         }
 
         [Fact]

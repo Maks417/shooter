@@ -1623,3 +1623,35 @@ Consequences: playtest matrix becomes three maps × four sizes; larger fights st
 Rollback: revert this change, restore {5,6} allowlist and prior caps/slots/workloads, and republish catalog packages from the prior source.
 
 Evidence: pure Game/Simulation/Generation/Maps lanes and lock verifiers after implementation; Unity EditMode for shell/setup; native content republish when the locked editor is available. Manual playtest and hardware remain Pending.
+
+## ADR-102 — Accepted: named real-world arsenal, random spawn loadouts and muzzle flash fix
+
+Date 2026-11-17. Context: owner request. Every gun was generic ("Rifle", "Sidearm"), shared two shapes, two shot sounds and two reload tracks, and the HUD showed slot names. The owner asked for guns modelled on real firearms (AK-47, AK-102, M16, a McMillan-style sniper, an "Mk 2" marksman rifle, Glock, a golden Desert Eagle), each with its own look, sound, animation and handling. Separately, firing showed smoke but no muzzle flash. Owner decisions: random loadout per spawn (no UI), "Mk 2" means a Mk 14 EBR-style DMR, brand names are replaced by close stand-ins, and shot sounds come from real recordings.
+
+Decision:
+- **Roster.** Five primaries and two sidearms, one `Content/Weapons/*.weapon.json` file each (ADR-077):
+
+  | id | label | fire | dmg | falloff m (min) | mag | optic FOV |
+  |---|---|---|---|---|---|---|
+  | weapons/ak47 | AK-47 | auto, 6 ticks | 36 | 25-60 (0.75) | 30/90 | irons |
+  | weapons/ak102 | AK-102 | auto, 5 ticks | 28 | 15-40 (0.70) | 30/90 | irons |
+  | weapons/m16 | M16A4 | 3-round burst, 4 ticks inside, 18 after | 32 | 35-80 (0.80) | 30/90 | 2x scope, 40 deg |
+  | weapons/mk14 | Mk 14 EBR | semi, 9 ticks | 55 | 60-150 (0.85) | 20/60 | 4x scope, 20 deg |
+  | weapons/mtac338 | M-TAC 338 | bolt (semi, 72 ticks) | 120 | none | 5/25 | 8x scope, 10 deg |
+  | weapons/g17 | G17 | semi, 7 ticks | 24 | 10-30 (0.60) | 17/51 | irons |
+  | weapons/golden-eagle | Golden Eagle .50 | semi, 22 ticks | 55 | 15-40 (0.70) | 7/28 | irons |
+
+  The generic `weapons/rifle`, `weapons/rifle-carbine` and `weapons/pistol` stay in the catalog with `spawnWeight 0`: they are never issued in a match, and remain the fixed default loadout for harness tests, diagnostics and the C0 fixtures, which are not migrated.
+- **Simulation (not locked).** `WeaponDefinition` gains optional `burstCount`/`burstIntervalTicks` (`FireMode.Burst`), `falloffStartMeters`/`falloffEndMeters`/`falloffMinScale`, `moveSpeedScale` (clamped 0.5-1.2 in the motor) and `spawnWeight`. Burst progress is read back from `ShotIndex` (each burst starts on a multiple of the burst count), so the frozen C0 `WeaponState` is unchanged; any interruption ends the burst. Falloff scales base damage by the shot-origin-to-hit distance before the ADR-063 region multiplier.
+- **Random loadout.** `WeaponLoadoutPolicy.CreateRandomLoadout(seed, actor, tick)` draws a weighted primary and sidearm (SplitMix64 of session seed, entity and tick), so a replay draws the same guns. `OfflineGameSession.RandomLoadouts` (default true) turns it on for product sessions; `CombatHarnessSimulation.RandomLoadouts` is off by default. Bots read magazine size and cadence from the guns they were issued (`IActorLoadoutSource`), and marksman/sniper guns aim down sights from medium range and wait for settled aim.
+- **Geometry `geometry.weapon` 1.2.0.** Six archetype kinds (`ak`, `ar`, `dmr`, `bolt`, `pistol-striker`, `pistol-eagle`) with parts `barrelFrontMm`, `furniture` (black/gold/polymer/wood), `muzzle` (birdcage/brake/flash/none/slant), `optic` (irons/scope2/scope4/scope8) and `stock` (chassis/fixed/folding/none/wood). New `ArsenalGeometry` builds four LODs, magazine (curved AK, STANAG, box), cycle part (AK charging handle, AR charging handle, op rod, bolt, slides), sockets, collision and per-kind envelopes; 1.0.5/1.1.0 output is byte-identical. Material slot 5 (oiled wood) and 6 (polished gold) are presentation tints of the verified polymer and steel planes; no new textures. The first-person support hand follows each gun's `left-hand-grip` socket and soldier motion accepts every long-gun kind.
+- **Handling.** Profile `handlingStyle` (Rifle, Ak, Bolt, Pistol): the AK rocks its magazine and, when empty, racks the right-side charging handle; the bolt gun swaps its box magazine and works the bolt on every reload and after every shot within the fire interval. `adsFovDegrees` sets magnified-optic zoom. `muzzleFlashScale` and `muzzleFlashSideJets` size each gun's flash; brakes vent two side jets.
+- **Muzzle flash fix.** The flipbook bake writes frame 0 at byte row 0, but raw texture rows start at the bottom and the texture-sheet animation plays the top-left tile first, so every flipbook ran backwards and the flash peaked after it had faded. The presenter now flips rows on upload (`AnalyticFxPool.FlipTextureRows`); the `fx.flipbook` bake and map packages are unchanged. The flash is placed on the muzzle socket of the weapon the viewer sees (first-person view model or held weapon) and sorts above its smoke.
+- **Audio bank v6.** `combat-audio-bank-v6-stereo` appends `ak47_shot`, `ak102_shot`, `m16_shot`, `mk14_shot`, `tac338_shot`, `g17_shot`, `eagle_shot`, `bolt_cycle`, `reload_ak` and `reload_bolt` after the unchanged v5 slots. Clips are cut from the already-sourced CC0 Free Firearm Sound Library (AK-47, AR-15, Tikka, Mosin Nagant, Arisaka, Walther PPQ, 1911) and the existing reload Foley; no new downloads. Missing cues derive from the real rifle/pistol takes by varispeed. Reload Foley follows the gun that last fired from that slot; bolt shots schedule the bolt cycle.
+- **HUD.** The ammo panel shows the gun's display label; kill-feed glyphs gain one value per named gun with mesh-traced icons.
+
+Consequences: `feature-content-lock.json` is refrozen for the 1.2.0 generator, sources, schema and the `rifle-1.2.0` fixture. The weapon package grows by seven mesh sets and must be republished with `Compile-GameContent.ps1`. No C0, Game-v1 or content-format lock change. Spawn weights favour assault rifles (3) over the DMR and sniper (2).
+
+Rollback: set the new definitions' `spawnWeight` to 0 and the generic ones back to 1 (or revert the change), regenerate the catalogs and republish content.
+
+Evidence: pure Simulation, Generation, Game and fixture lanes; Unity EditMode/PlayMode and a client build when the locked editor is available. Visual, audio and balance acceptance by the owner in a packaged build remain Pending.

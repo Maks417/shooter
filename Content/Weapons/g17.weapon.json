@@ -1,0 +1,51 @@
+{
+  "schemaId": "shooter.weapon.v1",
+  "id": "weapons/g17",
+  "order": 10,
+  "displayLabel": "G17",
+  "family": "Sidearm",
+  "combat": {
+    "fireMode": "SemiAutomatic",
+    "fireIntervalTicks": 7,
+    "reloadTicks": 96,
+    "equipTicks": 16,
+    "magazineSize": 17,
+    "reserveCapacity": 51,
+    "baseDamage": 24,
+    "hipSpreadDegrees": 1.4,
+    "adsSpreadDegrees": 0.3,
+    "recoilPitchDegrees": 0.45,
+    "recoilYawHalfDegrees": 0.14,
+    "falloffStartMeters": 10,
+    "falloffEndMeters": 30,
+    "falloffMinScale": 0.6,
+    "spawnWeight": 3
+  },
+  "visual": {
+    "meshKey": "g17",
+    "geometryRecipe": "g17",
+    "magazineCycle": true,
+    "nearFieldScale": 1.15,
+    "nearFieldHipBias": [
+      0.08,
+      -0.085,
+      0.11
+    ],
+    "hipRotationDegrees": [
+      0,
+      -3,
+      -2
+    ],
+    "optic": "Irons",
+    "cycleTravelMeters": 0.038,
+    "adsSeconds": 0.13,
+    "handlingStyle": "Pistol",
+    "muzzleFlashScale": 0.6
+  },
+  "audio": {
+    "shot": "G17Shot"
+  },
+  "hud": {
+    "killFeedGlyph": "G17"
+  }
+}

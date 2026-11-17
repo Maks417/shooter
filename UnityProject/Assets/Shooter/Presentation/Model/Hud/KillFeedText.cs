@@ -11,7 +11,15 @@ namespace Shooter.Presentation.Hud
         Carbine = 2,
         Pistol = 3,
         Knife = 4,
-        Grenade = 5
+        Grenade = 5,
+        // ADR-102 named guns: each kill shows the silhouette traced from that gun's own mesh.
+        Ak47 = 6,
+        Ak102 = 7,
+        M16 = 8,
+        Mk14 = 9,
+        Mtac338 = 10,
+        G17 = 11,
+        GoldenEagle = 12
     }
 
     /// <summary>One expiring kill-feed row: names plus correlated weapon/headshot cues.</summary>

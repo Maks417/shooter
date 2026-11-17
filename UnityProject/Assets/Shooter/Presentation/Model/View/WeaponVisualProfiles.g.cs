@@ -57,7 +57,70 @@ namespace Shooter.Presentation.View
                 hipRotationDegrees: new Float3(0f, -3f, -2f), cycleTravelMeters: 0f, displayLabel: "Grenade", muzzleFx: "none",
                 recoilPitchDegrees: 0f, recoilYawHalfDegrees: 0f,
                 equipTicks: 18, fireIntervalTicks: 0, reloadTicks: 0, fuseTicks: 120, adsSeconds: 0.15f,
-                handlingStyle: WeaponHandlingStyle.Auto, adsFovDegrees: 0f, muzzleFlashScale: -1f, muzzleFlashSideJets: false)
+                handlingStyle: WeaponHandlingStyle.Auto, adsFovDegrees: 0f, muzzleFlashScale: -1f, muzzleFlashSideJets: false),
+            // Content/Weapons/ak47.weapon.json
+            new WeaponVisualProfile(
+                new DefinitionId("weapons/ak47"), WeaponVisualFamily.PrimaryGun, "ak47",
+                WeaponOpticMode.Irons, hasMagazineCycle: true, shotVoice: SynthVoiceKind.Ak47Shot, killFeedGlyph: KillFeedWeapon.Ak47,
+                nearFieldScale: 1.12f, nearFieldHipBias: new Float3(0.08f, -0.01f, -0.1f),
+                hipRotationDegrees: new Float3(0f, -12f, -5f), cycleTravelMeters: 0.08f, displayLabel: "AK-47", muzzleFx: "rifle",
+                recoilPitchDegrees: 0.5f, recoilYawHalfDegrees: 0.18f,
+                equipTicks: 26, fireIntervalTicks: 6, reloadTicks: 150, fuseTicks: 0, adsSeconds: 0.22f,
+                handlingStyle: WeaponHandlingStyle.Ak, adsFovDegrees: 0f, muzzleFlashScale: 1.15f, muzzleFlashSideJets: false),
+            // Content/Weapons/ak102.weapon.json
+            new WeaponVisualProfile(
+                new DefinitionId("weapons/ak102"), WeaponVisualFamily.PrimaryGun, "ak102",
+                WeaponOpticMode.Irons, hasMagazineCycle: true, shotVoice: SynthVoiceKind.Ak102Shot, killFeedGlyph: KillFeedWeapon.Ak102,
+                nearFieldScale: 1.12f, nearFieldHipBias: new Float3(0.08f, -0.01f, -0.1f),
+                hipRotationDegrees: new Float3(0f, -12f, -5f), cycleTravelMeters: 0.08f, displayLabel: "AK-102", muzzleFx: "rifle",
+                recoilPitchDegrees: 0.42f, recoilYawHalfDegrees: 0.16f,
+                equipTicks: 22, fireIntervalTicks: 5, reloadTicks: 132, fuseTicks: 0, adsSeconds: 0.18f,
+                handlingStyle: WeaponHandlingStyle.Ak, adsFovDegrees: 0f, muzzleFlashScale: 1.3f, muzzleFlashSideJets: false),
+            // Content/Weapons/m16.weapon.json
+            new WeaponVisualProfile(
+                new DefinitionId("weapons/m16"), WeaponVisualFamily.PrimaryGun, "m16",
+                WeaponOpticMode.ScopedPip, hasMagazineCycle: true, shotVoice: SynthVoiceKind.M16Shot, killFeedGlyph: KillFeedWeapon.M16,
+                nearFieldScale: 1.12f, nearFieldHipBias: new Float3(0.08f, -0.01f, -0.1f),
+                hipRotationDegrees: new Float3(0f, -12f, -5f), cycleTravelMeters: 0.07f, displayLabel: "M16A4", muzzleFx: "rifle",
+                recoilPitchDegrees: 0.3f, recoilYawHalfDegrees: 0.08f,
+                equipTicks: 24, fireIntervalTicks: 18, reloadTicks: 144, fuseTicks: 0, adsSeconds: 0.2f,
+                handlingStyle: WeaponHandlingStyle.Rifle, adsFovDegrees: 40f, muzzleFlashScale: 0.85f, muzzleFlashSideJets: false),
+            // Content/Weapons/mk14.weapon.json
+            new WeaponVisualProfile(
+                new DefinitionId("weapons/mk14"), WeaponVisualFamily.PrimaryGun, "mk14",
+                WeaponOpticMode.ScopedPip, hasMagazineCycle: true, shotVoice: SynthVoiceKind.Mk14Shot, killFeedGlyph: KillFeedWeapon.Mk14,
+                nearFieldScale: 1.12f, nearFieldHipBias: new Float3(0.08f, -0.01f, -0.1f),
+                hipRotationDegrees: new Float3(0f, -12f, -5f), cycleTravelMeters: 0.07f, displayLabel: "Mk 14 EBR", muzzleFx: "rifle",
+                recoilPitchDegrees: 0.9f, recoilYawHalfDegrees: 0.2f,
+                equipTicks: 28, fireIntervalTicks: 9, reloadTicks: 168, fuseTicks: 0, adsSeconds: 0.26f,
+                handlingStyle: WeaponHandlingStyle.Rifle, adsFovDegrees: 20f, muzzleFlashScale: 1.0f, muzzleFlashSideJets: true),
+            // Content/Weapons/mtac338.weapon.json
+            new WeaponVisualProfile(
+                new DefinitionId("weapons/mtac338"), WeaponVisualFamily.PrimaryGun, "mtac338",
+                WeaponOpticMode.ScopedPip, hasMagazineCycle: true, shotVoice: SynthVoiceKind.Tac338Shot, killFeedGlyph: KillFeedWeapon.Mtac338,
+                nearFieldScale: 1.12f, nearFieldHipBias: new Float3(0.08f, -0.01f, -0.1f),
+                hipRotationDegrees: new Float3(0f, -12f, -5f), cycleTravelMeters: 0.09f, displayLabel: "M-TAC 338", muzzleFx: "rifle",
+                recoilPitchDegrees: 2.5f, recoilYawHalfDegrees: 0.4f,
+                equipTicks: 34, fireIntervalTicks: 72, reloadTicks: 210, fuseTicks: 0, adsSeconds: 0.34f,
+                handlingStyle: WeaponHandlingStyle.Bolt, adsFovDegrees: 10f, muzzleFlashScale: 1.4f, muzzleFlashSideJets: true),
+            // Content/Weapons/g17.weapon.json
+            new WeaponVisualProfile(
+                new DefinitionId("weapons/g17"), WeaponVisualFamily.Sidearm, "g17",
+                WeaponOpticMode.Irons, hasMagazineCycle: true, shotVoice: SynthVoiceKind.G17Shot, killFeedGlyph: KillFeedWeapon.G17,
+                nearFieldScale: 1.15f, nearFieldHipBias: new Float3(0.08f, -0.085f, 0.11f),
+                hipRotationDegrees: new Float3(0f, -3f, -2f), cycleTravelMeters: 0.038f, displayLabel: "G17", muzzleFx: "pistol",
+                recoilPitchDegrees: 0.45f, recoilYawHalfDegrees: 0.14f,
+                equipTicks: 16, fireIntervalTicks: 7, reloadTicks: 96, fuseTicks: 0, adsSeconds: 0.13f,
+                handlingStyle: WeaponHandlingStyle.Pistol, adsFovDegrees: 0f, muzzleFlashScale: 0.6f, muzzleFlashSideJets: false),
+            // Content/Weapons/golden-eagle.weapon.json
+            new WeaponVisualProfile(
+                new DefinitionId("weapons/golden-eagle"), WeaponVisualFamily.Sidearm, "golden-eagle",
+                WeaponOpticMode.Irons, hasMagazineCycle: true, shotVoice: SynthVoiceKind.EagleShot, killFeedGlyph: KillFeedWeapon.GoldenEagle,
+                nearFieldScale: 1.15f, nearFieldHipBias: new Float3(0.08f, -0.085f, 0.11f),
+                hipRotationDegrees: new Float3(0f, -3f, -2f), cycleTravelMeters: 0.045f, displayLabel: "Golden Eagle .50", muzzleFx: "pistol",
+                recoilPitchDegrees: 1.6f, recoilYawHalfDegrees: 0.35f,
+                equipTicks: 22, fireIntervalTicks: 22, reloadTicks: 120, fuseTicks: 0, adsSeconds: 0.17f,
+                handlingStyle: WeaponHandlingStyle.Pistol, adsFovDegrees: 0f, muzzleFlashScale: 1.1f, muzzleFlashSideJets: false)
         };
     }
 }
