@@ -20,8 +20,10 @@ namespace Shooter.Presentation.Rendering
         /// <summary>Presentation-only shrink so metal cover reads as crates instead of coplanar slabs.</summary>
         public const float CoverHorizontalInset = 0.94f;
         public const float CoverVerticalInset = 0.97f;
-        /// <summary>Lift cover overlays a few centimetres to avoid z-fighting with baked solids.</summary>
-        public const float CoverLiftMeters = 0.035f;
+        /// <summary>ADR-103: overlay top always clears the baked cover top by this much, whatever the cover height.</summary>
+        public const float CoverTopClearanceMeters = 0.03f;
+        /// <summary>ADR-103: apron sits well below the yard pad so the two horizontal planes never depth-fight at range.</summary>
+        public const float ApronTopMeters = -0.12f;
         /// <summary>Inner yard pad as a fraction of map half-extent (apron occupies the outer ring).</summary>
         public const float InnerYardExtentFraction = 0.78f;
 
@@ -108,7 +110,7 @@ namespace Shooter.Presentation.Rendering
             float full = half * 2f;
             // Outer apron ring (darker asphalt response) + inner yard pad for lane readability.
             // Presentation-only unit boxes; no colliders.
-            Place("Product apron", new Vector3(0f, -0.06f, 0f), new Vector3(full, 0.1f, full), apron!, unitBox!);
+            Place("Product apron", new Vector3(0f, ApronTopMeters - 0.05f, 0f), new Vector3(full, 0.1f, full), apron!, unitBox!);
             float inner = full * InnerYardExtentFraction;
             Material yardSurface = UsesAsphaltYard(mapId) ? asphalt! : ground!;
             Place("Product ground", new Vector3(0f, -0.02f, 0f), new Vector3(inner, 0.1f, inner), yardSurface, unitBox!);
@@ -130,6 +132,9 @@ namespace Shooter.Presentation.Rendering
 
             // Place discrete metal cover props; skip set tracks overlays already placed (not coverIds).
             var placedMetalCovers = new HashSet<ulong>();
+            // ADR-103: features drawn by ArenaFeatureDressing (sandbags, vehicles, cargo) get no metal slab overlay;
+            // the slab shared planes with the dressing's top course and flickered.
+            foreach (ulong dressed in DressedFeatureIds(boxes, mapId)) placedMetalCovers.Add(dressed);
             if (metadataBytes != null && metadataBytes.Length > 0)
                 PlaceMetadataCovers(metadataBytes, coverIds, placedMetalCovers);
             PlaceCoverOverlaysFromBoxes(boxes, coverIds, placedMetalCovers);
@@ -304,6 +309,24 @@ namespace Shooter.Presentation.Rendering
             }
         }
 
+        private static IEnumerable<ulong> DressedFeatureIds(IReadOnlyList<CollisionBox> boxes, string? id)
+        {
+            var result = new List<ulong>();
+            if (string.IsNullOrEmpty(id) || !MapRegistry.TryGet(id!, out _)) return result;
+            CompoundPlan plan;
+            try { plan = ProductMapPlanner.Generate(id!); }
+            catch (Exception) { return result; }
+            bool oil = string.Equals(id, OilDepotDressing.MapId, StringComparison.Ordinal) && plan.Arena != null;
+            for (int i = 0; i < boxes.Count; i++)
+                if (ArenaFeatureDressing.ReplacedByDressing(boxes[i], plan.Features) || (oil && OilDepotDressing.ReplacedByDressing(boxes[i])))
+                    result.Add(boxes[i].StableId);
+            return result;
+        }
+
+        /// <summary>ADR-103 overlay centre lift: the overlay top clears the baked cover top by CoverTopClearanceMeters.</summary>
+        public static float CoverOverlayLift(float sizeY) =>
+            CoverTopClearanceMeters + sizeY * 0.5f * (1f - CoverVerticalInset);
+
         private void PlaceCover(string label, Vector3 center, Vector3 size)
         {
             // Inset + lift only; collision/authority boxes stay untouched.
@@ -311,7 +334,7 @@ namespace Shooter.Presentation.Rendering
                 size.x * CoverHorizontalInset,
                 size.y * CoverVerticalInset,
                 size.z * CoverHorizontalInset);
-            var lifted = new Vector3(center.x, center.y + CoverLiftMeters, center.z);
+            var lifted = new Vector3(center.x, center.y + CoverOverlayLift(size.y), center.z);
             Place(label, lifted, inset, cover!, unitBox!);
         }
 

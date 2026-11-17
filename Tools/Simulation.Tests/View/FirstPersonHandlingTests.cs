@@ -356,6 +356,25 @@ namespace Shooter.Simulation.Tests.View
         }
 
         [Fact]
+        public void LensCameraFovMatchesDigitalZoomFraming()
+        {
+            // ADR-103: at zoom 1 the lens shows the hip view inside 2*LensRadius of the screen height.
+            float r = AdsOpticVisual.LensRadiusFraction;
+            float expectedUnzoomed = (float)(Math.Atan(Math.Tan(40.0 * Math.PI / 180.0) * 2.0 * r) * 360.0 / Math.PI);
+            Assert.Equal(expectedUnzoomed, AdsOpticVisual.LensCameraFovDegrees(80f, r, 1f), 3);
+            // An 8x optic (10 deg ADS on 80 deg hip) gives roughly a 10 deg lens camera.
+            float eightX = AdsOpticVisual.LensCameraFovDegrees(80f, r, 10f / 80f);
+            Assert.InRange(eightX, 9.5f, 10.5f);
+            Assert.True(AdsOpticVisual.LensCameraFovDegrees(80f, r, .25f) > eightX);
+            Assert.Throws<ArgumentOutOfRangeException>(() => AdsOpticVisual.LensCameraFovDegrees(80f, r, 0f));
+            Assert.Throws<ArgumentOutOfRangeException>(() => AdsOpticVisual.LensCameraFovDegrees(float.NaN, r, .5f));
+            var scoped = WeaponVisualProfiles.Resolve(default, ProductAuthorityActionView.RifleSlot);
+            Assert.True(AdsOpticVisual.UsesLensCamera(scoped, 1f, reducedCameraMotion: false));
+            Assert.False(AdsOpticVisual.UsesLensCamera(scoped, 1f, reducedCameraMotion: true));
+            Assert.False(AdsOpticVisual.UsesLensCamera(scoped, 0f, reducedCameraMotion: false));
+        }
+
+        [Fact]
         public void KnifeShotStartsSlashAndUpgradesToStabOnHit()
         {
             var id = new EntityId(1);

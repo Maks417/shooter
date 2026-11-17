@@ -236,8 +236,9 @@ namespace Shooter.Presentation
             {
                 RenderSettings.fogMode = FogMode.Linear;
                 RenderSettings.fogColor = Horizon;
-                RenderSettings.fogStartDistance = fogStartMeters;
-                RenderSettings.fogEndDistance = fogEndMeters;
+                baseFogStart = fogStartMeters;
+                baseFogEnd = fogEndMeters;
+                ApplyFogScale(Shooter.Presentation.Rendering.ProductPostProcessing.CurrentTier.FogDistanceScale);
                 // Density retained for callers that switch to Exponential later; Linear uses start/end.
                 RenderSettings.fogDensity = fogDensity;
             }
@@ -262,8 +263,25 @@ namespace Shooter.Presentation
             DestroyOwned(skybox);
             skybox=new Material(Shader.Find("Shooter/AnalyticSky")??throw new InvalidOperationException("Required analytic sky shader missing.")){name="Numeric map atmosphere"};
             skybox.SetTexture("_Environment",cube);RenderSettings.skybox=skybox;
-            Shader.SetGlobalVector("_ShooterHeightFog",new Vector4(.009f,definition.SkyPreset=="petroleum"?.08f:.15f,1,0));
+            baseHeightFog=new Vector4(.009f,definition.SkyPreset=="petroleum"?.08f:.15f,1,0);
+            ApplyFogScale(Shooter.Presentation.Rendering.ProductPostProcessing.CurrentTier.FogDistanceScale);
             Shader.SetGlobalColor("_ShooterFogTint",Horizon);
+        }
+
+        private static float baseFogStart = GeneratedSkyMath.DefaultFogStartMeters, baseFogEnd = GeneratedSkyMath.DefaultFogEndMeters;
+        private static Vector4 baseHeightFog;
+
+        /// <summary>
+        /// ADR-103: higher tiers push the map's linear fog (and thin height fog) further out so distant and scoped
+        /// views keep contrast; Low keeps the reviewed 34-100 m readability band. Colour and grade are unchanged.
+        /// </summary>
+        public static void ApplyFogScale(float scale)
+        {
+            if (!(scale >= 1f) || float.IsInfinity(scale)) scale = 1f;
+            RenderSettings.fogStartDistance = baseFogStart * scale;
+            RenderSettings.fogEndDistance = baseFogEnd * scale;
+            if (baseHeightFog.z > 0f)
+                Shader.SetGlobalVector("_ShooterHeightFog", new Vector4(baseHeightFog.x / scale, baseHeightFog.y, baseHeightFog.z, baseHeightFog.w));
         }
 
         public Color SampleBackground(float elevation) =>
@@ -275,6 +293,7 @@ namespace Shooter.Presentation
             disposed = true;
             if (RenderSettings.skybox == skybox) RenderSettings.skybox = null;
             RenderSettings.fog = false;
+            baseHeightFog = Vector4.zero;
             RenderSettings.ambientIntensity = 1f;
             if (RenderSettings.customReflectionTexture == environment)
             {

@@ -192,11 +192,20 @@ public static class ShooterBuild
             string path = settings + "/" + names[i] + ".asset";
             var pipeline = AssetDatabase.LoadAssetAtPath<UniversalRenderPipelineAsset>(path);
             if (pipeline == null) { pipeline = UniversalRenderPipelineAsset.Create(renderer); AssetDatabase.CreateAsset(pipeline, path); }
-            pipeline.supportsHDR = false; pipeline.msaaSampleCount = i == 2 ? 2 : 1; pipeline.renderScale = 1;
-            pipeline.shadowDistance = i == 0 ? 40 : i == 1 ? 60 : 100; pipeline.shadowCascadeCount = 2;
-            pipeline.mainLightShadowmapResolution = i == 0 ? 1024 : 2048;
+            // ADR-103 quality uplift: Low keeps the 4600H reference-gate budget; Balanced/High get MSAA, longer
+            // 3/4-cascade soft shadows with a bigger atlas, so distant and scoped views stay stable and sharp.
+            pipeline.supportsHDR = false; pipeline.msaaSampleCount = ProfileMsaa[i]; pipeline.renderScale = 1;
+            pipeline.shadowDistance = ProfileShadowDistance[i]; pipeline.shadowCascadeCount = ProfileCascades[i];
+            if (ProfileCascades[i] == 3) pipeline.cascade3Split = new Vector2(.12f, .38f);
+            if (ProfileCascades[i] == 4) pipeline.cascade4Split = new Vector3(.067f, .2f, .47f);
+            if (ProfileCascades[i] == 2) pipeline.cascade2Split = .25f;
+            pipeline.mainLightShadowmapResolution = ProfileShadowmap[i];
+            pipeline.shadowDepthBias = 1f; pipeline.shadowNormalBias = i == 0 ? 1f : .6f;
             pipeline.maxAdditionalLightsCount = i == 0 ? 2 : 4;
             var serializedPipeline = new SerializedObject(pipeline);
+            serializedPipeline.FindProperty("m_SoftShadowsSupported").boolValue = i > 0;
+            var softQuality = serializedPipeline.FindProperty("m_SoftShadowQuality");
+            if (softQuality != null) softQuality.intValue = i == 2 ? 3 : 2; // SoftShadowQuality.High / Medium
             serializedPipeline.FindProperty("m_AdditionalLightsRenderingMode").intValue = (int)LightRenderingMode.PerPixel;
             serializedPipeline.FindProperty("m_AdditionalLightShadowsSupported").boolValue = false;
             serializedPipeline.ApplyModifiedPropertiesWithoutUndo();
@@ -204,6 +213,7 @@ public static class ShooterBuild
             EditorUtility.SetDirty(pipeline); pipelines[i] = pipeline;
             QualitySettings.SetQualityLevel(i, false); QualitySettings.renderPipeline = pipeline;
             QualitySettings.vSyncCount = 0; QualitySettings.antiAliasing = 0; QualitySettings.skinWeights = SkinWeights.FourBones;
+            QualitySettings.anisotropicFiltering = i == 0 ? AnisotropicFiltering.Enable : AnisotropicFiltering.ForceEnable;
             QualitySettings.asyncUploadTimeSlice = 2;
         }
         GraphicsSettings.defaultRenderPipeline = pipelines[0];
@@ -259,6 +269,12 @@ public static class ShooterBuild
         VerifyToolchain();
         Debug.Log("SHOOTER_FOUNDATION_INITIALIZED");
     });
+
+    /// <summary>ADR-103 per-profile render budgets (Low, Balanced, High); FoundationEditorTests asserts the same values.</summary>
+    internal static readonly int[] ProfileMsaa = { 1, 2, 4 };
+    internal static readonly float[] ProfileShadowDistance = { 40, 80, 150 };
+    internal static readonly int[] ProfileCascades = { 2, 3, 4 };
+    internal static readonly int[] ProfileShadowmap = { 1024, 2048, 4096 };
 
     internal static Texture2D BakeOrderedDither(string path, int size)
     {

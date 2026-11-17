@@ -112,6 +112,27 @@ namespace Shooter.Presentation.View
         public static float LensUvZoom(float hipFovDegrees, byte weaponSlot, float adsPresentationBlend) =>
             LensUvZoom(hipFovDegrees, WeaponVisualProfiles.Resolve(default, weaponSlot), adsPresentationBlend);
 
+        /// <summary>
+        /// ADR-103 optical lens camera: vertical FOV that shows exactly what the digital lens zoom would, so the lens
+        /// renders the scene at native resolution (with narrow-FOV LOD, mips and shadows) instead of stretching pixels.
+        /// The lens spans 2 * lensRadiusFraction of the screen height and shows hip-view height scaled by lensUvZoom.
+        /// </summary>
+        public static float LensCameraFovDegrees(float hipFovDegrees, float lensRadiusFraction, float lensUvZoom)
+        {
+            if (!float.IsFinite(hipFovDegrees) || hipFovDegrees <= 1f || hipFovDegrees >= 179f)
+                throw new ArgumentOutOfRangeException(nameof(hipFovDegrees));
+            if (!float.IsFinite(lensRadiusFraction) || lensRadiusFraction <= 0f || lensRadiusFraction > 1f)
+                throw new ArgumentOutOfRangeException(nameof(lensRadiusFraction));
+            if (!float.IsFinite(lensUvZoom) || lensUvZoom <= 0f || lensUvZoom > 1f)
+                throw new ArgumentOutOfRangeException(nameof(lensUvZoom));
+            double halfTan = Math.Tan(hipFovDegrees * Math.PI / 360.0) * 2.0 * lensRadiusFraction * lensUvZoom;
+            return (float)(Math.Atan(halfTan) * 360.0 / Math.PI);
+        }
+
+        /// <summary>ADR-103: the optical lens camera is used once the near-field rifle is hidden (clean lens).</summary>
+        public static bool UsesLensCamera(in WeaponVisualProfile profile, float adsPresentationBlend, bool reducedCameraMotion) =>
+            !reducedCameraMotion && HideRifleViewModel(profile, adsPresentationBlend);
+
         public static bool KeepsHipCameraFov(in WeaponVisualProfile profile) => UsesScopedOptic(profile);
 
         public static bool KeepsHipCameraFov(byte weaponSlot) =>

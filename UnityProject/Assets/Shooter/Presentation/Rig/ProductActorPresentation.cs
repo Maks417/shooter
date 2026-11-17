@@ -72,11 +72,21 @@ namespace Shooter.Presentation.Rig
             public GameObject? Contact;
         }
 
-        private sealed class FlatGround : ISoldierGround
+        /// <summary>Cosmetic foot support: installed collision boxes first, then the actor's own feet height. A jump,
+        /// ledge or map-edge step with no box under the foot must never throw out of Sync (that aborted the local
+        /// weapon update and left ADS/scope state stale).</summary>
+        private sealed class FallbackGround : ISoldierGround
         {
+            public ISoldierGround? Primary;
             public float Height;
-            public bool TrySample(float x, float z, out float y) { y = Height; return true; }
+            public bool TrySample(float x, float z, out float y)
+            {
+                if (Primary != null && Primary.TrySample(x, z, out y) && !float.IsNaN(y) && !float.IsInfinity(y)) return true;
+                y = Height;
+                return true;
+            }
         }
+        private readonly FallbackGround footGround = new FallbackGround();
 
         public CollisionSoldierGround? CollisionGround { get; set; }
         public Func<Float3,float>? AmbientVisibility { get; set; }
@@ -93,7 +103,6 @@ namespace Shooter.Presentation.Rig
         private readonly List<EntityId> despawnScratch = new List<EntityId>(16);
         private readonly List<EntityId> corpseEnsureScratch = new List<EntityId>(4);
         private readonly List<UnityEngine.Object> owned = new List<UnityEngine.Object>();
-        private readonly FlatGround ground = new FlatGround();
         private Mesh? bodyMesh;
         /// <summary>Uploaded packaged weapon meshes keyed by visual profile MeshAssetKey (ADR-078).</summary>
         private sealed class WeaponMeshSet
@@ -142,6 +151,7 @@ namespace Shooter.Presentation.Rig
         private EntityId localViewHuman;
         private bool ready;
         private bool visualsBound;
+        private bool localWeaponScopeHidden;
         private string reviewMapId = "";
         private string reviewProfile = "";
         private uint reviewTick;
@@ -252,9 +262,13 @@ namespace Shooter.Presentation.Rig
         public IEnumerable<int> BindPackagedVisualSteps(PackagedVisualPayloads visuals, bool showcase = false)
         {
             int epoch=++packagedBindEpoch;
+            // Unbind before destroying: the bind yields across frames, and a Sync/avatar/weapon apply in that window
+            // would otherwise cache the new weapon meshes against destroyed materials (magenta for the session).
+            visualsBound=false;
             ClearAll();
             foreach(var value in owned)DestroyObject(value);owned.Clear();
             bodyMesh=null;contactMesh=null;contactMaterial=null;weaponMeshes.Clear();weaponPalettes.Clear();
+            weaponMaterials=Array.Empty<Material>();team1Palette=null;team2Palette=null;firstPersonHandMaterials=null;
             if (visuals == null) throw new ArgumentNullException(nameof(visuals));
             var shader = Shader.Find("Shooter/MapSurface");
             if (shader == null || !shader.isSupported)
@@ -360,6 +374,7 @@ namespace Shooter.Presentation.Rig
                     value => owned.Add(value));
                 firstPersonHandMaterials = new[] { sleeve, glove, riflePolymer };
 
+                weaponPalettes.Clear();
                 visualsBound = true;complete=true;
                 ApplyLocalWeaponVisual(WeaponVisualProfiles.DefaultIdForSlot(ProductAuthorityActionView.RifleSlot), ProductAuthorityActionView.RifleSlot);
                 Debug.Log("SHOOTER_PRODUCT_ACTOR_VIEW packaged visuals ready profile=" + visuals.Profile +
@@ -562,6 +577,7 @@ namespace Shooter.Presentation.Rig
                 && lifecycle.TryGetActorState(humanEntity, out human)
                 && human.Alive;
             if (localWeapon != null) localWeapon.gameObject.SetActive(showLocalWeapon);
+            localWeaponScopeHidden = false;
             if (showLocalWeapon)
             {
                 float visibility=AmbientVisibility?.Invoke(human.Feet)??1f;foreach(var renderer in localLitRenderers)ApplyAmbient(renderer,visibility);
@@ -584,7 +600,8 @@ namespace Shooter.Presentation.Rig
                 localView.SetCooking(human.WeaponAction == WeaponAction.Cooking);
                 // A reload lowers the sights (presentation only): scoped ADS hides the rifle mesh, which would
                 // otherwise make the reload invisible.
-                bool viewAim = aimHeld && !actions.IsReloading(human.EntityId);
+                bool viewAim = FirstPersonHandling.ViewAimTarget(aimHeld, actions.IsReloading(human.EntityId),
+                    human.WeaponAction == WeaponAction.Reloading);
                 var activeProfile = WeaponVisualProfiles.Resolve(weaponId, slot);
                 localView.ApplyProfile(activeProfile);
                 if (combatEvents != null)
@@ -686,7 +703,11 @@ namespace Shooter.Presentation.Rig
                 var weaponRenderer = localWeapon.GetComponent<MeshRenderer>();
                 weaponRenderer.enabled = !(ProductAuthorityActionView.IsGrenadeSlot(shown) && localView.HideHeldGrenade(human.Magazine));
                 if (AdsOpticVisual.HideRifleViewModel(profile, adsPresent))
+                {
                     localWeapon.gameObject.SetActive(false);
+                    // Still posed on the sight line: the muzzle flash anchors to it so it shows in the scope lens.
+                    localWeaponScopeHidden = true;
+                }
             localLitRenderers=localWeapon.GetComponentsInChildren<Renderer>(true);
             }
             else if (localViewHuman.IsValid)
@@ -856,7 +877,6 @@ namespace Shooter.Presentation.Rig
 
             // Reset only on first living pose or the first death-collapse frame (clears gait contacts).
             bool reset = !avatar.HasPrevious || (dying && avatar.DeathPhase <= 1e-4f);
-            ground.Height = state.Feet.Y;
             float yaw = state.AimYaw;
             float pitch = dying
                 ? 0f
@@ -898,7 +918,9 @@ namespace Shooter.Presentation.Rig
             avatar.Contact.SetActive(QualitySettings.GetQualityLevel()==0&&!dying);
             avatar.Contact.transform.position=V(new Float3(displayFeet.X,displayFeet.Y+.025f,displayFeet.Z));
             if(CollisionGround!=null)CollisionGround.ReferenceHeight=state.Feet.Y;
-            var pose = avatar.Motion.Evaluate(input, CollisionGround??(ISoldierGround)ground);
+            footGround.Primary = CollisionGround;
+            footGround.Height = state.Feet.Y;
+            var pose = avatar.Motion.Evaluate(input, footGround);
             for (int j = 0; j < SoldierSkeleton.JointCount; j++)
                 avatar.Bones[j].SetPositionAndRotation(V(pose.WorldPositions[j]), Q(pose.WorldRotations[j]));
 
@@ -1113,7 +1135,7 @@ namespace Shooter.Presentation.Rig
         public bool TryGetMuzzleWorld(EntityId instigator, out Float3 muzzle)
         {
             muzzle = default;
-            if (instigator.Equals(localHuman) && localWeapon != null && localWeapon.gameObject.activeInHierarchy)
+            if (instigator.Equals(localHuman) && localWeapon != null && (localWeapon.gameObject.activeInHierarchy || localWeaponScopeHidden))
                 return TryMuzzle(localWeapon, localVisibleWeaponId, out muzzle);
             if (avatars.TryGetValue(instigator.Value, out var avatar) && !avatar.Corpse && avatar.Weapon != null && avatar.Weapon.gameObject.activeInHierarchy)
                 return TryMuzzle(avatar.Weapon, avatar.WeaponDefinition, out muzzle);
@@ -1125,7 +1147,12 @@ namespace Shooter.Presentation.Rig
             muzzle = default;
             if (!WeaponVisualProfiles.TryGet(id, out var profile) || !weaponMeshes.TryGetValue(profile.MeshAssetKey, out var set)) return false;
             if (set.MuzzleSocket.X == 0 && set.MuzzleSocket.Y == 0 && set.MuzzleSocket.Z == 0) return false;
-            Vector3 world = weapon.TransformPoint(V(set.MuzzleSocket));
+            // The legacy rifle socket table is shared by the shorter carbine silhouette; never place the flash in
+            // the air ahead of a barrel that ends sooner than the socket.
+            Vector3 local = V(set.MuzzleSocket);
+            var filter = weapon.GetComponent<MeshFilter>();
+            if (filter != null && filter.sharedMesh != null) local.z = Mathf.Min(local.z, filter.sharedMesh.bounds.max.z);
+            Vector3 world = weapon.TransformPoint(local);
             muzzle = new Float3(world.x, world.y, world.z);
             return true;
         }
@@ -1167,6 +1194,7 @@ namespace Shooter.Presentation.Rig
         private Material[] WeaponPalette(Mesh? mesh)
         {
             if (mesh == null) return Array.Empty<Material>();
+            if (!visualsBound) throw new InvalidOperationException("Weapon palette requested before packaged materials are bound.");
             if (weaponPalettes.TryGetValue(mesh, out var palette)) return palette;
             if (mesh.subMeshCount > weaponMaterials.Length) throw new InvalidOperationException("Unknown weapon material slot.");
             palette = weaponMaterials.Take(mesh.subMeshCount).ToArray();

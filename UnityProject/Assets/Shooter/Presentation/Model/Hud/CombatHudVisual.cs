@@ -107,16 +107,82 @@ namespace Shooter.Presentation.Hud
         /// Edge vignette strength from observed health and an optional recent-damage pulse.
         /// Reduced flash keeps a static critical/warn cue only (no damage pulse).
         /// </summary>
+        public const float MaxHealthVignette = 0.38f;
+
         public static float HealthVignette(int health, bool recentDamage, bool reducedFlash = false)
         {
-            float danger = health <= HealthDangerThreshold ? 0.22f
-                : health <= HealthWarnThreshold ? 0.10f
+            // ADR-103: stronger edge cue (the URP damage volume adds the desaturation/red grade on top).
+            float danger = health <= HealthDangerThreshold ? 0.30f
+                : health <= HealthWarnThreshold ? 0.14f
                 : 0f;
             if (reducedFlash)
-                return danger > 0f ? Math.Min(0.14f, danger * 0.65f) : 0f;
-            float pulse = recentDamage ? 0.16f : 0f;
+                return danger > 0f ? Math.Min(0.14f, danger * 0.45f) : 0f;
+            float pulse = recentDamage ? 0.22f : 0f;
             float peak = danger > pulse ? danger : pulse;
-            return peak > 0.28f ? 0.28f : peak;
+            return peak > MaxHealthVignette ? MaxHealthVignette : peak;
+        }
+
+        /// <summary>ADR-103 low-health screen grade driven into the URP damage volume.</summary>
+        public readonly struct LowHealthGrade
+        {
+            public LowHealthGrade(float weight, float vignette, float saturation, float contrast, float exposure, float heartbeat)
+            {
+                Weight = weight; Vignette = vignette; Saturation = saturation; Contrast = contrast; Exposure = exposure; Heartbeat = heartbeat;
+            }
+            /// <summary>Volume weight 0..1 (0 = no override at all).</summary>
+            public float Weight { get; }
+            /// <summary>Red vignette intensity 0..1.</summary>
+            public float Vignette { get; }
+            /// <summary>Colour-adjustments saturation delta (negative desaturates).</summary>
+            public float Saturation { get; }
+            public float Contrast { get; }
+            public float Exposure { get; }
+            /// <summary>Current heartbeat envelope 0..1 (also drives the heartbeat audio cue).</summary>
+            public float Heartbeat { get; }
+        }
+
+        public const int LowHealthGradeThreshold = 40;
+        public const float HitGradeSeconds = 0.45f;
+
+        /// <summary>Heartbeat rate in Hz: calm 1.1 Hz at 40 HP rising to 1.8 Hz at 25 HP and below.</summary>
+        public static float HeartbeatRateHz(int health)
+        {
+            if (health <= HealthDangerThreshold) return 1.8f;
+            if (health >= LowHealthGradeThreshold) return 1.1f;
+            float u = (LowHealthGradeThreshold - health) / (float)(LowHealthGradeThreshold - HealthDangerThreshold);
+            return 1.1f + 0.7f * u;
+        }
+
+        /// <summary>Double-thump envelope (lub-dub) for a phase in [0,1).</summary>
+        public static float HeartbeatEnvelope(float phase)
+        {
+            phase -= (float)Math.Floor(phase);
+            float a = phase / 0.07f, b = (phase - 0.2f) / 0.07f;
+            return Math.Min(1f, (float)(Math.Exp(-a * a) + 0.65 * Math.Exp(-b * b)));
+        }
+
+        /// <summary>
+        /// ADR-103 low-health and hit grade. Below 40 HP the screen bleeds red at the edges, desaturates (to -55 at 0 HP)
+        /// and darkens slightly, pulsing with a heartbeat; a fresh hit adds a short extra punch of red/desaturation.
+        /// Reduced flash: no pulse and everything at half strength. Dead (0 HP) returns no grade (the KIA view owns it).
+        /// </summary>
+        public static LowHealthGrade LowHealth(int health, float seconds, float hitRemainingSeconds, bool reducedFlash)
+        {
+            if (health <= 0) return default;
+            float severity = health >= LowHealthGradeThreshold ? 0f : (LowHealthGradeThreshold - health) / (float)LowHealthGradeThreshold;
+            float hit = hitRemainingSeconds <= 0f ? 0f : Math.Min(1f, hitRemainingSeconds / HitGradeSeconds);
+            if (severity <= 0f && hit <= 0f) return default;
+            float beat = 0f;
+            if (!reducedFlash && severity > 0f && float.IsFinite(seconds))
+                beat = HeartbeatEnvelope(seconds * HeartbeatRateHz(health));
+            if (reducedFlash) hit = 0f;
+            float vignette = (severity > 0f ? 0.25f + 0.25f * severity : 0f) + 0.08f * beat * severity + 0.18f * hit;
+            float saturation = -55f * severity - 18f * hit;
+            float contrast = 8f * severity + 6f * hit;
+            float exposure = -0.25f * severity - 0.1f * beat * severity;
+            if (reducedFlash) { vignette *= 0.5f; saturation *= 0.5f; contrast *= 0.5f; exposure *= 0.5f; }
+            if (vignette > 0.6f) vignette = 0.6f;
+            return new LowHealthGrade(1f, vignette, saturation, contrast, exposure, beat);
         }
 
         /// <summary>True when health should use the danger ink (coral) rather than ivory.</summary>

@@ -4,6 +4,8 @@ Shader "Shooter/AdsScopePip"
     {
         _MainTex("Source", 2D) = "white" {}
         _BlurTex("Blurred", 2D) = "white" {}
+        _LensTex("Optical lens camera", 2D) = "black" {}
+        _UseLensTex("Use optical lens camera", Float) = 0
         _BlurOffset("Blur texel offset", Vector) = (1, 0, 0, 0)
         _LensRadius("Lens radius (min-axis UV)", Float) = 0.42
         _Zoom("Lens UV zoom", Float) = 0.525
@@ -64,6 +66,8 @@ Shader "Shooter/AdsScopePip"
 
             TEXTURE2D(_MainTex); SAMPLER(sampler_MainTex);
             TEXTURE2D(_BlurTex); SAMPLER(sampler_BlurTex);
+            TEXTURE2D(_LensTex); SAMPLER(sampler_LensTex);
+            float _UseLensTex;
             float _LensRadius;
             float _Zoom;
             float _Strength;
@@ -97,6 +101,10 @@ Shader "Shooter/AdsScopePip"
                 float2 uvZoom = saturate(0.5f + q * zoom);
 
                 half3 sharp = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, uvZoom).rgb;
+                // ADR-103: the optical lens camera renders exactly the lens disc (square target, lens diameter wide).
+                float2 lensUv = saturate(0.5f + float2(q.x * aspect, q.y) / max(2.0f * _LensRadius, 1e-4f));
+                half3 optical = SAMPLE_TEXTURE2D(_LensTex, sampler_LensTex, lensUv).rgb;
+                sharp = lerp(sharp, optical, step(0.5f, _UseLensTex));
                 half3 blurred = SAMPLE_TEXTURE2D(_BlurTex, sampler_BlurTex, uv).rgb;
                 half3 hip = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, uv).rgb;
 

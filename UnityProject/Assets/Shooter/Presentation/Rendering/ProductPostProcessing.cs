@@ -58,6 +58,9 @@ namespace Shooter.Presentation.Rendering
 
         public static void Detach(Camera camera) => Cameras.Remove(camera);
 
+        public static PostProcessingTier CurrentTier =>
+            PostProcessingTier.For(appliedTier >= 0 ? appliedTier : Mathf.Clamp(QualitySettings.GetQualityLevel(), 0, PostProcessingTier.TierCount - 1));
+
         /// <summary>Rebuild the volume and camera flags for a quality tier (call after QualitySettings changes).</summary>
         public static void Apply(int qualityTier)
         {
@@ -71,15 +74,74 @@ namespace Shooter.Presentation.Rendering
             }
             appliedTier = tier.Tier;
             ApplyAoStrength();
+            GeneratedSky.ApplyFogScale(tier.FogDistanceScale);
             Cameras.RemoveAll(c => c == null);
             foreach (var camera in Cameras)
             {
                 camera.allowHDR = tier.Hdr;
                 var data = camera.GetUniversalAdditionalCameraData();
                 data.renderPostProcessing = true;
-                data.antialiasing = AntialiasingMode.None;
+                // ADR-103: MSAA follows the tier (the old one-shot allowMSAA at camera creation missed the saved tier);
+                // Low gets texture-free FXAA instead. SMAA stays off (ADR-080 lookup-texture audit).
+                camera.allowMSAA = tier.MsaaSamples > 1;
+                data.antialiasing = tier.Fxaa ? AntialiasingMode.FastApproximateAntialiasing : AntialiasingMode.None;
                 data.requiresDepthOption = CameraOverrideOption.UsePipelineSettings;
             }
+        }
+
+        private static Volume? damageVolume;
+        private static Vignette? damageVignette;
+        private static ColorAdjustments? damageColor;
+        private static readonly Color DamageRed = new Color(0.55f, 0.02f, 0.02f, 1f);
+
+        /// <summary>
+        /// ADR-103 low-health/hit grade: a second code-built global volume (priority 20) that blends a red vignette,
+        /// desaturation and a slight exposure dip over the tier grade. Weight 0 removes it entirely (no cost).
+        /// </summary>
+        public static void SetDamageGrade(Shooter.Presentation.Hud.CombatHudVisual.LowHealthGrade grade)
+        {
+            if (grade.Weight <= 0f)
+            {
+                if (damageVolume != null) { damageVolume.weight = 0f; damageVolume.enabled = false; }
+                return;
+            }
+            if (damageVolume == null)
+            {
+                var host = new GameObject("Product damage volume");
+                Object.DontDestroyOnLoad(host);
+                host.hideFlags = HideFlags.DontSave;
+                damageVolume = host.AddComponent<Volume>();
+                damageVolume.isGlobal = true;
+                damageVolume.priority = 20f;
+                var damageProfile = ScriptableObject.CreateInstance<VolumeProfile>();
+                damageProfile.name = "Product damage grade (code-built)";
+                damageProfile.hideFlags = HideFlags.DontSave;
+                damageVolume.sharedProfile = damageProfile;
+                damageVignette = Get<Vignette>(damageProfile);
+                damageColor = Get<ColorAdjustments>(damageProfile);
+            }
+            damageVolume.enabled = true;
+            damageVolume.weight = Mathf.Clamp01(grade.Weight);
+            damageVignette!.color.Override(DamageRed);
+            damageVignette.intensity.Override(Mathf.Max(PostProcessingTier.For(Mathf.Max(0, appliedTier)).VignetteIntensity, Mathf.Clamp01(grade.Vignette)));
+            damageVignette.smoothness.Override(0.55f);
+            damageVignette.rounded.Override(false);
+            damageColor!.saturation.Override(BaseSaturation() + grade.Saturation);
+            damageColor.contrast.Override(BaseContrast() + grade.Contrast);
+            damageColor.postExposure.Override(PostProcessingTier.For(Mathf.Max(0, appliedTier)).PostExposure + grade.Exposure);
+        }
+
+        // The damage volume overrides the same parameters as the tier volume, so it carries the tier baseline forward.
+        private static float BaseSaturation()
+        {
+            var tier = PostProcessingTier.For(Mathf.Max(0, appliedTier));
+            return tier.Saturation + (tier.Tier == 0 ? (mapGrade.Saturation - 1000) / 10f : 0f);
+        }
+
+        private static float BaseContrast()
+        {
+            var tier = PostProcessingTier.For(Mathf.Max(0, appliedTier));
+            return tier.Contrast + (tier.Tier == 0 ? (mapGrade.Contrast - 1000) / 10f : 0f);
         }
 
         private static bool PipelineHdr() =>

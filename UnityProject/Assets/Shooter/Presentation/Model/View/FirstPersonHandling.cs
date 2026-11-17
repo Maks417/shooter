@@ -258,6 +258,14 @@ namespace Shooter.Presentation.View
         public static float AdsPresentationBlend(float ads, float equipBlend) =>
             Math.Clamp(ads, 0f, 1f) * Smooth(Math.Clamp(equipBlend, 0f, 1f));
 
+        /// <summary>
+        /// Presentation aim target: a reload lowers the sights for its whole window, whether the reload is known from
+        /// the ReloadStarted event or only from the authoritative weapon state (a missed event edge must not keep a
+        /// scope up and hide the reload). Aim re-raises after the reload if the button is still held.
+        /// </summary>
+        public static bool ViewAimTarget(bool aimHeld, bool reloadEventActive, bool authorityReloading) =>
+            aimHeld && !reloadEventActive && !authorityReloading;
+
         /// <summary>Camera-only support-hand reach toward the magazine; returns to its packaged grip at both endpoints.</summary>
         public static Float3 SupportHandOffset(byte slot, float reloadPhase, bool reducedMotion, bool magazineEmpty = false)
         {

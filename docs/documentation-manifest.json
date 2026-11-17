@@ -58,7 +58,7 @@
     "content-schemas/visual-decals.schema.json": "03c1ca9158e69cdff8eb0340bdbb9fc1d92bdf643b7b615a68a35fb06ba6a80d",
     "content-schemas/visual-decals.valid.json": "c74882fd0d838c0a71f17a1d0c7564fec0794aa29cb6ba641131007966c83049",
     "contract-details.md": "66a72e60c88b036c2c1a8d048da714293859e86ee0654b1a48dff6051df46383",
-    "decisions.md": "abd08b6b4142e125c56185e91683050f9f635d63abbe5a8040a254454e7184bb",
+    "decisions.md": "9159b14fe271aa10677ec36b1db5f29a3277be39b26dd50ad0b71c9e368a7045",
     "design-milestones.md": "a0d7e2edb3a930f19738ef9f5721db303679d09f3c31480bc97590f173f1c666",
     "deterministic-format.md": "7f3a9be8b9c128ea2803064b649f3a23f0051b1501109d2032b6f2bc6134c7d1",
     "domain-model.md": "59cdc7dcc1f4c7c72cac974ad1a7f7246113f1d159985e4f03727b5e01744492",
@@ -144,7 +144,7 @@
     "milestones/m11-playable-release/agent-assignments.md": "9df1f7cb3f1ec7d602287b80806acf1db118be20b342094ce8e7bc2f0a526bad",
     "milestones/m11-playable-release/contracts-integration.md": "92ec7f423a0f51f6446c72bfb3e2c915247478b6a10d05ee47ab449fdd453c7f",
     "milestones/m11-playable-release/handoff-archive.md": "e3db424191a4fa7543db0b383eee5e8c4f100c7c5676bf723155a3773cf9e8b6",
-    "milestones/m11-playable-release/handoff.md": "58ad4eba8f01c3209e963441dd81fda974e890d1c15a134eac756c571839b607",
+    "milestones/m11-playable-release/handoff.md": "f0ebfd6005cab720e00f4c8f5ecdc08c22a8ee8618a9ef7f3cfe6f366ea42a8a",
     "milestones/m11-playable-release/implementation.md": "99e735b4d00a559e2a8c66831a37f9bf160cbea1bfb1cf33038a8a14d5ae765a",
     "milestones/m11-playable-release/index.md": "78a1956ece247f649fd43c3fa1836939673af368fc4b5b9f08e44bd6aac289e3",
     "milestones/m11-playable-release/validation-acceptance.md": "ca9a71e2f30781b1d5872b69011ef0948c90e984de916889f0035e23117692c8",
@@ -194,7 +194,7 @@
     "verify_docs.py": "b213b88e001c2fba0ab82d1d400c0b4903716a9a6ae3496c7bcc0540c34bda97",
     "vision.md": "24132c1ef2124bd6275ab262943b68b6274b796942764b6e7975865e873a0908",
     "visual-art-brief.md": "bed6c786e5f0b55017a8e2585e934ecc60b33f6e6e462ba2e7197035b7c12cee",
-    "visual-defect-inventory.md": "3c758838718505c5ede9254c6cfe0a6d362fab448aaca201697fc8c372258f5b",
+    "visual-defect-inventory.md": "019a9141b207b920d560aaa86b01f84c0bd379df12ec7a97fd8cae7a5a40e45f",
     "visual-roadmap.md": "8208502f0da27a9e522053c694ef59b48e6d58e84f69bf984895e04403dbf3d1",
     "weapon-recipe-baseline.md": "87d6fd1607df8504c87f4373c3f593d05169a6cc87474a7620faea4d13fafb85"
   }

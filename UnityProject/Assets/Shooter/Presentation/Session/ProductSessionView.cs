@@ -42,6 +42,11 @@ namespace Shooter.Presentation.Session
         private readonly CosmeticGrenadeFlight grenadeFlight = new CosmeticGrenadeFlight();
         private readonly FirstPersonCameraBob cameraBob = new FirstPersonCameraBob();
         private readonly FirstPersonCameraRecoil cameraRecoil = new FirstPersonCameraRecoil();
+        // ADR-103 damage feedback v2: view flinch, damage-scaled flash and the URP low-health grade.
+        private readonly FirstPersonDamagePunch damagePunch = new FirstPersonDamagePunch();
+        private int lastDamageAmount;
+        private float damageAudioGain = 1f;
+        private float hitGradeUntil;
         private CosmeticGrenadePresenter? grenadePresenter;
         private readonly List<ActorLifecycleState> footstepScratch = new List<ActorLifecycleState>(GameContractVersion.MaxParticipants);
         private readonly HashSet<string> accessibilityCueKeys = new HashSet<string>(System.StringComparer.Ordinal);
@@ -223,7 +228,7 @@ namespace Shooter.Presentation.Session
             camera.farClipPlane = 400f;
             camera.clearFlags = CameraClearFlags.SolidColor;
             camera.backgroundColor = new Color(0.35f, 0.55f, 0.85f, 1f);
-            camera.allowMSAA = QualitySettings.GetQualityLevel() == 2;
+            // ADR-103: MSAA/FXAA are owned by ProductPostProcessing.Apply so the saved tier is honoured.
             camera.cullingMask &= ~(1 << ProductMenuScene.StageLayer);
             // ADR-080: code-built post stack; HDR follows the quality tier.
             Shooter.Presentation.Rendering.ProductPostProcessing.Attach(camera);
@@ -238,10 +243,10 @@ namespace Shooter.Presentation.Session
             sun.transform.rotation = Quaternion.Euler(44f, -32f, 0f);
             sun.color = new Color(1f, 0.94f, 0.84f, 1f);
             sun.intensity = 1.50f;
-            sun.shadows = LightShadows.Hard;
+            // ADR-103: Soft where the tier's URP asset supports it (Balanced/High); Low's asset resolves this to hard.
+            // Bias comes from the pipeline asset (per-light values were silently ignored by URP before).
+            sun.shadows = LightShadows.Soft;
             sun.shadowStrength = 0.85f;
-            sun.shadowBias = .035f;
-            sun.shadowNormalBias = .18f;
             sun.cullingMask &= ~(1 << ProductMenuScene.StageLayer);
             QualitySettings.vSyncCount = 0;
             Application.targetFrameRate = -1;
@@ -320,6 +325,7 @@ namespace Shooter.Presentation.Session
         {
             if (settings == null) throw new System.ArgumentNullException(nameof(settings));
             UserSettingsAudioBinding.ApplyGains(settings, EnsureAudio().mixer);
+            damageAudioGain = Mathf.Clamp01(settings.MasterVolume) * Mathf.Clamp01(settings.EffectsVolume);
             if (shellUiMixer != null) UserSettingsAudioBinding.ApplyGains(settings, shellUiMixer);
             musicOutput?.SetChannelGain(UserSettingsAudioBinding.MusicGain(settings));
             string qualityName = settings.QualityTier < QualitySettings.names.Length
@@ -384,7 +390,10 @@ namespace Shooter.Presentation.Session
             float zoom = reducedCameraMotion
                 ? 1f
                 : AdsOpticVisual.LensUvZoom(hip, profile, adsPresentationBlend);
-            scopePip.Configure(strength, zoom, AdsOpticVisual.LensRadiusFraction);
+            // ADR-103: real optical lens camera once the rifle mesh is hidden; same framing as the digital zoom.
+            bool optical = AdsOpticVisual.UsesLensCamera(profile, adsPresentationBlend, reducedCameraMotion);
+            float lensFov = AdsOpticVisual.LensCameraFovDegrees(hip, AdsOpticVisual.LensRadiusFraction, zoom);
+            scopePip.Configure(strength, zoom, AdsOpticVisual.LensRadiusFraction, optical, lensFov);
         }
 
         /// <summary>
@@ -492,6 +501,11 @@ namespace Shooter.Presentation.Session
             scoreAwardDrain.Clear();
             cameraBob.Reset();
             cameraRecoil.Reset();
+            damagePunch.Reset();
+            hitGradeUntil = 0f;
+            lastDamageAmount = 0;
+            Shooter.Presentation.Rendering.ProductPostProcessing.SetDamageGrade(default);
+            audioOutput?.Fx.Reset();
             hitMarkerUntil = 0f;
             damageFlashUntil = 0f;
             damagePulseUntil = 0f;
@@ -584,6 +598,7 @@ namespace Shooter.Presentation.Session
                         {
                             cameraBob.Reset();
                             cameraRecoil.Reset();
+                            damagePunch.Reset();
                             cameraBobLife = human.EntityId;
                             presentedEye = -1f;
                         }
@@ -622,10 +637,20 @@ namespace Shooter.Presentation.Session
                         cameraRecoil.Step(combatEvents, human.EntityId, recoilRunning ? Time.unscaledDeltaTime : 0f, reducedCameraMotion);
                         cameraYaw += cameraRecoil.YawRadians;
                         cameraPitch += cameraRecoil.PitchRadians;
+                        // ADR-103: presentation-only flinch when hit; never feeds aim input or authority.
+                        damagePunch.Step(recoilRunning ? Time.unscaledDeltaTime : 0f, reducedCameraMotion);
+                        cameraYaw += damagePunch.YawRadians;
+                        cameraPitch += damagePunch.PitchRadians;
                         var rotation = Quaternion.Euler(cameraPitch * Mathf.Rad2Deg, cameraYaw * Mathf.Rad2Deg, roll);
                         camera.transform.rotation = rotation;
                         var basePos = new Vector3(human.Feet.X, human.Feet.Y + eye, human.Feet.Z);
                         camera.transform.position = basePos + rotation * new Vector3(bobLocal.X, bobLocal.Y, bobLocal.Z);
+                        Shooter.Presentation.Rendering.ProductPostProcessing.SetDamageGrade(CombatHudVisual.LowHealth(
+                            human.Alive ? human.Health : 0, Time.unscaledTime, hitGradeUntil - Time.unscaledTime, reducedFlash));
+                        int lifeHealth = human.Alive ? human.Health : 100;
+                        float lowSeverity = lifeHealth >= CombatHudVisual.LowHealthGradeThreshold ? 0f
+                            : (CombatHudVisual.LowHealthGradeThreshold - lifeHealth) / (float)CombatHudVisual.LowHealthGradeThreshold;
+                        audioOutput?.Fx.SetState(lowSeverity, CombatHudVisual.HeartbeatRateHz(lifeHealth), damageAudioGain);
                         ApplyPresentationFov(
                             adsBlend,
                             actors != null ? actors.LocalVisibleWeaponSlot : human.ActiveWeaponSlot,
@@ -847,15 +872,34 @@ namespace Shooter.Presentation.Session
                 float now = Time.unscaledTime;
                 damagePulseUntil = now + CombatHudVisual.DamagePulseSeconds;
                 damageFlashUntil = now + FirstPersonHitFeedback.DamageFlashSeconds;
+                hitGradeUntil = now + CombatHudVisual.HitGradeSeconds;
+                bool headshot = false;
+                lastDamageAmount = 25;
                 if (ev.Payload is DamagePayload dmg)
+                {
                     lastSeenHealth = dmg.RemainingHealth;
+                    lastDamageAmount = dmg.Amount;
+                    headshot = dmg.RegionId == 1;
+                }
                 RecordDamageSource(ev.Instigator, now);
+                damagePunch.Kick(lastDamageAmount, headshot, AttackerBearing(ev.Instigator), reducedCameraMotion);
+                audioOutput?.Fx.Hit(lastDamageAmount);
             }
             else if (FirstPersonHitFeedback.IsDamageDealt(ev.Kind, ev.Instigator, local))
             {
                 hitMarkerUntil = Time.unscaledTime + FirstPersonHitFeedback.HitMarkerSeconds;
                 hitMarkerHeadshot = ev.Payload is DamagePayload dealt && dealt.RegionId == 1;
             }
+        }
+
+        /// <summary>Attacker bearing relative to the local view (radians, positive = right); 0 if unknown.</summary>
+        private float AttackerBearing(EntityId instigator)
+        {
+            if (session?.Lifecycle == null || !instigator.IsValid) return 0f;
+            if (!session.Lifecycle.TryGetActorState(instigator, out var attacker)) return 0f;
+            if (!session.Lifecycle.TryGetActorState(session.HumanEntityId, out var self)) return 0f;
+            if (instigator.Equals(self.EntityId)) return 0f; // own grenade: straight flinch
+            return CombatHudVisual.DamageIndicatorAngle(self.AimYaw, self.Feet.X, self.Feet.Z, attacker.Feet.X, attacker.Feet.Z);
         }
 
         private void RecordDamageSource(EntityId instigator, float now)
@@ -1100,6 +1144,8 @@ namespace Shooter.Presentation.Session
             if (shellOwned)
             {
                 if (!cursorLocked || session.Phase != GameMatchPhase.Playing || session.PauseState != SessionPauseState.Running) return;
+                // Holding Tab shows the translucent live scoreboard; the combat HUD would paint across it.
+                if (input.ScoreboardHeld) return;
                 DrawCombatHud();
                 return;
             }
@@ -1180,8 +1226,9 @@ namespace Shooter.Presentation.Session
                 if (!session.Lifecycle!.TryGetActorState(session.HumanEntityId, out var human)) return;
                 if (human.Health < lastSeenHealth) damagePulseUntil = Time.unscaledTime + CombatHudVisual.DamagePulseSeconds;
                 lastSeenHealth = human.Health;
-                float flash = FirstPersonHitFeedback.DamageFlashStrength(damageFlashUntil - Time.unscaledTime, reducedFlash);
-                // Direction arcs and the bounded health vignette replace the old full edge flash.
+                // ADR-103: damage-scaled edge flash on every hit, under the direction arcs and health vignette.
+                float flash = FirstPersonHitFeedback.DamageFlashStrength(damageFlashUntil - Time.unscaledTime, reducedFlash, lastDamageAmount);
+                if (flash > 0.01f) TacticalUi.EdgeVignette(combatUi.Width, combatUi.Height, flash * 1.6f, TacticalUi.Enemy);
                 DrawHealthVignette(human.Health);
                 DrawDamageIndicators(human);
                 DrawTacticalMap(a, human, snap);
@@ -1316,32 +1363,9 @@ namespace Shooter.Presentation.Session
             }
             finally { GUI.EndGroup(); }
 
-            float squadX = map.xMax + 8, squadTop = safe.yMax - 138;
-            int allies = 0;
-            if (snapshot != null)
-                for (int i = 0; i < snapshot.Participants.Count; i++)
-                {
-                    var p = snapshot.Participants[i];
-                    if (p.Team == human.Team && !p.IsHuman) allies++;
-                }
-            float squadH = 14 + allies * 13 + 36;
-            TacticalUi.CombatPlate(new Rect(squadX - 4, squadTop - 2, 128, squadH));
-            TacticalUi.Fill(new Rect(squadX - 4, squadTop - 2, 2, squadH), TacticalUi.Ally);
-            combatUi.Label(new Rect(squadX, squadTop, 116, 11), "SQUAD", 9, TacticalUi.Ally);
-            int row = 0;
-            if (snapshot != null)
-                for (int i = 0; i < snapshot.Participants.Count; i++)
-                {
-                    var participant = snapshot.Participants[i];
-                    if (participant.Team != human.Team || participant.IsHuman) continue;
-                    string name = participant.DisplayName.Length > 11 ? participant.DisplayName.Substring(0, 10) + "…" : participant.DisplayName;
-                    float ry = squadTop + 13 + row * 13;
-                    // Alive/dead cue stays color-independent (+ / -).
-                    string mark = participant.Alive ? "+  " : "-  ";
-                    combatUi.Label(new Rect(squadX, ry, 110, 12), mark + name, 9,
-                        participant.Alive ? TacticalUi.Text : TacticalUi.Muted);
-                    row++;
-                }
+            // The in-match teammate list was removed: at 15v15 it ran over the HP block. Team status lives on the
+            // Tab scoreboard instead.
+            float squadX = map.xMax + 8;
 
             bool danger = CombatHudVisual.IsHealthDanger(human.Health);
             Color healthInk = danger ? TacticalUi.Enemy

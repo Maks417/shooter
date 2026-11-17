@@ -25,6 +25,8 @@ namespace Shooter.Presentation.Fx
         public const int MaxSmokeProxies = 16;
         public const int MaxShellCasings = 24;
         public const int MaxTracers = 16;
+        /// <summary>Impact/footstep dust and debris share one cap so they cannot starve muzzle flashes.</summary>
+        public const int MaxDustAndDebris = 14;
         // Brief but denser combat proxies (Warface-scale feedback without particle packs).
         public const float MuzzleFlashLifetime = 0.13f;
         public const float ImpactSparkLifetime = 0.26f;
@@ -38,6 +40,8 @@ namespace Shooter.Presentation.Fx
         public int SmokeCount { get; private set; }
         public int ShellCount { get; private set; }
         public int TracerCount { get; private set; }
+        public int DustCount { get; private set; }
+        public int Evicted { get; private set; }
         public int Spawns { get; private set; }
         public int Rejected { get; private set; }
 
@@ -131,7 +135,14 @@ namespace Shooter.Presentation.Fx
             if (kind == FxKind.SmokeProxy && SmokeCount >= MaxSmokeProxies) { Rejected++; return false; }
             if (kind == FxKind.ShellCasing && ShellCount >= MaxShellCasings) { Rejected++; return false; }
             if (kind == FxKind.Tracer && TracerCount >= MaxTracers) { Rejected++; return false; }
+            if (IsDust(kind) && DustCount >= MaxDustAndDebris) { Rejected++; return false; }
+            int slot = -1;
             for (int i = 0; i < MaxInstances; i++)
+                if (!items[i].Active) { slot = i; break; }
+            // A saturated pool must still show the shot: flashes and blasts evict the most-faded ambient proxy.
+            if (slot < 0 && (kind == FxKind.MuzzleFlash || kind == FxKind.Fireball || kind == FxKind.Shockwave))
+                slot = EvictAmbient();
+            for (int i = slot < 0 ? MaxInstances : slot; i < MaxInstances; i++)
             {
                 if (items[i].Active) continue;
                 items[i] = new FxInstance
@@ -147,6 +158,7 @@ namespace Shooter.Presentation.Fx
                 if (kind == FxKind.SmokeProxy) SmokeCount++;
                 else if (kind == FxKind.ShellCasing) ShellCount++;
                 else if (kind == FxKind.Tracer) TracerCount++;
+                else if (IsDust(kind)) DustCount++;
                 Spawns++;
                 return true;
             }
@@ -252,7 +264,7 @@ namespace Shooter.Presentation.Fx
         public void Tick(float dt)
         {
             if (dt < 0) throw new ArgumentOutOfRangeException(nameof(dt));
-            int active = 0, smoke = 0, shells = 0, tracers = 0;
+            int active = 0, smoke = 0, shells = 0, tracers = 0, dust = 0;
             for (int i = 0; i < MaxInstances; i++)
             {
                 if (!items[i].Active) continue;
@@ -262,11 +274,40 @@ namespace Shooter.Presentation.Fx
                 if (items[i].Kind == FxKind.SmokeProxy) smoke++;
                 else if (items[i].Kind == FxKind.ShellCasing) shells++;
                 else if (items[i].Kind == FxKind.Tracer) tracers++;
+                else if (IsDust(items[i].Kind)) dust++;
             }
             ActiveCount = active;
             SmokeCount = smoke;
             ShellCount = shells;
             TracerCount = tracers;
+            DustCount = dust;
+        }
+
+        private static bool IsDust(FxKind kind) => kind == FxKind.Dust || kind == FxKind.Debris;
+
+        private static bool IsAmbient(FxKind kind) =>
+            kind == FxKind.SmokeProxy || kind == FxKind.Dust || kind == FxKind.Debris || kind == FxKind.ShellCasing;
+
+        /// <summary>Free the ambient proxy (smoke, dust, debris, casing) closest to the end of its life.</summary>
+        private int EvictAmbient()
+        {
+            int best = -1;
+            float bestT = -1f;
+            for (int i = 0; i < MaxInstances; i++)
+            {
+                if (!items[i].Active || !IsAmbient(items[i].Kind)) continue;
+                float t = NormalizeAge(items[i].Age, items[i].Lifetime);
+                if (t > bestT) { bestT = t; best = i; }
+            }
+            if (best < 0) return -1;
+            var kind = items[best].Kind;
+            items[best].Active = false;
+            ActiveCount--;
+            if (kind == FxKind.SmokeProxy) SmokeCount--;
+            else if (kind == FxKind.ShellCasing) ShellCount--;
+            else if (IsDust(kind)) DustCount--;
+            Evicted++;
+            return best;
         }
 
         public void Clear()
@@ -277,6 +318,7 @@ namespace Shooter.Presentation.Fx
             SmokeCount = 0;
             ShellCount = 0;
             TracerCount = 0;
+            DustCount = 0;
         }
 
         public FxInstance Get(int index) => items[index];

@@ -40,6 +40,25 @@ namespace Shooter.Simulation.Tests.View
         }
 
         [Fact]
+        public void QualityUpliftScalesAntiAliasingTexturesFogAndScopeLens()
+        {
+            var low = PostProcessingTier.For(0);
+            var balanced = PostProcessingTier.For(1);
+            var high = PostProcessingTier.For(2);
+            // ADR-103: Low keeps the gate budget (no MSAA, cheap FXAA); higher tiers resolve edges with MSAA.
+            Assert.Equal(1, low.MsaaSamples);
+            Assert.True(low.Fxaa);
+            Assert.Equal(2, balanced.MsaaSamples);
+            Assert.Equal(4, high.MsaaSamples);
+            Assert.False(high.Fxaa);
+            Assert.True(high.AnisoLevel > balanced.AnisoLevel && balanced.AnisoLevel > low.AnisoLevel);
+            Assert.Equal(1f, low.FogDistanceScale);
+            Assert.True(high.FogDistanceScale > balanced.FogDistanceScale && balanced.FogDistanceScale > 1f);
+            Assert.True(high.ScopeLensTextureSize >= 1024);
+            Assert.True(balanced.ScopeLensTextureSize > low.ScopeLensTextureSize);
+        }
+
+        [Fact]
         public void UnknownTierIsRejected()
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => PostProcessingTier.For(3));

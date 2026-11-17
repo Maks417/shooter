@@ -18,6 +18,8 @@ namespace Shooter.Presentation.Audio
         private volatile int deviceSampleRate = 48000;
 
         public SynthAudioMixer? Mixer => mixer;
+        /// <summary>ADR-103 heartbeat, hit thud and critical-health muffle applied after the combat mix.</summary>
+        public LowHealthAudioFx Fx { get; } = new LowHealthAudioFx();
         public bool IsOutputEnabled => outputEnabled;
         public bool DeviceWarningRaised => deviceWarned;
         public bool CallbackArmed => callbackArmed;
@@ -53,6 +55,7 @@ namespace Shooter.Presentation.Audio
         {
             callbackArmed = false;
             outputEnabled = false;
+            Fx.Reset();
             mixer?.StopAll();
             if (source != null && source.isPlaying) source.Stop();
         }
@@ -98,6 +101,7 @@ namespace Shooter.Presentation.Audio
             }
             // Configuration is cached on the main thread; callback invokes no Unity API.
             mixer.Fill(data, channels, deviceSampleRate);
+            Fx.Process(data, channels, deviceSampleRate);
         }
 
         private void RefreshDeviceRate(bool deviceChanged)

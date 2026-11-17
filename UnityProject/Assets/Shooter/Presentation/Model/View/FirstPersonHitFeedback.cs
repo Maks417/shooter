@@ -48,13 +48,28 @@ namespace Shooter.Presentation.View
             return peak * t * t;
         }
 
+        /// <summary>
+        /// ADR-103 damage-scaled flash: a 10 HP graze stays a light cue, a 60+ HP hit (headshot, sniper) floods the edges.
+        /// Reduced flash keeps the quiet static cue.
+        /// </summary>
+        public static float DamageFlashStrength(float remainingSeconds, bool reducedFlash, int damage)
+        {
+            if (remainingSeconds <= 0f) return 0f;
+            float t = remainingSeconds / DamageFlashSeconds;
+            if (t > 1f) t = 1f;
+            if (reducedFlash) return 0.10f * t * t;
+            float scale = 0.45f + Math.Max(0, damage) / 60f;
+            if (scale > 1f) scale = 1f;
+            return 0.38f * scale * t * t;
+        }
+
         /// <summary>Optional micro shake amplitude (meters) for damage taken; zero under reduced motion/flash.</summary>
         public static float DamageShakeMeters(float remainingSeconds, bool reducedMotion, bool reducedFlash)
         {
             if (reducedMotion || reducedFlash || remainingSeconds <= 0f) return 0f;
             float t = remainingSeconds / DamageFlashSeconds;
             if (t > 1f) t = 1f;
-            return 0.0045f * t;
+            return 0.009f * t; // ADR-103: doubled so a hit is felt, still presentation-only
         }
     }
 }

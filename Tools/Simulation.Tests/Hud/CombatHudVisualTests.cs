@@ -80,7 +80,7 @@ namespace Shooter.Simulation.Tests.Hud
             Assert.True(CombatHudVisual.HealthVignette(25, false) > CombatHudVisual.HealthVignette(40, false));
             Assert.True(CombatHudVisual.HealthVignette(20, false) > 0f);
             Assert.True(CombatHudVisual.HealthVignette(100, true) > 0f);
-            Assert.True(CombatHudVisual.HealthVignette(20, true) <= 0.28f);
+            Assert.True(CombatHudVisual.HealthVignette(20, true) <= CombatHudVisual.MaxHealthVignette);
         }
 
         [Fact]

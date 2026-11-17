@@ -148,19 +148,31 @@ namespace Shooter.Generation.Environment
             // Contacting bands extend only centimetres from the authoritative wall, never across openings.
             Float3 Dimensions(float run, float height, float depth) => alongX ? new Float3(run, height, depth) : new Float3(depth, height, run);
             Float3 At(float run, float height) => alongX ? new Float3(box.Center.X + run, height, box.Center.Z) : new Float3(box.Center.X, height, box.Center.Z + run);
-            Box(mesh, At(0, foot + .22f), Dimensions(length, .44f, thickness + .024f), MapSolidsMaterialRole.Foundation);
-            Box(mesh, At(0, foot + box.Size.Y - .065f), Dimensions(length, .13f, thickness + .04f), MapSolidsMaterialRole.Trim);
+            // ADR-103 depth-fight rule: every contacting detail face is separated from the wall (and from other details)
+            // by at least MinDetailSeparation, so no two coplanar faces fight at distance or under scope magnification.
+            const float sep = MinDetailSeparation;
+            const float endRun = .11f;
+            // Foundation band stops short of the end protections; its faces sit 12 mm proud of the wall.
+            float bandRun = Math.Max(.5f, length - 2f * (endRun + .01f));
+            Box(mesh, At(0, foot + .22f), Dimensions(bandRun, .44f, thickness + .024f), MapSolidsMaterialRole.Foundation);
+            // Top trim caps the wall: its top sits above the wall top and its ends overhang the end protections.
+            float trimHeight = .13f + sep;
+            Box(mesh, At(0, foot + box.Size.Y + sep - trimHeight * .5f), Dimensions(length + 4f * sep, trimHeight, thickness + .05f), MapSolidsMaterialRole.Trim);
             int panels = Math.Max(1, (int)Math.Ceiling(length / 3.2f));
-            for (int i = 1; i < panels; i++)
+            float jointBottom = foot + .44f, jointTop = foot + box.Size.Y - .13f;
+            for (int i = 1; i < panels && jointTop > jointBottom + .1f; i++)
             {
                 float run = -length * .5f + length * i / panels;
-                // Narrow expansion joints break long blank walls at believable precast-panel intervals.
-                Box(mesh, At(run, foot + box.Size.Y * .5f), Dimensions(.025f, box.Size.Y - .24f, thickness + .008f), MapSolidsMaterialRole.Foundation);
+                // Narrow expansion joints run between band and trim so they never share a plane with either.
+                Box(mesh, At(run, (jointBottom + jointTop) * .5f), Dimensions(.025f, jointTop - jointBottom, thickness + .02f), MapSolidsMaterialRole.Foundation);
             }
-            // Wall-end protection stays within the original silhouette in both horizontal axes.
+            // Wall-end protection wraps the end face: its outer face sits proud of the wall end, never coplanar with it.
             foreach (float end in new[] { -1f, 1f })
-                Box(mesh, At(end * (length * .5f - .055f), foot + box.Size.Y * .5f), Dimensions(.11f, box.Size.Y - .13f, thickness + .025f), MapSolidsMaterialRole.Trim);
+                Box(mesh, At(end * (length * .5f - endRun * .5f + sep), foot + box.Size.Y * .5f - .03f), Dimensions(endRun, box.Size.Y - .2f, thickness + .03f), MapSolidsMaterialRole.Trim);
         }
+
+        /// <summary>ADR-103: minimum gap between any two parallel detail faces (metres).</summary>
+        public const float MinDetailSeparation = .008f;
 
         private static void AddCargoDetails(MeshAssembly mesh, CollisionBox box)
         {

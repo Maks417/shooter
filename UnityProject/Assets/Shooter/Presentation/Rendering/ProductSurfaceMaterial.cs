@@ -172,7 +172,7 @@ namespace Shooter.Presentation.Rendering
                 name = label,
                 wrapMode = TextureWrapMode.Repeat,
                 filterMode = FilterMode.Trilinear,
-                anisoLevel = 2
+                anisoLevel = ProductPostProcessing.CurrentTier.AnisoLevel // ADR-103
             };
             own(texture);
             for (int mip = 0; mip < data.MipBytes.Count; mip++)

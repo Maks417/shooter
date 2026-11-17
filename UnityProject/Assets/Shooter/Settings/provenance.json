@@ -6,7 +6,7 @@
     "sources": [
         {
             "path": "UnityProject/Assets/Shooter/Bootstrap/Editor/ShooterBuild.cs",
-            "sha256": "c8aaef611e831bb63ce3407890b5baebb05d82c90a837bb7717aaa15239b1ea4"
+            "sha256": "338f5c505219e4734cb984a1cc535231768068145b7610ebce1a210ddb885927"
         },
         {
             "path": "UnityProject/Assets/Shooter/Bootstrap/Editor/ShooterPostProcessingBuild.cs",
@@ -24,7 +24,7 @@
         },
         {
             "path": "UnityProject/Assets/Shooter/Settings/Balanced.asset",
-            "sha256": "acd316d558e6d1c753ccb8aed53b8bc46efa7c65ee57b272d94fc04d0420fd64"
+            "sha256": "19b723065356fda8058267e947e5edb92f403a7d6585d081a559179f511ec535"
         },
         {
             "path": "UnityProject/Assets/Shooter/Settings/DefaultVolumeProfile.asset",
@@ -48,7 +48,7 @@
         },
         {
             "path": "UnityProject/Assets/Shooter/Settings/High.asset",
-            "sha256": "23e5611ed1f7dd2b13bde69e779d92b9426617e64838259f080a42035eabb874"
+            "sha256": "4aa22efc11dc216eda2deca9f12536869b7d19dc245df29db3354d6d1ba63282"
         },
         {
             "path": "UnityProject/Assets/Shooter/Settings/Low.asset",

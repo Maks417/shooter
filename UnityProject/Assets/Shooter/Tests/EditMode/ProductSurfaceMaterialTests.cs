@@ -125,7 +125,7 @@ namespace Shooter.Tests
                 Assert.That(cover, Is.Not.Null);
                 Assert.That(cover!.localScale.x, Is.EqualTo(1.2f * ProductMapView.CoverHorizontalInset).Within(0.0001f));
                 Assert.That(cover.localScale.y, Is.EqualTo(1.2f * ProductMapView.CoverVerticalInset).Within(0.0001f));
-                Assert.That(cover.position.y, Is.EqualTo(0.6f + ProductMapView.CoverLiftMeters).Within(0.0001f));
+                Assert.That(cover.position.y, Is.EqualTo(0.6f + ProductMapView.CoverOverlayLift(1.2f)).Within(0.0001f));
                 Assert.That(cover.GetComponent<MeshRenderer>().sharedMaterial.GetFloat("_BumpScale"),
                     Is.EqualTo(ProductSurfaceResponse.CoverMetal.BumpScale).Within(0.0001f));
                 Assert.That(root.GetComponentsInChildren<Collider>().Length, Is.Zero,

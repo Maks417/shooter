@@ -46,6 +46,7 @@ Do not delete failed M1 artifacts, do not relabel FAIL as PASS, and do not inher
 | VD-D17 | particle FX | SoftFixedPendingReview | ADR-092/093 five numeric flipbooks, bounded particle adaptation, weapon/impact/explosion/movement cues; live/reduced-flash/reference review Pending |
 | VD-D18 | soldier kit | SoftFixedPendingReview | ADR-094 1.0.3 contoured carrier/pouches, camo, bands/patches, collision support and per-profile grips; P05 correction failed and stays disabled by default |
 | VD-D19 | insertion/menu craft | SoftFixedPendingReview | ADR-087 blueprint, tips, wordmark/cards/keycaps, sliced loading with stale-epoch fencing; 720p/150% and indivisible upload review Pending |
+| VD-D20 | flicker / scope / damage | SoftFixedPendingReview | ADR-103 coplanar trim and cover fixes, optical lens camera, tier AA/shadow/fog uplift, damage flinch + low-health grade + heartbeat; 1080p High scoped and low-health review Pending |
 | VD-D06 | reference | PendingOwner | Exact Bodycam/Warface comparison frames/timecodes not yet selected (BFV chat screenshots establish direction only) |
 
 VD gaps are tracked for the [VD0–VD9](design-milestones.md) track and the [art brief](visual-art-brief.md). Closing a VD-D* row requires evidence and owner/technical review; software merges alone do not mark them resolved.
