@@ -394,6 +394,9 @@ namespace Shooter.Simulation.Tests.View
             view.ResetForLife(ProductAuthorityActionView.GrenadeSlot);
             view.SetCooking(true);
             Assert.True(view.Cooking);
+            // ADR-099: the cook raise eases in after the pin pull starts.
+            Assert.Equal(0f, view.SpecialActionPosition(false).Y);
+            view.TickAim(false, FirstPersonSpecialActions.CookRaiseSeconds + 0.1f);
             var cookPos = view.SpecialActionPosition(false);
             Assert.True(cookPos.Y > 0f);
 

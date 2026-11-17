@@ -1035,7 +1035,7 @@ Decision:
 - **Validation.** Unknown or missing fields, duplicate keys, ids or orders, a file name that does not match the id, exponent or out-of-range numbers, a fire mode that does not suit the family, optics or magazine cycles on melee/throwables, a missing or mismatched geometry recipe, CRLF, and a catalog missing any of the four families are all rejected. Enum values are read from the C# sources, so the file format cannot drift from the code.
 - **Routing by profile.** `WeaponVisualProfile.AudioShotKey` is replaced by `ShotVoice` and `KillFeedGlyph`. `ProductAudioEventRouter.MapShotVoice` and `KillFeedCause.MapWeapon` read the profile; unknown ids keep the rifle voice and glyph.
 
-Not in scope (later steps of the review): reload/equip voices per weapon (reload events carry only the slot), new bank sample kinds, packaged weapon meshes still listed per weapon in `MapVisualClosure`/`MapPackageBuilder`/`ProductActorPresentation`, slot-keyed first-person equip timing, and the part-based geometry grammar. A weapon with a new silhouette still needs a `geometry.weapon` change.
+Not in scope (later steps of the review): reload/equip voices per weapon (reload events carry only the slot), new bank sample kinds, packaged weapon meshes still listed per weapon in `MapVisualClosure`/`MapPackageBuilder`/`ProductActorPresentation`, slot-keyed first-person equip timing (closed by [ADR-099](#adr-099--accepted-per-weapon-first-person-hand-and-weapon-choreography)), and the part-based geometry grammar. A weapon with a new silhouette still needs a `geometry.weapon` change.
 
 Validation: `WeaponDefinitionFileTests` (catalogs agree, meshes resolve, combat rows bit-identical to the pre-ADR values, voice and glyph come from the profile) and the existing catalog, profile, kill-feed and audio tests pass in `Tools/Simulation.Tests`; `Tools/test_generate_weapon_catalog.py` (16 cases) covers the generator. On 2026-11-16 Simulation 326, Game 96 and Generation 462 passed, source provenance passed with the two new `.meta` files, and Unity EditMode passed 71/71 with the generated files compiled by the locked editor. A client player build and in-game listen/kill-feed check are Pending. Rollback: revert the ADR-077 merge; the hand-written rows are restored with it.
 
@@ -1501,3 +1501,67 @@ Unchanged: C0/Game-v1 contracts, Simulation recoil and hit results, weapon defin
 Validation: `WeaponRecoilPresentationTests` (profile/catalog recoil parity, camera climb equals `AuthoritativeRecoil` per tick for rifle, carbine and pistol, punch timing, reduced motion, remote/knife/duplicate filtering, per-weapon kick ordering, and per-shot pulsing under automatic fire). On 2026-11-17 Simulation 404, Game 102 and Generation 520 passed, and source provenance and `generate_weapon_catalog.py --check` passed. Unity EditMode, a client build and an in-game feel check are Pending.
 
 Rollback: revert this change. The generated profile fields are optional constructor parameters.
+
+## ADR-099 — Accepted: per-weapon first-person hand and weapon choreography
+
+Date 2026-11-17. Context: the owner asked for better first-person hand animation per weapon, covering the regular view, shooting, reload, switching, grenade and knife. Before this change, one generic sine arc served every reload, and the same magazine went out and came back. Switches took a fixed 0.34 s regardless of the simulation's `equipTicks`. The knife played one 0.22 s arc against a 0.4 s interval, and the grenade cook snapped to a static pose. The throw was cut on the release tick, because the simulation switches back to the rifle in the same tick and the presentation dropped the throw with the slot. Sprint, jump/land, crouch and look had no viewmodel motion.
+
+Decision:
+- **Timing stays weapon data.** `Tools/generate_weapon_catalog.py` copies `combat.equipTicks`, `fireIntervalTicks`, `reloadTicks` and `fuseTicks` into `WeaponVisualProfile`. It also adds an optional `visual.adsSeconds` (default 0.15). The Simulation catalog is unchanged.
+- **Choreography is numeric key tables, not clips.** `MotionCurve` is a C1 Hermite track whose extreme keys hold still. Every beat is an equipment-relative waypoint table in pure `Presentation/Model/View`. There are no authored bone poses or recordings, consistent with AGENTS.md and the motion graph in `soldiers-animation.md`.
+- **Reload** (`FirstPersonReloadChoreography`): runs on the authoritative ActionPayload phase.
+  - Rifle and carbine: tilt, press the release, then strip and drop the old magazine (tactical) or let it fall (empty). The hand fetches a second, fresh magazine from the belt, inserts it and slaps it home. Empty reloads add a bolt-catch press that releases the locked-back bolt.
+  - Pistol: cant, thumb release (the magazine falls), fetch, insert and palm-seat. Empty reloads add an overhand slide rack.
+  - The packaged magazine part is the dropped one. A second "FP fresh magazine" child that reuses the same mesh rides in the support hand until it seats, so no geometry is added.
+  - The support wrist follows the hand track, and the elbow stays anchored (ADR-069).
+  - Reduced motion halves the tilt and keeps the hand, magazine and weapon travel.
+  - Third-person avatars keep `FirstPersonMagazineTravel`.
+- **Shooting:** the bolt or slide cycle closes within `min(90 ms, 0.8 × fire interval)`, eased so it lingers at the rear and then slams home. On an empty magazine it stays locked back until the reload releases it.
+- **Switching** (`FirstPersonEquipChoreography`): a presentation-only tuck of at most 0.10 s (and at most 35% of the window), then a per-weapon draw that fills the rest of the incoming weapon's equip window and ends with a small overshoot settle.
+  - Rifle: swings up with a roll.
+  - Pistol: rises muzzle-down.
+  - Knife: wrist flip.
+  - Grenade: comes up from the belt.
+
+  This closes ADR-077's "slot-keyed first-person equip timing".
+- **Knife:** each swing lasts the knife's fire interval and alternates right-to-left and left-to-right. A short wind-up is followed by a fast cut and recovery. A same-tick hit still upgrades the swing to a stab.
+- **Grenade:**
+  - Cook: a pin pull at the start (support hand to the ring, yank, lower away), then an eased raise into a cocked pose and a tremble that grows with the elapsed fuse share.
+  - Throw: starts from the pose at release, hides the prop at 12% of the throw and keeps the hands through the follow-through.
+  - `FirstPersonHandling` holds the outgoing grenade mesh while the throw plays, then swaps without a tuck and draws the rifle in the rest of its equip window (at least 0.18 s).
+- **Movement** (`FirstPersonLocomotionPose`): `LocalMovementView` adds `Sprinting`, `Grounded` and `VerticalSpeedMetersPerSecond`, copied from `MotorBodyState`; `LocalMovementView` is not a frozen contract. The pose adds:
+  - a sprint carry and figure-eight bob, dropped within about 50 ms by a shot, reload, special action, switch or ADS;
+  - a jump lag and a landing dip scaled by fall speed (exact `DampedSpring`);
+  - a crouch tuck and a slide roll;
+  - look inertia: the gun trails a turn by at most 0.07 rad.
+
+  Rotation layers fade fully at ADS, so the verified sight line is unchanged. The camera eye height now eases between stances (45 ms time constant) instead of snapping. The authoritative eye and ballistic origin are untouched.
+- **Idle:** a slow breathing rise and fall is added to the existing sway.
+
+Unchanged:
+- C0/Game-v1 contracts, Simulation timing, hit results and recoil.
+- Hand rig `fp.hand.v2` and the packaged meshes (no map-package republish).
+- Third-person animation and audio.
+
+Validation:
+- `FirstPersonChoreographyTests` covers:
+  - curve keys and overshoot;
+  - reload continuity for every family and reload kind;
+  - the magazine drop before the fresh one seats;
+  - the empty-reload cycle lock and release;
+  - reduced motion;
+  - the draw finishing on the authoritative equip window for every weapon;
+  - draw continuity;
+  - the held throw swap;
+  - knife duration and alternation;
+  - pin pull and fuse tremble;
+  - the throw surviving the switch back;
+  - cycle timing;
+  - the ADS profile time;
+  - sprint blend in and out, landing dip scaling, frame-rate independence, look inertia bounds, crouch and reset.
+- The Game test covers the new movement-view fields.
+- Unity EditMode adds `ReloadDropsTheOldMagazineAndSeatsAFreshOneFromTheBelt`.
+- `ShooterFeatureBuild.CaptureHandling` adds frames for the empty-reload fresh magazine, the bolt or slide release, the knife slash, the grenade pin pull and the grenade throw.
+- On 2026-11-17: Simulation 434, Game 103, Generation 520 and Unity EditMode 88/88 passed. Source provenance, `generate_weapon_catalog.py --check` (generator tests 23) and the asmdef graph also passed. A client build, the CaptureHandling render and the in-game feel review are Pending.
+
+Rollback: revert this change. The new profile fields and `LocalMovementView` fields are optional constructor parameters with neutral defaults.

@@ -51,7 +51,7 @@ COMBAT_REQUIRED = ["fireMode", "fireIntervalTicks", "reloadTicks", "equipTicks",
 
 VISUAL_REQUIRED = ["meshKey", "optic", "magazineCycle", "nearFieldScale", "nearFieldHipBias", "hipRotationDegrees",
                    "cycleTravelMeters"]
-VISUAL_OPTIONAL = {"geometryRecipe", "geometryParts", "muzzleFx"}
+VISUAL_OPTIONAL = {"geometryRecipe", "geometryParts", "muzzleFx", "adsSeconds"}
 # ADR-082 geometry.weapon 1.1.0 numeric rifle parts (millimetres or counts).
 GEOMETRY_PART_NUMBERS = ["handguardFrontMm", "barrelFrontMm", "topRailTeeth", "gasBlockZMm", "gasTubeZMm",
                          "gasTubeLengthMm", "frontSightZMm"]
@@ -253,6 +253,8 @@ def validate(root: Path, path: Path, doc, enums) -> dict:
         "hipRotationDegrees": vector(visual["hipRotationDegrees"], v + "hipRotationDegrees", 180),
         "muzzleFx": muzzle_fx,
         "cycleTravelMeters": number(visual["cycleTravelMeters"], v + "cycleTravelMeters", maximum=0.5),
+        # ADR-099: cosmetic ADS raise time; the C# default is 0.15 s.
+        "adsSeconds": number(visual.get("adsSeconds", Literal("0.15")), v + "adsSeconds", minimum=0.05, maximum=1),
         "shotVoice": choice(audio["shot"], where + ".audio.shot", enums["SynthVoiceKind"]),
         "glyph": glyph,
         "recipeSource": recipe_source,
@@ -348,7 +350,10 @@ def render_profiles(weapons) -> str:
             "                hipRotationDegrees: " + float3(w["hipRotationDegrees"]) + ", cycleTravelMeters: "
             + f(w["cycleTravelMeters"]) + ", displayLabel: \"" + w["label"] + "\", muzzleFx: \"" + w["muzzleFx"] + "\",\n"
             "                recoilPitchDegrees: " + f(w["combat"]["recoilPitchDegrees"]) + ", recoilYawHalfDegrees: "
-            + f(w["combat"]["recoilYawHalfDegrees"]) + ")")
+            + f(w["combat"]["recoilYawHalfDegrees"]) + ",\n"
+            "                equipTicks: " + w["combat"]["equipTicks"] + ", fireIntervalTicks: "
+            + w["combat"]["fireIntervalTicks"] + ", reloadTicks: " + w["combat"]["reloadTicks"] + ", fuseTicks: "
+            + w["combat"]["fuseTicks"] + ", adsSeconds: " + f(w["adsSeconds"]) + ")")
     return (HEADER + "#nullable enable\nusing Shooter.Contracts;\nusing Shooter.Presentation.Audio;\n"
             "using Shooter.Presentation.Hud;\n\nnamespace Shooter.Presentation.View\n{\n"
             "    public static partial class WeaponVisualProfiles\n    {\n"

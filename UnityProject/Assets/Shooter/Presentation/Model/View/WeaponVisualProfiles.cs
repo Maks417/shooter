@@ -46,6 +46,21 @@ namespace Shooter.Presentation.View
         public float RecoilPitchDegrees { get; }
         /// <summary>Authoritative per-shot horizontal half-range (degrees) copied from the weapon definition file.</summary>
         public float RecoilYawHalfDegrees { get; }
+        /// <summary>Authoritative draw window (ticks) copied from the definition file; times the switch choreography (ADR-099).</summary>
+        public uint EquipTicks { get; }
+        /// <summary>Authoritative ticks between shots/swings; times the bolt cycle and knife swing (ADR-099).</summary>
+        public uint FireIntervalTicks { get; }
+        /// <summary>Authoritative reload window (ticks); the reload choreography is phase-normalized to it (ADR-099).</summary>
+        public uint ReloadTicks { get; }
+        /// <summary>Authoritative grenade fuse (ticks); drives the cook tremble (ADR-099).</summary>
+        public uint FuseTicks { get; }
+        /// <summary>Seconds for the cosmetic ADS raise (ADR-099). Optional visual key, default 0.15.</summary>
+        public float AdsSeconds { get; }
+
+        public float EquipSeconds => EquipTicks / ProductAuthorityActionView.SimulationHz;
+        public float FireIntervalSeconds => FireIntervalTicks / ProductAuthorityActionView.SimulationHz;
+        public float ReloadSeconds => ReloadTicks / ProductAuthorityActionView.SimulationHz;
+        public float FuseSeconds => FuseTicks / ProductAuthorityActionView.SimulationHz;
 
         public WeaponVisualProfile(
             DefinitionId definitionId,
@@ -60,7 +75,9 @@ namespace Shooter.Presentation.View
             Float3 hipRotationDegrees,
             float cycleTravelMeters,
             string displayLabel, string muzzleFx = "rifle",
-            float recoilPitchDegrees = 0f, float recoilYawHalfDegrees = 0f)
+            float recoilPitchDegrees = 0f, float recoilYawHalfDegrees = 0f,
+            uint equipTicks = 0, uint fireIntervalTicks = 0, uint reloadTicks = 0, uint fuseTicks = 0,
+            float adsSeconds = DefaultAdsSeconds)
         {
             if (!definitionId.IsValid) throw new ArgumentException("Definition id required.", nameof(definitionId));
             if (string.IsNullOrEmpty(meshAssetKey)) throw new ArgumentException("Mesh asset key required.", nameof(meshAssetKey));
@@ -83,7 +100,15 @@ namespace Shooter.Presentation.View
             if (!(recoilYawHalfDegrees >= 0f && recoilYawHalfDegrees <= 45f)) throw new ArgumentOutOfRangeException(nameof(recoilYawHalfDegrees));
             RecoilPitchDegrees = recoilPitchDegrees;
             RecoilYawHalfDegrees = recoilYawHalfDegrees;
+            if (!(adsSeconds >= 0.05f && adsSeconds <= 1f)) throw new ArgumentOutOfRangeException(nameof(adsSeconds));
+            EquipTicks = equipTicks;
+            FireIntervalTicks = fireIntervalTicks;
+            ReloadTicks = reloadTicks;
+            FuseTicks = fuseTicks;
+            AdsSeconds = adsSeconds;
         }
+
+        public const float DefaultAdsSeconds = 0.15f;
     }
 
     /// <summary>Frozen presentation catalog parallel to Simulation WeaponCatalog ids; generated from the same definition files.</summary>

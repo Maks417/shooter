@@ -38,16 +38,42 @@ namespace Shooter.Presentation.View
         private float cycleOpen;
         private float meleePhase;
         private bool meleeStab;
+        private float meleeDurationSeconds = FirstPersonSpecialActions.MeleeDurationSeconds;
+        private uint meleeSwings;
         private float throwPhase;
+        private Float3 throwStartPosition;
+        private Float3 throwStartRotation;
         private bool cooking;
+        private float cookSeconds;
+        private float fuseSeconds;
+        private float adsSeconds = WeaponVisualProfile.DefaultAdsSeconds;
+        private float cycleSeconds = DefaultCycleSeconds;
+        private bool reducedMotionHint;
         private byte activeSlot;
         private Float3 leftGrip = new Float3(-0.12f, -0.08f, 0.35f);
         private Float3 rightGrip = new Float3(0.08f, -0.10f, 0.40f);
 
+        /// <summary>Bolt/slide close time after a shot when the weapon's fire interval is unknown.</summary>
+        public const float DefaultCycleSeconds = 0.09f;
+
         public ViewPose Pose => new ViewPose(leftGrip, rightGrip, ads, recoilPitch, recoilYaw);
         public float ReloadPhase => reloadPhase > 0f ? reloadPhase : 0f;
-        /// <summary>0 = bolt/slide closed, 1 = fully open after a shot impulse.</summary>
-        public float CycleOpen01 => cycleOpen;
+        /// <summary>
+        /// 0 = bolt/slide closed, 1 = fully open after a shot impulse. Eased so the part lingers at the rear and
+        /// slams home (ADR-099).
+        /// </summary>
+        public float CycleOpen01 => 1f - (1f - cycleOpen) * (1f - cycleOpen);
+        /// <summary>Linear cycle state (tests and diagnostics).</summary>
+        public float CycleLinear01 => cycleOpen;
+        public float CycleSeconds => cycleSeconds;
+        public float AdsSeconds => adsSeconds;
+        public float MeleeDurationSeconds => meleeDurationSeconds;
+        /// <summary>+1 / -1 alternating cut direction of the current or last knife swing.</summary>
+        public int MeleeDirection => (meleeSwings & 1u) == 1u ? 1 : -1;
+        /// <summary>Seconds since the current cook started (0 when not cooking).</summary>
+        public float CookSeconds => cooking ? cookSeconds : 0f;
+        /// <summary>True while the throw follow-through plays; it outlives the authority switch back to the rifle.</summary>
+        public bool Throwing => throwPhase > 0f;
         public byte ActiveWeaponSlot => activeSlot;
         /// <summary>0 idle; (0,1] active knife melee cosmetic phase.</summary>
         public float MeleePhase01 => meleePhase > 0f ? meleePhase : 0f;
@@ -65,11 +91,14 @@ namespace Shooter.Presentation.View
             cycleOpen = 0f;
             meleePhase = 0f;
             meleeStab = false;
+            meleeSwings = 0;
             throwPhase = 0f;
             cooking = false;
+            cookSeconds = 0f;
             recoilPitch = recoilYaw = recoilPitchVel = recoilYawVel = 0f;
             ads = 0f;
             consumedEvents.Clear();
+            ApplyProfile(WeaponVisualProfiles.Resolve(default, weaponSlot));
             ApplyGripPose();
         }
 
@@ -84,18 +113,32 @@ namespace Shooter.Presentation.View
                 cycleOpen = 0f;
                 meleePhase = 0f;
                 meleeStab = false;
-                throwPhase = 0f;
+                // The authority switches back to the rifle on the release tick; the throw follow-through keeps
+                // playing on the outgoing grenade (ADR-099) while FirstPersonHandling holds the swap.
                 cooking = false;
+                cookSeconds = 0f;
                 recoilPitch = recoilYaw = recoilPitchVel = recoilYawVel = 0f;
                 ads = 0f;
                 ApplyGripPose();
             }
         }
 
+        /// <summary>Per-weapon timing from the definition-file profile (ADS raise, bolt cycle, fuse) - ADR-099.</summary>
+        public void ApplyProfile(in WeaponVisualProfile profile)
+        {
+            adsSeconds = profile.AdsSeconds >= 0.05f ? profile.AdsSeconds : WeaponVisualProfile.DefaultAdsSeconds;
+            float interval = profile.FireIntervalSeconds;
+            cycleSeconds = interval > 0f ? Math.Min(DefaultCycleSeconds, interval * 0.8f) : DefaultCycleSeconds;
+            if (profile.Family == WeaponVisualFamily.Throwable) fuseSeconds = profile.FuseSeconds;
+            if (profile.Family == WeaponVisualFamily.Melee && interval > 0f) meleeDurationSeconds = interval;
+        }
+
         /// <summary>Mirror authority Cooking for grenade raise pose (ActorLifecycleState.WeaponAction).</summary>
         public void SetCooking(bool isCooking)
         {
-            cooking = isCooking && ProductAuthorityActionView.IsGrenadeSlot(activeSlot);
+            bool next = isCooking && ProductAuthorityActionView.IsGrenadeSlot(activeSlot);
+            if (next && !cooking) cookSeconds = 0f;
+            cooking = next;
             if (!cooking) return;
             // Cook cancels an unfinished throw pose if authority restarted a cook (should not happen mid-flight).
             if (throwPhase > 0f && throwPhase < 1f) throwPhase = 0f;
@@ -106,13 +149,14 @@ namespace Shooter.Presentation.View
         {
             if (!float.IsFinite(dtSeconds) || dtSeconds < 0) throw new ArgumentOutOfRangeException(nameof(dtSeconds));
             float targetAds = aimHeld ? 1f : 0f;
-            ads = MoveTowards(ads, targetAds, dtSeconds / 0.15f);
+            ads = MoveTowards(ads, targetAds, dtSeconds / adsSeconds);
             IntegrateSpring(ref recoilPitch, ref recoilPitchVel, dtSeconds);
             IntegrateSpring(ref recoilYaw, ref recoilYawVel, dtSeconds);
             AdvanceCycle(dtSeconds);
             AdvanceReload(dtSeconds);
             AdvanceMelee(dtSeconds);
             AdvanceThrow(dtSeconds);
+            if (cooking) cookSeconds += dtSeconds;
             ApplyGripPose();
         }
 
@@ -132,7 +176,7 @@ namespace Shooter.Presentation.View
             if (!float.IsFinite(dtSeconds) || dtSeconds < 0) throw new ArgumentOutOfRangeException(nameof(dtSeconds));
 
             float targetAds = aimHeld ? 1f : 0f;
-            ads = MoveTowards(ads, targetAds, dtSeconds / 0.15f);
+            ads = MoveTowards(ads, targetAds, dtSeconds / adsSeconds);
 
             for (int i = 0; i < events.Count; i++)
             {
@@ -153,19 +197,31 @@ namespace Shooter.Presentation.View
                         uint shotIndex = shot?.ShotIndex ?? ev.Id.Ordinal;
                         recoilPitchVel += pitchImpulse;
                         recoilYawVel += ((shotIndex & 1u) == 0u ? -1f : 1f) * yawImpulse;
+                        float interval = profile.FireIntervalSeconds;
+                        cycleSeconds = interval > 0f ? Math.Min(DefaultCycleSeconds, interval * 0.8f) : DefaultCycleSeconds;
                         cycleOpen = Math.Max(cycleOpen, FirstPersonWeaponMechanics.CycleImpulse);
                     }
                     else if (ProductAuthorityActionView.IsKnifeSlot(activeSlot))
                     {
+                        // Swing length is the knife's authoritative fire interval; cuts alternate direction.
+                        var shot = ev.Payload as ShotPayload;
+                        var profile = WeaponVisualProfiles.Resolve(shot?.WeaponId ?? default, activeSlot);
+                        if (profile.FireIntervalSeconds > 0f) meleeDurationSeconds = profile.FireIntervalSeconds;
+                        meleeSwings++;
                         meleePhase = 0.01f;
                         meleeStab = HasMeleeHit(events, ev.Instigator, ev.Id.Tick);
                     }
                 }
                 else if (ev.Kind == CombatEventKind.ProjectileSpawned
-                    && ProductAuthorityActionView.IsGrenadeSlot(activeSlot))
+                    && (ProductAuthorityActionView.IsGrenadeSlot(activeSlot) || IsThrowable(ev.Payload)))
                 {
+                    // Start from the pose the grenade had when it left the cook, so the release never pops.
+                    float cooked = cooking ? cookSeconds : FirstPersonSpecialActions.CookRaiseSeconds;
+                    throwStartPosition = FirstPersonSpecialActions.GrenadeCookPosition(cooked, fuseSeconds, reducedMotionHint);
+                    throwStartRotation = FirstPersonSpecialActions.GrenadeCookRotation(cooked, fuseSeconds, reducedMotionHint);
                     throwPhase = 0.01f;
                     cooking = false;
+                    cookSeconds = 0f;
                 }
                 else if (ev.Kind == CombatEventKind.ReloadStarted && ev.Payload is ActionPayload started)
                 {
@@ -187,6 +243,7 @@ namespace Shooter.Presentation.View
             AdvanceReload(dtSeconds);
             AdvanceMelee(dtSeconds);
             AdvanceThrow(dtSeconds);
+            if (cooking) cookSeconds += dtSeconds;
             ApplyGripPose();
         }
 
@@ -199,35 +256,44 @@ namespace Shooter.Presentation.View
         /// <summary>Combined equipment offset for knife/grenade special actions (meters).</summary>
         public Float3 SpecialActionPosition(bool reducedMotion)
         {
+            reducedMotionHint = reducedMotion;
+            if (throwPhase > 0f)
+                return FirstPersonSpecialActions.GrenadeThrowPosition(throwPhase, throwStartPosition, reducedMotion);
             if (ProductAuthorityActionView.IsKnifeSlot(activeSlot) && meleePhase > 0f)
-                return FirstPersonSpecialActions.MeleePositionOffset(meleePhase, meleeStab, reducedMotion);
-            if (ProductAuthorityActionView.IsGrenadeSlot(activeSlot))
-            {
-                if (throwPhase > 0f)
-                    return FirstPersonSpecialActions.GrenadeThrowPosition(throwPhase, reducedMotion);
-                if (cooking)
-                    return FirstPersonSpecialActions.GrenadeCookPosition(true, reducedMotion);
-            }
+                return FirstPersonSpecialActions.MeleePositionOffset(meleePhase, meleeStab, MeleeDirection, reducedMotion);
+            if (ProductAuthorityActionView.IsGrenadeSlot(activeSlot) && cooking)
+                return FirstPersonSpecialActions.GrenadeCookPosition(cookSeconds, fuseSeconds, reducedMotion);
             return default;
         }
 
         public Float3 SpecialActionRotation(bool reducedMotion)
         {
+            if (throwPhase > 0f)
+                return FirstPersonSpecialActions.GrenadeThrowRotation(throwPhase, throwStartRotation, reducedMotion);
             if (ProductAuthorityActionView.IsKnifeSlot(activeSlot) && meleePhase > 0f)
-                return FirstPersonSpecialActions.MeleeRotationDegrees(meleePhase, meleeStab, reducedMotion);
-            if (ProductAuthorityActionView.IsGrenadeSlot(activeSlot))
-            {
-                if (throwPhase > 0f)
-                    return FirstPersonSpecialActions.GrenadeThrowRotation(throwPhase, reducedMotion);
-                if (cooking)
-                    return FirstPersonSpecialActions.GrenadeCookRotation(true, reducedMotion);
-            }
+                return FirstPersonSpecialActions.MeleeRotationDegrees(meleePhase, meleeStab, MeleeDirection, reducedMotion);
+            if (ProductAuthorityActionView.IsGrenadeSlot(activeSlot) && cooking)
+                return FirstPersonSpecialActions.GrenadeCookRotation(cookSeconds, fuseSeconds, reducedMotion);
             return default;
         }
 
-        /// <summary>True once a throw phase has started or magazine is empty on grenade (hide held prop).</summary>
+        /// <summary>Support-hand wrist offset for special actions (the pin pull); hand-root local meters.</summary>
+        public Float3 SpecialSupportWrist =>
+            cooking && ProductAuthorityActionView.IsGrenadeSlot(activeSlot)
+                ? FirstPersonSpecialActions.PinPullWrist(cookSeconds) : default;
+
+        /// <summary>Support-hand finger openness for special actions.</summary>
+        public float SpecialSupportOpen =>
+            cooking && ProductAuthorityActionView.IsGrenadeSlot(activeSlot)
+                ? FirstPersonSpecialActions.PinPullOpen(cookSeconds) : 0f;
+
+        /// <summary>
+        /// Hide the held grenade once it leaves the hand, or when the active grenade slot is empty and not cooking.
+        /// The hands stay visible through the follow-through.
+        /// </summary>
         public bool HideHeldGrenade(ushort magazine) =>
-            ProductAuthorityActionView.IsGrenadeSlot(activeSlot) && (magazine == 0 || throwPhase > 0.35f);
+            throwPhase > FirstPersonSpecialActions.ThrowReleasePhase
+            || (ProductAuthorityActionView.IsGrenadeSlot(activeSlot) && magazine == 0 && !cooking);
 
         private void AdvanceReload(float dtSeconds)
         {
@@ -240,14 +306,14 @@ namespace Shooter.Presentation.View
         private void AdvanceCycle(float dtSeconds)
         {
             if (cycleOpen <= 0f) { cycleOpen = 0f; return; }
-            // Bolt/slide closes in ~90 ms after the impulse peak.
-            cycleOpen = MoveTowards(cycleOpen, 0f, dtSeconds / 0.09f);
+            // Bolt/slide closes within the weapon's own cycle time (at most ~90 ms, under its fire interval).
+            cycleOpen = MoveTowards(cycleOpen, 0f, dtSeconds / cycleSeconds);
         }
 
         private void AdvanceMelee(float dtSeconds)
         {
             if (meleePhase <= 0f) return;
-            float duration = FirstPersonSpecialActions.MeleeDurationSeconds;
+            float duration = meleeDurationSeconds;
             meleePhase = Math.Min(1f, meleePhase + (duration > 1e-4f ? dtSeconds / duration : 1f));
             if (meleePhase >= 1f)
             {
@@ -263,6 +329,11 @@ namespace Shooter.Presentation.View
             throwPhase = Math.Min(1f, throwPhase + (duration > 1e-4f ? dtSeconds / duration : 1f));
             if (throwPhase >= 1f) throwPhase = 0f;
         }
+
+        private static bool IsThrowable(CombatPayload? payload) =>
+            payload is ProjectilePayload projectile
+            && WeaponVisualProfiles.TryGet(projectile.DefinitionId, out var profile)
+            && profile.Family == WeaponVisualFamily.Throwable;
 
         private static bool HasMeleeHit(IReadOnlyList<CombatEvent> events, EntityId instigator, uint tick)
         {
@@ -280,11 +351,7 @@ namespace Shooter.Presentation.View
         {
             // Near-field Bodycam mass: grips sit a touch lower/closer; ADS still pulls to the sight plane.
             float adsPull = ads * 0.09f;
-            Float3 mag = FirstPersonMagazineTravel.Offset(reloadPhase, magazineEmpty: false, reducedMotion: false);
-            if (reloadPhase > 0f)
-                leftGrip = new Float3(-0.12f + mag.X, -0.09f + mag.Y, 0.33f + mag.Z);
-            else
-                leftGrip = new Float3(-0.12f, -0.09f, 0.33f);
+            leftGrip = new Float3(-0.12f, -0.09f, 0.33f);
 
             float hipZ = ProductAuthorityActionView.IsRifleSlot(activeSlot) ? 0.36f : 0.28f;
             float hipY = ProductAuthorityActionView.IsRifleSlot(activeSlot) ? -0.12f : -0.09f;

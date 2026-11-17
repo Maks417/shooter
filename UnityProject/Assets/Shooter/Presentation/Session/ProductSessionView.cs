@@ -119,6 +119,8 @@ namespace Shooter.Presentation.Session
         private readonly float[] gunfireRevealZ = new float[CombatHudVisual.MaxGunfireReveals];
         private readonly float[] gunfireRevealUntil = new float[CombatHudVisual.MaxGunfireReveals];
         private EntityId cameraBobLife;
+        /// <summary>Eased camera eye height (ADR-099): crouch/stand glide instead of snapping; authority eye is unchanged.</summary>
+        private float presentedEye = -1f;
 
         public ProductMapView? MapView => mapView;
         public ProductActorPresentation? Actors => actors;
@@ -583,7 +585,12 @@ namespace Shooter.Presentation.Session
                             cameraBob.Reset();
                             cameraRecoil.Reset();
                             cameraBobLife = human.EntityId;
+                            presentedEye = -1f;
                         }
+                        // Stance changes glide over ~0.1 s (time constant 45 ms); death and spawn snap.
+                        if (presentedEye < 0f || !human.Alive) presentedEye = eye;
+                        else presentedEye += (eye - presentedEye) * (1f - Mathf.Exp(-Time.unscaledDeltaTime / 0.045f));
+                        eye = presentedEye;
                         float dtBob = Time.unscaledDeltaTime;
                         if (session.PauseState == SessionPauseState.Running && human.Alive)
                             cameraBob.Step(human.Feet, dtBob, sliding);

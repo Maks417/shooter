@@ -114,6 +114,9 @@ namespace Shooter.Presentation.Rig
         private Transform? localWeapon;
         private Transform? localMagazine;
         private MeshFilter? localMagazineFilter;
+        /// <summary>Second magazine carried up from the belt during a reload (ADR-099).</summary>
+        private Transform? localFreshMagazine;
+        private MeshFilter? localFreshMagazineFilter;
         private Transform? localCycle;
         private MeshFilter? localCycleFilter;
         private SkinnedMeshRenderer? triggerHand;
@@ -124,6 +127,10 @@ namespace Shooter.Presentation.Rig
         private readonly Transform[][] handBones = { new Transform[FirstPersonHandRig.JointCount], new Transform[FirstPersonHandRig.JointCount] };
         private readonly ProceduralViewModel localView = new ProceduralViewModel();
         private readonly FirstPersonHandling localHandling = new FirstPersonHandling();
+        private readonly FirstPersonLocomotionPose localLocomotion = new FirstPersonLocomotionPose();
+        private bool hasLookSample;
+        private float lastLookYaw;
+        private float lastLookPitch;
         private float localAdsPresentation;
         private byte localVisibleWeaponSlot;
         private EntityId localViewHuman;
@@ -200,6 +207,8 @@ namespace Shooter.Presentation.Rig
             localWeapon.gameObject.AddComponent<MeshFilter>();
             localWeapon.gameObject.AddComponent<MeshRenderer>();
             localMagazineFilter = CreateWeaponChild(localWeapon, "FP magazine", out localMagazine);
+            localFreshMagazineFilter = CreateWeaponChild(localWeapon, "FP fresh magazine", out localFreshMagazine);
+            localFreshMagazine.gameObject.SetActive(false);
             localCycleFilter = CreateWeaponChild(localWeapon, "FP cycle", out localCycle);
             SkinnedMeshRenderer CreateHand(string name, int handIndex)
             {
@@ -559,6 +568,8 @@ namespace Shooter.Presentation.Rig
                 {
                     localView.ResetForLife(slot);
                     localHandling.Reset(slot);
+                    localLocomotion.Reset();
+                    hasLookSample = false;
                     localViewHuman = human.EntityId;
                     if (slot == ProductAuthorityActionView.RifleSlot && weaponId.IsValid)
                         localPrimaryWeaponId = weaponId;
@@ -569,6 +580,8 @@ namespace Shooter.Presentation.Rig
                 // A reload lowers the sights (presentation only): scoped ADS hides the rifle mesh, which would
                 // otherwise make the reload invisible.
                 bool viewAim = aimHeld && !actions.IsReloading(human.EntityId);
+                var activeProfile = WeaponVisualProfiles.Resolve(weaponId, slot);
+                localView.ApplyProfile(activeProfile);
                 if (combatEvents != null)
                     localView.ConsumeEvents(combatEvents, human.EntityId, viewAim, dtSeconds);
                 else
@@ -578,7 +591,10 @@ namespace Shooter.Presentation.Rig
                 localView.SetCooking(human.WeaponAction == WeaponAction.Cooking);
                 var pose = localView.Pose;
                 var movement = movementView?.Invoke(human.EntityId);
-                localHandling.Step(human.Feet, slot, dtSeconds, movement.HasValue && movement.Value.Sliding, reducedMotion);
+                // ADR-099: the switch fills the incoming weapon's authoritative equip window; a throw follow-through
+                // holds the outgoing grenade on screen until the hand has left the view.
+                localHandling.Step(human.Feet, slot, dtSeconds, movement.HasValue && movement.Value.Sliding, reducedMotion,
+                    activeProfile.EquipSeconds, holdOutgoing: localView.Throwing);
                 // Mesh follows the holster→draw visible slot so the outgoing gun finishes tucking first.
                 byte shown = localHandling.VisibleWeaponSlot;
                 // Mid-switch keeps the outgoing slot's last known id (primary may be carbine).
@@ -593,14 +609,46 @@ namespace Shooter.Presentation.Rig
                 ApplyLocalWeaponVisual(shownId, shown);
                 float reload = localHandling.IsSwitching ? -1f : actions.ReloadPhaseAtTick(human.EntityId, completedTick);
                 float recoilEnergy = Math.Abs(pose.RecoilPitch) + Math.Abs(pose.RecoilYaw);
-                bool magazineEmpty = human.Magazine == 0;
+                // Ammo refills only at ReloadCompleted, so an empty magazine marks an empty reload for its whole window.
+                bool magazineEmpty = human.Magazine == 0 && shown == slot;
                 float adsPresent = FirstPersonHandling.AdsPresentationBlend(pose.AdsBlend, localHandling.EquipBlend);
                 localAdsPresentation = adsPresent;
+                var reloadPose = FirstPersonReloadChoreography.Evaluate(profile.Family, reload, magazineEmpty,
+                    profile.ReloadSeconds, reducedMotion);
                 var offset = localHandling.PositionOffset(adsPresent, reload, reducedMotion, recoilEnergy, magazineEmpty);
-                var rotation = localHandling.RotationDegrees(adsPresent, reload, reducedMotion, recoilEnergy);
+                var rotation = localHandling.RotationDegrees(adsPresent, reload, reducedMotion, recoilEnergy, magazineEmpty);
                 var specialPos = localView.SpecialActionPosition(reducedMotion);
                 var specialRot = localView.SpecialActionRotation(reducedMotion);
                 var kick = localView.EquipmentKickMeters(reducedMotion);
+
+                // Movement layers: sprint carry, jump lift / landing dip, crouch tuck, slide tilt and look inertia.
+                float lookYawDelta = 0f, lookPitchDelta = 0f;
+                if (fpsCamera != null)
+                {
+                    Vector3 forward = fpsCamera.transform.forward;
+                    float lookYaw = Mathf.Atan2(forward.x, forward.z);
+                    float lookPitch = -Mathf.Asin(Mathf.Clamp(forward.y, -1f, 1f));
+                    if (hasLookSample)
+                    {
+                        lookYawDelta = Mathf.DeltaAngle(lastLookYaw * Mathf.Rad2Deg, lookYaw * Mathf.Rad2Deg) * Mathf.Deg2Rad;
+                        lookPitchDelta = lookPitch - lastLookPitch;
+                    }
+                    lastLookYaw = lookYaw;
+                    lastLookPitch = lookPitch;
+                    hasLookSample = true;
+                }
+                var locomotionInput = movement.HasValue
+                    ? new FirstPersonLocomotionInput(movement.Value.Sprinting, movement.Value.Grounded,
+                        movement.Value.Stance == Stance.Crouching, movement.Value.Sliding,
+                        movement.Value.VerticalSpeedMetersPerSecond, movement.Value.LocomotionDistanceMeters,
+                        movement.Value.HorizontalSpeedMetersPerSecond)
+                    : FirstPersonLocomotionInput.Standing;
+                bool busy = reload > 0f || localHandling.IsSwitching || localView.Throwing || localView.Cooking
+                    || localView.MeleePhase01 > 0f || recoilEnergy > 0.02f;
+                localLocomotion.Step(locomotionInput, dtSeconds, adsPresent, busy, lookYawDelta, lookPitchDelta);
+                var moveOffset = localLocomotion.PositionOffset(shown, adsPresent, reducedMotion);
+                var moveRotation = localLocomotion.RotationDegrees(shown, adsPresent, reducedMotion);
+
                 Float3 sight = SightSocketForProfile(profile);
                 float scale = FirstPersonHandling.NearFieldScale(profile);
                 Float3 hipBias = FirstPersonHandling.NearFieldHipBias(profile);
@@ -612,19 +660,26 @@ namespace Shooter.Presentation.Rig
                 // Scale the sight socket with near-field mass so TransformPoint still lands on the camera ray.
                 Vector3 aligned = new Vector3(-sight.X * scale, -sight.Y * scale, hip.z);
                 localWeapon.localScale = new Vector3(scale, scale, scale);
-                localWeapon.localPosition = Vector3.Lerp(hip, aligned, adsPresent) + V(offset) + V(kick) + V(specialPos);
+                localWeapon.localPosition = Vector3.Lerp(hip, aligned, adsPresent) + V(offset) + V(kick) + V(specialPos)
+                    + V(moveOffset);
                 float rotKick = FirstPersonHandling.RecoilRotationScale(adsPresent, reducedMotion);
                 var composition = FirstPersonHandling.HipRotationDegrees(profile, adsPresent);
                 localWeapon.localRotation = Quaternion.Euler(
-                    rotation.X + composition.X + specialRot.X + pose.RecoilPitch * Mathf.Rad2Deg * rotKick,
-                    rotation.Y + composition.Y + specialRot.Y + pose.RecoilYaw * Mathf.Rad2Deg * rotKick,
-                    rotation.Z + composition.Z + specialRot.Z);
-                PoseLocalHands(shown,reload,localView.CycleOpen01,reducedMotion,magazineEmpty);
-                PoseLocalMechanicalParts(profile, shown, reload, magazineEmpty, localView.CycleOpen01, reducedMotion);
+                    rotation.X + composition.X + specialRot.X + moveRotation.X + pose.RecoilPitch * Mathf.Rad2Deg * rotKick,
+                    rotation.Y + composition.Y + specialRot.Y + moveRotation.Y + pose.RecoilYaw * Mathf.Rad2Deg * rotKick,
+                    rotation.Z + composition.Z + specialRot.Z + moveRotation.Z);
+                bool gun = FirstPersonWeaponMechanics.HasMagazinePart(profile);
+                // Bolt/slide: reload choreography wins, then lock-back on an empty magazine, then the shot cycle.
+                float cycle = reloadPose.CycleOverride01 >= 0f ? reloadPose.CycleOverride01
+                    : gun && magazineEmpty ? 1f : localView.CycleOpen01;
+                float trigger = gun && reload <= 0f ? localView.CycleOpen01 : 0f;
+                PoseLocalHands(profile, shown, reloadPose, localView.SpecialSupportWrist, localView.SpecialSupportOpen, trigger);
+                PoseLocalMechanicalParts(profile, reloadPose, cycle, reducedMotion);
                 // Full scoped ADS uses the analytic scope overlay — hide the near-field mesh so the lens stays clean.
-                // Empty/thrown grenade hides the held prop so the throw reads clearly.
-                if (AdsOpticVisual.HideRifleViewModel(profile, adsPresent)
-                    || localView.HideHeldGrenade(human.Magazine))
+                // A released grenade hides only the prop; the hands finish the follow-through.
+                var weaponRenderer = localWeapon.GetComponent<MeshRenderer>();
+                weaponRenderer.enabled = !(ProductAuthorityActionView.IsGrenadeSlot(shown) && localView.HideHeldGrenade(human.Magazine));
+                if (AdsOpticVisual.HideRifleViewModel(profile, adsPresent))
                     localWeapon.gameObject.SetActive(false);
             localLitRenderers=localWeapon.GetComponentsInChildren<Renderer>(true);
             }
@@ -632,6 +687,8 @@ namespace Shooter.Presentation.Rig
             {
                 localView.ResetForLife();
                 localHandling.Reset(ProductAuthorityActionView.RifleSlot);
+                localLocomotion.Reset();
+                hasLookSample = false;
                 localAdsPresentation = 0f;
                 localVisibleWeaponSlot = ProductAuthorityActionView.RifleSlot;
                 localViewHuman = default;
@@ -906,6 +963,13 @@ namespace Shooter.Presentation.Rig
                 localMagazine.gameObject.SetActive(guns);
                 localMagazine.localPosition = Vector3.zero;
             }
+            if (localFreshMagazineFilter != null && localFreshMagazine != null)
+            {
+                localFreshMagazineFilter.sharedMesh = guns ? LocalMagazineForProfile(profile) : null;
+                localFreshMagazine.GetComponent<MeshRenderer>().sharedMaterials = WeaponPalette(localFreshMagazineFilter!.sharedMesh);
+                localFreshMagazine.gameObject.SetActive(false);
+                localFreshMagazine.localPosition = Vector3.zero;
+            }
             if (localCycleFilter != null && localCycle != null)
             {
                 localCycleFilter.sharedMesh = guns ? LocalCycleForProfile(profile) : null;
@@ -937,32 +1001,43 @@ namespace Shooter.Presentation.Rig
             }
         }
 
-        private void PoseLocalHands(byte slot,float reload,float cycle,bool reducedMotion,bool magazineEmpty)
+        private void PoseLocalHands(in WeaponVisualProfile profile, byte slot, in ReloadPose reloadPose,
+            Float3 specialWrist, float specialOpen, float trigger)
         {
             if(triggerHand==null || supportHand==null) return;
-            bool gun=FirstPersonWeaponMechanics.HasMagazinePart(slot);
+            bool gun=FirstPersonWeaponMechanics.HasMagazinePart(profile);
+            // ADR-099: the support hand follows the reload choreography (magazine, belt, bolt catch / slide) or the
+            // grenade pin pull; the elbow stays on its bind so the sleeve stretches between them (ADR-069).
+            Float3 reach=new Float3(reloadPose.SupportWristOffset.X+specialWrist.X,reloadPose.SupportWristOffset.Y+specialWrist.Y,
+                reloadPose.SupportWristOffset.Z+specialWrist.Z);
+            float supportOpen=gun ? reloadPose.SupportOpen01 : specialOpen;
             for(int hand=0;hand<2;hand++)
             {
                 var skeleton=handSkeletons[slot*2+hand]!;
-                float open=hand==1 && gun ? FirstPersonHandRig.OpenForReload(reload) : 0;
-                var reach=hand==1 ? FirstPersonHandling.SupportHandOffset(slot,reload,reducedMotion,magazineEmpty) : default;
+                float open=hand==1 ? supportOpen : 0;
                 for(int j=0;j<FirstPersonHandRig.JointCount;j++)
                 {
                     var bone=handBones[hand][j];
-                    bone.localPosition=V(skeleton.Joints[j].LocalBindPosition)+(j==2?V(reach):Vector3.zero);
-                    bone.localRotation=Q(FirstPersonHandRig.FingerRotation(j,hand==1,open,gun && reload<=0?cycle:0));
+                    bone.localPosition=V(skeleton.Joints[j].LocalBindPosition)+(hand==1 && j==2?V(reach):Vector3.zero);
+                    bone.localRotation=Q(FirstPersonHandRig.FingerRotation(j,hand==1,open,gun?trigger:0));
                 }
             }
         }
 
-        private void PoseLocalMechanicalParts(in WeaponVisualProfile profile, byte slot, float reload, bool magazineEmpty, float cycleOpen, bool reducedMotion)
+        private void PoseLocalMechanicalParts(in WeaponVisualProfile profile, in ReloadPose reloadPose, float cycleOpen, bool reducedMotion)
         {
+            bool gun = FirstPersonWeaponMechanics.HasMagazinePart(profile);
             if (localMagazine != null)
             {
-                bool show = FirstPersonWeaponMechanics.HasMagazinePart(profile);
+                bool show = gun && reloadPose.MagazineVisible;
                 localMagazine.gameObject.SetActive(show);
-                if (show)
-                    localMagazine.localPosition = V(FirstPersonWeaponMechanics.MagazineOffset(reload, magazineEmpty, reducedMotion));
+                if (show) localMagazine.localPosition = V(reloadPose.MagazineOffset);
+            }
+            if (localFreshMagazine != null)
+            {
+                bool show = gun && reloadPose.FreshMagazineVisible;
+                localFreshMagazine.gameObject.SetActive(show);
+                if (show) localFreshMagazine.localPosition = V(reloadPose.FreshMagazineOffset);
             }
             if (localCycle != null)
             {

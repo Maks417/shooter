@@ -306,6 +306,34 @@ namespace Shooter.Game.Contracts.Tests
         }
 
         [Fact]
+        public async Task OfflineSessionMovementViewCopiesSprintGroundedAndVerticalSpeed()
+        {
+            // ADR-099: the first-person sprint carry and jump/land layers read these authority fields.
+            var defaults = new LocalMovementView(Stance.Standing, 1.65f, false);
+            Assert.True(defaults.Grounded);
+            Assert.False(defaults.Sprinting);
+            Assert.Equal(0f, new LocalMovementView(Stance.Standing, 1.65f, false, verticalSpeedMetersPerSecond: float.NaN)
+                .VerticalSpeedMetersPerSecond);
+
+            var catalog = StaticMapCatalog.CreateReleaseSeed();
+            using var session = new OfflineGameSession(catalog, (w, n) => new FakeMapRuntime(w, n), allowFakeMapRuntime: true);
+            var request = new SessionRequest(WellKnownMaps.TrainingCompound, WellKnownModes.TeamDeathmatch, 5, 460072030UL);
+            Assert.True((await session.BeginLoadAsync(request, CancellationToken.None)).Succeeded);
+            Assert.True(session.Start().Succeeded);
+            var human = session.HumanEntityId;
+            Assert.True(session.TryGetMovementView(human, out var idle));
+            Assert.False(idle.Sprinting);
+            for (uint i = 0; i < 3; i++)
+            {
+                session.Step(new InputCommand(human, i, i + 1, 0, 1, 0, 0, InputButtons.SprintHeld, 0));
+                Assert.True(session.TryGetMovementView(human, out var running));
+                Assert.True(float.IsFinite(running.VerticalSpeedMetersPerSecond));
+                // The motor only sprints on the ground (the fake runtime has no floor, so the human is airborne here).
+                Assert.True(!running.Sprinting || running.Grounded);
+            }
+        }
+
+        [Fact]
         public async Task OfflineSession_Load_Start_Pause_Abort()
         {
             var catalog = StaticMapCatalog.CreateReleaseSeed();

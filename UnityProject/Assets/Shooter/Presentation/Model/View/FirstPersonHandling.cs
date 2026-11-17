@@ -14,9 +14,9 @@ namespace Shooter.Presentation.View
         // Bodycam-leaning near-field mass: slightly larger mesh scale + hip bias closer to the lens.
         public const float RifleNearFieldScale = 1.06f;
         public const float PistolNearFieldScale = 1.10f;
-        /// <summary>Seconds to lower the outgoing weapon before the mesh swap.</summary>
+        /// <summary>Legacy tuck seconds, used only when the incoming weapon's equip window is unknown.</summary>
         public const float HolsterSeconds = 0.14f;
-        /// <summary>Seconds to raise the incoming weapon after the mesh swap.</summary>
+        /// <summary>Legacy draw seconds, used only when the incoming weapon's equip window is unknown.</summary>
         public const float DrawSeconds = 0.20f;
         /// <summary>Swap mesh when holster reach this equip value (fully tucked).</summary>
         public const float SwapEquipThreshold = 0.02f;
@@ -32,6 +32,19 @@ namespace Shooter.Presentation.View
         private bool drawing = true;
         private double idleClock;
         private float swayBlend;
+        private float holsterSeconds = HolsterSeconds;
+        private float drawSeconds = DrawSeconds;
+        private float switchElapsed;
+        private bool heldOutgoing;
+        private float drawOverrideSeconds;
+        // Pose difference carried across a mid-phase reversal (switch during a draw, or back during a tuck); it fades
+        // out over the new phase so the gun never jumps on screen.
+        private Float3 carryPosition;
+        private Float3 carryRotation;
+        private float carryFrom = 1f;
+        private bool hasCarry;
+        /// <summary>Shortest draw after a held swap (the throw follow-through already used part of the equip window).</summary>
+        public const float MinDrawAfterHoldSeconds = 0.18f;
 
         public float EquipBlend => equip;
         public float SwayBlend => swayBlend;
@@ -55,25 +68,84 @@ namespace Shooter.Presentation.View
             drawing = true;
             idleClock = 0d;
             swayBlend = 0f;
+            holsterSeconds = HolsterSeconds;
+            drawSeconds = DrawSeconds;
+            switchElapsed = 0f;
+            heldOutgoing = false;
+            drawOverrideSeconds = 0f;
+            ClearCarry();
+            carryFrom = 1f;
         }
+
+        /// <summary>True while the incoming weapon is rising (false during the outgoing tuck).</summary>
+        public bool Drawing => drawing;
+        /// <summary>Seconds of the current tuck and draw (ADR-099: fitted to the incoming weapon's equip ticks).</summary>
+        public float CurrentHolsterSeconds => holsterSeconds;
+        public float CurrentDrawSeconds => drawSeconds;
 
         public void Step(Float3 feet, byte weaponSlot, float dt, bool sliding) =>
             Step(feet, weaponSlot, dt, sliding, reducedMotion: false);
 
-        public void Step(Float3 feet, byte weaponSlot, float dt, bool sliding, bool reducedMotion)
+        public void Step(Float3 feet, byte weaponSlot, float dt, bool sliding, bool reducedMotion) =>
+            Step(feet, weaponSlot, dt, sliding, reducedMotion, equipSeconds: 0f);
+
+        /// <summary>
+        /// <paramref name="equipSeconds"/> is the incoming weapon's authoritative equip window (definition equipTicks);
+        /// tuck + draw fill it (ADR-099). Non-positive keeps the legacy fixed timing.
+        /// </summary>
+        public void Step(Float3 feet, byte weaponSlot, float dt, bool sliding, bool reducedMotion, float equipSeconds) =>
+            Step(feet, weaponSlot, dt, sliding, reducedMotion, equipSeconds, holdOutgoing: false);
+
+        /// <summary>
+        /// <paramref name="holdOutgoing"/> keeps the outgoing weapon on screen while its own action finishes (the grenade
+        /// throw follow-through, which ends with the hand already out of view). When the hold ends the mesh swaps without
+        /// a tuck and the draw uses what is left of the equip window, never less than <see cref="MinDrawAfterHoldSeconds"/>.
+        /// </summary>
+        public void Step(Float3 feet, byte weaponSlot, float dt, bool sliding, bool reducedMotion, float equipSeconds,
+            bool holdOutgoing)
         {
+            if (!float.IsFinite(equipSeconds)) throw new ArgumentOutOfRangeException(nameof(equipSeconds));
             if (!float.IsFinite(dt) || dt < 0f) throw new ArgumentOutOfRangeException(nameof(dt));
             if (weaponSlot > ProductAuthorityActionView.MaxSlot) throw new ArgumentOutOfRangeException(nameof(weaponSlot));
             if (weaponSlot != desiredSlot)
             {
                 desiredSlot = weaponSlot;
                 // Begin (or continue) holstering the currently visible mesh; swap only at the bottom.
-                drawing = false;
+                if (drawing) BeginPhase(nextDrawing: false);
                 swayBlend = 0f;
+                switchElapsed = 0f;
+                drawOverrideSeconds = 0f;
             }
+            (holsterSeconds, drawSeconds) = FirstPersonEquipChoreography.Split(equipSeconds);
+            float equipDt = dt;
+            if (desiredSlot != visibleSlot)
+            {
+                if (holdOutgoing)
+                {
+                    heldOutgoing = true;
+                    drawing = false;
+                    equip = 1f;
+                    equipDt = 0f;
+                }
+                else if (heldOutgoing)
+                {
+                    // The follow-through left the hand out of view: swap now and draw in the rest of the window.
+                    heldOutgoing = false;
+                    visibleSlot = desiredSlot;
+                    drawing = true;
+                    equip = 0f;
+                    ClearCarry();
+                    float remaining = equipSeconds > 0f ? equipSeconds - switchElapsed : DrawSeconds;
+                    drawOverrideSeconds = Math.Max(MinDrawAfterHoldSeconds, remaining);
+                }
+            }
+            else heldOutgoing = false;
+            if (drawOverrideSeconds > 0f) drawSeconds = drawOverrideSeconds;
+            if (dt > 0f) switchElapsed += dt;
             if (dt > 0f)
             {
-                AdvanceEquip(dt, reducedMotion);
+                if (equipDt > 0f) AdvanceEquip(equipDt, reducedMotion);
+                if (equip >= 1f && desiredSlot == visibleSlot) drawOverrideSeconds = 0f;
                 float distance = 0f;
                 if (hasPrevious)
                 {
@@ -92,19 +164,21 @@ namespace Shooter.Presentation.View
                 previousFeet = feet;
                 hasPrevious = true;
             }
-            else if (!drawing && desiredSlot != visibleSlot && equip <= SwapEquipThreshold)
+            else if (!holdOutgoing && !drawing && desiredSlot != visibleSlot && equip <= SwapEquipThreshold)
             {
                 // Zero-dt tests / paused frames can still complete the mesh swap at the bottom.
                 visibleSlot = desiredSlot;
                 drawing = true;
                 equip = 0f;
+                ClearCarry();
             }
         }
 
         private void AdvanceEquip(float dt, bool reducedMotion)
         {
-            float holster = HolsterSeconds * (reducedMotion ? 0.55f : 1f);
-            float draw = DrawSeconds * (reducedMotion ? 0.55f : 1f);
+            // Reduced motion shortens the tuck; the draw stays on the authoritative window (fire is blocked until then).
+            float holster = holsterSeconds * (reducedMotion ? 0.55f : 1f);
+            float draw = drawSeconds;
             if (holster < 1e-4f) holster = 1e-4f;
             if (draw < 1e-4f) draw = 1e-4f;
             float remaining = dt;
@@ -123,6 +197,8 @@ namespace Shooter.Presentation.View
                         visibleSlot = desiredSlot;
                         drawing = true;
                         equip = 0f;
+                        // The swap happens fully tucked, out of view: the new weapon starts on its own draw pose.
+                        ClearCarry();
                         continue;
                     }
 
@@ -130,7 +206,8 @@ namespace Shooter.Presentation.View
                     return;
                 }
 
-                drawing = true;
+                // Switched back to the visible weapon mid-tuck: rise again from where it is.
+                if (!drawing) BeginPhase(nextDrawing: true);
                 float timeToReady = (1f - equip) * draw;
                 if (remaining + 1e-6f >= timeToReady)
                 {
@@ -221,6 +298,14 @@ namespace Shooter.Presentation.View
         public Float3 PositionOffset(float ads, float reloadPhase, bool reducedMotion) =>
             PositionOffset(ads, reloadPhase, reducedMotion, recoilEnergy: 0f, magazineEmpty: false);
 
+        /// <summary>Weapon-specific reload pose for the visible slot (ADR-099).</summary>
+        public ReloadPose ReloadPoseFor(float reloadPhase, bool magazineEmpty, bool reducedMotion)
+        {
+            var profile = WeaponVisualProfiles.Resolve(default, visibleSlot);
+            return FirstPersonReloadChoreography.Evaluate(profile.Family, reloadPhase, magazineEmpty,
+                profile.ReloadSeconds, reducedMotion);
+        }
+
         public Float3 PositionOffset(
             float ads,
             float reloadPhase,
@@ -229,48 +314,98 @@ namespace Shooter.Presentation.View
             bool magazineEmpty)
         {
             float hip = 1f - Math.Clamp(ads, 0f, 1f);
-            float reload = reloadPhase > 0f ? (float)Math.Sin(Math.PI * Math.Clamp(reloadPhase, 0f, 1f)) : 0f;
-            // Ease tuck with a soft mid-bump so holster swings out then settles, and draw rises cleanly.
-            float tuck = 1f - Smooth(equip);
-            float swing = SwitchSwing(equip);
+            Float3 reload = ReloadPoseFor(reloadPhase, magazineEmpty, reducedMotion).WeaponPosition;
             float switchAmp = reducedMotion ? 0.55f : 1f;
+            Float3 draw = MotionCurve.Scale(SwitchPosition(), switchAmp);
             float gait = reducedMotion ? 0f : movement * hip * Smooth(equip);
             double phase = travel * (Math.PI * 2d / 1.4d);
 
 
             Float3 sway = IdleSway(ads, reloadPhase, reducedMotion, recoilEnergy);
 
-            // Holster: down/back + outward hip swing; draw reverses with the same arc.
             return new Float3(
-                (float)Math.Sin(phase) * .005f * gait + .018f * reload + sway.X
-                    + (0.055f * tuck + 0.04f * swing) * switchAmp,
-                -(float)Math.Cos(phase * 2d) * .004f * gait - .055f * reload + sway.Y
-                    - (0.185f * tuck + 0.02f * swing) * switchAmp,
-                -.028f * reload + sway.Z
-                    - (0.125f * tuck + 0.035f * swing) * switchAmp);
+                (float)Math.Sin(phase) * .005f * gait + reload.X + sway.X + draw.X,
+                -(float)Math.Cos(phase * 2d) * .004f * gait + reload.Y + sway.Y + draw.Y,
+                reload.Z + sway.Z + draw.Z);
         }
 
         public Float3 RotationDegrees(float ads, float reloadPhase, bool reducedMotion) =>
             RotationDegrees(ads, reloadPhase, reducedMotion, recoilEnergy: 0f);
 
-        public Float3 RotationDegrees(float ads, float reloadPhase, bool reducedMotion, float recoilEnergy)
+        public Float3 RotationDegrees(float ads, float reloadPhase, bool reducedMotion, float recoilEnergy) =>
+            RotationDegrees(ads, reloadPhase, reducedMotion, recoilEnergy, magazineEmpty: false);
+
+        public Float3 RotationDegrees(float ads, float reloadPhase, bool reducedMotion, float recoilEnergy, bool magazineEmpty)
         {
             if (reducedMotion) return default;
             float hip = 1f - Math.Clamp(ads, 0f, 1f);
-            float reload = reloadPhase > 0f ? (float)Math.Sin(Math.PI * Math.Clamp(reloadPhase, 0f, 1f)) : 0f;
-            float tuck = 1f - Smooth(equip);
-            float swing = SwitchSwing(equip);
+            Float3 reload = ReloadPoseFor(reloadPhase, magazineEmpty, false).WeaponRotationDegrees;
+            Float3 draw = SwitchRotation();
             Float3 sway = IdleSway(ads, reloadPhase, false, recoilEnergy);
             // Short mechanical roll/pitch oscillation while the cosmetic spring is still settling.
             float energy = Math.Min(Math.Max(recoilEnergy, 0f), 0.45f);
             float rollKick = energy * 28f * hip;
             float pitchKick = energy * 10f * hip;
             return new Float3(
-                34f * tuck + 10f * swing + 11f * reload + sway.X * 18f + pitchKick,
-                14f * tuck + 18f * swing + sway.Y * 12f,
-                -12f * reload - 18f * tuck - 8f * swing
+                reload.X + draw.X + sway.X * 18f + pitchKick,
+                reload.Y + draw.Y + sway.Y * 12f,
+                reload.Z + draw.Z
                     + (float)Math.Sin(travel * Math.PI * 2d / 1.4d) * .5f * movement * hip + sway.Z * 14f
                     + rollKick);
+        }
+
+        /// <summary>Switch translation: generic tuck while holstering, the weapon's own style while drawing (ADR-099).</summary>
+        private Float3 SwitchPosition()
+        {
+            Float3 raw = drawing ? FirstPersonEquipChoreography.DrawPosition(visibleSlot, equip) : TuckPosition(equip);
+            return MotionCurve.Add(raw, MotionCurve.Scale(carryPosition, CarryWeight()));
+        }
+
+        private Float3 SwitchRotation()
+        {
+            Float3 raw = drawing ? FirstPersonEquipChoreography.DrawRotationDegrees(visibleSlot, equip) : TuckRotation(equip);
+            return MotionCurve.Add(raw, MotionCurve.Scale(carryRotation, CarryWeight()));
+        }
+
+        // Holster: down/back with an outward hip swing.
+        private static Float3 TuckPosition(float equipBlend)
+        {
+            float tuck = 1f - Smooth(equipBlend), swing = SwitchSwing(equipBlend);
+            return new Float3(0.055f * tuck + 0.04f * swing, -(0.185f * tuck + 0.02f * swing), -(0.125f * tuck + 0.035f * swing));
+        }
+
+        private static Float3 TuckRotation(float equipBlend)
+        {
+            float tuck = 1f - Smooth(equipBlend), swing = SwitchSwing(equipBlend);
+            return new Float3(34f * tuck + 10f * swing, 14f * tuck + 18f * swing, -18f * tuck - 8f * swing);
+        }
+
+        /// <summary>1 where the phase reversed, 0 at the phase's end (fully tucked or fully ready).</summary>
+        private float CarryWeight()
+        {
+            if (!hasCarry) return 0f;
+            float u = drawing
+                ? (carryFrom >= 1f - 1e-4f ? 0f : (1f - equip) / (1f - carryFrom))
+                : (carryFrom <= 1e-4f ? 0f : equip / carryFrom);
+            return Smooth(Math.Clamp(u, 0f, 1f));
+        }
+
+        private void BeginPhase(bool nextDrawing)
+        {
+            Float3 position = SwitchPosition(), rotation = SwitchRotation();
+            drawing = nextDrawing;
+            carryFrom = equip;
+            Float3 rawPosition = drawing ? FirstPersonEquipChoreography.DrawPosition(visibleSlot, equip) : TuckPosition(equip);
+            Float3 rawRotation = drawing ? FirstPersonEquipChoreography.DrawRotationDegrees(visibleSlot, equip) : TuckRotation(equip);
+            carryPosition = MotionCurve.Sub(position, rawPosition);
+            carryRotation = MotionCurve.Sub(rotation, rawRotation);
+            hasCarry = true;
+        }
+
+        private void ClearCarry()
+        {
+            carryPosition = carryRotation = default;
+            hasCarry = false;
         }
 
         /// <summary>Peaks mid-switch so the gun arcs outward before the tuck/draw settles.</summary>
@@ -288,9 +423,12 @@ namespace Shooter.Presentation.View
             if (hip < 0.05f || reloadPhase > 0f || recoilEnergy >= 0.04f) return default;
             float gate = swayBlend * hip;
             double t = idleClock;
+            // ADR-099 breathing: a slow ~4.2 s rise and fall with a quicker inhale, layered on the drift.
+            double breath = Math.Sin(t * (Math.PI * 2d / 4.2d));
+            breath = breath > 0d ? breath : breath * 0.7d;
             return new Float3(
                 (float)Math.Sin(t * 1.35d) * 0.0018f * gate,
-                (float)Math.Sin(t * 1.05d + 0.7d) * 0.0012f * gate,
+                ((float)Math.Sin(t * 1.05d + 0.7d) * 0.0012f + (float)breath * 0.0016f) * gate,
                 (float)Math.Cos(t * 0.9d) * 0.0009f * gate);
         }
 

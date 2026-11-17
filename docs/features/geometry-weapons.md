@@ -44,6 +44,23 @@ Five semantic material slots distinguish coated metal, polymer, machined steel, 
 
 `ShooterFeatureBuild.CaptureArsenal` renders eight source diagnostics (four weapons, side/three-quarter) using URP Lit and the same finish adapter. These are offline source renders, not packaged-player/first-person acceptance. Gallery and soldier diagnostic consumers accept the versioned rifle and show detached parts. Old 1.0.2 fixtures remain immutable and reject regeneration; 1.0.3 migration and schema fixtures are retained. Named gameplay/visual comparison, P05 and reference-machine performance acceptance remain open.
 
+## Per-weapon hand and weapon choreography — ADR-099
+
+[ADR-099](../decisions.md#adr-099--accepted-per-weapon-first-person-hand-and-weapon-choreography) replaces the shared reload arc and the fixed switch timing with numeric per-weapon key tables (`MotionCurve`) in pure `Presentation/Model/View`.
+
+- **Reload.** The magazine-fed weapons each have their own sequence:
+  - Rifle/carbine: tilt, release, strip/drop, fetch a fresh magazine from the belt, insert, slap; empty reloads add a bolt-catch press.
+  - Pistol: cant, thumb drop, insert, palm seat; empty reloads add a slide rack.
+
+  The packaged magazine falls away, and the `FP fresh magazine` child (same mesh) rides in the support hand until it seats.
+- **Switching.** The draw style is per weapon and fills the incoming weapon's authoritative equip ticks after a short tuck.
+- **Knife.** Swings last the knife's fire interval and alternate direction.
+- **Grenade.**
+  - Cook: a pin pull with the support hand, then a cocked raise with a fuse tremble.
+  - Throw: survives the authority's same-tick switch back to the rifle and keeps the hands through the follow-through.
+- **Movement and idle.** Sprint carry, jump lift/landing dip, crouch tuck, slide roll, look inertia, idle breathing and an eased crouch eye height are added from new `LocalMovementView` motor fields.
+- **Constraints.** Every layer is cosmetic, ADS-safe and scaled by reduced motion. Hand rig `fp.hand.v2` and the packaged meshes are unchanged.
+
 ## Articulated handling and reflection pass — ADR-069
 
 [ADR-069](../decisions.md#adr-069--accepted-articulated-near-field-hands-and-global-analytic-reflections) adds `fp.hand.v2`: 17 camera-only joints per hand, three finger segments plus thumb articulation, a wrist-driven sleeve with an anchored elbow, and independent rifle/pistol/knife/grenade grips. Eight skinned meshes and matching skeletons are published through `MapVisualClosure`; runtime validates required skin indices and binds verified payloads. Existing SGAF skin/skeleton encodings are reused. Soldier skeleton/P05 and authority hit data are unaffected.
@@ -83,4 +100,4 @@ Weapon meshes are no longer inside map packages. `WeaponPackage` publishes one `
 
 `geometry.weapon` advances **1.0.4 → 1.0.5**. Recipes require `parameters.silhouette` (`standard` | `carbine`; carbine only with `kind=rifle`). Combat remains owned by Simulation `WeaponCatalog` / `WeaponDefinition`; recipes still cannot override damage, fire rate or magazine size. Presentation binds packaged meshes by DefinitionId visual profile (`weapons/rifle`, `weapons/rifle-carbine`, …), not by loadout slot alone. Map visual closure publishes carbine LOD/mag/cycle paths beside the classic rifle. Sockets and collision mechanical dimensions stay on the numeric baseline. Old 1.0.4 fixtures remain immutable and reject regeneration. Named player/installer review remains Pending.
 
-`ShooterFeatureBuild.CaptureHandling` renders ready/reach/extract/seat source diagnostics using verified map visual payloads and copied authority fixtures. The fixture adapter is Editor-only and cannot ship. Diagnostics do not substitute for actual gameplay or the comparative visual gate.
+`ShooterFeatureBuild.CaptureHandling` renders ready/reach/extract/seat source diagnostics (ADR-099 adds empty-reload fresh/release, knife slash, grenade pin and throw frames) using verified map visual payloads and copied authority fixtures. The fixture adapter is Editor-only and cannot ship. Diagnostics do not substitute for actual gameplay or the comparative visual gate.

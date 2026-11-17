@@ -197,6 +197,41 @@ namespace Shooter.Tests
         }
 
         [Test]
+        public void ReloadDropsTheOldMagazineAndSeatsAFreshOneFromTheBelt()
+        {
+            // ADR-099: mid-reload the packaged magazine has fallen away and a second copy rides in the support hand.
+            var root=new GameObject("Fresh magazine reload test");
+            try
+            {
+                var camera=new GameObject("Camera").AddComponent<Camera>(); camera.transform.SetParent(root.transform);
+                var presentation=ProductActorPresentation.Create(root.transform,camera);
+                var visuals=PackagedVisualPayloads.FromBuild(MapPackageBuilder.Build("training-compound","low",
+                    ContentIdentity.Hash(System.Text.Encoding.ASCII.GetBytes("fresh-magazine"))));
+                presentation.BindPackagedVisuals(visuals);
+                var id=new EntityId(1);
+                var lifecycle=new Lifecycle { State=new ActorLifecycleState(id,1,true,100,default,0,0,0,30,90) };
+                var snapshot=new MatchViewSnapshot(1,10,10,53990,GameMatchPhase.Playing,MatchOutcome.None,FinishReason.None,0,0,
+                    new[]{new ParticipantState(new ParticipantId(1),"Human",1,true,id,new LifeId(1),true,0,0,0)},0);
+                presentation.Sync(snapshot,lifecycle,null,0,id,false,.016f,Array.Empty<CombatEvent>(),10);
+                var weapon=camera.transform.Find("Local FP rifle");
+                var magazine=weapon.Find("FP magazine"); var fresh=weapon.Find("FP fresh magazine");
+                Assert.That(fresh,Is.Not.Null);
+                Assert.That(fresh.gameObject.activeSelf,Is.False);
+                Assert.That(fresh.GetComponent<MeshFilter>().sharedMesh,Is.SameAs(magazine.GetComponent<MeshFilter>().sharedMesh));
+                var reload=new CombatEvent(new EventId(1,10,id,1),CombatEventKind.ReloadStarted,id,default,new ActionPayload(0,10,110));
+                presentation.Sync(snapshot,lifecycle,null,0,id,false,.016f,new[]{reload},65);
+                Assert.That(magazine.gameObject.activeSelf,Is.False,"The dropped magazine has left the view.");
+                Assert.That(fresh.gameObject.activeSelf,Is.True,"A fresh magazine is on its way up to the well.");
+                Assert.That(fresh.localPosition.y,Is.LessThan(-.01f));
+                presentation.Sync(snapshot,lifecycle,null,0,id,false,.016f,Array.Empty<CombatEvent>(),110);
+                Assert.That(magazine.gameObject.activeSelf,Is.True);
+                Assert.That(magazine.localPosition,Is.EqualTo(Vector3.zero));
+                Assert.That(fresh.gameObject.activeSelf,Is.False);
+            }
+            finally { UnityEngine.Object.DestroyImmediate(root); }
+        }
+
+        [Test]
         public void EveryLoadoutSlotKeepsSemanticMaterialsAndHidesAbsentMovingParts()
         {
             var root = new GameObject("Arsenal slot test");

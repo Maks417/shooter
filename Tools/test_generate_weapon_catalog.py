@@ -90,6 +90,17 @@ class GeneratorTests(unittest.TestCase):
         self.assertIn("recoilPitchRadians: Deg(0.40f)", catalog)
         self.assertIn("hipSpreadRadians: Deg(1.0f)", catalog)
 
+    def test_presentation_timing_copies_combat_ticks_and_optional_ads_seconds(self):
+        # ADR-099: first-person choreography is timed by the same definition file.
+        self.repo.edit("pistol.weapon.json", lambda d: d["visual"].update(adsSeconds=0.2))
+        gen.run(self.repo.root, check=False)
+        profiles = (self.repo.root / gen.PROFILES_OUT).read_text(encoding="utf-8")
+        self.assertIn("equipTicks: 18, fireIntervalTicks: 10, reloadTicks: 108, fuseTicks: 0, adsSeconds: 0.2f", profiles)
+        self.assertIn("equipTicks: 24, fireIntervalTicks: 6, reloadTicks: 144, fuseTicks: 0, adsSeconds: 0.15f", profiles)
+        self.assertIn("fuseTicks: 120", profiles)
+        self.repo.edit("pistol.weapon.json", lambda d: d["visual"].update(adsSeconds=0.01))
+        self.rejects("adsSeconds")
+
     def test_unknown_and_missing_fields(self):
         self.repo.edit("rifle.weapon.json", lambda d: d["combat"].update(damage=5))
         self.rejects("unknown damage")

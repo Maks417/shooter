@@ -225,10 +225,34 @@ public static class ShooterFeatureBuild
                     presentation.Sync(snapshot,lifecycle,null,0,id,true,0,Array.Empty<CombatEvent>(),52); RenderHandPose(camera,Path.Combine(output,name+"-extract.png"));
                     presentation.Sync(snapshot,lifecycle,null,0,id,true,0,Array.Empty<CombatEvent>(),86); RenderHandPose(camera,Path.Combine(output,name+"-seat.png"));
                     presentation.Sync(snapshot,lifecycle,null,0,id,true,0,Array.Empty<CombatEvent>(),110);
+                    // ADR-099 empty reload: the fresh magazine on its way up, then the bolt-catch press / slide release.
+                    lifecycle.State=new Shooter.Game.Contracts.ActorLifecycleState(id,1,true,100,default,0,0,slot,0,90);
+                    var empty=new CombatEvent(new EventId(1,120,id,2),CombatEventKind.ReloadStarted,id,default,new ActionPayload(slot,120,220));
+                    presentation.Sync(snapshot,lifecycle,null,0,id,true,0,new[]{empty},176); RenderHandPose(camera,Path.Combine(output,name+"-fresh.png"));
+                    presentation.Sync(snapshot,lifecycle,null,0,id,true,0,Array.Empty<CombatEvent>(),199); RenderHandPose(camera,Path.Combine(output,name+"-release.png"));
+                    presentation.Sync(snapshot,lifecycle,null,0,id,true,0,Array.Empty<CombatEvent>(),220);
+                }
+                else if(slot==2)
+                {
+                    var swing=new CombatEvent(new EventId(1,20,id,1),CombatEventKind.ShotAccepted,id,default,
+                        new ShotPayload(new DefinitionId("weapons/knife"),1,default,new Float3(0,0,1),1,1));
+                    presentation.Sync(snapshot,lifecycle,null,0,id,false,0,new[]{swing},20);
+                    presentation.Sync(snapshot,lifecycle,null,0,id,false,.12f,Array.Empty<CombatEvent>(),27); RenderHandPose(camera,Path.Combine(output,"knife-slash.png"));
+                }
+                else
+                {
+                    lifecycle.State=new Shooter.Game.Contracts.ActorLifecycleState(id,1,true,100,default,0,0,slot,1,0,WeaponAction.Cooking);
+                    presentation.Sync(snapshot,lifecycle,null,0,id,false,.14f,Array.Empty<CombatEvent>(),20); RenderHandPose(camera,Path.Combine(output,"grenade-pin.png"));
+                    presentation.Sync(snapshot,lifecycle,null,0,id,false,.5f,Array.Empty<CombatEvent>(),50);
+                    lifecycle.State=new Shooter.Game.Contracts.ActorLifecycleState(id,1,true,100,default,0,0,0,30,90,WeaponAction.Equipping);
+                    var spawn=new CombatEvent(new EventId(1,60,id,1),CombatEventKind.ProjectileSpawned,id,default,
+                        new ProjectilePayload(new EntityId(400),new Float3(0,1,0),new Float3(0,2,10),new DefinitionId("weapons/grenade")));
+                    presentation.Sync(snapshot,lifecycle,null,0,id,false,0,new[]{spawn},60);
+                    presentation.Sync(snapshot,lifecycle,null,0,id,false,.06f,Array.Empty<CombatEvent>(),64); RenderHandPose(camera,Path.Combine(output,"grenade-throw.png"));
                 }
             }
-            File.WriteAllText(Path.Combine(output,"scope.txt"),"Editor packaged Low visual diagnostic; fixed camera and copied authority/action fixtures, no gameplay acceptance. fp.hand.v2 / geometry.weapon " + WeaponRecipe.GeneratorVersion);
-            Debug.Log("SHOOTER_HANDLING_CAPTURE files=10");
+            File.WriteAllText(Path.Combine(output,"scope.txt"),"Editor packaged Low visual diagnostic; fixed camera and copied authority/action fixtures, no gameplay acceptance. fp.hand.v2 / geometry.weapon " + WeaponRecipe.GeneratorVersion + " / ADR-099 choreography");
+            Debug.Log("SHOOTER_HANDLING_CAPTURE files=17");
         }
         finally { sky?.Dispose(); UnityEngine.Object.DestroyImmediate(root); }
     });
