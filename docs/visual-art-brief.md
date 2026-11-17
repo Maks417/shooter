@@ -54,7 +54,7 @@ Secondary mood context only: Battlefield 6, Call of Duty. References inform orig
 
 **First person:** tactile rifle/pistol, visible magazine exchange, analytic sights (no recursive scope RTT in baseline), near-wall composition that does not hide targets.
 
-**Interface:** charcoal/graphite `#161C20`, ivory `#F1F3EF`, muted `#ADB7B7`, sand-amber focus `#E6C56A`, ally `#7BC5D1`, danger `#E47B70`. Large headings, compact left navigation, rendered operation cards, opaque HUD plates, friendly minimap plus temporary gunfire reveal, bounded elimination feed. See [brandbook](brandbook.md).
+**Interface:** charcoal/graphite `#161C20`, ivory `#F1F3EF`, muted `#ADB7B7`, sand-amber focus `#E6C56A`, ally `#7BC5D1`, danger `#E47B70`. Large headings, compact left navigation, rendered operation cards, opaque HUD plates, circular heading-up friendly minimap ringed by the compass plus temporary gunfire reveal, bounded elimination feed. See [brandbook](brandbook.md).
 
 **Motion / FX:** weighty locomotion; shot/impact/smoke as bounded analytic meshes; synchronized synthetic audio. Cosmetics never re-apply authoritative recoil.
 

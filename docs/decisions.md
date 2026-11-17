@@ -1676,3 +1676,21 @@ Consequences: High costs more GPU (4x MSAA, 4096 four-cascade soft shadows, lens
 Rollback: revert the commit and rerun `ShooterBuild.InitializeFoundation` and `Compile-GameContent.ps1 -Native`.
 
 Evidence: pure Simulation (new `DamageFeedbackV2Tests`, lens FOV and tier tests), Generation, Maps, Game and SourceProvenance lanes; Unity EditMode/PlayMode, client build and smoke when run. Visual acceptance (scoped M-TAC 338 at 1080p High, flicker at 50-150 m, low-health feel) and a High benchmark remain Pending owner review.
+
+## ADR-104 — Accepted: circular heading-up minimap with ring compass
+
+Date 2026-11-17. Context: owner playtest after 0.3.20: the minimap did not show the local player or teammates and looked weak; the owner asked for a round minimap that turns with the view and for the compass to ring the minimap instead of sitting at the top of the screen, with the compass letters turning so N always points to north on the map. Supersedes ADR-058's north-up / Fill-pip clause and removes the top compass strip; gunfire reveal rules from ADR-058 are unchanged.
+
+Finding: `DrawTacticalMap` drew inside `GUI.BeginGroup` and the self/ally markers were rotated `TacticalUi.MapGlyph` icons. IMGUI applies the group offset before `GUI.matrix`, so the rotation also rotated the group offset and every marker with a non-zero yaw landed outside the group and was clipped (the ADR-058 bug, reintroduced by the rotated glyphs). Unrotated gunfire blips still showed.
+
+Decision:
+- The minimap is drawn in absolute HUD space with no group. `UiSdf.BeginCircleClip/EndCircleClip` set a new `_ClipCircle` shader mask (view-space device px) applied to every SDF draw; flat fallbacks are culled to rects fully inside the circle.
+- Heading-up disc, radius 75 px for 50 m (`CombatHudVisual.MinimapRadius/MinimapRangeMeters`), bottom-left of the safe area. Layers: shadowed bezel, radial-gradient disc, 25 m range ring, forward view cone, structures as rotated rounded rects, teammate arrows (rim pips when out of range), gunfire blips (rim-clamped and dimmed), centred self arrow pointing up.
+- Compass: a 16 px bezel band around the disc with ticks every 15 degrees and N/E/S/W letters placed by `CompassRingAngle(bearing, heading)` so they turn with the map (N in amber); the objective (enemy spawn) marker sits just outside the ring at its bearing. A fixed amber notch and a three-digit heading readout sit above the ring. The HP/stamina block moves right of the ring.
+- Pure math (`MinimapProject`, `MinimapClampToRim`, `CompassRingAngle`, `HeadingDegrees`, `RectInsideCircle`) lives in `CombatHudVisual` with xUnit coverage; the shader mask has an EditMode test.
+
+Consequences: presentation only. No C0, Game-v1, content-format, sensing or authority change.
+
+Rollback: revert the commit.
+
+Evidence: Simulation pure lane and Unity EditMode; interactive review (rotation, markers, clipping, 150% UI scale) Pending owner playtest.

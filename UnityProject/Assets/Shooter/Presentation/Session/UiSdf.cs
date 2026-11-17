@@ -82,6 +82,24 @@ namespace Shooter.Presentation.Session
         private static readonly int GlowColorId = Shader.PropertyToID("_GlowColor");
         private static readonly int ArcId = Shader.PropertyToID("_Arc");
         private static readonly int FadeId = Shader.PropertyToID("_Fade");
+        private static readonly int ClipCircleId = Shader.PropertyToID("_ClipCircle");
+        private static Vector4 clipCircle;
+
+        /// <summary>True while a <see cref="BeginCircleClip"/> mask applies to every SDF draw.</summary>
+        public static bool CircleClipActive => clipCircle.z > 0f;
+
+        /// <summary>
+        /// ADR-104: mask every following SDF draw to a circle given in the current GUI space (no groups: the mask is
+        /// resolved through <see cref="GUI.matrix"/> only). Flat fallbacks are not masked; callers cull them.
+        /// </summary>
+        public static void BeginCircleClip(Vector2 centre, float radius)
+        {
+            Vector3 c = GUI.matrix.MultiplyPoint3x4(new Vector3(centre.x, centre.y, 0f));
+            float scale = DeviceScale();
+            clipCircle = new Vector4(c.x, c.y, Mathf.Max(0f, radius) * scale, 1f);
+        }
+
+        public static void EndCircleClip() => clipCircle = Vector4.zero;
 
         /// <summary>True when the SDF shader loaded (players preload it; see ShooterBuild).</summary>
         public static bool Available => EnsureMaterial() != null;
@@ -147,6 +165,7 @@ namespace Shooter.Presentation.Session
             mat.SetVector(ShapeA, new Vector4((float)UiShapeKind.EdgeFade, 0f, 0f, 0f));
             mat.SetVector(ColorId, Out4(tint));
             mat.SetVector(FadeId, new Vector4(band, Mathf.Clamp01(strength), 0f, 0f));
+            mat.SetVector(ClipCircleId, clipCircle);
             mat.SetVector(ShadowId, Vector4.zero);
             mat.SetVector(GlowId, new Vector4(0f, 0f, -1f, 0f));
             Graphics.DrawTexture(r, Texture2D.whiteTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, Color.white, mat);
@@ -173,6 +192,7 @@ namespace Shooter.Presentation.Session
             mat.SetVector(GlowId, new Vector4(glow, Mathf.Clamp01(style.GlowAlpha), style.Glint, Mathf.Clamp01(style.GlintAlpha)));
             mat.SetVector(GlowColorId, Out4(style.GlowColor));
             mat.SetVector(ArcId, arc);
+            mat.SetVector(ClipCircleId, clipCircle);
             Graphics.DrawTexture(quad, Texture2D.whiteTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, Color.white, mat);
             return true;
         }
@@ -212,6 +232,7 @@ namespace Shooter.Presentation.Session
             // Atlas entry Y is top-down; the texture was flipped on upload.
             mat.SetVector(GlyphRectId, new Vector4(entry.X / aw, (ah - entry.Y - entry.Height) / ah, entry.Width / aw, entry.Height / ah));
             mat.SetVector(GlyphMapId, new Vector4(Generation.Icons.IconAtlas.SpreadPixels, fit.height / entry.Height, 0f, 0f));
+            mat.SetVector(ClipCircleId, clipCircle);
             Graphics.DrawTexture(quad, tex, new Rect(0, 0, 1, 1), 0, 0, 0, 0, Color.white, mat);
             return true;
         }

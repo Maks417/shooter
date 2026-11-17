@@ -1234,7 +1234,6 @@ namespace Shooter.Presentation.Session
                 DrawTacticalMap(a, human, snap);
                 DrawAmmoPanel(a, human, snap);
                 DrawAmmoScorePopup(a);
-                DrawCompass(a, human.AimYaw, human.Feet);
                 DrawKillFeed(a);
                 DrawScoreFeed(a);
                 DrawScoreRibbon(a);
@@ -1316,56 +1315,16 @@ namespace Shooter.Presentation.Session
 
         private void DrawTacticalMap(Rect safe, ActorLifecycleState human, MatchViewSnapshot? snapshot)
         {
-            const float size = 108, range = 42;
-            Rect map = new Rect(safe.x, safe.yMax - size, size, size);
-            TacticalUi.CombatPlate(new Rect(map.x - 1, map.y - 1, map.width + 2, map.height + 2));
-            GUI.BeginGroup(map);
-            try
-            {
-                TacticalUi.Fill(new Rect(0, 0, size, size), new Color(.03f, .05f, .055f, .55f));
-                // Quiet cross only — no quarter grid noise.
-                TacticalUi.Fill(new Rect(size * .5f, 8, 1, size - 16), new Color(.45f, .6f, .65f, .06f));
-                TacticalUi.Fill(new Rect(8, size * .5f, size - 16, 1), new Color(.45f, .6f, .65f, .06f));
-                float scale = size / (range * 2);
-                for (int i = 0; i < hudBoxes.Count; i++)
-                {
-                    var box = hudBoxes[i];
-                    if (!box.Gameplay || box.Size.Y < .3f) continue;
-                    float cx = size * .5f + (box.Center.X - human.Feet.X) * scale;
-                    float cy = size * .5f - (box.Center.Z - human.Feet.Z) * scale;
-                    Rect r = new Rect(cx - box.Size.X * scale * .5f, cy - box.Size.Z * scale * .5f, box.Size.X * scale, box.Size.Z * scale);
-                    if (r.xMax < 0 || r.yMax < 0 || r.x > size || r.y > size) continue;
-                    TacticalUi.Fill(r, new Color(.48f, .58f, .60f, .72f));
-                }
-                if (snapshot != null && session?.Lifecycle != null)
-                    for (int i = 0; i < snapshot.Participants.Count; i++)
-                    {
-                        var participant = snapshot.Participants[i];
-                        if (!participant.Alive || participant.Team != human.Team || participant.IsHuman) continue;
-                        if (!session.Lifecycle.TryGetActorState(participant.EntityId, out var ally)) continue;
-                        float px = size * .5f + (ally.Feet.X - human.Feet.X) * scale;
-                        float py = size * .5f - (ally.Feet.Z - human.Feet.Z) * scale;
-                        if (px > 4 && px < size - 4 && py > 4 && py < size - 4)
-                            DrawAllyMarker(px, py, ally.AimYaw);
-                    }
-                float now = Time.unscaledTime;
-                for (int i = 0; i < gunfireRevealUntil.Length; i++)
-                {
-                    float alpha = CombatHudVisual.GunfireRevealAlpha(gunfireRevealUntil[i] - now);
-                    if (alpha <= 0.02f) continue;
-                    float px = size * .5f + (gunfireRevealX[i] - human.Feet.X) * scale;
-                    float py = size * .5f - (gunfireRevealZ[i] - human.Feet.Z) * scale;
-                    if (px > 4 && px < size - 4 && py > 4 && py < size - 4)
-                        DrawGunfireRevealMarker(px, py, alpha);
-                }
-                DrawSelfMarker(size * .5f, human.AimYaw);
-                combatUi.Label(new Rect(size - 16, 2, 14, 14), "N", 11, TacticalUi.Muted, TextAnchor.UpperCenter);
-            }
-            finally { GUI.EndGroup(); }
+            // ADR-104: circular heading-up minimap with the compass as a ring around it. Drawn in absolute HUD space
+            // (no GUI.BeginGroup: IMGUI applies the group offset before GUI.matrix, so rotated glyphs used to land
+            // outside the group and vanish). Map content is masked to the disc by the UiSdf circle clip.
+            const float radius = CombatHudVisual.MinimapRadius, band = CombatHudVisual.CompassBandWidth;
+            var centre = new Vector2(safe.x + radius + band, safe.yMax - radius - band);
+            DrawMinimap(centre, human, snapshot);
 
             // The in-match teammate list was removed: at 15v15 it ran over the HP block. Team status lives on the
             // Tab scoreboard instead.
-            float squadX = map.xMax + 8;
+            float squadX = centre.x + radius + band + 10f;
 
             bool danger = CombatHudVisual.IsHealthDanger(human.Health);
             Color healthInk = danger ? TacticalUi.Enemy
@@ -1411,49 +1370,148 @@ namespace Shooter.Presentation.Session
             combatUi.Label(new Rect(hx + barW + 4, tightY - 2, 28, 10), "STA", 8, TacticalUi.Muted, TextAnchor.MiddleLeft);
         }
 
-        private static void DrawAllyMarker(float px, float py, float aimYaw) =>
-            TacticalUi.MapGlyph(px, py, Generation.Icons.IconLibrary.AllyArrow, TacticalUi.Ally, aimYaw);
-
-        private static void DrawSelfMarker(float center, float aimYaw) =>
-            TacticalUi.MapGlyph(center, center, Generation.Icons.IconLibrary.AllyArrow, TacticalUi.Accent, aimYaw, 15f);
-
-        private static void DrawGunfireRevealMarker(float px, float py, float alpha) =>
-            TacticalUi.MapGlyph(px, py, Generation.Icons.IconLibrary.EnemyMarker,
-                new Color(TacticalUi.Enemy.r, TacticalUi.Enemy.g, TacticalUi.Enemy.b, alpha));
-
-        private void DrawCompass(Rect safe, float yaw, Float3 feet)
+        private void DrawMinimap(Vector2 centre, ActorLifecycleState human, MatchViewSnapshot? snapshot)
         {
-            // Sit under the shell score/clock strip (BFV-like top hierarchy). Quiet so world stays first.
-            float center = combatUi.Width * .5f;
-            float y = safe.y + 40;
-            float w = 248, h = 14;
-            TacticalUi.CombatPlate(new Rect(center - w * .5f, y, w, h));
-            float degrees = Mathf.Repeat(yaw * Mathf.Rad2Deg, 360f);
-            TacticalUi.Fill(new Rect(center - 1, y, 2, 2.5f), TacticalUi.Accent);
+            const float radius = CombatHudVisual.MinimapRadius, band = CombatHudVisual.CompassBandWidth;
+            float yaw = human.AimYaw;
+            float pxPerMeter = radius / CombatHudVisual.MinimapRangeMeters;
+            float outer = radius + band;
+            Rect disc = new Rect(centre.x - radius, centre.y - radius, radius * 2f, radius * 2f);
+            Rect bezel = new Rect(centre.x - outer, centre.y - outer, outer * 2f, outer * 2f);
+
+            // 1. Bezel plate with a soft shadow, then the map disc (lighter centre, darker edge).
+            var bezelStyle = UiSdf.Style.Solid(new Color(.045f, .058f, .066f, .86f)).WithShadow(.35f, 8f, 2f);
+            if (!UiSdf.Circle(bezel, bezelStyle)) TacticalUi.Fill(bezel, new Color(.045f, .058f, .066f, .7f));
+            UiSdf.Circle(disc, UiSdf.Style.Solid(new Color(.09f, .115f, .125f, .82f))
+                .WithGradient(new Color(.035f, .046f, .052f, .9f), UiSdf.Gradient.Radial));
+
+            // 2. Map content, masked to the disc.
+            UiSdf.BeginCircleClip(centre, radius);
+            try
+            {
+                var rangeRing = UiSdf.Style.Solid(new Color(.6f, .72f, .75f, .09f));
+                rangeRing.Stroke = 1f;
+                float half = radius * .5f;
+                UiSdf.Circle(new Rect(centre.x - half, centre.y - half, half * 2f, half * 2f), rangeRing);
+                // Forward view cone (always up on a heading-up map).
+                UiSdf.Arc(disc, -35f * Mathf.Deg2Rad, 35f * Mathf.Deg2Rad, radius,
+                    UiSdf.Style.Solid(new Color(TacticalUi.Accent.r, TacticalUi.Accent.g, TacticalUi.Accent.b, .09f)));
+                DrawMinimapStructures(centre, human, pxPerMeter);
+            }
+            finally { UiSdf.EndCircleClip(); }
+
+            // 3. Teammates (rim-clamped when out of range) and 4. temporary gunfire reveals.
+            float rim = radius - CombatHudVisual.MinimapRimInset;
+            if (snapshot != null && session?.Lifecycle != null)
+                for (int i = 0; i < snapshot.Participants.Count; i++)
+                {
+                    var participant = snapshot.Participants[i];
+                    if (!participant.Alive || participant.Team != human.Team || participant.IsHuman) continue;
+                    if (!session.Lifecycle.TryGetActorState(participant.EntityId, out var ally)) continue;
+                    CombatHudVisual.MinimapProject(yaw, human.Feet.X, human.Feet.Z, ally.Feet.X, ally.Feet.Z, pxPerMeter, out float rx, out float dy);
+                    if (CombatHudVisual.MinimapClampToRim(ref rx, ref dy, rim))
+                    {
+                        Rect pip = new Rect(centre.x + rx - 3f, centre.y + dy - 3f, 6f, 6f);
+                        if (!UiSdf.Circle(pip, UiSdf.Style.Solid(new Color(TacticalUi.Ally.r, TacticalUi.Ally.g, TacticalUi.Ally.b, .7f))))
+                            TacticalUi.Fill(pip, TacticalUi.Ally);
+                        continue;
+                    }
+                    TacticalUi.MapGlyph(centre.x + rx, centre.y + dy, Generation.Icons.IconLibrary.AllyArrow, TacticalUi.Ally, ally.AimYaw - yaw, 12f);
+                }
+            float now = Time.unscaledTime;
+            for (int i = 0; i < gunfireRevealUntil.Length; i++)
+            {
+                float alpha = CombatHudVisual.GunfireRevealAlpha(gunfireRevealUntil[i] - now);
+                if (alpha <= 0.02f) continue;
+                CombatHudVisual.MinimapProject(yaw, human.Feet.X, human.Feet.Z, gunfireRevealX[i], gunfireRevealZ[i], pxPerMeter, out float rx, out float dy);
+                bool clamped = CombatHudVisual.MinimapClampToRim(ref rx, ref dy, rim);
+                var ink = new Color(TacticalUi.Enemy.r, TacticalUi.Enemy.g, TacticalUi.Enemy.b, clamped ? alpha * .7f : alpha);
+                TacticalUi.MapGlyph(centre.x + rx, centre.y + dy, Generation.Icons.IconLibrary.EnemyMarker, ink, 0f, clamped ? 9f : 12f);
+            }
+
+            // 5. Self: always centred and pointing up.
+            if (!TacticalUi.Icon(new Rect(centre.x - 8f, centre.y - 8f, 16f, 16f), Generation.Icons.IconLibrary.AllyArrow, TacticalUi.Accent, shadow: true))
+                TacticalUi.Fill(new Rect(centre.x - 3f, centre.y - 3f, 6f, 6f), TacticalUi.Accent);
+
+            // 6. Compass ring: hairlines, ticks and letters turn with the map so N always marks north.
+            var hairline = UiSdf.Style.Solid(TacticalUi.HudEdge);
+            hairline.Stroke = 1f;
+            UiSdf.Circle(bezel, hairline);
+            UiSdf.Circle(new Rect(disc.x - .5f, disc.y - .5f, disc.width + 1f, disc.height + 1f),
+                new UiSdf.Style { Fill = new Color(1f, 1f, 1f, .14f), Fill2 = new Color(1f, 1f, 1f, .14f), Stroke = 1f, Glint = -1f });
+            float headingDeg = Mathf.Repeat(yaw * Mathf.Rad2Deg, 360f);
+            for (int bearing = 0; bearing < 360; bearing += 15)
+            {
+                bool cardinal = CombatHudVisual.IsCardinal(bearing);
+                if (cardinal) continue; // letters take the cardinal slots
+                float angle = CombatHudVisual.CompassRingAngle(bearing, headingDeg);
+                float len = bearing % 45 == 0 ? 5f : 3f;
+                var dir = new Vector2(Mathf.Sin(angle), -Mathf.Cos(angle));
+                var tickInk = bearing % 45 == 0 ? new Color(TacticalUi.Text.r, TacticalUi.Text.g, TacticalUi.Text.b, .55f)
+                    : new Color(TacticalUi.Muted.r, TacticalUi.Muted.g, TacticalUi.Muted.b, .4f);
+                TacticalUi.Line(centre + dir * (outer - 2f - len), centre + dir * (outer - 2f), tickInk, 1f);
+            }
+            for (int c = 0; c < 4; c++)
+            {
+                int bearing = c * 90;
+                float angle = CombatHudVisual.CompassRingAngle(bearing, headingDeg);
+                var dir = new Vector2(Mathf.Sin(angle), -Mathf.Cos(angle));
+                Vector2 p = centre + dir * (radius + band * .5f);
+                bool north = bearing == 0;
+                combatUi.Label(new Rect(p.x - 9f, p.y - 7.5f, 18f, 15f), CombatHudVisual.CardinalOrBearing(bearing),
+                    north ? 12 : 10, north ? TacticalUi.Accent : TacticalUi.Text, TextAnchor.MiddleCenter);
+            }
             if (enemySpawn.HasValue)
             {
-                var p = enemySpawn.Value;
-                float angle = CombatHudVisual.DamageIndicatorAngle(yaw, feet.X, feet.Z, p.X, p.Z) * Mathf.Rad2Deg;
-                float offset = Mathf.Clamp(angle * 1.3f, -w * .5f + 8, w * .5f - 8);
-                TacticalUi.Icon(new Rect(center + offset - 5, y + h + 2, 10, 10), Generation.Icons.IconLibrary.Objective, TacticalUi.Accent);
+                var spawn = enemySpawn.Value;
+                float objective = CombatHudVisual.DamageIndicatorAngle(yaw, human.Feet.X, human.Feet.Z, spawn.X, spawn.Z);
+                var dir = new Vector2(Mathf.Sin(objective), -Mathf.Cos(objective));
+                Vector2 p = centre + dir * (outer + 7f);
+                TacticalUi.Icon(new Rect(p.x - 5f, p.y - 5f, 10f, 10f), Generation.Icons.IconLibrary.Objective, TacticalUi.Accent, shadow: true);
             }
-            int nearest = Mathf.RoundToInt(degrees / 15f) * 15;
-            for (int i = -10; i <= 10; i++)
+
+            // 7. Fixed heading notch and bearing readout above the ring.
+            float notchY = centre.y - outer;
+            Matrix4x4 prior = GUI.matrix;
+            try
             {
-                int bearing = ((nearest + i * 15) % 360 + 360) % 360;
-                float offset = Mathf.DeltaAngle(degrees, bearing) * 1.3f;
-                if (Mathf.Abs(offset) > w * .5f - 6f) continue;
-                float x = center + offset;
-                bool cardinal = CombatHudVisual.IsCardinal(bearing);
-                float tickH = cardinal ? 5f : (bearing % 30 == 0 ? 3.5f : 2f);
-                Color tick = cardinal ? TacticalUi.Text : new Color(TacticalUi.Muted.r, TacticalUi.Muted.g, TacticalUi.Muted.b, 0.65f);
-                TacticalUi.Fill(new Rect(x - 0.5f, y + h - tickH - 1f, 1f, tickH), tick);
-                if (cardinal || bearing % 30 == 0)
+                GUI.matrix = prior * Matrix4x4.TRS(new Vector3(centre.x, notchY + 1f, 0f), Quaternion.Euler(0f, 0f, 180f), Vector3.one);
+                if (!UiSdf.Shape(new Rect(-5f, -3f, 10f, 7f), UiShapeKind.Triangle, UiSdf.Style.Solid(TacticalUi.Accent)))
+                    TacticalUi.Fill(new Rect(-1f, -3f, 2f, 7f), TacticalUi.Accent);
+            }
+            finally { GUI.matrix = prior; }
+            Rect readout = new Rect(centre.x - 18f, notchY - 21f, 36f, 15f);
+            TacticalUi.CombatPlate(readout, strong: true);
+            combatUi.Label(readout, CombatHudVisual.HeadingDegrees(yaw).ToString("000"), 11, TacticalUi.Text, TextAnchor.MiddleCenter);
+        }
+
+        private void DrawMinimapStructures(Vector2 centre, ActorLifecycleState human, float pxPerMeter)
+        {
+            const float radius = CombatHudVisual.MinimapRadius;
+            float yaw = human.AimYaw;
+            float turn = -yaw * Mathf.Rad2Deg;
+            bool sdf = UiSdf.Available;
+            var fill = new Color(.55f, .63f, .65f, .82f);
+            var edge = new UiSdf.Style { Fill = new Color(.02f, .03f, .035f, .5f), Fill2 = new Color(.02f, .03f, .035f, .5f), Radius = 1f, Stroke = 1f, Glint = -1f };
+            Matrix4x4 prior = GUI.matrix;
+            try
+            {
+                for (int i = 0; i < hudBoxes.Count; i++)
                 {
-                    combatUi.Label(new Rect(x - 14, y - 1, 28, 12), CombatHudVisual.CardinalOrBearing(bearing),
-                        cardinal ? 11 : 9, cardinal ? TacticalUi.Text : TacticalUi.Muted, TextAnchor.UpperCenter);
+                    var box = hudBoxes[i];
+                    if (!box.Gameplay || box.Size.Y < .3f) continue;
+                    CombatHudVisual.MinimapProject(yaw, human.Feet.X, human.Feet.Z, box.Center.X, box.Center.Z, pxPerMeter, out float rx, out float dy);
+                    float hw = box.Size.X * pxPerMeter * .5f, hh = box.Size.Z * pxPerMeter * .5f;
+                    float reach = radius + Mathf.Sqrt(hw * hw + hh * hh);
+                    if (rx * rx + dy * dy > reach * reach) continue;
+                    if (!sdf && !CombatHudVisual.RectInsideCircle(rx, dy, hw, hh, -yaw, radius)) continue;
+                    GUI.matrix = prior * Matrix4x4.TRS(new Vector3(centre.x + rx, centre.y + dy, 0f), Quaternion.Euler(0f, 0f, turn), Vector3.one);
+                    Rect r = new Rect(-hw, -hh, hw * 2f, hh * 2f);
+                    if (UiSdf.Rect(r, UiSdf.Style.Solid(fill, 1f))) UiSdf.Rect(r, edge);
+                    else TacticalUi.Fill(r, fill);
                 }
             }
+            finally { GUI.matrix = prior; }
         }
 
         private void DrawHealthVignette(int health)

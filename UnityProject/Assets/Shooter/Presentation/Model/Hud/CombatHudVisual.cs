@@ -262,6 +262,74 @@ namespace Shooter.Presentation.Hud
             };
         }
 
+        /// <summary>ADR-104 circular heading-up minimap: disc radius (logical px) and world radius shown.</summary>
+        public const float MinimapRadius = 75f;
+        public const float MinimapRangeMeters = 50f;
+        /// <summary>Compass bezel band drawn around the disc.</summary>
+        public const float CompassBandWidth = 16f;
+        /// <summary>Rim-clamped markers keep this distance from the disc edge.</summary>
+        public const float MinimapRimInset = 6f;
+
+        /// <summary>
+        /// Heading-up projection of a world XZ point onto the minimap, relative to the viewer: <paramref name="right"/>
+        /// grows to the screen right and <paramref name="down"/> to the screen bottom (GUI y-down). The viewer's aim
+        /// (yaw clockwise from north, +Z north, +X east) always points up.
+        /// </summary>
+        public static void MinimapProject(float viewYaw, float viewerX, float viewerZ, float x, float z, float pxPerMeter,
+            out float right, out float down)
+        {
+            float dx = x - viewerX, dz = z - viewerZ;
+            float c = (float)Math.Cos(viewYaw), s = (float)Math.Sin(viewYaw);
+            right = (dx * c - dz * s) * pxPerMeter;
+            down = -(dx * s + dz * c) * pxPerMeter;
+        }
+
+        /// <summary>Pull a minimap offset back onto a circle of <paramref name="maxRadius"/>; true when it was outside.</summary>
+        public static bool MinimapClampToRim(ref float right, ref float down, float maxRadius)
+        {
+            float d2 = right * right + down * down;
+            if (maxRadius <= 0f || d2 <= maxRadius * maxRadius) return false;
+            float k = maxRadius / (float)Math.Sqrt(d2);
+            right *= k;
+            down *= k;
+            return true;
+        }
+
+        /// <summary>
+        /// Screen angle (radians, 0 = top, clockwise positive, in [-pi, pi)) of a world bearing on the compass ring when
+        /// the map is heading-up at <paramref name="headingDegrees"/>.
+        /// </summary>
+        public static float CompassRingAngle(float bearingDegrees, float headingDegrees)
+        {
+            double d = (bearingDegrees - headingDegrees) % 360.0;
+            if (d < -180.0) d += 360.0;
+            if (d >= 180.0) d -= 360.0;
+            return (float)(d * Math.PI / 180.0);
+        }
+
+        /// <summary>Whole-degree heading 0..359 for a yaw in radians (clockwise from north).</summary>
+        public static int HeadingDegrees(float yaw)
+        {
+            double deg = yaw * 180.0 / Math.PI;
+            int r = (int)Math.Round(deg) % 360;
+            return r < 0 ? r + 360 : r;
+        }
+
+        /// <summary>True when a rect (centre offset, half extents, rotated by <paramref name="angle"/>) lies inside the circle.</summary>
+        public static bool RectInsideCircle(float cx, float cy, float halfW, float halfH, float angle, float radius)
+        {
+            float c = (float)Math.Cos(angle), s = (float)Math.Sin(angle);
+            float r2 = radius * radius;
+            for (int i = 0; i < 4; i++)
+            {
+                float lx = (i & 1) == 0 ? -halfW : halfW;
+                float ly = (i & 2) == 0 ? -halfH : halfH;
+                float x = cx + lx * c - ly * s, y = cy + lx * s + ly * c;
+                if (x * x + y * y > r2) return false;
+            }
+            return true;
+        }
+
         public static bool TrySplitKillFeed(string line, out string left, out string right)
         {
             left = "";

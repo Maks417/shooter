@@ -986,7 +986,7 @@ namespace Shooter.Presentation.Session
         {
             var snap = session?.TryAcquireSnapshot();
             if (snap == null) return;
-            // BFV-like top score/clock strip; combat compass sits just below (ProductSessionView).
+            // BFV-like top score/clock strip; the compass rings the minimap (ADR-104, ProductSessionView).
             float w = 248, h = 26, x = (ui.Width - w) * .5f, y = ui.Safe.y + 8;
             TacticalUi.CombatPlate(new Rect(x, y, w, h), strong: true);
             TacticalUi.Fill(new Rect(x, y, 2, h), TacticalUi.Ally);

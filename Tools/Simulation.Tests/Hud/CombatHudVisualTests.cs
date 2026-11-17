@@ -191,5 +191,66 @@ namespace Shooter.Simulation.Tests.Hud
             until[0] = 1.5f;
             Assert.Equal(0, CombatHudVisual.PickGunfireRevealSlot(ids, until, 10, now: 2f, capacity: 4));
         }
+
+        [Fact]
+        public void Minimap_is_heading_up()
+        {
+            // Facing north: a point 10 m north sits straight up.
+            CombatHudVisual.MinimapProject(0f, 0f, 0f, 0f, 10f, 1f, out float r, out float d);
+            Assert.Equal(0f, r, 3);
+            Assert.Equal(-10f, d, 3);
+            // Facing east: east is up, north is to the left, south to the right.
+            float east = (float)System.Math.PI / 2f;
+            CombatHudVisual.MinimapProject(east, 5f, 5f, 15f, 5f, 2f, out r, out d);
+            Assert.Equal(0f, r, 3);
+            Assert.Equal(-20f, d, 3);
+            CombatHudVisual.MinimapProject(east, 0f, 0f, 0f, 10f, 1f, out r, out d);
+            Assert.Equal(-10f, r, 3);
+            Assert.Equal(0f, d, 3);
+            CombatHudVisual.MinimapProject(east, 0f, 0f, 0f, -10f, 1f, out r, out d);
+            Assert.Equal(10f, r, 3);
+        }
+
+        [Fact]
+        public void Minimap_rim_clamp_keeps_direction()
+        {
+            float r = 30f, d = -40f;
+            Assert.True(CombatHudVisual.MinimapClampToRim(ref r, ref d, 10f));
+            Assert.Equal(6f, r, 3);
+            Assert.Equal(-8f, d, 3);
+            r = 3f; d = 4f;
+            Assert.False(CombatHudVisual.MinimapClampToRim(ref r, ref d, 10f));
+            Assert.Equal(3f, r);
+        }
+
+        [Fact]
+        public void Compass_ring_turns_with_the_map()
+        {
+            Assert.Equal(0f, CombatHudVisual.CompassRingAngle(0f, 0f), 4);
+            // Facing east, north is a quarter turn to the left and east is on top.
+            Assert.Equal(-(float)System.Math.PI / 2f, CombatHudVisual.CompassRingAngle(0f, 90f), 4);
+            Assert.Equal(0f, CombatHudVisual.CompassRingAngle(90f, 90f), 4);
+            Assert.Equal((float)System.Math.PI / 2f, CombatHudVisual.CompassRingAngle(10f, 280f), 4);
+            Assert.Equal(-(float)System.Math.PI, CombatHudVisual.CompassRingAngle(180f, 0f), 4);
+        }
+
+        [Fact]
+        public void Heading_degrees_wrap()
+        {
+            Assert.Equal(0, CombatHudVisual.HeadingDegrees(0f));
+            Assert.Equal(90, CombatHudVisual.HeadingDegrees((float)System.Math.PI / 2f));
+            Assert.Equal(270, CombatHudVisual.HeadingDegrees(-(float)System.Math.PI / 2f));
+            Assert.Equal(0, CombatHudVisual.HeadingDegrees((float)System.Math.PI * 2f));
+        }
+
+        [Fact]
+        public void Rect_inside_circle_checks_rotated_corners()
+        {
+            Assert.True(CombatHudVisual.RectInsideCircle(0f, 0f, 5f, 5f, 0f, 8f));
+            Assert.False(CombatHudVisual.RectInsideCircle(0f, 0f, 6f, 6f, 0f, 8f));
+            // A rotated thin bar fits while every rotated corner stays inside.
+            Assert.True(CombatHudVisual.RectInsideCircle(0f, 0f, 7f, 1f, (float)System.Math.PI / 4f, 7.5f));
+            Assert.False(CombatHudVisual.RectInsideCircle(5f, 0f, 2f, 2f, 0f, 6f));
+        }
     }
 }
