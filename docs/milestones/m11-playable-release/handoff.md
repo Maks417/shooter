@@ -1312,3 +1312,21 @@ Final pre-build wrappers: Maps **72/72** (`Artifacts/m8-runtime-composition/08eb
 ## ADR-093 addendum — surface impacts — 2026-11-17
 
 Bullet impacts now distinguish concrete (grey dust and chips), metal (sparks) and dirt (brown kick-up and clods) through pure `ImpactSurfaceFx`, resolved read-only from the verified packaged collision boxes and the map's registry ground surface. Simulation **364/364** (`Artifacts/m2-combat-harness/ff105841f92da3e717339607cbca30509a6e43ab/20261117T071440472Z-257ce52b`), EditMode **87/87** (`Artifacts/m0-foundation/ff105841f92da3e717339607cbca30509a6e43ab/tests-editmode-20261117T071546961Z-1bcef835`), source provenance PASS. No Client build, player capture or owner review was run for this change; those remain Pending.
+
+
+## ADR-095 structural shooting posture — 2026-11-17
+
+The owner reopened P05 for one structural revision after reviewing the ADR-094 root cause (head-only correction toward a chest-anchored weapon). Sole integrator changed `SoldierMotion` (opt-in `ShootingPosture`, now the product default), `ProductActorPresentation` (retired `-shooterP05Candidate`), the product defect catalog/inventory identities, `SoldierClearanceTests` and the feature-content lock.
+
+| Gate (unchanged envelope and proxy, rifle) | v5 baseline | v6 shooting posture |
+|---|---|---|
+| Minimum arm/body clearance | -1.944 mm | **+3.000 mm** |
+| Max eye/sight-line residual | 127.0 mm | **0.000 mm** |
+| Max grip error | 7.5e-8 m | 6.8e-8 m |
+| Max stock error | 1.2e-7 m | 1.2e-7 m |
+
+Search: first full-envelope measurement 07:28:42Z, stopped at 07:47Z on gate pass (bound 180 minutes). All 4,190 measured parameter sets, the harness, a source snapshot and the disposition are under `Artifacts/visual-design/adr-095/`. A dense diagnostic (33,330 poses: crouch 0/0.5/1, yaw step 22.5 degrees, pitch step 5 degrees, phase step 0.005) found 0 negative samples. During the search a harness mode briefly parsed only 7 of 11 parameters; those runs are logged with their 7-parameter strings and the final values were re-measured with the fixed harness and the pure test.
+
+Verification (parent `c87a20f`, sourceDirty): Generation 517/517 (`Artifacts/m1-procedural-feasibility/c87a20f19d1548fd0b4550338806243712961ba9/20261117T074703654Z-62d1ec75`, sourceDirty), Simulation 364/364 (`Artifacts/m2-combat-harness/c87a20f19d1548fd0b4550338806243712961ba9/20261117T074907727Z-80572b62`), source provenance PASS (964 entries / 482 GUIDs), feature registry PASS, Unity EditMode **87/87** with the locked editor (`Artifacts/m0-foundation/c87a20f19d1548fd0b4550338806243712961ba9/tests-editmode-20261117T074936291Z-5cb53d7b`), fixtures/docs/contract lock PASS. The second Generation run on the final lock is `20261117T075059331Z-40b6a935` (517/517).
+
+Remaining: P05 visual acceptance stays **FAIL** pending a named visual review (front/side/back/three-quarter, live near/far, both teams); the historical FAIL record is retained. Pistol sockets leave a -4.3 mm left-arm residual at reload phase 0.91 (baseline v5 with pistol sockets: -60.3 mm). Slide and death poses are outside the gate. Eight-soldier CPU on the reference laptop, client build and installer are not rerun for this change.

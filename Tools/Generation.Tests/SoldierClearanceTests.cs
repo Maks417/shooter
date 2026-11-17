@@ -31,4 +31,26 @@ public sealed class SoldierClearanceTests
         Assert.True(minimum<0,"ADR-024 retains third-candidate clearance FAIL; unexpected non-negative minimum="+minimum+" "+worst);
         Assert.True(maxEye>0.05f,"ADR-024 retains unresolved eye/sight residual; unexpected maxEyeSightLine="+maxEye);
     }
+
+    // ADR-095 gate: the same envelope and the unchanged conservative proxy on the product v6 shooting posture.
+    // Numeric P05-D01..D03 resolution only; P05 visual acceptance stays FAIL until a named visual review.
+    [Fact]
+    public void ShootingPostureClearsArmsAndPutsEyeOnSightLineAcrossSupportedRange()
+    {
+        var motion=new SoldierMotion(WeaponRecipe.Parse(File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory,"FeatureRecipes","rifle.json"))),new ShootingPosture());
+        Assert.Equal("soldier.motion.v6.shooting",motion.Identity);
+        var ground=new Ground();float minimum=float.MaxValue,maxGrip=0,maxEye=0,maxStock=0;string worst="";
+        foreach(float crouch in new[]{0f,1f})foreach(float yaw in new[]{-SoldierMotion.MaxAimYawRadians,0,SoldierMotion.MaxAimYawRadians})
+        foreach(float pitch in new[]{-SoldierMotion.MaxAimPitchRadians,0,SoldierMotion.MaxAimPitchRadians})
+        for(int phase=-1;phase<=100;phase++)
+        {
+            var pose=motion.Evaluate(new SoldierMotionInput(new Float3(0,0,0),0,0,0,crouch,yaw,pitch,phase<0?-1:phase/100f),ground);
+            float clearance=ArmBodyClearance.Minimum(pose);
+            if(clearance<minimum){minimum=clearance;worst="crouch="+crouch+" yaw="+yaw+" pitch="+pitch+" phase="+phase;}
+            maxGrip=Math.Max(maxGrip,Math.Max(pose.LeftGripError,pose.RightGripError));maxEye=Math.Max(maxEye,pose.EyeSightLineErrorMeters);maxStock=Math.Max(maxStock,pose.RightStockErrorMeters);
+        }
+        output.WriteLine("ADR-095 "+motion.Identity+" minArmBodyClearance="+minimum+" worst="+worst+" maxGrip="+maxGrip+" maxStock="+maxStock+" maxEyeSightLine="+maxEye);
+        Assert.True(minimum>=0,"ADR-095 clearance gate: minimum="+minimum+" "+worst);
+        Assert.InRange(maxEye,0,.005f);Assert.InRange(maxGrip,0,.02f);Assert.InRange(maxStock,0,1e-5f);
+    }
 }

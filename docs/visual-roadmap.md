@@ -183,6 +183,10 @@ After each wave, build a clean installer per the [playtest guide](playtest-guide
 | Soldier kit / T093 inputs, ADR-094 | `soldier.loft` 1.0.3 plus explicit legacy 1.0.2; contoured carrier/pouches, sleeve folds, digits, bands and rasterised numeric emblems; collision-backed cosmetic support and per-weapon grips | P05 remains **FAIL**. Three measured correction candidates exhausted the bound; failed head/arm correction is available only with `-shooterP05Candidate`, never enabled by default |
 | Delivery | One matching clean source/content installer after integration verification | Installed upgrade, named playtest and all REL/VD acceptance remain owner-run |
 
+### ADR-095 structural posture
+
+After the ADR-094 bound was used up, [ADR-095](decisions.md#adr-095--accepted-structural-weapon-from-eye-shooting-posture-p05-reopening) authorized one structural revision. `soldier.motion.v6.shooting` passes the unchanged gate (arm clearance minimum +3.0 mm, eye/sight 0 mm) and is the product default. P05 visual acceptance needs a named review of front/side/back/three-quarter and live near/far captures. See [the M11 handoff](milestones/m11-playable-release/handoff.md#adr-095-structural-shooting-posture--2026-11-17).
+
 ### Bounded P05 disposition
 
 [ADR-094](decisions.md#adr-094--accepted-bounded-soldier-presentation-revision-and-p05-reopening) permits three measured candidates / 90 minutes. All three were measured and retained under `Artifacts/visual-design/adr-094/`; the candidate limit has been reached, so further clearance searching stops. Fresh baseline minimum clearance is -0.001944 m and worst eye/sight residual 0.127032 m. Candidates 1/2/3 have minimum clearances -0.055602 / -0.057712 / -0.011462 m; all close the numerical eye line to below 0.000001 m but leave unacceptable arm penetration. The product keeps the baseline solver. New kit/material/ground/grip code does not turn P05 into PASS. A new owner decision is needed for any further correction search.

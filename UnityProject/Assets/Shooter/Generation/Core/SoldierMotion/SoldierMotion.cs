@@ -46,6 +46,43 @@ namespace Shooter.Generation
         }
     }
 
+    /// <summary>
+    /// ADR-095 structural shooting posture (defaults are the measured gate-passing values,
+    /// Artifacts/visual-design/adr-095/measurements.jsonl): right clavicle shooting posture, a head pose whose right eye lies on the
+    /// weapon sight line by construction (neck chain solved to that eye target), and an outward support-hand reload
+    /// offset where the path passes the carrier. Presentation only; skeleton, sockets and hit volumes are unchanged.
+    /// </summary>
+    public sealed class ShootingPosture
+    {
+        /// <summary>Right clavicle elevation about the chest forward axis (radians). Baseline posture uses 40 degrees.</summary>
+        public float ClavicleElevation { get; set; } = 31.6f * Degrees;
+        /// <summary>Right clavicle protraction about chest up (radians, positive moves the shoulder forward).</summary>
+        public float ClavicleProtraction { get; set; } = 2.4f * Degrees;
+        /// <summary>Head flexion (chin down) relative to the aim line (radians).</summary>
+        public float HeadPitch { get; set; } = 7.6f * Degrees;
+        /// <summary>Head yaw relative to the aim line (radians).</summary>
+        public float HeadYaw { get; set; } = 18f * Degrees;
+        /// <summary>Head roll (cant) relative to the aim line (radians).</summary>
+        public float HeadRoll { get; set; } = 4.6f * Degrees;
+        /// <summary>Preferred eye position along the weapon axis relative to the sight-eye socket (metres, negative is behind).</summary>
+        public float EyeRelief { get; set; } = -.19f;
+        /// <summary>Fraction of the reload weapon cant the head roll follows (keeps the cheek on the canted stock).</summary>
+        public float HeadCantFollow { get; set; } = .28f;
+        /// <summary>Additional eye relief at full reload cant (metres along the weapon axis).</summary>
+        public float CantEyeRelief { get; set; } = -.12f;
+        /// <summary>Additional clavicle elevation at full reload cant (radians; negative drops the shoulder and stock).</summary>
+        public float CantClavicleElevation { get; set; } = -27.5f * Degrees;
+        /// <summary>Additional clavicle protraction at full reload cant (radians).</summary>
+        public float CantClavicleProtraction { get; set; } = 50f * Degrees;
+        /// <summary>Outward (left, chest frame) support-hand reload offset peak (metres) around the withdraw-to-belt hand-off.</summary>
+        public float ReloadOutward { get; set; } = .07f;
+        /// <summary>Neck chain reach used for the eye target (metres; chain length 0.28 m, IK reach clamp 98%).</summary>
+        public const float NeckReach = .27f;
+        /// <summary>Motion identity of the ADR-095 posture with these default values.</summary>
+        public const string Version = "soldier.motion.v6.shooting";
+        private const float Degrees = (float)Math.PI / 180;
+    }
+
     /// <summary>A per-rig reused view, valid until its next Evaluate call. Copy when retaining samples.</summary>
     public sealed class SoldierPose
     {
@@ -100,6 +137,7 @@ namespace Shooter.Generation
         private readonly FootState left = new FootState(), right = new FootState();
         private Float3 grip, support, magazine, stock, sight;
         private readonly bool upgraded;
+        private readonly ShootingPosture? shooting;
         private bool initialized, running, wasMoving;
         private double previousDistance;
         private Float3 previousRoot;
@@ -124,6 +162,44 @@ namespace Shooter.Generation
                 else if (socket.Id == "sight-eye") sight = socket.Position;
             }
         }
+
+        public SoldierMotion(WeaponRecipe rifle, ShootingPosture posture) : this(rifle)
+        {
+            shooting = posture ?? throw new ArgumentNullException(nameof(posture));
+        }
+
+        /// <summary>Motion identity of this instance: the ADR-095 posture or the retained v5 baseline solver.</summary>
+        public string Identity => shooting != null ? ShootingPosture.Version : Version;
+
+        /// <summary>
+        /// ADR-095: clavicle posture first, then the weapon from the stock socket, then the head so the right eye is on the
+        /// sight line (eye relief slides along the axis only as far as the neck reach requires). Arms are solved afterwards.
+        /// </summary>
+        private void ShootingHead(Quat aim,float cant)
+        {
+            var posture=shooting!;var p=pose.Positions;var r=pose.Rotations;
+            var head=Multiply(aim,Multiply(AxisAngle(Up,posture.HeadYaw),Multiply(AxisAngle(new Float3(1,0,0),posture.HeadPitch),AxisAngle(Forward,posture.HeadRoll+posture.HeadCantFollow*cant))));
+            var axis=Rotate(Forward,pose.WeaponRotation);
+            var sightPoint=Add(pose.WeaponPosition,Rotate(sight,pose.WeaponRotation));
+            var eyeLocal=Rotate(EyeOffset,head);
+            // Head centre as a function of eye relief s: c(s)=c0+axis*s.
+            var c0=Sub(Add(sightPoint,Scale(axis,posture.EyeRelief+posture.CantEyeRelief*Math.Abs(cant)/(45*Radians))),eyeLocal);
+            var rel=Sub(c0,p[4]);float along=Dot(rel,axis);
+            float perpendicular=(float)Math.Max(0,rel.LengthSquared-along*along);
+            const float reach=ShootingPosture.NeckReach;float s=0;
+            if(rel.LengthSquared>reach*reach)
+            {
+                // Move the minimum distance along the sight line that brings the head centre within neck reach.
+                float room=reach*reach-perpendicular;
+                if(room<=0)s=-along;
+                else{float limit=(float)Math.Sqrt(room);s=along>0?limit-along:-limit-along;}
+            }
+            var target=Add(c0,Scale(axis,s));
+            var neck=TwoBoneIk.Solve(p[4],target,Rotate(new Float3(0,0,-1),r[4]),.16f,.12f,75*Radians,.98f);
+            p[5]=neck.Joint;p[6]=neck.End;
+            r[5]=SegmentRotation(5,6,r[4]);r[6]=head;
+        }
+        private static readonly Float3 EyeOffset=new Float3(.035f,-.005f,.103f);
 
         public void SetVisualWeapon(WeaponRecipe recipe)
         {
@@ -221,7 +297,15 @@ namespace Shooter.Generation
             SetChild(5, Multiply(r[4], Multiply(AxisAngle(new Float3(0,0,1), -30*Radians), AxisAngle(new Float3(1,0,0),30*Radians))));
             SetChild(6, Multiply(r[5],AxisAngle(Up,-35*Radians)));
             SetChild(7, Multiply(r[4],AxisAngle(Up,45*Radians))); SetChild(8,r[4]);
-            SetChild(11, Multiply(r[4],AxisAngle(new Float3(0,0,1),40*Radians))); SetChild(12,r[4]);
+            if(shooting!=null)
+            {
+                float reloadCant=0;
+                if(input.ReloadPhase>=0){reloadCant=(float)Math.Sin(Math.PI*input.ReloadPhase);reloadCant*=reloadCant;}
+                SetChild(11, Multiply(r[4],Multiply(AxisAngle(Up,-(shooting.ClavicleProtraction+shooting.CantClavicleProtraction*reloadCant)),
+                    AxisAngle(new Float3(0,0,1),shooting.ClavicleElevation+shooting.CantClavicleElevation*reloadCant))));
+            }
+            else SetChild(11, Multiply(r[4],AxisAngle(new Float3(0,0,1),40*Radians)));
+            SetChild(12,r[4]);
             SetChild(15, bodyYaw); SetChild(19, bodyYaw);
             var leftLeg = Leg(15, 16, 17, 18, leftTarget, legYaw); var rightLeg = Leg(19, 20, 21, 22, rightTarget, legYaw);
             pose.LeftKneeFlexion = leftLeg.FlexionRadians; pose.RightKneeFlexion = rightLeg.FlexionRadians;
@@ -232,10 +316,12 @@ namespace Shooter.Generation
             if(TryRestoreUpper(input))return pose;
             pose.UpperBodyCacheHit=false;
             pose.WeaponRotation = Multiply(yaw,Multiply(AxisAngle(Up,input.AimYawRadians),AxisAngle(new Float3(1,0,0),-input.AimPitchRadians)));
+            float cant=0;
             if(input.ReloadPhase>=0)
             {
                 float envelope=(float)Math.Sin(Math.PI*input.ReloadPhase);envelope*=envelope;
-                pose.WeaponRotation=Multiply(pose.WeaponRotation,AxisAngle(Forward,-45*Radians*envelope));
+                cant=-45*Radians*envelope;
+                pose.WeaponRotation=Multiply(pose.WeaponRotation,AxisAngle(Forward,cant));
             }
             pose.WeaponPosition = Sub(p[12], Rotate(stock,pose.WeaponRotation));
             pose.RightHandTarget = Add(pose.WeaponPosition, Rotate(grip, pose.WeaponRotation));
@@ -243,10 +329,17 @@ namespace Shooter.Generation
             var mag = Add(pose.WeaponPosition, Rotate(magazine, pose.WeaponRotation));
             var belt = Add(p[4], Rotate(upgraded?new Float3(-.24f,-.28f,.22f):PouchContactChestLocal, r[4]));
             pose.LeftHandTarget = input.ReloadPhase < 0 ? heldSupport : ReloadTask(input.ReloadPhase, heldSupport, mag, belt,r[4],pose.WeaponRotation);
+            if(shooting!=null&&input.ReloadPhase>=.25f&&input.ReloadPhase<=.95f)
+            {
+                // ADR-095 D01: bow the support hand outward while it passes the carrier strap to the belt and back.
+                float bow=(float)Math.Sin(Math.PI*(input.ReloadPhase-.25f)/.7f);
+                pose.LeftHandTarget=Add(pose.LeftHandTarget,Rotate(new Float3(-shooting.ReloadOutward*bow*bow,0,0),r[4]));
+            }
             // Clavicle protraction follows the equipment target's reach requirement, not a joint-keyframe phase.
             float protraction=SupportProtraction(pose.LeftHandTarget);
             SetChild(7,Multiply(r[4],AxisAngle(Up,protraction)));SetChild(8,r[4]);
-            if(upgraded)AlignHeadToSight(input);
+            if(shooting!=null)ShootingHead(Multiply(yaw,Multiply(AxisAngle(Up,input.AimYawRadians),AxisAngle(new Float3(1,0,0),-input.AimPitchRadians))),cant);
+            else if(upgraded)AlignHeadToSight(input);
             armBody.Update(pose);
             var leftArm = Arm(8, 9, 10, pose.LeftHandTarget, r[7], -1);
             var rightArm = Arm(12, 13, 14, pose.RightHandTarget, r[11], 1);

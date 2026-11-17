@@ -1437,3 +1437,18 @@ Consequences: procedural numeric sources only, presentation read-only, quality-i
 Evidence: required pure/cross-lane/provenance/build checks and limitations are recorded in the visual-roadmap handoff before delivery. Missing player, reference and owner evidence remains Pending.
 
 Rollback: revert this ADR implementation and republish matching source/content; retained old packages keep their original identities.
+
+
+## ADR-095 — Accepted: structural weapon-from-eye shooting posture (P05 reopening)
+
+Date 2026-11-17. Context: the ADR-094 bound is exhausted (three candidates, P05 FAIL). All three candidates changed only a neck look-at that pulled the head onto the sight line of a weapon whose stock stays on an unraised right shoulder joint. With the rifle sockets the sight line runs only 55 mm above the stock socket, so a head moved onto it lands on the trigger arm (worst at the +/-45 degree aim-yaw limit) and arm clearance got worse (-55.6 / -57.7 / -11.5 mm). The shipping baseline keeps the head clear but misses the sight line by up to 127 mm and still has a -1.9 mm left-forearm overlap at down-aim reload phase 0.45. The owner reviewed this root-cause analysis and authorized a structural revision instead of further head-only tuning.
+
+Decision: the owner reopens P05 once more for one structural solver revision of `SoldierMotion` presentation posture. Allowed changes: a right-shoulder shooting posture (clavicle elevation/protraction moves the shoulder joint, and so the stock socket, toward the line of sight); a head pose that puts the right eye on the sight line by construction (cheek-weld cant/flex with the neck chain solved to that eye target); spine distribution of aim yaw; the existing clearance-aware elbow solve applied after the head is final; and an outward offset of the support-hand reload path where it passes the carrier. The skeleton, bind pose, limb lengths, weapon recipes/sockets, `ArmBodyClearance` proxy, gameplay pose/hit volumes, Simulation, AI and authoritative root motion stay unchanged. Nothing from the corrected pose feeds authority (ADR-004).
+
+Gate, fixed before the first measurement: the unchanged `SoldierClearanceTests` envelope (stand/crouch x aim yaw -45/0/+45 x pitch -25/0/+25 x held plus reload phases 0..1 in 0.01 steps) on the baseline rifle must show minimum `ArmBodyClearance` >= 0 m, eye/sight-line residual <= 0.005 m on every sample, grip <= 0.02 m and stock socket error <= 1e-5 m. No tolerance relaxation, proxy change, narrower envelope or waiver. Bound: 180 minutes of solver work after the first full-envelope measurement; every measured parameter set's residuals are retained under `Artifacts/visual-design/adr-095/`. Stop at the bound.
+
+If the gate passes, the revision becomes the product default under a new motion identity and the `-shooterP05Candidate` diagnostic is retired; P05-D01..D03 become numerically resolved, and P05 itself stays FAIL until a named visual review of front/side/back/three-quarter and live near/far captures accepts the candidate (the historical FAIL record is retained either way). If the gate fails, the product keeps the baseline solver, residuals are recorded and P05 stays FAIL.
+
+Consequences: presentation-only change; quality-independent gameplay, procedural numeric sources and the pinned toolchain remain binding. A changed motion identity requires the feature-content lock refresh through its tool and republication of affected visual bytes.
+
+Rollback: revert the solver and identity change; the baseline v5 solver and all ADR-024/094 evidence remain reproducible.

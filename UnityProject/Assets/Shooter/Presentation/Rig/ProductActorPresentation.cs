@@ -669,8 +669,8 @@ namespace Shooter.Presentation.Rig
                 DeathPhase = corpse ? 0f : -1f,
                 Root = new GameObject("Actor " + state.EntityId.Value).transform,
                 Bones = new Transform[SoldierSkeleton.JointCount],
-                // Generation SoldierMotion spike validates rifle sockets; pistol mesh shares the bind.
-                Motion = new SoldierMotion(motionRecipe,upgraded:System.Array.IndexOf(System.Environment.GetCommandLineArgs(),"-shooterP05Candidate")>=0),
+                // ADR-095 v6 shooting posture (rifle-validated sockets; per-profile sockets follow via SetVisualWeapon).
+                Motion = new SoldierMotion(motionRecipe,new ShootingPosture()),
                 PreviousFeet = state.Feet,
                 DisplayedFeet = state.Feet,
                 PreviousHealth = state.Health

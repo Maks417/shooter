@@ -22,9 +22,9 @@ Do not delete failed M1 artifacts, do not relabel FAIL as PASS, and do not inher
 
 | ID | Category | Status | Summary |
 |---|---|---|---|
-| P05-D01 | clearance | Unresolved | ~2.18 mm dense possible left forearm/strap overlap near down-aim reload phase 0.45 |
-| P05-D02 | alignment | Unresolved | Eye/sight-line residual (~6.49 cm neutral; ~12.70 cm worst reload) |
-| P05-D03 | clearance | Unresolved | Historical iteration-2 trigger-arm/torso penetration context |
+| P05-D01 | clearance | NumericallyResolvedPendingReview | Historical ~2.18 mm left forearm/strap overlap at down-aim reload 0.45; ADR-095 v6 minimum +3.0 mm |
+| P05-D02 | alignment | NumericallyResolvedPendingReview | Historical eye/sight-line residual (~6.49 cm neutral; ~12.70 cm reload); ADR-095 v6 residual 0 mm |
+| P05-D03 | clearance | NumericallyResolvedPendingReview | Historical trigger-arm/torso penetration; ADR-095 v6 right-arm minimum +3.0 mm |
 | PROD-D01 | readability | PendingCapture | Team-identifiable living soldiers in product player (both maps) |
 | PROD-D02 | lod | PendingCapture | Required LOD / grip / foot / clearance tolerances in live poses |
 | PROD-D03 | ui | PendingReview | 720p HUD/shell readability at 100–150% UI scale |
@@ -91,3 +91,7 @@ Packages land under ignored `Artifacts/m8-runtime-composition/<commit>/visual-de
 ## ADR-094 bounded correction disposition
 
 The full roadmap owner assignment reopened the ADR-024 stop only for three measured candidates / 90 minutes. All three failed the unchanged conservative arm-clearance gate; the search stopped at the candidate limit. Candidate 3 closes the numeric eye line but retains -11.46 mm worst arm clearance and is available only by diagnostic CLI. The product keeps the baseline solver (-1.94 mm fresh clearance / 127.03 mm worst eye-line residual); P05-D01–D03 remain unresolved. Raw failed candidates and source snapshots are retained under `Artifacts/visual-design/adr-094/`; [roadmap disposition](visual-roadmap.md#bounded-p05-disposition).
+
+## ADR-095 structural shooting posture
+
+[ADR-095](decisions.md#adr-095--accepted-structural-weapon-from-eye-shooting-posture-p05-reopening) replaced head-only correction with a structural posture: right clavicle shooting posture (with a reload drop/protraction), the right eye placed on the sight line by construction with the neck solved to it, clearance-aware elbows solved after the head, and an outward support-hand reload bow. On the unchanged gate envelope and proxy, `soldier.motion.v6.shooting` measures minimum arm clearance +3.0 mm, eye/sight residual 0 mm, grip below 1e-7 m and stock error 1.2e-7 m. It is now the product default; `-shooterP05Candidate` is retired. P05-D01..D03 are numerically resolved only. P05 visual acceptance stays **FAIL** until a named visual review. Pistol sockets still show a -4.3 mm left-arm residual at reload phase 0.91 (outside the rifle gate). Evidence is in `Artifacts/visual-design/adr-095/`.

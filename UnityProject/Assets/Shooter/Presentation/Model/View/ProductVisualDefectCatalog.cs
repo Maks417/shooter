@@ -16,7 +16,7 @@ namespace Shooter.Presentation.View
         public const string VisualAcceptance = "FAIL";
         public const bool FourthClearanceSearchAuthorized = false;
         public const string SoldierRecipeIdentity = "soldier.loft1.0.2";
-        public const string MotionIdentity = "soldier.motion.spike.v5";
+        public const string MotionIdentity = "soldier.motion.v6.shooting";
 
         public sealed class Defect
         {
@@ -54,24 +54,24 @@ namespace Shooter.Presentation.View
                 "clearance",
                 "Left forearm / chest-strap overlap",
                 "Conservative clearance probe fails near down-aim reload phase 0.45 with approximately 2.18 mm dense possible left forearm/strap overlap on loft1.0.2/motion.spike.v3.",
-                "docs/soldier-baseline.md third bounded clearance candidate; M1 captures under Artifacts/m1-procedural-feasibility (immutable).",
-                "Unresolved",
+                "docs/soldier-baseline.md third bounded clearance candidate; M1 captures under Artifacts/m1-procedural-feasibility (immutable). ADR-095 v6 shooting posture: unchanged conservative probe minimum +3.0 mm over the full gate envelope (outward support-hand reload bow). Visual review pending.",
+                "NumericallyResolvedPendingReview",
                 "RUN05, REL03, FIX11"),
             new Defect(
                 "P05-D02",
                 "alignment",
                 "Eye / sight-line unresolved",
                 "Neutral eye/sight-line separation is about 6.49 cm; worst reported reload residual about 12.70 cm. Grip/contact passes do not override this failure.",
-                "docs/soldier-baseline.md; ADR-023 candidate review retained as FAIL.",
-                "Unresolved",
+                "docs/soldier-baseline.md; ADR-023 candidate review retained as FAIL. ADR-095 v6 shooting posture: eye/sight-line residual 0.000 mm over the full gate envelope (eye placed on the sight line by construction). Visual review pending.",
+                "NumericallyResolvedPendingReview",
                 "RUN05, REL03, FIX11"),
             new Defect(
                 "P05-D03",
                 "clearance",
                 "Iteration-2 trigger-arm / torso penetration (historical)",
                 "Neutral right shoulder/elbow/hand samples showed interior forearm points inside the loft ellipse and sleeve/plate intersection despite exact grip targets. Retained context for product pose triage; not accepted.",
-                "ADR-023 retained iteration-2 defect; M1 continuation artifacts.",
-                "Unresolved",
+                "ADR-023 retained iteration-2 defect; M1 continuation artifacts. ADR-095 v6 shooting posture: trigger-arm minimum clearance +3.0 mm over the full gate envelope. Visual review pending.",
+                "NumericallyResolvedPendingReview",
                 "RUN05, REL03, FIX11"),
             new Defect(
                 "PROD-D01",

@@ -67,3 +67,7 @@ This candidate is **not accepted**: the unchanged conservative clearance accepta
 ## Scope stop
 
 Under [ADR-024](decisions.md#adr-024--accepted-p05-soldier-visual-scope-stop-after-exhausted-clearance-iterations), after the third-candidate FAIL above and the owner's “do all” direction, P05 clearance/parameter search stops with no fourth iteration. Retain loft1.0.2/motion.spike.v3 as non-accepted diagnostic evidence. Numeric parameters and harness results above remain historical spike inputs; they are not reinterpreted as visual PASS. Soldier visual/clearance acceptance stays FAIL / not accepted while other M1 polish may continue.
+
+## ADR-095 structural posture
+
+[ADR-095](decisions.md#adr-095--accepted-structural-weapon-from-eye-shooting-posture-p05-reopening) adds `soldier.motion.v6.shooting` without changing the semantic23 skeleton, bind pose, limb lengths or weapon sockets. On the unchanged conservative proxy and full envelope it measures +3.0 mm minimum arm clearance and 0 mm eye/sight residual. The historical FAIL records above remain; visual acceptance needs a named review.

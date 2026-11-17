@@ -21,8 +21,8 @@ DEFECTS = [
             "Conservative clearance probe fails near down-aim reload phase 0.45 with approximately "
             "2.18 mm dense possible left forearm/strap overlap on loft1.0.2/motion.spike.v3."
         ),
-        "historicalEvidence": "docs/soldier-baseline.md; immutable M1 Artifacts captures.",
-        "status": "Unresolved",
+        "historicalEvidence": "docs/soldier-baseline.md; immutable M1 Artifacts captures. ADR-095 v6 shooting posture: unchanged conservative probe minimum +3.0 mm over the full gate envelope (outward support-hand reload bow). Visual review pending.",
+        "status": "NumericallyResolvedPendingReview",
         "requiredFor": "RUN05, REL03, FIX11",
     },
     {
@@ -33,8 +33,8 @@ DEFECTS = [
             "Neutral eye/sight-line separation is about 6.49 cm; worst reported reload residual "
             "about 12.70 cm. Grip/contact passes do not override this failure."
         ),
-        "historicalEvidence": "docs/soldier-baseline.md; ADR-023 candidate review retained as FAIL.",
-        "status": "Unresolved",
+        "historicalEvidence": "docs/soldier-baseline.md; ADR-023 candidate review retained as FAIL. ADR-095 v6 shooting posture: eye/sight-line residual 0.000 mm over the full gate envelope (eye placed on the sight line by construction). Visual review pending.",
+        "status": "NumericallyResolvedPendingReview",
         "requiredFor": "RUN05, REL03, FIX11",
     },
     {
@@ -45,8 +45,8 @@ DEFECTS = [
             "Neutral right shoulder/elbow/hand samples showed interior forearm points inside the "
             "loft ellipse and sleeve/plate intersection despite exact grip targets."
         ),
-        "historicalEvidence": "ADR-023 retained iteration-2 defect; M1 continuation artifacts.",
-        "status": "Unresolved",
+        "historicalEvidence": "ADR-023 retained iteration-2 defect; M1 continuation artifacts. ADR-095 v6 shooting posture: trigger-arm minimum clearance +3.0 mm over the full gate envelope. Visual review pending.",
+        "status": "NumericallyResolvedPendingReview",
         "requiredFor": "RUN05, REL03, FIX11",
     },
     {
@@ -107,7 +107,7 @@ def build_inventory(
         "visualAcceptance": P05_ACCEPTANCE,
         "fourthClearanceSearchAuthorized": False,
         "soldierRecipeIdentity": "soldier.loft1.0.2",
-        "motionIdentity": "soldier.motion.spike.v5",
+        "motionIdentity": "soldier.motion.v6.shooting",
         "sourceCommit": source_commit,
         "sourceDirty": bool(source_dirty),
         "inventoryRoot": inventory_root,
