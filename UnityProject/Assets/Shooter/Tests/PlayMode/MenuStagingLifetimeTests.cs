@@ -30,7 +30,8 @@ namespace Shooter.Tests
                 var weapon = camera.transform.GetChild(0);
                 var meshes = weapon.GetComponentsInChildren<MeshFilter>(true).Select(f => f.sharedMesh)
                     .Concat(weapon.GetComponentsInChildren<SkinnedMeshRenderer>(true).Select(r=>r.sharedMesh)).ToArray();
-                Assert.That(meshes.Length, Is.EqualTo(5), "Weapon, magazine, cycle and both packaged hands must be present.");
+                // ADR-099: the hidden "FP fresh magazine" child reuses the packaged magazine mesh (no new geometry).
+                Assert.That(meshes.Length, Is.EqualTo(6), "Weapon, magazine, fresh magazine, cycle and both packaged hands must be present.");
                 Object.Destroy(presentation.gameObject);
                 yield return null;
                 yield return null;
