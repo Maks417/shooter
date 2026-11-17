@@ -56,7 +56,7 @@ VISUAL_OPTIONAL = {"geometryRecipe", "geometryParts", "muzzleFx", "adsSeconds"}
 GEOMETRY_PART_NUMBERS = ["handguardFrontMm", "barrelFrontMm", "topRailTeeth", "gasBlockZMm", "gasTubeZMm",
                          "gasTubeLengthMm", "frontSightZMm"]
 FAMILY_FIRE_MODES = {
-    "PrimaryGun": {"Automatic", "SemiAutomatic"},
+    "PrimaryGun": {"Automatic", "SemiAutomatic", "Burst"},
     "Sidearm": {"Automatic", "SemiAutomatic"},
     "Melee": {"Melee"},
     "Throwable": {"Throwable"},
@@ -79,7 +79,11 @@ class Literal(str):
 
 COMBAT_OPTIONAL = {"maxRangeMeters": Literal("300"), "fuseTicks": Literal("0"),
                    "throwSpeedMetersPerSecond": Literal("0"), "blastRadiusMeters": Literal("0"),
-                   "consumesAmmo": True, "allowsSprintFire": False}
+                   "consumesAmmo": True, "allowsSprintFire": False,
+                   # ADR-102 handling: burst cadence, range falloff, move speed and random-loadout weight.
+                   "burstCount": Literal("0"), "burstIntervalTicks": Literal("0"),
+                   "falloffStartMeters": Literal("0"), "falloffEndMeters": Literal("0"), "falloffMinScale": Literal("1"),
+                   "moveSpeedScale": Literal("1"), "spawnWeight": Literal("1")}
 
 
 def enum_members(root: Path, name: str) -> set:
@@ -180,6 +184,23 @@ def validate(root: Path, path: Path, doc, enums) -> dict:
         fields[name] = number(combat.get(name, COMBAT_OPTIONAL[name]), c + name, maximum=10000)
     for name in ("consumesAmmo", "allowsSprintFire"):
         fields[name] = boolean(combat.get(name, COMBAT_OPTIONAL[name]), c + name)
+    fields["burstCount"] = number(combat.get("burstCount", COMBAT_OPTIONAL["burstCount"]), c + "burstCount", maximum=8, integer=True)
+    fields["burstIntervalTicks"] = number(combat.get("burstIntervalTicks", COMBAT_OPTIONAL["burstIntervalTicks"]),
+                                          c + "burstIntervalTicks", maximum=60, integer=True)
+    for name in ("falloffStartMeters", "falloffEndMeters"):
+        fields[name] = number(combat.get(name, COMBAT_OPTIONAL[name]), c + name, maximum=1000)
+    fields["falloffMinScale"] = number(combat.get("falloffMinScale", COMBAT_OPTIONAL["falloffMinScale"]), c + "falloffMinScale",
+                                       minimum=0.1, maximum=1)
+    fields["moveSpeedScale"] = number(combat.get("moveSpeedScale", COMBAT_OPTIONAL["moveSpeedScale"]), c + "moveSpeedScale",
+                                      minimum=0.5, maximum=1.2)
+    fields["spawnWeight"] = number(combat.get("spawnWeight", COMBAT_OPTIONAL["spawnWeight"]), c + "spawnWeight",
+                                   maximum=1000, integer=True)
+    if fire_mode == "Burst" and (int(fields["burstCount"]) < 2 or int(fields["burstIntervalTicks"]) < 1):
+        raise DefinitionError(c + "Burst needs burstCount >= 2 and burstIntervalTicks >= 1")
+    if fire_mode != "Burst" and int(fields["burstCount"]) != 0:
+        raise DefinitionError(c + "burstCount is only valid for fireMode Burst")
+    if float(fields["falloffStartMeters"]) > 0 and float(fields["falloffEndMeters"]) <= float(fields["falloffStartMeters"]):
+        raise DefinitionError(c + "falloffEndMeters must be greater than falloffStartMeters")
     if family in ("PrimaryGun", "Sidearm") and int(fields["fireIntervalTicks"]) < 1:
         raise DefinitionError(c + "fireIntervalTicks: guns need at least 1 tick between shots")
     if family == "Throwable" and (int(fields["fuseTicks"]) < 1 or float(fields["blastRadiusMeters"]) <= 0):
@@ -327,7 +348,12 @@ def render_catalog(weapons) -> str:
             "                    maxRangeMeters: " + f(c["maxRangeMeters"]) + ", fuseTicks: " + c["fuseTicks"]
             + ", throwSpeedMetersPerSecond: " + f(c["throwSpeedMetersPerSecond"]) + ",\n"
             "                    blastRadiusMeters: " + f(c["blastRadiusMeters"]) + ", consumesAmmo: " + b(c["consumesAmmo"])
-            + ", allowsSprintFire: " + b(c["allowsSprintFire"]) + "),\n"
+            + ", allowsSprintFire: " + b(c["allowsSprintFire"]) + ",\n"
+            "                    burstCount: " + c["burstCount"] + ", burstIntervalTicks: " + c["burstIntervalTicks"]
+            + ", falloffStartMeters: " + f(c["falloffStartMeters"]) + ", falloffEndMeters: " + f(c["falloffEndMeters"])
+            + ",\n"
+            "                    falloffMinScale: " + f(c["falloffMinScale"]) + ", moveSpeedScale: " + f(c["moveSpeedScale"])
+            + ", spawnWeight: " + c["spawnWeight"] + "),\n"
             "                WeaponFamily." + w["family"] + ", \"" + w["id"] + "\")")
     return (HEADER + "#nullable enable\nusing Shooter.Contracts;\n\nnamespace Shooter.Simulation.Combat\n{\n"
             "    public static partial class WeaponCatalog\n    {\n"

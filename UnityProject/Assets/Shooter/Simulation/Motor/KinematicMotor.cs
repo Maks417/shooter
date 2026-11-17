@@ -56,7 +56,7 @@ namespace Shooter.Simulation.Motor
         public KinematicMotor(MotorConfig? config = null) { this.config = config ?? MotorConfig.BaselineV1; }
         public MotorConfig Config => config;
 
-        public MotorBodyState Step(MotorBodyState previous, InputCommand command, uint tick, IWorldQueries world, bool slidePressed = false)
+        public MotorBodyState Step(MotorBodyState previous, InputCommand command, uint tick, IWorldQueries world, bool slidePressed = false, float weaponSpeedScale = 1f)
         {
             if (world == null) throw new ArgumentNullException(nameof(world));
             if (previous.Stance == Stance.Dead)
@@ -134,6 +134,8 @@ namespace Shooter.Simulation.Motor
             bool canSprint = wantSprint && tightness > 0f;
             float speed = stance == Stance.Crouching ? config.CrouchSpeed : canSprint ? config.SprintSpeed : config.WalkSpeed;
             if (wantAim) speed *= config.AdsSpeedMultiplier;
+            // ADR-102: heavy weapons move slower; clamped so a bad definition cannot freeze or launch the body.
+            speed *= weaponSpeedScale < 0.5f ? 0.5f : weaponSpeedScale > 1.2f ? 1.2f : weaponSpeedScale;
 
             Float3 wish = VecMath.Add(
                 VecMath.Scale(MotorMath.YawForward(yaw), ClampAxis(command.MoveY)),

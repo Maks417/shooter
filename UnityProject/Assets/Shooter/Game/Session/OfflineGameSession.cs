@@ -19,6 +19,12 @@ namespace Shooter.Game.Session
     /// </summary>
     public sealed class OfflineGameSession : IGameSession
     {
+        /// <summary>
+        /// ADR-102: each life draws a seeded random primary and sidearm. Set false before loading to keep
+        /// the fixed default loadout (deterministic harness scenarios).
+        /// </summary>
+        public bool RandomLoadouts { get; set; } = true;
+
         private readonly IMapCatalog catalog;
         private readonly Func<IWorldQueries, INavigation, IMapRuntime> mapFactory;
         private readonly bool allowFakeMapRuntime;
@@ -192,7 +198,7 @@ namespace Shooter.Game.Session
             countingMap = new QueryCountingMapRuntime(loadingRuntime, queries);
             mapRuntime = countingMap;
             querySamplesAtMatchStart = queries.TotalSamples;
-            harness = new CombatHarnessSimulation(queries, sessionId, request.Seed);
+            harness = new CombatHarnessSimulation(queries, sessionId, request.Seed) { RandomLoadouts = RandomLoadouts };
             harness.SetWorldKillBounds(gameplay.Bounds);
             lifecycle = new HarnessActorLifecycle(harness);
             bots = new TeamBotPlanner(queries, mapRuntime.Navigation, 0, gameplay.NavRevision);

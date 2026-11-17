@@ -20,7 +20,9 @@ namespace Shooter.Simulation.Combat
                     hipSpreadRadians: Deg(1.0f), adsSpreadRadians: Deg(0.15f),
                     recoilPitchRadians: Deg(0.35f), recoilYawHalfRadians: Deg(0.1f),
                     maxRangeMeters: 300f, fuseTicks: 0, throwSpeedMetersPerSecond: 0f,
-                    blastRadiusMeters: 0f, consumesAmmo: true, allowsSprintFire: false),
+                    blastRadiusMeters: 0f, consumesAmmo: true, allowsSprintFire: false,
+                    burstCount: 0, burstIntervalTicks: 0, falloffStartMeters: 0f, falloffEndMeters: 0f,
+                    falloffMinScale: 1f, moveSpeedScale: 1f, spawnWeight: 1),
                 WeaponFamily.PrimaryGun, "weapons/rifle"),
             // Content/Weapons/rifle-carbine.weapon.json
             new WeaponCatalogEntry(
@@ -31,7 +33,9 @@ namespace Shooter.Simulation.Combat
                     hipSpreadRadians: Deg(1.15f), adsSpreadRadians: Deg(0.18f),
                     recoilPitchRadians: Deg(0.40f), recoilYawHalfRadians: Deg(0.12f),
                     maxRangeMeters: 300f, fuseTicks: 0, throwSpeedMetersPerSecond: 0f,
-                    blastRadiusMeters: 0f, consumesAmmo: true, allowsSprintFire: false),
+                    blastRadiusMeters: 0f, consumesAmmo: true, allowsSprintFire: false,
+                    burstCount: 0, burstIntervalTicks: 0, falloffStartMeters: 0f, falloffEndMeters: 0f,
+                    falloffMinScale: 1f, moveSpeedScale: 1f, spawnWeight: 1),
                 WeaponFamily.PrimaryGun, "weapons/rifle-carbine"),
             // Content/Weapons/pistol.weapon.json
             new WeaponCatalogEntry(
@@ -42,7 +46,9 @@ namespace Shooter.Simulation.Combat
                     hipSpreadRadians: Deg(1.5f), adsSpreadRadians: Deg(0.3f),
                     recoilPitchRadians: Deg(0.55f), recoilYawHalfRadians: Deg(0.15f),
                     maxRangeMeters: 300f, fuseTicks: 0, throwSpeedMetersPerSecond: 0f,
-                    blastRadiusMeters: 0f, consumesAmmo: true, allowsSprintFire: false),
+                    blastRadiusMeters: 0f, consumesAmmo: true, allowsSprintFire: false,
+                    burstCount: 0, burstIntervalTicks: 0, falloffStartMeters: 0f, falloffEndMeters: 0f,
+                    falloffMinScale: 1f, moveSpeedScale: 1f, spawnWeight: 1),
                 WeaponFamily.Sidearm, "weapons/pistol"),
             // Content/Weapons/knife.weapon.json
             new WeaponCatalogEntry(
@@ -53,7 +59,9 @@ namespace Shooter.Simulation.Combat
                     hipSpreadRadians: Deg(0f), adsSpreadRadians: Deg(0f),
                     recoilPitchRadians: Deg(0f), recoilYawHalfRadians: Deg(0f),
                     maxRangeMeters: 1.8f, fuseTicks: 0, throwSpeedMetersPerSecond: 0f,
-                    blastRadiusMeters: 0f, consumesAmmo: false, allowsSprintFire: true),
+                    blastRadiusMeters: 0f, consumesAmmo: false, allowsSprintFire: true,
+                    burstCount: 0, burstIntervalTicks: 0, falloffStartMeters: 0f, falloffEndMeters: 0f,
+                    falloffMinScale: 1f, moveSpeedScale: 1f, spawnWeight: 1),
                 WeaponFamily.Melee, "weapons/knife"),
             // Content/Weapons/grenade.weapon.json
             new WeaponCatalogEntry(
@@ -64,7 +72,9 @@ namespace Shooter.Simulation.Combat
                     hipSpreadRadians: Deg(0f), adsSpreadRadians: Deg(0f),
                     recoilPitchRadians: Deg(0f), recoilYawHalfRadians: Deg(0f),
                     maxRangeMeters: 0f, fuseTicks: 120, throwSpeedMetersPerSecond: 18f,
-                    blastRadiusMeters: 5f, consumesAmmo: true, allowsSprintFire: false),
+                    blastRadiusMeters: 5f, consumesAmmo: true, allowsSprintFire: false,
+                    burstCount: 0, burstIntervalTicks: 0, falloffStartMeters: 0f, falloffEndMeters: 0f,
+                    falloffMinScale: 1f, moveSpeedScale: 1f, spawnWeight: 1),
                 WeaponFamily.Throwable, "weapons/grenade")
         };
     }

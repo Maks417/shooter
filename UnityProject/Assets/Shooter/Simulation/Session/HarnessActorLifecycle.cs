@@ -12,7 +12,7 @@ namespace Shooter.Simulation.Session
     /// T036 reusable lifecycle adapter over CombatHarnessSimulation. Preserves harness C0 behavior;
     /// shipping GameSession rejects fake map/nav adapters separately.
     /// </summary>
-    public sealed class HarnessActorLifecycle : IActorLifecycle, IActorStanceSource
+    public sealed class HarnessActorLifecycle : IActorLifecycle, IActorStanceSource, Shooter.Simulation.AI.IActorLoadoutSource
     {
         private sealed class Corpse
         {
@@ -44,13 +44,27 @@ namespace Shooter.Simulation.Session
             if (states.Count >= GameContractVersion.MaxActiveActors)
                 throw new InvalidOperationException("actor capacity");
             var id = harness.SpawnActor(feet, yaw, team);
-            var primary = WeaponCatalog.RequireDefinition(WeaponLoadoutPolicy.DefaultPrimaryId);
+            var primary = PrimaryOf(id);
             var state = new ActorLifecycleState(id, team, true, 100, feet, yaw, 0, 0, primary.MagazineSize, primary.ReserveCapacity,
                 WeaponAction.Ready, primary.Id);
             states[id.Value] = state;
             lives[id.Value] = (participant, life);
             return id;
         }
+
+        /// <summary>ADR-102: the primary and sidearm issued to this life, for bots and presentation.</summary>
+        public bool TryGetLoadout(EntityId entity, out DefinitionId primary, out DefinitionId sidearm)
+        {
+            primary = default; sidearm = default;
+            if (!harness.TryGetWeapon(entity, 0, out var p) || !harness.TryGetWeapon(entity, 1, out var s)) return false;
+            primary = p.DefinitionId; sidearm = s.DefinitionId;
+            return true;
+        }
+
+        /// <summary>The slot-0 gun the harness actually issued (random per life under ADR-102).</summary>
+        private WeaponDefinition PrimaryOf(EntityId id) =>
+            harness.TryGetWeapon(id, 0, out var weapon) ? WeaponCatalog.RequireDefinition(weapon.DefinitionId)
+                : WeaponCatalog.RequireDefinition(WeaponLoadoutPolicy.DefaultPrimaryId);
 
         public void DespawnLife(EntityId entity)
         {
@@ -95,7 +109,7 @@ namespace Shooter.Simulation.Session
         {
             if (!states.TryGetValue(entity.Value, out var prev)) throw new InvalidOperationException("unknown entity");
             if (!harness.ResetActor(entity, feet, yaw)) throw new InvalidOperationException("authority entity missing");
-            var primary = WeaponCatalog.RequireDefinition(WeaponLoadoutPolicy.DefaultPrimaryId);
+            var primary = PrimaryOf(entity);
             states[entity.Value] = new ActorLifecycleState(entity, prev.Team, true, 100, feet, yaw, 0, 0,
                 primary.MagazineSize, primary.ReserveCapacity, WeaponAction.Ready, primary.Id);
             stances[entity.Value] = Stance.Standing;

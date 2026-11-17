@@ -150,6 +150,11 @@ namespace Shooter.Simulation.AI
                     board.Health = state.Health;
                     board.MagAmmo = state.Magazine;
                     board.ReserveAmmo = state.Reserve;
+                    if (lifecycle is IActorLoadoutSource loadouts && loadouts.TryGetLoadout(board.Self, out var primaryId, out var sidearmId))
+                    {
+                        board.PrimaryWeapon = primaryId;
+                        board.SidearmWeapon = sidearmId;
+                    }
                     if (board.State == AiState.Dead)
                     {
                         board.State = AiState.Patrol;

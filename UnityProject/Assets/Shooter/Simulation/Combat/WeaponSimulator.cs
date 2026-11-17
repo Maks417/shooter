@@ -136,8 +136,15 @@ namespace Shooter.Simulation.Combat
             }
 
             bool rising = fireHeld && !active.PreviousFireHeld;
+            // ADR-102 burst: a press starts a burst and the remaining rounds follow on their own cadence.
+            // Progress lives in ShotIndex (each burst starts on a multiple of BurstCount), so the frozen
+            // C0 WeaponState needs no new field. Any interruption (reload, switch, sprint) ends the burst.
+            bool burst = activeDef.FireMode == FireMode.Burst && activeDef.BurstCount > 1;
+            bool burstContinues = burst && active.ShotIndex % activeDef.BurstCount != 0
+                && active.Action == WeaponAction.Ready && tick == active.NextAllowedFireTick;
             bool wantsFire = activeDef.FireMode == FireMode.Automatic ? (fireHeld || rising)
                 : activeDef.FireMode == FireMode.Melee ? (firePressed || rising)
+                : burst ? (burstContinues || firePressed || rising)
                 : firePressed;
             if (sprinting && !activeDef.AllowsSprintFire) wantsFire = false;
 
@@ -162,10 +169,18 @@ namespace Shooter.Simulation.Combat
             if (wantsFire && active.Action == WeaponAction.Ready && ammoOk && tick >= active.NextAllowedFireTick)
             {
                 uint shotIndex = unchecked(active.ShotIndex + 1);
+                uint interval = activeDef.FireIntervalTicks;
+                if (burst)
+                {
+                    uint count = activeDef.BurstCount;
+                    // A new burst starts on the next multiple of BurstCount (+1) so progress can be read back.
+                    if (!burstContinues) shotIndex = unchecked((active.ShotIndex + count - 1) / count * count + 1);
+                    if (shotIndex % count != 0) interval = activeDef.BurstIntervalTicks;
+                }
                 ushort ammo = active.AmmoInMagazine;
                 if (activeDef.ConsumesAmmo) ammo = (ushort)(ammo - 1);
                 active = new WeaponState(active.DefinitionId, WeaponAction.FiringRecovery, ammo, active.Reserve,
-                    unchecked(tick + activeDef.FireIntervalTicks), tick, unchecked(tick + activeDef.FireIntervalTicks), shotIndex, fireHeld);
+                    unchecked(tick + interval), tick, unchecked(tick + interval), shotIndex, fireHeld);
                 acceptedShots.Add(new AcceptedShot(activeSlot, activeDef, shotIndex, aiming));
                 slots[activeSlot] = active;
                 return;

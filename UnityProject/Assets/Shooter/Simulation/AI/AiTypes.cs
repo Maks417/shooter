@@ -16,6 +16,12 @@ namespace Shooter.Simulation.AI
         Dead = 8
     }
 
+    /// <summary>ADR-102: optional lifecycle side channel reporting each life's random primary and sidearm.</summary>
+    public interface IActorLoadoutSource
+    {
+        bool TryGetLoadout(Shooter.Contracts.EntityId entity, out Shooter.Contracts.DefinitionId primary, out Shooter.Contracts.DefinitionId sidearm);
+    }
+
     public sealed class AiBlackboard
     {
         public EntityId Self { get; set; }
@@ -27,6 +33,10 @@ namespace Shooter.Simulation.AI
         public ushort Health { get; set; } = 100;
         public int MagAmmo { get; set; } = 30;
         public int ReserveAmmo { get; set; } = 90;
+        /// <summary>Slot-0 gun issued for this life (random per spawn under ADR-102).</summary>
+        public Shooter.Contracts.DefinitionId PrimaryWeapon { get; set; } = Combat.WeaponLoadoutPolicy.DefaultPrimaryId;
+        /// <summary>Slot-1 sidearm issued for this life.</summary>
+        public Shooter.Contracts.DefinitionId SidearmWeapon { get; set; } = Combat.WeaponLoadoutPolicy.PistolId;
         /// <summary>Commanded loadout slot (0 rifle / 1 pistol / 2 knife / 3 grenade).</summary>
         public byte DesiredSlot { get; set; }
         /// <summary>One grenade per life; decremented when the bot commits a throw/cook detonation.</summary>
