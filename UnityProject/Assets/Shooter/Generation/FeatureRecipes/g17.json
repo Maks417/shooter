@@ -1,0 +1,18 @@
+{
+  "schemaId": "shooter.recipe.weapon.v1",
+  "recipeId": "weapons/g17",
+  "generatorId": "geometry.weapon",
+  "generatorVersion": "1.2.0",
+  "seed": "460072030",
+  "parameters": {
+    "kind": "pistol-striker",
+    "parts": {
+      "barrelFrontMm": 125,
+      "furniture": "black",
+      "muzzle": "none",
+      "optic": "irons",
+      "stock": "none"
+    }
+  },
+  "dependencies": []
+}

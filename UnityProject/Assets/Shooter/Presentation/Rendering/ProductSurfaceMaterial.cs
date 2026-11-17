@@ -33,6 +33,28 @@ namespace Shooter.Presentation.Rendering
         public static Material[] WeaponFinishes(Material coated, Material polymer, Material steel, Material recess, Material enamel)
             => new[] { coated, polymer, steel, recess, enamel };
 
+        /// <summary>
+        /// ADR-102 palette: the five verified finishes plus slot 5 oiled wood and slot 6 polished gold. Both are numeric
+        /// tints of the verified polymer and steel planes (no new textures), like <see cref="ArchitecturalAccents"/>.
+        /// </summary>
+        public static Material[] WeaponFinishes(Material coated, Material polymer, Material steel, Material recess, Material enamel,
+            Action<UnityEngine.Object> own)
+        {
+            if (own == null) throw new ArgumentNullException(nameof(own));
+            Material Tint(Material source, string name, Color tint, float smoothness)
+            {
+                var material = new Material(source) { name = name };
+                own(material);
+                material.SetColor("_BaseColor", tint);
+                if (material.HasProperty("_Smoothness")) material.SetFloat("_Smoothness", smoothness);
+                return material;
+            }
+            // The polymer albedo is near-black, so the walnut tint is above one to lift it into warm brown.
+            var wood = Tint(polymer, "Oiled walnut furniture", new Color(3.1f, 1.65f, .82f), .42f);
+            var gold = Tint(steel, "Polished gold plating", new Color(1.95f, 1.45f, .52f), .82f);
+            return new[] { coated, polymer, steel, recess, enamel, wood, gold };
+        }
+
         /// <summary>Retains verified box geometry; adapts face UVs to metres after nonuniform scaling.</summary>
         public static Mesh MetricBoxUv(Mesh source, Vector3 size, Action<UnityEngine.Object> own)
         {

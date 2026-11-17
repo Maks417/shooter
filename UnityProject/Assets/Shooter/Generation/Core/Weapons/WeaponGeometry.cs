@@ -42,6 +42,7 @@ namespace Shooter.Generation
         public static WeaponBuild Build(WeaponRecipe recipe)
         {
             if (recipe == null) throw new ArgumentNullException(nameof(recipe));
+            if (recipe.Arsenal != null) return ArsenalGeometry.Build(recipe.Kind, recipe.Arsenal);
             var lods = new MeshData[4];
             for (int i = 0; i < 4; i++) lods[i] = BuildLod(recipe.Kind, recipe.Parts, i);
             var magazine = BuildMagazine(recipe.Kind, 0);
@@ -57,11 +58,13 @@ namespace Shooter.Generation
         public static FrozenList<WeaponSocket> Sockets(WeaponRecipe recipe)
         {
             if (recipe == null) throw new ArgumentNullException(nameof(recipe));
+            if (recipe.Arsenal != null) return new FrozenList<WeaponSocket>(ArsenalGeometry.Sockets(recipe.Kind, recipe.Arsenal), 8);
             return new FrozenList<WeaponSocket>(Sockets(recipe.Kind), 8);
         }
         public static CollisionData Collision(WeaponRecipe recipe)
         {
             if (recipe == null) throw new ArgumentNullException(nameof(recipe));
+            if (recipe.Arsenal != null) return ArsenalGeometry.Collision(recipe.Kind, recipe.Arsenal);
             return BuildCollision(recipe.Kind);
         }
         // Construction envelope only — sockets stay on the numeric baseline; bevelled detail may fill this AABB.

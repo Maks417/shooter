@@ -101,6 +101,8 @@ namespace Shooter.Presentation.Rig
             public Mesh? Held, Local, Magazine, Cycle;
             public Float3 SightSocket;
             public Float3 MuzzleSocket;
+            public Float3 SupportSocket;
+            public bool HasSupportSocket;
         }
         private readonly Dictionary<string, WeaponMeshSet> weaponMeshes = new Dictionary<string, WeaponMeshSet>(StringComparer.Ordinal);
         private Material[]? team1Palette;
@@ -297,7 +299,7 @@ namespace Shooter.Presentation.Rig
                     if (cycle != null) { set.Cycle = Own(Upload(cycle, false)); silhouetteParts.Add(cycle); }
                     // ADR-085: HUD weapon icons are traced from these same packaged LOD0 meshes.
                     silhouettes.Add(new WeaponSilhouetteSource(source.MeshKey, WeaponSilhouetteSource.SpanFor(source.MeshKey), silhouetteParts));
-                    if (source.Recipe != null) { var sockets = WeaponGeometry.Sockets(source.Recipe); set.SightSocket = FindSocket(sockets, "sight-eye"); set.MuzzleSocket = FindSocket(sockets, "muzzle"); }
+                    if (source.Recipe != null) { var sockets = WeaponGeometry.Sockets(source.Recipe); set.SightSocket = FindSocket(sockets, "sight-eye"); set.MuzzleSocket = FindSocket(sockets, "muzzle"); set.SupportSocket = FindSocket(sockets, "left-hand-grip"); set.HasSupportSocket = true; }
                     weaponMeshes[source.MeshKey] = set;
                     yield return 0;
                 }
@@ -353,7 +355,8 @@ namespace Shooter.Presentation.Rig
                     rifleMetal, riflePolymer,
                     NearFieldSurface(MapVisualClosure.FirstPersonSurfacePaths[4], "Machined steel bevels and fasteners"),
                     NearFieldSurface(MapVisualClosure.FirstPersonSurfacePaths[5], "Weapon recesses and rubber"),
-                    NearFieldSurface(MapVisualClosure.FirstPersonSurfacePaths[6], "Olive enamel grenade shell"));
+                    NearFieldSurface(MapVisualClosure.FirstPersonSurfacePaths[6], "Olive enamel grenade shell"),
+                    value => owned.Add(value));
                 firstPersonHandMaterials = new[] { sleeve, glove, riflePolymer };
 
                 visualsBound = true;complete=true;
@@ -999,7 +1002,6 @@ namespace Shooter.Presentation.Rig
                     supportHand.sharedMesh = firstPersonHandMeshes[index + 1];
                     triggerHand.sharedMaterials = firstPersonHandMaterials;
                     supportHand.sharedMaterials = firstPersonHandMaterials;
-                    supportHand.transform.localPosition = Vector3.zero;
                     for (int hand=0;hand<2;hand++)
                     {
                         var skeleton=handSkeletons[index+hand]!;
@@ -1011,7 +1013,20 @@ namespace Shooter.Presentation.Rig
                         }
                     }
                 }
+                // ADR-102: the hand meshes are baked per slot for the classic rifle (handguard grip at z 340 mm) and
+                // pistol; each gun moves the support hand onto its own left-hand-grip socket.
+                supportHand.transform.localPosition = V(SupportHandShift(profile, slot));
             }
+        }
+
+        private static readonly Float3 RifleSupportBind = new Float3(0f, .010f, .340f);
+        private static readonly Float3 PistolSupportBind = new Float3(-.022f, 0f, -.005f);
+
+        private Float3 SupportHandShift(in WeaponVisualProfile profile, byte slot)
+        {
+            if (slot > 1 || !weaponMeshes.TryGetValue(profile.MeshAssetKey, out var set) || !set.HasSupportSocket) return default;
+            var bind = slot == 0 ? RifleSupportBind : PistolSupportBind;
+            return new Float3(set.SupportSocket.X - bind.X, set.SupportSocket.Y - bind.Y, set.SupportSocket.Z - bind.Z);
         }
 
         private void PoseLocalHands(in WeaponVisualProfile profile, byte slot, in ReloadPose reloadPose,

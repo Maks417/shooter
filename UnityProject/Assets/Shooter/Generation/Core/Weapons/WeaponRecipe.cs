@@ -72,6 +72,55 @@ namespace Shooter.Generation
         private static string I(int value) => value.ToString(CultureInfo.InvariantCulture);
     }
 
+    /// <summary>
+    /// ADR-102 geometry.weapon 1.2.0 arsenal parts. Each archetype kind (<see cref="WeaponRecipe.ArsenalKinds"/>) has its own
+    /// receiver, magazine and cycle construction; these parts choose barrel length, furniture, muzzle device, optic and stock.
+    /// </summary>
+    public sealed class ArsenalParts
+    {
+        public static readonly string[] Furnitures = { "black", "gold", "polymer", "wood" };
+        public static readonly string[] Muzzles = { "birdcage", "brake", "flash", "none", "slant" };
+        public static readonly string[] Optics = { "irons", "scope2", "scope4", "scope8" };
+        public static readonly string[] Stocks = { "chassis", "fixed", "folding", "none", "wood" };
+        public int BarrelFrontMm { get; }
+        public string Furniture { get; }
+        public string Muzzle { get; }
+        public string Optic { get; }
+        public string Stock { get; }
+        internal float BarrelFront => BarrelFrontMm / 1000f;
+
+        public ArsenalParts(string kind, int barrelFrontMm, string furniture, string muzzle, string optic, string stock)
+        {
+            if (Array.IndexOf(Furnitures, furniture) < 0) throw new FormatException("Weapon part furniture is unknown.");
+            if (Array.IndexOf(Muzzles, muzzle) < 0) throw new FormatException("Weapon part muzzle is unknown.");
+            if (Array.IndexOf(Optics, optic) < 0) throw new FormatException("Weapon part optic is unknown.");
+            if (Array.IndexOf(Stocks, stock) < 0) throw new FormatException("Weapon part stock is unknown.");
+            var (min, max) = BarrelRange(kind);
+            if (barrelFrontMm < min || barrelFrontMm > max)
+                throw new FormatException("Weapon part barrelFrontMm must be within " + min + ".." + max + " for " + kind + ".");
+            bool pistol = kind == "pistol-striker" || kind == "pistol-eagle";
+            if (pistol && (optic != "irons" || stock != "none")) throw new FormatException("Arsenal pistols take irons and no stock.");
+            if (!pistol && stock == "none") throw new FormatException("Arsenal long guns need a stock.");
+            BarrelFrontMm = barrelFrontMm; Furniture = furniture; Muzzle = muzzle; Optic = optic; Stock = stock;
+        }
+
+        /// <summary>Barrel front (millimetres ahead of the grip) each archetype's envelope accepts.</summary>
+        public static (int min, int max) BarrelRange(string kind) => kind switch
+        {
+            "ak" => (360, 600),
+            "ar" => (420, 780),
+            "dmr" => (480, 760),
+            "bolt" => (700, 960),
+            "pistol-striker" => (110, 140),
+            "pistol-eagle" => (150, 200),
+            _ => throw new FormatException("Unknown arsenal kind.")
+        };
+
+        public string ToCanonicalJson() =>
+            "{\"barrelFrontMm\":" + BarrelFrontMm.ToString(CultureInfo.InvariantCulture) + ",\"furniture\":\"" + Furniture +
+            "\",\"muzzle\":\"" + Muzzle + "\",\"optic\":\"" + Optic + "\",\"stock\":\"" + Stock + "\"}";
+    }
+
     public sealed class WeaponRecipe
     {
         public const string Schema = "shooter.recipe.weapon.v1";
@@ -80,20 +129,29 @@ namespace Shooter.Generation
         public const string GeneratorVersion = "1.0.5";
         /// <summary>Parametric part generator (ADR-082).</summary>
         public const string PartsVersion = "1.1.0";
-        public static bool IsSupportedVersion(string? version) => version == GeneratorVersion || version == PartsVersion;
+        /// <summary>Named real-world archetypes (ADR-102).</summary>
+        public const string ArsenalVersion = "1.2.0";
+        public static readonly string[] ArsenalKinds = { "ak", "ar", "bolt", "dmr", "pistol-eagle", "pistol-striker" };
+        public static bool IsSupportedVersion(string? version) => version == GeneratorVersion || version == PartsVersion || version == ArsenalVersion;
+        public static bool IsArsenalKind(string? kind) => kind != null && Array.IndexOf(ArsenalKinds, kind) >= 0;
+        /// <summary>Shouldered weapons: the 1.0.5/1.1.0 rifle and every 1.2.0 long-gun archetype.</summary>
+        public static bool IsLongGunKind(string? kind) => kind == "rifle" || kind == "ak" || kind == "ar" || kind == "dmr" || kind == "bolt";
+        public bool IsLongGun => IsLongGunKind(Kind);
 
         public RecipeDocument Document { get; }
         public string Kind { get; }
         /// <summary>1.0.5: <c>standard</c> or <c>carbine</c>. 1.1.0: always <c>parts</c>.</summary>
         public string Silhouette { get; }
-        /// <summary>Resolved rifle parts; null for pistols.</summary>
+        /// <summary>Resolved rifle parts; null for pistols and 1.2.0 archetypes.</summary>
         public WeaponParts? Parts { get; }
+        /// <summary>Resolved 1.2.0 archetype parts; null before 1.2.0.</summary>
+        public ArsenalParts? Arsenal { get; }
         public string Version => Document.GeneratorVersion;
         private readonly byte[] source;
         public byte[] CanonicalSource => (byte[])source.Clone();
         public ContentId SourceHash { get; }
-        private WeaponRecipe(RecipeDocument document, string kind, string silhouette, WeaponParts? parts, byte[] canonical)
-        { Document = document; Kind = kind; Silhouette = silhouette; Parts = parts; source = canonical; SourceHash = ContentIdentity.SourceHash(Schema, canonical); }
+        private WeaponRecipe(RecipeDocument document, string kind, string silhouette, WeaponParts? parts, ArsenalParts? arsenal, byte[] canonical)
+        { Document = document; Kind = kind; Silhouette = silhouette; Parts = parts; Arsenal = arsenal; source = canonical; SourceHash = ContentIdentity.SourceHash(Schema, canonical); }
 
         public static WeaponRecipe Parse(ReadOnlySpan<byte> source)
         {
@@ -103,7 +161,10 @@ namespace Shooter.Generation
             string version = root["generatorVersion"].String;
             if (root["schemaId"].String != Schema || root["generatorId"].String != GeneratorId || !IsSupportedVersion(version))
                 throw new FormatException("Unsupported weapon schema/generator version.");
-            var parsed = Parameters(version, root["parameters"]);
+            ArsenalParts? arsenal = null;
+            (string kind, string silhouette, WeaponParts? parts) parsed;
+            if (version == ArsenalVersion) { arsenal = ArsenalParameters(root["parameters"], out string arsenalKind); parsed = (arsenalKind, "arsenal", null); }
+            else parsed = Parameters(version, root["parameters"]);
             string seed = root["seed"].String;
             try
             {
@@ -117,8 +178,8 @@ namespace Shooter.Generation
                     if (i > 0 && dependencies[i - 1].CompareTo(dependencies[i]) >= 0) throw new FormatException("Dependencies must be sorted and unique.");
                 }
                 var document = new RecipeDocument(new DefinitionId(root["recipeId"].String), Schema, GeneratorId, version, seed,
-                    ParameterBytes(version, parsed.kind, parsed.silhouette, parsed.parts), dependencies);
-                return new WeaponRecipe(document, parsed.kind, parsed.silhouette, parsed.parts, canonical);
+                    ParameterBytes(version, parsed.kind, parsed.silhouette, parsed.parts, arsenal), dependencies);
+                return new WeaponRecipe(document, parsed.kind, parsed.silhouette, parsed.parts, arsenal, canonical);
             }
             catch (ArgumentException error) { throw new FormatException("Invalid weapon identity/seed/dependency.", error); }
         }
@@ -129,8 +190,12 @@ namespace Shooter.Generation
             if (!document.RecipeId.IsValid || document.SchemaId != Schema || document.GeneratorId != GeneratorId || !IsSupportedVersion(document.GeneratorVersion))
                 throw new FormatException("Unsupported weapon identity/schema/generator.");
             ContentIdentity.ParseSeed(document.Seed);
-            var parsed = Parameters(document.GeneratorVersion, JsonValue.Parse(document.Parameters));
-            if (!document.Parameters.SequenceEqual(ParameterBytes(document.GeneratorVersion, parsed.kind, parsed.silhouette, parsed.parts)))
+            ArsenalParts? arsenal = null;
+            (string kind, string silhouette, WeaponParts? parts) parsed;
+            if (document.GeneratorVersion == ArsenalVersion)
+            { arsenal = ArsenalParameters(JsonValue.Parse(document.Parameters), out string arsenalKind); parsed = (arsenalKind, "arsenal", null); }
+            else parsed = Parameters(document.GeneratorVersion, JsonValue.Parse(document.Parameters));
+            if (!document.Parameters.SequenceEqual(ParameterBytes(document.GeneratorVersion, parsed.kind, parsed.silhouette, parsed.parts, arsenal)))
                 throw new FormatException("Weapon parameters must be canonical.");
             return parsed;
         }
@@ -169,9 +234,22 @@ namespace Shooter.Generation
 
         private static int Int(IReadOnlyDictionary<string, JsonValue> values, string name) => values[name].Number;
 
-        private static byte[] ParameterBytes(string version, string kind, string silhouette, WeaponParts? parts) =>
+        private static ArsenalParts ArsenalParameters(JsonValue value, out string kind)
+        {
+            Fields(value.Object, "kind", "parts");
+            kind = value.Object["kind"].String;
+            if (!IsArsenalKind(kind)) throw new FormatException("Weapon kind must be one of the 1.2.0 arsenal archetypes.");
+            var parts = value.Object["parts"].Object;
+            Fields(parts, "barrelFrontMm", "furniture", "muzzle", "optic", "stock");
+            return new ArsenalParts(kind, Int(parts, "barrelFrontMm"), parts["furniture"].String, parts["muzzle"].String,
+                parts["optic"].String, parts["stock"].String);
+        }
+
+        private static byte[] ParameterBytes(string version, string kind, string silhouette, WeaponParts? parts, ArsenalParts? arsenal = null) =>
             Encoding.UTF8.GetBytes(version == GeneratorVersion
                 ? "{\"kind\":\"" + kind + "\",\"silhouette\":\"" + silhouette + "\"}"
+                : version == ArsenalVersion
+                ? "{\"kind\":\"" + kind + "\",\"parts\":" + arsenal!.ToCanonicalJson() + "}"
                 : "{\"kind\":\"" + kind + "\",\"parts\":" + (parts == null ? "{}" : parts.ToCanonicalJson()) + "}");
 
         private static void Fields(IReadOnlyDictionary<string, JsonValue> values, params string[] names)
