@@ -6,7 +6,7 @@
     "sources": [
         {
             "path": "UnityProject/Assets/Shooter/Bootstrap/Editor/ShooterBuild.cs",
-            "sha256": "20a3bba1caf79b6ff357893ea7d66732b8b78065029131c4734a24131d817eb1"
+            "sha256": "c8aaef611e831bb63ce3407890b5baebb05d82c90a837bb7717aaa15239b1ea4"
         },
         {
             "path": "UnityProject/Assets/Shooter/Bootstrap/Editor/ShooterPostProcessingBuild.cs",
@@ -17,6 +17,10 @@
         {
             "path": "UnityProject/Assets/Shooter/Bootstrap/Scenes/Bootstrap.unity",
             "sha256": "b8a4419173f3d8befdd7a86611290bad6cf1f06571585b3b8e1890297453bb17"
+        },
+        {
+            "path": "UnityProject/Assets/Shooter/Settings/AppIcon.asset",
+            "sha256": "90e48673679139ee25b0794347d05d06f786cd73c8c38be8117b3b94dd0a2dd2"
         },
         {
             "path": "UnityProject/Assets/Shooter/Settings/Balanced.asset",

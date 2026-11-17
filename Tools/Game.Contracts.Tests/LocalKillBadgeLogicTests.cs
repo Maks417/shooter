@@ -58,7 +58,8 @@ namespace Shooter.Game.Contracts.Tests
             Assert.True(awards[0].Headshot);
             Assert.Equal(100u, awards[0].Points);
             Assert.Equal(LocalScoreAwardKind.Headshot, awards[1].Kind);
-            Assert.Equal(0u, awards[1].Points);
+            Assert.Equal(LocalKillBadgeLogic.HeadshotBonusPoints, awards[1].Points);
+            Assert.Equal(20u, awards[1].Points);
             Assert.Equal(0, awards[1].KillStreak);
             Assert.True(awards[1].Headshot);
         }

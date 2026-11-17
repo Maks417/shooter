@@ -7,12 +7,15 @@ namespace Shooter.Game.Session
 {
     /// <summary>
     /// Pure helpers for ADR-073 local multi-kill / headshot HUD awards.
-    /// Does not change personal Score math; Game/Session must not reference Presentation.
+    /// ADR-097 adds the headshot bonus constant; Game/Session must not reference Presentation.
     /// </summary>
     public static class LocalKillBadgeLogic
     {
         /// <summary>Matches combat head region used by kill-feed correlators.</summary>
         public const ushort HeadRegionId = 1;
+
+        /// <summary>ADR-097: extra personal Score for an enemy kill whose fatal hit was to the head.</summary>
+        public const uint HeadshotBonusPoints = 20;
 
         public static byte IncrementStreak(byte current) =>
             current == byte.MaxValue ? byte.MaxValue : (byte)(current + 1);
@@ -55,7 +58,7 @@ namespace Shooter.Game.Session
             if (streak == 0) streak = 1;
             push(new LocalScoreAward(LocalScoreAwardKind.Kill, killPoints, victimName, streak, headshot));
             if (headshot)
-                push(new LocalScoreAward(LocalScoreAwardKind.Headshot, 0, victimName, 0, true));
+                push(new LocalScoreAward(LocalScoreAwardKind.Headshot, HeadshotBonusPoints, victimName, 0, true));
         }
     }
 }

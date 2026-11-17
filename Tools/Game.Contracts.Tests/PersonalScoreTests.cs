@@ -27,6 +27,24 @@ namespace Shooter.Game.Contracts.Tests
         }
 
         [Fact]
+        public void Headshot_kill_awards_kill_plus_bonus_in_session_order()
+        {
+            var match = CreateMatch(out var roster);
+            match.MarkPlaying(26, 0);
+            var killer = Find(roster, 1);
+            var victim = Find(roster, 2);
+            // OfflineGameSession order (ADR-097): ProcessDeath, headshot AddScore, then EvaluateEndOfTick.
+            match.ProcessDeath(Death(26, killer.EntityId, victim.EntityId, victim.LifeId, 1));
+            match.AddScore(killer.EntityId, Shooter.Game.Session.LocalKillBadgeLogic.HeadshotBonusPoints);
+            match.EvaluateEndOfTick(1, true);
+            var snap = match.AcquireSnapshot(26, 1);
+            var killerRow = FindById(snap, killer.ParticipantId);
+            Assert.Equal(1u, killerRow.Kills);
+            Assert.Equal(120u, killerRow.Score);
+            Assert.Equal(1u, snap.Team1Kills);
+        }
+
+        [Fact]
         public void Assist_awards_damage_points_without_kill_credit()
         {
             var match = CreateMatch(out var roster);

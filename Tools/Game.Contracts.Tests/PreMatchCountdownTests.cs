@@ -101,7 +101,7 @@ namespace Shooter.Game.Contracts.Tests
         }
 
         /// <summary>Walkable horizontal floor planes at integer heights so the motor settles instead of falling out of the world.</summary>
-        private sealed class FloorWorld : IWorldQueries
+        internal sealed class FloorWorld : IWorldQueries
         {
             public SweepHit SweepCapsule(Capsule capsule, Float3 displacement, QueryFilter filter)
             {
@@ -117,7 +117,7 @@ namespace Shooter.Game.Contracts.Tests
             public OverlapResult Overlap(Capsule capsule, QueryFilter filter, HitBuffer callerOwned) => new OverlapResult(QueryStatus.NoHit, 0, 0);
         }
 
-        private sealed class NoNav : INavigation
+        internal sealed class NoNav : INavigation
         {
             public PathTicket RequestPath(EntityId actor, Float3 destination, uint navRevision) => new PathTicket(new NavTicketId(1), actor, navRevision);
             public PathResult Poll(PathTicket ticket, PathBuffer callerOwned) => new PathResult(PathStatus.Failed, 0, 0, ErrorCode.MissingContent);

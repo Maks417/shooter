@@ -66,11 +66,11 @@ Status: T089 / [ADR-062](../decisions.md#adr-062--accepted-stereo-foundauthored-
 - Playing/Paused/confirmations → calm bed, latched to tension when the leading team is within 15 kills of the limit or 60 s remain. Paused → 60 %. Ducked up to −6 dB under local fire or a blast within 15 m.
 - Results → outcome stinger from the local team (victory/defeat/draw), then the results loop.
 
-`UnityMusicOutput` crossfades two 2D `AudioSource`s and keeps clips Vorbis-compressed in memory. Music level = master × music (`UserSettings.musicVolume`, default 0.6, Audio tab slider). A missing or invalid track is silent with one warning.
+`UnityMusicOutput` crossfades two 2D `AudioSource`s and keeps clips Vorbis-compressed in memory (the loader turns streaming off before requesting compression, keeps each load request alive for its clip's lifetime and starts a cue only once its audio data is loaded, logging `SHOOTER_MUSIC_PLAY`). The code-built scene has no camera listener, so it adds the single `AudioListener` when none exists. Music level = master × music (`UserSettings.musicVolume`, default 0.6, Audio tab slider). A missing or invalid track is silent with one warning.
 
 ## Runtime path
 
-`Content/Audio/combat` (editor repo root / packaged beside exe) → `CombatAudioBankBaker.Bake` → `OfflineGameSession` combat event lease → `ProductSessionView.PumpProductAudio` → `ProductAudioEventRouter` (+ `LocalWeaponCueTracker`, scheduled bounces, distant battle) → `SynthAudioMixer.TryPlay` (stereo sample + per-kind distance + mild azimuth) → `UnitySynthAudioOutput.OnAudioFilterRead` → device. Shell UI cues use a second mixer on the same bank; music is `ProductShellHost.UpdateMusic` → `MusicDirector` → `UnityMusicOutput`.
+`Content/Audio/combat` (editor repo root / packaged beside exe) → `CombatAudioBankBaker.Bake` → `OfflineGameSession` combat event lease (every tick's events since the previous frame's lease) → `ProductSessionView.PumpProductAudio` → `ProductAudioEventRouter` (+ `LocalWeaponCueTracker`, scheduled bounces, distant battle) → `SynthAudioMixer.TryPlay` (stereo sample + per-kind distance + mild azimuth) → `UnitySynthAudioOutput.OnAudioFilterRead` → device. Shell UI cues use a second mixer on the same bank; music is `ProductShellHost.UpdateMusic` → `MusicDirector` → `UnityMusicOutput`.
 
 Missing/unavailable audio device: recoverable warning; play continues without claiming FIX10 PASS.
 

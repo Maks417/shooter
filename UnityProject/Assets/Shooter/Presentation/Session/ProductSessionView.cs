@@ -1426,8 +1426,14 @@ namespace Shooter.Presentation.Session
                 var award = scoreAwardDrain[i];
                 if (award.Kind == LocalScoreAwardKind.Headshot)
                 {
-                    // ADR-073: extra feed-only badge; no ribbon, no ammo +0.
-                    PushScoreFeed(ScoreBadgeVisual.HeadshotLabel, 0, now);
+                    // ADR-073 feed badge; ADR-097 adds the +20 bonus to the feed row and to the kill totals
+                    // (the Headshot award always follows its Kill award in the same drain).
+                    PushScoreFeed(ScoreBadgeVisual.HeadshotLabel, award.Points, now);
+                    if (award.Points > 0)
+                    {
+                        ammoScorePoints = unchecked(ammoScorePoints + award.Points);
+                        scoreRibbonPoints = unchecked(scoreRibbonPoints + award.Points);
+                    }
                     continue;
                 }
                 if (award.Points == 0) continue;

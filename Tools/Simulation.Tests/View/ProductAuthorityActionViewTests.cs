@@ -47,6 +47,48 @@ namespace Shooter.Simulation.Tests.View
         }
 
         [Fact]
+        public void WeaponSwitchCancelsReloadWithoutCompletedEvent()
+        {
+            var view = new ProductAuthorityActionView();
+            var id = new EntityId(3);
+            view.SyncLifecycle(id, ProductAuthorityActionView.RifleSlot, true);
+            view.ApplyEvents(new[] { ReloadStarted(3, ProductAuthorityActionView.RifleSlot, 100, 250) });
+            view.SyncLifecycle(id, ProductAuthorityActionView.RifleSlot, true);
+            Assert.True(view.IsReloading(id));
+            view.SyncLifecycle(id, ProductAuthorityActionView.PistolSlot, true);
+            Assert.False(view.IsReloading(id));
+            Assert.Equal(-1f, view.ReloadPhaseAtTick(id, 120));
+        }
+
+        [Fact]
+        public void ReconcileClearsStaleReloadOnlyAfterWindowAndWhenAuthorityIsNotReloading()
+        {
+            var view = new ProductAuthorityActionView();
+            var id = new EntityId(4);
+            view.SyncLifecycle(id, ProductAuthorityActionView.RifleSlot, true);
+            view.ApplyEvents(new[] { ReloadStarted(4, ProductAuthorityActionView.RifleSlot, 100, 250) });
+            view.ReconcileReload(id, WeaponAction.Ready, 150);
+            Assert.True(view.IsReloading(id));
+            view.ReconcileReload(id, WeaponAction.Reloading, 260);
+            Assert.True(view.IsReloading(id));
+            view.ReconcileReload(id, WeaponAction.Ready, 260);
+            Assert.False(view.IsReloading(id));
+        }
+
+        [Fact]
+        public void ReloadStartedFromEarlierTickOfMultiTickFrameStillStartsPose()
+        {
+            // The session now leases every tick's events since the last frame; an earlier tick's ReloadStarted
+            // followed by later-tick shots must still start the reload.
+            var view = new ProductAuthorityActionView();
+            var id = new EntityId(5);
+            view.SyncLifecycle(id, ProductAuthorityActionView.RifleSlot, true);
+            view.ApplyEvents(new[] { ReloadStarted(5, ProductAuthorityActionView.RifleSlot, 100, 250), Shot(9, 3) });
+            Assert.True(view.IsReloading(id));
+            Assert.InRange(view.ReloadPhaseAtTick(id, 103), 0.01f, 0.05f);
+        }
+
+        [Fact]
         public void ShotAcceptedDoesNotStartReloadPhase()
         {
             var view = new ProductAuthorityActionView();

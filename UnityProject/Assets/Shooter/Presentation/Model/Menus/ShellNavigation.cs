@@ -97,7 +97,7 @@ namespace Shooter.Presentation.Menus
             {
                 if (Screen == ShellScreen.Playing || Screen == ShellScreen.Paused ||
                     Screen == ShellScreen.ConfirmLeave || Screen == ShellScreen.ConfirmRestart ||
-                    Screen == ShellScreen.Settings)
+                    (Screen == ShellScreen.Settings && SettingsReturn == ShellScreen.Paused))
                 {
                     EnterResults();
                 }

@@ -38,6 +38,33 @@ namespace Shooter.Simulation.Tests.Shell
         }
 
         [Fact]
+        public void Menu_settings_after_finished_match_stays_on_settings()
+        {
+            var nav = new ShellNavigation();
+            nav.EnterPlaying();
+            nav.SyncFromAuthority(matchFinished: true, sessionPaused: false);
+            Assert.Equal(ShellScreen.Results, nav.Screen);
+            nav.ResetToMain();
+            nav.OpenSettings();
+            // The stopped session keeps reporting Finished; menu settings must not be hijacked.
+            nav.SyncFromAuthority(matchFinished: true, sessionPaused: false);
+            Assert.Equal(ShellScreen.Settings, nav.Screen);
+            nav.CloseSettings();
+            Assert.Equal(ShellScreen.Main, nav.Screen);
+        }
+
+        [Fact]
+        public void Pause_settings_when_match_finishes_moves_to_results()
+        {
+            var nav = new ShellNavigation();
+            nav.EnterPlaying();
+            nav.EnterPaused();
+            nav.OpenSettings();
+            nav.SyncFromAuthority(matchFinished: true, sessionPaused: false);
+            Assert.Equal(ShellScreen.Results, nav.Screen);
+        }
+
+        [Fact]
         public void Load_failure_and_cancel_return_to_setup_recoverably()
         {
             var nav = new ShellNavigation();

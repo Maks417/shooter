@@ -474,6 +474,7 @@ namespace Shooter.Presentation.Rig
                     if (!lifecycle.TryGetActorState(p.EntityId, out var state) || !state.Alive) continue;
                     livingScratch.Add(state);
                     actions.SyncLifecycle(state.EntityId, state.ActiveWeaponSlot, state.Alive);
+                    actions.ReconcileReload(state.EntityId, state.WeaponAction, completedTick);
                 }
             }
 
@@ -565,10 +566,13 @@ namespace Shooter.Presentation.Rig
                 actions.SyncLifecycle(human.EntityId, slot, true);
                 localView.SetActiveWeaponSlot(slot);
                 localView.SetCooking(human.WeaponAction == WeaponAction.Cooking);
+                // A reload lowers the sights (presentation only): scoped ADS hides the rifle mesh, which would
+                // otherwise make the reload invisible.
+                bool viewAim = aimHeld && !actions.IsReloading(human.EntityId);
                 if (combatEvents != null)
-                    localView.ConsumeEvents(combatEvents, human.EntityId, aimHeld, dtSeconds);
+                    localView.ConsumeEvents(combatEvents, human.EntityId, viewAim, dtSeconds);
                 else
-                    localView.TickAim(aimHeld, dtSeconds);
+                    localView.TickAim(viewAim, dtSeconds);
                 // Authority wins over an older action event on a switch/cancel frame.
                 localView.SetActiveWeaponSlot(slot);
                 localView.SetCooking(human.WeaponAction == WeaponAction.Cooking);

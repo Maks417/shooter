@@ -54,6 +54,7 @@ namespace Shooter.Presentation.Audio
 
         private void Initialize(string? musicFolder)
         {
+            EnsureListener();
             a = MakeSource();
             b = MakeSource();
             active = a;
@@ -105,6 +106,17 @@ namespace Shooter.Presentation.Audio
             {
                 AudioClip? clip = null;
                 bool ready = wantedCue == MusicCue.None || TryGetClip(wantedCue, out clip);
+                // Start only once the clip's audio data is resident; Play() on an unloaded clip is silent.
+                if (ready && clip != null && clip.loadState != AudioDataLoadState.Loaded)
+                {
+                    if (clip.loadState == AudioDataLoadState.Unloaded) clip.LoadAudioData();
+                    if (clip.loadState == AudioDataLoadState.Failed)
+                    {
+                        Warn("SHOOTER_MUSIC_DECODE " + wantedCue + ": audio data failed to load");
+                        clip = null;
+                    }
+                    else ready = false;
+                }
                 if (ready)
                 {
                     var next = active == a ? b : a;
@@ -112,7 +124,14 @@ namespace Shooter.Presentation.Audio
                     next.clip = clip;
                     next.loop = wantedLoop;
                     next.volume = 0f;
-                    if (clip != null) next.Play();
+                    if (clip != null)
+                    {
+                        next.Play();
+                        Debug.Log("SHOOTER_MUSIC_PLAY cue=" + wantedCue + " loadType=" + clip.loadType +
+                                  " length=" + clip.length.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) +
+                                  " state=" + clip.loadState + " playing=" + (next.isPlaying ? 1 : 0) +
+                                  " gain=" + (wantedGain * channelGain).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture));
+                    }
                     active = next;
                     playingCue = wantedCue;
                     fadeIn = 0f;
@@ -161,6 +180,8 @@ namespace Shooter.Presentation.Audio
                 load.Clip = DownloadHandlerAudioClip.GetContent(request);
                 load.Clip.name = "Music " + cue;
                 clip = load.Clip;
+                // Keep the request (and its download handler) alive for the clip's lifetime; OnDestroy disposes it.
+                return true;
             }
             request.Dispose();
             load.Request = null;
@@ -175,11 +196,24 @@ namespace Shooter.Presentation.Audio
             if (request.downloadHandler is DownloadHandlerAudioClip handler)
             {
                 // Keep Vorbis in memory and decode while playing: a few MB per track instead of tens of MB of PCM.
-                handler.compressed = true;
+                // Streaming must be switched off first: Unity rejects `compressed` while streamAudio is on
+                // ("Audio compression is not valid as streamAudio is set to true").
                 handler.streamAudio = false;
+                handler.compressed = true;
             }
             request.SendWebRequest();
             loads[cue] = new Load { Request = request };
+        }
+
+        /// <summary>
+        /// Clip playback needs an <see cref="AudioListener"/> and the code-built scene has none. All product sources
+        /// are 2D, so the listener lives on this long-lived object (menu cameras come and go) unless one exists.
+        /// </summary>
+        private void EnsureListener()
+        {
+            if (FindAnyObjectByType<AudioListener>() != null) return;
+            gameObject.AddComponent<AudioListener>();
+            Debug.Log("SHOOTER_AUDIO_LISTENER host=" + gameObject.name);
         }
 
         private AudioSource MakeSource()

@@ -573,7 +573,8 @@ namespace Shooter.Presentation.Session
             float radius = View.AdsOpticVisual.LensRadiusPixels(width, height);
             Texture2D mask = EnsureScopeMask();
             Color prior = GUI.color;
-            // Housing ring only — clear lens (~0.62 of pad) aligned to LensRadiusPixels; no opaque corners.
+            // Housing ring only — clear lens (~0.62 of pad) aligned to LensRadiusPixels; the mask is transparent at
+            // its square edges, so no rectangle is drawn on wide screens.
             float pad = radius / 0.62f;
             GUI.color = new Color(1f, 1f, 1f, a * 0.85f);
             GUI.DrawTexture(new Rect(cx - pad, cy - pad, pad * 2f, pad * 2f), mask, ScaleMode.StretchToFill);
@@ -627,23 +628,25 @@ namespace Shooter.Presentation.Session
             };
             var pixels = new Color32[size * size];
             float mid = (size - 1) * 0.5f;
-            // Clear lens inside ~0.62R; soft black housing to the square edge.
+            // Clear lens inside ~0.62R, a soft dark housing band, then fully clear again well before the texture
+            // edge. The texture is a square sized from the shorter screen side, so anything opaque at its edges
+            // shows up as a dark rectangle with vertical seams on wide screens.
             float clearR = mid * 0.62f;
             float softStart = mid * 0.58f;
+            float bandEnd = mid * 0.72f;
+            float fadeEnd = mid * 0.97f;
             for (int y = 0; y < size; y++)
             {
                 for (int x = 0; x < size; x++)
                 {
                     float dx = x - mid, dy = y - mid;
                     float r = Mathf.Sqrt(dx * dx + dy * dy);
-                    byte a;
-                    if (r <= softStart) a = 0;
-                    else if (r >= mid) a = 255;
-                    else
-                    {
-                        float u = (r - softStart) / (mid - softStart);
-                        a = (byte)Mathf.Clamp(Mathf.RoundToInt(u * u * 255f), 0, 255);
-                    }
+                    float alpha;
+                    if (r <= softStart || r >= fadeEnd) alpha = 0f;
+                    else if (r < clearR) { float u = (r - softStart) / (clearR - softStart); alpha = u * u; }
+                    else if (r <= bandEnd) alpha = 1f;
+                    else { float u = 1f - (r - bandEnd) / (fadeEnd - bandEnd); alpha = u * u * (3f - 2f * u); }
+                    byte a = (byte)Mathf.Clamp(Mathf.RoundToInt(alpha * 255f), 0, 255);
                     // Slight warmth on the housing rim so the tube does not read as flat GUI black.
                     byte v = r > clearR ? (byte)8 : (byte)0;
                     pixels[y * size + x] = new Color32(v, v, (byte)(v + 2), a);

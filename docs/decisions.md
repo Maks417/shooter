@@ -1476,3 +1476,13 @@ Decision:
 Consequences: bank memory grows with the added cues. Music is decoded by the engine outside the 0.5 ms SFX mix target. Pure tests cover the new routing, the director, the manifest, the tracker and the settings key. Named listening review (FIX10/SET02) stays Pending until the owner records it.
 
 Rollback: revert this change. The v4 manifest and its files are recoverable from git, and older settings files remain valid.
+
+## ADR-097 — Accepted: headshot kill Score bonus
+
+Date 2026-11-17. Context: owner playtest of 0.3.18 asked that a headshot kill be worth more than a body kill, for example 100 for the kill plus 20 for the head. ADR-059 fixed the killer's personal Score at exactly 100 and ADR-073 made the headshot badge worth 0 points.
+
+Decision: an enemy kill whose fatal `DamageApplied` from the killer to the victim in the same tick batch has region 1 (head), as decided by `LocalKillBadgeLogic.IsFatalHeadshot`, adds `LocalKillBadgeLogic.HeadshotBonusPoints` = 20 personal Score on top of the ADR-059 kill points. It applies to every participant, bots included. `OfflineGameSession` adds it through `ITeamMatch.AddScore` directly after `ProcessDeath` and before `EvaluateEndOfTick`, so a match-ending headshot keeps its bonus. The local HUD Headshot award carries Points = 20: the feed shows `+20 HEADSHOT`, and the ribbon/ammo popup show the kill total (120). Team kills, the 150-kill limit, assists, environmental deaths and the C0/Game-v1 contracts are unchanged; the constant lives in `Game/Session`, so no lock refreeze is needed. This supersedes "exactly 100" in ADR-059 and "(0 points)" for the headshot badge in ADR-073.
+
+Consequences: personal Score and results ordering can differ from earlier builds for the same play; team outcome cannot.
+
+Rollback: set the bonus to 0 or revert this change.

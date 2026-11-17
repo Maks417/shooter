@@ -55,6 +55,12 @@ namespace Shooter.Presentation.View
             if (activeWeaponSlot > MaxSlot)
                 throw new ArgumentOutOfRangeException(nameof(activeWeaponSlot), "Weapon slot must be 0..3 (rifle/pistol/knife/grenade).");
             var state = GetOrCreate(entity.Value);
+            // The weapon simulator cancels a reload on a weapon switch without emitting ReloadCompleted.
+            if (state.Reloading && state.HasSlot && state.Slot != activeWeaponSlot)
+            {
+                state.Reloading = false;
+                state.ReloadPhase = -1f;
+            }
             state.Slot = activeWeaponSlot;
             state.HasSlot = true;
             if (!alive)
@@ -63,6 +69,21 @@ namespace Shooter.Presentation.View
                 state.ReloadPhase = -1f;
                 state.FireImpulse = false;
             }
+        }
+
+        /// <summary>
+        /// Level check against authority after events are applied: once the reload window has elapsed and the
+        /// authoritative weapon is no longer Reloading, a missing ReloadCompleted must not leave the reload pose or
+        /// the "Reloading" label stuck on.
+        /// </summary>
+        public void ReconcileReload(EntityId entity, WeaponAction authorityAction, uint completedTick)
+        {
+            if (!entity.IsValid || !entities.TryGetValue(entity.Value, out var state) || !state.Reloading) return;
+            if (authorityAction == WeaponAction.Reloading) return;
+            uint span = Serial32.ForwardDistance(state.ReloadEndTick, state.ReloadStartTick);
+            if (Serial32.ForwardDistance(completedTick, state.ReloadStartTick) < span) return;
+            state.Reloading = false;
+            state.ReloadPhase = -1f;
         }
 
         /// <summary>

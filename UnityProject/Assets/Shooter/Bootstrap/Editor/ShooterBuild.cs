@@ -231,6 +231,7 @@ public static class ShooterBuild
         }
         harnessMaterial.SetColor("_BaseColor", new Color(.42f, .46f, .48f, 1)); harnessMaterial.SetFloat("_Smoothness", .12f); harnessMaterial.SetFloat("_Metallic", 0);
         EditorUtility.SetDirty(harnessMaterial);
+        ApplyAppIcon(settings);
         QualitySettings.SetQualityLevel(0, true);
         var tags = new SerializedObject(AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/TagManager.asset")[0]);
         string[] layerNames = { "WorldSolid", "ActorMotor", "ActorHit", "Cosmetic", "ObjectiveTrigger", "SensorTrigger" };
@@ -271,6 +272,41 @@ public static class ShooterBuild
             bytes[y * size + x] = size == 1 ? (byte)0 : (byte)((rank * 256 + 128) / (size * size));
         }
         texture.LoadRawTextureData(bytes); texture.wrapMode = TextureWrapMode.Repeat; texture.filterMode = FilterMode.Point; texture.Apply(false, false);
+        EditorUtility.SetDirty(texture); return texture;
+    }
+
+    /// <summary>Bake the analytic executable icon and set it as the default and Standalone player icon.</summary>
+    public static void ConfigureAppIcon() => Guard(() =>
+    {
+        CheckToolchain();
+        ApplyAppIcon("Assets/Shooter/Settings");
+        AssetDatabase.SaveAssets();
+        WriteSettingsProvenance();
+        Debug.Log("SHOOTER_APP_ICON_CONFIGURED");
+    });
+
+    private static void ApplyAppIcon(string settings)
+    {
+        // Executable/shortcut icon from the analytic AppIcon recipe (no imported art); default + Standalone.
+        var appIcon = BakeAppIcon(settings + "/AppIcon.asset");
+        PlayerSettings.SetIcons(NamedBuildTarget.Unknown, new Texture2D[] { appIcon }, IconKind.Any);
+        int iconSlots = PlayerSettings.GetIconSizes(NamedBuildTarget.Standalone, IconKind.Any).Length;
+        PlayerSettings.SetIcons(NamedBuildTarget.Standalone, Enumerable.Repeat(appIcon, iconSlots).ToArray(), IconKind.Any);
+        AssetDatabase.SaveAssets();
+    }
+
+    internal static Texture2D BakeAppIcon(string path)
+    {
+        int size = Shooter.Generation.Icons.AppIcon.DefaultSize;
+        var texture = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+        if (texture == null)
+        {
+            texture = new Texture2D(size, size, TextureFormat.RGBA32, false, false) { name = "Analytic app icon" };
+            AssetDatabase.CreateAsset(texture, path);
+        }
+        texture.LoadRawTextureData(Shooter.Generation.Icons.AppIcon.Rgba(size));
+        texture.wrapMode = TextureWrapMode.Clamp; texture.filterMode = FilterMode.Bilinear;
+        texture.Apply(false, false); // stays readable: the player icon writer samples it
         EditorUtility.SetDirty(texture); return texture;
     }
 

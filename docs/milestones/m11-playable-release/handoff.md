@@ -562,3 +562,31 @@ Initial sandbox attempts failed: Contracts restore exited 1 without a diagnostic
 **Post-installer cleanup:** dry run reviewed, then `Tools/Clean-Artifacts.ps1 -Apply -IncludeBuildCaches` freed **106,807,395 bytes**, zero failures, preserving cited/recent evidence; report `workspace-cleanup/20261117T095112342Z/cleanup-report.json`. After confirming no Unity editor was running and verifying the exact absolute target was ignored, untracked and within this repository, removed regenerable `UnityProject/Library` (**5,493,198,243 bytes**). Report `deliveries/cleanup-0.3.18-library.json`. Total explicit cleanup **5,600,005,638 bytes (5.22 GiB)**, additional to automatic wrapper retention. Source, `.local` pinned tools, content caches, current evidence and delivery installers are preserved. Next Unity launch will regenerate Library; no post-cleanup Unity import is claimed.
 
 **Pending / NotClaimed:** actual 0.3.18 installation/upgrade/settings preservation, formal T071 gameplay, named audio/visual/device reviews, provisional ADR-096 cue replacements, reference benchmarks/soaks and REL/VD acceptance. P05 named visual acceptance remains FAIL pending review. Networking and Dedicated Server build are Parked (offline scope). Building the installer does not close these gates.
+
+## Playtest fixes after 0.3.18 — 2026-11-17
+
+Owner playtest of 0.3.18 reported six problems. Root causes and fixes (uncommitted working tree on `2686510`):
+
+| Report | Root cause | Fix |
+|---|---|---|
+| Reload animation sometimes missing | A frame runs up to 4 simulation ticks, but `OfflineGameSession.TryLeaseCombatEvents` returned only the last tick's events. `ReloadStarted` (and any other event, including reload Foley and kill feed) from earlier ticks never reached presentation. Also: a weapon-switch cancel emits no `ReloadCompleted`, and scoped ADS hides the rifle mesh during a reload. | The session accumulates every tick's events and drains them once per lease. `ProductAuthorityActionView` clears a reload on a slot change and, after the reload window, when authority is no longer Reloading. The local viewmodel lowers ADS while reloading (presentation only). |
+| Dark rectangle while scoped | The `TacticalUi.AdsScope` mask was a square, sized from the screen height and opaque out to its edges, so on 16:9 it dimmed x≈12–88 % with vertical seams. | The mask is now a housing ring that fades to transparent before the texture edge. |
+| Headshot should be worth extra | ADR-059/073 fixed kill Score at 100 and gave the headshot badge 0 points. | [ADR-097](../../decisions.md#adr-097--accepted-headshot-kill-score-bonus): +20 personal Score for an enemy kill with a fatal head hit (bots too). The feed shows `+20 HEADSHOT` and the ribbon/ammo popup show 120. Team kills are unchanged. |
+| Settings shows last scoreboard after a match | `Stop()` keeps phase Finished, and `ShellNavigation.SyncFromAuthority` forced any Settings screen to Results every frame. | Only in-match Settings (opened from Pause) moves to Results. |
+| Default Unity icon | No player icon was ever set. | Analytic `Generation/Icons/AppIcon` reticle, baked by the new `ShooterBuild.ConfigureAppIcon` (also called from `InitializeFoundation`) into `Assets/Shooter/Settings/AppIcon.asset` and set as the default and Standalone icon. |
+| No music | Every track load logged "Audio compression is not valid as streamAudio is set to true", because `compressed` was set before streaming was turned off. The load request was then disposed right after `GetContent`, and the code-built scene has no `AudioListener`. | Streaming is turned off first. The request lives as long as its clip. A cue starts only when its audio data is loaded, and each start logs `SHOOTER_MUSIC_PLAY`. An `AudioListener` is added when none exists. |
+
+Verification (all on dirty tree `2686510`; evidence under `Artifacts/`):
+
+- Game **102/102**, Simulation **395/395** and Generation **520/520** PASS (offline advisory PendingNetwork).
+- Unity EditMode **87/87** PASS.
+- Source provenance **976 entries / 488 GUIDs** PASS.
+- asmdef graph PASS.
+
+- Client build PASS (dirty, `build-client-20261117T121740830Z-5ed2a0ee`). The built `Shooter.exe` carries the reticle icon, checked by extracting it.
+- The new player was run for 30 s over a scratch copy of the installed 0.3.18 content. The log shows `SHOOTER_AUDIO_LISTENER host=Music output`, which confirms the game had no listener before. It also shows `SHOOTER_MUSIC_PLAY cue=MenuTheme loadType=DecompressOnLoad length=283.8 state=Loaded playing=1 gain=0.85`, with no compression error.
+- Package-Release correctly rejects the dirty candidate, so it is not run until commit.
+
+New tests cover: multi-tick event lease, switch-cancel/stale reload, finished-match menu Settings, headshot 120 and AppIcon determinism.
+
+Pending / NotClaimed: owner in-game confirmation of all six fixes (music audible on menu/match/results, reload visible in every case, scope look, icon on the installed exe/shortcuts) and a new installer.

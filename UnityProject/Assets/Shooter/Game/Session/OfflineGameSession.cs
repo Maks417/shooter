@@ -51,6 +51,9 @@ namespace Shooter.Game.Session
         private readonly Dictionary<ulong, Dictionary<ulong, uint>> damageByVictim = new Dictionary<ulong, Dictionary<ulong, uint>>();
         private readonly Dictionary<ulong, uint> damageVictimLife = new Dictionary<ulong, uint>();
         private readonly List<LocalScoreAward> localScoreAwards = new List<LocalScoreAward>(8);
+        // Every tick's combat events since the last presentation lease. A frame can run up to four ticks, and the
+        // harness only keeps the latest tick's list, so edge events (ReloadStarted, kills) would otherwise be lost.
+        private readonly List<CombatEvent> presentationEvents = new List<CombatEvent>(256);
         private readonly List<ulong> assistAttackersScratch = new List<ulong>(8);
         /// <summary>Local-human enemy kills since last death (ADR-073 HUD badges).</summary>
         private byte localKillStreak;
@@ -341,6 +344,7 @@ namespace Shooter.Game.Session
             {
                 measurement.LeaseAcquires++;
                 IReadOnlyList<CombatEvent> batch = events.Events;
+                CapturePresentationEvents(batch);
                 for (int i = 0; i < batch.Count; i++)
                 {
                     var ev = batch[i];
@@ -363,6 +367,13 @@ namespace Shooter.Game.Session
                     EntityId? killer = ev.Instigator.IsValid ? ev.Instigator : (EntityId?)null;
                     SettlePersonalScores(ev.Target, life, killer, snap);
                     match.ProcessDeath(new DeathResolution(sessionId, ev.Id, ev.Target, life, killer, tick));
+                    // ADR-097: +20 for an enemy kill whose fatal hit was the head (bots included). The match is still
+                    // Playing here (the phase flips only in EvaluateEndOfTick), so a match-ending headshot keeps it.
+                    bool headshot = killer is EntityId killerEntity &&
+                        IsEnemyOf(snap, killerEntity, ev.Target) &&
+                        LocalKillBadgeLogic.IsFatalHeadshot(batch, i);
+                    if (headshot)
+                        match.AddScore(killer.GetValueOrDefault(),LocalKillBadgeLogic.HeadshotBonusPoints);
                     // Kill Score is applied inside ProcessDeath; mirror a local HUD award when the human got the kill.
                     if (killer is EntityId credited &&
                         credited.Equals(humanEntity) &&
@@ -370,7 +381,6 @@ namespace Shooter.Game.Session
                         IsEnemyOf(snap, credited, ev.Target))
                     {
                         localKillStreak = LocalKillBadgeLogic.IncrementStreak(localKillStreak);
-                        bool headshot = LocalKillBadgeLogic.IsFatalHeadshot(batch, i);
                         LocalKillBadgeLogic.PushKillBadges(
                             PushLocalAward,
                             ResolveDisplayName(ev.Target, snap),
@@ -418,6 +428,8 @@ namespace Shooter.Game.Session
                 measurement.LeaseAcquires++;
                 lifecycle!.SyncFromSnapshot(lease.Snapshot);
             }
+            using (var events = harness.AcquireEvents())
+                CapturePresentationEvents(events.Events);
             RescueEmbeddedActors(snap, lifecycle, harness, mapRuntime!);
             preMatchTicksRemaining--;
             tick = unchecked(tick + 1);
@@ -439,14 +451,25 @@ namespace Shooter.Game.Session
         }
 
         /// <summary>
-        /// Read-only lease of the last completed combat event list for presentation (audio/FX).
-        /// Null when no completed tick or harness is absent. Caller must dispose the lease.
+        /// Read-only lease of every combat event completed since the previous lease, in tick order, for presentation
+        /// (audio/FX/actions). Taking the lease drains them, so each event is presented once even when a frame ran
+        /// several ticks. Null when no completed tick or harness is absent. Caller must dispose the lease.
         /// </summary>
         public EventLease? TryLeaseCombatEvents()
         {
             if (harness == null || tick == 0) return null;
             if (phase == GameMatchPhase.Stopped || phase == GameMatchPhase.Loading) return null;
-            return harness.AcquireEvents();
+            var frozen = new FrozenList<CombatEvent>(presentationEvents, ContractVersion.MaxEvents);
+            presentationEvents.Clear();
+            return new EventLease(frozen, () => { });
+        }
+
+        private void CapturePresentationEvents(IReadOnlyList<CombatEvent> batch)
+        {
+            for (int i = 0; i < batch.Count; i++) presentationEvents.Add(batch[i]);
+            // Bounded when nothing leases (headless runs): keep the newest MaxEvents.
+            int overflow = presentationEvents.Count - ContractVersion.MaxEvents;
+            if (overflow > 0) presentationEvents.RemoveRange(0, overflow);
         }
 
         public MatchResults? TryAcquireResults() => match.TryAcquireResults();
@@ -772,6 +795,7 @@ namespace Shooter.Game.Session
             damageByVictim.Clear();
             damageVictimLife.Clear();
             localScoreAwards.Clear();
+            presentationEvents.Clear();
             localKillStreak = 0;
             querySamplesAtMatchStart = 0;
         }
