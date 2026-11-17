@@ -105,7 +105,8 @@ namespace Shooter.Tests
             {
                 var map = new CompoundMapRuntime(host.transform, store, mid =>
                 { catalog.TryGet(mid, out var e); return e.GameplayRootHash; });
-                using var session = new OfflineGameSession(catalog, (_, __) => map, false);
+                // Locomotion check on the fixed loadout: ADR-102 random guns change move speed (the sniper sprints slower).
+                using var session = new OfflineGameSession(catalog, (_, __) => map, false) { RandomLoadouts = false };
                 catalog.TryGet(WellKnownMaps.DepotYard, out var entry);
                 var request = new SessionRequest(WellKnownMaps.DepotYard, WellKnownModes.TeamDeathmatch, 5, entry.RecipeSeed);
                 var load = session.BeginLoadAsync(request, CancellationToken.None).GetAwaiter().GetResult();
