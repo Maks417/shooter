@@ -662,3 +662,30 @@ Owner report: map flicker, poor distant/scoped image at 1080p High, weak damage 
 ## ADR-104 circular minimap and ring compass — 2026-11-17
 
 Owner report: minimap missed the player and teammates and looked weak; wanted a round, view-rotating minimap with the compass around it. Root cause: rotated map glyphs inside `GUI.BeginGroup` (group offset applied before `GUI.matrix`). Replaced with a group-free heading-up disc masked by a new UiSdf circle clip and a rotating compass ring (see ADR-104). Lanes on the working tree (base fa0b34d): `Test-Simulation.ps1` PASS 500/500 (incl. 5 new minimap/compass tests), `Test-SourceProvenance.ps1` PASS, `verify_docs.py` PASS, `Test-Unity.ps1 -Mode EditMode` PASS 91/91 (incl. the new circle-clip shader test). Client build and interactive review (rotation, markers, clipping, 150% UI scale) Pending owner playtest.
+
+## Delivery 0.3.21
+
+Owner requested a new release/installer (2026-11-18). Clean binary/content source **`01677bc8f74508b7121d7ed5c2b90b179cbdb39c`** adds to 0.3.20 the ADR-103 graphics quality uplift (optical scope lens camera, per-tier MSAA/FXAA, Balanced/High shadow, anisotropy and fog budgets, wall-trim/cover flicker fixes, damage feedback v2), the 0.3.20 playtest fixes (translucent live Tab scoreboard, scrolling 15v15 debrief, no in-game squad list, pink-weapon material rebind and foot-IK fallback, scoped muzzle flash and FX pool eviction, reload lowers ADS) and the ADR-104 circular heading-up minimap with ring compass. Windows installer **0.3.21**, **66,435,477 bytes**, SHA256 **`b650b10dd0bc0e49cd37b6988ae09dde0dd3091c1b96772fa71b84a9c7adde6f`**. Delivery copy: `Artifacts/deliveries/Shooter-Setup-0.3.21.exe`, with hash sidecar and `installer-report-0.3.21.json`. Stable AppId `B01E0F69-2123-4D91-AB59-88864A944E39` is unchanged; monotonic check against the 0.3.20 report PASS. Unity 6000.3.28f1 / 8f082d2fe476, IL2CPP, Inno Setup 6.7.3; C0-v1 and Game-v1 unchanged.
+
+All paths below are beneath `Artifacts/`; commit roots use the full source hash above.
+
+| Check | Actual result / retained run |
+|---|---|
+| Contracts | **79/79 PASS**, `m0-foundation/01677bc…/20261117T225703138Z-b110fa6b/`. |
+| Generation | **544/544 PASS**, `m1-procedural-feasibility/01677bc…/20261117T225716656Z-734406a0/`. |
+| Game / Simulation | **106/106** and **500/500 PASS**, `m8-runtime-composition/01677bc…/20261117T225919461Z-256068ab/` and `m2-combat-harness/01677bc…/20261117T225958990Z-743ad79a/`. |
+| Maps and verifiers | Maps **57/57 PASS**, `m8-runtime-composition/01677bc…/test-maps-20261117T230016996Z-6af890e8/`; source provenance, fixtures, docs and contract-lock verifiers PASS. |
+| Unity | EditMode **91/91**, `m0-foundation/01677bc…/tests-editmode-20261117T230221127Z-1d7abb95/`; PlayMode **21/21**, `tests-playmode-20261117T230450031Z-8c7e866c/` in the same root. |
+| Clean Client | PASS, `sourceDirty=false`, `m0-foundation/01677bc…/build-client-20261117T230554871Z-225e3e6e/`. |
+| Native packages | **12 PASS**, `nativeUnityNavBake=PASS`; focused package tests **54/54**. `m8-runtime-composition/01677bc…/compile-gamecontent-20261117T230735686Z-5ebd71dd/`. |
+| Release smoke | PASS, `m0-foundation/01677bc…/smoke-client-20261117T231009937Z-d4e70085/`; boot/shutdown only. |
+| Package | PASS, native navigation required (`-MapCacheRoot Artifacts/map-packages-native`), **1042 inventory files**, extraction and corrupt-content rehearsal PASS; previous-pair rehearsal SkippedNoPrevious. `m11-playable-release/01677bc…/package-20261117T231018380Z-e232d4ad/`. |
+| Installer | PASS, `workspaceDirty=false`; `m11-playable-release/01677bc…/installer-20261117T231048664Z-ddb3840f/`. |
+
+Source hash `a2b72a7de293f871da52b57cacb36a29d7e8a5d2932539f7e60071346e092992`; toolchain hash `a8331fe2bc5b4293773762d829dc293c8aa5185024bd1a771543ac4eda840500`; build-content manifest `73d2c88fd069c2b0ba4273832c5da907e3c314cd24269506513373a2f9d160f4`; native content closure `23d55520e1838cd3598114899637bd5d388b0bff8e1bd3a5c4e1094d6dd5904a`; index `b5e945985ba4bd0c83ecbd34bc792e93d1ad54b57e63b8779f9e78b9bcf76cb6`; internal ZIP `5686318cc80a7b345d41e6adfa641c1bccb7d4a627a930cbad9227ad876fdb0e`.
+
+Wrapper retention pruned the 0.3.20 `ab83755` package and installer run folders; their JSON reports remain under `Artifacts/reports/`, and the 0.3.20 delivery copy and report in `Artifacts/deliveries/` are preserved.
+
+**Post-installer cleanup:** dry run reviewed, then `Tools/Clean-Artifacts.ps1 -Apply -IncludeBuildCaches` freed about 0.06 GB, zero failures, preserving cited/recent evidence; report `workspace-cleanup/20261117T231214682Z/cleanup-report.json`. After confirming no Unity editor was running and that the exact target was ignored, untracked and within this repository, removed regenerable `UnityProject/Library` (**5,017,951,230 bytes**); report `deliveries/cleanup-0.3.21-library.json`. Source, `.local` pinned tools, content caches, current evidence and delivery installers are preserved. Next Unity launch will regenerate Library; no post-cleanup Unity import is claimed.
+
+**Pending / NotClaimed:** actual 0.3.21 installation/upgrade/settings preservation, in-game check of ADR-103/104, the 0.3.20 playtest fixes, the ADR-102 named guns and ADR-098–101, formal T071 gameplay, named audio/visual/device reviews, provisional ADR-096 cue replacements, reference benchmarks/soaks and REL/VD acceptance. P05 named visual acceptance remains FAIL pending review. Networking and Dedicated Server build are Parked (offline scope). Building the installer does not close these gates.
