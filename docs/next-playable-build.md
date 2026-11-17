@@ -4,9 +4,9 @@ This page is the single source of truth for the current build, the product defin
 
 ## Current build
 
-**Latest installer — 0.3.18 (2026-11-17):** `Artifacts/deliveries/Shooter-Setup-0.3.18.exe`, clean binary/content source `cbf12e5`. Includes the visual roadmap ADR-087–095 and ADR-096 audio/music/UI sound. Three maps × two roster sizes, native navigation in all 12 packages, rifle/pistol/knife/grenade. Pure lanes, Unity EditMode/PlayMode, native packages, clean IL2CPP Client, smoke, package and installer builders PASS. Actual install/upgrade, a playtest of this build, named listening/visual review and all acceptance remain Pending. [Delivery evidence](milestones/m11-playable-release/handoff.md#delivery-0318).
+**Latest installer — 0.3.19 (2026-11-17):** `Artifacts/deliveries/Shooter-Setup-0.3.19.exe`, clean binary/content source `3c29b39`. Adds to 0.3.18 the six 0.3.18 playtest fixes with ADR-097 headshot bonus, ADR-098 per-weapon recoil presentation, ADR-099 per-weapon hand/weapon choreography and ADR-100 bot strafe/jump/slide motion. Three maps × two roster sizes, native navigation in all 12 packages, rifle/pistol/knife/grenade. Pure lanes, Unity EditMode/PlayMode, native packages, clean IL2CPP Client, smoke, package and installer builders PASS. Actual install/upgrade, a playtest of this build, named listening/visual/feel review and all acceptance remain Pending. [Delivery evidence](milestones/m11-playable-release/handoff.md#delivery-0319).
 
-The [visual roadmap](visual-roadmap.md) source tranche is now in the installer: HUD craft, noise surfaces, weathering, decals, sky/grade, combat particles, surface-resolved impacts, soldier kit and structural shooting posture. ADR-096 retains its three provisional audio cues pending the assigned follow-up and owner listening review.
+The [visual roadmap](visual-roadmap.md) tranche (ADR-087–095) has been in installers since 0.3.18. ADR-096 retains its three provisional audio cues pending the assigned follow-up and owner listening review.
 
 [Launch and playtest guide](playtest-guide.md) · [product state audit](product-state-audit.md) · [visual roadmap](visual-roadmap.md).
 
@@ -30,7 +30,7 @@ The deliverable is a source-matched Windows x64 installer with [in-place upgrade
 | T069 — preferences | Editable bindings/accessibility, staged display persistence, device modes. | Named UI/control/display/audio review, real Keep/Revert, 20 load/replay cycles. |
 | T070 — measurement | Finish/results/replay, soak capture, honest counters; capture/soak defects found on 9f2219f fixed. | Twelve reference captures + two soaks on the final build (PendingHardware); per-tick managed allocation still fails the zero-allocation gate. |
 | T071 — owner playtest | Owner playtest sessions on 0.3.x builds drove many fixes (see M11 handoff). | Formal matrix on the newest installer: 3 maps × 2 sizes, complete matches/results/replay, recovery and prior-pair rollback. |
-| T073 — installer | Inno Setup installer with stable AppId and monotonic version check (ADR-041), shipped 0.3.1–0.3.18. INS02 upgrade, INS03 repair, INS05 uninstall and INS06 rollback PASS as earlier silent software exercises on the owner PC. | Actual 0.3.18 installed upgrade, INS01 on a clean machine, INS04 mid-copy interruption, interactive wizard; [status](features/windows-installer.md#implementation-status). |
+| T073 — installer | Inno Setup installer with stable AppId and monotonic version check (ADR-041), shipped 0.3.1–0.3.19. INS02 upgrade, INS03 repair, INS05 uninstall and INS06 rollback PASS as earlier silent software exercises on the owner PC. | Actual 0.3.19 installed upgrade, INS01 on a clean machine, INS04 mid-copy interruption, interactive wizard; [status](features/windows-installer.md#implementation-status). |
 | T062 — P05 soldier | ADR-095 structural shooting posture resolves the numeric P05 gate (D01–D03). | Named visual review; P05 visual acceptance stays FAIL until then. See [defect inventory](visual-defect-inventory.md). |
 | T065 — final acceptance | Operator checklist. | REL01–REL06 and FIX01–FIX14 on one stable final pair. NotClaimed. |
 | T091 — third-party provenance | ADR-075 allowlist categories enforced by `Test-SourceProvenance.ps1`. | Done (2026-11-16). |
@@ -41,7 +41,7 @@ The deliverable is a source-matched Windows x64 installer with [in-place upgrade
 
 ## Order of remaining work
 
-1. **Install the delivered visual roadmap candidate.** The source-matched installer and locked-editor EditMode/PlayMode checks are delivered ([visual roadmap step 6](visual-roadmap.md)); actual installed upgrade remains Pending.
+1. **Install 0.3.19.** The source-matched installer and locked-editor EditMode/PlayMode checks are delivered ([delivery](milestones/m11-playable-release/handoff.md#delivery-0319)); actual installed upgrade and the in-game feel check of ADR-098–100 remain Pending.
 2. **T071 formal playtest on that installer.** Follow the [guide](playtest-guide.md): all three maps × 5v5/6v6, at least one complete normal match per map, results and replay, missing/corrupt content recovery and a real prior-version upgrade. Record named reviewer, identities, logs and every blocker; route defects to their owning cards.
 3. **T093, T094 and the T095 audio placeholders** when the owner assigns them.
 4. **T070 + T062 + T065 on the final stable pair.** Reference captures and soaks on the idle reference laptop, named visual/UI/audio/display reviews, eight full matches, draw fixture, provenance/regressions and the remaining installer INS checks. Missing reviewers/hardware/counters stay Pending/PendingHardware.
@@ -71,3 +71,4 @@ Compact index of handoff entries. All are included in the current installer; the
 | Kill-feed icons, ADR-073 badges, ADR-074 compact maps | [ADR-074](milestones/m11-playable-release/handoff.md#adr-074--compact-64--80-m-maps-with-distinct-layouts--2026-11-15) |
 | ADR-075–086 content pipeline, post-processing, SDF UI | [delivery](milestones/m11-playable-release/handoff.md#delivery-0317) |
 | ADR-096 audio overhaul: bank v5, music, menu UI sound (T095) | [handoff](milestones/m11-playable-release/handoff.md#adr-096-audio-overhaul-bank-v5-music-ui-sound--2026-11-17) |
+| 0.3.18 playtest fixes, ADR-097 headshot bonus, ADR-098 recoil, ADR-099 hand choreography, ADR-100 bot motion | [fixes](milestones/m11-playable-release/handoff.md#playtest-fixes-after-0318--2026-11-17), [ADR-098](decisions.md#adr-098--accepted-per-weapon-first-person-recoil-presentation-camera-climb--per-shot-kick), [ADR-099](decisions.md#adr-099--accepted-per-weapon-first-person-hand-and-weapon-choreography), [ADR-100](milestones/m11-playable-release/handoff.md#adr-100-bot-strafe-jump-and-slide-motion--2026-11-17), [delivery](milestones/m11-playable-release/handoff.md#delivery-0319) |

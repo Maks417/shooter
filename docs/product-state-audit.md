@@ -4,7 +4,7 @@ Current build, task disposition and the order of remaining work are in [next pla
 
 ## Summary — 2026-11-17
 
-The product is a packaged offline TDM game: three maps (Training Compound, Depot Yard, Oil Depot) at 5v5/6v6, four weapons, bots with native navigation, menus, settings and a Windows installer with in-place upgrades. The current delivery includes the visual roadmap tranche ADR-087–095 and ADR-096 audio/music; see [current build](next-playable-build.md#current-build) and [delivery evidence](milestones/m11-playable-release/handoff.md#delivery-0318). Networking and the dedicated server are parked under [ADR-076](decisions.md#adr-076--accepted-offline-only-scope-and-bounded-local-evidence).
+The product is a packaged offline TDM game: three maps (Training Compound, Depot Yard, Oil Depot) at 5v5/6v6, four weapons, bots with native navigation, menus, settings and a Windows installer with in-place upgrades. The current delivery (0.3.19) includes the visual roadmap tranche ADR-087–095, ADR-096 audio/music and ADR-097–100 combat feel and bot motion; see [current build](next-playable-build.md#current-build) and [delivery evidence](milestones/m11-playable-release/handoff.md#delivery-0319). Networking and the dedicated server are parked under [ADR-076](decisions.md#adr-076--accepted-offline-only-scope-and-bounded-local-evidence).
 
 Status of the findings raised by the 2026-11-14 review (details in the dated record below):
 

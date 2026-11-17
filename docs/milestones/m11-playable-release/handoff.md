@@ -602,3 +602,29 @@ Verification (dirty tree on `31ba0c7`; evidence under `Artifacts/`):
 - Source provenance (988 entries / 494 GUIDs), feature registry, docs, fixtures, contract lock and asmdef graph PASS.
 
 Pending / NotClaimed: client build and the owner's in-game look at bot strafes, hops and slides; P05 visual acceptance stays FAIL.
+
+## Delivery 0.3.19
+
+Owner requested a new version/installer containing the changes committed since 0.3.18 (2026-11-17). Clean binary/content source **`3c29b39d0b4a068064a4f44a4441bf3dc513fea1`** includes the six 0.3.18 playtest fixes with ADR-097, ADR-098 recoil presentation, ADR-099 hand/weapon choreography and ADR-100 bot motion. Windows installer **0.3.19**, **62,128,142 bytes**, SHA256 **`f2d6f272718297df3afc5e3d9ed9f9b021fe6bc2121e414ce10e640e668e83cb`**. Delivery copy: `Artifacts/deliveries/Shooter-Setup-0.3.19.exe`, with hash sidecar and `installer-report-0.3.19.json`. Stable AppId `B01E0F69-2123-4D91-AB59-88864A944E39` is unchanged; monotonic check against the 0.3.18 report PASS. Unity 6000.3.28f1 / 8f082d2fe476, IL2CPP, Inno Setup 6.7.3; C0-v1 and Game-v1 unchanged.
+
+**Test fix before delivery:** the first PlayMode run on `21bee40` failed 20/21. `MenuStagingLifetimeTests.DestroyingPresentationReleasesCameraOwnedHandsAndWeaponRoot` expected 5 first-person meshes but found 6. ADR-099 intentionally adds a hidden "FP fresh magazine" child that reuses the packaged magazine mesh, and ADR-099 was committed with EditMode only. Commit `3c29b39` updates the expectation to 6 with an ADR-099 comment; no product code changed.
+
+All paths below are beneath `Artifacts/`; commit roots use the full source hash above.
+
+| Check | Actual result / retained run |
+|---|---|
+| Contracts | **79/79 PASS**, `m0-foundation/3c29b39…/20261117T140656966Z-d4e8bb1c/`. |
+| Generation | **526/526 PASS**, `m1-procedural-feasibility/3c29b39…/20261117T140710008Z-b4359f2b/`. |
+| Game / Simulation | **103/103** and **443/443 PASS**, `m8-runtime-composition/3c29b39…/20261117T140857569Z-1c74a6ab/` and `m2-combat-harness/3c29b39…/20261117T140935212Z-03720df0/`. |
+| Unity | EditMode **88/88**, `m0-foundation/3c29b39…/tests-editmode-20261117T140955133Z-91082daa/`; PlayMode **21/21**, `tests-playmode-20261117T141152111Z-24dbb2d1/` in the same root. |
+| Clean Client | PASS, `sourceDirty=false`, `m0-foundation/3c29b39…/build-client-20261117T141250765Z-9f80229e/`. |
+| Native packages | **12 PASS**, `nativeUnityNavBake=PASS`; focused package tests **54/54**. `m8-runtime-composition/3c29b39…/compile-gamecontent-20261117T141503862Z-7011e2f1/`. |
+| Release smoke | PASS, `m0-foundation/3c29b39…/smoke-client-20261117T141722691Z-46113000/`; boot/shutdown only. |
+| Package | PASS, native navigation required, **966 inventory files**, extraction and corrupt-content rehearsal PASS; previous-pair rehearsal SkippedNoPrevious (no previous package directory supplied). `m11-playable-release/3c29b39…/package-20261117T141749852Z-eac99c43/`. |
+| Installer | PASS, `workspaceDirty=false`; `m11-playable-release/3c29b39…/installer-20261117T141814501Z-20ff3215/`. |
+
+Source hash `54ae9c6dc905751bbff547d9201f9a1c7292fb9b5c00e31897660ef1536ca9a4`; toolchain hash `a8331fe2bc5b4293773762d829dc293c8aa5185024bd1a771543ac4eda840500`; build-content manifest `c97c470544a923aed96f84e30c2a475d63765808c237fd84cd7c8cf498961247`; native content closure `d296ce45194461345719de76055b09c5c9de065fca58c54ca9a17428cc40d4b6`; index `ce7105ca6a61a7a135e0fbebf5c2452a64e7a0154fe0e906d61d358bf669bb1c`; internal ZIP `8cfc69fd5cf05d8df17c8f137dbf14be914a5419267334edf6510699e7c76696`.
+
+The first packaging attempt failed `RequireNativeNav` because it read the default pure cache; rerun with `-MapCacheRoot Artifacts/map-packages-native` PASS. Wrapper retention pruned the 0.3.18 `cbf12e5` PlayMode, package and installer run folders; their JSON reports remain under `Artifacts/reports/`, and the 0.3.18 delivery copy and report in `Artifacts/deliveries/` are preserved.
+
+**Pending / NotClaimed:** actual 0.3.19 installation/upgrade/settings preservation, in-game feel check of ADR-098–100, formal T071 gameplay, named audio/visual/device reviews, provisional ADR-096 cue replacements, reference benchmarks/soaks and REL/VD acceptance. P05 named visual acceptance remains FAIL pending review. Networking and Dedicated Server build are Parked (offline scope). Building the installer does not close these gates.

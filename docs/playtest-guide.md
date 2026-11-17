@@ -1,6 +1,6 @@
 # Launch and playtest the current build
 
-This guide gets a tester from the installer to a match and defines what to record. Which installer is current, and what it contains, is tracked only in [next playable build](next-playable-build.md#current-build); exact hashes and evidence are in the [M11 handoff](milestones/m11-playable-release/handoff.md#delivery-0318).
+This guide gets a tester from the installer to a match and defines what to record. Which installer is current, and what it contains, is tracked only in [next playable build](next-playable-build.md#current-build); exact hashes and evidence are in the [M11 handoff](milestones/m11-playable-release/handoff.md#delivery-0319).
 
 ## This version runs locally
 
