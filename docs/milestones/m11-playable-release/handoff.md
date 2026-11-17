@@ -628,3 +628,29 @@ Source hash `54ae9c6dc905751bbff547d9201f9a1c7292fb9b5c00e31897660ef1536ca9a4`; 
 The first packaging attempt failed `RequireNativeNav` because it read the default pure cache; rerun with `-MapCacheRoot Artifacts/map-packages-native` PASS. Wrapper retention pruned the 0.3.18 `cbf12e5` PlayMode, package and installer run folders; their JSON reports remain under `Artifacts/reports/`, and the 0.3.18 delivery copy and report in `Artifacts/deliveries/` are preserved.
 
 **Pending / NotClaimed:** actual 0.3.19 installation/upgrade/settings preservation, in-game feel check of ADR-098–100, formal T071 gameplay, named audio/visual/device reviews, provisional ADR-096 cue replacements, reference benchmarks/soaks and REL/VD acceptance. P05 named visual acceptance remains FAIL pending review. Networking and Dedicated Server build are Parked (offline scope). Building the installer does not close these gates.
+
+## Delivery 0.3.20
+
+Owner requested a new release/installer (2026-11-17). Clean binary/content source **`ab83755347325057ba804b7021d739832a7a1e54`** adds to 0.3.19 the ADR-102 named arsenal (seven named guns, `geometry.weapon` 1.2.0, burst fire, range falloff, weapon move speed, random spawn loadouts, per-gun handling/flash/report, combat bank v6), the muzzle-flash flipbook/anchor fix and ADR-101 5/8/10/15 team sizes. Windows installer **0.3.20**, **66,395,468 bytes**, SHA256 **`53177431f5dae92cabbdb20507ad56cfba7b0ea0c06775332125ab4e12b9270f`**. Delivery copy: `Artifacts/deliveries/Shooter-Setup-0.3.20.exe`, with hash sidecar and `installer-report-0.3.20.json`. Stable AppId `B01E0F69-2123-4D91-AB59-88864A944E39` is unchanged; monotonic check against the 0.3.19 report PASS. Unity 6000.3.28f1 / 8f082d2fe476, IL2CPP, Inno Setup 6.7.3; C0-v1 and Game-v1 unchanged.
+
+All paths below are beneath `Artifacts/`; commit roots use the full source hash above.
+
+| Check | Actual result / retained run |
+|---|---|
+| Contracts | **79/79 PASS**, `m0-foundation/ab83755…/20261117T182857084Z-f00f67de/`. |
+| Generation | **544/544 PASS**, `m1-procedural-feasibility/ab83755…/20261117T182913051Z-c92efdcd/`. |
+| Game / Simulation | **106/106** and **468/468 PASS**, `m8-runtime-composition/ab83755…/20261117T183114199Z-47c91eeb/` and `m2-combat-harness/ab83755…/20261117T183155363Z-c867a5fc/`. |
+| Unity | EditMode **88/88**, `m0-foundation/ab83755…/tests-editmode-20261117T183234392Z-84afc340/`; PlayMode **21/21**, `tests-playmode-20261117T183455108Z-513fb680/` in the same root. |
+| Clean Client | PASS, `sourceDirty=false`, `m0-foundation/ab83755…/build-client-20261117T183554090Z-9f3302e8/`. |
+| Native packages | **12 PASS**, `nativeUnityNavBake=PASS`; focused package tests **54/54**. `m8-runtime-composition/ab83755…/compile-gamecontent-20261117T183620382Z-82d92091/`. |
+| Release smoke | PASS, `m0-foundation/ab83755…/smoke-client-20261117T183858328Z-85317d81/`; boot/shutdown only. |
+| Package | PASS, native navigation required, **1042 inventory files**, extraction and corrupt-content rehearsal PASS; previous-pair rehearsal SkippedNoPrevious (no previous package directory supplied). `m11-playable-release/ab83755…/package-20261117T183910934Z-50ffd632/`. |
+| Installer | PASS, `workspaceDirty=false`; `m11-playable-release/ab83755…/installer-20261117T183941428Z-298c39fd/`. |
+
+Source hash `4bdfec2c74503559a8cef3b40330ad07d915028e4aba18ba339ea1f7cde9d33a`; toolchain hash `a8331fe2bc5b4293773762d829dc293c8aa5185024bd1a771543ac4eda840500`; build-content manifest `7862f5efb3bd7b5836c48b5cf1efce223fa6ba774b94683280b94197f4abd3c6`; native content closure `a82fc0b1533e1c9823e7e5011ef5978c9be1e81bfd4ba3ca2840d3a41f7e240f`; index `ee3c0b0af644b8d953e5abd9c3b7b27d6a4bee6f812548c6bf1729e9be3c154e`; internal ZIP `a2ba7f069c1ba40a71915e358e34a153413a839206a618a743b57730f5cf9b99`.
+
+Wrapper retention pruned the 0.3.19 `3c29b39` package and installer run folders; their JSON reports remain under `Artifacts/reports/`, and the 0.3.19 delivery copy and report in `Artifacts/deliveries/` are preserved.
+
+**Post-installer cleanup:** dry run reviewed, then `Tools/Clean-Artifacts.ps1 -Apply -IncludeBuildCaches` freed about 0.07 GB, zero failures, preserving cited/recent evidence; report `workspace-cleanup/20261117T184202476Z/cleanup-report.json`. After confirming no Unity editor was running and that the exact target was ignored, untracked and within this repository, removed regenerable `UnityProject/Library` (**5,034,982,144 bytes**); report `deliveries/cleanup-0.3.20-library.json`. Source, `.local` pinned tools, content caches, current evidence and delivery installers are preserved. Next Unity launch will regenerate Library; no post-cleanup Unity import is claimed.
+
+**Pending / NotClaimed:** actual 0.3.20 installation/upgrade/settings preservation, in-game check of the ADR-102 named guns and ADR-098–101, formal T071 gameplay, named audio/visual/device reviews, provisional ADR-096 cue replacements, reference benchmarks/soaks and REL/VD acceptance. P05 named visual acceptance remains FAIL pending review. Networking and Dedicated Server build are Parked (offline scope). Building the installer does not close these gates.
