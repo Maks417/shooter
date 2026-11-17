@@ -505,7 +505,7 @@ namespace Shooter.Game.Session
             int botsRegistered = 0;
             int botIndex = 0;
             int botCount = request.ParticipantCount - 1;
-            // M8 composition workload is eight bots; M9 full 5v5/6v6 registers the rest.
+            // M8 composition workload is eight bots; product TDM registers the full ADR-101 roster.
             int botCap = Math.Min(CombatAiDirector.MaxBots, botCount);
             for (int i = 0; i < request.ParticipantCount; i++)
             {

@@ -127,7 +127,7 @@ public sealed class MapPackageTests : IDisposable
     {
         var package = MapPackageBuilder.Build("depot-yard", "gameplay", toolchain);
         var meta = MapJsonValue.Parse(package.MetadataBytes).Object;
-        Assert.True(meta["spawnSlots"].Array.Count >= 24);
+        Assert.True(meta["spawnSlots"].Array.Count >= 30);
         Assert.True(meta["colliders"].Array.Count >= 1);
         Assert.Equal(package.CollisionHash.ToString(), meta["collisionArtifactSha256"].String);
         foreach (var row in meta["colliders"].Array)

@@ -14,12 +14,13 @@ public sealed class MapRegistryTests
 
     // Captured from the pre-ADR-083 C# planners (commit b1fd112); the registry and layout documents must not move them.
     [Theory]
+    // ADR-101: gameplay roots change with 15 spawn slots/team; collision/nav stay frozen.
     [InlineData("training-compound", "0acdcbcc9c56dd9297a3cf27e1c822fed158412cd012290718df1843f1220cb9", "1b506b637da07266ec4bb9ec53f3612121988965d84d2532c9f277043730cb4d",
-        "84df2eed88230e9115b70568319a7d1af8277e76444f1184b2c15cae449959b1", "d91f0d513b4375b8a1b46287e236869a47377278d8aa2487832ea64752b2eab6")]
+        "d5293e1d33eb7c84662c177a96718b7abbb12e9f18cbe8999b92de93e42548ae", "d91f0d513b4375b8a1b46287e236869a47377278d8aa2487832ea64752b2eab6")]
     [InlineData("depot-yard", "ee0a4cae11f63649f645278b07af6ad4b3c262ab370cf2e5aeab91780f77dea0", "35855448e5203c5725a749a55f56793c3975828608849055844915eae59ec403",
-        "ebf442ecd59900d604b581475bfaa09fcd026bd52e6dc625217e3ff8af0703d1", "764fb5808141ef3876d85feed74547c553e13d7f4ebfba6032333025f78d702c")]
+        "e456c8673208a5feb94d6cafe2ddb20296366115bf37313d8be95130fb2414fd", "764fb5808141ef3876d85feed74547c553e13d7f4ebfba6032333025f78d702c")]
     [InlineData("oil-depot", "62017fa929c60f085fdd9e728f43b1a5f01a80b294bebcb75b0d83e0efae58a2", "f6f95df6c1bed8177fe89bb14cc8c847611b679ef653643733ed4b4e5290fb71",
-        "4322540497839f0007f7a20aac7b561a3345ed65e91c4f44040948dd4fe8e341", "ef40f57d1d82264b6ddcc00e88dd3fdbb68cb20c422dce32f45520502018a8c4")]
+        "ed316960217cec8de2034857443f9fa26285f88904091d9193c8b5131618df3b", "ef40f57d1d82264b6ddcc00e88dd3fdbb68cb20c422dce32f45520502018a8c4")]
     public void RegisteredMapsRetainGameplayAndIntentionallyMigrateVisualClosures(string mapId, string collision, string nav, string gameplayRoot, string lowRoot)
     {
         var plan = ProductMapPlanner.Generate(mapId);

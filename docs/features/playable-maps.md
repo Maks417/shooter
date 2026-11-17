@@ -8,13 +8,13 @@ Layout note: since [ADR-074](../decisions.md#adr-074--accepted-compact-64--80-m-
 
 | Stable MapId / display name | Proposed numeric layout | Gameplay |
 |---|---|---|
-| `training-compound` / Training Compound | Compact 64 × 80 m garrison square (ADR-074); seed `460072030` | Team Deathmatch, 5v5 and 6v6 |
-| `depot-yard` / Depot Yard | Compact 64 × 80 m rail crossing (ADR-074); **approved catalog seed `460072031`** (ADR-035; historical `42` remains robustness-corpus only) | Team Deathmatch, 5v5 and 6v6 |
-| `oil-depot` / Oil Depot | Compact 64 × 80 m petroleum arena with elevated catwalk (ADR-071/074); seed `460072032` | Team Deathmatch, 5v5 and 6v6 |
+| `training-compound` / Training Compound | Compact 64 × 80 m garrison square (ADR-074); seed `460072030` | Team Deathmatch, 5v5 / 8v8 / 10v10 / 15v15 |
+| `depot-yard` / Depot Yard | Compact 64 × 80 m rail crossing (ADR-074); **approved catalog seed `460072031`** (ADR-035; historical `42` remains robustness-corpus only) | Team Deathmatch, 5v5 / 8v8 / 10v10 / 15v15 |
+| `oil-depot` / Oil Depot | Compact 64 × 80 m petroleum arena with elevated catwalk (ADR-071/074); seed `460072032` | Team Deathmatch, 5v5 / 8v8 / 10v10 / 15v15 |
 
 These names/layouts are chosen product defaults. Seeds or lighting variants of the same topology do not count as distinct maps. Release requires every registered map (currently these three). Depot uses existing primitive/material families and procedural recipe rules, without imported props or authored meshes. Stay within the existing baseline building/prop ceilings until measured: maximum 12 building shells / 120 repeated props per map initially. Density budgets do not prove frame-time acceptance.
 
-Each map has ≥12 validated spawn slots per team, at least two separate exits per staging area, at least three distinct routes between sides including a covered route, and no initial direct spawn-to-enemy-spawn shot. All slots reach the combat routes through real navigation with standing clearance under [gameplay baseline](../gameplay-baseline.md). Spawn roles, route destinations and cover proxies have stable IDs and metadata; team/quality never changes physical collision, nav, visibility or hit rules. Mirrored blockout is acceptable initially; exploit/imbalance findings require numeric recipe fixes and regenerated identities.
+Each map has ≥15 validated spawn slots per team (ADR-101), at least two separate exits per staging area, at least three distinct routes between sides including a covered route, and no initial direct spawn-to-enemy-spawn shot. All slots reach the combat routes through real navigation with standing clearance under [gameplay baseline](../gameplay-baseline.md). Spawn roles, route destinations and cover proxies have stable IDs and metadata; team/quality never changes physical collision, nav, visibility or hit rules. Mirrored blockout is acceptable initially; exploit/imbalance findings require numeric recipe fixes and regenerated identities.
 
 ## Content path — partial implementation and required exit
 

@@ -29,19 +29,25 @@ namespace Shooter.Game.Contracts.Tests
 
         [Theory]
         [InlineData(4)]
+        [InlineData(6)]
         [InlineData(7)]
+        [InlineData(9)]
         public void SessionRequest_Rejects_Invalid_TeamSize(byte size)
         {
             Assert.Throws<ArgumentException>(() => new SessionRequest(WellKnownMaps.TrainingCompound, WellKnownModes.TeamDeathmatch, size, 460072030UL));
         }
 
         [Fact]
-        public void SessionRequest_Accepts_5_And_6()
+        public void SessionRequest_Accepts_Allowed_Team_Sizes()
         {
             var a = new SessionRequest(WellKnownMaps.TrainingCompound, WellKnownModes.TeamDeathmatch, 5, 460072030UL);
-            var b = new SessionRequest(WellKnownMaps.DepotYard, WellKnownModes.TeamDeathmatch, 6, 460072031UL);
+            var b = new SessionRequest(WellKnownMaps.DepotYard, WellKnownModes.TeamDeathmatch, 8, 460072031UL);
+            var c = new SessionRequest(WellKnownMaps.OilDepot, WellKnownModes.TeamDeathmatch, 10, 460072032UL);
+            var d = new SessionRequest(WellKnownMaps.TrainingCompound, WellKnownModes.TeamDeathmatch, 15, 460072030UL);
             Assert.Equal(10, a.ParticipantCount);
-            Assert.Equal(12, b.ParticipantCount);
+            Assert.Equal(16, b.ParticipantCount);
+            Assert.Equal(20, c.ParticipantCount);
+            Assert.Equal(30, d.ParticipantCount);
         }
 
         [Fact]
@@ -158,7 +164,7 @@ namespace Shooter.Game.Contracts.Tests
             const ulong sessionId = 77;
             var catalog = StaticMapCatalog.CreateReleaseSeed();
             Assert.True(catalog.TryGetGameplay(WellKnownMaps.TrainingCompound, out var map));
-            var request = new SessionRequest(WellKnownMaps.TrainingCompound, WellKnownModes.TeamDeathmatch, 6, 460072030UL);
+            var request = new SessionRequest(WellKnownMaps.TrainingCompound, WellKnownModes.TeamDeathmatch, 8, 460072030UL);
             var runtime = new FakeMapRuntime(new NoWorld(), new NoNav());
             Assert.True((await runtime.LoadAsync(map, CancellationToken.None)).Succeeded);
             var harness = new CombatHarnessSimulation(runtime.WorldQueries, sessionId, request.Seed);
@@ -361,7 +367,7 @@ namespace Shooter.Game.Contracts.Tests
         {
             var catalog = StaticMapCatalog.CreateReleaseSeed();
             using var session = new OfflineGameSession(catalog, (w, n) => new FakeMapRuntime(new NoWorld(), new NoNav()), allowFakeMapRuntime: true);
-            var request = new SessionRequest(WellKnownMaps.TrainingCompound, WellKnownModes.TeamDeathmatch, 6, 460072030UL);
+            var request = new SessionRequest(WellKnownMaps.TrainingCompound, WellKnownModes.TeamDeathmatch, 8, 460072030UL);
             Assert.True((await session.BeginLoadAsync(request, CancellationToken.None)).Succeeded);
             Assert.True(session.Start().Succeeded);
             var lifecycle = Assert.IsType<HarnessActorLifecycle>(session.Lifecycle);

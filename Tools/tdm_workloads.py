@@ -1,4 +1,4 @@
-"""Load reviewed product TDM workload fixtures (ADR-037 / T063)."""
+"""Load reviewed product TDM workload fixtures (ADR-037 / T063 / ADR-101)."""
 from pathlib import Path
 import json
 
@@ -11,8 +11,10 @@ REQUIRED_COUNTERS = (
 )
 
 MEASUREMENT_IDS = (
-    "TDM-5v5-v1", "TDM-6v6-v1", "TDM-5v5-depot-v1", "TDM-6v6-depot-v1",
-    "TDM-soak-6v6-compound-v1", "TDM-soak-6v6-depot-v1",
+    "TDM-5v5-v1", "TDM-8v8-v1", "TDM-10v10-v1", "TDM-15v15-v1",
+    "TDM-5v5-depot-v1", "TDM-8v8-depot-v1", "TDM-10v10-depot-v1", "TDM-15v15-depot-v1",
+    "TDM-5v5-oil-v1", "TDM-8v8-oil-v1", "TDM-10v10-oil-v1", "TDM-15v15-oil-v1",
+    "TDM-soak-15v15-compound-v1", "TDM-soak-15v15-depot-v1", "TDM-soak-15v15-oil-v1",
 )
 
 

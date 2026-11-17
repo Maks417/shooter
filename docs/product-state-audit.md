@@ -4,7 +4,7 @@ Current build, task disposition and the order of remaining work are in [next pla
 
 ## Summary — 2026-11-17
 
-The product is a packaged offline TDM game: three maps (Training Compound, Depot Yard, Oil Depot) at 5v5/6v6, four weapons, bots with native navigation, menus, settings and a Windows installer with in-place upgrades. The current delivery (0.3.19) includes the visual roadmap tranche ADR-087–095, ADR-096 audio/music and ADR-097–100 combat feel and bot motion; see [current build](next-playable-build.md#current-build) and [delivery evidence](milestones/m11-playable-release/handoff.md#delivery-0319). Networking and the dedicated server are parked under [ADR-076](decisions.md#adr-076--accepted-offline-only-scope-and-bounded-local-evidence).
+The product is a packaged offline TDM game: three maps (Training Compound, Depot Yard, Oil Depot) at 5v5/8v8/10v10/15v15 (ADR-101), four weapons, bots with native navigation, menus, settings and a Windows installer with in-place upgrades. The current delivery (0.3.19) includes the visual roadmap tranche ADR-087–095, ADR-096 audio/music and ADR-097–100 combat feel and bot motion; see [current build](next-playable-build.md#current-build) and [delivery evidence](milestones/m11-playable-release/handoff.md#delivery-0319). Networking and the dedicated server are parked under [ADR-076](decisions.md#adr-076--accepted-offline-only-scope-and-bounded-local-evidence).
 
 Status of the findings raised by the 2026-11-14 review (details in the dated record below):
 
@@ -32,7 +32,7 @@ The owner subsequently requested and authorized implementation of Left Shift + F
 
 Review started at clean `main` `84befb9b48c98b71716d67a0a3e799b8b112c6df`. During review, `a54ed8302151a134e47cc1a421153edc8ef4e0c7` added `CLAUDE.md` only; it is preserved. The latest retained binary is **`7cd7e8191e118929af742bef382774edb22a57c2`**, not the review HEAD. Later changes before this review are documentation and deletion of unused `Assets/Resources.meta`; there is no newer runtime C# implementation. Do not relabel the existing binary as a build of a later commit.
 
-**Assessment:** the project has progressed from incomplete integration to a packaged offline playtest candidate. Source implements the two-map 5v5/6v6 loop, weapons, bots, respawn, menus and applied settings. Client/server builds and Unity tests have retained passing reports. The archive exists and passes a fresh inventory/hash check. The handoff records reaching Main menu, but complete manual gameplay has not been demonstrated. A percentage-complete or calendar estimate would imply evidence we do not have.
+**Assessment:** the project has progressed from incomplete integration to a packaged offline playtest candidate. Source implements the three-map 5v5–15v15 loop, weapons, bots, respawn, menus and applied settings. Client/server builds and Unity tests have retained passing reports. The archive exists and passes a fresh inventory/hash check. The handoff records reaching Main menu, but complete manual gameplay has not been demonstrated. A percentage-complete or calendar estimate would imply evidence we do not have.
 
 Owner clarification during this review: the first version is **local bots only**, with no online multiplayer, separate server or hosting purchase. Existing server-compatible architecture/isolation evidence is retained without adding an online-delivery prerequisite. See [scope](vision.md#first-version-scope-local-bots-only).
 

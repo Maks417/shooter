@@ -45,7 +45,7 @@ namespace Shooter.Generation.Tests
             var slots = MapSpawnLayout.BuildBothTeams(plan);
             var own = new List<SpawnCandidate>();
             foreach (var s in slots) if (s.Team == 1) own.Add(s);
-            Assert.Equal(12, own.Count);
+            Assert.Equal(15, own.Count);
 
             var tall = new List<CollisionBox>();
             foreach (var bx in plan.CollisionBoxes)

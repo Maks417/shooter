@@ -15,7 +15,7 @@ namespace Shooter.Game.Contracts
 
         public SessionRequest(MapId mapId, ModeId modeId, byte teamSize, ulong seed, uint ruleVersion = GameContractVersion.RuleVersion)
         {
-            GameRequire.That(teamSize == 5 || teamSize == 6, nameof(teamSize));
+            GameRequire.That(GameContractVersion.IsAllowedTeamSize(teamSize), nameof(teamSize));
             GameRequire.That(ruleVersion == GameContractVersion.RuleVersion, nameof(ruleVersion));
             MapId = mapId;
             ModeId = modeId;
@@ -62,7 +62,7 @@ namespace Shooter.Game.Contracts
             SupportedModes = new FrozenList<ModeId>(supportedModes, GameContractVersion.MaxModesPerMap);
             GameRequire.That(SupportedModes.Count >= 1, nameof(supportedModes));
             var sizes = GameRequire.Copy(supportedTeamSizes, 8, nameof(supportedTeamSizes));
-            foreach (var size in sizes) GameRequire.That(size == 5 || size == 6, nameof(supportedTeamSizes));
+            foreach (var size in sizes) GameRequire.That(GameContractVersion.IsAllowedTeamSize(size), nameof(supportedTeamSizes));
             SupportedTeamSizes = new FrozenList<byte>(sizes, 8);
             RecipeSeed = recipeSeed;
             RecipeVersion = GameRequire.Display(recipeVersion, nameof(recipeVersion), 64);

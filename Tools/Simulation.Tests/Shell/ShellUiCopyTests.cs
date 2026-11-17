@@ -14,7 +14,8 @@ namespace Shooter.Simulation.Tests.Shell
             Assert.Equal("Choose your fight", ShellUiCopy.SetupTitle);
             Assert.Equal("Finding a safe drop…", ShellUiCopy.AwaitingSpawn);
             Assert.Equal("YOU + 4 ALLIED BOTS\nVS 5 ENEMY BOTS", ShellUiCopy.SetupRosterLine(5));
-            Assert.Equal("YOU + 5 ALLIED BOTS\nVS 6 ENEMY BOTS", ShellUiCopy.SetupRosterLine(6));
+            Assert.Equal("YOU + 7 ALLIED BOTS\nVS 8 ENEMY BOTS", ShellUiCopy.SetupRosterLine(8));
+            Assert.Equal("YOU + 14 ALLIED BOTS\nVS 15 ENEMY BOTS", ShellUiCopy.SetupRosterLine(15));
         }
     }
 }

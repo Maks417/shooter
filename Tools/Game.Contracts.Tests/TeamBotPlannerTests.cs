@@ -15,12 +15,13 @@ namespace Shooter.Game.Contracts.Tests
     public sealed class TeamBotPlannerTests
     {
         [Fact]
-        public void Director_Accepts_Eleven_Bots()
+        public void Director_Accepts_Full_Bot_Capacity()
         {
             var ai = new CombatAiDirector(new NoWorld(), new NoNav(), 1u << 8);
             for (int i = 0; i < CombatAiDirector.MaxBots; i++)
                 ai.RegisterBot(new EntityId((ulong)(i + 1)), new Float3(i, 0, 0), 0);
-            Assert.Equal(11, ai.BotCount);
+            Assert.Equal(CombatAiDirector.MaxBots, ai.BotCount);
+            Assert.Equal(29, CombatAiDirector.MaxBots);
             Assert.Throws<System.InvalidOperationException>(() => ai.RegisterBot(new EntityId(99), default, 0));
         }
 

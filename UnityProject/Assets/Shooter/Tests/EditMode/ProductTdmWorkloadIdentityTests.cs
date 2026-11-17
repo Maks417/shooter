@@ -9,8 +9,8 @@ namespace Shooter.Tests.EditMode
         [Test]
         public void Depot_and_compound_measurement_ids_remain_distinct()
         {
-            Assert.IsTrue(ProductTdmWorkloads.TryGet(ProductTdmWorkloads.Compound6v6, out var compound));
-            Assert.IsTrue(ProductTdmWorkloads.TryGet(ProductTdmWorkloads.Depot6v6, out var depot));
+            Assert.IsTrue(ProductTdmWorkloads.TryGet(ProductTdmWorkloads.Compound15v15, out var compound));
+            Assert.IsTrue(ProductTdmWorkloads.TryGet(ProductTdmWorkloads.Depot15v15, out var depot));
             Assert.AreEqual("training-compound", compound.MapId.Value);
             Assert.AreEqual("depot-yard", depot.MapId.Value);
             Assert.AreEqual(460072030UL, compound.Seed);

@@ -11,7 +11,7 @@ One player and all allied/enemy bots run on your PC. You do **not** need a serve
 1. Verify the installer: `Get-FileHash -Algorithm SHA256 <path-to-Shooter-Setup-x.y.z.exe>` and compare with the handoff. `Artifacts/` is ignored and not in a Git clone; if the file is missing, a release integrator builds it from an explicitly identified source (`Tools/Build-Installer.ps1`), never by relabelling an older binary.
 2. Run the installer. It installs per-user to `%LOCALAPPDATA%\Programs\Shooter` by default (optional desktop shortcut). Running a newer installer upgrades the existing installation in place and keeps settings and controls; downgrades are refused unless `/ALLOWDOWNGRADE=1` is passed. See [installer behaviour](features/windows-installer.md).
 3. Start **Shooter** from the Start menu or desktop shortcut. The first screen is the Main menu.
-4. Choose **Play** or a map card, pick **Training Compound**, **Depot Yard** or **Oil Depot**, select **5v5** or **6v6**, then **Start match**. A 5-second countdown precedes the fight.
+4. Choose **Play** or a map card, pick **Training Compound**, **Depot Yard** or **Oil Depot**, select **5v5**, **8v8**, **10v10** or **15v15**, then **Start match**. A 5-second countdown precedes the fight.
 5. Use **Esc** to pause, resume, change settings, restart or leave. A normal match ends at **150 team kills or 15 active minutes**. Check the debrief and **Play again**.
 
 ## Default controls
@@ -41,11 +41,17 @@ Use one installed build. Start with Training Compound 5v5, then cover every conf
 | Configuration | Load / movement / all weapons | Bots / repeated respawn / pause-focus | Settings / scoreboard / leave-restart | Complete match / debrief / replay |
 |---|---|---|---|---|
 | Training Compound 5v5 | Pending | Pending | Pending | Pending |
-| Training Compound 6v6 | Pending | Pending | Pending | Pending |
+| Training Compound 8v8 | Pending | Pending | Pending | Pending |
+| Training Compound 10v10 | Pending | Pending | Pending | Pending |
+| Training Compound 15v15 | Pending | Pending | Pending | Pending |
 | Depot Yard 5v5 | Pending | Pending | Pending | Pending |
-| Depot Yard 6v6 | Pending | Pending | Pending | Pending |
+| Depot Yard 8v8 | Pending | Pending | Pending | Pending |
+| Depot Yard 10v10 | Pending | Pending | Pending | Pending |
+| Depot Yard 15v15 | Pending | Pending | Pending | Pending |
 | Oil Depot 5v5 | Pending | Pending | Pending | Pending |
-| Oil Depot 6v6 | Pending | Pending | Pending | Pending |
+| Oil Depot 8v8 | Pending | Pending | Pending | Pending |
+| Oil Depot 10v10 | Pending | Pending | Pending | Pending |
+| Oil Depot 15v15 | Pending | Pending | Pending | Pending |
 
 Finish at least one full normal match per map and record which size was completed. Do not shorten rules for evidence. T065 separately requires the full score-limit/timeout matrix, the draw fixture and named reviews; this table does not replace those exits.
 

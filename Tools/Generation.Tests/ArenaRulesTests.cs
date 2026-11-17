@@ -115,7 +115,7 @@ namespace Shooter.Generation.Tests
             var plan = ProductMapPlanner.Generate(mapId);
             var arena = plan.Arena!;
             var slots = MapSpawnLayout.BuildBothTeams(plan);
-            Assert.Equal(24, slots.Count);
+            Assert.Equal(30, slots.Count);
             Assert.True(MapSpawnLayout.PositionsUnique(slots));
             int t1 = 0, t2 = 0;
             foreach (var s in slots)
@@ -127,8 +127,8 @@ namespace Shooter.Generation.Tests
                 if (s.Team == 1) { t1++; Assert.True(Math.Cos(s.Yaw) > 0); }
                 else { t2++; Assert.True(Math.Cos(s.Yaw) < 0); }
             }
-            Assert.Equal(12, t1);
-            Assert.Equal(12, t2);
+            Assert.Equal(15, t1);
+            Assert.Equal(15, t2);
             Assert.Equal(arena.Team1Anchor, plan.PlayerSpawn);
             Assert.Equal(arena.Team2Anchor, plan.ObjectiveCenter);
         }

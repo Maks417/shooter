@@ -15,20 +15,24 @@ namespace Shooter.Game.Contracts
         /// <summary>Personal scoreboard points awarded to a valid enemy killer (ADR-059). Does not change team kill totals.</summary>
         public const int PersonalKillPoints = 100;
         public const int TimeLimitActiveTicks = 54000;
-        public const int MaxParticipants = 12;
+        public const int MaxParticipants = 30;
         public const int MaxMaps = 16;
         public const int MaxModesPerMap = 8;
         public const int MaxSpawnSlots = 128;
         public const int MaxDisplayName = 32;
         public const int MaxMapId = 64;
         public const int MaxDescription = 256;
-        public const int MaxActiveActors = 12;
+        public const int MaxActiveActors = 30;
         public const int MaxCosmeticCorpses = 4;
         public const int RespawnDelayActiveTicks = 180;
         public const int SpawnRetryDeferTicks = 30;
         public const int SpawnFailureTimeoutTicks = 600;
         public const int TeamSizesMin = 5;
-        public const int TeamSizesMax = 6;
+        public const int TeamSizesMax = 15;
+
+        /// <summary>ADR-101 product team sizes. Unknown values are rejected at the SessionRequest boundary.</summary>
+        public static bool IsAllowedTeamSize(byte teamSize)
+            => teamSize == 5 || teamSize == 8 || teamSize == 10 || teamSize == 15;
         public const int MaxSettingsFileBytes = 65536;
         public const int MaxSettingsBindings = 32;
         public const int MaxBindingToken = 64;

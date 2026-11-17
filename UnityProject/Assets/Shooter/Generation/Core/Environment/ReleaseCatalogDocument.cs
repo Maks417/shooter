@@ -47,7 +47,7 @@ namespace Shooter.Generation.Environment
                     ["displayName"] = MapRecipe.DisplayName(mapId),
                     ["description"] = MapRecipe.Description(mapId),
                     ["supportedModes"] = new List<object?> { "team-deathmatch" },
-                    ["supportedTeamSizes"] = new List<object?> { 5, 6 },
+                    ["supportedTeamSizes"] = new List<object?> { 5, 8, 10, 15 },
                     ["recipeSeed"] = seed.ToString(CultureInfo.InvariantCulture),
                     ["recipeVersion"] = MapRecipe.GeneratorIdFor(mapId) + "." + MapRecipe.GeneratorVersion,
                     ["gameplayRootSha256"] = roots["gameplay"].ToString(),

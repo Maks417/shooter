@@ -28,7 +28,7 @@ namespace Shooter.Game.Contracts.Tests
         public void CaptureCoordinator_finish_results_replay_preserves_request_and_epochs()
         {
             var coord = new ProductTdmCaptureCoordinator();
-            var request = new SessionRequest(WellKnownMaps.TrainingCompound, WellKnownModes.TeamDeathmatch, 6, 460072030UL);
+            var request = new SessionRequest(WellKnownMaps.TrainingCompound, WellKnownModes.TeamDeathmatch, 8, 460072030UL);
             Assert.True(coord.TryBeginLoad(request, out _));
             Assert.Equal(1, coord.MatchIndex);
             ulong epoch1 = coord.LoadEpoch;
@@ -53,7 +53,7 @@ namespace Shooter.Game.Contracts.Tests
         public void CaptureCoordinator_replays_when_capture_window_incomplete()
         {
             var coord = new ProductTdmCaptureCoordinator();
-            var request = new SessionRequest(WellKnownMaps.DepotYard, WellKnownModes.TeamDeathmatch, 6, 460072031UL);
+            var request = new SessionRequest(WellKnownMaps.DepotYard, WellKnownModes.TeamDeathmatch, 8, 460072031UL);
             Assert.True(coord.TryBeginLoad(request, out _));
             coord.CompleteLoadSuccess();
             coord.MarkFinished(null, 12000);
@@ -104,7 +104,7 @@ namespace Shooter.Game.Contracts.Tests
         {
             var catalog = StaticMapCatalog.CreateReleaseSeed();
             using var session = new OfflineGameSession(catalog, (w, n) => new FakeMapRuntime(new NoWorld(), new NoNav()), allowFakeMapRuntime: true);
-            var request = new SessionRequest(WellKnownMaps.TrainingCompound, WellKnownModes.TeamDeathmatch, 6, 460072030UL);
+            var request = new SessionRequest(WellKnownMaps.TrainingCompound, WellKnownModes.TeamDeathmatch, 8, 460072030UL);
             Assert.True((await session.BeginLoadAsync(request, CancellationToken.None)).Succeeded);
             Assert.True(session.Start().Succeeded);
             var lifecycle = Assert.IsType<HarnessActorLifecycle>(session.Lifecycle);
@@ -137,7 +137,7 @@ namespace Shooter.Game.Contracts.Tests
             using var session = new OfflineGameSession(catalog, (w, n) => new FakeMapRuntime(w, n), allowFakeMapRuntime: true);
             var request = new SessionRequest(WellKnownMaps.TrainingCompound, WellKnownModes.TeamDeathmatch, 5, 460072030UL);
             Assert.True((await session.BeginLoadAsync(request, CancellationToken.None)).Succeeded);
-            session.Measurement.WorkloadId = ProductTdmWorkloads.SoakCompound6v6;
+            session.Measurement.WorkloadId = ProductTdmWorkloads.SoakCompound15v15;
             session.Measurement.ActiveTicks = 100;
             session.Measurement.Respawns = 2;
             session.Measurement.FoldMatchIntoCumulative();
@@ -150,7 +150,7 @@ namespace Shooter.Game.Contracts.Tests
             Assert.Equal(100, session.Measurement.CumulativeActiveTicks);
             Assert.Equal(0, session.Measurement.ActiveTicks);
             // WorkloadId survives ResetForNewMatch across replay loads.
-            Assert.Equal(ProductTdmWorkloads.SoakCompound6v6, session.Measurement.WorkloadId);
+            Assert.Equal(ProductTdmWorkloads.SoakCompound15v15, session.Measurement.WorkloadId);
         }
 
         [Theory]

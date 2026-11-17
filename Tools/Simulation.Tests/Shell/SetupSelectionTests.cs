@@ -21,7 +21,7 @@ namespace Shooter.Simulation.Tests.Shell
             Assert.Equal("", error);
             Assert.NotNull(request);
             Assert.Equal(WellKnownMaps.DepotYard, request!.MapId);
-            Assert.Equal((byte)6, request.TeamSize);
+            Assert.Equal((byte)8, request.TeamSize);
             Assert.Equal(460072031UL, request.Seed);
         }
 
@@ -61,7 +61,7 @@ namespace Shooter.Simulation.Tests.Shell
                 return new MapCatalogEntry(
                     id, name, desc,
                     new[] { WellKnownModes.TeamDeathmatch },
-                    new byte[] { 5, 6 },
+                    new byte[] { 5, 8, 10, 15 },
                     seed, "map.test.1",
                     zero, zero, zero, zero);
             }

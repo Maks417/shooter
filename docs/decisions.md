@@ -1604,3 +1604,22 @@ Validation:
 Pending: client build and the owner's in-game look at bot strafes, hops and slides; P05 visual acceptance stays FAIL pending a named review.
 
 Rollback: revert this change. That restores v6, the aim-heading stride and the previous bot tuning; the new input and view fields are optional with neutral defaults.
+
+## ADR-101 — Accepted: selectable team sizes 5 / 8 / 10 / 15
+
+Date 2026-11-17. Context: owner request to replace the product Setup choice of 5v5/6v6 with per-team sizes 5, 8, 10 and 15. Game-v1 was frozen at team sizes {5,6}, `MaxParticipants`/`MaxActiveActors` 12 and `CombatAiDirector.MaxBots` 11; arena maps emitted exactly 12 spawn slots per team; the bot display-name pool held 24 names. 15v15 needs 30 actors and 29 bots.
+
+Decision:
+- **Allowlist.** `SessionRequest.TeamSize` and catalog `supportedTeamSizes` accept only `{5,8,10,15}`. Product Setup shows a 2×2 grid (5v5 / 8v8 / 10v10 / 15v15). Default and unknown prefs/CLI values (including legacy saved `6`) clamp to **5**.
+- **Capacity.** `GameContractVersion.MaxParticipants` / `MaxActiveActors` = **30**; `CombatAiDirector.MaxBots` = **29**. `TeamSizesMin`/`Max` = 5/15 with the explicit allowlist above. Game-v1 `ruleVersion` stays 1; C0-v1 and package encoding versions are unchanged.
+- **AI budgets.** Keep the global **≤16 vision rays / ≤2 new paths per tick**. Every bot must still receive a sensing opportunity within **`MaxBots` active ticks** under a full roster; starvation remains a reject. No silent per-size budget scaling.
+- **Spawns.** `MapSpawnLayout.SlotsPerTeam` = **15**; ArenaRules expects 15/team. Catalog gameplay packages are republished (hashes change).
+- **Names.** `BotDisplayNames.Pool` grows to ≥29 unique short ASCII first names.
+- **Workloads.** Keep `TDM-5v5-*`. Replace product `TDM-6v6-*` and soak-6v6 rows with `TDM-8v8-*`, `TDM-10v10-*`, `TDM-15v15-*` measurement identities and `TDM-soak-15v15-*` soaks. Historical 6v6 evidence stays archival; the product shell no longer starts size 6.
+- **Locks.** Refreeze `game-contract-lock.json` after Contracts/fixture migration; refresh `content-format-lock.json` for the release-catalog schema/sample enum change.
+
+Consequences: playtest matrix becomes three maps × four sizes; larger fights stress AI round-robin and presentation actor counts; reference captures/soaks must use the new workload IDs.
+
+Rollback: revert this change, restore {5,6} allowlist and prior caps/slots/workloads, and republish catalog packages from the prior source.
+
+Evidence: pure Game/Simulation/Generation/Maps lanes and lock verifiers after implementation; Unity EditMode for shell/setup; native content republish when the locked editor is available. Manual playtest and hardware remain Pending.

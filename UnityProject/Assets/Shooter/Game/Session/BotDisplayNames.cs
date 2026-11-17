@@ -10,12 +10,13 @@ namespace Shooter.Game.Session
     /// </summary>
     public static class BotDisplayNames
     {
-        /// <summary>Fixed ASCII first-name pool (≥24). Order is the shuffle base, not match assignment.</summary>
+        /// <summary>Fixed ASCII first-name pool (≥29 for ADR-101 15v15). Order is the shuffle base, not match assignment.</summary>
         public static readonly string[] Pool =
         {
             "Alex", "Marco", "Nadia", "Sam", "Elena", "Omar", "Priya", "Luca",
             "Nora", "Kai", "Mira", "Jonas", "Aya", "Reed", "Sofia", "Malik",
-            "Ines", "Theo", "Yuki", "Hugo", "Lara", "Devon", "Anika", "Cole"
+            "Ines", "Theo", "Yuki", "Hugo", "Lara", "Devon", "Anika", "Cole",
+            "Ravi", "Tess", "Owen", "Zara", "Neil"
         };
 
         /// <summary>

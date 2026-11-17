@@ -17,14 +17,14 @@ param(
 . (Join-Path $PSScriptRoot 'Unity.Common.ps1')
 $unity = Get-ShooterUnity
 $run = New-ShooterRun 'benchmark-product-matrix' $unity
-$workloads = @('TDM-5v5-v1','TDM-6v6-v1','TDM-5v5-depot-v1','TDM-6v6-depot-v1')
+$workloads = @('TDM-5v5-v1','TDM-15v15-v1','TDM-5v5-depot-v1','TDM-15v15-depot-v1','TDM-5v5-oil-v1','TDM-15v15-oil-v1')
 $build = (Resolve-Path -LiteralPath $BuildRunDirectory).Path
 $sensor = (Resolve-Path -LiteralPath $SensorLog).Path
-$run.Report['scope'] = 'FIX12 product matrix: 4 workloads × 3 runs = 12 captures; hardware acceptance PendingHardware until reference proof.'
+$run.Report['scope'] = 'FIX12 product matrix: 6 workloads × 3 runs = 18 captures (min/max size per map, ADR-101); hardware acceptance PendingHardware until reference proof.'
 $run.Report['buildDirectory'] = $build
 $run.Report['sensorLog'] = $sensor
 $run.Report['workloads'] = $workloads
-$run.Report['expectedCaptures'] = 12
+$run.Report['expectedCaptures'] = 18
 $run.Report['warmupSeconds'] = 60
 $run.Report['captureSeconds'] = 180
 $run.Report['profile'] = 'Low'

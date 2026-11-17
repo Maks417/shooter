@@ -81,7 +81,7 @@ namespace Shooter.Presentation.Session
             session = backend.Session ?? throw new InvalidOperationException("Product session missing.");
             catalog = backend.Catalog ?? throw new InvalidOperationException("Product catalog missing.");
 
-            if (preferredTeamSize != 5 && preferredTeamSize != 6) preferredTeamSize = 5;
+            if (!GameContractVersion.IsAllowedTeamSize(preferredTeamSize)) preferredTeamSize = 5;
             MapId preferredMap;
             try { preferredMap = new MapId(string.IsNullOrEmpty(preferredMapId) ? WellKnownMaps.TrainingCompound.Value : preferredMapId); }
             catch { preferredMap = WellKnownMaps.TrainingCompound; }
@@ -591,12 +591,14 @@ namespace Shooter.Presentation.Session
             ui.Label(new Rect(textX, preview.y + 36, textW, preview.height - 48), setup.SelectedDescription, 16, TacticalUi.Muted);
             ui.Section(new Rect(rx, y, rw, 18), ShellUiCopy.SetupMode);
             float half = (rw - 8) * .5f;
-            if (ui.Button(new Rect(rx, y + 24, half, 40), "setup.5", "5 v 5", selected: setup.SelectedTeamSize == 5) && setup.SelectedTeamSize != 5) setup.CycleTeamSize(1);
-            if (ui.Button(new Rect(rx + half + 8, y + 24, half, 40), "setup.6", "6 v 6", selected: setup.SelectedTeamSize == 6) && setup.SelectedTeamSize != 6) setup.CycleTeamSize(1);
-            ui.Panel(new Rect(rx, y + 78, rw, 128), accentTop: true);
-            ui.Label(new Rect(rx + 14, y + 90, rw - 28, 22), ShellUiCopy.SetupRules, 12, TacticalUi.Accent);
-            ui.Label(new Rect(rx + 14, y + 112, rw - 28, 40), ShellUiCopy.SetupRulesBody, 18);
-            ui.Label(new Rect(rx + 14, y + 156, rw - 28, 40), ShellUiCopy.SetupRosterLine(setup.SelectedTeamSize), 16, TacticalUi.Muted);
+            if (ui.Button(new Rect(rx, y + 24, half, 36), "setup.5", "5 v 5", selected: setup.SelectedTeamSize == 5)) setup.SelectTeamSize(5);
+            if (ui.Button(new Rect(rx + half + 8, y + 24, half, 36), "setup.8", "8 v 8", selected: setup.SelectedTeamSize == 8)) setup.SelectTeamSize(8);
+            if (ui.Button(new Rect(rx, y + 64, half, 36), "setup.10", "10 v 10", selected: setup.SelectedTeamSize == 10)) setup.SelectTeamSize(10);
+            if (ui.Button(new Rect(rx + half + 8, y + 64, half, 36), "setup.15", "15 v 15", selected: setup.SelectedTeamSize == 15)) setup.SelectTeamSize(15);
+            ui.Panel(new Rect(rx, y + 110, rw, 128), accentTop: true);
+            ui.Label(new Rect(rx + 14, y + 122, rw - 28, 22), ShellUiCopy.SetupRules, 12, TacticalUi.Accent);
+            ui.Label(new Rect(rx + 14, y + 144, rw - 28, 40), ShellUiCopy.SetupRulesBody, 18);
+            ui.Label(new Rect(rx + 14, y + 188, rw - 28, 40), ShellUiCopy.SetupRosterLine(setup.SelectedTeamSize), 16, TacticalUi.Muted);
             GUI.enabled = !coordinator.StartInFlight;
             if (ui.Button(new Rect(rx, a.yMax - 66, rw, 44), "setup.start", ShellUiCopy.SetupStart, primary: true)) StartSelectedMatch();
             GUI.enabled = true;

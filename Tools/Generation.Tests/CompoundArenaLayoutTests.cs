@@ -76,7 +76,7 @@ namespace Shooter.Generation.Tests
                     if (seen > worst) { worst = seen; wx = x; wz = z; worstTeam = team; }
                 }
             }
-            output.WriteLine("spawn visibility worst case: " + worst + " of 12 own slots (team " + worstTeam + ") from (" + wx + "," + wz + "); " + points + " observer points");
+            output.WriteLine("spawn visibility worst case: " + worst + " of 15 own slots (team " + worstTeam + ") from (" + wx + "," + wz + "); " + points + " observer points");
             Assert.True(worst <= 4, "worst " + worst + " slots visible from (" + wx + "," + wz + ")");
         }
 

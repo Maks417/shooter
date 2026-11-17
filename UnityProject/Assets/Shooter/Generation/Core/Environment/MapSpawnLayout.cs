@@ -7,11 +7,11 @@ namespace Shooter.Generation.Environment
 {
     /// <summary>
     /// Shared T058 spawn-slot layout for catalog gameplay and map-package metadata.
-    /// Emits ≥12 unique standing-clearance slots per team without rewriting package encoding.
+    /// Emits ≥15 unique standing-clearance slots per team without rewriting package encoding (ADR-101).
     /// </summary>
     public static class MapSpawnLayout
     {
-        public const int SlotsPerTeam = 12;
+        public const int SlotsPerTeam = 15;
         public const float MinSlotSpacingMeters = 2f;
         public const float EyeHeightMeters = 1.65f;
 
@@ -97,43 +97,92 @@ namespace Shooter.Generation.Environment
                 throw new InvalidOperationException("Unable to place " + SlotsPerTeam + " unique team-" + team + " spawn slots.");
         }
 
-        /// <summary>Arena plans: slots live inside the plan's own staging rectangle, nearest the anchor first, facing the enemy anchor.</summary>
+        /// <summary>
+        /// Arena plans: slots live inside the plan's own staging rectangle, facing the enemy anchor.
+        /// Prefer the staging back wall (farthest from combat) so ADR-101's 15/team still meet the
+        /// outside-staging visibility budget used by the arena layout tests.
+        /// </summary>
         private static void AddTeamInArena(List<SpawnCandidate> slots, CompoundPlan plan, ArenaLayout arena, byte team, uint idBase)
         {
-            const float pitch = 3f, inset = 1.5f;
+            const float pitch = 2f, inset = 1.25f;
             float clearance = CompoundConnectivity.RequiredClearance;
-            var anchor = arena.Anchor(team);
             var enemy = arena.Anchor(team == 1 ? 2 : 1);
             var rect = arena.StagingRect(team);
-            var candidates = new List<(float d2, float x, float z)>();
-            for (int i = -40; i <= 40; i++)
-            for (int j = -10; j <= 10; j++)
+            // Team 1 plays at -Z: back wall is minZ. Team 2 mirror: back wall is maxZ.
+            float backZ = team == 1 ? rect.minZ + inset + 0.5f : rect.maxZ - inset - 0.5f;
+            float frontLimit = team == 1
+                ? rect.minZ + (rect.maxZ - rect.minZ) * 0.45f
+                : rect.maxZ - (rect.maxZ - rect.minZ) * 0.45f;
+            var candidates = new List<(float backPenalty, float xAbs, float x, float z)>();
+            for (float x = rect.minX + inset; x <= rect.maxX - inset + 0.01f; x += pitch)
+            for (float z = rect.minZ + inset; z <= rect.maxZ - inset + 0.01f; z += pitch)
             {
-                float x = anchor.X + i * pitch;
-                float z = anchor.Z + j * pitch;
-                if (x < rect.minX + inset || x > rect.maxX - inset || z < rect.minZ + inset || z > rect.maxZ - inset) continue;
-                float dx = x - anchor.X, dz = z - anchor.Z;
-                candidates.Add((dx * dx + dz * dz, x, z));
+                if (team == 1 && z > frontLimit) continue;
+                if (team == 2 && z < frontLimit) continue;
+                float backPenalty = (z - backZ) * (z - backZ);
+                candidates.Add((backPenalty, MathF.Abs(x), x, z));
             }
             candidates.Sort((a, b) =>
             {
-                int c = a.d2.CompareTo(b.d2);
+                int c = a.backPenalty.CompareTo(b.backPenalty);
                 if (c != 0) return c;
-                c = a.x.CompareTo(b.x);
-                return c != 0 ? c : a.z.CompareTo(b.z);
+                c = a.xAbs.CompareTo(b.xAbs);
+                if (c != 0) return c;
+                return a.x.CompareTo(b.x);
             });
             int added = 0;
-            for (int k = 0; k < candidates.Count && added < SlotsPerTeam; k++)
+            for (int pass = 0; pass < 2 && added < SlotsPerTeam; pass++)
             {
-                float x = candidates[k].x, z = candidates[k].z;
-                if (CompoundConnectivity.IsBlocked(plan.CollisionBoxes, x, z, clearance)) continue;
-                var feet = new Float3(x, 0f, z);
-                if (!SpacingOk(slots, team, feet, MinSlotSpacingMeters)) continue;
-                slots.Add(new SpawnCandidate(idBase + (uint)added, team, feet, YawToward(feet, enemy)));
-                added++;
+                for (int k = 0; k < candidates.Count && added < SlotsPerTeam; k++)
+                {
+                    float x = candidates[k].x, z = candidates[k].z;
+                    if (CompoundConnectivity.IsBlocked(plan.CollisionBoxes, x, z, clearance)) continue;
+                    var feet = new Float3(x, 0f, z);
+                    if (!SpacingOk(slots, team, feet, MinSlotSpacingMeters)) continue;
+                    if (pass == 0 && !SpawnLosSafe(plan, arena, slots, team, feet, enemy)) continue;
+                    slots.Add(new SpawnCandidate(idBase + (uint)added, team, feet, YawToward(feet, enemy)));
+                    added++;
+                }
+            }
+            if (added < SlotsPerTeam)
+            {
+                // Last resort: use the full staging strip if cover/back-half packing fell short.
+                for (float x = rect.minX + inset; x <= rect.maxX - inset + 0.01f && added < SlotsPerTeam; x += pitch)
+                for (float z = rect.minZ + inset; z <= rect.maxZ - inset + 0.01f && added < SlotsPerTeam; z += pitch)
+                {
+                    if (CompoundConnectivity.IsBlocked(plan.CollisionBoxes, x, z, clearance)) continue;
+                    var feet = new Float3(x, 0f, z);
+                    if (!SpacingOk(slots, team, feet, MinSlotSpacingMeters)) continue;
+                    if (!SpawnLosSafe(plan, arena, slots, team, feet, enemy)) continue;
+                    slots.Add(new SpawnCandidate(idBase + (uint)added, team, feet, YawToward(feet, enemy)));
+                    added++;
+                }
             }
             if (added < SlotsPerTeam)
                 throw new InvalidOperationException("Unable to place " + SlotsPerTeam + " team-" + team + " spawn slots inside the staging rectangle.");
+        }
+
+        /// <summary>Reject open spawn-to-spawn shots: enemy anchor, Rotate180 mirror, and already-placed enemies.</summary>
+        private static bool SpawnLosSafe(
+            CompoundPlan plan,
+            ArenaLayout arena,
+            List<SpawnCandidate> slots,
+            byte team,
+            Float3 feet,
+            Float3 enemyAnchor)
+        {
+            if (HasSpawnLos(plan.CollisionBoxes, feet, enemyAnchor)) return false;
+            if (arena.Symmetry == ArenaSymmetry.Rotate180)
+            {
+                var mirror = new Float3(-feet.X, feet.Y, -feet.Z);
+                if (HasSpawnLos(plan.CollisionBoxes, feet, mirror)) return false;
+            }
+            for (int i = 0; i < slots.Count; i++)
+            {
+                if (slots[i].Team == team) continue;
+                if (HasSpawnLos(plan.CollisionBoxes, feet, slots[i].Position)) return false;
+            }
+            return true;
         }
 
         private static bool SpacingOk(List<SpawnCandidate> slots, byte team, Float3 feet, float minSpacing)

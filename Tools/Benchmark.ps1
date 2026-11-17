@@ -2,8 +2,10 @@
 param([Parameter(Mandatory)][string]$BuildRunDirectory,
     [ValidateSet(
         'B01-minimal-v1','B01-materials-v1',
-        'TDM-5v5-v1','TDM-6v6-v1','TDM-5v5-depot-v1','TDM-6v6-depot-v1',
-        'TDM-soak-6v6-compound-v1','TDM-soak-6v6-depot-v1')][string]$Workload = 'B01-minimal-v1',
+        'TDM-5v5-v1','TDM-8v8-v1','TDM-10v10-v1','TDM-15v15-v1',
+        'TDM-5v5-depot-v1','TDM-8v8-depot-v1','TDM-10v10-depot-v1','TDM-15v15-depot-v1',
+        'TDM-5v5-oil-v1','TDM-8v8-oil-v1','TDM-10v10-oil-v1','TDM-15v15-oil-v1',
+        'TDM-soak-15v15-compound-v1','TDM-soak-15v15-depot-v1','TDM-soak-15v15-oil-v1')][string]$Workload = 'B01-minimal-v1',
     [ValidateSet('Low')][string]$Profile = 'Low', [ValidateRange(1,3)][int]$RunIndex = 1, [switch]$Diagnostic,
     [string]$MaterialCacheRoot = '', [string]$MapCacheRoot = '', [string]$HardwareEvidence = '',
     [switch]$DiagnosticAllocate, [switch]$PresentMon, [ValidateRange(0,1800)][int]$PreconditionSeconds = 0)

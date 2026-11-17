@@ -15,7 +15,7 @@ namespace Shooter.Game.Contracts.Tests
         [Fact]
         public void Pool_Has_At_Least_Twenty_Four_Short_Ascii_Names()
         {
-            Assert.True(BotDisplayNames.Pool.Length >= 24);
+            Assert.True(BotDisplayNames.Pool.Length >= 29);
             var seen = new HashSet<string>();
             foreach (string name in BotDisplayNames.Pool)
             {
@@ -31,7 +31,7 @@ namespace Shooter.Game.Contracts.Tests
         [Fact]
         public void Resolve_Is_Deterministic_For_Same_Seed_And_BotCount()
         {
-            const int botCount = 11;
+            const int botCount = 29;
             const ulong seed = 460072030UL;
             var first = Collect(botCount, seed);
             var second = Collect(botCount, seed);
@@ -41,7 +41,7 @@ namespace Shooter.Game.Contracts.Tests
         [Fact]
         public void Resolve_Yields_Unique_Names_From_Pool()
         {
-            const int botCount = 11;
+            const int botCount = 29;
             var names = Collect(botCount, 460072031UL);
             Assert.Equal(botCount, names.Count);
             Assert.Equal(botCount, new HashSet<string>(names).Count);

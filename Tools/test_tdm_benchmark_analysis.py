@@ -15,7 +15,7 @@ class TdmWorkloadFixtureTests(unittest.TestCase):
         self.assertEqual(by_id["TDM-5v5-v1"]["mapId"], "training-compound")
         self.assertEqual(by_id["TDM-5v5-depot-v1"]["mapId"], "depot-yard")
         self.assertEqual(by_id["TDM-5v5-depot-v1"]["seed"], "460072031")
-        self.assertNotEqual(by_id["TDM-6v6-v1"]["mapId"], by_id["TDM-6v6-depot-v1"]["mapId"])
+        self.assertNotEqual(by_id["TDM-15v15-v1"]["mapId"], by_id["TDM-15v15-depot-v1"]["mapId"])
 
 
 class TdmCaptureAnalysisTests(unittest.TestCase):
@@ -116,11 +116,11 @@ class TdmCaptureAnalysisTests(unittest.TestCase):
 
     def test_soak_without_replay_match_is_rejected(self):
         self.meta.update(
-            workloadId="TDM-soak-6v6-compound-v1",
+            workloadId="TDM-soak-15v15-compound-v1",
             mapId="training-compound",
             seed="460072030",
-            teamSize=6,
-            actors=12,
+            teamSize=15,
+            actors=30,
             warmupSeconds=0,
             captureSeconds=1800,
             ticks=108000,
@@ -152,7 +152,7 @@ class TdmCaptureAnalysisTests(unittest.TestCase):
             self.report()
 
     def test_compound_fixture_cannot_silently_become_depot(self):
-        workload = tdm_workloads.require_measurement("TDM-6v6-v1")
+        workload = tdm_workloads.require_measurement("TDM-15v15-v1")
         self.assertEqual(workload["mapId"], "training-compound")
         with self.assertRaises(ValueError):
             # Pretend analysis accepted a substituted map without reviewed depot ID.

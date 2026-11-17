@@ -47,7 +47,7 @@ namespace Shooter.Generation.Tests
         {
             var plan = CompoundPlanner.Generate(460072030UL); // legacy ring layout stays covered
             var slots = MapSpawnLayout.BuildBothTeams(plan);
-            Assert.Equal(24, slots.Count);
+            Assert.Equal(30, slots.Count);
             Assert.True(MapSpawnLayout.PositionsUnique(slots));
             var seen = new HashSet<uint>();
             int t1 = 0, t2 = 0;
@@ -56,8 +56,8 @@ namespace Shooter.Generation.Tests
                 Assert.True(seen.Add(slots[i].SlotId));
                 if (slots[i].Team == 1) t1++; else t2++;
             }
-            Assert.Equal(12, t1);
-            Assert.Equal(12, t2);
+            Assert.Equal(15, t1);
+            Assert.Equal(15, t2);
         }
     }
 }

@@ -32,7 +32,7 @@
           "supportedTeamSizes": {
             "type": "array",
             "minItems": 1,
-            "items": { "type": "integer", "enum": [5, 6] }
+            "items": { "type": "integer", "enum": [5, 8, 10, 15] }
           },
           "recipeSeed": {
             "type": "string",

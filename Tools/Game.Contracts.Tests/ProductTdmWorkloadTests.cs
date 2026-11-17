@@ -8,11 +8,12 @@ namespace Shooter.Game.Contracts.Tests
     {
         [Theory]
         [InlineData(ProductTdmWorkloads.Compound5v5, "training-compound", 5, 10UL, 460072030UL)]
-        [InlineData(ProductTdmWorkloads.Compound6v6, "training-compound", 6, 12UL, 460072030UL)]
+        [InlineData(ProductTdmWorkloads.Compound8v8, "training-compound", 8, 16UL, 460072030UL)]
+        [InlineData(ProductTdmWorkloads.Compound15v15, "training-compound", 15, 30UL, 460072030UL)]
         [InlineData(ProductTdmWorkloads.Depot5v5, "depot-yard", 5, 10UL, 460072031UL)]
-        [InlineData(ProductTdmWorkloads.Depot6v6, "depot-yard", 6, 12UL, 460072031UL)]
+        [InlineData(ProductTdmWorkloads.Depot10v10, "depot-yard", 10, 20UL, 460072031UL)]
         [InlineData(ProductTdmWorkloads.Oil5v5, "oil-depot", 5, 10UL, 460072032UL)]
-        [InlineData(ProductTdmWorkloads.Oil6v6, "oil-depot", 6, 12UL, 460072032UL)]
+        [InlineData(ProductTdmWorkloads.Oil15v15, "oil-depot", 15, 30UL, 460072032UL)]
         public void Measurement_identities_keep_distinct_map_seeds(string id, string map, byte teamSize, ulong actors, ulong seed)
         {
             Assert.True(ProductTdmWorkloads.TryGet(id, out var workload));
@@ -50,6 +51,7 @@ namespace Shooter.Game.Contracts.Tests
         {
             Assert.False(ProductTdmWorkloads.IsProductWorkload("B01-minimal-v1"));
             Assert.False(ProductTdmWorkloads.IsProductWorkload("TDM-5v5-v1-depot-silent"));
+            Assert.False(ProductTdmWorkloads.IsProductWorkload("TDM-6v6-v1"));
             Assert.False(ProductTdmWorkloads.IsProductWorkload(""));
         }
     }

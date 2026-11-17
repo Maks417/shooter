@@ -68,7 +68,7 @@ namespace Shooter.Bootstrap
                                         FoundationEntry.CommandLine("-shooterTeamSize",
                                             PlayerPrefs.GetInt("shooter.teamSize", 5).ToString()),
                                         System.Globalization.CultureInfo.InvariantCulture);
-                                    if (size != 5 && size != 6) size = 5;
+                                    if (!Shooter.Game.Contracts.GameContractVersion.IsAllowedTeamSize(size)) size = 5;
                                     GameShellMenu.Create(new EntryShellBackend(authority), map, size);
                                 });
                             return;
@@ -79,7 +79,7 @@ namespace Shooter.Bootstrap
                             FoundationEntry.CommandLine("-shooterTeamSize",
                                 PlayerPrefs.GetInt("shooter.teamSize", 5).ToString()),
                             System.Globalization.CultureInfo.InvariantCulture);
-                        if (preferredSize != 5 && preferredSize != 6) preferredSize = 5;
+                        if (!Shooter.Game.Contracts.GameContractVersion.IsAllowedTeamSize(preferredSize)) preferredSize = 5;
                         // T059: shell owns start/stop; CLI/PlayerPrefs are setup defaults only.
                         boot.ContinueAfterPaint(() =>
                             GameShellMenu.Create(new EntryShellBackend(authority), preferredMap, preferredSize));

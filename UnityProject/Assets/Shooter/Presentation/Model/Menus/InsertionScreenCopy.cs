@@ -26,13 +26,13 @@ namespace Shooter.Presentation.Menus
 
         public static string MatchRules(byte teamSize)
         {
-            int n = teamSize == 6 ? 6 : 5;
+            int n = teamSize == 5 || teamSize == 8 || teamSize == 10 || teamSize == 15 ? teamSize : 5;
             return "TEAM DEATHMATCH  ·  " + n + " v " + n + "  ·  150 KILLS / 15 MIN";
         }
 
         public static string MatchFooter(byte teamSize)
         {
-            int n = teamSize == 6 ? 6 : 5;
+            int n = teamSize == 5 || teamSize == 8 || teamSize == 10 || teamSize == 15 ? teamSize : 5;
             return "TEAM DEATHMATCH   /   " + n + " v " + n;
         }
 

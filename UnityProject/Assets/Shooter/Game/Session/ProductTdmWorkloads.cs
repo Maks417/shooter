@@ -5,20 +5,26 @@ using Shooter.Game.Contracts;
 namespace Shooter.Game.Session
 {
     /// <summary>
-    /// Reviewed product TDM measurement identities (ADR-037 / T063). Mirrors docs/game-fixtures/tdm-workloads.json;
+    /// Reviewed product TDM measurement identities (ADR-037 / T063 / ADR-101). Mirrors docs/game-fixtures/tdm-workloads.json;
     /// do not invent map substitutions for compound-only historical rows.
     /// </summary>
     public static class ProductTdmWorkloads
     {
         public const string Compound5v5 = "TDM-5v5-v1";
-        public const string Compound6v6 = "TDM-6v6-v1";
+        public const string Compound8v8 = "TDM-8v8-v1";
+        public const string Compound10v10 = "TDM-10v10-v1";
+        public const string Compound15v15 = "TDM-15v15-v1";
         public const string Depot5v5 = "TDM-5v5-depot-v1";
-        public const string Depot6v6 = "TDM-6v6-depot-v1";
+        public const string Depot8v8 = "TDM-8v8-depot-v1";
+        public const string Depot10v10 = "TDM-10v10-depot-v1";
+        public const string Depot15v15 = "TDM-15v15-depot-v1";
         public const string Oil5v5 = "TDM-5v5-oil-v1";
-        public const string Oil6v6 = "TDM-6v6-oil-v1";
-        public const string SoakCompound6v6 = "TDM-soak-6v6-compound-v1";
-        public const string SoakDepot6v6 = "TDM-soak-6v6-depot-v1";
-        public const string SoakOil6v6 = "TDM-soak-6v6-oil-v1";
+        public const string Oil8v8 = "TDM-8v8-oil-v1";
+        public const string Oil10v10 = "TDM-10v10-oil-v1";
+        public const string Oil15v15 = "TDM-15v15-oil-v1";
+        public const string SoakCompound15v15 = "TDM-soak-15v15-compound-v1";
+        public const string SoakDepot15v15 = "TDM-soak-15v15-depot-v1";
+        public const string SoakOil15v15 = "TDM-soak-15v15-oil-v1";
 
         public readonly struct Definition
         {
@@ -70,14 +76,20 @@ namespace Shooter.Game.Session
         private static readonly Definition[] All =
         {
             new Definition(Compound5v5, WellKnownMaps.TrainingCompound, 5, 1, 9, 10, 460072030UL, 3600, 10800, false, MeasurementCounters),
-            new Definition(Compound6v6, WellKnownMaps.TrainingCompound, 6, 1, 11, 12, 460072030UL, 3600, 10800, false, MeasurementCounters),
+            new Definition(Compound8v8, WellKnownMaps.TrainingCompound, 8, 1, 15, 16, 460072030UL, 3600, 10800, false, MeasurementCounters),
+            new Definition(Compound10v10, WellKnownMaps.TrainingCompound, 10, 1, 19, 20, 460072030UL, 3600, 10800, false, MeasurementCounters),
+            new Definition(Compound15v15, WellKnownMaps.TrainingCompound, 15, 1, 29, 30, 460072030UL, 3600, 10800, false, MeasurementCounters),
             new Definition(Depot5v5, WellKnownMaps.DepotYard, 5, 1, 9, 10, 460072031UL, 3600, 10800, false, MeasurementCounters),
-            new Definition(Depot6v6, WellKnownMaps.DepotYard, 6, 1, 11, 12, 460072031UL, 3600, 10800, false, MeasurementCounters),
+            new Definition(Depot8v8, WellKnownMaps.DepotYard, 8, 1, 15, 16, 460072031UL, 3600, 10800, false, MeasurementCounters),
+            new Definition(Depot10v10, WellKnownMaps.DepotYard, 10, 1, 19, 20, 460072031UL, 3600, 10800, false, MeasurementCounters),
+            new Definition(Depot15v15, WellKnownMaps.DepotYard, 15, 1, 29, 30, 460072031UL, 3600, 10800, false, MeasurementCounters),
             new Definition(Oil5v5, WellKnownMaps.OilDepot, 5, 1, 9, 10, 460072032UL, 3600, 10800, false, MeasurementCounters),
-            new Definition(Oil6v6, WellKnownMaps.OilDepot, 6, 1, 11, 12, 460072032UL, 3600, 10800, false, MeasurementCounters),
-            new Definition(SoakCompound6v6, WellKnownMaps.TrainingCompound, 6, 1, 11, 12, 460072030UL, 0, 108000, true, MeasurementCounters),
-            new Definition(SoakDepot6v6, WellKnownMaps.DepotYard, 6, 1, 11, 12, 460072031UL, 0, 108000, true, MeasurementCounters),
-            new Definition(SoakOil6v6, WellKnownMaps.OilDepot, 6, 1, 11, 12, 460072032UL, 0, 108000, true, MeasurementCounters)
+            new Definition(Oil8v8, WellKnownMaps.OilDepot, 8, 1, 15, 16, 460072032UL, 3600, 10800, false, MeasurementCounters),
+            new Definition(Oil10v10, WellKnownMaps.OilDepot, 10, 1, 19, 20, 460072032UL, 3600, 10800, false, MeasurementCounters),
+            new Definition(Oil15v15, WellKnownMaps.OilDepot, 15, 1, 29, 30, 460072032UL, 3600, 10800, false, MeasurementCounters),
+            new Definition(SoakCompound15v15, WellKnownMaps.TrainingCompound, 15, 1, 29, 30, 460072030UL, 0, 108000, true, MeasurementCounters),
+            new Definition(SoakDepot15v15, WellKnownMaps.DepotYard, 15, 1, 29, 30, 460072031UL, 0, 108000, true, MeasurementCounters),
+            new Definition(SoakOil15v15, WellKnownMaps.OilDepot, 15, 1, 29, 30, 460072032UL, 0, 108000, true, MeasurementCounters)
         };
 
         public static bool IsProductWorkload(string? workloadId)

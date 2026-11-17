@@ -16,7 +16,7 @@ The first version is a single offline process with one human and local allied/en
 
 ## Required playable product
 
-The deliverable is a source-matched Windows x64 installer with [in-place upgrades](features/windows-installer.md); the installed game launches offline into the Main menu. ZIPs are internal artifacts. The player selects Training Compound, Depot Yard or Oil Depot, Team Deathmatch, and 5v5 or 6v6. One human joins Team 1 with nine/eleven total bots. Teams race to 150 enemy kills or 15 active minutes; equal scores draw. Movement, sprint/slide, rifle/pistol/knife/grenade, aim/fire/reload, death/respawn, pause, live/final tables, replay and return to menu must work. Audio/video/control/accessibility settings persist and affect actual devices.
+The deliverable is a source-matched Windows x64 installer with [in-place upgrades](features/windows-installer.md); the installed game launches offline into the Main menu. ZIPs are internal artifacts. The player selects Training Compound, Depot Yard or Oil Depot, Team Deathmatch, and 5v5 / 8v8 / 10v10 / 15v15 (ADR-101). One human joins Team 1 with nine to twenty-nine total bots. Teams race to 150 enemy kills or 15 active minutes; equal scores draw. Movement, sprint/slide, rifle/pistol/knife/grenade, aim/fire/reload, death/respawn, pause, live/final tables, replay and return to menu must work. Audio/video/control/accessibility settings persist and affect actual devices.
 
 [Team rules](features/team-deathmatch.md), [maps](features/playable-maps.md), [map layouts](features/tdm-map-layouts.md) and [shell](features/game-shell.md) retain exact requirements. Native 1280×720 Low 30 FPS on the reference machine remains an acceptance gate; 60 FPS is a separate stretch. No external art or online scope is added.
 
@@ -42,7 +42,7 @@ The deliverable is a source-matched Windows x64 installer with [in-place upgrade
 ## Order of remaining work
 
 1. **Install 0.3.19.** The source-matched installer and locked-editor EditMode/PlayMode checks are delivered ([delivery](milestones/m11-playable-release/handoff.md#delivery-0319)); actual installed upgrade and the in-game feel check of ADR-098–100 remain Pending.
-2. **T071 formal playtest on that installer.** Follow the [guide](playtest-guide.md): all three maps × 5v5/6v6, at least one complete normal match per map, results and replay, missing/corrupt content recovery and a real prior-version upgrade. Record named reviewer, identities, logs and every blocker; route defects to their owning cards.
+2. **T071 formal playtest on that installer.** Follow the [guide](playtest-guide.md): all three maps × 5v5/8v8/10v10/15v15, at least one complete normal match per map, results and replay, missing/corrupt content recovery and a real prior-version upgrade. Record named reviewer, identities, logs and every blocker; route defects to their owning cards.
 3. **T093, T094 and the T095 audio placeholders** when the owner assigns them.
 4. **T070 + T062 + T065 on the final stable pair.** Reference captures and soaks on the idle reference laptop, named visual/UI/audio/display reviews, eight full matches, draw fixture, provenance/regressions and the remaining installer INS checks. Missing reviewers/hardware/counters stay Pending/PendingHardware.
 

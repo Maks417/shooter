@@ -26,7 +26,7 @@ namespace Shooter.Simulation.Tests.Shell
         public void Cancel_and_failure_clear_inflight_without_activating_match()
         {
             var coord = new ShellSessionCoordinator();
-            var request = new SessionRequest(WellKnownMaps.DepotYard, WellKnownModes.TeamDeathmatch, 6, 460072031UL);
+            var request = new SessionRequest(WellKnownMaps.DepotYard, WellKnownModes.TeamDeathmatch, 8, 460072031UL);
             Assert.True(coord.TryBeginStart(request, out _));
             ulong epoch = coord.LoadEpoch;
             coord.CancelStart();

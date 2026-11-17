@@ -17,7 +17,7 @@ namespace Shooter.Presentation.Session
         {
             string map = PlayerPrefs.GetString("shooter.map", "training-compound");
             int size = PlayerPrefs.GetInt("shooter.teamSize", 5);
-            if (size != 5 && size != 6) size = 5;
+            if (size < 0 || size > 255 || !GameContractVersion.IsAllowedTeamSize((byte)size)) size = 5;
             var mapId = new MapId(map);
             if (!catalog.TryGet(mapId, out var entry)) return null;
             return new SessionRequest(mapId, WellKnownModes.TeamDeathmatch, (byte)size, entry.RecipeSeed);

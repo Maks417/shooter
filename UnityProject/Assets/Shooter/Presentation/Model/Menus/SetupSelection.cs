@@ -14,7 +14,8 @@ namespace Shooter.Presentation.Menus
             WellKnownMaps.OilDepot
         };
 
-        private static readonly byte[] TeamSizes = { 5, 6 };
+        /// <summary>ADR-101 product team sizes (per side).</summary>
+        private static readonly byte[] TeamSizes = { 5, 8, 10, 15 };
 
         private readonly IMapCatalog catalog;
         private readonly MapId[] maps;
@@ -35,7 +36,7 @@ namespace Shooter.Presentation.Menus
                     if (maps[i].Equals(preferredMap.Value)) { mapIndex = i; break; }
             }
 
-            teamSizeIndex = preferredTeamSize == 6 ? 1 : 0;
+            teamSizeIndex = IndexOfTeamSize(preferredTeamSize);
         }
 
         public int MapCount => maps.Length;
@@ -79,6 +80,12 @@ namespace Shooter.Presentation.Menus
 
         public void CycleTeamSize(int delta) => teamSizeIndex = Mod(teamSizeIndex + delta, TeamSizes.Length);
 
+        public void SelectTeamSize(byte teamSize)
+        {
+            int index = IndexOfTeamSize(teamSize);
+            if (index >= 0) teamSizeIndex = index;
+        }
+
         public SessionRequest? TryBuildRequest(out string error)
         {
             error = "";
@@ -97,6 +104,13 @@ namespace Shooter.Presentation.Menus
             }
 
             return request;
+        }
+
+        private static int IndexOfTeamSize(byte teamSize)
+        {
+            for (int i = 0; i < TeamSizes.Length; i++)
+                if (TeamSizes[i] == teamSize) return i;
+            return 0;
         }
 
         private static MapId[] FilterAvailable(IMapCatalog catalog, MapId[] candidates)

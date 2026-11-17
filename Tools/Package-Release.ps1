@@ -373,7 +373,7 @@ Direct executable also works from any cwd: defaults resolve Content\map-packages
   .\Shooter.exe
 
 Controls: WASD move, mouse look, LMB fire, RMB aim, R reload, 1/2 rifle/pistol, Esc pause, Tab scoreboard
-Menu: Play or choose an operation card, then select 5v5/6v6 and Start match. Settings groups use Apply/Cancel.
+Menu: Play or choose an operation card, then select 5v5/8v8/10v10/15v15 and Start match. Settings groups use Apply/Cancel.
 Movement: Left Shift sprint, Left Ctrl crouch, Space jump, Left Shift + F slide while sprinting (Sprint + Slide bindings).
 Slide: 0.75s maximum, momentum decays, jump cancels; 1s cooldown from entry. Rebind Slide in Settings.
 Maps: -shooterMap training-compound|depot-yard
@@ -400,7 +400,7 @@ KNOWN ISSUES / LIMITATIONS (T071 owner playtest candidate / FIX13 packaging)
 - P05: FAIL retained under ADR-024 (skin/forearm/strap/eye-sight residuals). No fourth clearance search.
 - T072 slide uses Sprint + Slide (default Left Shift + F); manual both-map slide/readability/device review remains Pending.
 - T074 scene-led menu and compact tactical HUD are implemented; environment/soldier/weapon/hand-animation redesign remains staged work. The menu uses existing procedural soldier assets, not imported reference art.
-- Manual playtest still Pending: both maps x 5v5/6v6, full move/aim/fire/switch/reload, bots, death/respawn, pause/scoreboard/settings, complete matches, results/replay.
+- Manual playtest still Pending: three maps x 5v5/8v8/10v10/15v15, full move/aim/fire/switch/reload, bots, death/respawn, pause/scoreboard/settings, complete matches, results/replay.
 - Named device/UI/audio reviews (FIX08–10 / SET01–02), FIX05 visibility captures, FIX03 focus loss, FIX06 mixed-team player, and 20-launch soak: Pending.
 - Reference performance / soaks (REL04 / FIX12 / T070): PendingHardware until collector + twelve native720p Low captures and two-map soaks on reference machine.
 - Offline NuGet advisory lookup: PendingNetwork.

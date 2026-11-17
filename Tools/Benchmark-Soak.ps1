@@ -1,14 +1,14 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)][string]$BuildRunDirectory,
-    [ValidateSet('TDM-soak-6v6-compound-v1','TDM-soak-6v6-depot-v1')][string]$Workload = 'TDM-soak-6v6-compound-v1',
+    [ValidateSet('TDM-soak-15v15-compound-v1','TDM-soak-15v15-depot-v1','TDM-soak-15v15-oil-v1')][string]$Workload = 'TDM-soak-15v15-compound-v1',
     [string]$MapCacheRoot = '',
     [string]$HardwareEvidence = '',
     [switch]$PlanOnly
 )
 <#
 .SYNOPSIS
-    FIX12 normal-AI 6v6 soak (≥30 minutes / two matches+replay intent) per map.
+    FIX12 normal-AI 15v15 soak (≥30 minutes / two matches+replay intent) per map (ADR-101).
 .NOTES
     Reference execution remains PendingHardware. Does not claim PASS without a completed soak capture.
 #>
@@ -16,7 +16,7 @@ param(
 $unity = Get-ShooterUnity
 $run = New-ShooterRun 'benchmark-soak' $unity
 $build = (Resolve-Path -LiteralPath $BuildRunDirectory).Path
-$run.Report['scope'] = 'FIX12/T070 ≥30-minute normal-AI 6v6 soak; ProductTdmHost finish/results/replay across normal match rules; PendingHardware until reference run.'
+$run.Report['scope'] = 'FIX12/T070 ≥30-minute normal-AI 15v15 soak; ProductTdmHost finish/results/replay across normal match rules; PendingHardware until reference run.'
 $run.Report['workloadId'] = $Workload
 $run.Report['buildDirectory'] = $build
 $run.Report['captureSeconds'] = 1800

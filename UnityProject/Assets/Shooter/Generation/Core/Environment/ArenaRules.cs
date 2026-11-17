@@ -256,9 +256,9 @@ namespace Shooter.Generation.Environment
                     }
                 }
             }
-            rules.Add(new ArenaRuleResult(RuleSpawnSlots, slotsOk && s1 == 12 && s2 == 12 && inside && spacing,
+            rules.Add(new ArenaRuleResult(RuleSpawnSlots, slotsOk && s1 == 15 && s2 == 15 && inside && spacing,
                 slotsOk ? "t1=" + s1 + " t2=" + s2 + " insideStaging=" + inside + " spacingOk=" + spacing : slotError,
-                "12/team inside own staging, spacing >= 2"));
+                "15/team inside own staging, spacing >= 2"));
 
             return new ArenaRulesReport(rules, sizeX, sizeZ, minHeight, closed, separation, c1, c2, enemy,
                 exits1, exits2, minSpacing, topology.DistinctRoutes, topology.HasCoveredRoute,

@@ -115,4 +115,4 @@ Training Compound and Depot Yard use only roles 0–5. Collision, navigation and
 
 - **Pure checks:** `Tools/Test-Generation.ps1`, `Tools/Test-Maps.ps1`, `Tools/Test-Simulation.ps1`, `Tools/Test-Game.ps1`, `Tools/Test-Contracts.ps1`, source provenance, docs/fixtures checks.
 - **Content:** regenerate packages with `Tools/Compile-GameContent.ps1` (native nav with the locked editor where available) and record old/new package identities in the M11 handoff.
-- **Not covered:** rule validation proves geometry constraints only. Enjoyable flow, time to first contact, spawn pressure and bot behaviour on the compact layouts remain Pending a manual playtest of all three maps at 5v5 and 6v6.
+- **Not covered:** rule validation proves geometry constraints only. Enjoyable flow, time to first contact, spawn pressure and bot behaviour on the compact layouts remain Pending a manual playtest of all three maps at 5v5/8v8/10v10/15v15 (ADR-101).

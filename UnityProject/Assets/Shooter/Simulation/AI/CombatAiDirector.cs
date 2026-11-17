@@ -20,12 +20,12 @@ namespace Shooter.Simulation.AI
 
     /// <summary>
     /// Team AI: ≤16 AI rays (vision + T082 cover probes + T090 peeks/hearing) and ≤2 new paths per tick;
-    /// cover/reload/stuck through normal commands. Capacity 11 for 6v6. T082/T085/T090 add aim, fire,
+    /// cover/reload/stuck through normal commands. Capacity 29 for ADR-101 15v15. T082/T085/T090 add aim, fire,
     /// strafing with ledge probes, sticky targeting, wall-aware hearing, spread, cover peeks and callouts.
     /// </summary>
     public sealed class CombatAiDirector
     {
-        public const int MaxBots = 11;
+        public const int MaxBots = 29;
         public const int MaxNewPathsPerTick = 2;
         public const float StuckDistance = 0.2f;
         public const float CornerArrivalDistance = 0.35f;

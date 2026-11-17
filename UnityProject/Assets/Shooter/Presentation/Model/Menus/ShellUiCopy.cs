@@ -1,5 +1,6 @@
 #nullable enable
 using System;
+using Shooter.Game.Contracts;
 
 namespace Shooter.Presentation.Menus
 {
@@ -18,7 +19,7 @@ namespace Shooter.Presentation.Menus
 
         public const string MainHeadline = "YOUR NEXT\nOPERATION";
         public const string MainBattles = "OFFLINE BATTLES / TEAM DEATHMATCH";
-        public const string MainCardSubtitle = "5v5 / 6v6  ·  LOCAL BOTS";
+        public const string MainCardSubtitle = "5v5–15v15  ·  LOCAL BOTS";
         public const string MainNavigate = "TAB / ARROWS  Navigate     ENTER  Select";
         public const string MapCompound = "TRAINING COMPOUND";
         public const string MapDepot = "DEPOT YARD";
@@ -80,7 +81,7 @@ namespace Shooter.Presentation.Menus
 
         public static string SetupRosterLine(byte teamSize)
         {
-            int n = teamSize == 6 ? 6 : 5;
+            int n = GameContractVersion.IsAllowedTeamSize(teamSize) ? teamSize : 5;
             return "YOU + " + (n - 1) + " ALLIED BOTS\nVS " + n + " ENEMY BOTS";
         }
 
