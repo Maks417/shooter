@@ -757,7 +757,8 @@ namespace Shooter.Presentation.Session
                 var profile=WeaponVisualProfiles.Require(shot.WeaponId);
                 // The flash sits on the muzzle the viewer sees (FP view model or held weapon), not on the
                 // gameplay shot origin, which floats beside the handguard. Falls back when no socket is shown.
-                bool anchored=actors!=null&&actors.TryGetMuzzleWorld(ev.Instigator,out var visibleMuzzle);
+                Float3 visibleMuzzle=default;
+                bool anchored=actors!=null&&actors.TryGetMuzzleWorld(ev.Instigator,out visibleMuzzle);
                 Float3 flashOrigin=anchored?visibleMuzzle:shot.Origin;
                 // ADR-102: each gun sizes its own flash; a muzzle brake adds side jets.
                 if(profile.MuzzleFlashVariant!=0)analyticFxPool.SpawnGunshotFeedback(flashOrigin, shot.UnitDirection, reducedFlash,

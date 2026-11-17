@@ -115,7 +115,7 @@
     "UnityProject/Assets/Shooter/Generation/Core/Soldiers/SoldierInsignia.cs": "82017b735e1f84998a020f95a8f76e54c370dcd991558c09a4c907570a1980ee",
     "UnityProject/Assets/Shooter/Generation/Core/Soldiers/SoldierRecipe.cs": "044cac5b2d104a692dc85dfb4d55991c4816768c8cdfdefbfeaf21ed2556cd1d",
     "UnityProject/Assets/Shooter/Generation/Core/Soldiers/SoldierSkeleton.cs": "f3dab186647fbae93ffe531e641ca91b401b4bb1c051c4cbf4c41cd66caf29af",
-    "UnityProject/Assets/Shooter/Generation/Core/Weapons/ArsenalGeometry.cs": "838aeb691d088f7268c1ead3296da43e8a076521fb0d4f8c50ae8e7ba13d07af",
+    "UnityProject/Assets/Shooter/Generation/Core/Weapons/ArsenalGeometry.cs": "341ead7fd1e56e6b12045b6f6223c6ab2c11b9a4074ecc35e4862debffbb94e7",
     "UnityProject/Assets/Shooter/Generation/Core/Weapons/BoredMuzzle.cs": "d8b74b0b987f197f1f240459fc3c38af983defb22c654d0fda0fe27784614c12",
     "UnityProject/Assets/Shooter/Generation/Core/Weapons/LoadoutPropGeometry.cs": "e997af36b313a96690d6d094ad0978f215c033d6b86dc670e437083af3ebfbe9",
     "UnityProject/Assets/Shooter/Generation/Core/Weapons/WeaponAssetGenerator.cs": "8fdad1a385f054e38509d75ff09b7e0e6904f79521ca898568c38624f4bf47b2",

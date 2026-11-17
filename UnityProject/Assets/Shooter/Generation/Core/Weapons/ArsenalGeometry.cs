@@ -230,13 +230,21 @@ namespace Shooter.Generation
             private void PistolGrip(float y, float z, float pitch, ushort material)
             {
                 Box(0, y, z, .030f, .105f, .042f, material, pitch);
-                if (detail)
-                    for (int i = 0; i < (fine ? 4 : 2); i++)
-                    {
-                        float gy = y + .03f - i * .022f;
-                        Box(-.0155f, gy, z - (gy - y) * .3f, .002f, .012f, .034f, Recess, pitch);
-                        Box(.0155f, gy, z - (gy - y) * .3f, .002f, .012f, .034f, Recess, pitch);
-                    }
+                if (detail) GripGrooves(y, z, pitch, .030f, .105f, .042f, fine ? 4 : 2);
+            }
+
+            /// <summary>Flush finger grooves on both grip faces, placed along the grip's own pitched axis.</summary>
+            private void GripGrooves(float y, float z, float pitch, float sx, float sy, float sz, int count)
+            {
+                double rad = pitch * Math.PI / 180;
+                float up = (float)Math.Cos(rad), forward = (float)Math.Sin(rad);
+                for (int i = 0; i < count; i++)
+                {
+                    float along = sy * (.32f - i * .64f / Math.Max(1, count - 1));
+                    float gy = y + along * up, gz = z + along * forward;
+                    for (int side = -1; side <= 1; side += 2)
+                        Box(side * (sx / 2 - .0004f), gy, gz, .0012f, sy * .07f, sz * .7f, Recess, pitch);
+                }
             }
 
             private void TriggerGroup(float guardZ)
@@ -356,7 +364,8 @@ namespace Shooter.Generation
                 Box(0, .112f, sightZ, .004f, .012f, .004f, Steel);
                 if (detail) for (int side = -1; side <= 1; side += 2) Box(side * .008f, .114f, sightZ, .003f, .016f, .016f, metal);
                 MuzzleDevice(y, front);
-                PistolGrip(-.045f, -.025f, 18, p.Furniture == "wood" ? Wood : Polymer);
+                PistolGrip(-.022f, -.03f, 18, p.Furniture == "wood" ? Wood : Polymer);
+                Box(0, .030f, .01f, .040f, .030f, .13f, metal);               // lower receiver / trigger housing
                 TriggerGroup(.04f);
                 if (detail) Box(0, .032f, .11f, .040f, .018f, .03f, metal);   // magazine catch
                 if (p.Stock == "folding")
@@ -398,7 +407,7 @@ namespace Shooter.Generation
                 Box(0, .112f, sightZ, .012f, .042f, .016f, metal);              // A2 sight tower
                 if (detail) Box(0, .132f, sightZ, .003f, .010f, .003f, Steel);
                 MuzzleDevice(y, front);
-                PistolGrip(-.045f, -.02f, 18, Polymer);
+                PistolGrip(-.022f, -.022f, 18, Polymer);
                 TriggerGroup(.045f);
                 Loft(.062f, new[] { -.43f, -.415f, -.17f, -.06f }, new[] { .024f, .026f, .020f, .016f }, new[] { .070f, .068f, .040f, .030f }, Polymer);
                 Box(0, .06f, -.433f, .050f, .14f, .012f, Recess);
@@ -426,7 +435,7 @@ namespace Shooter.Generation
                 }
                 Tube(0, y, .38f, front, .0095f, metal);
                 MuzzleDevice(y, front);
-                PistolGrip(-.045f, -.02f, 18, furniture);
+                PistolGrip(-.012f, -.02f, 18, furniture);
                 TriggerGroup(.045f);
                 Box(0, .010f, .05f, .036f, .022f, .12f, metal);                 // trigger housing
                 Tube(0, .070f, -.28f, -.08f, .0160f, metal);                     // buffer tube
@@ -500,7 +509,7 @@ namespace Shooter.Generation
             private void Eagle()
             {
                 float y = .090f, front = p.BarrelFront;
-                Box(0, .045f, .04f, .032f, .030f, .20f, metal);                  // frame
+                Box(0, .052f, .04f, .032f, .044f, .20f, metal);                  // frame
                 Box(0, .098f, (.06f + front) / 2, .030f, .036f, front - .06f, metal); // fixed barrel block
                 Box(0, .120f, (.06f + front) / 2, .018f, .008f, front - .07f, metal); // top rail
                 Bore(y, front + .001f, .0105f, .0062f, .012f);
@@ -521,13 +530,7 @@ namespace Shooter.Generation
             private void PistolGripPistol(float y, float z, float pitch, float sx, float sy, float sz, ushort material)
             {
                 Box(0, y, z, sx, sy, sz, material, pitch);
-                if (detail)
-                    for (int i = 0; i < (fine ? 5 : 2); i++)
-                    {
-                        float gy = y + sy * .35f - i * sy * .16f;
-                        for (int side = -1; side <= 1; side += 2)
-                            Box(side * (sx / 2 + .0005f), gy, z - (gy - y) * .28f, .001f, sy * .07f, sz * .75f, Recess, pitch);
-                    }
+                if (detail) GripGrooves(y, z, pitch, sx, sy, sz, fine ? 5 : 2);
             }
 
             // ---------------------------------------------------------------- Magazines
@@ -626,7 +629,7 @@ namespace Shooter.Generation
                                 Box(side * .0132f, .071f, -.055f + i * .006f, .001f, .022f, .002f, Recess);
                         break;
                     default:
-                        Box(0, .090f, -.01f, .034f, .042f, .12f, metal);              // slide
+                        Box(0, .090f, 0f, .034f, .042f, .14f, metal);                 // slide
                         Box(0, .116f, -.06f, .024f, .010f, .010f, Steel);             // rear sight
                         for (int i = 0; i < 6; i++)
                             for (int side = -1; side <= 1; side += 2)
