@@ -145,10 +145,14 @@ namespace Shooter.Presentation.View
                 {
                     if (ProductAuthorityActionView.IsGunSlot(activeSlot))
                     {
-                        // Stronger hip-fire spring so each shot reads as mechanical kick from the shooter POV.
-                        recoilPitchVel += activeSlot == ProductAuthorityActionView.PistolSlot ? 3.6f : 4.0f;
-                        recoilYawVel += ((ev.Id.Ordinal & 1) == 0 ? -1f : 1f) *
-                            (activeSlot == ProductAuthorityActionView.PistolSlot ? 0.95f : 0.85f);
+                        // Per-shot kick sized from the firing weapon's own recoil (its definition file), on a
+                        // stiff spring that peaks ~31 ms after the report and settles before the next auto round.
+                        var shot = ev.Payload as ShotPayload;
+                        var profile = WeaponVisualProfiles.Resolve(shot?.WeaponId ?? default, activeSlot);
+                        var (pitchImpulse, yawImpulse) = ShotKickImpulse(profile);
+                        uint shotIndex = shot?.ShotIndex ?? ev.Id.Ordinal;
+                        recoilPitchVel += pitchImpulse;
+                        recoilYawVel += ((shotIndex & 1u) == 0u ? -1f : 1f) * yawImpulse;
                         cycleOpen = Math.Max(cycleOpen, FirstPersonWeaponMechanics.CycleImpulse);
                     }
                     else if (ProductAuthorityActionView.IsKnifeSlot(activeSlot))
@@ -292,18 +296,25 @@ namespace Shooter.Presentation.View
         public Float3 EquipmentKickMeters(bool reducedMotion) =>
             FirstPersonHandling.EquipmentRecoilKick(recoilPitch, recoilYaw, ads, reducedMotion);
 
-        // Exact solution of x'' + 12x' + 40x = 0. Frame rate and pause do not
-        // change the spring energy; large frame gaps decay rather than exploding.
-        private static void IntegrateSpring(ref float position, ref float velocity, float dt)
+        /// <summary>Viewmodel kick spring: peak ~31 ms after a shot, ~85% settled within one 600 RPM interval.</summary>
+        public const float KickDamping = 18f;
+        public const float KickFrequency = 36f;
+        /// <summary>Visual muzzle-rise at the kick peak per degree of the weapon's authoritative recoil pitch.</summary>
+        public const float KickPeakRadiansPerRecoilDegree = 0.16f;
+        /// <summary>Visual sideways kick at the peak per degree of the weapon's yaw half-range.</summary>
+        public const float KickYawRadiansPerRecoilDegree = 0.30f;
+
+        /// <summary>Velocity impulses (rad/s) for one shot of <paramref name="profile"/>; zero for recoil-less weapons.</summary>
+        public static (float pitch, float yaw) ShotKickImpulse(in WeaponVisualProfile profile)
         {
-            double decay = Math.Exp(-6d * dt);
-            double cosine = Math.Cos(2d * dt);
-            double sine = Math.Sin(2d * dt);
-            float initialPosition = position;
-            float initialVelocity = velocity;
-            position = (float)(decay * (initialPosition * cosine + (initialVelocity + 6d * initialPosition) * sine / 2d));
-            velocity = (float)(decay * (initialVelocity * cosine - (6d * initialVelocity + 40d * initialPosition) * sine / 2d));
+            float peak = DampedSpring.FirstPeakPerUnitVelocity(KickDamping, KickFrequency);
+            return (profile.RecoilPitchDegrees * KickPeakRadiansPerRecoilDegree / peak,
+                profile.RecoilYawHalfDegrees * KickYawRadiansPerRecoilDegree / peak);
         }
+
+        // Frame-rate independent exact spring solution (see DampedSpring).
+        private static void IntegrateSpring(ref float position, ref float velocity, float dt) =>
+            DampedSpring.Step(ref position, ref velocity, dt, KickDamping, KickFrequency);
 
         private static float MoveTowards(float current, float target, float maxDelta)
         {

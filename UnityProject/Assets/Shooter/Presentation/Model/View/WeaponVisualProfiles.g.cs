@@ -18,31 +18,36 @@ namespace Shooter.Presentation.View
                 new DefinitionId("weapons/rifle"), WeaponVisualFamily.PrimaryGun, "rifle",
                 WeaponOpticMode.ScopedPip, hasMagazineCycle: true, shotVoice: SynthVoiceKind.RifleShot, killFeedGlyph: KillFeedWeapon.Rifle,
                 nearFieldScale: 1.12f, nearFieldHipBias: new Float3(0.08f, -0.01f, -0.1f),
-                hipRotationDegrees: new Float3(0f, -12f, -5f), cycleTravelMeters: 0.07f, displayLabel: "Rifle", muzzleFx: "rifle"),
+                hipRotationDegrees: new Float3(0f, -12f, -5f), cycleTravelMeters: 0.07f, displayLabel: "Rifle", muzzleFx: "rifle",
+                recoilPitchDegrees: 0.35f, recoilYawHalfDegrees: 0.1f),
             // Content/Weapons/rifle-carbine.weapon.json
             new WeaponVisualProfile(
                 new DefinitionId("weapons/rifle-carbine"), WeaponVisualFamily.PrimaryGun, "rifle-carbine",
                 WeaponOpticMode.ScopedPip, hasMagazineCycle: true, shotVoice: SynthVoiceKind.RifleShot, killFeedGlyph: KillFeedWeapon.Carbine,
                 nearFieldScale: 1.1f, nearFieldHipBias: new Float3(0.08f, -0.01f, -0.09f),
-                hipRotationDegrees: new Float3(0f, -11f, -4f), cycleTravelMeters: 0.06f, displayLabel: "Carbine", muzzleFx: "carbine"),
+                hipRotationDegrees: new Float3(0f, -11f, -4f), cycleTravelMeters: 0.06f, displayLabel: "Carbine", muzzleFx: "carbine",
+                recoilPitchDegrees: 0.40f, recoilYawHalfDegrees: 0.12f),
             // Content/Weapons/pistol.weapon.json
             new WeaponVisualProfile(
                 new DefinitionId("weapons/pistol"), WeaponVisualFamily.Sidearm, "pistol",
                 WeaponOpticMode.Irons, hasMagazineCycle: true, shotVoice: SynthVoiceKind.PistolShot, killFeedGlyph: KillFeedWeapon.Pistol,
                 nearFieldScale: 1.15f, nearFieldHipBias: new Float3(0.08f, -0.085f, 0.11f),
-                hipRotationDegrees: new Float3(0f, -3f, -2f), cycleTravelMeters: 0.038f, displayLabel: "Sidearm", muzzleFx: "pistol"),
+                hipRotationDegrees: new Float3(0f, -3f, -2f), cycleTravelMeters: 0.038f, displayLabel: "Sidearm", muzzleFx: "pistol",
+                recoilPitchDegrees: 0.55f, recoilYawHalfDegrees: 0.15f),
             // Content/Weapons/knife.weapon.json
             new WeaponVisualProfile(
                 new DefinitionId("weapons/knife"), WeaponVisualFamily.Melee, "knife",
                 WeaponOpticMode.None, hasMagazineCycle: false, shotVoice: SynthVoiceKind.KnifeSwing, killFeedGlyph: KillFeedWeapon.Knife,
                 nearFieldScale: 1.08f, nearFieldHipBias: new Float3(0.1f, -0.1f, 0.16f),
-                hipRotationDegrees: new Float3(0f, -3f, -2f), cycleTravelMeters: 0f, displayLabel: "Knife", muzzleFx: "none"),
+                hipRotationDegrees: new Float3(0f, -3f, -2f), cycleTravelMeters: 0f, displayLabel: "Knife", muzzleFx: "none",
+                recoilPitchDegrees: 0f, recoilYawHalfDegrees: 0f),
             // Content/Weapons/grenade.weapon.json
             new WeaponVisualProfile(
                 new DefinitionId("weapons/grenade"), WeaponVisualFamily.Throwable, "grenade",
                 WeaponOpticMode.None, hasMagazineCycle: false, shotVoice: SynthVoiceKind.GrenadeThrow, killFeedGlyph: KillFeedWeapon.Grenade,
                 nearFieldScale: 1.08f, nearFieldHipBias: new Float3(0.09f, -0.09f, 0.14f),
-                hipRotationDegrees: new Float3(0f, -3f, -2f), cycleTravelMeters: 0f, displayLabel: "Grenade", muzzleFx: "none")
+                hipRotationDegrees: new Float3(0f, -3f, -2f), cycleTravelMeters: 0f, displayLabel: "Grenade", muzzleFx: "none",
+                recoilPitchDegrees: 0f, recoilYawHalfDegrees: 0f)
         };
     }
 }

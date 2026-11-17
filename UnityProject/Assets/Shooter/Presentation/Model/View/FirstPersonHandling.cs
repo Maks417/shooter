@@ -205,11 +205,13 @@ namespace Shooter.Presentation.View
             float hip = 1f - a;
             float pitch = recoilPitch;
             float yaw = recoilYaw;
-            // ~1.4× prior hip kick so rifle fire reads as noticeable rearward punch (ADS still Z-only).
+            // The per-shot spring peaks at a few degrees, so the rearward punch carries most of the kick: ~1.7 cm
+            // for the rifle at the peak. ADS keeps only Z (plus a trace of Y) so the sight stays on the camera ray;
+            // the camera recoil layer supplies the visible climb there.
             return new Float3(
-                yaw * 0.0091f * hip,
-                pitch * 0.0063f * (0.2f + 0.8f * hip),
-                -Math.Abs(pitch) * 0.020f - Math.Abs(yaw) * 0.005f);
+                yaw * 0.06f * hip,
+                pitch * 0.05f * (0.2f + 0.8f * hip),
+                -Math.Abs(pitch) * 0.30f - Math.Abs(yaw) * 0.04f);
         }
 
         /// <summary>Rotational recoil fades with ADS so optic alignment is not desynced.</summary>

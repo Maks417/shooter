@@ -42,6 +42,10 @@ namespace Shooter.Presentation.View
         public float CycleTravelMeters { get; }
         public string DisplayLabel { get; }
         public string MuzzleFx { get; }
+        /// <summary>Authoritative per-shot muzzle climb (degrees) copied from the weapon definition file.</summary>
+        public float RecoilPitchDegrees { get; }
+        /// <summary>Authoritative per-shot horizontal half-range (degrees) copied from the weapon definition file.</summary>
+        public float RecoilYawHalfDegrees { get; }
 
         public WeaponVisualProfile(
             DefinitionId definitionId,
@@ -55,7 +59,8 @@ namespace Shooter.Presentation.View
             Float3 nearFieldHipBias,
             Float3 hipRotationDegrees,
             float cycleTravelMeters,
-            string displayLabel, string muzzleFx = "rifle")
+            string displayLabel, string muzzleFx = "rifle",
+            float recoilPitchDegrees = 0f, float recoilYawHalfDegrees = 0f)
         {
             if (!definitionId.IsValid) throw new ArgumentException("Definition id required.", nameof(definitionId));
             if (string.IsNullOrEmpty(meshAssetKey)) throw new ArgumentException("Mesh asset key required.", nameof(meshAssetKey));
@@ -74,6 +79,10 @@ namespace Shooter.Presentation.View
             DisplayLabel = displayLabel ?? string.Empty;
             if(muzzleFx!="rifle"&&muzzleFx!="pistol"&&muzzleFx!="carbine"&&muzzleFx!="none")throw new ArgumentException("Unknown muzzle FX profile.");
             MuzzleFx=muzzleFx;
+            if (!(recoilPitchDegrees >= 0f && recoilPitchDegrees <= 45f)) throw new ArgumentOutOfRangeException(nameof(recoilPitchDegrees));
+            if (!(recoilYawHalfDegrees >= 0f && recoilYawHalfDegrees <= 45f)) throw new ArgumentOutOfRangeException(nameof(recoilYawHalfDegrees));
+            RecoilPitchDegrees = recoilPitchDegrees;
+            RecoilYawHalfDegrees = recoilYawHalfDegrees;
         }
     }
 

@@ -346,7 +346,9 @@ def render_profiles(weapons) -> str:
             "                nearFieldScale: " + f(w["nearFieldScale"]) + ", nearFieldHipBias: " + float3(w["nearFieldHipBias"])
             + ",\n"
             "                hipRotationDegrees: " + float3(w["hipRotationDegrees"]) + ", cycleTravelMeters: "
-            + f(w["cycleTravelMeters"]) + ", displayLabel: \"" + w["label"] + "\", muzzleFx: \"" + w["muzzleFx"] + "\")")
+            + f(w["cycleTravelMeters"]) + ", displayLabel: \"" + w["label"] + "\", muzzleFx: \"" + w["muzzleFx"] + "\",\n"
+            "                recoilPitchDegrees: " + f(w["combat"]["recoilPitchDegrees"]) + ", recoilYawHalfDegrees: "
+            + f(w["combat"]["recoilYawHalfDegrees"]) + ")")
     return (HEADER + "#nullable enable\nusing Shooter.Contracts;\nusing Shooter.Presentation.Audio;\n"
             "using Shooter.Presentation.Hud;\n\nnamespace Shooter.Presentation.View\n{\n"
             "    public static partial class WeaponVisualProfiles\n    {\n"

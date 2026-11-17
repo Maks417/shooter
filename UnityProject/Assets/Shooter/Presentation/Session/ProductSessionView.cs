@@ -41,6 +41,7 @@ namespace Shooter.Presentation.Session
         private readonly AnalyticFxPool analyticFxPool = new AnalyticFxPool();
         private readonly CosmeticGrenadeFlight grenadeFlight = new CosmeticGrenadeFlight();
         private readonly FirstPersonCameraBob cameraBob = new FirstPersonCameraBob();
+        private readonly FirstPersonCameraRecoil cameraRecoil = new FirstPersonCameraRecoil();
         private CosmeticGrenadePresenter? grenadePresenter;
         private readonly List<ActorLifecycleState> footstepScratch = new List<ActorLifecycleState>(GameContractVersion.MaxParticipants);
         private readonly HashSet<string> accessibilityCueKeys = new HashSet<string>(System.StringComparer.Ordinal);
@@ -488,6 +489,7 @@ namespace Shooter.Presentation.Session
             ammoScoreUntil = 0f;
             scoreAwardDrain.Clear();
             cameraBob.Reset();
+            cameraRecoil.Reset();
             hitMarkerUntil = 0f;
             damageFlashUntil = 0f;
             damagePulseUntil = 0f;
@@ -538,84 +540,93 @@ namespace Shooter.Presentation.Session
                 }
             }
 
-            bool acceptsGameplayInput = false;
-            bool aimHeld = false;
-            Float3 listenerFeet = default;
-            bool hasListener = false;
-            if (session.Lifecycle != null && session.Lifecycle.TryGetActorState(session.HumanEntityId, out var human))
-            {
-                if (!human.EntityId.Equals(inputLifeEntity))
-                {
-                    inputLifeEntity = human.EntityId;
-                    input.ResetForLife(human.AimYaw, human.AimPitch, human.ActiveWeaponSlot);
-                }
-                acceptsGameplayInput = session.Phase == GameMatchPhase.Playing
-                    && session.PauseState == SessionPauseState.Running
-                    && session.PreMatchTicksRemaining <= 0 // pre-match countdown: no movement/fire/look
-                    && human.Alive
-                    && cursorLocked
-                    && Application.isFocused;
-                input.CaptureFrame(acceptsGameplayInput);
-                aimHeld = acceptsGameplayInput && input.AimHeld;
-                listenerFeet = human.Feet;
-                hasListener = true;
-                if (camera != null)
-                {
-                    bool sliding = false;
-                    float eye = human.Alive ? 1.65f : 0.4f;
-                    if (session.TryGetMovementView(human.EntityId, out var movement))
-                    {
-                        eye = movement.EyeHeight;
-                        sliding = movement.Sliding;
-                    }
-                    if (!human.EntityId.Equals(cameraBobLife) || !human.Alive)
-                    {
-                        cameraBob.Reset();
-                        cameraBobLife = human.EntityId;
-                    }
-                    float dtBob = Time.unscaledDeltaTime;
-                    if (session.PauseState == SessionPauseState.Running && human.Alive)
-                        cameraBob.Step(human.Feet, dtBob, sliding);
-                    else if (!human.Alive)
-                        cameraBob.Reset();
-
-                    // Prefer last Sync's equip-gated ADS so FOV/bob track the optic raise, not a binary click.
-                    float adsBlend = actors != null ? actors.LocalAdsPresentationBlend : (aimHeld ? 1f : 0f);
-                    Float3 bobLocal = cameraBob.LocalOffsetMeters(adsBlend, reducedCameraMotion, human.Alive);
-                    float roll = cameraBob.RollDegrees(adsBlend, reducedCameraMotion, human.Alive);
-                    float shake = FirstPersonHitFeedback.DamageShakeMeters(
-                        damageFlashUntil - Time.unscaledTime, reducedCameraMotion, reducedFlash);
-                    if (shake > 0f && adsBlend < 0.95f)
-                    {
-                        // Presentation-only translation; does not mutate aim input / authority pose.
-                        bobLocal = new Float3(bobLocal.X + shake * 0.35f, bobLocal.Y + shake, bobLocal.Z);
-                    }
-
-                    if(!reducedCameraMotion&&!reducedFlash&&explosionShakeUntil>Time.unscaledTime)
-                    {
-                        float strength=(explosionShakeUntil-Time.unscaledTime)*.045f;
-                        bobLocal=new Float3(bobLocal.X+Mathf.Sin(Time.unscaledTime*47)*strength,bobLocal.Y+Mathf.Cos(Time.unscaledTime*39)*strength,bobLocal.Z);
-                    }
-                    float cameraYaw = acceptsGameplayInput ? input.Yaw : human.AimYaw;
-                    float cameraPitch = acceptsGameplayInput ? input.Pitch : human.AimPitch;
-                    var rotation = Quaternion.Euler(cameraPitch * Mathf.Rad2Deg, cameraYaw * Mathf.Rad2Deg, roll);
-                    camera.transform.rotation = rotation;
-                    var basePos = new Vector3(human.Feet.X, human.Feet.Y + eye, human.Feet.Z);
-                    camera.transform.position = basePos + rotation * new Vector3(bobLocal.X, bobLocal.Y, bobLocal.Z);
-                    ApplyPresentationFov(
-                        adsBlend,
-                        actors != null ? actors.LocalVisibleWeaponSlot : human.ActiveWeaponSlot,
-                        actors != null ? actors.LocalVisibleWeaponId : human.ActiveWeaponDefinition);
-                }
-            }
-            else input.CaptureFrame(false);
-
+            // Lease this frame's combat events before the camera so local recoil lands on the same frame as the
+            // shot report and viewmodel kick.
             IReadOnlyList<CombatEvent>? combatEvents = null;
             EventLease? combatLease = null;
             try
             {
                 combatLease = session.TryLeaseCombatEvents();
                 if (combatLease != null) combatEvents = combatLease.Events;
+                bool acceptsGameplayInput = false;
+                bool aimHeld = false;
+                Float3 listenerFeet = default;
+                bool hasListener = false;
+                if (session.Lifecycle != null && session.Lifecycle.TryGetActorState(session.HumanEntityId, out var human))
+                {
+                    if (!human.EntityId.Equals(inputLifeEntity))
+                    {
+                        inputLifeEntity = human.EntityId;
+                        input.ResetForLife(human.AimYaw, human.AimPitch, human.ActiveWeaponSlot);
+                    }
+                    acceptsGameplayInput = session.Phase == GameMatchPhase.Playing
+                        && session.PauseState == SessionPauseState.Running
+                        && session.PreMatchTicksRemaining <= 0 // pre-match countdown: no movement/fire/look
+                        && human.Alive
+                        && cursorLocked
+                        && Application.isFocused;
+                    input.CaptureFrame(acceptsGameplayInput);
+                    aimHeld = acceptsGameplayInput && input.AimHeld;
+                    listenerFeet = human.Feet;
+                    hasListener = true;
+                    if (camera != null)
+                    {
+                        bool sliding = false;
+                        float eye = human.Alive ? 1.65f : 0.4f;
+                        if (session.TryGetMovementView(human.EntityId, out var movement))
+                        {
+                            eye = movement.EyeHeight;
+                            sliding = movement.Sliding;
+                        }
+                        if (!human.EntityId.Equals(cameraBobLife) || !human.Alive)
+                        {
+                            cameraBob.Reset();
+                            cameraRecoil.Reset();
+                            cameraBobLife = human.EntityId;
+                        }
+                        float dtBob = Time.unscaledDeltaTime;
+                        if (session.PauseState == SessionPauseState.Running && human.Alive)
+                            cameraBob.Step(human.Feet, dtBob, sliding);
+                        else if (!human.Alive)
+                            cameraBob.Reset();
+
+                        // Prefer last Sync's equip-gated ADS so FOV/bob track the optic raise, not a binary click.
+                        float adsBlend = actors != null ? actors.LocalAdsPresentationBlend : (aimHeld ? 1f : 0f);
+                        Float3 bobLocal = cameraBob.LocalOffsetMeters(adsBlend, reducedCameraMotion, human.Alive);
+                        float roll = cameraBob.RollDegrees(adsBlend, reducedCameraMotion, human.Alive);
+                        float shake = FirstPersonHitFeedback.DamageShakeMeters(
+                            damageFlashUntil - Time.unscaledTime, reducedCameraMotion, reducedFlash);
+                        if (shake > 0f && adsBlend < 0.95f)
+                        {
+                            // Presentation-only translation; does not mutate aim input / authority pose.
+                            bobLocal = new Float3(bobLocal.X + shake * 0.35f, bobLocal.Y + shake, bobLocal.Z);
+                        }
+
+                        if(!reducedCameraMotion&&!reducedFlash&&explosionShakeUntil>Time.unscaledTime)
+                        {
+                            float strength=(explosionShakeUntil-Time.unscaledTime)*.045f;
+                            bobLocal=new Float3(bobLocal.X+Mathf.Sin(Time.unscaledTime*47)*strength,bobLocal.Y+Mathf.Cos(Time.unscaledTime*39)*strength,bobLocal.Z);
+                        }
+                        float cameraYaw = acceptsGameplayInput ? input.Yaw : human.AimYaw;
+                        float cameraPitch = acceptsGameplayInput ? input.Pitch : human.AimPitch;
+                        // Presentation-only weapon recoil (per-weapon definition): mirrors the authoritative climb the
+                        // simulation already applies to shots, plus a short per-shot punch. Never feeds aim input.
+                        bool recoilRunning = session.PauseState == SessionPauseState.Running && human.Alive;
+                        cameraRecoil.Step(combatEvents, human.EntityId, recoilRunning ? Time.unscaledDeltaTime : 0f, reducedCameraMotion);
+                        cameraYaw += cameraRecoil.YawRadians;
+                        cameraPitch += cameraRecoil.PitchRadians;
+                        var rotation = Quaternion.Euler(cameraPitch * Mathf.Rad2Deg, cameraYaw * Mathf.Rad2Deg, roll);
+                        camera.transform.rotation = rotation;
+                        var basePos = new Vector3(human.Feet.X, human.Feet.Y + eye, human.Feet.Z);
+                        camera.transform.position = basePos + rotation * new Vector3(bobLocal.X, bobLocal.Y, bobLocal.Z);
+                        ApplyPresentationFov(
+                            adsBlend,
+                            actors != null ? actors.LocalVisibleWeaponSlot : human.ActiveWeaponSlot,
+                            actors != null ? actors.LocalVisibleWeaponId : human.ActiveWeaponDefinition);
+                    }
+                }
+                else input.CaptureFrame(false);
+
                 if (shellOwned && combatEvents != null) ObserveEliminations(combatEvents);
                 if (shellOwned) ObserveLocalScoreAwards();
 

@@ -1486,3 +1486,18 @@ Decision: an enemy kill whose fatal `DamageApplied` from the killer to the victi
 Consequences: personal Score and results ordering can differ from earlier builds for the same play; team outcome cannot.
 
 Rollback: set the bonus to 0 or revert this change.
+
+## ADR-098 — Accepted: per-weapon first-person recoil presentation (camera climb + per-shot kick)
+
+Date 2026-11-17. Context: owner playtest reported that the rifle's firing animation did not match its shot sound, and that recoil showed neither on the weapon nor on the camera while aiming. Simulation already deflected every shot by the authoritative recoil offset (`AuthoritativeRecoil`, up to 5° climb), but the camera never showed it, and a scoped ADS hides the rifle mesh, so the scope had no recoil feedback at all. The viewmodel spring (`x'' + 12x' + 40x`, about 1 Hz) used fixed slot impulses. At 600 RPM it piled up into a slow drift instead of one kick per report.
+
+Decision:
+- **Recoil stays weapon data.** `Tools/generate_weapon_catalog.py` copies each definition file's `combat.recoilPitchDegrees` / `recoilYawHalfDegrees` into `WeaponVisualProfile.RecoilPitchDegrees` / `RecoilYawHalfDegrees`, the same numbers the Simulation catalog uses. A new weapon gets its own camera and viewmodel recoil from its `.weapon.json` alone; presentation has no slot or id switches for recoil.
+- **Camera recoil** (`Presentation/Model/View/FirstPersonCameraRecoil`, applied in `ProductSessionView`): the *climb* mirrors the authoritative pitch tick for tick (per-tick decay at 8/s, the extra decay inside `ApplyImpulse`, minus the weapon's pitch, clamp 5°). The screen centre and the scope reticle then stay on where rounds go. A cosmetic *punch* spring (peak ≈ 0.9 × one shot's climb, about 31 ms after the event, about 85% settled by 100 ms) gives every report a visible kick, ADS and scope included. Reduced camera motion drops the punch and keeps the climb. Authoritative yaw is seeded in Simulation, so it is not mirrored; only a small alternating cosmetic yaw punch is shown. The values are added to the camera rotation only and never reach aim input or authority. Combat events are now leased before the camera is posed, so the kick lands on the same frame as the shot audio.
+- **Viewmodel kick** (`ProceduralViewModel`): each local ShotAccepted adds an impulse sized from the firing weapon's profile (`ShotKickImpulse`, peak 0.16 rad per recoil degree) to a stiff exact spring (`DampedSpring`, damping 18, frequency 36: peak about 31 ms, about 85% settled by 100 ms), so automatic fire pulses once per round. `EquipmentRecoilKick` scales up the rearward punch (about 1.7 cm at the rifle peak), which remains at full ADS. The ADS rotation and lateral offsets stay suppressed for sight alignment.
+
+Unchanged: C0/Game-v1 contracts, Simulation recoil and hit results, weapon definition schema (no new fields), audio.
+
+Validation: `WeaponRecoilPresentationTests` (profile/catalog recoil parity, camera climb equals `AuthoritativeRecoil` per tick for rifle, carbine and pistol, punch timing, reduced motion, remote/knife/duplicate filtering, per-weapon kick ordering, and per-shot pulsing under automatic fire). On 2026-11-17 Simulation 404, Game 102 and Generation 520 passed, and source provenance and `generate_weapon_catalog.py --check` passed. Unity EditMode, a client build and an in-game feel check are Pending.
+
+Rollback: revert this change. The generated profile fields are optional constructor parameters.

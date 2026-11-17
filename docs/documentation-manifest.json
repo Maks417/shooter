@@ -58,7 +58,7 @@
     "content-schemas/visual-decals.schema.json": "03c1ca9158e69cdff8eb0340bdbb9fc1d92bdf643b7b615a68a35fb06ba6a80d",
     "content-schemas/visual-decals.valid.json": "c74882fd0d838c0a71f17a1d0c7564fec0794aa29cb6ba641131007966c83049",
     "contract-details.md": "66a72e60c88b036c2c1a8d048da714293859e86ee0654b1a48dff6051df46383",
-    "decisions.md": "85bdfa52401c8e23993afe1ca1e54af33aade147aeb8788c414e9d34e1a4762b",
+    "decisions.md": "abcddb92b9466ecced37e91617b6fefb51047c9dbfa67af546071de44731e44a",
     "design-milestones.md": "40823b7547624862d15a454f3f7113eb78e2be984d1de7b3f663a3d843206ab4",
     "deterministic-format.md": "7f3a9be8b9c128ea2803064b649f3a23f0051b1501109d2032b6f2bc6134c7d1",
     "domain-model.md": "59cdc7dcc1f4c7c72cac974ad1a7f7246113f1d159985e4f03727b5e01744492",
