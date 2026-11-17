@@ -1565,3 +1565,42 @@ Validation:
 - On 2026-11-17: Simulation 434, Game 103, Generation 520 and Unity EditMode 88/88 passed. Source provenance, `generate_weapon_catalog.py --check` (generator tests 23) and the asmdef graph also passed. A client build, the CaptureHandling render and the in-game feel review are Pending.
 
 Rollback: revert this change. The new profile fields and `LocalMovementView` fields are optional constructor parameters with neutral defaults.
+
+## ADR-100 — Accepted: third-person directional gait, airborne pose and bot hops/slides
+
+Date 2026-11-17. Context: owner playtest. When bots strafe, their legs float instead of stepping, the same happens in jumps, and jumps and slides either have no third-person animation or are never seen. Root causes:
+- `SoldierMotion` placed every foot target along the aim heading. Bots strafe at 90 degrees to their aim (`CombatAiDirector.EngageMove`), so planted anchors and swing targets trailed sideways by up to a full stride cycle and the leg IK clamped at 98% reach (0.89 m foot-to-root measured on a 3 m/s strafe).
+- There was no airborne pose. `ProductActorPresentation.PoseAvatar` ignored `Grounded` and vertical speed for third person, so the gait kept cycling in the air and sampled ground under elevated feet.
+- The slide dive faced the aim, not the travel, and switched 0/1 without a blend.
+- Bots jumped only when stuck (never in combat) and slid only in SeekCover/Reposition after 30 sprint ticks, with a 600-tick cooldown and 5 m of straight path, so players almost never saw either.
+
+The owner approved bots jumping and sliding more often, and the `feature-content-lock.json` refreeze for the motion generator.
+
+Decision:
+- **Motion identity `soldier.motion.v7.locomotion`** (the ADR-095 shooting posture plus the items below; `ShootingPosture.Version`). The v5 baseline solver keeps `soldier.motion.spike.v5`; new `SoldierMotionInput` fields default to the previous behaviour (no heading means travel along aim; airborne 0; land -1).
+- **Directional gait.** `SoldierMotionInput.MoveHeadingRadians` (world travel yaw). The stride offset of every foot target runs along the travel heading while the torso, weapon and knees keep the aim. The stance-width axis turns from the body blade toward the travel perpendicular as the actor side-steps (sign fixed to the body's right, widened up to 40%), so strafing feet shuffle staggered instead of crossing. Side-step/backpedal (travel more than about 60 degrees off aim, with hysteresis) uses a 1.0/1.6 m walk/run cycle and replans contacts on the mode change, like walk/run.
+- **Reversals.** A travel turn of more than 120 degrees (a bot strafe flip) mirrors the gait phase: the planted foot's anchor becomes the leading contact for the new direction, and each swinging foot runs back along its own arc. The swing is continuous because the smoothing curve is symmetric. A turn of 60-120 degrees re-aims a swinging foot that is less than half way, with the swing start solved so the foot does not jump. Both stay inside the two-ground-query budget.
+- **Airborne.** `Airborne` 0..1 selects a tuck pose with no ground samples. Pelvis at the gait's nominal height minus 4 cm; feet lift up to 0.30 m with a 0.14 m front/back split along travel while rising, and reach back down as the fall speed approaches 4 m/s. Gait contacts are released so feet re-plant on landing. Gait and airborne share one torso and upper-body solve.
+- **Landing.** `Land` 0..1 dips the gait pelvis by `0.07 sin(pi land)` m; the leg IK supplies the knee bend.
+- **Slide.** Hips, legs and the lead/trail feet use the travel heading; the spine twists back to the aim within the 45-degree torso budget, so the weapon stays on target.
+- **Presentation.** `LocalMovementView` gains `VelocityXMetersPerSecond`/`VelocityZMetersPerSecond` (optional, not a frozen contract), copied from the motor in `OfflineGameSession.TryGetMovementView`. The pure `Presentation/Model/View/ThirdPersonLocomotionBlend` turns copied authority movement into the cosmetic inputs:
+  - the heading follows velocity above 0.3 m/s, is held through slow frames (a strafe flip) and released below 0.05 m/s;
+  - airborne when ungrounded and rising faster than 0.5 m/s, or ungrounded for more than 0.10 s (stairs and step edges do not flicker), blended over 0.08 s;
+  - a 0.20 s landing after at least 0.15 s of airtime;
+  - the slide eases in over 0.10 s and out over 0.15 s.
+- **Bots** (`CombatAiDirector`, `AiTuning`, deterministic from id and tick):
+  - Slides: also in Investigate and Search; 18 sprint ticks (was 30); 4 m straight path (was 5); 300-tick cooldown plus the `(id % 5) * 60` jitter (was 600). The motor's own slide gates are unchanged.
+  - Traversal hop: while travelling (not engaging, firing, reloading or crouched), every 6 ticks a knee-height ray (0.35 m, above the 0.25 m motor step) looks 0.9 m along the move direction. A hit with a clear ray at 0.75 m (below the ~0.6 m jump apex plus the body) presses jump, with the existing 90-tick jump cooldown. Counter `TraversalJumps`.
+  - Combat hop: on a strafe reversal whose new side is safe, at close or mid range, 25% chance (`AiNoise.SaltHop`), never while firing, in a burst, reloading, crouched or holding still; 180-tick hop cooldown and the jump cooldown. Counter `CombatHops`. The AI has no tightness readout, so the motor still refuses a jump below its tightness cost.
+
+Unchanged: C0/Game-v1 contracts, motor, hit volumes and gameplay pose, simulation timing, skeleton and sockets, first-person presentation, map packages.
+
+Validation:
+- Generation `SoldierMotionTests`: strafe (max foot-to-root 0.33 m versus 0.89 m on the aim-heading stride; plant error and slide below 1e-6 m), backpedal, repeated strafe reversals with no contact reset, airborne tuck and reach with a ground sampler that always fails, landing dip, slide along travel with the weapon on aim, input validation. `SoldierClearanceTests` asserts the v7 identity on the unchanged ADR-095 gate.
+- Simulation `ThirdPersonLocomotionBlendTests` (heading hold and release, jump and landing, stairs flicker, slide easing, reset) and `BotJumpSlideTests` (low-obstacle hop, tall walls ignored, deterministic combat hops with cooldown and no fire/crouch, none at long range, sooner and repeated slides).
+- Game test: the movement view velocity matches the copied horizontal speed.
+- `feature-content-lock.json` refrozen (source hashes, `motionVersion`).
+
+Pending: client build and the owner's in-game look at bot strafes, hops and slides; P05 visual acceptance stays FAIL pending a named review.
+
+Rollback: revert this change. That restores v6, the aim-heading stride and the previous bot tuning; the new input and view fields are optional with neutral defaults.

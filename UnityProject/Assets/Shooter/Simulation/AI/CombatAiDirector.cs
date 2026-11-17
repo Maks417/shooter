@@ -53,11 +53,12 @@ namespace Shooter.Simulation.AI
         /// <summary>Stuck ticks (of StuckTicksThreshold) before the first jump attempt: 0.75 s.</summary>
         public const uint JumpStuckTicks = 45;
         public const uint JumpCooldownTicks = 90;
-        /// <summary>Continuous sprint ticks before a slide may be requested (motor needs previous SprintActive and speed).</summary>
-        public const uint SlideMinSprintTicks = 30;
-        public const float SlideMinStraightMeters = 5f;
+        /// <summary>Continuous sprint ticks before a slide may be requested (motor needs previous SprintActive and speed).
+        /// ADR-100 lowered it from 30 so slides are actually seen.</summary>
+        public const uint SlideMinSprintTicks = 18;
+        public const float SlideMinStraightMeters = 4f;
         public const float SlideRequestSpeed = MotorConfig.SlideMinEntrySpeed + 0.3f;
-        public const uint SlideBotCooldownBaseTicks = 600;
+        public const uint SlideBotCooldownBaseTicks = 300;
         public const uint SlideBotCooldownSpreadTicks = 60;
         /// <summary>Minimum forward component of the move axes for sprint.</summary>
         public const float SprintMinForward = 0.5f;
@@ -393,6 +394,8 @@ namespace Shooter.Simulation.AI
             board.NextJumpTick = 0;
             board.NextSlideTick = 0;
             board.SlideIntent = false;
+            board.NextHopTick = 0;
+            board.StrafeFlippedThisTick = false;
         }
 
         private static void ResetCombat(AiBlackboard board)
@@ -1424,6 +1427,7 @@ namespace Shooter.Simulation.AI
             // 2. Where to move (world XZ), then into command space relative to the new aim yaw.
             float wx = 0, wz = 0;
             bool crouch = false, holdStill = false;
+            board.StrafeFlippedThisTick = false;
             var range = FireDiscipline.Classify(board.TargetDistance);
             bool crouchShooter = board.Self.Value % AiTuning.CrouchShooterModulo == 0;
             if (engaging && board.TargetDistance < AiTuning.AdvanceRange)
@@ -1554,10 +1558,32 @@ namespace Shooter.Simulation.AI
                 if (!engaging && !firingOrReloading) buttons |= InputButtons.JumpPressed;
                 board.JumpPending = false;
             }
+            // ADR-100 traversal hop: a low obstacle (above the motor step, below jump clearance) right ahead on the route.
+            if (!engaging && !firingOrReloading && moving && !crouch && tick >= board.NextJumpTick
+                && (buttons & InputButtons.JumpPressed) == 0
+                && unchecked(tick + (uint)board.Self.Value) % AiTuning.VaultProbeIntervalTicks == 0
+                && LowObstacleAhead(board, wx, wz))
+            {
+                buttons |= InputButtons.JumpPressed;
+                board.NextJumpTick = tick + JumpCooldownTicks;
+                counters.TraversalJumps++;
+            }
+            // ADR-100 combat hop: sometimes hop as the strafe reverses, never mid-burst, reloading or crouch-shooting.
+            if (engaging && board.StrafeFlippedThisTick && !holdStill && !crouch && !firingOrReloading
+                && range != EngageRange.Long && !FireDiscipline.InBurst(board, tick)
+                && tick >= board.NextHopTick && tick >= board.NextJumpTick
+                && AiNoise.Unit(board.Self.Value, tick, AiNoise.SaltHop) < AiTuning.CombatHopChance)
+            {
+                buttons |= InputButtons.JumpPressed;
+                board.NextHopTick = tick + AiTuning.CombatHopCooldownTicks;
+                board.NextJumpTick = tick + JumpCooldownTicks;
+                counters.CombatHops++;
+            }
 
-            // 7. Occasional slide when sprinting toward cover / repositioning with a long straight leg left.
+            // 7. Occasional slide when sprinting through open travel with a long straight leg left (ADR-100 widened).
             if (sprint && (buttons & InputButtons.JumpPressed) == 0
-                && (board.State == AiState.SeekCover || board.State == AiState.Reposition)
+                && (board.State == AiState.SeekCover || board.State == AiState.Reposition
+                    || board.State == AiState.Investigate || board.State == AiState.Search)
                 && board.SprintTicks >= SlideMinSprintTicks
                 && board.SpeedMps >= SlideRequestSpeed
                 && tick >= board.NextSlideTick
@@ -1658,9 +1684,11 @@ namespace Shooter.Simulation.AI
             {
                 board.StrafeDir = -board.StrafeDir;
                 board.StrafeFlipTick = tick + NextStrafeInterval(board);
+                board.StrafeFlippedThisTick = true;
                 // If the other side is also unsafe, cancel lateral strafe this tick (back-off may still apply).
                 if (!StrafeFootingSafe(board, rx, rz, board.StrafeDir))
                 {
+                    board.StrafeFlippedThisTick = false;
                     wx = 0; wz = 0;
                     if (board.TargetDistance < AiTuning.BackOffRange)
                     {
@@ -1708,6 +1736,23 @@ namespace Shooter.Simulation.AI
             }
             groundY = hit.Hit.Point.Y;
             return true;
+        }
+
+        /// <summary>
+        /// ADR-100: two horizontal collision rays along the move direction. Hits at knee height (above the motor step)
+        /// with clear space at hop clearance height mean a low obstacle the motor can only cross with a jump.
+        /// </summary>
+        private bool LowObstacleAhead(AiBlackboard board, float wx, float wz)
+        {
+            float len = MathF.Sqrt(wx * wx + wz * wz);
+            if (len < 1e-4f) return false;
+            var dir = new Float3(wx / len, 0f, wz / len);
+            var filter = new QueryFilter(visionMask, board.Self, false);
+            var feet = board.Feet;
+            var knee = world.Raycast(new Float3(feet.X, feet.Y + AiTuning.VaultProbeHeightMeters, feet.Z), dir, AiTuning.VaultProbeMeters, filter);
+            if (knee.Status != QueryStatus.Hit) return false;
+            var clear = world.Raycast(new Float3(feet.X, feet.Y + AiTuning.VaultClearHeightMeters, feet.Z), dir, AiTuning.VaultProbeMeters + 0.3f, filter);
+            return clear.Status != QueryStatus.Hit;
         }
 
         private uint NextStrafeInterval(AiBlackboard board) =>

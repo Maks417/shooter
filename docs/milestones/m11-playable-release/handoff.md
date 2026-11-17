@@ -590,3 +590,15 @@ Verification (all on dirty tree `2686510`; evidence under `Artifacts/`):
 New tests cover: multi-tick event lease, switch-cancel/stale reload, finished-match menu Settings, headshot 120 and AppIcon determinism.
 
 Pending / NotClaimed: owner in-game confirmation of all six fixes (music audible on menu/match/results, reload visible in every case, scope look, icon on the installed exe/shortcuts) and a new installer.
+
+## ADR-100 bot strafe, jump and slide motion — 2026-11-17
+
+Owner playtest: strafing bots' legs floated instead of stepping, jumps had no pose, and bot jumps and slides were rarely or never seen. [ADR-100](../../decisions.md#adr-100--accepted-third-person-directional-gait-airborne-pose-and-bot-hopsslides) adds `soldier.motion.v7.locomotion` (travel-heading strides, reversal phase mirroring, airborne tuck, landing dip, travel-aligned slide), the presentation filter `ThirdPersonLocomotionBlend`, `LocalMovementView` velocity, and bot traversal hops, combat hops and more frequent slides. The owner approved the `feature-content-lock.json` refreeze.
+
+Verification (dirty tree on `31ba0c7`; evidence under `Artifacts/`):
+
+- Generation **526/526** (`m1-procedural-feasibility/.../20261117T134608427Z-45763d51`), Simulation **443/443** (`m2-combat-harness/.../20261117T134801508Z-d3ec939d`) and Game **103/103** (`m8-runtime-composition/.../20261117T134819514Z-eee649e4`) PASS (offline; advisory PendingNetwork).
+- Unity EditMode **88/88** PASS (`m0-foundation/.../tests-editmode-20261117T134909020Z-2d073277`).
+- Source provenance (988 entries / 494 GUIDs), feature registry, docs, fixtures, contract lock and asmdef graph PASS.
+
+Pending / NotClaimed: client build and the owner's in-game look at bot strafes, hops and slides; P05 visual acceptance stays FAIL.

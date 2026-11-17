@@ -349,6 +349,117 @@ public sealed class SoldierMotionTests
         Assert.Throws<ArgumentOutOfRangeException>(()=>new SoldierMotionInput(new Float3(0,0,0),0,0,0,slide:-.1f));
         Assert.Throws<ArgumentOutOfRangeException>(()=>new SoldierMotionInput(new Float3(0,0,0),0,0,0,slide:1.1f));
     }
+
+    // ADR-100 directional gait: drive a root along a world travel heading while the aim stays at yaw 0.
+    private static (float maxError,float maxSlide,float maxReach,int resets) Travel(SoldierMotion motion,ISoldierGround ground,
+        ref Float3 root,ref double distance,float heading,float speed,int ticks,bool directional,Action<SoldierPose>? each=null)
+    {
+        float maxError=0,maxSlide=0,maxReach=0;int resets=0;
+        float dx=(float)Math.Sin(heading)*speed/60,dz=(float)Math.Cos(heading)*speed/60;
+        for(int i=0;i<ticks;i++)
+        {
+            root=new Float3(root.X+dx,0,root.Z+dz);distance+=speed/60;
+            var pose=motion.Evaluate(new SoldierMotionInput(root,0,distance,speed,moveHeadingRadians:directional?heading:float.NaN),ground);
+            maxError=Math.Max(maxError,pose.PlantTargetError);maxSlide=Math.Max(maxSlide,pose.PlantSlide);
+            foreach(int foot in new[]{17,21})
+            {
+                var f=pose.WorldPositions[foot];
+                maxReach=Math.Max(maxReach,(float)Math.Sqrt((f.X-root.X)*(f.X-root.X)+(f.Z-root.Z)*(f.Z-root.Z)));
+            }
+            if(pose.ContactsReset)resets++;
+            Assert.InRange(pose.GroundQueries,0,2);
+            each?.Invoke(pose);
+        }
+        return (maxError,maxSlide,maxReach,resets);
+    }
+    [Fact]
+    public void StrafeSideStepsKeepPlantedFeetUnderTheBodyInsteadOfTrailing()
+    {
+        float right=(float)Math.PI/2;
+        var root=new Float3(0,0,0);double distance=0;
+        var strafe=Travel(new SoldierMotion(Rifle(),new ShootingPosture()),new Ground(),ref root,ref distance,right,3.0f,240,true);
+        root=new Float3(0,0,0);distance=0;
+        var legacy=Travel(new SoldierMotion(Rifle(),new ShootingPosture()),new Ground(),ref root,ref distance,right,3.0f,240,false);
+        output.WriteLine("ADR-100 strafe maxReach="+strafe.maxReach+" plantError="+strafe.maxError+" plantSlide="+strafe.maxSlide+
+            " | aim-heading feet maxReach="+legacy.maxReach+" plantError="+legacy.maxError);
+        Assert.InRange(strafe.maxError,0,.05f);Assert.InRange(strafe.maxSlide,0,.05f);
+        Assert.InRange(strafe.maxReach,0,.7f);
+        Assert.True(legacy.maxReach>strafe.maxReach+.3f,"the old aim-heading stride trails the strafing root");
+        Assert.Equal(1,strafe.resets);
+    }
+    [Fact]
+    public void BackpedalStepsBackwardWithinReach()
+    {
+        var root=new Float3(0,0,0);double distance=0;float minZ=float.MaxValue;
+        var back=Travel(new SoldierMotion(Rifle(),new ShootingPosture()),new Ground(),ref root,ref distance,(float)Math.PI,2.5f,240,true,
+            pose=>minZ=Math.Min(minZ,Math.Min(pose.WorldPositions[17].Z,pose.WorldPositions[21].Z)));
+        Assert.InRange(back.maxError,0,.05f);Assert.InRange(back.maxReach,0,.7f);
+        Assert.True(minZ<root.Z+.3f,"feet follow the backward travel");
+    }
+    [Fact]
+    public void StrafeReversalReplansTheSwingWithoutResetOrPlantError()
+    {
+        var motion=new SoldierMotion(Rifle(),new ShootingPosture());var ground=new Ground();
+        var root=new Float3(0,0,0);double distance=0;
+        Travel(motion,ground,ref root,ref distance,(float)Math.PI/2,3f,90,true);
+        float maxError=0,maxReach=0;int resets=0;
+        for(int flip=0;flip<6;flip++)
+        {
+            float heading=flip%2==0?-(float)Math.PI/2:(float)Math.PI/2;
+            var leg=Travel(motion,ground,ref root,ref distance,heading,3f,40+flip*7,true);
+            maxError=Math.Max(maxError,leg.maxError);maxReach=Math.Max(maxReach,leg.maxReach);resets+=leg.resets;
+        }
+        output.WriteLine("ADR-100 strafe reversal maxError="+maxError+" maxReach="+maxReach+" resets="+resets);
+        Assert.Equal(0,resets);Assert.InRange(maxError,0,.05f);Assert.InRange(maxReach,0,.8f);
+    }
+    [Fact]
+    public void AirbornePoseTucksLegsWithoutGroundSamplesAndRelandsWithADip()
+    {
+        var motion=new SoldierMotion(Rifle(),new ShootingPosture());var missing=new MissingGround();var ground=new Ground();
+        var standing=motion.Evaluate(new SoldierMotionInput(new Float3(0,0,0),0,0,0),ground);
+        float standKnee=Math.Max(standing.LeftKneeFlexion,standing.RightKneeFlexion);float standPelvis=standing.WorldPositions[1].Y;
+        var air=new Float3(0,.5f,.3f);
+        var rising=motion.Evaluate(new SoldierMotionInput(air,0,.3,4,moveHeadingRadians:0,airborne:1,verticalSpeedMetersPerSecond:4),missing);
+        Assert.Equal(0,rising.GroundQueries);Assert.True(rising.ContactsReset);
+        float risingFeet=Math.Min(rising.WorldPositions[17].Y,rising.WorldPositions[21].Y)-air.Y;
+        float risingKnee=Math.Min(rising.LeftKneeFlexion,rising.RightKneeFlexion);
+        var falling=motion.Evaluate(new SoldierMotionInput(air,0,.35,4,moveHeadingRadians:0,airborne:1,verticalSpeedMetersPerSecond:-6),missing);
+        float fallingFeet=Math.Min(falling.WorldPositions[17].Y,falling.WorldPositions[21].Y)-air.Y;
+        Assert.True(risingKnee>standKnee+.5f,"rising tuck bends the knees: "+risingKnee+" vs "+standKnee);
+        Assert.True(risingFeet>.25f&&fallingFeet<risingFeet-.1f,"feet tuck up rising and reach down falling: "+risingFeet+"/"+fallingFeet);
+        for(int j=0;j<SoldierSkeleton.JointCount;j++)Assert.True(falling.WorldRotations[j].IsValid);
+        Assert.InRange(rising.RightGripError,0,.02f);
+        // Landing re-plants the gait contacts and dips the pelvis at mid phase.
+        var landed=motion.Evaluate(new SoldierMotionInput(new Float3(0,0,.4f),0,.4,0,land:.5f),ground);
+        Assert.True(landed.ContactsReset);
+        Assert.InRange(landed.WorldPositions[1].Y,standPelvis-SoldierMotion.LandDipMeters-.001f,standPelvis-SoldierMotion.LandDipMeters+.001f);
+        output.WriteLine("ADR-100 airborne knee="+risingKnee+" stand="+standKnee+" risingFeet="+risingFeet+" fallingFeet="+fallingFeet);
+    }
+    [Fact]
+    public void SlideDivesAlongTravelWhileTheChestAndWeaponStayOnAim()
+    {
+        var motion=new SoldierMotion(Rifle(),new ShootingPosture());var ground=new Ground();
+        float heading=40*(float)Math.PI/180;
+        var pose=motion.Evaluate(new SoldierMotionInput(new Float3(0,0,0),0,0,5,moveHeadingRadians:heading,slide:1),ground);
+        var lead=pose.WorldPositions[21];var trail=pose.WorldPositions[17];
+        float dx=lead.X-trail.X,dz=lead.Z-trail.Z,length=(float)Math.Sqrt(dx*dx+dz*dz);
+        float alongTravel=(dx*(float)Math.Sin(heading)+dz*(float)Math.Cos(heading))/length;
+        Assert.True(alongTravel>.95f,"feet split along the slide travel: "+alongTravel);
+        var weaponForward=Transform(new Float3(0,0,0),pose.WeaponRotation,new Float3(0,0,1));
+        Assert.InRange(weaponForward.X,-.02f,.02f);
+        var aimOnly=new SoldierMotion(Rifle(),new ShootingPosture()).Evaluate(new SoldierMotionInput(new Float3(0,0,0),0,0,5,slide:1),ground);
+        var legacy=aimOnly.WorldPositions[21];
+        Assert.InRange(legacy.X-aimOnly.WorldPositions[17].X,-.25f,.25f); // no heading: unchanged aim-aligned dive
+    }
+    [Fact]
+    public void UnsupportedLocomotionInputsReject()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(()=>new SoldierMotionInput(new Float3(0,0,0),0,0,0,airborne:1.1f));
+        Assert.Throws<ArgumentOutOfRangeException>(()=>new SoldierMotionInput(new Float3(0,0,0),0,0,0,verticalSpeedMetersPerSecond:31));
+        Assert.Throws<ArgumentOutOfRangeException>(()=>new SoldierMotionInput(new Float3(0,0,0),0,0,0,land:-.5f));
+        Assert.Throws<ArgumentOutOfRangeException>(()=>new SoldierMotionInput(new Float3(0,0,0),0,0,0,moveHeadingRadians:float.PositiveInfinity));
+        Assert.False(new SoldierMotionInput(new Float3(0,0,0),0,0,0).HasMoveHeading);
+    }
     private static Float3 Transform(Float3 origin,Quat q,Float3 p)
     {
         float tx=2*(q.Y*p.Z-q.Z*p.Y),ty=2*(q.Z*p.X-q.X*p.Z),tz=2*(q.X*p.Y-q.Y*p.X);

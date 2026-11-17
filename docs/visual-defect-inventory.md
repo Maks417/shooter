@@ -12,7 +12,7 @@ Authoritative stop: [ADR-024](decisions.md#adr-024--accepted-p05-soldier-visual-
 | Visual acceptance | **FAIL** |
 | ADR | ADR-024 stop; ADR-094 reopening (failed); ADR-095 structural posture (numeric PASS) |
 | Further clearance/parameter search | Not needed for the numeric gate after ADR-095; any further change needs a new owner decision |
-| Soldier identity under review | `soldier.loft` 1.0.3 kit with `soldier.motion.v6.shooting` (product default); historical 1.0.2 / baseline motion non-accepted |
+| Soldier identity under review | `soldier.loft` 1.0.3 kit with `soldier.motion.v7.locomotion` (product default); historical 1.0.2 / baseline motion non-accepted |
 | FIX11 software disposition | ToolingReady |
 | REL03 | Open until named review attaches captures with defects resolved/unresolved |
 
@@ -94,4 +94,4 @@ The full roadmap owner assignment reopened the ADR-024 stop only for three measu
 
 ## ADR-095 structural shooting posture
 
-[ADR-095](decisions.md#adr-095--accepted-structural-weapon-from-eye-shooting-posture-p05-reopening) replaced head-only correction with a structural posture: right clavicle shooting posture (with a reload drop/protraction), the right eye placed on the sight line by construction with the neck solved to it, clearance-aware elbows solved after the head, and an outward support-hand reload bow. On the unchanged gate envelope and proxy, `soldier.motion.v6.shooting` measures minimum arm clearance +3.0 mm, eye/sight residual 0 mm, grip below 1e-7 m and stock error 1.2e-7 m. It is now the product default; `-shooterP05Candidate` is retired. P05-D01..D03 are numerically resolved only. P05 visual acceptance stays **FAIL** until a named visual review. Pistol sockets still show a -4.3 mm left-arm residual at reload phase 0.91 (outside the rifle gate). Evidence is in `Artifacts/visual-design/adr-095/`.
+[ADR-095](decisions.md#adr-095--accepted-structural-weapon-from-eye-shooting-posture-p05-reopening) replaced head-only correction with a structural posture: right clavicle shooting posture (with a reload drop/protraction), the right eye placed on the sight line by construction with the neck solved to it, clearance-aware elbows solved after the head, and an outward support-hand reload bow. On the unchanged gate envelope and proxy, `soldier.motion.v7.locomotion` measures minimum arm clearance +3.0 mm, eye/sight residual 0 mm, grip below 1e-7 m and stock error 1.2e-7 m. It is now the product default; `-shooterP05Candidate` is retired. P05-D01..D03 are numerically resolved only. P05 visual acceptance stays **FAIL** until a named visual review. Pistol sockets still show a -4.3 mm left-arm residual at reload phase 0.91 (outside the rifle gate). Evidence is in `Artifacts/visual-design/adr-095/`.

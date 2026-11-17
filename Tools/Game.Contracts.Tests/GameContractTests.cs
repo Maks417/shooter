@@ -330,7 +330,13 @@ namespace Shooter.Game.Contracts.Tests
                 Assert.True(float.IsFinite(running.VerticalSpeedMetersPerSecond));
                 // The motor only sprints on the ground (the fake runtime has no floor, so the human is airborne here).
                 Assert.True(!running.Sprinting || running.Grounded);
+                // ADR-100: the travel velocity components agree with the copied horizontal speed.
+                float vx = running.VelocityXMetersPerSecond, vz = running.VelocityZMetersPerSecond;
+                Assert.Equal(running.HorizontalSpeedMetersPerSecond, (float)System.Math.Sqrt(vx * vx + vz * vz), 3);
             }
+            var velocity = new LocalMovementView(Stance.Standing, 1.65f, false, velocityXMetersPerSecond: 2f, velocityZMetersPerSecond: float.NaN);
+            Assert.Equal(2f, velocity.VelocityXMetersPerSecond);
+            Assert.Equal(0f, velocity.VelocityZMetersPerSecond);
         }
 
         [Fact]

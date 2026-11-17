@@ -71,3 +71,5 @@ Under [ADR-024](decisions.md#adr-024--accepted-p05-soldier-visual-scope-stop-aft
 ## ADR-095 structural posture
 
 [ADR-095](decisions.md#adr-095--accepted-structural-weapon-from-eye-shooting-posture-p05-reopening) adds `soldier.motion.v6.shooting` without changing the semantic23 skeleton, bind pose, limb lengths or weapon sockets. On the unchanged conservative proxy and full envelope it measures +3.0 mm minimum arm clearance and 0 mm eye/sight residual. The historical FAIL records above remain; visual acceptance needs a named review.
+
+[ADR-100](decisions.md#adr-100--accepted-third-person-directional-gait-airborne-pose-and-bot-hopsslides) adds `soldier.motion.v7.locomotion` on top of the v6 shooting posture: travel-heading strides with a 1.0/1.6 m side-step cycle, mirrored phase on reversals, a sample-free airborne tuck (0.30 m lift, 0.14 m split), a 0.07 m landing dip and a travel-aligned slide. Skeleton, sockets, limb lengths and the ADR-095 upper-body gate are unchanged. Visual acceptance needs a named review.

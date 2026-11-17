@@ -38,7 +38,7 @@ public sealed class SoldierClearanceTests
     public void ShootingPostureClearsArmsAndPutsEyeOnSightLineAcrossSupportedRange()
     {
         var motion=new SoldierMotion(WeaponRecipe.Parse(File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory,"FeatureRecipes","rifle.json"))),new ShootingPosture());
-        Assert.Equal("soldier.motion.v6.shooting",motion.Identity);
+        Assert.Equal("soldier.motion.v7.locomotion",motion.Identity);
         var ground=new Ground();float minimum=float.MaxValue,maxGrip=0,maxEye=0,maxStock=0;string worst="";
         foreach(float crouch in new[]{0f,1f})foreach(float yaw in new[]{-SoldierMotion.MaxAimYawRadians,0,SoldierMotion.MaxAimYawRadians})
         foreach(float pitch in new[]{-SoldierMotion.MaxAimPitchRadians,0,SoldierMotion.MaxAimPitchRadians})

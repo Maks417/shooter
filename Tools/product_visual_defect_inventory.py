@@ -107,7 +107,7 @@ def build_inventory(
         "visualAcceptance": P05_ACCEPTANCE,
         "fourthClearanceSearchAuthorized": False,
         "soldierRecipeIdentity": "soldier.loft1.0.2",
-        "motionIdentity": "soldier.motion.v6.shooting",
+        "motionIdentity": "soldier.motion.v7.locomotion",
         "sourceCommit": source_commit,
         "sourceDirty": bool(source_dirty),
         "inventoryRoot": inventory_root,

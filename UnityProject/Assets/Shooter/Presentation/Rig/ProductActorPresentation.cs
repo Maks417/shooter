@@ -54,6 +54,8 @@ namespace Shooter.Presentation.Rig
             public float DeathPhase = -1f;
             public bool DeathCollapseActive;
             public bool HasPrevious;
+            /// <summary>ADR-100 travel heading, airborne, landing and slide blends for the cosmetic legs.</summary>
+            public readonly ThirdPersonLocomotionBlend Locomotion = new ThirdPersonLocomotionBlend();
             // T062 review metrics (read-only presentation; does not change authority or generator sources).
             public float LastArmBodyClearance;
             public float LastEyeSightLineError;
@@ -792,14 +794,20 @@ namespace Shooter.Presentation.Rig
             // Prefer authoritative motor speed/distance when the session view is available (stable gait).
             float slide = 0f;
             bool crouching = false;
+            var locomotion = avatar.Locomotion;
             if (movement.HasValue && !avatar.Corpse && state.Alive)
             {
                 var m = movement.Value;
                 speed = Mathf.Clamp(m.HorizontalSpeedMetersPerSecond, 0f, 5.5f);
                 avatar.Distance = m.LocomotionDistanceMeters;
                 crouching = m.Stance == Stance.Crouching && !m.Sliding;
-                if (m.Sliding) slide = 1f;
+                // ADR-100: travel heading (side-steps/backpedal), airborne tuck, landing dip and eased slide.
+                locomotion.Step(dtSeconds, true, m.Grounded, m.VerticalSpeedMetersPerSecond,
+                    m.VelocityXMetersPerSecond, m.VelocityZMetersPerSecond, m.Sliding);
+                slide = locomotion.Slide;
             }
+            else
+                locomotion.Reset();
 
             byte slot = state.ActiveWeaponSlot;
             DefinitionId weaponId = state.ActiveWeaponDefinition.IsValid
@@ -874,7 +882,11 @@ namespace Shooter.Presentation.Rig
                 avatar.ReloadPhase,
                 reset,
                 dying ? avatar.DeathPhase : -1f,
-                slide);
+                slide,
+                dying ? float.NaN : locomotion.HeadingRadians,
+                dying ? 0f : locomotion.Airborne,
+                Mathf.Clamp(movement.HasValue ? movement.Value.VerticalSpeedMetersPerSecond : 0f, -30f, 30f),
+                dying ? -1f : locomotion.Land);
             avatar.Root.position = V(displayFeet);
             float visibility=AmbientVisibility?.Invoke(displayFeet)??1f;
             ApplyAmbient(avatar.Body,visibility);ApplyAmbient(avatar.WeaponRenderer,visibility);ApplyAmbient(avatar.MagazineRenderer,visibility);ApplyAmbient(avatar.CycleRenderer,visibility);

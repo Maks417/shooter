@@ -34,6 +34,10 @@ namespace Shooter.Game.Session
         public bool Grounded { get; }
         /// <summary>Authoritative vertical velocity (m/s) for the cosmetic jump lift and landing dip (ADR-099).</summary>
         public float VerticalSpeedMetersPerSecond { get; }
+        /// <summary>Authoritative world horizontal velocity X (m/s) for the third-person travel heading (ADR-100).</summary>
+        public float VelocityXMetersPerSecond { get; }
+        /// <summary>Authoritative world horizontal velocity Z (m/s) for the third-person travel heading (ADR-100).</summary>
+        public float VelocityZMetersPerSecond { get; }
 
         public LocalMovementView(
             Stance stance,
@@ -44,7 +48,9 @@ namespace Shooter.Game.Session
             float locomotionDistanceMeters = 0f,
             bool sprinting = false,
             bool grounded = true,
-            float verticalSpeedMetersPerSecond = 0f)
+            float verticalSpeedMetersPerSecond = 0f,
+            float velocityXMetersPerSecond = 0f,
+            float velocityZMetersPerSecond = 0f)
         {
             Stance = stance;
             EyeHeight = eyeHeight;
@@ -56,6 +62,8 @@ namespace Shooter.Game.Session
             // default(LocalMovementView) keeps Grounded false; the constructor default is the grounded case.
             Grounded = grounded;
             VerticalSpeedMetersPerSecond = float.IsFinite(verticalSpeedMetersPerSecond) ? verticalSpeedMetersPerSecond : 0f;
+            VelocityXMetersPerSecond = float.IsFinite(velocityXMetersPerSecond) ? velocityXMetersPerSecond : 0f;
+            VelocityZMetersPerSecond = float.IsFinite(velocityZMetersPerSecond) ? velocityZMetersPerSecond : 0f;
         }
     }
 }

@@ -81,6 +81,10 @@ namespace Shooter.Simulation.AI
         public bool JumpPending { get; set; }
         public uint NextJumpTick { get; set; }
         public uint NextSlideTick { get; set; }
+        /// <summary>ADR-100 combat hop cooldown.</summary>
+        public uint NextHopTick { get; set; }
+        /// <summary>ADR-100: EngageMove reversed the strafe this tick (and the new side is safe).</summary>
+        public bool StrafeFlippedThisTick { get; set; }
         /// <summary>Set by BuildCommand for the tick being planned; consumed by the session as the slide request.</summary>
         public bool SlideIntent { get; set; }
 
@@ -185,6 +189,9 @@ namespace Shooter.Simulation.AI
         public int HearingOcclusionRays;
         public int HearingOccluded;
         public int StrafeLedgeFlips;
+        // ADR-100
+        public int TraversalJumps;
+        public int CombatHops;
         public int RouteCorridorPenalties;
     }
 }

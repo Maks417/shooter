@@ -16,7 +16,7 @@ namespace Shooter.Presentation.View
         public const string VisualAcceptance = "FAIL";
         public const bool FourthClearanceSearchAuthorized = false;
         public const string SoldierRecipeIdentity = "soldier.loft1.0.2";
-        public const string MotionIdentity = "soldier.motion.v6.shooting";
+        public const string MotionIdentity = "soldier.motion.v7.locomotion";
 
         public sealed class Defect
         {

@@ -28,9 +28,19 @@ namespace Shooter.Generation
         public float DeathPhase { get; }
         /// <summary>0..1 cosmetic slide dive (motor still owns root translation).</summary>
         public float Slide { get; }
+        /// <summary>ADR-100 world yaw of horizontal travel (radians); NaN means "travel along the aim heading".</summary>
+        public float MoveHeadingRadians { get; }
+        /// <summary>ADR-100 0..1 cosmetic airborne blend (tucked legs, no ground samples).</summary>
+        public float Airborne { get; }
+        /// <summary>ADR-100 vertical speed (m/s, +up) shaping the airborne tuck; bounded to +/-30.</summary>
+        public float VerticalSpeedMetersPerSecond { get; }
+        /// <summary>ADR-100: -1 none; 0..1 landing compression phase.</summary>
+        public float Land { get; }
+        public bool HasMoveHeading => !float.IsNaN(MoveHeadingRadians);
         public SoldierMotionInput(Float3 root, float yawRadians, double distanceMeters, float speedMetersPerSecond,
             float crouch = 0, float aimYawRadians = 0, float aimPitchRadians = 0, float reloadPhase = -1, bool reset = false,
-            float deathPhase = -1, float slide = 0)
+            float deathPhase = -1, float slide = 0, float moveHeadingRadians = float.NaN, float airborne = 0,
+            float verticalSpeedMetersPerSecond = 0, float land = -1)
         {
             if (!Finite(yawRadians) || Math.Abs(yawRadians) > 1000000 || double.IsNaN(distanceMeters) || double.IsInfinity(distanceMeters) || distanceMeters < 0 || distanceMeters > 10000000 ||
                 !Finite(speedMetersPerSecond) || speedMetersPerSecond < 0 || speedMetersPerSecond > 5.5f || !Finite(crouch) || crouch < 0 || crouch > 1 ||
@@ -38,11 +48,16 @@ namespace Shooter.Generation
                 !Finite(aimPitchRadians) || Math.Abs(aimPitchRadians) > SoldierMotion.MaxAimPitchRadians + 1e-6f ||
                 !Finite(reloadPhase) || (reloadPhase != -1 && (reloadPhase < 0 || reloadPhase > 1)) ||
                 !Finite(deathPhase) || (deathPhase != -1 && (deathPhase < 0 || deathPhase > 1)) ||
-                !Finite(slide) || slide < 0 || slide > 1)
+                !Finite(slide) || slide < 0 || slide > 1 ||
+                (!float.IsNaN(moveHeadingRadians) && (!Finite(moveHeadingRadians) || Math.Abs(moveHeadingRadians) > 1000000)) ||
+                !Finite(airborne) || airborne < 0 || airborne > 1 ||
+                !Finite(verticalSpeedMetersPerSecond) || Math.Abs(verticalSpeedMetersPerSecond) > 30 ||
+                !Finite(land) || (land != -1 && (land < 0 || land > 1)))
                 throw new ArgumentOutOfRangeException(nameof(distanceMeters), "Unsupported motion input; aim is bounded to +/-45 yaw and +/-25 pitch degrees.");
             Root = root; YawRadians = yawRadians; DistanceMeters = distanceMeters; SpeedMetersPerSecond = speedMetersPerSecond;
             Crouch = crouch; AimYawRadians = aimYawRadians; AimPitchRadians = aimPitchRadians; ReloadPhase = reloadPhase; Reset = reset;
             DeathPhase = deathPhase; Slide = slide;
+            MoveHeadingRadians = moveHeadingRadians; Airborne = airborne; VerticalSpeedMetersPerSecond = verticalSpeedMetersPerSecond; Land = land;
         }
     }
 
@@ -78,8 +93,9 @@ namespace Shooter.Generation
         public float ReloadOutward { get; set; } = .07f;
         /// <summary>Neck chain reach used for the eye target (metres; chain length 0.28 m, IK reach clamp 98%).</summary>
         public const float NeckReach = .27f;
-        /// <summary>Motion identity of the ADR-095 posture with these default values.</summary>
-        public const string Version = "soldier.motion.v6.shooting";
+        /// <summary>Motion identity of the ADR-095 posture with these default values, plus ADR-100 directional gait,
+        /// airborne tuck, landing dip and travel-aligned slide.</summary>
+        public const string Version = "soldier.motion.v7.locomotion";
         private const float Degrees = (float)Math.PI / 180;
     }
 
@@ -138,7 +154,9 @@ namespace Shooter.Generation
         private Float3 grip, support, magazine, stock, sight;
         private readonly bool upgraded;
         private readonly ShootingPosture? shooting;
-        private bool initialized, running, wasMoving;
+        private bool initialized, running, wasMoving, sideStepping;
+        private double phaseOffset;
+        private float lastTravelYaw;
         private double previousDistance;
         private Float3 previousRoot;
         private readonly Float3[] cachedUpperPositions=new Float3[10];
@@ -260,25 +278,49 @@ namespace Shooter.Generation
                 return EvaluateDeathCollapse(input, ground);
             if (input.Slide > .01f)
                 return EvaluateSlide(input, ground);
+            if (input.Airborne > .01f)
+                return EvaluateAirborne(input);
             // Hysteresis: enter run above RunEnterSpeed, leave below RunLeaveSpeed (avoids ContactsReset thrash).
             bool run = !initialized ? input.SpeedMetersPerSecond > 3.5f
                 : running ? input.SpeedMetersPerSecond >= RunLeaveSpeed
                 : input.SpeedMetersPerSecond > RunEnterSpeed;
             bool moving = input.SpeedMetersPerSecond > .001f;
+            // ADR-100: feet stride along the travel heading; the torso keeps the aim heading.
+            float travelYaw = input.HasMoveHeading ? input.MoveHeadingRadians : input.YawRadians;
+            float relative = WrapAngle(travelYaw - input.YawRadians);
+            float along = (float)Math.Cos(relative);
+            // Side-step/backpedal mode uses a shorter stride; hysteresis keeps it from chattering at the boundary.
+            bool sideStep = moving && (sideStepping ? along < .6f : along < .4f);
             double travel = input.DistanceMeters - previousDistance;
-            bool reset = !initialized || input.Reset || run != running || moving != wasMoving || travel < 0 || travel > .5 || Sub(input.Root, previousRoot).LengthSquared > .25;
-            initialized = true; running = run; wasMoving = moving; previousDistance = input.DistanceMeters; previousRoot = input.Root;
+            bool reset = !initialized || input.Reset || run != running || moving != wasMoving || sideStep != sideStepping ||
+                travel < 0 || travel > .5 || Sub(input.Root, previousRoot).LengthSquared > .25;
+            initialized = true; running = run; wasMoving = moving; sideStepping = sideStep; previousDistance = input.DistanceMeters; previousRoot = input.Root;
             pose.ContactsReset = reset; pose.GroundQueries = 0;
             Quat yaw = AxisAngle(Up, input.YawRadians);
             // Pelvis stance is cosmetic; root position/rotation and requested weapon aim remain the input.
             Quat bodyYaw = Multiply(yaw, AxisAngle(Up, BodyBladeRadians));
             Quat legYaw = Multiply(yaw, AxisAngle(Up, LegHeadingOffsetRadians));
             // v5 run: slightly longer plant duty and clearance so sprint feet read more clearly.
-            float cycle = run ? 2.2f : 1.4f, duty = run ? .38f : .50f, clearance = run ? .14f : .08f;
-            double phase = input.DistanceMeters / cycle; phase -= Math.Floor(phase);
-            var leftTarget = FootTarget(left, -.1f, phase, cycle, duty, clearance, moving, reset, input.Root, yaw, bodyYaw, ground);
+            float cycle = sideStep ? (run ? 1.6f : 1.0f) : run ? 2.2f : 1.4f, duty = run ? .38f : .50f, clearance = run ? .14f : .08f;
+            var stride = input.HasMoveHeading ? Rotate(Forward, AxisAngle(Up, travelYaw)) : Rotate(Forward, yaw);
+            float sideness = Math.Abs((float)Math.Sin(relative));
+            var side = StanceSide(bodyYaw, stride, sideness);
+            float widen = 1 + .4f * sideness;
+            if (reset) phaseOffset = 0;
+            else if (moving && Math.Abs(WrapAngle(travelYaw - lastTravelYaw)) > ReverseRadians)
+            {
+                // ADR-100 travel reversal (bot strafe flip): mirror the gait phase so the planted foot's anchor becomes
+                // the leading contact for the new direction and each swinging foot runs back along its own arc.
+                // Smooth is symmetric, so the mirrored swing continues from the exact current position.
+                double raw = input.DistanceMeters / cycle + phaseOffset; raw -= Math.Floor(raw);
+                phaseOffset += duty - 2 * raw; phaseOffset -= Math.Floor(phaseOffset);
+                MirrorSwing(left, travelYaw); MirrorSwing(right, travelYaw);
+            }
+            lastTravelYaw = travelYaw;
+            double phase = input.DistanceMeters / cycle + phaseOffset; phase -= Math.Floor(phase);
+            var leftTarget = FootTarget(left, -.1f * widen, phase, cycle, duty, clearance, moving, reset, input.Root, stride, side, travelYaw, ground);
             double rightPhase = phase + .5; rightPhase -= Math.Floor(rightPhase);
-            var rightTarget = FootTarget(right, .1f, rightPhase, cycle, duty, clearance, moving, reset, input.Root, yaw, bodyYaw, ground);
+            var rightTarget = FootTarget(right, .1f * widen, rightPhase, cycle, duty, clearance, moving, reset, input.Root, stride, side, travelYaw, ground);
             // Version2 uses a bent-knee locomotion posture. Full crouch remains the original.66m;
             // locomotion lowering is interpolated, never stacked onto the crouch displacement.
             float nominalHeight = moving ? .78f : .96f;
@@ -286,8 +328,24 @@ namespace Shooter.Generation
             float desired = Math.Min(RequiredPelvis(leftTarget, -.1f, input.Root, bodyYaw), RequiredPelvis(rightTarget, .1f, input.Root, bodyYaw));
             pose.PelvisCorrection = Clamp(desired - pelvisY, -.08f, 0);
             pelvisY += pose.PelvisCorrection;
+            // ADR-100 landing compression: a short pelvis dip; the leg IK supplies the knee bend.
+            if (input.Land >= 0) pelvisY -= LandDipMeters * (float)Math.Sin(Math.PI * input.Land);
+            PoseTorso(input, yaw, bodyYaw, new Float3(input.Root.X, pelvisY, input.Root.Z));
+            var leftLeg = Leg(15, 16, 17, 18, leftTarget, legYaw); var rightLeg = Leg(19, 20, 21, 22, rightTarget, legYaw);
+            pose.LeftKneeFlexion = leftLeg.FlexionRadians; pose.RightKneeFlexion = rightLeg.FlexionRadians;
+            pose.LeftPlanted = left.Stance; pose.RightPlanted = right.Stance;
+            pose.PlantTargetError = Math.Max(left.Stance ? leftLeg.TargetError : 0, right.Stance ? rightLeg.TargetError : 0);
+            float leftSlide = TrackPlant(left, pose.Positions[17]), rightSlide = TrackPlant(right, pose.Positions[21]);
+            pose.PlantSlide = Math.Max(leftSlide, rightSlide);
+            SolveUpper(input, yaw);
+            return pose;
+        }
+
+        /// <summary>Pelvis, spine, neck and shoulder chain shared by the gait and airborne poses.</summary>
+        private void PoseTorso(SoldierMotionInput input, Quat yaw, Quat bodyYaw, Float3 pelvis)
+        {
             var p = pose.Positions; var r = pose.Rotations;
-            p[0] = input.Root; r[0] = yaw; p[1] = new Float3(input.Root.X, pelvisY, input.Root.Z); r[1] = bodyYaw;
+            p[0] = input.Root; r[0] = yaw; p[1] = pelvis; r[1] = bodyYaw;
             // Distribute the documented torso45deg yaw/25deg pitch over the three spine joints.
             for (int i = 2; i <= 4; i++)
             {
@@ -307,13 +365,13 @@ namespace Shooter.Generation
             else SetChild(11, Multiply(r[4],AxisAngle(new Float3(0,0,1),40*Radians)));
             SetChild(12,r[4]);
             SetChild(15, bodyYaw); SetChild(19, bodyYaw);
-            var leftLeg = Leg(15, 16, 17, 18, leftTarget, legYaw); var rightLeg = Leg(19, 20, 21, 22, rightTarget, legYaw);
-            pose.LeftKneeFlexion = leftLeg.FlexionRadians; pose.RightKneeFlexion = rightLeg.FlexionRadians;
-            pose.LeftPlanted = left.Stance; pose.RightPlanted = right.Stance;
-            pose.PlantTargetError = Math.Max(left.Stance ? leftLeg.TargetError : 0, right.Stance ? rightLeg.TargetError : 0);
-            float leftSlide = TrackPlant(left, p[17]), rightSlide = TrackPlant(right, p[21]);
-            pose.PlantSlide = Math.Max(leftSlide, rightSlide);
-            if(TryRestoreUpper(input))return pose;
+        }
+
+        /// <summary>Weapon, hands, head and arms over an already posed torso (exact rigid cache reuse when unchanged).</summary>
+        private void SolveUpper(SoldierMotionInput input, Quat yaw)
+        {
+            var p = pose.Positions; var r = pose.Rotations;
+            if(TryRestoreUpper(input))return;
             pose.UpperBodyCacheHit=false;
             pose.WeaponRotation = Multiply(yaw,Multiply(AxisAngle(Up,input.AimYawRadians),AxisAngle(new Float3(1,0,0),-input.AimPitchRadians)));
             float cant=0;
@@ -354,7 +412,75 @@ namespace Shooter.Generation
             pose.EyeSightLineErrorMeters=(float)Math.Sqrt(Sub(eyeDelta,Scale(axis,Dot(eyeDelta,axis))).LengthSquared);
             pose.ArmBodyClearanceMeters=Math.Min(armBody.Arm(p[8],p[9],p[10]),armBody.Arm(p[12],p[13],p[14]));
             StoreUpper(input);
+        }
+
+        /// <summary>
+        /// ADR-100 cosmetic airborne pose: gait contacts are released (feet re-plant on landing), the legs tuck while
+        /// rising and reach down while falling. No ground samples, so an elevated jump never needs a floor under it.
+        /// </summary>
+        private SoldierPose EvaluateAirborne(SoldierMotionInput input)
+        {
+            float a = Clamp(input.Airborne, 0, 1);
+            initialized = false;
+            left.Stance = right.Stance = false;
+            pose.ContactsReset = true;
+            pose.GroundQueries = 0;
+            pose.PlantSlide = 0;
+            pose.PlantTargetError = 0;
+            pose.PelvisCorrection = 0;
+            pose.LeftPlanted = pose.RightPlanted = false;
+            previousRoot = input.Root;
+            previousDistance = input.DistanceMeters;
+
+            Quat yaw = AxisAngle(Up, input.YawRadians);
+            Quat bodyYaw = Multiply(yaw, AxisAngle(Up, BodyBladeRadians));
+            Quat legYaw = Multiply(yaw, AxisAngle(Up, LegHeadingOffsetRadians));
+            var stride = input.HasMoveHeading ? Rotate(Forward, AxisAngle(Up, input.MoveHeadingRadians)) : Rotate(Forward, yaw);
+            var side = Rotate(new Float3(1, 0, 0), bodyYaw);
+            // Rising: knees up. Falling: the legs reach back down toward the landing.
+            float fall = Clamp(-input.VerticalSpeedMetersPerSecond / AirborneReachSpeed, 0, 1);
+            float tuck = a * AirborneTuckMeters * (1 - .75f * fall);
+            float split = a * AirborneSplitMeters * (1 - .5f * fall);
+            // Same nominal pelvis as the gait so blending back to the ground pose does not pop the hips.
+            float nominal = input.SpeedMetersPerSecond > .001f ? .78f : .96f;
+            float standing = nominal + (.66f - nominal) * input.Crouch;
+            float pelvisY = input.Root.Y + standing - a * .04f;
+            PoseTorso(input, yaw, bodyYaw, new Float3(input.Root.X, pelvisY, input.Root.Z));
+            var lift = new Float3(0, .08f + tuck, 0);
+            var leftTarget = Add(input.Root, Add(lift, Add(Scale(side, -.1f), Scale(stride, split))));
+            var rightTarget = Add(input.Root, Add(lift, Add(Scale(side, .1f), Scale(stride, -split))));
+            var leftLeg = Leg(15, 16, 17, 18, leftTarget, legYaw); var rightLeg = Leg(19, 20, 21, 22, rightTarget, legYaw);
+            pose.LeftKneeFlexion = leftLeg.FlexionRadians; pose.RightKneeFlexion = rightLeg.FlexionRadians;
+            SolveUpper(input, yaw);
             return pose;
+        }
+        /// <summary>ADR-100 airborne foot lift above the root at full blend while rising (metres).</summary>
+        public const float AirborneTuckMeters = .30f;
+        /// <summary>ADR-100 front/back foot split along travel while airborne (metres).</summary>
+        public const float AirborneSplitMeters = .14f;
+        /// <summary>ADR-100 falling speed at which the legs fully reach down (m/s).</summary>
+        public const float AirborneReachSpeed = 4f;
+        /// <summary>ADR-100 landing pelvis dip peak (metres).</summary>
+        public const float LandDipMeters = .07f;
+
+        /// <summary>
+        /// Stance width axis: the body blade for forward travel, turning toward the travel perpendicular as the
+        /// actor side-steps (sign fixed to the body's right so a strafe reversal does not swap the feet).
+        /// </summary>
+        private static Float3 StanceSide(Quat bodyYaw, Float3 stride, float sideness)
+        {
+            var bodyX = Rotate(new Float3(1, 0, 0), bodyYaw);
+            if (sideness < 1e-6f) return bodyX;
+            var perpendicular = new Float3(stride.Z, 0, -stride.X);
+            if (Dot(perpendicular, bodyX) < 0) perpendicular = Scale(perpendicular, -1);
+            return Normalize(Lerp(bodyX, perpendicular, sideness));
+        }
+        private static float WrapAngle(float radians) => (float)Math.Atan2(Math.Sin(radians), Math.Cos(radians));
+        private const float ReverseRadians = 120 * Radians;
+        private static void MirrorSwing(FootState foot, float travelYaw)
+        {
+            if (!foot.Stance) { var start = foot.Start; foot.Start = foot.End; foot.End = start; }
+            foot.SwingHeading = travelYaw;
         }
 
         /// <summary>
@@ -382,10 +508,15 @@ namespace Shooter.Generation
             // Two foot ground samples (budget 2); pelvis uses the same flat height as the root.
             pose.GroundQueries = 0;
             Quat yaw = AxisAngle(Up, input.YawRadians);
-            Quat bodyYaw = Multiply(yaw, AxisAngle(Up, BodyBladeRadians));
-            Quat legYaw = Multiply(yaw, AxisAngle(Up, LegHeadingOffsetRadians));
-            Float3 forward = Rotate(Forward, yaw);
-            Float3 rightAxis = Rotate(new Float3(1, 0, 0), yaw);
+            // ADR-100: hips, legs and feet dive along the slide's travel; the spine twists back to the aim
+            // (bounded to the 45-degree torso budget) so the weapon stays on target.
+            float twist = input.HasMoveHeading ? Clamp(WrapAngle(input.YawRadians - input.MoveHeadingRadians), -MaxAimYawRadians, MaxAimYawRadians) : 0;
+            Quat lowerYaw = twist == 0 ? yaw : AxisAngle(Up, input.YawRadians - twist);
+            Quat bodyYaw = Multiply(lowerYaw, AxisAngle(Up, BodyBladeRadians));
+            Quat legYaw = Multiply(lowerYaw, AxisAngle(Up, LegHeadingOffsetRadians));
+            Quat travelYaw = input.HasMoveHeading ? AxisAngle(Up, input.MoveHeadingRadians) : yaw;
+            Float3 forward = Rotate(Forward, travelYaw);
+            Float3 rightAxis = Rotate(new Float3(1, 0, 0), travelYaw);
             Quat pitchDown = AxisAngle(new Float3(1, 0, 0), 58f * Radians * s);
             Quat bodyRot = Multiply(bodyYaw, pitchDown);
             Quat slideLegYaw = Multiply(legYaw, pitchDown);
@@ -400,7 +531,7 @@ namespace Shooter.Generation
             for (int i = 2; i <= 4; i++)
             {
                 p[i] = Add(p[i - 1], Rotate(SoldierSkeleton.Definition.Joints[i].LocalBindPosition, r[i - 1]));
-                r[i] = Multiply(bodyRot, Multiply(
+                r[i] = Multiply(twist == 0 ? bodyRot : Multiply(AxisAngle(Up, twist * (i - 1) / 3f), bodyRot), Multiply(
                     AxisAngle(Up, input.AimYawRadians * (i - 1) / 3f),
                     AxisAngle(new Float3(1, 0, 0), -input.AimPitchRadians * (i - 1) / 3f - spineFold * (i - 1) / 3f)));
             }
@@ -685,7 +816,7 @@ namespace Shooter.Generation
             return target.Y + .04f + (float)Math.Sqrt(Math.Max(0, max * max - dx * dx - dz * dz));
         }
         private Float3 FootTarget(FootState foot, float lateral, double phase, float cycle, float duty, float clearance,
-            bool moving, bool reset, Float3 root, Quat yaw, Quat bodyYaw, ISoldierGround ground)
+            bool moving, bool reset, Float3 root, Float3 stride, Float3 side, float travelYaw, ISoldierGround ground)
         {
             bool stance = !moving || phase < duty;
             if (reset || moving != foot.Moving)
@@ -694,13 +825,14 @@ namespace Shooter.Generation
                 if (stance)
                 {
                     float ahead = moving ? (duty * .5f - (float)phase) * cycle : 0;
-                    foot.Anchor = Sample(FootPoint(root,yaw,bodyYaw,lateral,.02f+ahead), ground);
+                    foot.Anchor = Sample(FootPoint(root,stride,side,lateral,.02f+ahead), ground);
                     foot.Start = foot.Anchor; foot.End = foot.Anchor;
                 }
                 else
                 {
-                    foot.Start = FootPoint(root,yaw,bodyYaw,lateral,.02f-duty*cycle*.5f);
-                    foot.End = Sample(FootPoint(root,yaw,bodyYaw,lateral,.02f+(1-(float)phase+duty*.5f)*cycle), ground);
+                    foot.Start = FootPoint(root,stride,side,lateral,.02f-duty*cycle*.5f);
+                    foot.End = Sample(FootPoint(root,stride,side,lateral,.02f+(1-(float)phase+duty*.5f)*cycle), ground);
+                    foot.SwingHeading = travelYaw;
                 }
             }
             else if (stance && !foot.Stance)
@@ -708,7 +840,20 @@ namespace Shooter.Generation
             else if (!stance && foot.Stance)
             {
                 foot.Start = foot.Anchor;
-                foot.End = Sample(FootPoint(root,yaw,bodyYaw,lateral,.02f+(1-(float)phase+duty*.5f)*cycle), ground);
+                foot.End = Sample(FootPoint(root,stride,side,lateral,.02f+(1-(float)phase+duty*.5f)*cycle), ground);
+                foot.SwingHeading = travelYaw;
+            }
+            else if (!stance && Math.Abs(WrapAngle(travelYaw - foot.SwingHeading)) > SwingRetargetRadians && pose.GroundQueries < 2)
+            {
+                // ADR-100 travel reversal (bot strafe flip): re-aim the swinging foot early in its swing without a snap.
+                float s0 = Smooth((float)((phase - duty) / (1 - duty)));
+                if (s0 < .5f)
+                {
+                    var current = Lerp(foot.Start, foot.End, s0);
+                    foot.End = Sample(FootPoint(root,stride,side,lateral,.02f+(1-(float)phase+duty*.5f)*cycle), ground);
+                    foot.Start = Scale(Sub(current, Scale(foot.End, s0)), 1 / (1 - s0));
+                    foot.SwingHeading = travelYaw;
+                }
             }
             foot.Stance = stance; foot.Moving = moving;
             if (stance) return foot.Anchor;
@@ -716,8 +861,9 @@ namespace Shooter.Generation
             var target = Lerp(foot.Start, foot.End, Smooth(t));
             return Add(target, new Float3(0, clearance * (float)Math.Sin(Math.PI * t), 0));
         }
-        private static Float3 FootPoint(Float3 root,Quat heading,Quat body,float lateral,float ahead)
-            =>Add(root,Add(Rotate(new Float3(lateral,0,0),body),Rotate(new Float3(0,.08f,ahead),heading)));
+        private const float SwingRetargetRadians = 60 * Radians;
+        private static Float3 FootPoint(Float3 root,Float3 stride,Float3 side,float lateral,float ahead)
+            =>Add(root,Add(Scale(side,lateral),Add(new Float3(0,.08f,0),Scale(stride,ahead))));
         private Float3 Sample(Float3 point, ISoldierGround ground)
         {
             pose.GroundQueries++;
@@ -759,6 +905,7 @@ namespace Shooter.Generation
         {
             public bool Stance, Moving, NewPlant;
             public Float3 Anchor, Start, End, ActualStart;
+            public float SwingHeading;
         }
     }
 }

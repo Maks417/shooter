@@ -82,6 +82,14 @@ namespace Shooter.Simulation.AI
         public const float StrafeMaxDropMeters = 0.55f;
         /// <summary>T090: cast starts this far above the foot plane when sampling ground under a strafe probe.</summary>
         public const float StrafeGroundLiftMeters = 0.6f;
+        /// <summary>ADR-100: chance (per strafe reversal) of a combat hop; deterministic from id and tick.</summary>
+        public const float CombatHopChance = 0.25f;
+        public const uint CombatHopCooldownTicks = 180;
+        /// <summary>ADR-100 traversal hop probes: knee ray above the 0.25 m motor step, clearance ray below the ~0.6 m apex.</summary>
+        public const float VaultProbeHeightMeters = 0.35f;
+        public const float VaultClearHeightMeters = 0.75f;
+        public const float VaultProbeMeters = 0.9f;
+        public const uint VaultProbeIntervalTicks = 6;
 
         // Hearing and damage stimuli (no rays; distance-attenuated).
         public const float GunfireHearingRadius = 45f;

@@ -86,7 +86,7 @@
     "docs/feature-schemas/material.schema.json": "c2ff53e7e1ad1cd4f50a577b1c531c53601e02c362522315aef49341b3db33d2",
     "docs/feature-schemas/soldier.schema.json": "630e09a3275448358c01b36e6db63291037dfc09e3d2fbe15b8894df24fcba38",
     "docs/feature-schemas/weapon.schema.json": "332600ba49702ff91d53f7105fd07e884322902e02b8536dbdfffa63ccf8b8c0",
-    "docs/soldier-baseline.md": "4b8c3a0a8f15f82d8f15b09b3edfed9248d9a4c1648c7a94874e589a8f5f2867",
+    "docs/soldier-baseline.md": "386cf00d71aca710c5f7ff1099279933282ba52e3bcf438bbc3ed04224de9828",
     "docs/weapon-recipe-baseline.md": "60a24cc8ca14a84c963f29e006cf53a7f62ee004065961223aa600c7457c5745",
     "UnityProject/Assets/Shooter/Generation/Core/Compilation/ValidatedRecipe.cs": "9fd953887e489ddcb8946318243e154671ac95e088d9a6c6a9fd1516cacdc019",
     "UnityProject/Assets/Shooter/Generation/Core/Fx/FxFlipbook.cs": "6fc9138e3711cf81035772f77428e9cd7bfb48410a94a63f67274239762e301a",
@@ -101,7 +101,7 @@
     "UnityProject/Assets/Shooter/Generation/Core/Materials/NumericPlanes.cs": "8cf299bf62459346e888dcac93ef260578b43539547fbe9e78f41d6084c4ed53",
     "UnityProject/Assets/Shooter/Generation/Core/SoldierMotion/ArmBodyClearance.cs": "8f2836e21108ec273d3e79190f22601acc961b6325abe772a81ff14f8fed399d",
     "UnityProject/Assets/Shooter/Generation/Core/SoldierMotion/CollisionSoldierGround.cs": "77eee05fbf90d9f00888d80be589b53e865b672fc24678c17d6214bed56d7528",
-    "UnityProject/Assets/Shooter/Generation/Core/SoldierMotion/SoldierMotion.cs": "d73d02a2e88530c4ee75a5e25a7c8c13c1eacaf54f7416a6cf801eb648c38cf2",
+    "UnityProject/Assets/Shooter/Generation/Core/SoldierMotion/SoldierMotion.cs": "d60226de4d69acec9748348a979a6e5728922dbedf288fcd03208697f3f8d231",
     "UnityProject/Assets/Shooter/Generation/Core/SoldierMotion/TwoBoneIk.cs": "94b09db2d0ff755baee8a73ef5165809b39a369732bbb7d194eb5c4fe673f5a5",
     "UnityProject/Assets/Shooter/Generation/Core/Soldiers/SoldierAssetGenerator.cs": "b472e6d70ce81b6aebba2767e333ca8a3558927a1c56056a7bc4aa91621355cd",
     "UnityProject/Assets/Shooter/Generation/Core/Soldiers/SoldierGeometry.cs": "0583ae8c7b62e6954144773246a94f3eaa82aefa318f07057a22c5b181ee4275",
@@ -125,7 +125,7 @@
     "UnityProject/Assets/Shooter/Generation/FeatureRecipes/soil.json": "cc2ebc90846af67d3fad0333f0702b0f27142060a62ed7eb87d49cbe0270f79a",
     "UnityProject/Assets/Shooter/Generation/FeatureRecipes/soldier.json": "e0f291b94e52bb25148091e102ec2cdc8586e70179d7a5cd6d612c409e1b85cd"
   },
-  "motionVersion": "soldier.motion.v6.shooting",
+  "motionVersion": "soldier.motion.v7.locomotion",
   "skeletonVersion": "soldier.semantic23.v1",
-  "visualMotionCandidate": "ADR-095 v6 shooting posture is the product default (numeric gate PASS); P05 visual acceptance FAIL pending named review"
+  "visualMotionCandidate": "ADR-100 v7 locomotion (ADR-095 shooting posture plus directional gait, airborne tuck, landing dip, travel-aligned slide) is the product default (numeric gate PASS); P05 visual acceptance FAIL pending named review"
 }

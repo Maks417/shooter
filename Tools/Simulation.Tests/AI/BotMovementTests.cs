@@ -203,7 +203,7 @@ namespace Shooter.Simulation.Tests.AI
         {
             Assert.True(RunSlideRequests(out var requests));
             Assert.True(requests[0] >= CombatAiDirector.SlideMinSprintTicks);
-            Assert.Single(requests); // 600+ tick bot cooldown inside a 200 tick run
+            Assert.Single(requests); // 300+ tick bot cooldown (ADR-100) inside a 200 tick run
         }
 
         [Fact]

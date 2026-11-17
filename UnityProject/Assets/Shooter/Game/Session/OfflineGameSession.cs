@@ -120,7 +120,7 @@ namespace Shooter.Game.Session
             float horizontalSpeed = (float)System.Math.Sqrt(hx * hx + hz * hz);
             view = new LocalMovementView(
                 state.Stance, eye, state.SlideActive, state.Tightness, horizontalSpeed, state.LocomotionDistanceMeters,
-                state.SprintActive, state.Grounded, state.Velocity.Y);
+                state.SprintActive, state.Grounded, state.Velocity.Y, hx, hz);
             return true;
         }
 
