@@ -45,6 +45,12 @@ namespace Shooter.Presentation.Audio
         private readonly List<(ulong owner, float due, Float3 position, ulong seed)> pendingBounces =
             new List<(ulong owner, float due, Float3 position, ulong seed)>();
         public const int MaxPendingBounces = 16;
+        /// <summary>ADR-102: bolt-action rounds are followed by the bolt being worked inside the fire interval.</summary>
+        private readonly List<(ulong owner, float due, Float3 position, ulong seed, bool local)> pendingCycles =
+            new List<(ulong owner, float due, Float3 position, ulong seed, bool local)>();
+        /// <summary>Last primary and sidearm each shooter fired: reload Foley follows the gun, not the slot.</summary>
+        private readonly Dictionary<ulong, (DefinitionId primary, DefinitionId sidearm)> lastGuns =
+            new Dictionary<ulong, (DefinitionId primary, DefinitionId sidearm)>();
         /// <summary>Second, shorter hop after the first ground contact.</summary>
         public const float SecondBounceDelaySeconds = 0.32f;
         /// <summary>Main-thread presentation query only; never invoked by the audio callback.</summary>
@@ -90,6 +96,8 @@ namespace Shooter.Presentation.Audio
             lastFeet.Clear();
             lastKnifeTick.Clear();
             pendingBounces.Clear();
+            pendingCycles.Clear();
+            lastGuns.Clear();
             uiOrdinal = 0;
             localOrdinal = 0;
             mixer.StopAll();
@@ -116,10 +124,13 @@ namespace Shooter.Presentation.Audio
                 if (ev.Kind == CombatEventKind.ShotAccepted && ev.Payload is ShotPayload knifeShot && IsKnife(knifeShot.WeaponId))
                     lastKnifeTick[ev.Instigator.Value] = ev.Id.Tick;
 
+                RememberGun(ev);
                 if (TryMapCombat(ev, knifeHit, out var voice))
                 {
+                    if (ev.Kind == CombatEventKind.ReloadStarted) voice = ReloadVoiceFor(ev);
                     Float3 pos = EventPosition(ev, listenerFeet);
                     bool local = IsLocalEmitter(ev, localEntity);
+                    ScheduleBoltCycle(ev, pos, local);
                     float rate = ReloadPlaybackRate(ev, voice);
                     if (PlayAt(voice, ev, pos, listenerFeet, local, rate)) played++;
                     // Distant explosion layer: rolls in past ~30 m where the close blast thins out.
@@ -166,6 +177,9 @@ namespace Shooter.Presentation.Audio
             if (id == 0) return;
             mixer.StopOwner(id, SynthVoiceKind.ReloadStart);
             mixer.StopOwner(id, SynthVoiceKind.ReloadPistol);
+            mixer.StopOwner(id, SynthVoiceKind.ReloadAk);
+            mixer.StopOwner(id, SynthVoiceKind.ReloadBolt);
+            if (ev.Kind == CombatEventKind.Death) pendingCycles.RemoveAll(c => c.owner == id);
         }
 
         /// <summary>
@@ -210,8 +224,17 @@ namespace Shooter.Presentation.Audio
         /// <summary>Advance presentation-scheduled cues (grenade bounces). Call once per presentation frame.</summary>
         public int TickScheduled(float dtSeconds, Float3 listenerFeet)
         {
-            if (!attached || dtSeconds <= 0f || pendingBounces.Count == 0) return 0;
+            if (!attached || dtSeconds <= 0f || pendingBounces.Count + pendingCycles.Count == 0) return 0;
             int played = 0;
+            for (int i = pendingCycles.Count - 1; i >= 0; i--)
+            {
+                var c = pendingCycles[i];
+                c.due -= dtSeconds;
+                if (c.due > 0f) { pendingCycles[i] = c; continue; }
+                pendingCycles.RemoveAt(i);
+                if (c.local ? mixer.TryPlay(SynthVoiceKind.BoltCycle, 0f, 0f, c.seed, true, 0f, 0f)
+                    : PlayWorld(SynthVoiceKind.BoltCycle, c.position, listenerFeet, c.seed)) played++;
+            }
             for (int i = pendingBounces.Count - 1; i >= 0; i--)
             {
                 var b = pendingBounces[i];
@@ -228,6 +251,46 @@ namespace Shooter.Presentation.Audio
         }
 
         public int PendingBounceCount => pendingBounces.Count;
+        public int PendingBoltCycleCount => pendingCycles.Count;
+
+        private void RememberGun(CombatEvent ev)
+        {
+            if (ev.Kind != CombatEventKind.ShotAccepted || ev.Payload is not ShotPayload shot || !ev.Instigator.IsValid) return;
+            if (!WeaponVisualProfiles.TryGet(shot.WeaponId, out var profile)) return;
+            lastGuns.TryGetValue(ev.Instigator.Value, out var guns);
+            if (profile.Family == WeaponVisualFamily.PrimaryGun) guns.primary = shot.WeaponId;
+            else if (profile.Family == WeaponVisualFamily.Sidearm) guns.sidearm = shot.WeaponId;
+            else return;
+            lastGuns[ev.Instigator.Value] = guns;
+        }
+
+        private SynthVoiceKind ReloadVoiceFor(CombatEvent ev)
+        {
+            if (ev.Payload is not ActionPayload action) return SynthVoiceKind.ReloadStart;
+            DefinitionId id = default;
+            if (lastGuns.TryGetValue(ev.Instigator.Value, out var guns))
+                id = action.Slot == 0 ? guns.primary : action.Slot == 1 ? guns.sidearm : default;
+            return ReloadVoiceForStyle(WeaponVisualProfiles.Resolve(id, action.Slot).HandlingStyle);
+        }
+
+        public static SynthVoiceKind ReloadVoiceForStyle(WeaponHandlingStyle style) => style switch
+        {
+            WeaponHandlingStyle.Pistol => SynthVoiceKind.ReloadPistol,
+            WeaponHandlingStyle.Ak => SynthVoiceKind.ReloadAk,
+            WeaponHandlingStyle.Bolt => SynthVoiceKind.ReloadBolt,
+            _ => SynthVoiceKind.ReloadStart
+        };
+
+        private void ScheduleBoltCycle(CombatEvent ev, Float3 position, bool local)
+        {
+            if (ev.Kind != CombatEventKind.ShotAccepted || ev.Payload is not ShotPayload shot) return;
+            if (!WeaponVisualProfiles.TryGet(shot.WeaponId, out var profile) || profile.HandlingStyle != WeaponHandlingStyle.Bolt) return;
+            float interval = profile.FireIntervalSeconds;
+            if (interval <= 0f) return;
+            if (pendingCycles.Count >= MaxPendingBounces) pendingCycles.RemoveAt(0);
+            // Matches the first-person bolt pull (ProceduralViewModel: open from 34 % of 85 % of the interval).
+            pendingCycles.Add((ev.Instigator.Value, interval * 0.85f * 0.34f, position, Seed(ev) ^ 0xB017UL, local));
+        }
 
         private bool IsKnifeFollowUp(CombatEvent ev)
         {
@@ -269,7 +332,7 @@ namespace Shooter.Presentation.Audio
             if (ev.Kind != CombatEventKind.ShotAccepted || ev.Payload is not ShotPayload shot) return false;
             if (localEntity.IsValid && ev.Instigator == localEntity) return false;
             var voice = MapShotVoice(ev);
-            if (voice != SynthVoiceKind.RifleShot && voice != SynthVoiceKind.PistolShot) return false;
+            if (!SynthAudioMixer.IsGunShotKind(voice)) return false;
             return FlybyGeometry(shot.Origin, shot.UnitDirection, EarHeight(listenerFeet), out missMeters, out closest);
         }
 

@@ -124,7 +124,9 @@ public static class ShooterFeatureBuild
                 return Shooter.Presentation.Rendering.ProductSurfaceMaterial.Create(shader, bake.Albedo, bake.Normal, bake.Mask,
                     "Arsenal source finish " + family, 10, value => owned.Add(value));
             }
-            var palette = Shooter.Presentation.Rendering.ProductSurfaceMaterial.WeaponFinishes(Surface(0), Surface(1), Surface(4), Surface(5), Surface(6));
+            // ADR-102: seven-slot palette (wood and gold tints) so the named guns render with their furniture.
+            var palette = Shooter.Presentation.Rendering.ProductSurfaceMaterial.WeaponFinishes(Surface(0), Surface(1), Surface(4), Surface(5), Surface(6),
+                value => owned.Add(value));
             var cameraObject = new GameObject("Arsenal capture camera"); owned.Add(cameraObject);
             var camera = cameraObject.AddComponent<Camera>();
             camera.clearFlags = CameraClearFlags.SolidColor; camera.backgroundColor = new Color(.075f, .09f, .11f);
@@ -134,11 +136,12 @@ public static class ShooterFeatureBuild
             key.transform.rotation = Quaternion.Euler(35, -35, 0);
             RenderSettings.ambientMode = AmbientMode.Flat; RenderSettings.ambientLight = new Color(.32f, .36f, .42f);
             var paths = new List<string>();
-            foreach (string kind in new[] { "rifle", "pistol", "knife", "grenade" })
+            string[] arsenal = { "ak47", "ak102", "m16", "mk14", "mtac338", "g17", "golden-eagle" };
+            foreach (string kind in new[] { "rifle", "pistol", "knife", "grenade" }.Concat(arsenal))
             {
                 var root = new GameObject(kind); owned.Add(root);
                 var parts = new List<MeshData>();
-                if (kind == "rifle" || kind == "pistol")
+                if (kind == "rifle" || kind == "pistol" || arsenal.Contains(kind))
                 {
                     var build = WeaponGeometry.Build(WeaponRecipe.Parse(Source(kind)));
                     parts.Add(build.Lods[0]); parts.Add(build.Magazine); parts.Add(build.CyclePart);

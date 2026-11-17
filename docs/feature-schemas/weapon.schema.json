@@ -16,7 +16,8 @@
     "generatorVersion": {
       "enum": [
         "1.0.5",
-        "1.1.0"
+        "1.1.0",
+        "1.2.0"
       ]
     },
     "seed": {
@@ -187,6 +188,91 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "generatorVersion": {
+            "const": "1.2.0"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "parameters": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "enum": [
+                  "ak",
+                  "ar",
+                  "bolt",
+                  "dmr",
+                  "pistol-eagle",
+                  "pistol-striker"
+                ]
+              },
+              "parts": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "barrelFrontMm": {
+                    "type": "integer",
+                    "minimum": 110,
+                    "maximum": 960
+                  },
+                  "furniture": {
+                    "enum": [
+                      "black",
+                      "gold",
+                      "polymer",
+                      "wood"
+                    ]
+                  },
+                  "muzzle": {
+                    "enum": [
+                      "birdcage",
+                      "brake",
+                      "flash",
+                      "none",
+                      "slant"
+                    ]
+                  },
+                  "optic": {
+                    "enum": [
+                      "irons",
+                      "scope2",
+                      "scope4",
+                      "scope8"
+                    ]
+                  },
+                  "stock": {
+                    "enum": [
+                      "chassis",
+                      "fixed",
+                      "folding",
+                      "none",
+                      "wood"
+                    ]
+                  }
+                },
+                "required": [
+                  "barrelFrontMm",
+                  "furniture",
+                  "muzzle",
+                  "optic",
+                  "stock"
+                ]
+              }
+            },
+            "required": [
+              "kind",
+              "parts"
+            ]
           }
         }
       }

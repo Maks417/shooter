@@ -15,7 +15,8 @@
     "hipSpreadDegrees": 1.5,
     "adsSpreadDegrees": 0.3,
     "recoilPitchDegrees": 0.55,
-    "recoilYawHalfDegrees": 0.15
+    "recoilYawHalfDegrees": 0.15,
+    "spawnWeight": 0
   },
   "visual": {
     "meshKey": "pistol",

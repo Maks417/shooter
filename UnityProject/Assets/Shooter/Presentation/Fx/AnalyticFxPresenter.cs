@@ -41,7 +41,7 @@ namespace Shooter.Presentation.Fx
             {
                 var data=MapVisualClosure.DecodeMaterial(visuals,FxFlipbook.Path((FlipbookKind)i),FxFlipbook.Fingerprint);
                 var texture=new Texture2D(data.Width,data.Height,TextureFormat.RGBA32,false,true){name="Verified "+(FlipbookKind)i+" flipbook",wrapMode=TextureWrapMode.Clamp,filterMode=FilterMode.Bilinear};owned.Add(texture);
-                var bytes=new byte[data.MipBytes[0].Count];for(int j=0;j<bytes.Length;j++)bytes[j]=data.MipBytes[0][j];texture.LoadRawTextureData(bytes);texture.Apply(false,true);
+                var bytes=AnalyticFxPool.FlipTextureRows(data.MipBytes[0],data.Width,data.Height);texture.LoadRawTextureData(bytes);texture.Apply(false,true);
                 var material=new Material(shader){name="Numeric "+(FlipbookKind)i};owned.Add(material);material.SetTexture("_BaseMap",texture);bool additive=i>=2;material.SetFloat("_DstBlend",additive?(float)BlendMode.One:(float)BlendMode.OneMinusSrcAlpha);material.SetFloat("_Brightness",additive?5f:1f);materials[i]=material;
                 yield return 0;
             }
@@ -67,6 +67,8 @@ namespace Shooter.Presentation.Fx
                     renderers[i].sharedMaterial=fx.Kind==FxKind.Shockwave?ringMaterial:materials[texture];
                     renderers[i].renderMode=fx.Kind==FxKind.Shockwave?ParticleSystemRenderMode.HorizontalBillboard:fx.Kind==FxKind.Tracer?ParticleSystemRenderMode.Stretch:ParticleSystemRenderMode.Billboard;
                     renderers[i].velocityScale=.03f;renderers[i].lengthScale=2;
+                    // Smoke sorts behind the additive flash it spawns with so its alpha blend cannot hide it.
+                    renderers[i].sortingFudge=fx.Kind==FxKind.SmokeProxy?2f:fx.Kind==FxKind.MuzzleFlash?-2f:0f;
                     int count=fx.Kind==FxKind.SmokeProxy||fx.Kind==FxKind.Dust?(tier==0?3:8):fx.Kind==FxKind.ImpactSpark?(tier==0?4:12):fx.Kind==FxKind.Debris?(tier==0?3:7):1;
                     var main=ps.main;main.gravityModifier=fx.Kind==FxKind.ShellCasing||fx.Kind==FxKind.Debris?.7f:dirt?.3f:0;
                     var size=ps.sizeOverLifetime;size.enabled=true;size.size=new ParticleSystem.MinMaxCurve(1,fx.Kind==FxKind.Shockwave?RingSize:fx.Kind==FxKind.SmokeProxy?SmokeSize:FadeSize);
@@ -75,13 +77,15 @@ namespace Shooter.Presentation.Fx
                     for(int p=0;p<count;p++)
                     {
                         float turn=(p*2.399963f+i*.31f);Vector3 spread=new Vector3(Mathf.Cos(turn),.3f+(p%3)*.22f,Mathf.Sin(turn));
-                        var emit=new ParticleSystem.EmitParams{position=new Vector3(fx.Position.X,fx.Position.Y,fx.Position.Z),velocity=fx.Kind==FxKind.SmokeProxy?Vector3.up*.25f:fx.Kind==FxKind.Tracer?normal*70:dirt&&fx.Kind==FxKind.Dust?normal*1.1f+Vector3.up*1.4f+spread*.35f:normal*.5f+spread*(fx.Kind==FxKind.Dust?.25f:1.7f),startLifetime=Mathf.Max(.02f,fx.Lifetime-fx.Age),startSize=fx.Kind==FxKind.Fireball?3f:fx.Kind==FxKind.Shockwave?4f:fx.Kind==FxKind.SmokeProxy?1.1f:fx.Kind==FxKind.Dust?(concrete?.38f:dirt?.7f:.55f):fx.Kind==FxKind.MuzzleFlash?(fx.Variant==1?.42f:fx.Variant==2?.54f:.65f):fx.Kind==FxKind.Tracer?.18f:concrete||dirt?.07f:.08f,startColor=fx.Kind==FxKind.Debris&&(concrete||dirt)?new Color(.62f,.62f,.62f,1f):Color.white,rotation=turn};ps.Emit(emit,1);
+                        var emit=new ParticleSystem.EmitParams{position=new Vector3(fx.Position.X,fx.Position.Y,fx.Position.Z),velocity=fx.Kind==FxKind.SmokeProxy?Vector3.up*.25f:fx.Kind==FxKind.Tracer?normal*70:dirt&&fx.Kind==FxKind.Dust?normal*1.1f+Vector3.up*1.4f+spread*.35f:normal*.5f+spread*(fx.Kind==FxKind.Dust?.25f:1.7f),startLifetime=Mathf.Max(.02f,fx.Lifetime-fx.Age),startSize=fx.Kind==FxKind.Fireball?3f:fx.Kind==FxKind.Shockwave?4f:fx.Kind==FxKind.SmokeProxy?1.1f:fx.Kind==FxKind.Dust?(concrete?.38f:dirt?.7f:.55f):fx.Kind==FxKind.MuzzleFlash?MuzzleSize(fx.Variant):fx.Kind==FxKind.Tracer?.18f:concrete||dirt?.07f:.08f,startColor=fx.Kind==FxKind.Debris&&(concrete||dirt)?new Color(.62f,.62f,.62f,1f):Color.white,rotation=turn};ps.Emit(emit,1);
                     }
                 }
                 else if(fx.Age>age[i])ps.Simulate(fx.Age-age[i],false,false,false);
                 active[i]=true;age[i]=fx.Age;kind[i]=fx.Kind;
             }
         }
+        /// <summary>Variants 0..2 are the legacy rifle/pistol/carbine flashes; 10+ carry the ADR-102 size in hundredths.</summary>
+        private static float MuzzleSize(byte variant) => variant >= 10 ? .65f * variant / 100f : variant == 1 ? .42f : variant == 2 ? .54f : .65f;
         public void ClearVisuals(){for(int i=0;i<systems.Length;i++){if(systems[i]!=null)systems[i].Stop(false,ParticleSystemStopBehavior.StopEmittingAndClear);active[i]=false;}}
         private void ReleaseMaterials(){foreach(var value in owned)if(value!=null){if(Application.isPlaying)Destroy(value);else DestroyImmediate(value);}owned.Clear();bound=false;}
         private void OnDestroy(){ClearVisuals();ReleaseMaterials();}

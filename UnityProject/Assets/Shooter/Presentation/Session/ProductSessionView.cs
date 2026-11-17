@@ -755,9 +755,16 @@ namespace Shooter.Presentation.Session
                 if (IsKnifeDefinition(shot.WeaponId)) return;
                 // ADR-061: dual flame lobes + tracer + casing. ReducedFlash hides muzzle+tracer only.
                 var profile=WeaponVisualProfiles.Require(shot.WeaponId);
-                if(profile.MuzzleFx!="none")analyticFxPool.SpawnGunshotFeedback(shot.Origin, shot.UnitDirection, reducedFlash,
-                    profile.MuzzleFx=="pistol"?(byte)1:profile.MuzzleFx=="carbine"?(byte)2:(byte)0);
-                analyticFxPool.TrySpawn(FxKind.SmokeProxy,shot.Origin,shot.UnitDirection);
+                // The flash sits on the muzzle the viewer sees (FP view model or held weapon), not on the
+                // gameplay shot origin, which floats beside the handguard. Falls back when no socket is shown.
+                Float3 visibleMuzzle=default;
+                bool anchored=actors!=null&&actors.TryGetMuzzleWorld(ev.Instigator,out visibleMuzzle);
+                Float3 flashOrigin=anchored?visibleMuzzle:shot.Origin;
+                // ADR-102: each gun sizes its own flash; a muzzle brake adds side jets.
+                if(profile.MuzzleFlashVariant!=0)analyticFxPool.SpawnGunshotFeedback(flashOrigin, shot.UnitDirection, reducedFlash,
+                    profile.MuzzleFlashVariant,
+                    anchored?AnalyticFxPool.MuzzleSocketPushMeters:AnalyticFxPool.MuzzleFlashForwardPushMeters, profile.MuzzleFlashSideJets);
+                analyticFxPool.TrySpawn(FxKind.SmokeProxy,flashOrigin,shot.UnitDirection);
                 return;
             }
 
@@ -1215,18 +1222,20 @@ namespace Shooter.Presentation.Session
             const float w = 152f, h = 62f;
             float x = safe.xMax - w, y = safe.yMax - h;
             TacticalUi.CombatPlate(new Rect(x, y, w, h), accentBottom: true);
-            string weapon = human.ActiveWeaponSlot switch
-            {
-                1 => ShellUiCopy.Sidearm,
-                2 => ShellUiCopy.Knife,
-                3 => ShellUiCopy.Grenade,
-                _ => ShellUiCopy.Rifle
-            };
-            combatUi.Label(new Rect(x + 8, y + 4, w - 16, 11), weapon, 9, TacticalUi.Muted, TextAnchor.UpperRight);
             // ADR-085: mesh-traced silhouette of the weapon actually shown in the hands.
             var shownProfile = WeaponVisualProfiles.Resolve(
                 actors != null ? actors.LocalVisibleWeaponId : human.ActiveWeaponDefinition,
                 actors != null ? actors.LocalVisibleWeaponSlot : human.ActiveWeaponSlot);
+            // ADR-102: guns show their own name (AK-47, G17, ...); knife and grenade keep the shell copy.
+            string weapon = human.ActiveWeaponSlot switch
+            {
+                2 => ShellUiCopy.Knife,
+                3 => ShellUiCopy.Grenade,
+                _ => string.IsNullOrEmpty(shownProfile.DisplayLabel)
+                    ? (human.ActiveWeaponSlot == 1 ? ShellUiCopy.Sidearm : ShellUiCopy.Rifle)
+                    : shownProfile.DisplayLabel.ToUpperInvariant()
+            };
+            combatUi.Label(new Rect(x + 8, y + 4, w - 16, 11), weapon, 9, TacticalUi.Muted, TextAnchor.UpperRight);
             TacticalUi.Icon(new Rect(x + 8, y + 3, 64, 13), TacticalUi.WeaponIconName(shownProfile.KillFeedGlyph), TacticalUi.Muted);
             bool knife = human.ActiveWeaponSlot == 2;
             bool grenade = human.ActiveWeaponSlot == 3;

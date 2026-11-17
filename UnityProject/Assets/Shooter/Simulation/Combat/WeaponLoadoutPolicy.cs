@@ -16,21 +16,68 @@ namespace Shooter.Simulation.Combat
         public static DefinitionId KnifeId { get; } = new DefinitionId("weapons/knife");
         public static DefinitionId GrenadeId { get; } = new DefinitionId("weapons/grenade");
 
-        /// <summary>Product default: classic rifle in slot 0.</summary>
-        public static WeaponState[] CreateDefaultLoadout() => CreateLoadout(DefaultPrimaryId);
+        /// <summary>Fixed default loadout for tests and fallbacks; the product draws random loadouts (ADR-102).</summary>
+        public static WeaponState[] CreateDefaultLoadout() => CreateLoadout(DefaultPrimaryId, PistolId);
 
-        public static WeaponState[] CreateLoadout(DefinitionId primaryId)
+        public static WeaponState[] CreateLoadout(DefinitionId primaryId) => CreateLoadout(primaryId, PistolId);
+
+        public static WeaponState[] CreateLoadout(DefinitionId primaryId, DefinitionId sidearmId)
         {
             var primary = WeaponCatalog.Require(primaryId);
             if (primary.Family != WeaponFamily.PrimaryGun)
                 throw new ArgumentException("Slot 0 requires a PrimaryGun catalog entry.", nameof(primaryId));
+            var sidearm = WeaponCatalog.Require(sidearmId);
+            if (sidearm.Family != WeaponFamily.Sidearm)
+                throw new ArgumentException("Slot 1 requires a Sidearm catalog entry.", nameof(sidearmId));
             return new[]
             {
                 CreateLoaded(primary.Definition),
-                CreateLoaded(WeaponCatalog.RequireDefinition(PistolId)),
+                CreateLoaded(sidearm.Definition),
                 CreateLoaded(WeaponCatalog.RequireDefinition(KnifeId)),
                 CreateLoaded(WeaponCatalog.RequireDefinition(GrenadeId))
             };
+        }
+
+        /// <summary>
+        /// ADR-102: a deterministic weighted draw of one primary and one sidearm for a new life. The same
+        /// seed, actor and tick always give the same guns, so replays and tests stay reproducible.
+        /// </summary>
+        public static WeaponState[] CreateRandomLoadout(ulong seed, EntityId actor, uint tick)
+        {
+            ulong state = Mix(seed ^ Mix(actor.Value + 0x9E3779B97F4A7C15UL) ^ Mix(tick + 0xD1B54A32D192ED03UL));
+            var primary = Pick(WeaponFamily.PrimaryGun, Mix(state), DefaultPrimaryId);
+            var sidearm = Pick(WeaponFamily.Sidearm, Mix(state + 1), PistolId);
+            return CreateLoadout(primary, sidearm);
+        }
+
+        /// <summary>Weighted pick among catalog entries of <paramref name="family"/> in catalog order.</summary>
+        public static DefinitionId Pick(WeaponFamily family, ulong roll, DefinitionId fallback)
+        {
+            ulong total = 0;
+            var all = WeaponCatalog.All;
+            for (int i = 0; i < all.Count; i++)
+                if (all[i].Family == family) total += all[i].Definition.SpawnWeight;
+            if (total == 0) return fallback;
+            ulong target = roll % total;
+            for (int i = 0; i < all.Count; i++)
+            {
+                if (all[i].Family != family) continue;
+                ulong weight = all[i].Definition.SpawnWeight;
+                if (target < weight) return all[i].Definition.Id;
+                target -= weight;
+            }
+            return fallback;
+        }
+
+        private static ulong Mix(ulong z)
+        {
+            unchecked
+            {
+                z += 0x9E3779B97F4A7C15UL;
+                z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9UL;
+                z = (z ^ (z >> 27)) * 0x94D049BB133111EBUL;
+                return z ^ (z >> 31);
+            }
         }
 
         public static WeaponState CreateLoaded(WeaponDefinition def) =>

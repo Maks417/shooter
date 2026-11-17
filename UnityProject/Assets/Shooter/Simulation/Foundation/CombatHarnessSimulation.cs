@@ -76,6 +76,26 @@ namespace Shooter.Simulation
         /// <summary>Disables the out-of-world kill volume.</summary>
         public void ClearWorldKillBounds() { killBounds = null; }
 
+        /// <summary>
+        /// ADR-102: when set, every spawn and respawn draws a seeded random primary and sidearm. Off by
+        /// default so harness tests keep the fixed default loadout.
+        /// </summary>
+        public bool RandomLoadouts { get; set; }
+
+        private WeaponState[] LoadoutFor(EntityId id, uint atTick) =>
+            RandomLoadouts ? WeaponLoadoutPolicy.CreateRandomLoadout(shotSeed, id, atTick) : WeaponSimulator.CreateDefaultLoadout();
+
+        /// <summary>Weapon state of <paramref name="slot"/> for a live actor (lifecycle bookkeeping).</summary>
+        public bool TryGetWeapon(EntityId entity, byte slot, out WeaponState weapon)
+        {
+            MainThread();
+            weapon = default;
+            if (slot >= WeaponSimulator.SlotCount) return false;
+            for (int i = 0; i < actors.Count; i++)
+                if (actors[i].Id.Equals(entity)) { weapon = actors[i].Weapons[slot]; return true; }
+            return false;
+        }
+
         public CombatHarnessSimulation(IWorldQueries world, ulong authoritySessionId = 1, ulong shotSeed = 460072030UL)
         {
             this.world = world ?? throw new ArgumentNullException(nameof(world));
@@ -96,7 +116,7 @@ namespace Shooter.Simulation
                 Id = id,
                 Team = team,
                 Motor = new MotorBodyState(feet, default, yaw, 0, Stance.Standing, 1.8f, true, new SurfaceId(100), new Float3(0, 1, 0), 0, 0, 0, false),
-                Weapons = WeaponSimulator.CreateDefaultLoadout()
+                Weapons = LoadoutFor(id, tick)
             });
             matchState = MatchState.Playing;
             return id;
@@ -154,7 +174,7 @@ namespace Shooter.Simulation
                     0,
                     0,
                     false);
-                actor.Weapons = WeaponSimulator.CreateDefaultLoadout();
+                actor.Weapons = LoadoutFor(entity, tick);
                 actor.ActiveSlot = 0;
                 actor.DesiredSlot = 0;
                 actor.RecoilYaw = 0;
@@ -297,7 +317,8 @@ namespace Shooter.Simulation
                 for (int g = 0; g < acceptedGrenades.Count; g++)
                     ResolveGrenadeAction(actor, acceptedGrenades[g], requestedTick, ref nextEvent);
 
-                actor.Motor = motor.Step(actor.Motor, cmd, requestedTick, world, freshCommand && SlideRequested(actor.Id, localSlideActor, slideActors));
+                float moveScale = WeaponDefinition.FromId(actor.Weapons[actor.ActiveSlot].DefinitionId).MoveSpeedScale;
+                actor.Motor = motor.Step(actor.Motor, cmd, requestedTick, world, freshCommand && SlideRequested(actor.Id, localSlideActor, slideActors), moveScale);
                 AuthoritativeRecoil.Decay(ref actor.RecoilYaw, ref actor.RecoilPitch);
             }
 
@@ -337,7 +358,11 @@ namespace Shooter.Simulation
                     new ImpactPayload(result.Impact.Point, result.Impact.Normal, result.Impact.SurfaceTag, region)));
                 nextEvent = nextEvent.NextOrdinal();
                 if (!result.Impact.EntityId.IsValid) continue;
-                ApplyDirectDamage(shooter, result.Impact.EntityId, region, shot.Definition.BaseDamage, ref nextEvent, ref damageEvents);
+                // ADR-102 range falloff from the shot origin to the hit.
+                float dx = result.Impact.Point.X - result.Origin.X, dy = result.Impact.Point.Y - result.Origin.Y, dz = result.Impact.Point.Z - result.Origin.Z;
+                float meters = (float)Math.Sqrt(dx * dx + dy * dy + dz * dz);
+                ushort baseDamage = DamageMath.FalloffDamage(shot.Definition.BaseDamage, shot.Definition.FalloffScale(meters));
+                ApplyDirectDamage(shooter, result.Impact.EntityId, region, baseDamage, ref nextEvent, ref damageEvents);
             }
 
             // Preserve any same-tick in-hand detonations queued during weapon step, then append flight fuse expiry.

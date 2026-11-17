@@ -15,7 +15,8 @@
     "hipSpreadDegrees": 1.15,
     "adsSpreadDegrees": 0.18,
     "recoilPitchDegrees": 0.40,
-    "recoilYawHalfDegrees": 0.12
+    "recoilYawHalfDegrees": 0.12,
+    "spawnWeight": 0
   },
   "visual": {
     "meshKey": "rifle-carbine",

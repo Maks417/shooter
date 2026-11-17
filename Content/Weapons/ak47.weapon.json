@@ -1,0 +1,52 @@
+{
+  "schemaId": "shooter.weapon.v1",
+  "id": "weapons/ak47",
+  "order": 5,
+  "displayLabel": "AK-47",
+  "family": "PrimaryGun",
+  "combat": {
+    "fireMode": "Automatic",
+    "fireIntervalTicks": 6,
+    "reloadTicks": 150,
+    "equipTicks": 26,
+    "magazineSize": 30,
+    "reserveCapacity": 90,
+    "baseDamage": 36,
+    "hipSpreadDegrees": 1.3,
+    "adsSpreadDegrees": 0.22,
+    "recoilPitchDegrees": 0.5,
+    "recoilYawHalfDegrees": 0.18,
+    "falloffStartMeters": 25,
+    "falloffEndMeters": 60,
+    "falloffMinScale": 0.75,
+    "moveSpeedScale": 0.95,
+    "spawnWeight": 3
+  },
+  "visual": {
+    "meshKey": "ak47",
+    "geometryRecipe": "ak47",
+    "magazineCycle": true,
+    "nearFieldScale": 1.12,
+    "nearFieldHipBias": [
+      0.08,
+      -0.01,
+      -0.1
+    ],
+    "hipRotationDegrees": [
+      0,
+      -12,
+      -5
+    ],
+    "optic": "Irons",
+    "cycleTravelMeters": 0.08,
+    "adsSeconds": 0.22,
+    "handlingStyle": "Ak",
+    "muzzleFlashScale": 1.15
+  },
+  "audio": {
+    "shot": "Ak47Shot"
+  },
+  "hud": {
+    "killFeedGlyph": "Ak47"
+  }
+}

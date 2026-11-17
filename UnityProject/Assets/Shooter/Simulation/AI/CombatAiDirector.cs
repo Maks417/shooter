@@ -341,7 +341,8 @@ namespace Shooter.Simulation.AI
             board.Alive = true;
             board.State = AiState.Patrol;
             board.Health = 100;
-            var primary = Combat.WeaponCatalog.RequireDefinition(Combat.WeaponLoadoutPolicy.DefaultPrimaryId);
+            // The lifecycle sync overwrites ammo and the issued guns before the next plan (ADR-102).
+            var primary = ActiveGun(board);
             board.MagAmmo = primary.MagazineSize;
             board.ReserveAmmo = primary.ReserveCapacity;
             board.DesiredSlot = 0;
@@ -788,7 +789,7 @@ namespace Shooter.Simulation.AI
             if (board.State == AiState.Reload)
             {
                 // Authority owns reload timing and ammunition; leave only once the magazine actually grew.
-                int magSize = PrimaryMagazineSize();
+                int magSize = ActiveMagazineSize(board);
                 if (board.MagAmmo > board.ReloadStartMag || board.MagAmmo >= magSize)
                     Enter(board, board.HasVisibleTarget ? AiState.Engage
                         : board.CoverPoint.HasValue || board.CoverReservation.HasValue ? AiState.SeekCover : AiState.Search);
@@ -801,7 +802,7 @@ namespace Shooter.Simulation.AI
                     !board.CoverPoint.HasValue && !board.CoverProbeActive)
                     CoverFinder.Start(board, board.LastSeenEnemy.Value);
             }
-            else if (board.MagAmmo < TacticalReloadThreshold() && board.ReserveAmmo > 0 && !board.HasVisibleTarget &&
+            else if (board.MagAmmo < TacticalReloadThreshold(board) && board.ReserveAmmo > 0 && !board.HasVisibleTarget &&
                      (board.LastSeenTick == 0 || unchecked(tick - board.LastSeenTick) > AiTuning.CombatMemoryTicks) &&
                      (IsCalm(board.State) || board.InCover))
             {
@@ -810,7 +811,7 @@ namespace Shooter.Simulation.AI
                 Enter(board, AiState.Reload);
             }
             else if (board.InCover && board.State == AiState.SeekCover && !board.HasVisibleTarget &&
-                     board.MagAmmo < PrimaryMagazineSize() && board.ReserveAmmo > 0)
+                     board.MagAmmo < ActiveMagazineSize(board) && board.ReserveAmmo > 0)
             {
                 board.ReloadStartMag = board.MagAmmo;
                 Enter(board, AiState.Reload);
@@ -1527,8 +1528,10 @@ namespace Shooter.Simulation.AI
             {
                 float tol = AimController.FireTolerance(board.TargetDistance);
                 uint interval = ActiveGunFireInterval(board);
+                // Precision guns only fire on settled aim; there is no follow-up spray to correct a miss.
+                bool precision = IsPrecisionGun(board);
                 fire = FireDiscipline.Update(board, tick, board.TargetDistance,
-                    board.AimOffsetRadians <= tol, board.AimOffsetRadians <= tol * 2.5f, interval);
+                    board.AimOffsetRadians <= (precision ? tol * 0.6f : tol), board.AimOffsetRadians <= (precision ? tol : tol * 2.5f), interval);
                 if (fire && board.BurstStartTick == tick) counters.BurstsStarted++;
                 if (fire)
                 {
@@ -1540,6 +1543,7 @@ namespace Shooter.Simulation.AI
 
             if (board.State == AiState.Reload && slot < 2) buttons |= InputButtons.ReloadPressed;
             if (engaging && holdStill && range == EngageRange.Long && slot < 2) buttons |= InputButtons.AimHeld;
+            if (engaging && holdStill && range != EngageRange.Close && IsPrecisionGun(board)) buttons |= InputButtons.AimHeld;
 
             board.SlideIntent = false;
             if (sprint)
@@ -1595,19 +1599,31 @@ namespace Shooter.Simulation.AI
             return new InputCommand(board.Self, simulationTick, sequence, mx, my, board.Yaw, board.Pitch, buttons, slot);
         }
 
-        private static int PrimaryMagazineSize() =>
-            Combat.WeaponCatalog.RequireDefinition(Combat.WeaponLoadoutPolicy.DefaultPrimaryId).MagazineSize;
+        /// <summary>The gun in the commanded slot: the life's own primary or sidearm (ADR-102).</summary>
+        private static Combat.WeaponDefinition ActiveGun(AiBlackboard board) =>
+            Combat.WeaponCatalog.TryGet(board.DesiredSlot == 1 ? board.SidearmWeapon : board.PrimaryWeapon, out var entry)
+                ? entry.Definition
+                : Combat.WeaponCatalog.RequireDefinition(board.DesiredSlot == 1 ? Combat.WeaponLoadoutPolicy.PistolId : Combat.WeaponLoadoutPolicy.DefaultPrimaryId);
 
-        private static int TacticalReloadThreshold() =>
-            Math.Max(1, PrimaryMagazineSize() * 2 / 5);
+        private static int ActiveMagazineSize(AiBlackboard board) => ActiveGun(board).MagazineSize;
+
+        private static int TacticalReloadThreshold(AiBlackboard board) =>
+            Math.Max(1, ActiveMagazineSize(board) * 2 / 5);
 
         private static uint ActiveGunFireInterval(AiBlackboard board)
         {
-            var id = board.DesiredSlot == 1
-                ? Combat.WeaponLoadoutPolicy.PistolId
-                : Combat.WeaponLoadoutPolicy.DefaultPrimaryId;
-            uint interval = Combat.WeaponCatalog.RequireDefinition(id).FireIntervalTicks;
+            var gun = ActiveGun(board);
+            uint interval = gun.FireMode == Combat.FireMode.Burst
+                ? gun.BurstIntervalTicks * (uint)Math.Max(0, gun.BurstCount - 1) + gun.FireIntervalTicks
+                : gun.FireIntervalTicks;
             return interval == 0 ? 1u : interval;
+        }
+
+        /// <summary>Marksman and sniper guns: bots aim down sights from medium range and wait for settled aim.</summary>
+        private static bool IsPrecisionGun(AiBlackboard board)
+        {
+            var gun = ActiveGun(board);
+            return gun.FireMode == Combat.FireMode.SemiAutomatic && board.DesiredSlot == 0 && gun.AdsSpreadRadians < 0.1f * (float)Math.PI / 180f;
         }
 
         private static void UpdateLoadout(AiBlackboard board, bool visible)

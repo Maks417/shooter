@@ -149,6 +149,13 @@ namespace Shooter.Presentation.Session
             KillFeedWeapon.Pistol => "weapon.pistol",
             KillFeedWeapon.Knife => "weapon.knife",
             KillFeedWeapon.Grenade => "weapon.grenade",
+            KillFeedWeapon.Ak47 => "weapon.ak47",
+            KillFeedWeapon.Ak102 => "weapon.ak102",
+            KillFeedWeapon.M16 => "weapon.m16",
+            KillFeedWeapon.Mk14 => "weapon.mk14",
+            KillFeedWeapon.Mtac338 => "weapon.mtac338",
+            KillFeedWeapon.G17 => "weapon.g17",
+            KillFeedWeapon.GoldenEagle => "weapon.golden-eagle",
             _ => "weapon.rifle"
         };
 
@@ -173,8 +180,13 @@ namespace Shooter.Presentation.Session
             {
                 case KillFeedWeapon.Rifle:
                 case KillFeedWeapon.Carbine:
+                case KillFeedWeapon.Ak47:
+                case KillFeedWeapon.Ak102:
+                case KillFeedWeapon.M16:
+                case KillFeedWeapon.Mk14:
+                case KillFeedWeapon.Mtac338:
                 {
-                    bool carbine = weapon == KillFeedWeapon.Carbine;
+                    bool carbine = weapon == KillFeedWeapon.Carbine || weapon == KillFeedWeapon.Ak102;
                     float barrelEnd = carbine ? 0.88f : 0.98f;
                     // Stock (tapered by two parts), receiver, handguard, barrel, magazine, grip, optic.
                     Part(new Rect(x, y + h * 0.30f, w * 0.20f, h * 0.30f), color, k);
@@ -188,6 +200,8 @@ namespace Shooter.Presentation.Session
                     break;
                 }
                 case KillFeedWeapon.Pistol:
+                case KillFeedWeapon.G17:
+                case KillFeedWeapon.GoldenEagle:
                 {
                     // Long thin slide, frame, angled grip, trigger guard.
                     Part(new Rect(x + w * 0.08f, y + h * 0.18f, w * 0.80f, h * 0.24f), color, k);
@@ -1192,7 +1206,8 @@ namespace Shooter.Presentation.Session
             ScoreRibbon(new Rect(x0 + 600, y + 24, 260, 40), 1f, 10f, 4, ReducedMotion, ReducedFlash);
             y += 90;
             Label(new Rect(x0, y, 400, 16), "KILL FEED ICONS  (FEED SIZE / LARGE)", 12, Accent);
-            var weapons = new[] { KillFeedWeapon.Rifle, KillFeedWeapon.Carbine, KillFeedWeapon.Pistol, KillFeedWeapon.Knife, KillFeedWeapon.Grenade };
+            var weapons = new[] { KillFeedWeapon.Ak47, KillFeedWeapon.Ak102, KillFeedWeapon.M16, KillFeedWeapon.Mk14, KillFeedWeapon.Mtac338,
+                KillFeedWeapon.G17, KillFeedWeapon.GoldenEagle, KillFeedWeapon.Knife, KillFeedWeapon.Grenade };
             for (int i = 0; i < weapons.Length; i++)
             {
                 CombatPlate(new Rect(x0 + i * 110, y + 22, 100, 26), strong: true);

@@ -38,6 +38,7 @@ ENUM_SOURCES = {
     "WeaponOpticMode": ASSETS / "Presentation/Model/View/WeaponVisualProfiles.cs",
     "SynthVoiceKind": ASSETS / "Presentation/Model/Audio/Runtime/SynthAudioMixer.cs",
     "KillFeedWeapon": ASSETS / "Presentation/Model/Hud/KillFeedText.cs",
+    "WeaponHandlingStyle": ASSETS / "Presentation/Model/View/WeaponVisualProfiles.cs",
 }
 
 ID_PATTERN = re.compile(r"^weapons/[a-z0-9]+(?:-[a-z0-9]+)*$")
@@ -51,12 +52,14 @@ COMBAT_REQUIRED = ["fireMode", "fireIntervalTicks", "reloadTicks", "equipTicks",
 
 VISUAL_REQUIRED = ["meshKey", "optic", "magazineCycle", "nearFieldScale", "nearFieldHipBias", "hipRotationDegrees",
                    "cycleTravelMeters"]
-VISUAL_OPTIONAL = {"geometryRecipe", "geometryParts", "muzzleFx", "adsSeconds"}
+VISUAL_OPTIONAL = {"geometryRecipe", "geometryParts", "muzzleFx", "adsSeconds",
+                   # ADR-102: handling choreography, magnified-optic FOV and muzzle flash size.
+                   "handlingStyle", "adsFovDegrees", "muzzleFlashScale", "muzzleFlashSideJets"}
 # ADR-082 geometry.weapon 1.1.0 numeric rifle parts (millimetres or counts).
 GEOMETRY_PART_NUMBERS = ["handguardFrontMm", "barrelFrontMm", "topRailTeeth", "gasBlockZMm", "gasTubeZMm",
                          "gasTubeLengthMm", "frontSightZMm"]
 FAMILY_FIRE_MODES = {
-    "PrimaryGun": {"Automatic", "SemiAutomatic"},
+    "PrimaryGun": {"Automatic", "SemiAutomatic", "Burst"},
     "Sidearm": {"Automatic", "SemiAutomatic"},
     "Melee": {"Melee"},
     "Throwable": {"Throwable"},
@@ -79,7 +82,11 @@ class Literal(str):
 
 COMBAT_OPTIONAL = {"maxRangeMeters": Literal("300"), "fuseTicks": Literal("0"),
                    "throwSpeedMetersPerSecond": Literal("0"), "blastRadiusMeters": Literal("0"),
-                   "consumesAmmo": True, "allowsSprintFire": False}
+                   "consumesAmmo": True, "allowsSprintFire": False,
+                   # ADR-102 handling: burst cadence, range falloff, move speed and random-loadout weight.
+                   "burstCount": Literal("0"), "burstIntervalTicks": Literal("0"),
+                   "falloffStartMeters": Literal("0"), "falloffEndMeters": Literal("0"), "falloffMinScale": Literal("1"),
+                   "moveSpeedScale": Literal("1"), "spawnWeight": Literal("1")}
 
 
 def enum_members(root: Path, name: str) -> set:
@@ -146,6 +153,13 @@ def vector(value, where, limit):
     return [number(x, where, minimum=-limit, maximum=limit) for x in value]
 
 
+def adsfov(value, where):
+    text = number(value, where, maximum=80)
+    if float(text) != 0 and float(text) < 5:
+        raise DefinitionError(where + ": 0 (optic default) or 5..80 degrees")
+    return text
+
+
 def validate(root: Path, path: Path, doc, enums) -> dict:
     where = str(path.relative_to(root)).replace("\\", "/")
     keys(doc, where, sorted(TOP_KEYS))
@@ -180,6 +194,23 @@ def validate(root: Path, path: Path, doc, enums) -> dict:
         fields[name] = number(combat.get(name, COMBAT_OPTIONAL[name]), c + name, maximum=10000)
     for name in ("consumesAmmo", "allowsSprintFire"):
         fields[name] = boolean(combat.get(name, COMBAT_OPTIONAL[name]), c + name)
+    fields["burstCount"] = number(combat.get("burstCount", COMBAT_OPTIONAL["burstCount"]), c + "burstCount", maximum=8, integer=True)
+    fields["burstIntervalTicks"] = number(combat.get("burstIntervalTicks", COMBAT_OPTIONAL["burstIntervalTicks"]),
+                                          c + "burstIntervalTicks", maximum=60, integer=True)
+    for name in ("falloffStartMeters", "falloffEndMeters"):
+        fields[name] = number(combat.get(name, COMBAT_OPTIONAL[name]), c + name, maximum=1000)
+    fields["falloffMinScale"] = number(combat.get("falloffMinScale", COMBAT_OPTIONAL["falloffMinScale"]), c + "falloffMinScale",
+                                       minimum=0.1, maximum=1)
+    fields["moveSpeedScale"] = number(combat.get("moveSpeedScale", COMBAT_OPTIONAL["moveSpeedScale"]), c + "moveSpeedScale",
+                                      minimum=0.5, maximum=1.2)
+    fields["spawnWeight"] = number(combat.get("spawnWeight", COMBAT_OPTIONAL["spawnWeight"]), c + "spawnWeight",
+                                   maximum=1000, integer=True)
+    if fire_mode == "Burst" and (int(fields["burstCount"]) < 2 or int(fields["burstIntervalTicks"]) < 1):
+        raise DefinitionError(c + "Burst needs burstCount >= 2 and burstIntervalTicks >= 1")
+    if fire_mode != "Burst" and int(fields["burstCount"]) != 0:
+        raise DefinitionError(c + "burstCount is only valid for fireMode Burst")
+    if float(fields["falloffStartMeters"]) > 0 and float(fields["falloffEndMeters"]) <= float(fields["falloffStartMeters"]):
+        raise DefinitionError(c + "falloffEndMeters must be greater than falloffStartMeters")
     if family in ("PrimaryGun", "Sidearm") and int(fields["fireIntervalTicks"]) < 1:
         raise DefinitionError(c + "fireIntervalTicks: guns need at least 1 tick between shots")
     if family == "Throwable" and (int(fields["fuseTicks"]) < 1 or float(fields["blastRadiusMeters"]) <= 0):
@@ -255,6 +286,11 @@ def validate(root: Path, path: Path, doc, enums) -> dict:
         "cycleTravelMeters": number(visual["cycleTravelMeters"], v + "cycleTravelMeters", maximum=0.5),
         # ADR-099: cosmetic ADS raise time; the C# default is 0.15 s.
         "adsSeconds": number(visual.get("adsSeconds", Literal("0.15")), v + "adsSeconds", minimum=0.05, maximum=1),
+        "handlingStyle": choice(visual.get("handlingStyle", "Auto"), v + "handlingStyle", enums["WeaponHandlingStyle"]),
+        "adsFovDegrees": adsfov(visual.get("adsFovDegrees", Literal("0")), v + "adsFovDegrees"),
+        "muzzleFlashScale": number(visual.get("muzzleFlashScale", Literal("-1")), v + "muzzleFlashScale", minimum=-1, maximum=2.5)
+        if "muzzleFlashScale" not in visual else number(visual["muzzleFlashScale"], v + "muzzleFlashScale", minimum=0, maximum=2.5),
+        "muzzleFlashSideJets": boolean(visual.get("muzzleFlashSideJets", False), v + "muzzleFlashSideJets"),
         "shotVoice": choice(audio["shot"], where + ".audio.shot", enums["SynthVoiceKind"]),
         "glyph": glyph,
         "recipeSource": recipe_source,
@@ -327,7 +363,12 @@ def render_catalog(weapons) -> str:
             "                    maxRangeMeters: " + f(c["maxRangeMeters"]) + ", fuseTicks: " + c["fuseTicks"]
             + ", throwSpeedMetersPerSecond: " + f(c["throwSpeedMetersPerSecond"]) + ",\n"
             "                    blastRadiusMeters: " + f(c["blastRadiusMeters"]) + ", consumesAmmo: " + b(c["consumesAmmo"])
-            + ", allowsSprintFire: " + b(c["allowsSprintFire"]) + "),\n"
+            + ", allowsSprintFire: " + b(c["allowsSprintFire"]) + ",\n"
+            "                    burstCount: " + c["burstCount"] + ", burstIntervalTicks: " + c["burstIntervalTicks"]
+            + ", falloffStartMeters: " + f(c["falloffStartMeters"]) + ", falloffEndMeters: " + f(c["falloffEndMeters"])
+            + ",\n"
+            "                    falloffMinScale: " + f(c["falloffMinScale"]) + ", moveSpeedScale: " + f(c["moveSpeedScale"])
+            + ", spawnWeight: " + c["spawnWeight"] + "),\n"
             "                WeaponFamily." + w["family"] + ", \"" + w["id"] + "\")")
     return (HEADER + "#nullable enable\nusing Shooter.Contracts;\n\nnamespace Shooter.Simulation.Combat\n{\n"
             "    public static partial class WeaponCatalog\n    {\n"
@@ -353,7 +394,9 @@ def render_profiles(weapons) -> str:
             + f(w["combat"]["recoilYawHalfDegrees"]) + ",\n"
             "                equipTicks: " + w["combat"]["equipTicks"] + ", fireIntervalTicks: "
             + w["combat"]["fireIntervalTicks"] + ", reloadTicks: " + w["combat"]["reloadTicks"] + ", fuseTicks: "
-            + w["combat"]["fuseTicks"] + ", adsSeconds: " + f(w["adsSeconds"]) + ")")
+            + w["combat"]["fuseTicks"] + ", adsSeconds: " + f(w["adsSeconds"]) + ",\n"
+            "                handlingStyle: WeaponHandlingStyle." + w["handlingStyle"] + ", adsFovDegrees: " + f(w["adsFovDegrees"])
+            + ", muzzleFlashScale: " + f(w["muzzleFlashScale"]) + ", muzzleFlashSideJets: " + b(w["muzzleFlashSideJets"]) + ")")
     return (HEADER + "#nullable enable\nusing Shooter.Contracts;\nusing Shooter.Presentation.Audio;\n"
             "using Shooter.Presentation.Hud;\n\nnamespace Shooter.Presentation.View\n{\n"
             "    public static partial class WeaponVisualProfiles\n    {\n"

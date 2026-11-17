@@ -1,0 +1,51 @@
+{
+  "schemaId": "shooter.weapon.v1",
+  "id": "weapons/golden-eagle",
+  "order": 11,
+  "displayLabel": "Golden Eagle .50",
+  "family": "Sidearm",
+  "combat": {
+    "fireMode": "SemiAutomatic",
+    "fireIntervalTicks": 22,
+    "reloadTicks": 120,
+    "equipTicks": 22,
+    "magazineSize": 7,
+    "reserveCapacity": 28,
+    "baseDamage": 55,
+    "hipSpreadDegrees": 2.2,
+    "adsSpreadDegrees": 0.35,
+    "recoilPitchDegrees": 1.6,
+    "recoilYawHalfDegrees": 0.35,
+    "falloffStartMeters": 15,
+    "falloffEndMeters": 40,
+    "falloffMinScale": 0.7,
+    "spawnWeight": 2
+  },
+  "visual": {
+    "meshKey": "golden-eagle",
+    "geometryRecipe": "golden-eagle",
+    "magazineCycle": true,
+    "nearFieldScale": 1.15,
+    "nearFieldHipBias": [
+      0.08,
+      -0.085,
+      0.11
+    ],
+    "hipRotationDegrees": [
+      0,
+      -3,
+      -2
+    ],
+    "optic": "Irons",
+    "cycleTravelMeters": 0.045,
+    "adsSeconds": 0.17,
+    "handlingStyle": "Pistol",
+    "muzzleFlashScale": 1.1
+  },
+  "audio": {
+    "shot": "EagleShot"
+  },
+  "hud": {
+    "killFeedGlyph": "GoldenEagle"
+  }
+}

@@ -192,6 +192,42 @@ namespace Shooter.Simulation.Tests.Fx
         }
 
         [Fact]
+        public void Flipped_muzzle_flipbook_starts_bright_in_the_top_left_tile()
+        {
+            // Unity's texture-sheet animation plays the top-left tile first; raw rows start at the bottom.
+            var plane = Shooter.Generation.Fx.FxFlipbook.Bake(Shooter.Generation.Fx.FlipbookKind.Muzzle, 32);
+            var bytes = AnalyticFxPool.FlipTextureRows(plane.MipBytes[0], plane.Width, plane.Height);
+            int n = plane.Width, cell = n / 8;
+            long TileAlpha(int column, int topRow)
+            {
+                long sum = 0;
+                for (int y = 0; y < cell; y++)
+                    for (int x = 0; x < cell; x++)
+                    {
+                        int rawRow = n - 1 - (topRow * cell + y);
+                        sum += bytes[(rawRow * n + column * cell + x) * 4 + 3];
+                    }
+                return sum;
+            }
+            long first = TileAlpha(0, 0), last = TileAlpha(7, 7);
+            Assert.True(first > 0);
+            Assert.True(first > last * 20, $"first {first} last {last}");
+        }
+
+        [Fact]
+        public void Socket_anchored_flash_uses_short_push()
+        {
+            var pool = new AnalyticFxPool();
+            pool.SpawnGunshotFeedback(new Float3(0, 1, 0), new Float3(0, 0, 1), false, 0, AnalyticFxPool.MuzzleSocketPushMeters);
+            for (int i = 0; i < AnalyticFxPool.MaxInstances; i++)
+            {
+                var fx = pool.Get(i);
+                if (fx.Active && fx.Kind == FxKind.MuzzleFlash) { Assert.InRange(fx.Position.Z, 0.04f, 0.08f); return; }
+            }
+            Assert.Fail("no flash");
+        }
+
+        [Fact]
         public void SpawnGunshotFeedback_reduced_flash_keeps_casing_only()
         {
             var pool = new AnalyticFxPool();

@@ -26,6 +26,14 @@ namespace Shooter.Simulation.Combat
             return (ushort)rounded;
         }
 
+        /// <summary>Base damage after range falloff, rounded like region damage and never below 1 (ADR-102).</summary>
+        public static ushort FalloffDamage(ushort baseDamage, float scale)
+        {
+            if (scale >= 1f) return baseDamage;
+            int rounded = (int)Math.Floor(baseDamage * (double)scale + 0.5);
+            return (ushort)(rounded < 1 ? 1 : rounded);
+        }
+
         public static ushort Apply(ushort health, ushort amount, out ushort remaining)
         {
             if (health == 0) { remaining = 0; return 0; }

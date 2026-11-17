@@ -100,6 +100,9 @@ namespace Shooter.Presentation.Rig
         {
             public Mesh? Held, Local, Magazine, Cycle;
             public Float3 SightSocket;
+            public Float3 MuzzleSocket;
+            public Float3 SupportSocket;
+            public bool HasSupportSocket;
         }
         private readonly Dictionary<string, WeaponMeshSet> weaponMeshes = new Dictionary<string, WeaponMeshSet>(StringComparer.Ordinal);
         private Material[]? team1Palette;
@@ -110,7 +113,8 @@ namespace Shooter.Presentation.Rig
         private readonly Dictionary<Mesh, Material[]> weaponPalettes = new Dictionary<Mesh, Material[]>();
         private WeaponRecipe? motionRecipe;
         private DefinitionId localVisibleWeaponId;
-        private DefinitionId localPrimaryWeaponId = new DefinitionId("weapons/rifle");
+        /// <summary>Last gun seen in each slot this life: random loadouts mean a slot no longer implies a weapon (ADR-102).</summary>
+        private readonly DefinitionId[] localSlotWeaponIds = new DefinitionId[4];
         private EntityId localHuman;
         private Camera? fpsCamera;
         private Transform? localWeapon;
@@ -296,7 +300,7 @@ namespace Shooter.Presentation.Rig
                     if (cycle != null) { set.Cycle = Own(Upload(cycle, false)); silhouetteParts.Add(cycle); }
                     // ADR-085: HUD weapon icons are traced from these same packaged LOD0 meshes.
                     silhouettes.Add(new WeaponSilhouetteSource(source.MeshKey, WeaponSilhouetteSource.SpanFor(source.MeshKey), silhouetteParts));
-                    if (source.Recipe != null) set.SightSocket = FindSocket(WeaponGeometry.Sockets(source.Recipe), "sight-eye");
+                    if (source.Recipe != null) { var sockets = WeaponGeometry.Sockets(source.Recipe); set.SightSocket = FindSocket(sockets, "sight-eye"); set.MuzzleSocket = FindSocket(sockets, "muzzle"); set.SupportSocket = FindSocket(sockets, "left-hand-grip"); set.HasSupportSocket = true; }
                     weaponMeshes[source.MeshKey] = set;
                     yield return 0;
                 }
@@ -352,7 +356,8 @@ namespace Shooter.Presentation.Rig
                     rifleMetal, riflePolymer,
                     NearFieldSurface(MapVisualClosure.FirstPersonSurfacePaths[4], "Machined steel bevels and fasteners"),
                     NearFieldSurface(MapVisualClosure.FirstPersonSurfacePaths[5], "Weapon recesses and rubber"),
-                    NearFieldSurface(MapVisualClosure.FirstPersonSurfacePaths[6], "Olive enamel grenade shell"));
+                    NearFieldSurface(MapVisualClosure.FirstPersonSurfacePaths[6], "Olive enamel grenade shell"),
+                    value => owned.Add(value));
                 firstPersonHandMaterials = new[] { sleeve, glove, riflePolymer };
 
                 visualsBound = true;complete=true;
@@ -564,8 +569,8 @@ namespace Shooter.Presentation.Rig
                 DefinitionId weaponId = human.ActiveWeaponDefinition.IsValid
                     ? human.ActiveWeaponDefinition
                     : WeaponVisualProfiles.DefaultIdForSlot(slot);
-                if (slot == ProductAuthorityActionView.RifleSlot && weaponId.IsValid)
-                    localPrimaryWeaponId = weaponId;
+                if (!localViewHuman.Equals(human.EntityId)) Array.Clear(localSlotWeaponIds, 0, localSlotWeaponIds.Length);
+                if (slot < localSlotWeaponIds.Length && weaponId.IsValid) localSlotWeaponIds[slot] = weaponId;
                 if (!localViewHuman.Equals(human.EntityId))
                 {
                     localView.ResetForLife(slot);
@@ -573,8 +578,6 @@ namespace Shooter.Presentation.Rig
                     localLocomotion.Reset();
                     hasLookSample = false;
                     localViewHuman = human.EntityId;
-                    if (slot == ProductAuthorityActionView.RifleSlot && weaponId.IsValid)
-                        localPrimaryWeaponId = weaponId;
                 }
                 actions.SyncLifecycle(human.EntityId, slot, true);
                 localView.SetActiveWeaponSlot(slot);
@@ -599,12 +602,13 @@ namespace Shooter.Presentation.Rig
                     activeProfile.EquipSeconds, holdOutgoing: localView.Throwing);
                 // Mesh follows the holster→draw visible slot so the outgoing gun finishes tucking first.
                 byte shown = localHandling.VisibleWeaponSlot;
-                // Mid-switch keeps the outgoing slot's last known id (primary may be carbine).
+                // Mid-switch keeps the outgoing slot's last known id (each life draws its own guns).
                 DefinitionId shownId = shown == slot
                     ? weaponId
-                    : (shown == ProductAuthorityActionView.RifleSlot
-                        ? localPrimaryWeaponId
-                        : WeaponVisualProfiles.DefaultIdForSlot(shown));
+                    : shown < localSlotWeaponIds.Length && localSlotWeaponIds[shown].IsValid
+                        ? localSlotWeaponIds[shown]
+                        : WeaponVisualProfiles.DefaultIdForSlot(shown);
+                localHandling.VisibleWeaponId = shownId;
                 localVisibleWeaponSlot = shown;
                 localVisibleWeaponId = shownId;
                 var profile = WeaponVisualProfiles.Resolve(shownId, shown);
@@ -615,7 +619,7 @@ namespace Shooter.Presentation.Rig
                 bool magazineEmpty = human.Magazine == 0 && shown == slot;
                 float adsPresent = FirstPersonHandling.AdsPresentationBlend(pose.AdsBlend, localHandling.EquipBlend);
                 localAdsPresentation = adsPresent;
-                var reloadPose = FirstPersonReloadChoreography.Evaluate(profile.Family, reload, magazineEmpty,
+                var reloadPose = FirstPersonReloadChoreography.Evaluate(profile, reload, magazineEmpty,
                     profile.ReloadSeconds, reducedMotion);
                 var offset = localHandling.PositionOffset(adsPresent, reload, reducedMotion, recoilEnergy, magazineEmpty);
                 var rotation = localHandling.RotationDegrees(adsPresent, reload, reducedMotion, recoilEnergy, magazineEmpty);
@@ -646,7 +650,7 @@ namespace Shooter.Presentation.Rig
                         movement.Value.HorizontalSpeedMetersPerSecond)
                     : FirstPersonLocomotionInput.Standing;
                 bool busy = reload > 0f || localHandling.IsSwitching || localView.Throwing || localView.Cooking
-                    || localView.MeleePhase01 > 0f || recoilEnergy > 0.02f;
+                    || localView.MeleePhase01 > 0f || localView.BoltCycling || recoilEnergy > 0.02f;
                 localLocomotion.Step(locomotionInput, dtSeconds, adsPresent, busy, lookYawDelta, lookPitchDelta);
                 var moveOffset = localLocomotion.PositionOffset(shown, adsPresent, reducedMotion);
                 var moveRotation = localLocomotion.RotationDegrees(shown, adsPresent, reducedMotion);
@@ -998,7 +1002,6 @@ namespace Shooter.Presentation.Rig
                     supportHand.sharedMesh = firstPersonHandMeshes[index + 1];
                     triggerHand.sharedMaterials = firstPersonHandMaterials;
                     supportHand.sharedMaterials = firstPersonHandMaterials;
-                    supportHand.transform.localPosition = Vector3.zero;
                     for (int hand=0;hand<2;hand++)
                     {
                         var skeleton=handSkeletons[index+hand]!;
@@ -1010,7 +1013,20 @@ namespace Shooter.Presentation.Rig
                         }
                     }
                 }
+                // ADR-102: the hand meshes are baked per slot for the classic rifle (handguard grip at z 340 mm) and
+                // pistol; each gun moves the support hand onto its own left-hand-grip socket.
+                supportHand.transform.localPosition = V(SupportHandShift(profile, slot));
             }
+        }
+
+        private static readonly Float3 RifleSupportBind = new Float3(0f, .010f, .340f);
+        private static readonly Float3 PistolSupportBind = new Float3(-.022f, 0f, -.005f);
+
+        private Float3 SupportHandShift(in WeaponVisualProfile profile, byte slot)
+        {
+            if (slot > 1 || !weaponMeshes.TryGetValue(profile.MeshAssetKey, out var set) || !set.HasSupportSocket) return default;
+            var bind = slot == 0 ? RifleSupportBind : PistolSupportBind;
+            return new Float3(set.SupportSocket.X - bind.X, set.SupportSocket.Y - bind.Y, set.SupportSocket.Z - bind.Z);
         }
 
         private void PoseLocalHands(in WeaponVisualProfile profile, byte slot, in ReloadPose reloadPose,
@@ -1022,7 +1038,7 @@ namespace Shooter.Presentation.Rig
             // grenade pin pull; the elbow stays on its bind so the sleeve stretches between them (ADR-069).
             Float3 reach=new Float3(reloadPose.SupportWristOffset.X+specialWrist.X,reloadPose.SupportWristOffset.Y+specialWrist.Y,
                 reloadPose.SupportWristOffset.Z+specialWrist.Z);
-            float supportOpen=gun ? reloadPose.SupportOpen01 : specialOpen;
+            float supportOpen=gun ? Math.Max(reloadPose.SupportOpen01, specialOpen) : specialOpen;
             for(int hand=0;hand<2;hand++)
             {
                 var skeleton=handSkeletons[slot*2+hand]!;
@@ -1088,6 +1104,31 @@ namespace Shooter.Presentation.Rig
         private WeaponMeshSet? MeshSetForProfile(in WeaponVisualProfile profile) =>
             weaponMeshes.TryGetValue(profile.MeshAssetKey, out var set) ? set
             : weaponMeshes.TryGetValue(WeaponVisualProfiles.MeshKeyRifle, out var rifle) ? rifle : null;
+
+        /// <summary>
+        /// World position of the muzzle the viewer sees for <paramref name="instigator"/>: the first-person
+        /// view model for the local player, the held weapon otherwise. Presentation-only placement of the
+        /// flash; the authoritative shot origin is unchanged.
+        /// </summary>
+        public bool TryGetMuzzleWorld(EntityId instigator, out Float3 muzzle)
+        {
+            muzzle = default;
+            if (instigator.Equals(localHuman) && localWeapon != null && localWeapon.gameObject.activeInHierarchy)
+                return TryMuzzle(localWeapon, localVisibleWeaponId, out muzzle);
+            if (avatars.TryGetValue(instigator.Value, out var avatar) && !avatar.Corpse && avatar.Weapon != null && avatar.Weapon.gameObject.activeInHierarchy)
+                return TryMuzzle(avatar.Weapon, avatar.WeaponDefinition, out muzzle);
+            return false;
+        }
+
+        private bool TryMuzzle(Transform weapon, DefinitionId id, out Float3 muzzle)
+        {
+            muzzle = default;
+            if (!WeaponVisualProfiles.TryGet(id, out var profile) || !weaponMeshes.TryGetValue(profile.MeshAssetKey, out var set)) return false;
+            if (set.MuzzleSocket.X == 0 && set.MuzzleSocket.Y == 0 && set.MuzzleSocket.Z == 0) return false;
+            Vector3 world = weapon.TransformPoint(V(set.MuzzleSocket));
+            muzzle = new Float3(world.x, world.y, world.z);
+            return true;
+        }
 
         private Float3 SightSocketForProfile(in WeaponVisualProfile profile) =>
             weaponMeshes.TryGetValue(profile.MeshAssetKey, out var set) ? set.SightSocket : default;

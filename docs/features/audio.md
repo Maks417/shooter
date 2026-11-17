@@ -88,6 +88,10 @@ Follow-up to T089 / ADR-062, authorized by the owner after the source review. Bo
 
 Validation: pure tests cover rates/pitch, direction changes during a voice, priority/cap, obstruction energy, reflection tail/stop and cull fade; a Unity integration test checks actual map-wall occlusion, cosmetic exclusion and the query budget. Exact results and build/device limits are recorded in the [M11 handoff](../milestones/m11-playable-release/handoff.md#audio-spatial-and-mix-refinement--2026-11-15). Named headset/speaker review, output-device switching and 6v6 reference CPU/quality acceptance remain Pending. No Battlefield V parity claim follows from automated tests.
 
+## Bank v6 — named-gun reports (ADR-102)
+
+`combat-audio-bank-v6-stereo` appends ten cues after the v5 slots: `ak47_shot`, `ak102_shot`, `m16_shot`, `mk14_shot`, `tac338_shot`, `g17_shot`, `eagle_shot`, `bolt_cycle`, `reload_ak` and `reload_bolt`. All are cut by `Tools/build_audio_bank.py` from sources already in `Tools/audio-sources.json`: the CC0 Free Firearm Sound Library takes for AK-47 (AK-102 high-passed), AR-15 (M16), Tikka (.308, Mk 14), Mosin Nagant and Arisaka (M-TAC 338), Walther PPQ (G17) and 1911 with a low rifle layer (Golden Eagle), plus the existing reload and cocking Foley. A gun's voice is its definition's `audio.shot`. Reload Foley follows the handling style of the gun that last fired from the reloading slot, and bolt-action shots schedule `bolt_cycle` inside the fire interval. If a cue is missing from the manifest, named-gun shots are derived by varispeed from the shipped real rifle/pistol takes. Owner listening review is Pending.
+
 ## Follow-up: placeholders
 
 Open T095 work, deferred by the owner on 2026-11-17. Each item needs one more small download batch: list the files with source and size, and get the owner's approval before fetching.

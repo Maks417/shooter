@@ -44,7 +44,7 @@ namespace Shooter.Generation.Icons
         public static int SpanFor(string meshKey) => meshKey switch
         {
             "grenade" => 1,
-            "pistol" => 2,
+            "pistol" or "g17" or "golden-eagle" => 2,
             _ => 3
         };
     }

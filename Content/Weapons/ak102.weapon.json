@@ -1,0 +1,51 @@
+{
+  "schemaId": "shooter.weapon.v1",
+  "id": "weapons/ak102",
+  "order": 6,
+  "displayLabel": "AK-102",
+  "family": "PrimaryGun",
+  "combat": {
+    "fireMode": "Automatic",
+    "fireIntervalTicks": 5,
+    "reloadTicks": 132,
+    "equipTicks": 22,
+    "magazineSize": 30,
+    "reserveCapacity": 90,
+    "baseDamage": 28,
+    "hipSpreadDegrees": 1.15,
+    "adsSpreadDegrees": 0.2,
+    "recoilPitchDegrees": 0.42,
+    "recoilYawHalfDegrees": 0.16,
+    "falloffStartMeters": 15,
+    "falloffEndMeters": 40,
+    "falloffMinScale": 0.7,
+    "spawnWeight": 3
+  },
+  "visual": {
+    "meshKey": "ak102",
+    "geometryRecipe": "ak102",
+    "magazineCycle": true,
+    "nearFieldScale": 1.12,
+    "nearFieldHipBias": [
+      0.08,
+      -0.01,
+      -0.1
+    ],
+    "hipRotationDegrees": [
+      0,
+      -12,
+      -5
+    ],
+    "optic": "Irons",
+    "cycleTravelMeters": 0.08,
+    "adsSeconds": 0.18,
+    "handlingStyle": "Ak",
+    "muzzleFlashScale": 1.3
+  },
+  "audio": {
+    "shot": "Ak102Shot"
+  },
+  "hud": {
+    "killFeedGlyph": "Ak102"
+  }
+}

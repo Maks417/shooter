@@ -14,6 +14,19 @@ namespace Shooter.Presentation.View
         Irons = 2
     }
 
+    /// <summary>
+    /// ADR-102 first-person handling: which reload, charging and cycle choreography a gun uses. Auto follows the family
+    /// (primary guns handle like the AR rifle, sidearms like the pistol).
+    /// </summary>
+    public enum WeaponHandlingStyle : byte
+    {
+        Auto = 0,
+        Rifle = 1,
+        Ak = 2,
+        Bolt = 3,
+        Pistol = 4
+    }
+
     public enum WeaponVisualFamily : byte
     {
         PrimaryGun = 0,
@@ -56,6 +69,14 @@ namespace Shooter.Presentation.View
         public uint FuseTicks { get; }
         /// <summary>Seconds for the cosmetic ADS raise (ADR-099). Optional visual key, default 0.15.</summary>
         public float AdsSeconds { get; }
+        /// <summary>Resolved choreography style (ADR-102); never <see cref="WeaponHandlingStyle.Auto"/>.</summary>
+        public WeaponHandlingStyle HandlingStyle { get; }
+        /// <summary>Camera field of view at full ADS for an 80 degree hip view; 0 keeps the optic-mode default (ADR-102).</summary>
+        public float AdsFovDegrees { get; }
+        /// <summary>Muzzle flash size relative to the classic rifle flash (ADR-102).</summary>
+        public float MuzzleFlashScale { get; }
+        /// <summary>Muzzle brake: two extra flame jets vent sideways.</summary>
+        public bool MuzzleFlashSideJets { get; }
 
         public float EquipSeconds => EquipTicks / ProductAuthorityActionView.SimulationHz;
         public float FireIntervalSeconds => FireIntervalTicks / ProductAuthorityActionView.SimulationHz;
@@ -77,7 +98,8 @@ namespace Shooter.Presentation.View
             string displayLabel, string muzzleFx = "rifle",
             float recoilPitchDegrees = 0f, float recoilYawHalfDegrees = 0f,
             uint equipTicks = 0, uint fireIntervalTicks = 0, uint reloadTicks = 0, uint fuseTicks = 0,
-            float adsSeconds = DefaultAdsSeconds)
+            float adsSeconds = DefaultAdsSeconds, WeaponHandlingStyle handlingStyle = WeaponHandlingStyle.Auto,
+            float adsFovDegrees = 0f, float muzzleFlashScale = -1f, bool muzzleFlashSideJets = false)
         {
             if (!definitionId.IsValid) throw new ArgumentException("Definition id required.", nameof(definitionId));
             if (string.IsNullOrEmpty(meshAssetKey)) throw new ArgumentException("Mesh asset key required.", nameof(meshAssetKey));
@@ -106,7 +128,20 @@ namespace Shooter.Presentation.View
             ReloadTicks = reloadTicks;
             FuseTicks = fuseTicks;
             AdsSeconds = adsSeconds;
+            HandlingStyle = handlingStyle != WeaponHandlingStyle.Auto ? handlingStyle
+                : family == WeaponVisualFamily.Sidearm ? WeaponHandlingStyle.Pistol : WeaponHandlingStyle.Rifle;
+            if (!(adsFovDegrees == 0f || adsFovDegrees >= 5f && adsFovDegrees <= 80f)) throw new ArgumentOutOfRangeException(nameof(adsFovDegrees));
+            AdsFovDegrees = adsFovDegrees;
+            // Legacy profiles size the flash from the muzzleFx name (presenter start sizes .65 / .42 / .54 m).
+            if (muzzleFlashScale < 0f) muzzleFlashScale = muzzleFx == "pistol" ? .65f : muzzleFx == "carbine" ? .83f : muzzleFx == "none" ? 0f : 1f;
+            if (!(muzzleFlashScale >= 0f && muzzleFlashScale <= 2.5f)) throw new ArgumentOutOfRangeException(nameof(muzzleFlashScale));
+            MuzzleFlashScale = muzzleFlashScale;
+            MuzzleFlashSideJets = muzzleFlashSideJets;
         }
+
+        /// <summary>Pool variant byte carrying the flash size in hundredths (10..250); 0 means no flash.</summary>
+        public byte MuzzleFlashVariant => MuzzleFx == "none" || MuzzleFlashScale <= 0f ? (byte)0
+            : (byte)Math.Max(10, Math.Min(250, (int)Math.Round(MuzzleFlashScale * 100f)));
 
         public const float DefaultAdsSeconds = 0.15f;
     }

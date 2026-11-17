@@ -366,7 +366,9 @@ namespace Shooter.Game.Contracts.Tests
         public async Task OfflineSession_Rebinds_Bot_And_Human_Replacement_Lives()
         {
             var catalog = StaticMapCatalog.CreateReleaseSeed();
-            using var session = new OfflineGameSession(catalog, (w, n) => new FakeMapRuntime(new NoWorld(), new NoNav()), allowFakeMapRuntime: true);
+            // Wall-less fake world: with random loadouts the bots' snipers would thin the field before the
+            // all-alive check, so this rebinding scenario keeps the fixed default loadout.
+            using var session = new OfflineGameSession(catalog, (w, n) => new FakeMapRuntime(new NoWorld(), new NoNav()), allowFakeMapRuntime: true) { RandomLoadouts = false };
             var request = new SessionRequest(WellKnownMaps.TrainingCompound, WellKnownModes.TeamDeathmatch, 8, 460072030UL);
             Assert.True((await session.BeginLoadAsync(request, CancellationToken.None)).Succeeded);
             Assert.True(session.Start().Succeeded);

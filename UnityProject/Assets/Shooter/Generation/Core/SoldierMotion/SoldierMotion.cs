@@ -170,7 +170,7 @@ namespace Shooter.Generation
         public SoldierMotion(WeaponRecipe rifle, bool upgraded = false)
         {
             this.upgraded=upgraded;
-            if (rifle == null || rifle.Kind != "rifle") throw new ArgumentException("The M1 motion spike requires the validated baseline rifle.", nameof(rifle));
+            if (rifle == null || !rifle.IsLongGun) throw new ArgumentException("Soldier motion needs a shouldered long gun (rifle or ADR-102 archetype).", nameof(rifle));
             foreach (var socket in WeaponGeometry.Sockets(rifle))
             {
                 if (socket.Id == "right-hand-grip") grip = socket.Position;

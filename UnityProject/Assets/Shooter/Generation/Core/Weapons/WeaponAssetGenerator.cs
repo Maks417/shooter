@@ -18,9 +18,12 @@ namespace Shooter.Generation
                 return Fail(ErrorCode.InvalidInput, "Unknown weapon visual profile.");
             if (request.Recipe.Dependencies.Count != 0) return Fail(ErrorCode.InvalidInput, "Initial numeric weapon generator has no dependency inputs.");
             string kind;
+            WeaponRecipe? arsenalRecipe = null;
             try
             {
                 kind = WeaponRecipe.Validate(request.Recipe).kind;
+                if (request.Recipe.GeneratorVersion == WeaponRecipe.ArsenalVersion)
+                    arsenalRecipe = WeaponRecipe.Parse(System.Text.Encoding.UTF8.GetBytes("{\"schemaId\":\"" + WeaponRecipe.Schema + "\",\"recipeId\":\"" + request.Recipe.RecipeId + "\",\"generatorId\":\"" + WeaponRecipe.GeneratorId + "\",\"generatorVersion\":\"" + WeaponRecipe.ArsenalVersion + "\",\"seed\":\"" + request.Recipe.Seed + "\",\"parameters\":" + System.Text.Encoding.UTF8.GetString(request.Recipe.Parameters) + ",\"dependencies\":[]}"));
             }
             catch (Exception error) when (error is FormatException || error is ArgumentException) { return Fail(ErrorCode.InvalidInput, error.Message); }
             var artifacts = new List<GeneratedArtifact>();
@@ -31,8 +34,9 @@ namespace Shooter.Generation
                 byte[] payload = ArtifactCodec.Encode(contentKind, body, generator, request.ToolchainHash);
                 artifacts.Add(new GeneratedArtifact(contentKind, variant, 1, payload, ContentIdentity.Hash(payload)));
             }
-            Aabb bounds = WeaponGeometry.BoundsFor(kind);
-            if (request.VisualProfile == "gameplay") Add(ContentKind.Collision, "main", GeometryCodec.EncodeCollision(WeaponGeometry.BuildCollision(kind)));
+            Aabb bounds = arsenalRecipe != null ? ArsenalGeometry.BoundsFor(kind, arsenalRecipe.Arsenal!) : WeaponGeometry.BoundsFor(kind);
+            if (request.VisualProfile == "gameplay") Add(ContentKind.Collision, "main", GeometryCodec.EncodeCollision(
+                arsenalRecipe != null ? ArsenalGeometry.Collision(kind, arsenalRecipe.Arsenal!) : WeaponGeometry.BuildCollision(kind)));
             else
             {
                 // The validated canonical parameter bytes carry either the 1.0.5 silhouette or the 1.1.0 parts (ADR-082).

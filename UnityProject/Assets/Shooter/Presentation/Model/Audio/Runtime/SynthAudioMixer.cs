@@ -35,7 +35,18 @@ namespace Shooter.Presentation.Audio
         DistantBattle = 27,
         UiHover = 28,
         UiClick = 29,
-        UiBack = 30
+        UiBack = 30,
+        // ADR-102 bank v6: one report per named gun, bolt work and style-specific reload Foley.
+        Ak47Shot = 31,
+        Ak102Shot = 32,
+        M16Shot = 33,
+        Mk14Shot = 34,
+        Tac338Shot = 35,
+        G17Shot = 36,
+        EagleShot = 37,
+        BoltCycle = 38,
+        ReloadAk = 39,
+        ReloadBolt = 40
     }
 
     public sealed class SynthVoice
@@ -298,7 +309,7 @@ namespace Shooter.Presentation.Audio
             float lp = CombatAudioDistance.LowPassCoeff(distanceMeters, max > 0f ? max : CombatAudioDistance.GunfireMaxMeters);
             lp *= 1f - obstruction * 0.94f;
             bool loop = playKind == SynthVoiceKind.Ambient;
-            bool gun = playKind == SynthVoiceKind.RifleShot || playKind == SynthVoiceKind.PistolShot
+            bool gun = IsGunShotKind(playKind)
                 || playKind == SynthVoiceKind.GrenadeExplode || playKind == SynthVoiceKind.GrenadeExplodeFar;
             bool ui = IsUiKind(playKind);
             bool bed = loop || playKind == SynthVoiceKind.DistantBattle;
@@ -475,6 +486,16 @@ namespace Shooter.Presentation.Audio
             if (EffectsMuted || EffectsVolume <= 0f) return 0f;
             return MasterVolume * EffectsVolume;
         }
+
+        /// <summary>Gun reports: the classic rifle/pistol voices and every ADR-102 named-gun voice.</summary>
+        public static bool IsGunShotKind(SynthVoiceKind kind) =>
+            kind == SynthVoiceKind.Shot || kind == SynthVoiceKind.RifleShot || kind == SynthVoiceKind.PistolShot
+            || kind >= SynthVoiceKind.Ak47Shot && kind <= SynthVoiceKind.EagleShot;
+
+        /// <summary>Reload Foley voices (fitted to the authoritative reload window and cut on death or the next shot).</summary>
+        public static bool IsReloadKind(SynthVoiceKind kind) =>
+            kind == SynthVoiceKind.ReloadStart || kind == SynthVoiceKind.ReloadPistol
+            || kind == SynthVoiceKind.ReloadAk || kind == SynthVoiceKind.ReloadBolt;
 
         public static bool IsUiKind(SynthVoiceKind kind) =>
             kind == SynthVoiceKind.Ui || kind == SynthVoiceKind.UiHover || kind == SynthVoiceKind.UiClick || kind == SynthVoiceKind.UiBack;

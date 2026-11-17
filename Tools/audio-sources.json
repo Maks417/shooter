@@ -1168,6 +1168,409 @@
       "kind": "ui_back",
       "variation": 2,
       "source": "kenney/kenney_interface-sounds/Audio/back_003.ogg"
+    },
+    {
+      "kind": "ak47_shot",
+      "variation": 0,
+      "source": "oga/Prepared SFX Library/Prepared SFX Library/AK-47/C_27P.wav",
+      "start": 0.259,
+      "end": 1.25,
+      "fadeOut": 0.08
+    },
+    {
+      "kind": "ak47_shot",
+      "variation": 1,
+      "source": "oga/Prepared SFX Library/Prepared SFX Library/AK-47/C_29P.wav",
+      "start": 1.059,
+      "end": 1.85,
+      "fadeOut": 0.08
+    },
+    {
+      "kind": "ak47_shot",
+      "variation": 2,
+      "source": "oga/Prepared SFX Library/Prepared SFX Library/AK-47/C_31P.wav",
+      "start": 0.328,
+      "end": 1.55,
+      "fadeOut": 0.08
+    },
+    {
+      "kind": "ak47_shot",
+      "variation": 3,
+      "source": "oga/Prepared SFX Library/Prepared SFX Library/AK-47/C_36P.wav",
+      "start": 0.621,
+      "end": 1.85,
+      "fadeOut": 0.08
+    },
+    {
+      "kind": "ak102_shot",
+      "variation": 0,
+      "source": "oga/Prepared SFX Library/Prepared SFX Library/AK-47/C_28P.wav",
+      "start": 0.601,
+      "end": 1.07,
+      "fadeOut": 0.08,
+      "highpass": 220
+    },
+    {
+      "kind": "ak102_shot",
+      "variation": 1,
+      "source": "oga/Prepared SFX Library/Prepared SFX Library/AK-47/C_28P.wav",
+      "start": 3.247,
+      "end": 3.73,
+      "fadeOut": 0.08,
+      "highpass": 220
+    },
+    {
+      "kind": "ak102_shot",
+      "variation": 2,
+      "source": "oga/Prepared SFX Library/Prepared SFX Library/AK-47/C_34P.wav",
+      "start": 0.726,
+      "end": 1.6,
+      "fadeOut": 0.08,
+      "highpass": 220
+    },
+    {
+      "kind": "ak102_shot",
+      "variation": 3,
+      "source": "oga/Prepared SFX Library/Prepared SFX Library/AK-47/C_36P.wav",
+      "start": 4.454,
+      "end": 5.45,
+      "fadeOut": 0.08,
+      "highpass": 220
+    },
+    {
+      "kind": "m16_shot",
+      "variation": 0,
+      "source": "oga/Prepared SFX Library/Prepared SFX Library/AR-15/D_24P.wav",
+      "start": 0.539,
+      "end": 1.9,
+      "fadeOut": 0.08
+    },
+    {
+      "kind": "m16_shot",
+      "variation": 1,
+      "source": "oga/Prepared SFX Library/Prepared SFX Library/AR-15/D_24P.wav",
+      "start": 3.9,
+      "end": 5.3,
+      "fadeOut": 0.08
+    },
+    {
+      "kind": "m16_shot",
+      "variation": 2,
+      "source": "oga/Prepared SFX Library/Prepared SFX Library/AR-15/D_32P.wav",
+      "start": 0.694,
+      "end": 1.17,
+      "fadeOut": 0.08
+    },
+    {
+      "kind": "m16_shot",
+      "variation": 3,
+      "source": "oga/Prepared SFX Library/Prepared SFX Library/AR-15/D_32P.wav",
+      "start": 5.637,
+      "end": 6.19,
+      "fadeOut": 0.08
+    },
+    {
+      "kind": "mk14_shot",
+      "variation": 0,
+      "source": "oga/Prepared SFX Library/Prepared SFX Library/Tikka/W_24P.wav",
+      "start": 0.744,
+      "end": 2.2,
+      "fadeOut": 0.08
+    },
+    {
+      "kind": "mk14_shot",
+      "variation": 1,
+      "source": "oga/Prepared SFX Library/Prepared SFX Library/Tikka/W_24P.wav",
+      "start": 5.367,
+      "end": 6.9,
+      "fadeOut": 0.08
+    },
+    {
+      "kind": "mk14_shot",
+      "variation": 2,
+      "source": "oga/Prepared SFX Library/Prepared SFX Library/Tikka/W_29P.wav",
+      "start": 0.567,
+      "end": 1.48,
+      "fadeOut": 0.08
+    },
+    {
+      "kind": "mk14_shot",
+      "variation": 3,
+      "source": "oga/Prepared SFX Library/Prepared SFX Library/Tikka/W_29P.wav",
+      "start": 5.655,
+      "end": 6.61,
+      "fadeOut": 0.08
+    },
+    {
+      "kind": "tac338_shot",
+      "variation": 0,
+      "source": "oga/Prepared SFX Library/Prepared SFX Library/Mosin Nagant/M_26P.wav",
+      "start": 1.128,
+      "end": 3.05,
+      "fadeOut": 0.08
+    },
+    {
+      "kind": "tac338_shot",
+      "variation": 1,
+      "source": "oga/Prepared SFX Library/Prepared SFX Library/Mosin Nagant/M_26P.wav",
+      "start": 6.094,
+      "end": 7.9,
+      "fadeOut": 0.08
+    },
+    {
+      "kind": "tac338_shot",
+      "variation": 2,
+      "source": "oga/Prepared SFX Library/Prepared SFX Library/Mosin Nagant/M_26P.wav",
+      "start": 10.733,
+      "end": 12.5,
+      "fadeOut": 0.08
+    },
+    {
+      "kind": "tac338_shot",
+      "variation": 3,
+      "source": "oga/Prepared SFX Library/Prepared SFX Library/Arisaka/E_18P.wav",
+      "start": 0.349,
+      "end": 2.15,
+      "fadeOut": 0.08
+    },
+    {
+      "kind": "g17_shot",
+      "variation": 0,
+      "source": "oga/Prepared SFX Library/Prepared SFX Library/Walther PPQ/X_31P.wav",
+      "start": 1.075,
+      "end": 1.75,
+      "fadeOut": 0.08
+    },
+    {
+      "kind": "g17_shot",
+      "variation": 1,
+      "source": "oga/Prepared SFX Library/Prepared SFX Library/Walther PPQ/X_31P.wav",
+      "start": 5.232,
+      "end": 5.9,
+      "fadeOut": 0.08
+    },
+    {
+      "kind": "g17_shot",
+      "variation": 2,
+      "source": "oga/Prepared SFX Library/Prepared SFX Library/Walther PPQ/X_39P.wav",
+      "start": 1.397,
+      "end": 1.81,
+      "fadeOut": 0.08
+    },
+    {
+      "kind": "g17_shot",
+      "variation": 3,
+      "source": "oga/Prepared SFX Library/Prepared SFX Library/Walther PPQ/X_39P.wav",
+      "start": 6.434,
+      "end": 6.9,
+      "fadeOut": 0.08
+    },
+    {
+      "kind": "eagle_shot",
+      "variation": 0,
+      "source": "oga/Prepared SFX Library/Prepared SFX Library/1911/A_34P.wav",
+      "start": 1.53,
+      "end": 3.2,
+      "fadeOut": 0.08,
+      "layers": [
+        {
+          "source": "oga/Prepared SFX Library/Prepared SFX Library/Tikka/W_29P.wav",
+          "start": 0.567,
+          "end": 1.2,
+          "lowpass": 420,
+          "gainDb": -7,
+          "fadeOut": 0.1
+        }
+      ]
+    },
+    {
+      "kind": "eagle_shot",
+      "variation": 1,
+      "source": "oga/Prepared SFX Library/Prepared SFX Library/1911/A_34P.wav",
+      "start": 6.644,
+      "end": 8.5,
+      "fadeOut": 0.08,
+      "layers": [
+        {
+          "source": "oga/Prepared SFX Library/Prepared SFX Library/Tikka/W_29P.wav",
+          "start": 0.567,
+          "end": 1.2,
+          "lowpass": 420,
+          "gainDb": -7,
+          "fadeOut": 0.1
+        }
+      ]
+    },
+    {
+      "kind": "eagle_shot",
+      "variation": 2,
+      "source": "oga/Prepared SFX Library/Prepared SFX Library/1911/A_42P.wav",
+      "start": 0.931,
+      "end": 1.6,
+      "fadeOut": 0.08,
+      "layers": [
+        {
+          "source": "oga/Prepared SFX Library/Prepared SFX Library/Tikka/W_29P.wav",
+          "start": 0.567,
+          "end": 1.2,
+          "lowpass": 420,
+          "gainDb": -7,
+          "fadeOut": 0.1
+        }
+      ]
+    },
+    {
+      "kind": "eagle_shot",
+      "variation": 3,
+      "source": "oga/Prepared SFX Library/Prepared SFX Library/1911/A_42P.wav",
+      "start": 4.991,
+      "end": 5.66,
+      "fadeOut": 0.08,
+      "layers": [
+        {
+          "source": "oga/Prepared SFX Library/Prepared SFX Library/Tikka/W_29P.wav",
+          "start": 0.567,
+          "end": 1.2,
+          "lowpass": 420,
+          "gainDb": -7,
+          "fadeOut": 0.1
+        }
+      ]
+    },
+    {
+      "kind": "bolt_cycle",
+      "variation": 0,
+      "source": "oga/shotguncock.wav",
+      "start": 0.03,
+      "end": 0.474,
+      "fadeOut": 0.03
+    },
+    {
+      "kind": "bolt_cycle",
+      "variation": 1,
+      "source": "oga/shotguncock.wav",
+      "start": 0.03,
+      "end": 0.474,
+      "highpass": 400,
+      "gainDb": -2,
+      "fadeOut": 0.03
+    },
+    {
+      "kind": "reload_ak",
+      "variation": 0,
+      "source": "oga/assaultriflereload1.wav",
+      "start": 0.08,
+      "end": 0.42,
+      "fadeOut": 0.02,
+      "layers": [
+        {
+          "source": "kenney/kenney_rpg-audio/Audio/cloth1.ogg",
+          "gainDb": -8,
+          "delay": 0.55
+        },
+        {
+          "source": "oga/assaultriflereload1.wav",
+          "start": 1.0,
+          "end": 1.53,
+          "delay": 1.15,
+          "fadeOut": 0.03
+        },
+        {
+          "source": "oga/shotguncock.wav",
+          "start": 0.03,
+          "end": 0.474,
+          "delay": 1.75,
+          "highpass": 250,
+          "fadeOut": 0.03
+        }
+      ]
+    },
+    {
+      "kind": "reload_ak",
+      "variation": 1,
+      "source": "oga/gunreload1.wav",
+      "start": 0.04,
+      "end": 0.34,
+      "fadeOut": 0.02,
+      "layers": [
+        {
+          "source": "kenney/kenney_rpg-audio/Audio/cloth2.ogg",
+          "gainDb": -8,
+          "delay": 0.5
+        },
+        {
+          "source": "oga/assaultriflereload1.wav",
+          "start": 1.0,
+          "end": 1.53,
+          "delay": 1.2,
+          "fadeOut": 0.03
+        },
+        {
+          "source": "oga/shotguncock.wav",
+          "start": 0.03,
+          "end": 0.474,
+          "delay": 1.8,
+          "highpass": 250,
+          "fadeOut": 0.03
+        }
+      ]
+    },
+    {
+      "kind": "reload_bolt",
+      "variation": 0,
+      "source": "oga/assaultriflereload1.wav",
+      "start": 0.08,
+      "end": 0.42,
+      "fadeOut": 0.02,
+      "layers": [
+        {
+          "source": "kenney/kenney_rpg-audio/Audio/handleSmallLeather.ogg",
+          "gainDb": -9,
+          "delay": 0.5
+        },
+        {
+          "source": "oga/gunreload1.wav",
+          "start": 0.9,
+          "end": 1.08,
+          "delay": 1.3
+        },
+        {
+          "source": "oga/shotguncock.wav",
+          "start": 0.03,
+          "end": 0.474,
+          "delay": 2.4,
+          "fadeOut": 0.03
+        }
+      ]
+    },
+    {
+      "kind": "reload_bolt",
+      "variation": 1,
+      "source": "oga/reload.wav",
+      "start": 0.07,
+      "end": 0.22,
+      "fadeOut": 0.02,
+      "layers": [
+        {
+          "source": "kenney/kenney_rpg-audio/Audio/cloth3.ogg",
+          "gainDb": -8,
+          "delay": 0.45
+        },
+        {
+          "source": "oga/assaultriflereload1.wav",
+          "start": 1.0,
+          "end": 1.53,
+          "delay": 1.2,
+          "fadeOut": 0.03
+        },
+        {
+          "source": "oga/shotguncock.wav",
+          "start": 0.03,
+          "end": 0.474,
+          "delay": 2.45,
+          "fadeOut": 0.03
+        }
+      ]
     }
   ],
   "music": [

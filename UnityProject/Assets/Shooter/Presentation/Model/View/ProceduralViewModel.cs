@@ -36,6 +36,9 @@ namespace Shooter.Presentation.View
         private float reloadPhase;
         private float reloadDurationSeconds = 2.4f;
         private float cycleOpen;
+        /// <summary>ADR-102 bolt-action: 0..1 progress of working the bolt after a shot; 0 when idle.</summary>
+        private float boltPhase;
+        private float boltSeconds = 0.9f;
         private float meleePhase;
         private bool meleeStab;
         private float meleeDurationSeconds = FirstPersonSpecialActions.MeleeDurationSeconds;
@@ -62,7 +65,27 @@ namespace Shooter.Presentation.View
         /// 0 = bolt/slide closed, 1 = fully open after a shot impulse. Eased so the part lingers at the rear and
         /// slams home (ADR-099).
         /// </summary>
-        public float CycleOpen01 => 1f - (1f - cycleOpen) * (1f - cycleOpen);
+        public float CycleOpen01 => boltPhase > 0f ? BoltOpen(boltPhase) : 1f - (1f - cycleOpen) * (1f - cycleOpen);
+
+        /// <summary>True while the bolt is being worked after a bolt-action shot.</summary>
+        public bool BoltCycling => boltPhase > 0f;
+
+        // Bolt knob relative to the support hand on the forend (geometry.weapon 1.2.0 bolt archetype).
+        private static readonly Float3 BoltKnobReach = new Float3(0.052f, 0.082f, -0.410f);
+
+        /// <summary>Bolt travel over the cycle: closed while the hand reaches, opens on the pull, closes on the push.</summary>
+        public static float BoltOpen(float phase) =>
+            MotionCurve.Ramp(phase, .34f, .52f) * (1f - MotionCurve.Ramp(phase, .60f, .76f));
+
+        /// <summary>Support hand travel to the bolt knob, lift, pull, push, lower and back to the forend.</summary>
+        public static Float3 BoltHandReach(float phase)
+        {
+            if (phase <= 0f || phase >= 1f) return default;
+            float reach = MotionCurve.Ramp(phase, .04f, .26f) * (1f - MotionCurve.Ramp(phase, .80f, .98f));
+            float lift = MotionCurve.Ramp(phase, .26f, .34f) * (1f - MotionCurve.Ramp(phase, .76f, .82f));
+            float pull = BoltOpen(phase);
+            return new Float3(BoltKnobReach.X * reach, BoltKnobReach.Y * reach + .022f * lift, BoltKnobReach.Z * reach - .09f * pull);
+        }
         /// <summary>Linear cycle state (tests and diagnostics).</summary>
         public float CycleLinear01 => cycleOpen;
         public float CycleSeconds => cycleSeconds;
@@ -111,6 +134,7 @@ namespace Shooter.Presentation.View
                 activeSlot = weaponSlot;
                 reloadPhase = 0f;
                 cycleOpen = 0f;
+                boltPhase = 0f;
                 meleePhase = 0f;
                 meleeStab = false;
                 // The authority switches back to the rifle on the release tick; the throw follow-through keeps
@@ -153,6 +177,7 @@ namespace Shooter.Presentation.View
             IntegrateSpring(ref recoilPitch, ref recoilPitchVel, dtSeconds);
             IntegrateSpring(ref recoilYaw, ref recoilYawVel, dtSeconds);
             AdvanceCycle(dtSeconds);
+            AdvanceBolt(dtSeconds);
             AdvanceReload(dtSeconds);
             AdvanceMelee(dtSeconds);
             AdvanceThrow(dtSeconds);
@@ -200,6 +225,13 @@ namespace Shooter.Presentation.View
                         float interval = profile.FireIntervalSeconds;
                         cycleSeconds = interval > 0f ? Math.Min(DefaultCycleSeconds, interval * 0.8f) : DefaultCycleSeconds;
                         cycleOpen = Math.Max(cycleOpen, FirstPersonWeaponMechanics.CycleImpulse);
+                        if (profile.HandlingStyle == WeaponHandlingStyle.Bolt && interval > 0f)
+                        {
+                            // Work the bolt inside the authoritative fire interval, after the recoil settles.
+                            boltSeconds = Math.Max(0.4f, interval * 0.85f);
+                            boltPhase = 0.01f;
+                            cycleOpen = 0f;
+                        }
                     }
                     else if (ProductAuthorityActionView.IsKnifeSlot(activeSlot))
                     {
@@ -274,18 +306,26 @@ namespace Shooter.Presentation.View
                 return FirstPersonSpecialActions.MeleeRotationDegrees(meleePhase, meleeStab, MeleeDirection, reducedMotion);
             if (ProductAuthorityActionView.IsGrenadeSlot(activeSlot) && cooking)
                 return FirstPersonSpecialActions.GrenadeCookRotation(cookSeconds, fuseSeconds, reducedMotion);
+            if (boltPhase > 0f)
+            {
+                float roll = MotionCurve.Ramp(boltPhase, .06f, .26f) * (1f - MotionCurve.Ramp(boltPhase, .80f, .98f));
+                return new Float3(2f * roll, -3f * roll, (reducedMotion ? 5f : 10f) * roll);
+            }
             return default;
         }
 
         /// <summary>Support-hand wrist offset for special actions (the pin pull); hand-root local meters.</summary>
         public Float3 SpecialSupportWrist =>
             cooking && ProductAuthorityActionView.IsGrenadeSlot(activeSlot)
-                ? FirstPersonSpecialActions.PinPullWrist(cookSeconds) : default;
+                ? FirstPersonSpecialActions.PinPullWrist(cookSeconds)
+                : boltPhase > 0f ? BoltHandReach(boltPhase) : default;
 
         /// <summary>Support-hand finger openness for special actions.</summary>
         public float SpecialSupportOpen =>
             cooking && ProductAuthorityActionView.IsGrenadeSlot(activeSlot)
-                ? FirstPersonSpecialActions.PinPullOpen(cookSeconds) : 0f;
+                ? FirstPersonSpecialActions.PinPullOpen(cookSeconds)
+                : boltPhase > 0f ? .7f * MotionCurve.Ramp(boltPhase, .04f, .16f) * (1f - MotionCurve.Ramp(boltPhase, .22f, .30f))
+                    + .7f * MotionCurve.Ramp(boltPhase, .78f, .86f) * (1f - MotionCurve.Ramp(boltPhase, .92f, 1f)) : 0f;
 
         /// <summary>
         /// Hide the held grenade once it leaves the hand, or when the active grenade slot is empty and not cooking.
@@ -301,6 +341,15 @@ namespace Shooter.Presentation.View
             float duration = reloadDurationSeconds > 1e-4f ? reloadDurationSeconds : 2.4f;
             reloadPhase = Math.Min(1f, reloadPhase + dtSeconds / duration);
             if (reloadPhase >= 1f) reloadPhase = 0f;
+        }
+
+        private void AdvanceBolt(float dtSeconds)
+        {
+            if (boltPhase <= 0f) return;
+            // A reload takes over the bolt (its own track works it).
+            if (reloadPhase > 0f) { boltPhase = 0f; return; }
+            boltPhase = Math.Min(1f, boltPhase + dtSeconds / boltSeconds);
+            if (boltPhase >= 1f) boltPhase = 0f;
         }
 
         private void AdvanceCycle(float dtSeconds)
