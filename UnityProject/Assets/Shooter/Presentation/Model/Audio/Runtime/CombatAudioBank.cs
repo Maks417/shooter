@@ -8,8 +8,8 @@ namespace Shooter.Presentation.Audio
     /// </summary>
     public sealed class CombatAudioBank
     {
-        public const string RecipeId = "combat-audio-bank-v5-stereo";
-        public const int BankVersion = 5;
+        public const string RecipeId = "combat-audio-bank-v6-stereo";
+        public const int BankVersion = 6;
         public const int DefaultSampleRate = 48000;
         public const int Channels = 2;
         /// <summary>Variations baked for the generated emergency bank.</summary>
@@ -49,6 +49,17 @@ namespace Shooter.Presentation.Audio
             (SynthVoiceKind.UiHover, "ui_hover"),
             (SynthVoiceKind.UiClick, "ui_click"),
             (SynthVoiceKind.UiBack, "ui_back"),
+            // ADR-102 v6: appended so every v5 index is unchanged.
+            (SynthVoiceKind.Ak47Shot, "ak47_shot"),
+            (SynthVoiceKind.Ak102Shot, "ak102_shot"),
+            (SynthVoiceKind.M16Shot, "m16_shot"),
+            (SynthVoiceKind.Mk14Shot, "mk14_shot"),
+            (SynthVoiceKind.Tac338Shot, "tac338_shot"),
+            (SynthVoiceKind.G17Shot, "g17_shot"),
+            (SynthVoiceKind.EagleShot, "eagle_shot"),
+            (SynthVoiceKind.BoltCycle, "bolt_cycle"),
+            (SynthVoiceKind.ReloadAk, "reload_ak"),
+            (SynthVoiceKind.ReloadBolt, "reload_bolt"),
         };
 
         public const int AmbientIndex = 9;

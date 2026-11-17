@@ -1,5 +1,5 @@
 {
-  "bankId": "combat-audio-bank-v5-stereo",
+  "bankId": "combat-audio-bank-v6-stereo",
   "sampleRate": 48000,
   "channels": 2,
   "clips": [
@@ -929,6 +929,278 @@
       "file": "ui_back_02.wav",
       "sha256": "1a96ddb821229930e841faad6558f2685e9b3814158f5ccc1be205071edd4c86",
       "source": "Kenney Interface Sounds (https://kenney.nl/assets/interface-sounds)",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "ak47_shot",
+      "variation": 0,
+      "file": "ak47_shot_00.wav",
+      "sha256": "79e5ecc2f2a07f1457bbc1d31c0f4715e143af11794d83b6e6a0405fa72f848a",
+      "source": "The Free Firearm Sound Library (OpenGameArt) - studio firearm recordings and handling Foley (https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z)",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "ak47_shot",
+      "variation": 1,
+      "file": "ak47_shot_01.wav",
+      "sha256": "ef8504f06352021263b9bed5c4c25c8e825c796dfa6e9c40dcf95968c25e0070",
+      "source": "The Free Firearm Sound Library (OpenGameArt) - studio firearm recordings and handling Foley (https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z)",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "ak47_shot",
+      "variation": 2,
+      "file": "ak47_shot_02.wav",
+      "sha256": "ee80e73d3b53014d0d9d6e392e4aa5a1a22bc558f4fa8e098df3bb10722ff247",
+      "source": "The Free Firearm Sound Library (OpenGameArt) - studio firearm recordings and handling Foley (https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z)",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "ak47_shot",
+      "variation": 3,
+      "file": "ak47_shot_03.wav",
+      "sha256": "10628f7c8ea0060f0d66ac37c24bf9783af041264e5d9918110669609ce0a924",
+      "source": "The Free Firearm Sound Library (OpenGameArt) - studio firearm recordings and handling Foley (https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z)",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "ak102_shot",
+      "variation": 0,
+      "file": "ak102_shot_00.wav",
+      "sha256": "1cbdd1bf8f6e34a89deb89869d2f8e395ed1be2ee860d3f4cc1eface2e4e0cea",
+      "source": "The Free Firearm Sound Library (OpenGameArt) - studio firearm recordings and handling Foley (https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z)",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "ak102_shot",
+      "variation": 1,
+      "file": "ak102_shot_01.wav",
+      "sha256": "a112fd8a373d98c4e58cbc2273d71577933f2eb7a3b0a28045d4348d5a617f84",
+      "source": "The Free Firearm Sound Library (OpenGameArt) - studio firearm recordings and handling Foley (https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z)",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "ak102_shot",
+      "variation": 2,
+      "file": "ak102_shot_02.wav",
+      "sha256": "c431feee7c6927d369f3f29877b7fd5b81839fe64dbb0f85cc305a2e58dc1b53",
+      "source": "The Free Firearm Sound Library (OpenGameArt) - studio firearm recordings and handling Foley (https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z)",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "ak102_shot",
+      "variation": 3,
+      "file": "ak102_shot_03.wav",
+      "sha256": "37ae84e0ace3e966174b8511457bf504ddce71217b1401c56d071af71c3c2adb",
+      "source": "The Free Firearm Sound Library (OpenGameArt) - studio firearm recordings and handling Foley (https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z)",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "m16_shot",
+      "variation": 0,
+      "file": "m16_shot_00.wav",
+      "sha256": "54851ac315e4bdc33cfce7e8a4a0afe2a3ceb9d2094e26afb82457ffc9fceaaa",
+      "source": "The Free Firearm Sound Library (OpenGameArt) - studio firearm recordings and handling Foley (https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z)",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "m16_shot",
+      "variation": 1,
+      "file": "m16_shot_01.wav",
+      "sha256": "bb6b92d31d45b338080a24c7a9e187aa8faa1a848936ca73a7a38ae42aa1d39e",
+      "source": "The Free Firearm Sound Library (OpenGameArt) - studio firearm recordings and handling Foley (https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z)",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "m16_shot",
+      "variation": 2,
+      "file": "m16_shot_02.wav",
+      "sha256": "99fbaa5b32e413c25a6f3fcb50af047c2b2165a3d482138eeafb597fe55932f8",
+      "source": "The Free Firearm Sound Library (OpenGameArt) - studio firearm recordings and handling Foley (https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z)",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "m16_shot",
+      "variation": 3,
+      "file": "m16_shot_03.wav",
+      "sha256": "5658262f589e5ad0f7151277f167a8647471656d8b41af2e1fe149d718fa89e8",
+      "source": "The Free Firearm Sound Library (OpenGameArt) - studio firearm recordings and handling Foley (https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z)",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "mk14_shot",
+      "variation": 0,
+      "file": "mk14_shot_00.wav",
+      "sha256": "b7db0c9fd8adf4ac35b7df72db30292a4f36e5d8f51bdd793e6594a9509149cd",
+      "source": "The Free Firearm Sound Library (OpenGameArt) - studio firearm recordings and handling Foley (https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z)",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "mk14_shot",
+      "variation": 1,
+      "file": "mk14_shot_01.wav",
+      "sha256": "8302ba630599efb3e97e79b19937645cdee6334c6301dbe67ba0a0529e900c3f",
+      "source": "The Free Firearm Sound Library (OpenGameArt) - studio firearm recordings and handling Foley (https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z)",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "mk14_shot",
+      "variation": 2,
+      "file": "mk14_shot_02.wav",
+      "sha256": "ef29c2b75aa497f9e7d9a39133a41361ad16429b948a0d054a1e0c04a275a0ef",
+      "source": "The Free Firearm Sound Library (OpenGameArt) - studio firearm recordings and handling Foley (https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z)",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "mk14_shot",
+      "variation": 3,
+      "file": "mk14_shot_03.wav",
+      "sha256": "aee1e0a8964ef627b358c6ac2c3de6937881570b7251ec7b565b75cbd2ab37bc",
+      "source": "The Free Firearm Sound Library (OpenGameArt) - studio firearm recordings and handling Foley (https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z)",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "tac338_shot",
+      "variation": 0,
+      "file": "tac338_shot_00.wav",
+      "sha256": "a6952fabb3b90d6843a9ca763e9bf3429f9f650e1927fe44c14bbd83328130d1",
+      "source": "The Free Firearm Sound Library (OpenGameArt) - studio firearm recordings and handling Foley (https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z)",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "tac338_shot",
+      "variation": 1,
+      "file": "tac338_shot_01.wav",
+      "sha256": "43bbfa50d0483f2173de3355e53d21c4d410baeb0eec499d5aa8565eece0ae63",
+      "source": "The Free Firearm Sound Library (OpenGameArt) - studio firearm recordings and handling Foley (https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z)",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "tac338_shot",
+      "variation": 2,
+      "file": "tac338_shot_02.wav",
+      "sha256": "5031eb20525a617396afa083ce930a2f8e5121c025ea545dbd2b948f89b31d26",
+      "source": "The Free Firearm Sound Library (OpenGameArt) - studio firearm recordings and handling Foley (https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z)",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "tac338_shot",
+      "variation": 3,
+      "file": "tac338_shot_03.wav",
+      "sha256": "64021975edacc04bb28c9a38ccc03f90db42a302c5e392561357b9f2c06edc79",
+      "source": "The Free Firearm Sound Library (OpenGameArt) - studio firearm recordings and handling Foley (https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z)",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "g17_shot",
+      "variation": 0,
+      "file": "g17_shot_00.wav",
+      "sha256": "31881bfe8d5322e09f17b4e8007807468755c793b5b4162ad1f0247c69b8454d",
+      "source": "The Free Firearm Sound Library (OpenGameArt) - studio firearm recordings and handling Foley (https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z)",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "g17_shot",
+      "variation": 1,
+      "file": "g17_shot_01.wav",
+      "sha256": "f4907e0f8df04bd494d05aef8ffbe5382f08ee1842dc9df89c8a33402db7da84",
+      "source": "The Free Firearm Sound Library (OpenGameArt) - studio firearm recordings and handling Foley (https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z)",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "g17_shot",
+      "variation": 2,
+      "file": "g17_shot_02.wav",
+      "sha256": "7d57e67876b48fc4175db7366d7a12eb8762e261dbe6058e8886ec3cc7bafab7",
+      "source": "The Free Firearm Sound Library (OpenGameArt) - studio firearm recordings and handling Foley (https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z)",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "g17_shot",
+      "variation": 3,
+      "file": "g17_shot_03.wav",
+      "sha256": "fdba0cd4c48c881098def0aedb0b1fc32e40cfdb0bda4988dceebfc7aa03866b",
+      "source": "The Free Firearm Sound Library (OpenGameArt) - studio firearm recordings and handling Foley (https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z)",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "eagle_shot",
+      "variation": 0,
+      "file": "eagle_shot_00.wav",
+      "sha256": "9f237306f7afc8ce0f84b017c261e53db4e85270261ff521f592bf46ba069681",
+      "source": "The Free Firearm Sound Library (OpenGameArt) - studio firearm recordings and handling Foley (https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z) + The Free Firearm Sound Library (OpenGameArt) - studio firearm recordings and handling Foley (https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z)",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "eagle_shot",
+      "variation": 1,
+      "file": "eagle_shot_01.wav",
+      "sha256": "476d4fb01872bdcba9004d4ad42549c97bc9faf78fe7dba595a12c9ff293bcbe",
+      "source": "The Free Firearm Sound Library (OpenGameArt) - studio firearm recordings and handling Foley (https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z) + The Free Firearm Sound Library (OpenGameArt) - studio firearm recordings and handling Foley (https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z)",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "eagle_shot",
+      "variation": 2,
+      "file": "eagle_shot_02.wav",
+      "sha256": "7d8290f5a6223c2fda58f7b6a5f4708f0da969baa5d39c05f566ed9372f4ecb1",
+      "source": "The Free Firearm Sound Library (OpenGameArt) - studio firearm recordings and handling Foley (https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z) + The Free Firearm Sound Library (OpenGameArt) - studio firearm recordings and handling Foley (https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z)",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "eagle_shot",
+      "variation": 3,
+      "file": "eagle_shot_03.wav",
+      "sha256": "f2b9079369bc5b28621460b2c9a5bddba432241983677edcdaf35c3d83757c08",
+      "source": "The Free Firearm Sound Library (OpenGameArt) - studio firearm recordings and handling Foley (https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z) + The Free Firearm Sound Library (OpenGameArt) - studio firearm recordings and handling Foley (https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z)",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "bolt_cycle",
+      "variation": 0,
+      "file": "bolt_cycle_00.wav",
+      "sha256": "ddcf8c0f935284ff15ba162a82f919bc8dab9db28861b1ed05d38acdf5c0af99",
+      "source": "OpenGameArt Gun reload sounds (SpringySpringo) cock (https://opengameart.org/sites/default/files/shotguncock_0.wav)",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "bolt_cycle",
+      "variation": 1,
+      "file": "bolt_cycle_01.wav",
+      "sha256": "2b7956e330f68b9f8d9a814efcb2ecc773153cbf66af3462a82b8ae34b71b00e",
+      "source": "OpenGameArt Gun reload sounds (SpringySpringo) cock (https://opengameart.org/sites/default/files/shotguncock_0.wav)",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "reload_ak",
+      "variation": 0,
+      "file": "reload_ak_00.wav",
+      "sha256": "c21d16e3e48c8cda00a820190e4c0d0bceb338f73a29117f4678137cf81ea563",
+      "source": "OpenGameArt Gun reload sounds (SpringySpringo) rifle (https://opengameart.org/sites/default/files/assaultriflereload1_0.wav) + Kenney RPG Audio (https://kenney.nl/assets/rpg-audio) + OpenGameArt Gun reload sounds (SpringySpringo) rifle (https://opengameart.org/sites/default/files/assaultriflereload1_0.wav) + OpenGameArt Gun reload sounds (SpringySpringo) cock (https://opengameart.org/sites/default/files/shotguncock_0.wav)",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "reload_ak",
+      "variation": 1,
+      "file": "reload_ak_01.wav",
+      "sha256": "5e2d31a9244ff743ed3963ab2c01835e436cb216d0ae469c96b3d1b53ec53968",
+      "source": "OpenGameArt Gun reload sounds (SpringySpringo) pistol (https://opengameart.org/sites/default/files/gunreload1.wav) + Kenney RPG Audio (https://kenney.nl/assets/rpg-audio) + OpenGameArt Gun reload sounds (SpringySpringo) rifle (https://opengameart.org/sites/default/files/assaultriflereload1_0.wav) + OpenGameArt Gun reload sounds (SpringySpringo) cock (https://opengameart.org/sites/default/files/shotguncock_0.wav)",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "reload_bolt",
+      "variation": 0,
+      "file": "reload_bolt_00.wav",
+      "sha256": "adf7772f70696b906a95a9d8fb0334b596025571b23495e73a0a52adeef5b0ae",
+      "source": "OpenGameArt Gun reload sounds (SpringySpringo) rifle (https://opengameart.org/sites/default/files/assaultriflereload1_0.wav) + Kenney RPG Audio (https://kenney.nl/assets/rpg-audio) + OpenGameArt Gun reload sounds (SpringySpringo) pistol (https://opengameart.org/sites/default/files/gunreload1.wav) + OpenGameArt Gun reload sounds (SpringySpringo) cock (https://opengameart.org/sites/default/files/shotguncock_0.wav)",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "reload_bolt",
+      "variation": 1,
+      "file": "reload_bolt_01.wav",
+      "sha256": "2ecebc12917448d8f93a973383c16835aab9ac2f16b35127fb60c05f832ba0e2",
+      "source": "OpenGameArt Handgun Reload Sound Effect (zer0_sol) (https://opengameart.org/sites/default/files/reload.wav) + Kenney RPG Audio (https://kenney.nl/assets/rpg-audio) + OpenGameArt Gun reload sounds (SpringySpringo) rifle (https://opengameart.org/sites/default/files/assaultriflereload1_0.wav) + OpenGameArt Gun reload sounds (SpringySpringo) cock (https://opengameart.org/sites/default/files/shotguncock_0.wav)",
       "license": "CC0-1.0"
     }
   ]

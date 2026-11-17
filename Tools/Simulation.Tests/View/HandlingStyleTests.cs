@@ -87,3 +87,38 @@ namespace Shooter.Simulation.Tests.View
         }
     }
 }
+
+namespace Shooter.Simulation.Tests.View
+{
+    /// <summary>ADR-102 bank v6 voices and routing.</summary>
+    public sealed class ArsenalAudioTests
+    {
+        [Fact]
+        public void New_voices_append_after_v5_slots_and_count_as_gunfire()
+        {
+            Assert.Equal(29, Shooter.Presentation.Audio.CombatAudioBank.KindIndex(Shooter.Presentation.Audio.SynthVoiceKind.Ak47Shot));
+            Assert.Equal(0, Shooter.Presentation.Audio.CombatAudioBank.KindIndex(Shooter.Presentation.Audio.SynthVoiceKind.RifleShot));
+            Assert.True(Shooter.Presentation.Audio.SynthAudioMixer.IsGunShotKind(Shooter.Presentation.Audio.SynthVoiceKind.Tac338Shot));
+            Assert.False(Shooter.Presentation.Audio.SynthAudioMixer.IsGunShotKind(Shooter.Presentation.Audio.SynthVoiceKind.BoltCycle));
+            Assert.Equal(Shooter.Presentation.Audio.CombatAudioDistance.MaxAudibleMeters(Shooter.Presentation.Audio.SynthVoiceKind.ReloadStart),
+                Shooter.Presentation.Audio.CombatAudioDistance.MaxAudibleMeters(Shooter.Presentation.Audio.SynthVoiceKind.ReloadAk));
+        }
+
+        [Theory]
+        [InlineData(WeaponHandlingStyle.Rifle, Shooter.Presentation.Audio.SynthVoiceKind.ReloadStart)]
+        [InlineData(WeaponHandlingStyle.Ak, Shooter.Presentation.Audio.SynthVoiceKind.ReloadAk)]
+        [InlineData(WeaponHandlingStyle.Bolt, Shooter.Presentation.Audio.SynthVoiceKind.ReloadBolt)]
+        [InlineData(WeaponHandlingStyle.Pistol, Shooter.Presentation.Audio.SynthVoiceKind.ReloadPistol)]
+        public void Reload_foley_follows_the_handling_style(WeaponHandlingStyle style, Shooter.Presentation.Audio.SynthVoiceKind voice) =>
+            Assert.Equal(voice, Shooter.Presentation.Audio.ProductAudioEventRouter.ReloadVoiceForStyle(style));
+
+        [Fact]
+        public void Derived_takes_slow_down_for_heavier_guns()
+        {
+            var clip = new float[2000];
+            for (int i = 0; i < clip.Length; i++) clip[i] = (float)System.Math.Sin(i * 0.1);
+            var slower = Shooter.Presentation.Audio.CombatAudioBankBaker.Reshape(clip, 0.5f, 1f);
+            Assert.Equal(clip.Length * 2, slower.Length);
+        }
+    }
+}

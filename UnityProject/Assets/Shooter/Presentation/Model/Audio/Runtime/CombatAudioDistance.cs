@@ -99,7 +99,13 @@ namespace Shooter.Presentation.Audio
             return lp < 0.08f ? 0.08f : lp;
         }
 
-        private static SynthVoiceKind Normalize(SynthVoiceKind kind) =>
-            kind == SynthVoiceKind.Shot ? SynthVoiceKind.RifleShot : kind;
+        /// <summary>Range and falloff class: named-gun reports play like gunfire, style reloads like reload Foley.</summary>
+        private static SynthVoiceKind Normalize(SynthVoiceKind kind) => kind switch
+        {
+            SynthVoiceKind.Shot => SynthVoiceKind.RifleShot,
+            SynthVoiceKind.ReloadAk or SynthVoiceKind.ReloadBolt => SynthVoiceKind.ReloadStart,
+            SynthVoiceKind.BoltCycle => SynthVoiceKind.ReloadComplete,
+            _ => kind
+        };
     }
 }

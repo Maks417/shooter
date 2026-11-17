@@ -73,7 +73,9 @@ namespace Shooter.Presentation.Audio
             }
 
             // Compact each cue to the variations actually shipped; a cue missing from the manifest
-            // falls back to its generated emergency recipe only.
+            // falls back to its generated emergency recipe only. Named-gun reports missing from the manifest are
+            // derived from the shipped real rifle/pistol takes after compaction (ADR-102).
+            var derive = new bool[clips.Length];
             for (int k = 0; k < clips.Length; k++)
             {
                 int present = 0;
@@ -81,6 +83,7 @@ namespace Shooter.Presentation.Audio
                     if (clips[k][v] != null && clips[k][v].Length > 0) present++;
                 if (present == 0)
                 {
+                    derive[k] = DerivedFrom(CombatAudioBank.KindAt(k)).source != 0;
                     clips[k] = BakeVariations(sampleRate, FallbackBaker(k), count: k == CombatAudioBank.AmbientIndex ? 1 : CombatAudioBank.VariationsPerCue);
                     continue;
                 }
@@ -92,6 +95,15 @@ namespace Shooter.Presentation.Audio
             }
 
             if (loaded == 0) return null;
+            for (int k = 0; k < clips.Length; k++)
+            {
+                if (!derive[k]) continue;
+                var (source, pitch, gain) = DerivedFrom(CombatAudioBank.KindAt(k));
+                var takes = clips[CombatAudioBank.KindIndex(source)];
+                var derived = new float[takes.Length][];
+                for (int v = 0; v < takes.Length; v++) derived[v] = Reshape(takes[v], pitch, gain);
+                clips[k] = derived;
+            }
             string hash = ComputeHash(sampleRate, clips, found: true);
             return new CombatAudioBank(sampleRate, clips, hash, loadedFromFoundSamples: true);
         }
@@ -128,8 +140,60 @@ namespace Shooter.Presentation.Audio
             SynthVoiceKind.UiHover => BakeUi,
             SynthVoiceKind.UiClick => BakeUi,
             SynthVoiceKind.UiBack => BakeUi,
+            // ADR-102 v6 emergency fallbacks (the found-sample path derives shots from real takes instead).
+            SynthVoiceKind.Ak47Shot => BakeRifleShot,
+            SynthVoiceKind.Ak102Shot => BakeRifleShot,
+            SynthVoiceKind.M16Shot => BakeRifleShot,
+            SynthVoiceKind.Mk14Shot => BakeRifleShot,
+            SynthVoiceKind.Tac338Shot => BakeRifleShot,
+            SynthVoiceKind.G17Shot => BakePistolShot,
+            SynthVoiceKind.EagleShot => BakePistolShot,
+            SynthVoiceKind.BoltCycle => BakeReloadComplete,
+            SynthVoiceKind.ReloadAk => BakeReloadStart,
+            SynthVoiceKind.ReloadBolt => BakeReloadStart,
             _ => BakeImpact
         };
+
+        /// <summary>
+        /// Interim character for a named gun without its own recording: the shipped real take of the nearest
+        /// class, slowed (deeper, longer tail) or sped up. Source 0 = not derived.
+        /// </summary>
+        public static (SynthVoiceKind source, float pitch, float gain) DerivedFrom(SynthVoiceKind kind) => kind switch
+        {
+            SynthVoiceKind.Ak47Shot => (SynthVoiceKind.RifleShot, 0.90f, 1.00f),
+            SynthVoiceKind.Ak102Shot => (SynthVoiceKind.RifleShot, 1.07f, 0.95f),
+            SynthVoiceKind.M16Shot => (SynthVoiceKind.RifleShot, 1.12f, 0.92f),
+            SynthVoiceKind.Mk14Shot => (SynthVoiceKind.RifleShot, 0.84f, 1.00f),
+            SynthVoiceKind.Tac338Shot => (SynthVoiceKind.RifleShot, 0.70f, 1.00f),
+            SynthVoiceKind.G17Shot => (SynthVoiceKind.PistolShot, 1.06f, 0.95f),
+            SynthVoiceKind.EagleShot => (SynthVoiceKind.PistolShot, 0.74f, 1.00f),
+            SynthVoiceKind.ReloadAk => (SynthVoiceKind.ReloadStart, 0.94f, 1.00f),
+            SynthVoiceKind.ReloadBolt => (SynthVoiceKind.ReloadStart, 0.88f, 1.00f),
+            SynthVoiceKind.BoltCycle => (SynthVoiceKind.ReloadComplete, 0.85f, 1.00f),
+            _ => (default, 1f, 1f)
+        };
+
+        /// <summary>Linear-interpolated varispeed of an interleaved stereo clip, with a peak-safe gain.</summary>
+        public static float[] Reshape(float[] stereo, float pitch, float gain)
+        {
+            if (stereo == null || stereo.Length < CombatAudioBank.Channels) return Array.Empty<float>();
+            if (!(pitch > 0.25f && pitch < 4f)) throw new ArgumentOutOfRangeException(nameof(pitch));
+            int frames = stereo.Length / CombatAudioBank.Channels;
+            int outFrames = Math.Max(1, (int)(frames / pitch));
+            var result = new float[outFrames * CombatAudioBank.Channels];
+            for (int i = 0; i < outFrames; i++)
+            {
+                double at = i * (double)pitch;
+                int a = (int)at; int b = Math.Min(frames - 1, a + 1); float t = (float)(at - a);
+                if (a >= frames) a = frames - 1;
+                for (int c = 0; c < CombatAudioBank.Channels; c++)
+                {
+                    float v = stereo[a * 2 + c] + (stereo[b * 2 + c] - stereo[a * 2 + c]) * t;
+                    result[i * 2 + c] = Math.Max(-1f, Math.Min(1f, v * gain));
+                }
+            }
+            return result;
+        }
 
         private static float[][] BakeVariations(int sampleRate, Func<int, int, float[]> bake, int count = CombatAudioBank.VariationsPerCue)
         {
