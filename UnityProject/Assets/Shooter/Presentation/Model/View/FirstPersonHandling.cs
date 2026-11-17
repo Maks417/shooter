@@ -52,6 +52,8 @@ namespace Shooter.Presentation.View
         public byte DesiredWeaponSlot => desiredSlot;
         /// <summary>Mesh/hands slot currently shown; lags desired until holster completes.</summary>
         public byte VisibleWeaponSlot => visibleSlot;
+        /// <summary>The gun on screen (ADR-102 random loadouts); invalid falls back to the slot's default profile.</summary>
+        public DefinitionId VisibleWeaponId { get; set; }
         public bool IsSwitching => desiredSlot != visibleSlot || equip < 1f - 1e-4f;
 
         public void Reset(byte weaponSlot)
@@ -301,8 +303,8 @@ namespace Shooter.Presentation.View
         /// <summary>Weapon-specific reload pose for the visible slot (ADR-099).</summary>
         public ReloadPose ReloadPoseFor(float reloadPhase, bool magazineEmpty, bool reducedMotion)
         {
-            var profile = WeaponVisualProfiles.Resolve(default, visibleSlot);
-            return FirstPersonReloadChoreography.Evaluate(profile.Family, reloadPhase, magazineEmpty,
+            var profile = WeaponVisualProfiles.Resolve(VisibleWeaponId, visibleSlot);
+            return FirstPersonReloadChoreography.Evaluate(profile, reloadPhase, magazineEmpty,
                 profile.ReloadSeconds, reducedMotion);
         }
 

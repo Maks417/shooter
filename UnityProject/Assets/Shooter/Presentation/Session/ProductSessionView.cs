@@ -759,9 +759,10 @@ namespace Shooter.Presentation.Session
                 // gameplay shot origin, which floats beside the handguard. Falls back when no socket is shown.
                 bool anchored=actors!=null&&actors.TryGetMuzzleWorld(ev.Instigator,out var visibleMuzzle);
                 Float3 flashOrigin=anchored?visibleMuzzle:shot.Origin;
-                if(profile.MuzzleFx!="none")analyticFxPool.SpawnGunshotFeedback(flashOrigin, shot.UnitDirection, reducedFlash,
-                    profile.MuzzleFx=="pistol"?(byte)1:profile.MuzzleFx=="carbine"?(byte)2:(byte)0,
-                    anchored?AnalyticFxPool.MuzzleSocketPushMeters:AnalyticFxPool.MuzzleFlashForwardPushMeters);
+                // ADR-102: each gun sizes its own flash; a muzzle brake adds side jets.
+                if(profile.MuzzleFlashVariant!=0)analyticFxPool.SpawnGunshotFeedback(flashOrigin, shot.UnitDirection, reducedFlash,
+                    profile.MuzzleFlashVariant,
+                    anchored?AnalyticFxPool.MuzzleSocketPushMeters:AnalyticFxPool.MuzzleFlashForwardPushMeters, profile.MuzzleFlashSideJets);
                 analyticFxPool.TrySpawn(FxKind.SmokeProxy,flashOrigin,shot.UnitDirection);
                 return;
             }

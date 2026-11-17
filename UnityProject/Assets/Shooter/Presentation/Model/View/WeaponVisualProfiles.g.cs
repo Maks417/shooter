@@ -20,7 +20,8 @@ namespace Shooter.Presentation.View
                 nearFieldScale: 1.12f, nearFieldHipBias: new Float3(0.08f, -0.01f, -0.1f),
                 hipRotationDegrees: new Float3(0f, -12f, -5f), cycleTravelMeters: 0.07f, displayLabel: "Rifle", muzzleFx: "rifle",
                 recoilPitchDegrees: 0.35f, recoilYawHalfDegrees: 0.1f,
-                equipTicks: 24, fireIntervalTicks: 6, reloadTicks: 144, fuseTicks: 0, adsSeconds: 0.15f),
+                equipTicks: 24, fireIntervalTicks: 6, reloadTicks: 144, fuseTicks: 0, adsSeconds: 0.15f,
+                handlingStyle: WeaponHandlingStyle.Auto, adsFovDegrees: 0f, muzzleFlashScale: -1f, muzzleFlashSideJets: false),
             // Content/Weapons/rifle-carbine.weapon.json
             new WeaponVisualProfile(
                 new DefinitionId("weapons/rifle-carbine"), WeaponVisualFamily.PrimaryGun, "rifle-carbine",
@@ -28,7 +29,8 @@ namespace Shooter.Presentation.View
                 nearFieldScale: 1.1f, nearFieldHipBias: new Float3(0.08f, -0.01f, -0.09f),
                 hipRotationDegrees: new Float3(0f, -11f, -4f), cycleTravelMeters: 0.06f, displayLabel: "Carbine", muzzleFx: "carbine",
                 recoilPitchDegrees: 0.40f, recoilYawHalfDegrees: 0.12f,
-                equipTicks: 22, fireIntervalTicks: 5, reloadTicks: 132, fuseTicks: 0, adsSeconds: 0.15f),
+                equipTicks: 22, fireIntervalTicks: 5, reloadTicks: 132, fuseTicks: 0, adsSeconds: 0.15f,
+                handlingStyle: WeaponHandlingStyle.Auto, adsFovDegrees: 0f, muzzleFlashScale: -1f, muzzleFlashSideJets: false),
             // Content/Weapons/pistol.weapon.json
             new WeaponVisualProfile(
                 new DefinitionId("weapons/pistol"), WeaponVisualFamily.Sidearm, "pistol",
@@ -36,7 +38,8 @@ namespace Shooter.Presentation.View
                 nearFieldScale: 1.15f, nearFieldHipBias: new Float3(0.08f, -0.085f, 0.11f),
                 hipRotationDegrees: new Float3(0f, -3f, -2f), cycleTravelMeters: 0.038f, displayLabel: "Sidearm", muzzleFx: "pistol",
                 recoilPitchDegrees: 0.55f, recoilYawHalfDegrees: 0.15f,
-                equipTicks: 18, fireIntervalTicks: 10, reloadTicks: 108, fuseTicks: 0, adsSeconds: 0.15f),
+                equipTicks: 18, fireIntervalTicks: 10, reloadTicks: 108, fuseTicks: 0, adsSeconds: 0.15f,
+                handlingStyle: WeaponHandlingStyle.Auto, adsFovDegrees: 0f, muzzleFlashScale: -1f, muzzleFlashSideJets: false),
             // Content/Weapons/knife.weapon.json
             new WeaponVisualProfile(
                 new DefinitionId("weapons/knife"), WeaponVisualFamily.Melee, "knife",
@@ -44,7 +47,8 @@ namespace Shooter.Presentation.View
                 nearFieldScale: 1.08f, nearFieldHipBias: new Float3(0.1f, -0.1f, 0.16f),
                 hipRotationDegrees: new Float3(0f, -3f, -2f), cycleTravelMeters: 0f, displayLabel: "Knife", muzzleFx: "none",
                 recoilPitchDegrees: 0f, recoilYawHalfDegrees: 0f,
-                equipTicks: 12, fireIntervalTicks: 24, reloadTicks: 0, fuseTicks: 0, adsSeconds: 0.15f),
+                equipTicks: 12, fireIntervalTicks: 24, reloadTicks: 0, fuseTicks: 0, adsSeconds: 0.15f,
+                handlingStyle: WeaponHandlingStyle.Auto, adsFovDegrees: 0f, muzzleFlashScale: -1f, muzzleFlashSideJets: false),
             // Content/Weapons/grenade.weapon.json
             new WeaponVisualProfile(
                 new DefinitionId("weapons/grenade"), WeaponVisualFamily.Throwable, "grenade",
@@ -52,7 +56,8 @@ namespace Shooter.Presentation.View
                 nearFieldScale: 1.08f, nearFieldHipBias: new Float3(0.09f, -0.09f, 0.14f),
                 hipRotationDegrees: new Float3(0f, -3f, -2f), cycleTravelMeters: 0f, displayLabel: "Grenade", muzzleFx: "none",
                 recoilPitchDegrees: 0f, recoilYawHalfDegrees: 0f,
-                equipTicks: 18, fireIntervalTicks: 0, reloadTicks: 0, fuseTicks: 120, adsSeconds: 0.15f)
+                equipTicks: 18, fireIntervalTicks: 0, reloadTicks: 0, fuseTicks: 120, adsSeconds: 0.15f,
+                handlingStyle: WeaponHandlingStyle.Auto, adsFovDegrees: 0f, muzzleFlashScale: -1f, muzzleFlashSideJets: false)
         };
     }
 }

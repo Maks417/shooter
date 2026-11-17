@@ -38,6 +38,7 @@ ENUM_SOURCES = {
     "WeaponOpticMode": ASSETS / "Presentation/Model/View/WeaponVisualProfiles.cs",
     "SynthVoiceKind": ASSETS / "Presentation/Model/Audio/Runtime/SynthAudioMixer.cs",
     "KillFeedWeapon": ASSETS / "Presentation/Model/Hud/KillFeedText.cs",
+    "WeaponHandlingStyle": ASSETS / "Presentation/Model/View/WeaponVisualProfiles.cs",
 }
 
 ID_PATTERN = re.compile(r"^weapons/[a-z0-9]+(?:-[a-z0-9]+)*$")
@@ -51,7 +52,9 @@ COMBAT_REQUIRED = ["fireMode", "fireIntervalTicks", "reloadTicks", "equipTicks",
 
 VISUAL_REQUIRED = ["meshKey", "optic", "magazineCycle", "nearFieldScale", "nearFieldHipBias", "hipRotationDegrees",
                    "cycleTravelMeters"]
-VISUAL_OPTIONAL = {"geometryRecipe", "geometryParts", "muzzleFx", "adsSeconds"}
+VISUAL_OPTIONAL = {"geometryRecipe", "geometryParts", "muzzleFx", "adsSeconds",
+                   # ADR-102: handling choreography, magnified-optic FOV and muzzle flash size.
+                   "handlingStyle", "adsFovDegrees", "muzzleFlashScale", "muzzleFlashSideJets"}
 # ADR-082 geometry.weapon 1.1.0 numeric rifle parts (millimetres or counts).
 GEOMETRY_PART_NUMBERS = ["handguardFrontMm", "barrelFrontMm", "topRailTeeth", "gasBlockZMm", "gasTubeZMm",
                          "gasTubeLengthMm", "frontSightZMm"]
@@ -148,6 +151,13 @@ def vector(value, where, limit):
     if not isinstance(value, list) or len(value) != 3:
         raise DefinitionError(where + ": expected [x, y, z]")
     return [number(x, where, minimum=-limit, maximum=limit) for x in value]
+
+
+def adsfov(value, where):
+    text = number(value, where, maximum=80)
+    if float(text) != 0 and float(text) < 5:
+        raise DefinitionError(where + ": 0 (optic default) or 5..80 degrees")
+    return text
 
 
 def validate(root: Path, path: Path, doc, enums) -> dict:
@@ -276,6 +286,11 @@ def validate(root: Path, path: Path, doc, enums) -> dict:
         "cycleTravelMeters": number(visual["cycleTravelMeters"], v + "cycleTravelMeters", maximum=0.5),
         # ADR-099: cosmetic ADS raise time; the C# default is 0.15 s.
         "adsSeconds": number(visual.get("adsSeconds", Literal("0.15")), v + "adsSeconds", minimum=0.05, maximum=1),
+        "handlingStyle": choice(visual.get("handlingStyle", "Auto"), v + "handlingStyle", enums["WeaponHandlingStyle"]),
+        "adsFovDegrees": adsfov(visual.get("adsFovDegrees", Literal("0")), v + "adsFovDegrees"),
+        "muzzleFlashScale": number(visual.get("muzzleFlashScale", Literal("-1")), v + "muzzleFlashScale", minimum=-1, maximum=2.5)
+        if "muzzleFlashScale" not in visual else number(visual["muzzleFlashScale"], v + "muzzleFlashScale", minimum=0, maximum=2.5),
+        "muzzleFlashSideJets": boolean(visual.get("muzzleFlashSideJets", False), v + "muzzleFlashSideJets"),
         "shotVoice": choice(audio["shot"], where + ".audio.shot", enums["SynthVoiceKind"]),
         "glyph": glyph,
         "recipeSource": recipe_source,
@@ -379,7 +394,9 @@ def render_profiles(weapons) -> str:
             + f(w["combat"]["recoilYawHalfDegrees"]) + ",\n"
             "                equipTicks: " + w["combat"]["equipTicks"] + ", fireIntervalTicks: "
             + w["combat"]["fireIntervalTicks"] + ", reloadTicks: " + w["combat"]["reloadTicks"] + ", fuseTicks: "
-            + w["combat"]["fuseTicks"] + ", adsSeconds: " + f(w["adsSeconds"]) + ")")
+            + w["combat"]["fuseTicks"] + ", adsSeconds: " + f(w["adsSeconds"]) + ",\n"
+            "                handlingStyle: WeaponHandlingStyle." + w["handlingStyle"] + ", adsFovDegrees: " + f(w["adsFovDegrees"])
+            + ", muzzleFlashScale: " + f(w["muzzleFlashScale"]) + ", muzzleFlashSideJets: " + b(w["muzzleFlashSideJets"]) + ")")
     return (HEADER + "#nullable enable\nusing Shooter.Contracts;\nusing Shooter.Presentation.Audio;\n"
             "using Shooter.Presentation.Hud;\n\nnamespace Shooter.Presentation.View\n{\n"
             "    public static partial class WeaponVisualProfiles\n    {\n"

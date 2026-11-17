@@ -77,13 +77,15 @@ namespace Shooter.Presentation.Fx
                     for(int p=0;p<count;p++)
                     {
                         float turn=(p*2.399963f+i*.31f);Vector3 spread=new Vector3(Mathf.Cos(turn),.3f+(p%3)*.22f,Mathf.Sin(turn));
-                        var emit=new ParticleSystem.EmitParams{position=new Vector3(fx.Position.X,fx.Position.Y,fx.Position.Z),velocity=fx.Kind==FxKind.SmokeProxy?Vector3.up*.25f:fx.Kind==FxKind.Tracer?normal*70:dirt&&fx.Kind==FxKind.Dust?normal*1.1f+Vector3.up*1.4f+spread*.35f:normal*.5f+spread*(fx.Kind==FxKind.Dust?.25f:1.7f),startLifetime=Mathf.Max(.02f,fx.Lifetime-fx.Age),startSize=fx.Kind==FxKind.Fireball?3f:fx.Kind==FxKind.Shockwave?4f:fx.Kind==FxKind.SmokeProxy?1.1f:fx.Kind==FxKind.Dust?(concrete?.38f:dirt?.7f:.55f):fx.Kind==FxKind.MuzzleFlash?(fx.Variant==1?.42f:fx.Variant==2?.54f:.65f):fx.Kind==FxKind.Tracer?.18f:concrete||dirt?.07f:.08f,startColor=fx.Kind==FxKind.Debris&&(concrete||dirt)?new Color(.62f,.62f,.62f,1f):Color.white,rotation=turn};ps.Emit(emit,1);
+                        var emit=new ParticleSystem.EmitParams{position=new Vector3(fx.Position.X,fx.Position.Y,fx.Position.Z),velocity=fx.Kind==FxKind.SmokeProxy?Vector3.up*.25f:fx.Kind==FxKind.Tracer?normal*70:dirt&&fx.Kind==FxKind.Dust?normal*1.1f+Vector3.up*1.4f+spread*.35f:normal*.5f+spread*(fx.Kind==FxKind.Dust?.25f:1.7f),startLifetime=Mathf.Max(.02f,fx.Lifetime-fx.Age),startSize=fx.Kind==FxKind.Fireball?3f:fx.Kind==FxKind.Shockwave?4f:fx.Kind==FxKind.SmokeProxy?1.1f:fx.Kind==FxKind.Dust?(concrete?.38f:dirt?.7f:.55f):fx.Kind==FxKind.MuzzleFlash?MuzzleSize(fx.Variant):fx.Kind==FxKind.Tracer?.18f:concrete||dirt?.07f:.08f,startColor=fx.Kind==FxKind.Debris&&(concrete||dirt)?new Color(.62f,.62f,.62f,1f):Color.white,rotation=turn};ps.Emit(emit,1);
                     }
                 }
                 else if(fx.Age>age[i])ps.Simulate(fx.Age-age[i],false,false,false);
                 active[i]=true;age[i]=fx.Age;kind[i]=fx.Kind;
             }
         }
+        /// <summary>Variants 0..2 are the legacy rifle/pistol/carbine flashes; 10+ carry the ADR-102 size in hundredths.</summary>
+        private static float MuzzleSize(byte variant) => variant >= 10 ? .65f * variant / 100f : variant == 1 ? .42f : variant == 2 ? .54f : .65f;
         public void ClearVisuals(){for(int i=0;i<systems.Length;i++){if(systems[i]!=null)systems[i].Stop(false,ParticleSystemStopBehavior.StopEmittingAndClear);active[i]=false;}}
         private void ReleaseMaterials(){foreach(var value in owned)if(value!=null){if(Application.isPlaying)Destroy(value);else DestroyImmediate(value);}owned.Clear();bound=false;}
         private void OnDestroy(){ClearVisuals();ReleaseMaterials();}

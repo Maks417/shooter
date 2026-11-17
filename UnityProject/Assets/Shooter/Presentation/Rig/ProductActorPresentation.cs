@@ -113,7 +113,8 @@ namespace Shooter.Presentation.Rig
         private readonly Dictionary<Mesh, Material[]> weaponPalettes = new Dictionary<Mesh, Material[]>();
         private WeaponRecipe? motionRecipe;
         private DefinitionId localVisibleWeaponId;
-        private DefinitionId localPrimaryWeaponId = new DefinitionId("weapons/rifle");
+        /// <summary>Last gun seen in each slot this life: random loadouts mean a slot no longer implies a weapon (ADR-102).</summary>
+        private readonly DefinitionId[] localSlotWeaponIds = new DefinitionId[4];
         private EntityId localHuman;
         private Camera? fpsCamera;
         private Transform? localWeapon;
@@ -568,8 +569,8 @@ namespace Shooter.Presentation.Rig
                 DefinitionId weaponId = human.ActiveWeaponDefinition.IsValid
                     ? human.ActiveWeaponDefinition
                     : WeaponVisualProfiles.DefaultIdForSlot(slot);
-                if (slot == ProductAuthorityActionView.RifleSlot && weaponId.IsValid)
-                    localPrimaryWeaponId = weaponId;
+                if (!localViewHuman.Equals(human.EntityId)) Array.Clear(localSlotWeaponIds, 0, localSlotWeaponIds.Length);
+                if (slot < localSlotWeaponIds.Length && weaponId.IsValid) localSlotWeaponIds[slot] = weaponId;
                 if (!localViewHuman.Equals(human.EntityId))
                 {
                     localView.ResetForLife(slot);
@@ -577,8 +578,6 @@ namespace Shooter.Presentation.Rig
                     localLocomotion.Reset();
                     hasLookSample = false;
                     localViewHuman = human.EntityId;
-                    if (slot == ProductAuthorityActionView.RifleSlot && weaponId.IsValid)
-                        localPrimaryWeaponId = weaponId;
                 }
                 actions.SyncLifecycle(human.EntityId, slot, true);
                 localView.SetActiveWeaponSlot(slot);
@@ -603,12 +602,13 @@ namespace Shooter.Presentation.Rig
                     activeProfile.EquipSeconds, holdOutgoing: localView.Throwing);
                 // Mesh follows the holster→draw visible slot so the outgoing gun finishes tucking first.
                 byte shown = localHandling.VisibleWeaponSlot;
-                // Mid-switch keeps the outgoing slot's last known id (primary may be carbine).
+                // Mid-switch keeps the outgoing slot's last known id (each life draws its own guns).
                 DefinitionId shownId = shown == slot
                     ? weaponId
-                    : (shown == ProductAuthorityActionView.RifleSlot
-                        ? localPrimaryWeaponId
-                        : WeaponVisualProfiles.DefaultIdForSlot(shown));
+                    : shown < localSlotWeaponIds.Length && localSlotWeaponIds[shown].IsValid
+                        ? localSlotWeaponIds[shown]
+                        : WeaponVisualProfiles.DefaultIdForSlot(shown);
+                localHandling.VisibleWeaponId = shownId;
                 localVisibleWeaponSlot = shown;
                 localVisibleWeaponId = shownId;
                 var profile = WeaponVisualProfiles.Resolve(shownId, shown);
@@ -619,7 +619,7 @@ namespace Shooter.Presentation.Rig
                 bool magazineEmpty = human.Magazine == 0 && shown == slot;
                 float adsPresent = FirstPersonHandling.AdsPresentationBlend(pose.AdsBlend, localHandling.EquipBlend);
                 localAdsPresentation = adsPresent;
-                var reloadPose = FirstPersonReloadChoreography.Evaluate(profile.Family, reload, magazineEmpty,
+                var reloadPose = FirstPersonReloadChoreography.Evaluate(profile, reload, magazineEmpty,
                     profile.ReloadSeconds, reducedMotion);
                 var offset = localHandling.PositionOffset(adsPresent, reload, reducedMotion, recoilEnergy, magazineEmpty);
                 var rotation = localHandling.RotationDegrees(adsPresent, reload, reducedMotion, recoilEnergy, magazineEmpty);
@@ -650,7 +650,7 @@ namespace Shooter.Presentation.Rig
                         movement.Value.HorizontalSpeedMetersPerSecond)
                     : FirstPersonLocomotionInput.Standing;
                 bool busy = reload > 0f || localHandling.IsSwitching || localView.Throwing || localView.Cooking
-                    || localView.MeleePhase01 > 0f || recoilEnergy > 0.02f;
+                    || localView.MeleePhase01 > 0f || localView.BoltCycling || recoilEnergy > 0.02f;
                 localLocomotion.Step(locomotionInput, dtSeconds, adsPresent, busy, lookYawDelta, lookPitchDelta);
                 var moveOffset = localLocomotion.PositionOffset(shown, adsPresent, reducedMotion);
                 var moveRotation = localLocomotion.RotationDegrees(shown, adsPresent, reducedMotion);
@@ -1038,7 +1038,7 @@ namespace Shooter.Presentation.Rig
             // grenade pin pull; the elbow stays on its bind so the sleeve stretches between them (ADR-069).
             Float3 reach=new Float3(reloadPose.SupportWristOffset.X+specialWrist.X,reloadPose.SupportWristOffset.Y+specialWrist.Y,
                 reloadPose.SupportWristOffset.Z+specialWrist.Z);
-            float supportOpen=gun ? reloadPose.SupportOpen01 : specialOpen;
+            float supportOpen=gun ? Math.Max(reloadPose.SupportOpen01, specialOpen) : specialOpen;
             for(int hand=0;hand<2;hand++)
             {
                 var skeleton=handSkeletons[slot*2+hand]!;

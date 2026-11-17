@@ -79,6 +79,8 @@ namespace Shooter.Presentation.View
         {
             if (!float.IsFinite(hipFovDegrees) || hipFovDegrees < 1f)
                 throw new ArgumentOutOfRangeException(nameof(hipFovDegrees));
+            // ADR-102: magnified optics state their own field of view (2x, 4x, 8x).
+            if (profile.AdsFovDegrees > 0f) return hipFovDegrees * (profile.AdsFovDegrees / 80f);
             float ratio = UsesScopedOptic(profile) ? (42f / 80f)
                 : UsesIronSightOptic(profile) ? (52f / 80f)
                 : (58f / 80f);

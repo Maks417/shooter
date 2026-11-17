@@ -159,7 +159,7 @@ namespace Shooter.Presentation.Fx
         /// <paramref name="suppressMuzzleAndTracer"/> mirrors ReducedFlash — casings still spawn.
         /// </summary>
         public int SpawnGunshotFeedback(Float3 origin, Float3 unitDirection, bool suppressMuzzleAndTracer, byte muzzleProfile = 0,
-            float forwardPushMeters = MuzzleFlashForwardPushMeters)
+            float forwardPushMeters = MuzzleFlashForwardPushMeters, bool sideJets = false)
         {
             Float3 dir = unitDirection.IsUnit ? unitDirection : new Float3(0f, 0f, 1f);
             Float3 eject = EjectionAxis(dir);
@@ -180,6 +180,18 @@ namespace Shooter.Presentation.Fx
                     primary.Y + dir.Y * MuzzleFlashSecondaryPushMeters,
                     primary.Z + dir.Z * MuzzleFlashSecondaryPushMeters);
                 if (TrySpawn(FxKind.MuzzleFlash, secondary, cross, muzzleProfile)) spawned++;
+
+                // ADR-102 muzzle brake: gas vents left and right of the bore as two smaller jets.
+                if (sideJets)
+                {
+                    Float3 side = EjectionAxis(dir);
+                    byte jet = (byte)Math.Max(10, muzzleProfile * 3 / 5);
+                    for (int s = -1; s <= 1; s += 2)
+                    {
+                        var at = new Float3(primary.X + side.X * s * .09f, primary.Y + side.Y * s * .09f, primary.Z + side.Z * s * .09f);
+                        if (TrySpawn(FxKind.MuzzleFlash, at, new Float3(side.X * s, side.Y * s, side.Z * s), jet)) spawned++;
+                    }
+                }
 
                 if (TrySpawn(FxKind.Tracer, primary, dir)) spawned++;
             }
