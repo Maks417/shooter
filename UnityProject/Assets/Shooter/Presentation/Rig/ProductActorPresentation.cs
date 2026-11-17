@@ -100,6 +100,7 @@ namespace Shooter.Presentation.Rig
         {
             public Mesh? Held, Local, Magazine, Cycle;
             public Float3 SightSocket;
+            public Float3 MuzzleSocket;
         }
         private readonly Dictionary<string, WeaponMeshSet> weaponMeshes = new Dictionary<string, WeaponMeshSet>(StringComparer.Ordinal);
         private Material[]? team1Palette;
@@ -296,7 +297,7 @@ namespace Shooter.Presentation.Rig
                     if (cycle != null) { set.Cycle = Own(Upload(cycle, false)); silhouetteParts.Add(cycle); }
                     // ADR-085: HUD weapon icons are traced from these same packaged LOD0 meshes.
                     silhouettes.Add(new WeaponSilhouetteSource(source.MeshKey, WeaponSilhouetteSource.SpanFor(source.MeshKey), silhouetteParts));
-                    if (source.Recipe != null) set.SightSocket = FindSocket(WeaponGeometry.Sockets(source.Recipe), "sight-eye");
+                    if (source.Recipe != null) { var sockets = WeaponGeometry.Sockets(source.Recipe); set.SightSocket = FindSocket(sockets, "sight-eye"); set.MuzzleSocket = FindSocket(sockets, "muzzle"); }
                     weaponMeshes[source.MeshKey] = set;
                     yield return 0;
                 }
@@ -1088,6 +1089,31 @@ namespace Shooter.Presentation.Rig
         private WeaponMeshSet? MeshSetForProfile(in WeaponVisualProfile profile) =>
             weaponMeshes.TryGetValue(profile.MeshAssetKey, out var set) ? set
             : weaponMeshes.TryGetValue(WeaponVisualProfiles.MeshKeyRifle, out var rifle) ? rifle : null;
+
+        /// <summary>
+        /// World position of the muzzle the viewer sees for <paramref name="instigator"/>: the first-person
+        /// view model for the local player, the held weapon otherwise. Presentation-only placement of the
+        /// flash; the authoritative shot origin is unchanged.
+        /// </summary>
+        public bool TryGetMuzzleWorld(EntityId instigator, out Float3 muzzle)
+        {
+            muzzle = default;
+            if (instigator.Equals(localHuman) && localWeapon != null && localWeapon.gameObject.activeInHierarchy)
+                return TryMuzzle(localWeapon, localVisibleWeaponId, out muzzle);
+            if (avatars.TryGetValue(instigator.Value, out var avatar) && !avatar.Corpse && avatar.Weapon != null && avatar.Weapon.gameObject.activeInHierarchy)
+                return TryMuzzle(avatar.Weapon, avatar.WeaponDefinition, out muzzle);
+            return false;
+        }
+
+        private bool TryMuzzle(Transform weapon, DefinitionId id, out Float3 muzzle)
+        {
+            muzzle = default;
+            if (!WeaponVisualProfiles.TryGet(id, out var profile) || !weaponMeshes.TryGetValue(profile.MeshAssetKey, out var set)) return false;
+            if (set.MuzzleSocket.X == 0 && set.MuzzleSocket.Y == 0 && set.MuzzleSocket.Z == 0) return false;
+            Vector3 world = weapon.TransformPoint(V(set.MuzzleSocket));
+            muzzle = new Float3(world.x, world.y, world.z);
+            return true;
+        }
 
         private Float3 SightSocketForProfile(in WeaponVisualProfile profile) =>
             weaponMeshes.TryGetValue(profile.MeshAssetKey, out var set) ? set.SightSocket : default;

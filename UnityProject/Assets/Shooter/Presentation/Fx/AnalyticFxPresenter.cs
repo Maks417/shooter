@@ -41,7 +41,7 @@ namespace Shooter.Presentation.Fx
             {
                 var data=MapVisualClosure.DecodeMaterial(visuals,FxFlipbook.Path((FlipbookKind)i),FxFlipbook.Fingerprint);
                 var texture=new Texture2D(data.Width,data.Height,TextureFormat.RGBA32,false,true){name="Verified "+(FlipbookKind)i+" flipbook",wrapMode=TextureWrapMode.Clamp,filterMode=FilterMode.Bilinear};owned.Add(texture);
-                var bytes=new byte[data.MipBytes[0].Count];for(int j=0;j<bytes.Length;j++)bytes[j]=data.MipBytes[0][j];texture.LoadRawTextureData(bytes);texture.Apply(false,true);
+                var bytes=AnalyticFxPool.FlipTextureRows(data.MipBytes[0],data.Width,data.Height);texture.LoadRawTextureData(bytes);texture.Apply(false,true);
                 var material=new Material(shader){name="Numeric "+(FlipbookKind)i};owned.Add(material);material.SetTexture("_BaseMap",texture);bool additive=i>=2;material.SetFloat("_DstBlend",additive?(float)BlendMode.One:(float)BlendMode.OneMinusSrcAlpha);material.SetFloat("_Brightness",additive?5f:1f);materials[i]=material;
                 yield return 0;
             }
@@ -67,6 +67,8 @@ namespace Shooter.Presentation.Fx
                     renderers[i].sharedMaterial=fx.Kind==FxKind.Shockwave?ringMaterial:materials[texture];
                     renderers[i].renderMode=fx.Kind==FxKind.Shockwave?ParticleSystemRenderMode.HorizontalBillboard:fx.Kind==FxKind.Tracer?ParticleSystemRenderMode.Stretch:ParticleSystemRenderMode.Billboard;
                     renderers[i].velocityScale=.03f;renderers[i].lengthScale=2;
+                    // Smoke sorts behind the additive flash it spawns with so its alpha blend cannot hide it.
+                    renderers[i].sortingFudge=fx.Kind==FxKind.SmokeProxy?2f:fx.Kind==FxKind.MuzzleFlash?-2f:0f;
                     int count=fx.Kind==FxKind.SmokeProxy||fx.Kind==FxKind.Dust?(tier==0?3:8):fx.Kind==FxKind.ImpactSpark?(tier==0?4:12):fx.Kind==FxKind.Debris?(tier==0?3:7):1;
                     var main=ps.main;main.gravityModifier=fx.Kind==FxKind.ShellCasing||fx.Kind==FxKind.Debris?.7f:dirt?.3f:0;
                     var size=ps.sizeOverLifetime;size.enabled=true;size.size=new ParticleSystem.MinMaxCurve(1,fx.Kind==FxKind.Shockwave?RingSize:fx.Kind==FxKind.SmokeProxy?SmokeSize:FadeSize);

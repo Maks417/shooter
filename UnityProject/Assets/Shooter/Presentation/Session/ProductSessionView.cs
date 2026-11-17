@@ -755,9 +755,14 @@ namespace Shooter.Presentation.Session
                 if (IsKnifeDefinition(shot.WeaponId)) return;
                 // ADR-061: dual flame lobes + tracer + casing. ReducedFlash hides muzzle+tracer only.
                 var profile=WeaponVisualProfiles.Require(shot.WeaponId);
-                if(profile.MuzzleFx!="none")analyticFxPool.SpawnGunshotFeedback(shot.Origin, shot.UnitDirection, reducedFlash,
-                    profile.MuzzleFx=="pistol"?(byte)1:profile.MuzzleFx=="carbine"?(byte)2:(byte)0);
-                analyticFxPool.TrySpawn(FxKind.SmokeProxy,shot.Origin,shot.UnitDirection);
+                // The flash sits on the muzzle the viewer sees (FP view model or held weapon), not on the
+                // gameplay shot origin, which floats beside the handguard. Falls back when no socket is shown.
+                bool anchored=actors!=null&&actors.TryGetMuzzleWorld(ev.Instigator,out var visibleMuzzle);
+                Float3 flashOrigin=anchored?visibleMuzzle:shot.Origin;
+                if(profile.MuzzleFx!="none")analyticFxPool.SpawnGunshotFeedback(flashOrigin, shot.UnitDirection, reducedFlash,
+                    profile.MuzzleFx=="pistol"?(byte)1:profile.MuzzleFx=="carbine"?(byte)2:(byte)0,
+                    anchored?AnalyticFxPool.MuzzleSocketPushMeters:AnalyticFxPool.MuzzleFlashForwardPushMeters);
+                analyticFxPool.TrySpawn(FxKind.SmokeProxy,flashOrigin,shot.UnitDirection);
                 return;
             }
 

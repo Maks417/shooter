@@ -60,6 +60,8 @@ namespace Shooter.Presentation.Fx
         public const float MuzzleFlashSecondaryScale = 0.72f;
         /// <summary>Meters past the shot origin so the flame clears the viewmodel tip.</summary>
         public const float MuzzleFlashForwardPushMeters = 0.18f;
+        /// <summary>Push used when the flash is anchored to the visible weapon's muzzle socket.</summary>
+        public const float MuzzleSocketPushMeters = 0.05f;
         /// <summary>Extra forward offset for the secondary cross lobe.</summary>
         public const float MuzzleFlashSecondaryPushMeters = 0.025f;
 
@@ -156,7 +158,8 @@ namespace Shooter.Presentation.Fx
         /// Product-path gunshot FX (ADR-061): dual muzzle lobes + tracer + ejected casing.
         /// <paramref name="suppressMuzzleAndTracer"/> mirrors ReducedFlash — casings still spawn.
         /// </summary>
-        public int SpawnGunshotFeedback(Float3 origin, Float3 unitDirection, bool suppressMuzzleAndTracer, byte muzzleProfile = 0)
+        public int SpawnGunshotFeedback(Float3 origin, Float3 unitDirection, bool suppressMuzzleAndTracer, byte muzzleProfile = 0,
+            float forwardPushMeters = MuzzleFlashForwardPushMeters)
         {
             Float3 dir = unitDirection.IsUnit ? unitDirection : new Float3(0f, 0f, 1f);
             Float3 eject = EjectionAxis(dir);
@@ -165,9 +168,9 @@ namespace Shooter.Presentation.Fx
             if (!suppressMuzzleAndTracer)
             {
                 var primary = new Float3(
-                    origin.X + dir.X * MuzzleFlashForwardPushMeters,
-                    origin.Y + dir.Y * MuzzleFlashForwardPushMeters,
-                    origin.Z + dir.Z * MuzzleFlashForwardPushMeters);
+                    origin.X + dir.X * forwardPushMeters,
+                    origin.Y + dir.Y * forwardPushMeters,
+                    origin.Z + dir.Z * forwardPushMeters);
                 if (TrySpawn(FxKind.MuzzleFlash, primary, dir, muzzleProfile)) spawned++;
 
                 // Cross lobe: vertical relative to the shot so the flash reads as a star, not a marble.
@@ -184,6 +187,24 @@ namespace Shooter.Presentation.Fx
             // Casings remain under ReducedFlash (ADR-061).
             if (TrySpawn(FxKind.ShellCasing, origin, eject)) spawned++;
             return spawned;
+        }
+
+        /// <summary>
+        /// The flipbook bake writes frame 0 at byte row 0, but raw texture rows start at the bottom while the
+        /// texture-sheet animation numbers tiles from the top-left. Without this flip every flipbook played
+        /// last frame first, so the muzzle flash only peaked after it had faded out.
+        /// </summary>
+        public static byte[] FlipTextureRows(System.Collections.Generic.IReadOnlyList<byte> source, int width, int height)
+        {
+            int stride = width * 4;
+            if (source.Count != stride * height) throw new ArgumentException("RGBA32 size mismatch", nameof(source));
+            var bytes = new byte[source.Count];
+            for (int row = 0; row < height; row++)
+            {
+                int from = row * stride, to = (height - 1 - row) * stride;
+                for (int x = 0; x < stride; x++) bytes[to + x] = source[from + x];
+            }
+            return bytes;
         }
 
         /// <summary>Rightward ejection axis from the shot direction (weapon-local +X approximation).</summary>
