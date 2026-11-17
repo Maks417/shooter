@@ -61,19 +61,21 @@ namespace Shooter.Presentation.Fx
                 if(born)
                 {
                     ps.Stop(false,ParticleSystemStopBehavior.StopEmittingAndClear);
-                    int texture=fx.Kind==FxKind.MuzzleFlash?3:fx.Kind==FxKind.SmokeProxy?0:fx.Kind==FxKind.Dust?1:fx.Kind==FxKind.Fireball?2:4;
+                    bool concrete=fx.Variant==ImpactSurfaceFx.ConcreteVariant&&(fx.Kind==FxKind.Dust||fx.Kind==FxKind.Debris),dirt=fx.Variant==ImpactSurfaceFx.DirtVariant&&(fx.Kind==FxKind.Dust||fx.Kind==FxKind.Debris);
+                    // Surface impacts: concrete reads as grey smoke-sheet dust and chips, dirt as brown kick-up and clods.
+                    int texture=concrete?0:dirt?1:fx.Kind==FxKind.MuzzleFlash?3:fx.Kind==FxKind.SmokeProxy?0:fx.Kind==FxKind.Dust?1:fx.Kind==FxKind.Fireball?2:4;
                     renderers[i].sharedMaterial=fx.Kind==FxKind.Shockwave?ringMaterial:materials[texture];
                     renderers[i].renderMode=fx.Kind==FxKind.Shockwave?ParticleSystemRenderMode.HorizontalBillboard:fx.Kind==FxKind.Tracer?ParticleSystemRenderMode.Stretch:ParticleSystemRenderMode.Billboard;
                     renderers[i].velocityScale=.03f;renderers[i].lengthScale=2;
                     int count=fx.Kind==FxKind.SmokeProxy||fx.Kind==FxKind.Dust?(tier==0?3:8):fx.Kind==FxKind.ImpactSpark?(tier==0?4:12):fx.Kind==FxKind.Debris?(tier==0?3:7):1;
-                    var main=ps.main;main.gravityModifier=fx.Kind==FxKind.ShellCasing||fx.Kind==FxKind.Debris?.7f:0;
+                    var main=ps.main;main.gravityModifier=fx.Kind==FxKind.ShellCasing||fx.Kind==FxKind.Debris?.7f:dirt?.3f:0;
                     var size=ps.sizeOverLifetime;size.enabled=true;size.size=new ParticleSystem.MinMaxCurve(1,fx.Kind==FxKind.Shockwave?RingSize:fx.Kind==FxKind.SmokeProxy?SmokeSize:FadeSize);
                     var color=ps.colorOverLifetime;color.enabled=true;color.color=FadeColor;
                     Vector3 normal=new Vector3(fx.Normal.X,fx.Normal.Y,fx.Normal.Z);
                     for(int p=0;p<count;p++)
                     {
                         float turn=(p*2.399963f+i*.31f);Vector3 spread=new Vector3(Mathf.Cos(turn),.3f+(p%3)*.22f,Mathf.Sin(turn));
-                        var emit=new ParticleSystem.EmitParams{position=new Vector3(fx.Position.X,fx.Position.Y,fx.Position.Z),velocity=fx.Kind==FxKind.SmokeProxy?Vector3.up*.25f:fx.Kind==FxKind.Tracer?normal*70:normal*.5f+spread*(fx.Kind==FxKind.Dust?.25f:1.7f),startLifetime=Mathf.Max(.02f,fx.Lifetime-fx.Age),startSize=fx.Kind==FxKind.Fireball?3f:fx.Kind==FxKind.Shockwave?4f:fx.Kind==FxKind.SmokeProxy?1.1f:fx.Kind==FxKind.Dust?.55f:fx.Kind==FxKind.MuzzleFlash?(fx.Variant==1?.42f:fx.Variant==2?.54f:.65f):fx.Kind==FxKind.Tracer?.18f:.08f,startColor=Color.white,rotation=turn};ps.Emit(emit,1);
+                        var emit=new ParticleSystem.EmitParams{position=new Vector3(fx.Position.X,fx.Position.Y,fx.Position.Z),velocity=fx.Kind==FxKind.SmokeProxy?Vector3.up*.25f:fx.Kind==FxKind.Tracer?normal*70:dirt&&fx.Kind==FxKind.Dust?normal*1.1f+Vector3.up*1.4f+spread*.35f:normal*.5f+spread*(fx.Kind==FxKind.Dust?.25f:1.7f),startLifetime=Mathf.Max(.02f,fx.Lifetime-fx.Age),startSize=fx.Kind==FxKind.Fireball?3f:fx.Kind==FxKind.Shockwave?4f:fx.Kind==FxKind.SmokeProxy?1.1f:fx.Kind==FxKind.Dust?(concrete?.38f:dirt?.7f:.55f):fx.Kind==FxKind.MuzzleFlash?(fx.Variant==1?.42f:fx.Variant==2?.54f:.65f):fx.Kind==FxKind.Tracer?.18f:concrete||dirt?.07f:.08f,startColor=fx.Kind==FxKind.Debris&&(concrete||dirt)?new Color(.62f,.62f,.62f,1f):Color.white,rotation=turn};ps.Emit(emit,1);
                     }
                 }
                 else if(fx.Age>age[i])ps.Simulate(fx.Age-age[i],false,false,false);

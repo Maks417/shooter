@@ -1423,6 +1423,8 @@ Evidence: required pure/cross-lane/provenance/build checks and limitations are r
 
 Rollback: revert this ADR implementation and republish matching source/content; retained old packages keep their original identities.
 
+Addendum 2026-11-17 (surface impacts): the first implementation split bullet impacts only by the cover tag (sparks vs dust plus additive debris). Impacts now resolve three families through pure `ImpactSurfaceFx`: metal (cover tag, or the hit packaged collision box classifies to a metal role through the same `MapSolidsMesh.Classify` the solids mesh uses, plus oil-depot tank drums) gives sparks; concrete (other solids, or the floor on an asphalt-ground map) gives grey dust and chips; dirt (the floor on a soil-ground map) gives a brown upward kick-up and clods. Lookup is read-only against the verified packaged boxes and the registry `groundSurface`; the impact payload, simulation and package bytes are unchanged. Known limit: arena feature envelopes (vehicles, sandbags, tarp fences) are classified from their box alone, because their feature list is not in the packaged collision. Evidence: Simulation 364/364 (`Artifacts/m2-combat-harness/ff105841f92da3e717339607cbca30509a6e43ab/20261117T071440472Z-257ce52b`, 6 new `ImpactSurfaceFxTests`), EditMode 87/87 (`Artifacts/m0-foundation/ff105841f92da3e717339607cbca30509a6e43ab/tests-editmode-20261117T071546961Z-1bcef835`), source provenance PASS. Player look and owner review remain Pending.
+
 
 ## ADR-094 — Accepted: bounded soldier presentation revision and P05 reopening
 

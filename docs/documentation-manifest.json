@@ -28,7 +28,7 @@
     "content-schemas/visual-decals.valid.json": "c74882fd0d838c0a71f17a1d0c7564fec0794aa29cb6ba641131007966c83049",
     "contract-details.md": "bc0a0d7f6862da5522f1e021b73d980c410df789e3a03ad4a002a6e53aa2b78d",
     "contracts.md": "f515ffe6ae134461648849d42016b1ce1f24c515fd961c0e288a622d86172e54",
-    "decisions.md": "e6ba2c0635296ecd1c3e834548b346aa442549023c8efa120e9e552edbf201df",
+    "decisions.md": "2212181458a30a32a5c44d252a0d7258fef27c40f0988313200c46f6ed8b2d3a",
     "design-milestones.md": "d8218f039cbeb79fc5e486d9a8f0cafa5f944c3f32c889ad17935ed8c74ed1b8",
     "deterministic-format.md": "7f3a9be8b9c128ea2803064b649f3a23f0051b1501109d2032b6f2bc6134c7d1",
     "domain-model.md": "099efc93c03aeb920efd3428df1d824d04faa89bca8e951954ca72d40544baff",
@@ -118,7 +118,7 @@
     "milestones/m10-maps-shell/validation-acceptance.md": "f59ee4e95e39af44a274700951d39dc61da91b06052a7fabe894edc44e21f6d3",
     "milestones/m11-playable-release/agent-assignments.md": "fcd6a3e9bdf5b669f012363d3976a06aec86e0d0262b706e2b3a9963796c3285",
     "milestones/m11-playable-release/contracts-integration.md": "3fdcc05ea9c42a86de5ba1f272acd7eff6a6bde8ab390730e02a5874534382d6",
-    "milestones/m11-playable-release/handoff.md": "8986c5145cc0bedd4b98e38fbabc39c5aa9d54d8500146672dfbecdcb8d26c22",
+    "milestones/m11-playable-release/handoff.md": "ceb316cdf5dc576fead6f1800be804805333dc4801771f31c446581d503e42f5",
     "milestones/m11-playable-release/implementation.md": "f3101f38b36698f09db1790bbd211ffb2d7dd21041b750db9bd525a8774a045b",
     "milestones/m11-playable-release/index.md": "7fb2c548823d3bb4e20dc4932163057edd47ad216993a6c3717f074c71869299",
     "milestones/m11-playable-release/validation-acceptance.md": "0a8e37914940aba53d295d7cc59dcab41c1b54a50b9c8663b299a56710c26e37",
@@ -192,7 +192,7 @@
     "vision.md": "d34284b7ae1b3defa6695430ef8ec173f85d21b5738333c22ccb78168688db1c",
     "visual-art-brief.md": "97e6b57cd77b36a0140b15ac4a01d20deed956f76a6e335267655408ea514c28",
     "visual-defect-inventory.md": "72f1f6152195a1aa305f8113576eccc7cf626669c67ba5fb6ae3d79ccbd971cc",
-    "visual-roadmap.md": "e69838370a31fd0a38d4658fe81cb4477e849e7359624277f000c2283a3b0eb1",
+    "visual-roadmap.md": "a64c939354731e7297fad27824d3f633bce5b898eb5ed0aa2766bd6729c9eb11",
     "weapon-recipe-baseline.md": "60a24cc8ca14a84c963f29e006cf53a7f62ee004065961223aa600c7457c5745"
   }
 }

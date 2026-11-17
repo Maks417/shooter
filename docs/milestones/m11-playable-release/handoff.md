@@ -1308,3 +1308,7 @@ Clean Client/native-content/package/installer identities and release-player diag
 
 
 Final pre-build wrappers: Maps **72/72** (`Artifacts/m8-runtime-composition/08eb4de61077097017e6968a1ff45d7777d4b8f4/test-maps-20261116T230853024Z-3fffac84`, 15 Game + 57 generation cases); Contracts **79/79** (`Artifacts/m0-foundation/08eb4de61077097017e6968a1ff45d7777d4b8f4/20261116T231056623Z-e12750ea`). Documentation verification PASS: 129 Markdown pages / 1,413 local links / 192 integrity files. These are dirty-parent integration results; the following clean build is identified separately.
+
+## ADR-093 addendum — surface impacts — 2026-11-17
+
+Bullet impacts now distinguish concrete (grey dust and chips), metal (sparks) and dirt (brown kick-up and clods) through pure `ImpactSurfaceFx`, resolved read-only from the verified packaged collision boxes and the map's registry ground surface. Simulation **364/364** (`Artifacts/m2-combat-harness/ff105841f92da3e717339607cbca30509a6e43ab/20261117T071440472Z-257ce52b`), EditMode **87/87** (`Artifacts/m0-foundation/ff105841f92da3e717339607cbca30509a6e43ab/tests-editmode-20261117T071546961Z-1bcef835`), source provenance PASS. No Client build, player capture or owner review was run for this change; those remain Pending.

@@ -68,6 +68,9 @@ namespace Shooter.Presentation.Session
         private int presentationBindEpoch;
         private Float3? enemySpawn;
         private IReadOnlyList<CollisionBox> hudBoxes = System.Array.Empty<CollisionBox>();
+        private bool[] impactMetalBoxes = System.Array.Empty<bool>();
+        private bool impactAsphaltGround;
+        private const float ImpactBoxSlack = 0.03f;
         private readonly EventId[] recentDeathIds = new EventId[32];
         private int deathIdCursor;
         private readonly KillFeedEntry[] killFeed = new KillFeedEntry[4];
@@ -361,6 +364,8 @@ namespace Shooter.Presentation.Session
             if(analyticFxPresenter!=null)foreach(var step in analyticFxPresenter.BindVerifiedVisualSteps(visuals))yield return step;
             boundMapId = mapId ?? "";
             hudBoxes = boxes;
+            impactMetalBoxes = ClassifyImpactMetal(boxes, boundMapId);
+            impactAsphaltGround = MapRegistry.TryGet(boundMapId, out var impactMap) && impactMap.GroundSurface == "asphalt";
             enemySpawn = null;
             if (metadataBytes != null)
             {
@@ -423,6 +428,8 @@ namespace Shooter.Presentation.Session
             actors?.ClearAll();
             boundMapId = "";
             hudBoxes = System.Array.Empty<CollisionBox>();
+            impactMetalBoxes = System.Array.Empty<bool>();
+            impactAsphaltGround = false;
             enemySpawn = null;
             System.Array.Clear(recentDeathIds, 0, recentDeathIds.Length);
             System.Array.Clear(killFeedUntil, 0, killFeedUntil.Length);
@@ -699,11 +706,37 @@ namespace Shooter.Presentation.Session
                 }
                 else if(impact.RegionId==0)
                 {
-                    bool metal=impact.SurfaceTag==ArenaBoxBuilder.TagCover;
-                    analyticFxPool.TrySpawn(metal?FxKind.ImpactSpark:FxKind.Dust,impact.Position,impact.Normal);
-                    if(!metal)analyticFxPool.TrySpawn(FxKind.Debris,impact.Position,impact.Normal);
+                    ImpactSurfaceFx.Spawn(analyticFxPool,ResolveImpactSurface(impact),impact.Position,impact.Normal);
                 }
             }
+        }
+
+        /// <summary>
+        /// Presentation-only surface lookup against the verified packaged collision boxes: the hit box's packaged
+        /// material role (same classifier as the solids mesh) decides metal; floor hits use the registry ground.
+        /// </summary>
+        private ImpactSurface ResolveImpactSurface(ImpactPayload impact)
+        {
+            bool metal=impact.SurfaceTag==ArenaBoxBuilder.TagCover,onSolid=false;
+            var p=impact.Position;
+            for(int i=0;i<hudBoxes.Count&&i<impactMetalBoxes.Length;i++)
+            {
+                var box=hudBoxes[i];
+                if(System.Math.Abs(p.X-box.Center.X)>box.Size.X*.5f+ImpactBoxSlack||System.Math.Abs(p.Y-box.Center.Y)>box.Size.Y*.5f+ImpactBoxSlack||System.Math.Abs(p.Z-box.Center.Z)>box.Size.Z*.5f+ImpactBoxSlack)continue;
+                onSolid=true;if(impactMetalBoxes[i]){metal=true;break;}
+            }
+            return ImpactSurfaceFx.Resolve(metal,onSolid,p,impact.Normal,impactAsphaltGround);
+        }
+
+        private static bool[] ClassifyImpactMetal(IReadOnlyList<CollisionBox> boxes,string mapId)
+        {
+            var result=new bool[boxes.Count];bool oil=string.Equals(mapId,OilDepotDressing.MapId,System.StringComparison.Ordinal);
+            for(int i=0;i<boxes.Count;i++)
+            {
+                ushort role=MapSolidsMesh.Classify(boxes[i]);
+                result[i]=oil&&OilDepotDressing.ReplacedByDressing(boxes[i])||role!=(ushort)MapSolidsMaterialRole.StructureConcrete&&role!=(ushort)MapSolidsMaterialRole.Trim&&role!=(ushort)MapSolidsMaterialRole.Foundation;
+            }
+            return result;
         }
 
         private void ObserveMovementDust()
