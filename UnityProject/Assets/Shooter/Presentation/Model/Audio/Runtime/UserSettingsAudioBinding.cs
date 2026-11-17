@@ -22,5 +22,13 @@ namespace Shooter.Presentation.Audio
                 effectsMuted: settings.EffectsVolume <= 0f,
                 uiMuted: settings.UiVolume <= 0f);
         }
+
+        /// <summary>Music output level (ADR-096): master × music; either at 0 mutes music.</summary>
+        public static float MusicGain(UserSettings settings)
+        {
+            if (settings == null) throw new ArgumentNullException(nameof(settings));
+            if (settings.MasterVolume <= 0f || settings.MusicVolume <= 0f) return 0f;
+            return settings.MasterVolume * settings.MusicVolume;
+        }
     }
 }

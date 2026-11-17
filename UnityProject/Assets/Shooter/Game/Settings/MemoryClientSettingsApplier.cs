@@ -102,7 +102,8 @@ namespace Shooter.Game.Settings
                     applied.ReducedFlash,
                     applied.Contrast,
                     applied.Subtitles,
-                    CopyBindings(applied));
+                    CopyBindings(applied),
+                    applied.MusicVolume);
             }
             pendingDisplay = null;
             RevertCount++;
@@ -129,7 +130,8 @@ namespace Shooter.Game.Settings
                 source.ReducedFlash,
                 source.Contrast,
                 source.Subtitles,
-                CopyBindings(source));
+                CopyBindings(source),
+                source.MusicVolume);
 
         private static InputBinding[] CopyBindings(UserSettings source)
         {

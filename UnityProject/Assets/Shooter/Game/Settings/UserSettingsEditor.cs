@@ -120,7 +120,8 @@ namespace Shooter.Game.Settings
                 source.ReducedFlash,
                 source.Contrast,
                 source.Subtitles,
-                CopyBindings(source));
+                CopyBindings(source),
+                source.MusicVolume);
         }
 
         private static UserSettings Clone(UserSettings source)
@@ -144,7 +145,8 @@ namespace Shooter.Game.Settings
                 source.ReducedFlash,
                 source.Contrast,
                 source.Subtitles,
-                CopyBindings(source));
+                CopyBindings(source),
+                source.MusicVolume);
         }
 
         private static InputBinding[] CopyBindings(UserSettings source)

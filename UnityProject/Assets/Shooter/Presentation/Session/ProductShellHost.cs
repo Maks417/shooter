@@ -6,6 +6,7 @@ using Shooter.Game.Contracts;
 using Shooter.Game.Session;
 using Shooter.Game.Settings;
 using Shooter.Presentation.Input;
+using Shooter.Presentation.Audio;
 using Shooter.Presentation.Menus;
 using Shooter.Presentation.Scoreboard;
 using Shooter.Generation.Icons;
@@ -87,6 +88,7 @@ namespace Shooter.Presentation.Session
 
             setup = new SetupSelection(catalog, preferredMap, preferredTeamSize);
             view = ProductSessionView.Create(session, shellOwned: true);
+            ui.Sound = kind => view?.PlayShellUi(kind);
             if (backend is IProductMenuVisualSource menuVisuals) menuScene = ProductMenuScene.Create(transform, menuVisuals);
             view.SetGameplayFocus(false);
             backend.InstallHumanSampler(tick =>
@@ -167,6 +169,28 @@ namespace Shooter.Presentation.Session
             {
                 scoreboard.BindResults(coordinator.RetainedResults);
             }
+            UpdateMusic();
+        }
+
+        /// <summary>ADR-096: menu theme, calm/tension match bed, outcome stinger and results loop.</summary>
+        private void UpdateMusic()
+        {
+            if (view == null || session == null) return;
+            var context = MusicDirector.ContextFor(navigation.Screen, navigation.SettingsReturn);
+            bool tension = false;
+            var outcome = LocalMatchOutcome.Unknown;
+            if (context == MusicContext.Match && session.Phase == GameMatchPhase.Playing)
+            {
+                var snap = session.TryAcquireSnapshot();
+                if (snap != null)
+                    tension = MusicDirector.IsTense(snap.Team1Kills, snap.Team2Kills, GameContractVersion.ScoreLimit, snap.RemainingActiveTicks);
+            }
+            else if (context == MusicContext.Finished && coordinator.RetainedResults != null)
+            {
+                var results = coordinator.RetainedResults;
+                outcome = MusicDirector.OutcomeFor(results.Outcome, MusicDirector.LocalTeam(results, session.HumanEntityId));
+            }
+            view.UpdateMusic(context, tension, outcome, navigation.Screen != ShellScreen.Playing);
         }
 
         private void TickDisplayConfirmClock()
@@ -775,7 +799,7 @@ namespace Shooter.Presentation.Session
             }
 
             var draft = settingsEditor.Draft;
-            float master = draft.MasterVolume, effects = draft.EffectsVolume, uiVol = draft.UiVolume;
+            float master = draft.MasterVolume, effects = draft.EffectsVolume, uiVol = draft.UiVolume, music = draft.MusicVolume;
             byte quality = draft.QualityTier;
             int width = draft.ResolutionWidth, height = draft.ResolutionHeight, fps = draft.FpsCap;
             var mode = draft.DisplayMode;
@@ -794,6 +818,7 @@ namespace Shooter.Presentation.Session
                 master = SettingsSlider(ref y, cw, "Master volume", master, 0, 1, (master * 100).ToString("0") + "%");
                 effects = SettingsSlider(ref y, cw, "Effects volume", effects, 0, 1, (effects * 100).ToString("0") + "%");
                 uiVol = SettingsSlider(ref y, cw, "Interface volume", uiVol, 0, 1, (uiVol * 100).ToString("0") + "%");
+                music = SettingsSlider(ref y, cw, "Music volume", music, 0, 1, (music * 100).ToString("0") + "%");
                 ui.Label(new Rect(0, y + 8, cw, 36), "Set a channel to 0% to mute it.", 16, TacticalUi.Muted);
             }
             else if (settingsTab == 1)
@@ -828,7 +853,7 @@ namespace Shooter.Presentation.Session
                 subtitles = ui.Toggle(new Rect(0, y, cw, 36), "settings.subtitles", "SOUND CAPTIONS", subtitles);
             }
             settingsEditor.SetDraft(new UserSettings(draft.Schema, master, effects, uiVol, quality, width, height, mode, vsync, fps,
-                fov, sens, invertY, scale, reducedMotion, reducedFlash, contrast, subtitles, bindingEditor.ToArray()));
+                fov, sens, invertY, scale, reducedMotion, reducedFlash, contrast, subtitles, bindingEditor.ToArray(), music));
             GUI.EndScrollView();
 
             float by = a.yMax - 72;

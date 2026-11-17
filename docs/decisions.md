@@ -1452,3 +1452,27 @@ If the gate passes, the revision becomes the product default under a new motion 
 Consequences: presentation-only change; quality-independent gameplay, procedural numeric sources and the pinned toolchain remain binding. A changed motion identity requires the feature-content lock refresh through its tool and republication of affected visual bytes.
 
 Rollback: revert the solver and identity change; the baseline v5 solver and all ADR-024/094 evidence remain reproducible.
+
+## ADR-096 — Accepted: music channel, combat sample bank v5 and owner audio-source relaxation
+
+Date 2026-11-17. Context: owner reported that only rifle/pistol shots sound good; reload, knife and grenade cues sounded synthetic or were missing, and there was no music. The v4 bank (ADR-062, shipped as `combat-audio-bank-v4-stereo` after ADR-064's knife/grenade cues) used real recordings for gunshots and knife swing only; reload, impacts, footsteps, UI and ambience were project-rendered Foley. Nothing played in the menu or when a match finished.
+
+Decision:
+- **Source policy.** Owner decision: this is a non-commercial build, so a source's license no longer gates selection. Any freely downloadable recording or track may ship. Each file still records its source note, license (informational) and SHA-256 in its manifest. Extracting audio from commercial games stays out of scope. This amends the license sentence of ADR-055/062 and `features/audio.md`.
+- **Bank v5.** `combat-audio-bank-v5-stereo` keeps the v4 slot order and adds `reload_pistol`, `knife_hit_flesh`, `knife_hit_hard`, `grenade_pin`, `grenade_bounce`, `grenade_explode_far`, `dry_fire`, `weapon_switch`, `hit_marker`, `kill_confirm`, `bullet_flyby`, `distant_battle`, `ui_hover`, `ui_click` and `ui_back`. A manifest may ship 1–8 variations per cue; each missing cue falls back to its nearest generated recipe. `Tools/build_audio_bank.py` renders the bank from `Tools/audio-sources.json`. Downloads stay under the ignored `.local/audio-src`. `keep` entries retain the v4 gunshot files byte-for-byte.
+- **Routing (presentation only).**
+  - Reload Foley is chosen by slot family (sidearm vs long gun). It is time-fitted within ±12 % to the `ActionPayload` reload window and faded out on the owner's death or next shot.
+  - Knife `DamageApplied`/`Impact` on the swing's tick plays a flesh or hard hit.
+  - The local instigator hears a hit tick and a kill confirm.
+  - Enemy rounds passing within 2.5 m of the head play a flyby.
+  - Grenade blasts add a distant layer. Two bounce clinks are scheduled analytically where the arc meets the thrower's feet height; a blast cancels them.
+  - Dry fire, weapon switch and grenade pin come from the local lifecycle state.
+  - A session-seeded distant-battle bed plays every 6–20 s.
+  - No Simulation, C0 or Game-v1 event changes.
+- **Music.** `MusicDirector` (pure, `Presentation.Model`) maps shell screens to: menu theme → silence while loading → calm bed → tension bed (latched when the leading team is within 15 kills of the limit or 60 s remain) → victory/defeat/draw stinger → results loop. Beds duck by up to −6 dB under local fire or a blast within 15 m. `UnityMusicOutput` crossfades two 2D `AudioSource`s and loads Vorbis-compressed OGG from `Content/Audio/music` (manifest with SHA-256 and optional loop region). It needs the built-in engine modules `com.unity.modules.unitywebrequest` and `com.unity.modules.unitywebrequestaudio`, which are exempt from the package locks (ADR-079). A missing or invalid music bank is silent with one warning. `Package-Release` ships the folder when present.
+- **Menu UI sound.** A second small mixer instance sharing the bank plays hover/click/back from `TacticalUi`, so the menu has sound without an attached session.
+- **Settings.** `UserSettings` gains `musicVolume` (default 0.6) as an additive, optional schema-2 key. Older files load with the default and older builds ignore the key, so `SettingsSchema` stays 2. The Game-v1 lock is refrozen for `GameData.cs`. The Audio tab gets a Music slider. Music gain = master × music.
+
+Consequences: bank memory grows with the added cues. Music is decoded by the engine outside the 0.5 ms SFX mix target. Pure tests cover the new routing, the director, the manifest, the tracker and the settings key. Named listening review (FIX10/SET02) stays Pending until the owner records it.
+
+Rollback: revert this change. The v4 manifest and its files are recoverable from git, and older settings files remain valid.

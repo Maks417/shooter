@@ -20,6 +20,7 @@ namespace Shooter.Game.Settings
             WriteNumber(sb, "masterVolume", settings.MasterVolume, first: false);
             WriteNumber(sb, "effectsVolume", settings.EffectsVolume, first: false);
             WriteNumber(sb, "uiVolume", settings.UiVolume, first: false);
+            WriteNumber(sb, "musicVolume", settings.MusicVolume, first: false);
             WriteNumber(sb, "qualityTier", settings.QualityTier, first: false);
             WriteNumber(sb, "resolutionWidth", settings.ResolutionWidth, first: false);
             WriteNumber(sb, "resolutionHeight", settings.ResolutionHeight, first: false);
@@ -239,7 +240,8 @@ namespace Shooter.Game.Settings
                     RequireBool(root, "reducedFlash"),
                     RequireFloat(root, "contrast"),
                     RequireBool(root, "subtitles"),
-                    bindings);
+                    bindings,
+                    OptionalFloat(root, "musicVolume", UserSettings.DefaultMusicVolume));
                 return true;
             }
             catch (ArgumentException ex)
@@ -268,6 +270,13 @@ namespace Shooter.Game.Settings
                     return f;
             }
             throw new ArgumentException("missing float", keys[0]);
+        }
+
+        /// <summary>ADR-096: additive schema-2 key; files written before it load with the default.</summary>
+        private static float OptionalFloat(Dictionary<string, object?> root, string key, float fallback)
+        {
+            if (!root.TryGetValue(key, out var value) || value == null) return fallback;
+            return RequireFloat(root, key);
         }
 
         private static int RequireInt(Dictionary<string, object?> root, params string[] keys)

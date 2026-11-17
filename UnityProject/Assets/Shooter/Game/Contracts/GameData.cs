@@ -307,16 +307,20 @@ namespace Shooter.Game.Contracts
         }
     }
 
-    /// <summary>Immutable local presentation/input preferences. Schema 2 per ADR-036; no gameplay mutation.</summary>
+    /// <summary>Immutable local presentation/input preferences. Schema 2 per ADR-036 (+ optional musicVolume, ADR-096); no gameplay mutation.</summary>
     public sealed class UserSettings
     {
         public const string SchemaId = "shooter.user-settings.v2";
         public const string ReservedEscapeControl = "Key.Escape";
+        /// <summary>Default music channel level when a file predates ADR-096 or omits the key.</summary>
+        public const float DefaultMusicVolume = 0.6f;
 
         public uint Schema { get; }
         public float MasterVolume { get; }
         public float EffectsVolume { get; }
         public float UiVolume { get; }
+        /// <summary>Music channel (menu theme, match beds, stingers); multiplied by master. ADR-096.</summary>
+        public float MusicVolume { get; }
         public byte QualityTier { get; }
         public int ResolutionWidth { get; }
         public int ResolutionHeight { get; }
@@ -352,7 +356,8 @@ namespace Shooter.Game.Contracts
             bool reducedFlash,
             float contrast,
             bool subtitles,
-            IReadOnlyList<InputBinding> bindings)
+            IReadOnlyList<InputBinding> bindings,
+            float musicVolume = DefaultMusicVolume)
         {
             GameRequire.That(schema == GameContractVersion.SettingsSchema, nameof(schema));
             GameRequire.Finite(masterVolume, nameof(masterVolume));
@@ -361,6 +366,8 @@ namespace Shooter.Game.Contracts
             GameRequire.That(masterVolume >= 0f && masterVolume <= 1f, nameof(masterVolume));
             GameRequire.That(effectsVolume >= 0f && effectsVolume <= 1f, nameof(effectsVolume));
             GameRequire.That(uiVolume >= 0f && uiVolume <= 1f, nameof(uiVolume));
+            GameRequire.Finite(musicVolume, nameof(musicVolume));
+            GameRequire.That(musicVolume >= 0f && musicVolume <= 1f, nameof(musicVolume));
             GameRequire.That(qualityTier <= 2, nameof(qualityTier));
             GameRequire.That(resolutionWidth >= GameContractVersion.MinResolutionWidth, nameof(resolutionWidth));
             GameRequire.That(resolutionHeight >= GameContractVersion.MinResolutionHeight, nameof(resolutionHeight));
@@ -379,6 +386,7 @@ namespace Shooter.Game.Contracts
             MasterVolume = masterVolume;
             EffectsVolume = effectsVolume;
             UiVolume = uiVolume;
+            MusicVolume = musicVolume;
             QualityTier = qualityTier;
             ResolutionWidth = resolutionWidth;
             ResolutionHeight = resolutionHeight;

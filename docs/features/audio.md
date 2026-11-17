@@ -1,24 +1,27 @@
-# Feature: combat audio (stereo sample bank)
+# Feature: combat audio and music
 
-Status: T089 / [ADR-062](../decisions.md#adr-062--accepted-stereo-foundauthored-combat-wav-bank-and-per-kind-distance-t089) (extends T086 / [ADR-055](../decisions.md#adr-055--accepted-generated-pcm-combat-sample-banks-t086)). Named device hearing (FIX10 / SET02) remains Pending.
+Status: T089 / [ADR-062](../decisions.md#adr-062--accepted-stereo-foundauthored-combat-wav-bank-and-per-kind-distance-t089) (extends T086 / [ADR-055](../decisions.md#adr-055--accepted-generated-pcm-combat-sample-banks-t086)); bank v5 and music per [ADR-096](../decisions.md#adr-096--accepted-music-channel-combat-sample-bank-v5-and-owner-audio-source-relaxation). Named device hearing (FIX10 / SET02) remains Pending.
 
 ## Policy
 
-- Product combat feedback loads **stereo 48 kHz WAV** clips from `Content/Audio/combat/` via `manifest.json` (source note + SHA-256 per file). Not live MIDI/sine beeps.
-- **Rifle vs pistol shots** are distinct CC0 outdoor recordings (OpenGameArt Tabasco/kurt packs), sliced to one-shots — not shared synthetic beeps.
-- Every recording needs a suitable license and recorded provenance; non-commercial use alone is not permission. Extracting audio from third-party commercial games is forbidden. This pass retains the existing CC0 bank.
-- Generated stereo Foley (`CombatAudioBankBaker.BakeGenerated`) is **emergency fallback** only when the bank is missing or a hash fails.
-- Presentation-only: authority combat events and stride footsteps drive cues; audio never mutates simulation.
+- Product combat feedback loads **stereo 48 kHz WAV** clips from `Content/Audio/combat/` via `manifest.json` (`combat-audio-bank-v5-stereo`, source note + license + SHA-256 per file, 1–8 variations per cue). Not live MIDI/sine beeps.
+- **Rifle vs pistol shots** are distinct CC0 outdoor recordings (OpenGameArt Tabasco/kurt packs), sliced to one-shots and retained byte-for-byte in v5.
+- ADR-096 owner decision: non-commercial build, so a source's license does not gate selection; it is still recorded. Extracting audio from commercial games is forbidden.
+- `Tools/build_audio_bank.py` renders the bank and the music bank from `Tools/audio-sources.json` (downloads under ignored `.local/audio-src`): `fetch`, `analyze`, `build`, `review`, `check`.
+- Generated stereo Foley (`CombatAudioBankBaker.BakeGenerated`) is **emergency fallback** only when the bank is missing, a hash fails, or a cue is absent from the manifest (per cue).
+- Presentation-only: authority combat events, the local lifecycle snapshot and stride footsteps drive cues; audio never mutates simulation.
 - ≤24 voices, linked stereo limiter with 0.89 peak headroom and 80 ms release, master/effects/UI gains (volume 0 = mute). Soft mix CPU target 0.5 ms/frame remains unmeasured on reference hardware.
 
 ## Distance
 
 | Cue | Max audible | Notes |
 |---|---|---|
-| Footstep | 18 m | Steep atten + 0.45 base gain |
-| Reload / death / impact / damage | 35 m | Mid-range soft cues |
-| Rifle / pistol / headshot | 80 m | Gunfire ceiling |
-| UI / ambient | 0 (local) | Authored stereo as-is |
+| Footstep, dry fire, weapon switch, grenade pin | 18 m | Steep attenuation |
+| Reload (rifle/pistol) / death / impact / damage / knife / grenade throw and bounce | 35 m | Mid-range soft cues |
+| Rifle / pistol / headshot / near grenade blast | 80 m | Gunfire ceiling |
+| Distant grenade layer | 160 m | Quiet up close, dominant past ~30 m |
+| Bullet flyby | 3 m | Miss distance from the listener's head |
+| UI, hit marker, kill confirm, distant battle, ambient | 0 (local) | Authored stereo as-is |
 
 ## Cue map
 
@@ -26,20 +29,48 @@ Status: T089 / [ADR-062](../decisions.md#adr-062--accepted-stereo-foundauthored-
 |---|---|
 | RifleShot / PistolShot | `ShotAccepted` + weapon definition id |
 | KnifeSwing | `ShotAccepted` with `weapons/knife` |
+| KnifeHitFlesh / KnifeHitHard | knife instigator's `DamageApplied` / target-less `Impact` on the swing's tick |
+| GrenadePin | local `WeaponAction` enters `Cooking` |
 | GrenadeThrow | `ProjectileSpawned` (grenade leave-hand) |
-| GrenadeExplode | grenade blast `Impact` (invalid target, upward normal, surfaceTag 1) |
+| GrenadeBounce | two clinks scheduled where the throw arc meets the thrower's feet height; cancelled by the blast |
+| GrenadeExplode + GrenadeExplodeFar | grenade blast `Impact` (invalid target, upward normal, surfaceTag 1) |
 | Impact | `Impact` (non-head, non-blast regions) |
 | DamageTaken | `DamageApplied` on body/limbs |
 | Headshot | `Impact` / `DamageApplied` with region 1 (head) |
-| ReloadStart / ReloadComplete | `ReloadStarted` / `ReloadCompleted` |
+| HitMarker / KillConfirm | local instigator's `DamageApplied` / `Death` (local only) |
+| BulletFlyby | enemy rifle/pistol `ShotAccepted` whose ray passes within 2.5 m of the listener's head, >4 m from the muzzle |
+| ReloadStart (rifle) / ReloadPistol | `ReloadStarted` by slot family; time-fitted ±12 % to the reload window; faded on the owner's death or next shot |
+| ReloadComplete | `ReloadCompleted` |
+| DryFire / WeaponSwitch | local fire press with an empty gun / active slot change |
 | Death | `Death` |
 | Footstep | horizontal stride ≥ 0.75 m |
-| Ui | shell pause/resume and explicit UI cues |
+| Ui / UiHover / UiClick / UiBack | shell pause/resume; `TacticalUi` hover, click and back controls (menu included, own mixer) |
 | Ambient | quiet loop while an audio session is attached |
+| DistantBattle | far-off gunfire/explosion every 6–20 s while playing (session-seeded) |
+
+## Shipped sources (bank v5 / music v1)
+
+- Reloads: OpenGameArt CC0 handgun and airsoft reload recordings, stitched (mag out → pouch → mag in) to span the reload window. Bolt/slide release is `reload_complete`.
+- Knife, grenade handling, bounces, impacts, hits, deaths, footsteps, UI: Kenney Impact/Interface/RPG Audio (CC0).
+- Distant battle, far blast layer, flyby transients: The Free Firearm Sound Library mid/near-distance recordings (CC0).
+- Kept from v4: rifle/pistol shots, near grenade blast, ambience, two knife swings.
+- Provisional: flyby (no real whiz recording), defeat stinger, ambience.
+- The exact slices live in `Tools/audio-sources.json`.
+
+## Music
+
+`Content/Audio/music/manifest.json` (`music-bank-v1`) lists OGG tracks for `menu_theme`, `match_calm`, `match_tension`, `victory_stinger`, `defeat_stinger`, `draw_stinger` and `results_loop` with SHA-256 and optional loop region. `MusicDirector` (pure) maps shell screens:
+
+- Main/Setup/Settings from menu → menu theme.
+- Loading → silence.
+- Playing/Paused/confirmations → calm bed, latched to tension when the leading team is within 15 kills of the limit or 60 s remain. Paused → 60 %. Ducked up to −6 dB under local fire or a blast within 15 m.
+- Results → outcome stinger from the local team (victory/defeat/draw), then the results loop.
+
+`UnityMusicOutput` crossfades two 2D `AudioSource`s and keeps clips Vorbis-compressed in memory. Music level = master × music (`UserSettings.musicVolume`, default 0.6, Audio tab slider). A missing or invalid track is silent with one warning.
 
 ## Runtime path
 
-`Content/Audio/combat` (editor repo root / packaged beside exe) → `CombatAudioBankBaker.Bake` → `OfflineGameSession` combat event lease → `ProductSessionView.PumpProductAudio` → `ProductAudioEventRouter` → `SynthAudioMixer.TryPlay` (stereo sample + per-kind distance + mild azimuth) → `UnitySynthAudioOutput.OnAudioFilterRead` → device.
+`Content/Audio/combat` (editor repo root / packaged beside exe) → `CombatAudioBankBaker.Bake` → `OfflineGameSession` combat event lease → `ProductSessionView.PumpProductAudio` → `ProductAudioEventRouter` (+ `LocalWeaponCueTracker`, scheduled bounces, distant battle) → `SynthAudioMixer.TryPlay` (stereo sample + per-kind distance + mild azimuth) → `UnitySynthAudioOutput.OnAudioFilterRead` → device. Shell UI cues use a second mixer on the same bank; music is `ProductShellHost.UpdateMusic` → `MusicDirector` → `UnityMusicOutput`.
 
 Missing/unavailable audio device: recoverable warning; play continues without claiming FIX10 PASS.
 
@@ -60,4 +91,5 @@ Validation: pure tests cover rates/pitch, direction changes during a voice, prio
 ## Acceptance
 
 - Pure: voice cap, peak limit, gains/mute, per-kind distance cull, event-id dedupe, stereo bank load, manifest hash mismatch fallback.
-- Device: named reviewer hears distinct rifle vs pistol, impact, nearby footsteps (not map-wide), reload, UI and channel mute (FIX10 / SET02). Waveforms alone are not PASS.
+- Pure (ADR-096): every v5 slot resolves, variation compaction, reload time-fit and cancel, knife hit pairing, flyby geometry, bounce scheduling, duck level, music director transitions/outcome/tension, music manifest hash check, local weapon cues, settings `musicVolume`.
+- Device: named reviewer hears distinct rifle vs pistol, impact, nearby footsteps (not map-wide), rifle vs pistol reload, knife hit, grenade pin/bounce/near and far blast, menu music and UI clicks, outcome stinger, music slider and channel mute (FIX10 / SET02). Waveforms alone are not PASS.

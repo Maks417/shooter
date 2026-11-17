@@ -1,0 +1,1224 @@
+{
+  "schema": "shooter.audio-sources.v1",
+  "note": "ADR-096. Sources download to .local/audio-src (ignored). Owner decision 2026-11-17: non-commercial build, license recorded for information. No audio extracted from commercial games.",
+  "sources": [
+    {
+      "id": "firearm-library",
+      "url": "https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z",
+      "file": "oga/Prepared SFX Library.7z",
+      "license": "CC0-1.0",
+      "note": "The Free Firearm Sound Library (OpenGameArt) - studio firearm recordings and handling Foley"
+    },
+    {
+      "id": "handgun-reload",
+      "url": "https://opengameart.org/sites/default/files/reload.wav",
+      "file": "oga/reload.wav",
+      "license": "CC0-1.0",
+      "note": "OpenGameArt Handgun Reload Sound Effect (zer0_sol)"
+    },
+    {
+      "id": "airsoft-pistol-reload",
+      "url": "https://opengameart.org/sites/default/files/gunreload1.wav",
+      "file": "oga/gunreload1.wav",
+      "license": "CC0-1.0",
+      "note": "OpenGameArt Gun reload sounds (SpringySpringo) pistol"
+    },
+    {
+      "id": "airsoft-rifle-reload",
+      "url": "https://opengameart.org/sites/default/files/assaultriflereload1_0.wav",
+      "file": "oga/assaultriflereload1.wav",
+      "license": "CC0-1.0",
+      "note": "OpenGameArt Gun reload sounds (SpringySpringo) rifle"
+    },
+    {
+      "id": "airsoft-shotgun-cock",
+      "url": "https://opengameart.org/sites/default/files/shotguncock_0.wav",
+      "file": "oga/shotguncock.wav",
+      "license": "CC0-1.0",
+      "note": "OpenGameArt Gun reload sounds (SpringySpringo) cock"
+    },
+    {
+      "id": "war-theme-2",
+      "url": "https://opengameart.org/sites/default/files/war%20theme%20ver%202_0.ogg",
+      "file": "oga/war theme ver 2.ogg",
+      "license": "CC0-1.0",
+      "note": "OpenGameArt War Theme ver 2 (Spring Spring)"
+    },
+    {
+      "id": "war-theme",
+      "url": "https://opengameart.org/sites/default/files/war%20theme_0.ogg",
+      "file": "oga/war theme.ogg",
+      "license": "CC0-1.0",
+      "note": "OpenGameArt War Theme (Spring Spring)"
+    },
+    {
+      "id": "battle-music",
+      "url": "https://opengameart.org/sites/default/files/Battle_1.ogg",
+      "file": "oga/Battle.ogg",
+      "license": "CC-BY-3.0",
+      "note": "OpenGameArt Battle Music by peastman"
+    },
+    {
+      "id": "tread-of-war",
+      "url": "https://opengameart.org/sites/default/files/thetreadofwarmix_0.ogg",
+      "file": "oga/thetreadofwarmix.ogg",
+      "license": "CC-BY-3.0",
+      "note": "The Tread of War composed by Jonathan Shaw (www.jshaw.co.uk), RPG Orchestral Essentials remix"
+    },
+    {
+      "id": "precipice-of-victory",
+      "url": "https://opengameart.org/sites/default/files/The%20Precipice%20of%20Victory%20MP3.zip",
+      "file": "oga/The Precipice of Victory MP3.zip",
+      "license": "CC-BY-3.0",
+      "note": "The Precipice of Victory composed by Jonathan Shaw (www.jshaw.co.uk)"
+    },
+    {
+      "id": "tensions",
+      "url": "https://opengameart.org/sites/default/files/Tensions.mp3",
+      "file": "oga/Tensions.mp3",
+      "license": "GPL-3.0",
+      "note": "OpenGameArt Tensions (jobromedia)"
+    },
+    {
+      "id": "kenney-impact",
+      "url": "https://kenney.nl/assets/impact-sounds",
+      "file": "kenney/kenney_impact-sounds.zip",
+      "license": "CC0-1.0",
+      "note": "Kenney Impact Sounds",
+      "manual": true
+    },
+    {
+      "id": "kenney-interface",
+      "url": "https://kenney.nl/assets/interface-sounds",
+      "file": "kenney/kenney_interface-sounds.zip",
+      "license": "CC0-1.0",
+      "note": "Kenney Interface Sounds",
+      "manual": true
+    },
+    {
+      "id": "kenney-rpg",
+      "url": "https://kenney.nl/assets/rpg-audio",
+      "file": "kenney/kenney_rpg-audio.zip",
+      "license": "CC0-1.0",
+      "note": "Kenney RPG Audio",
+      "manual": true
+    }
+  ],
+  "clips": [
+    {
+      "kind": "rifle_shot",
+      "variation": 0,
+      "keep": true
+    },
+    {
+      "kind": "rifle_shot",
+      "variation": 1,
+      "keep": true
+    },
+    {
+      "kind": "rifle_shot",
+      "variation": 2,
+      "keep": true
+    },
+    {
+      "kind": "rifle_shot",
+      "variation": 3,
+      "keep": true
+    },
+    {
+      "kind": "pistol_shot",
+      "variation": 0,
+      "keep": true
+    },
+    {
+      "kind": "pistol_shot",
+      "variation": 1,
+      "keep": true
+    },
+    {
+      "kind": "pistol_shot",
+      "variation": 2,
+      "keep": true
+    },
+    {
+      "kind": "pistol_shot",
+      "variation": 3,
+      "keep": true
+    },
+    {
+      "kind": "grenade_explode",
+      "variation": 0,
+      "keep": true
+    },
+    {
+      "kind": "grenade_explode",
+      "variation": 1,
+      "keep": true
+    },
+    {
+      "kind": "grenade_explode",
+      "variation": 2,
+      "keep": true
+    },
+    {
+      "kind": "grenade_explode",
+      "variation": 3,
+      "keep": true
+    },
+    {
+      "kind": "ambient",
+      "variation": 0,
+      "keep": true
+    },
+    {
+      "kind": "knife_swing",
+      "variation": 0,
+      "keep": true
+    },
+    {
+      "kind": "knife_swing",
+      "variation": 1,
+      "keep": true
+    },
+    {
+      "kind": "reload_start",
+      "variation": 0,
+      "source": "oga/assaultriflereload1.wav",
+      "start": 0.08,
+      "end": 0.42,
+      "fadeOut": 0.02,
+      "layers": [
+        {
+          "source": "kenney/kenney_rpg-audio/Audio/cloth1.ogg",
+          "gainDb": -8,
+          "delay": 0.55
+        },
+        {
+          "source": "oga/assaultriflereload1.wav",
+          "start": 1.0,
+          "end": 1.53,
+          "delay": 1.25,
+          "fadeOut": 0.03
+        }
+      ]
+    },
+    {
+      "kind": "reload_start",
+      "variation": 1,
+      "source": "oga/gunreload1.wav",
+      "start": 0.04,
+      "end": 0.34,
+      "fadeOut": 0.02,
+      "layers": [
+        {
+          "source": "kenney/kenney_rpg-audio/Audio/cloth2.ogg",
+          "gainDb": -8,
+          "delay": 0.5
+        },
+        {
+          "source": "oga/assaultriflereload1.wav",
+          "start": 1.0,
+          "end": 1.53,
+          "delay": 1.3,
+          "fadeOut": 0.03
+        }
+      ]
+    },
+    {
+      "kind": "reload_start",
+      "variation": 2,
+      "source": "oga/assaultriflereload1.wav",
+      "start": 0.08,
+      "end": 0.42,
+      "fadeOut": 0.02,
+      "layers": [
+        {
+          "source": "kenney/kenney_rpg-audio/Audio/handleSmallLeather.ogg",
+          "gainDb": -9,
+          "delay": 0.45
+        },
+        {
+          "source": "oga/gunreload1.wav",
+          "start": 0.9,
+          "end": 1.08,
+          "delay": 1.2
+        },
+        {
+          "source": "oga/assaultriflereload1.wav",
+          "start": 1.0,
+          "end": 1.53,
+          "delay": 1.35,
+          "fadeOut": 0.03
+        }
+      ]
+    },
+    {
+      "kind": "reload_start",
+      "variation": 3,
+      "source": "oga/reload.wav",
+      "start": 0.07,
+      "end": 0.22,
+      "fadeOut": 0.02,
+      "layers": [
+        {
+          "source": "kenney/kenney_rpg-audio/Audio/cloth3.ogg",
+          "gainDb": -8,
+          "delay": 0.5
+        },
+        {
+          "source": "oga/assaultriflereload1.wav",
+          "start": 1.0,
+          "end": 1.53,
+          "delay": 1.2,
+          "fadeOut": 0.03
+        }
+      ]
+    },
+    {
+      "kind": "reload_pistol",
+      "variation": 0,
+      "source": "oga/reload.wav",
+      "start": 0.05,
+      "end": 0.83,
+      "fadeOut": 0.03
+    },
+    {
+      "kind": "reload_pistol",
+      "variation": 1,
+      "source": "oga/gunreload1.wav",
+      "start": 0.03,
+      "end": 1.1,
+      "fadeOut": 0.03
+    },
+    {
+      "kind": "reload_pistol",
+      "variation": 2,
+      "source": "oga/reload.wav",
+      "start": 0.05,
+      "end": 0.22,
+      "layers": [
+        {
+          "source": "oga/gunreload1.wav",
+          "start": 0.66,
+          "end": 1.08,
+          "delay": 0.75,
+          "fadeOut": 0.03
+        }
+      ]
+    },
+    {
+      "kind": "reload_pistol",
+      "variation": 3,
+      "source": "oga/gunreload1.wav",
+      "start": 0.03,
+      "end": 0.35,
+      "layers": [
+        {
+          "source": "oga/reload.wav",
+          "start": 0.55,
+          "end": 0.83,
+          "delay": 0.8,
+          "fadeOut": 0.03
+        }
+      ]
+    },
+    {
+      "kind": "reload_complete",
+      "variation": 0,
+      "source": "oga/reload.wav",
+      "start": 1.0,
+      "end": 1.4,
+      "fadeOut": 0.03
+    },
+    {
+      "kind": "reload_complete",
+      "variation": 1,
+      "source": "oga/gunreload1.wav",
+      "start": 1.22,
+      "end": 1.579,
+      "fadeOut": 0.03
+    },
+    {
+      "kind": "reload_complete",
+      "variation": 2,
+      "source": "oga/shotguncock.wav",
+      "start": 0.03,
+      "end": 0.474,
+      "highpass": 300,
+      "fadeOut": 0.03
+    },
+    {
+      "kind": "reload_complete",
+      "variation": 3,
+      "source": "kenney/kenney_rpg-audio/Audio/metalLatch.ogg",
+      "layers": [
+        {
+          "source": "kenney/kenney_rpg-audio/Audio/metalClick.ogg",
+          "gainDb": -4,
+          "delay": 0.06
+        }
+      ]
+    },
+    {
+      "kind": "knife_swing",
+      "variation": 2,
+      "source": "kenney/kenney_rpg-audio/Audio/knifeSlice.ogg"
+    },
+    {
+      "kind": "knife_swing",
+      "variation": 3,
+      "source": "kenney/kenney_rpg-audio/Audio/knifeSlice2.ogg"
+    },
+    {
+      "kind": "knife_hit_flesh",
+      "variation": 0,
+      "source": "kenney/kenney_impact-sounds/Audio/impactPunch_heavy_000.ogg",
+      "layers": [
+        {
+          "source": "kenney/kenney_rpg-audio/Audio/chop.ogg",
+          "gainDb": -5
+        }
+      ]
+    },
+    {
+      "kind": "knife_hit_hard",
+      "variation": 0,
+      "source": "kenney/kenney_impact-sounds/Audio/impactMetal_light_000.ogg",
+      "layers": [
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactPlate_light_000.ogg",
+          "gainDb": -6
+        }
+      ]
+    },
+    {
+      "kind": "knife_hit_flesh",
+      "variation": 1,
+      "source": "kenney/kenney_impact-sounds/Audio/impactPunch_heavy_001.ogg",
+      "layers": [
+        {
+          "source": "kenney/kenney_rpg-audio/Audio/chop.ogg",
+          "gainDb": -5
+        }
+      ]
+    },
+    {
+      "kind": "knife_hit_hard",
+      "variation": 1,
+      "source": "kenney/kenney_impact-sounds/Audio/impactMetal_light_001.ogg",
+      "layers": [
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactPlate_light_001.ogg",
+          "gainDb": -6
+        }
+      ]
+    },
+    {
+      "kind": "knife_hit_flesh",
+      "variation": 2,
+      "source": "kenney/kenney_impact-sounds/Audio/impactPunch_heavy_002.ogg",
+      "layers": [
+        {
+          "source": "kenney/kenney_rpg-audio/Audio/chop.ogg",
+          "gainDb": -5
+        }
+      ]
+    },
+    {
+      "kind": "knife_hit_hard",
+      "variation": 2,
+      "source": "kenney/kenney_impact-sounds/Audio/impactMetal_light_002.ogg",
+      "layers": [
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactPlate_light_002.ogg",
+          "gainDb": -6
+        }
+      ]
+    },
+    {
+      "kind": "knife_hit_flesh",
+      "variation": 3,
+      "source": "kenney/kenney_impact-sounds/Audio/impactPunch_heavy_003.ogg",
+      "layers": [
+        {
+          "source": "kenney/kenney_rpg-audio/Audio/chop.ogg",
+          "gainDb": -5
+        }
+      ]
+    },
+    {
+      "kind": "knife_hit_hard",
+      "variation": 3,
+      "source": "kenney/kenney_impact-sounds/Audio/impactMetal_light_003.ogg",
+      "layers": [
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactPlate_light_003.ogg",
+          "gainDb": -6
+        }
+      ]
+    },
+    {
+      "kind": "grenade_pin",
+      "variation": 0,
+      "source": "kenney/kenney_rpg-audio/Audio/metalLatch.ogg"
+    },
+    {
+      "kind": "grenade_pin",
+      "variation": 1,
+      "source": "kenney/kenney_rpg-audio/Audio/metalClick.ogg"
+    },
+    {
+      "kind": "grenade_pin",
+      "variation": 2,
+      "source": "kenney/kenney_impact-sounds/Audio/impactTin_medium_004.ogg",
+      "highpass": 800,
+      "layers": [
+        {
+          "source": "kenney/kenney_rpg-audio/Audio/metalClick.ogg",
+          "gainDb": -6,
+          "delay": 0.12
+        }
+      ]
+    },
+    {
+      "kind": "grenade_pin",
+      "variation": 3,
+      "source": "kenney/kenney_rpg-audio/Audio/metalLatch.ogg",
+      "layers": [
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactTin_medium_003.ogg",
+          "gainDb": -8,
+          "highpass": 800,
+          "delay": 0.1
+        }
+      ]
+    },
+    {
+      "kind": "grenade_throw",
+      "variation": 0,
+      "source": "kenney/kenney_rpg-audio/Audio/knifeSlice.ogg",
+      "lowpass": 1600,
+      "gainDb": -2,
+      "layers": [
+        {
+          "source": "kenney/kenney_rpg-audio/Audio/cloth1.ogg",
+          "gainDb": -4
+        }
+      ]
+    },
+    {
+      "kind": "grenade_bounce",
+      "variation": 0,
+      "source": "kenney/kenney_impact-sounds/Audio/impactTin_medium_000.ogg",
+      "layers": [
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactGeneric_light_000.ogg",
+          "gainDb": -6
+        }
+      ]
+    },
+    {
+      "kind": "grenade_throw",
+      "variation": 1,
+      "source": "kenney/kenney_rpg-audio/Audio/knifeSlice2.ogg",
+      "lowpass": 1600,
+      "gainDb": -2,
+      "layers": [
+        {
+          "source": "kenney/kenney_rpg-audio/Audio/cloth2.ogg",
+          "gainDb": -4
+        }
+      ]
+    },
+    {
+      "kind": "grenade_bounce",
+      "variation": 1,
+      "source": "kenney/kenney_impact-sounds/Audio/impactTin_medium_001.ogg",
+      "layers": [
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactGeneric_light_001.ogg",
+          "gainDb": -6
+        }
+      ]
+    },
+    {
+      "kind": "grenade_throw",
+      "variation": 2,
+      "source": "kenney/kenney_rpg-audio/Audio/knifeSlice.ogg",
+      "lowpass": 1600,
+      "gainDb": -2,
+      "layers": [
+        {
+          "source": "kenney/kenney_rpg-audio/Audio/cloth3.ogg",
+          "gainDb": -4
+        }
+      ]
+    },
+    {
+      "kind": "grenade_bounce",
+      "variation": 2,
+      "source": "kenney/kenney_impact-sounds/Audio/impactTin_medium_002.ogg",
+      "layers": [
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactGeneric_light_002.ogg",
+          "gainDb": -6
+        }
+      ]
+    },
+    {
+      "kind": "grenade_throw",
+      "variation": 3,
+      "source": "kenney/kenney_rpg-audio/Audio/knifeSlice2.ogg",
+      "lowpass": 1600,
+      "gainDb": -2,
+      "layers": [
+        {
+          "source": "kenney/kenney_rpg-audio/Audio/cloth4.ogg",
+          "gainDb": -4
+        }
+      ]
+    },
+    {
+      "kind": "grenade_bounce",
+      "variation": 3,
+      "source": "kenney/kenney_impact-sounds/Audio/impactTin_medium_003.ogg",
+      "layers": [
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactGeneric_light_003.ogg",
+          "gainDb": -6
+        }
+      ]
+    },
+    {
+      "kind": "grenade_explode_far",
+      "variation": 0,
+      "source": "oga/Prepared SFX Library/Prepared SFX Library/Mossberg/N_26P.wav",
+      "start": 0.7,
+      "end": 2.4,
+      "lowpass": 700,
+      "fadeOut": 0.4
+    },
+    {
+      "kind": "grenade_explode_far",
+      "variation": 1,
+      "source": "oga/Prepared SFX Library/Prepared SFX Library/Mossberg/N_26P.wav",
+      "start": 4.5,
+      "end": 6.2,
+      "lowpass": 700,
+      "fadeOut": 0.4
+    },
+    {
+      "kind": "grenade_explode_far",
+      "variation": 2,
+      "source": "oga/Prepared SFX Library/Prepared SFX Library/Nova/O_17P.wav",
+      "lowpass": 700,
+      "fadeOut": 0.4,
+      "start": 0.62,
+      "end": 2.35
+    },
+    {
+      "kind": "grenade_explode_far",
+      "variation": 3,
+      "source": "oga/Prepared SFX Library/Prepared SFX Library/Model 12/K_17P.wav",
+      "lowpass": 700,
+      "fadeOut": 0.4,
+      "start": 0.85,
+      "end": 2.7
+    },
+    {
+      "kind": "distant_battle",
+      "variation": 0,
+      "source": "oga/Prepared SFX Library/Prepared SFX Library/AK-47/C_36P.wav",
+      "start": 0.55,
+      "end": 3.2,
+      "lowpass": 1200,
+      "fadeIn": 0.01,
+      "fadeOut": 0.5
+    },
+    {
+      "kind": "distant_battle",
+      "variation": 1,
+      "source": "oga/Prepared SFX Library/Prepared SFX Library/AK-47/C_34P.wav",
+      "start": 5.1,
+      "end": 7.9,
+      "lowpass": 1200,
+      "fadeIn": 0.01,
+      "fadeOut": 0.5
+    },
+    {
+      "kind": "distant_battle",
+      "variation": 2,
+      "source": "oga/Prepared SFX Library/Prepared SFX Library/Carl Gustav M45/G_24P.wav",
+      "lowpass": 1200,
+      "fadeIn": 0.01,
+      "fadeOut": 0.5,
+      "start": 0.0,
+      "end": 2.8
+    },
+    {
+      "kind": "distant_battle",
+      "variation": 3,
+      "source": "oga/Prepared SFX Library/Prepared SFX Library/PPSh/P_22P.wav",
+      "start": 1.05,
+      "end": 3.5,
+      "lowpass": 1200,
+      "fadeIn": 0.01,
+      "fadeOut": 0.5
+    },
+    {
+      "kind": "distant_battle",
+      "variation": 4,
+      "source": "oga/Prepared SFX Library/Prepared SFX Library/Savage 10 .300 Blackout/T_17P.wav",
+      "start": 0.8,
+      "end": 2.45,
+      "lowpass": 1200,
+      "fadeIn": 0.01,
+      "fadeOut": 0.5
+    },
+    {
+      "kind": "distant_battle",
+      "variation": 5,
+      "source": "oga/Prepared SFX Library/Prepared SFX Library/Mossberg/N_26P.wav",
+      "start": 7.9,
+      "end": 9.6,
+      "lowpass": 1200,
+      "fadeIn": 0.01,
+      "fadeOut": 0.5
+    },
+    {
+      "kind": "dry_fire",
+      "variation": 0,
+      "source": "kenney/kenney_rpg-audio/Audio/metalClick.ogg",
+      "end": 0.12,
+      "fadeOut": 0.02
+    },
+    {
+      "kind": "dry_fire",
+      "variation": 1,
+      "source": "oga/gunreload1.wav",
+      "start": 0.68,
+      "end": 0.73,
+      "fadeOut": 0.01
+    },
+    {
+      "kind": "dry_fire",
+      "variation": 2,
+      "source": "oga/gunreload1.wav",
+      "start": 0.775,
+      "end": 0.875,
+      "fadeOut": 0.01
+    },
+    {
+      "kind": "dry_fire",
+      "variation": 3,
+      "source": "oga/assaultriflereload1.wav",
+      "start": 0.485,
+      "end": 0.515,
+      "fadeOut": 0.01
+    },
+    {
+      "kind": "weapon_switch",
+      "variation": 0,
+      "source": "kenney/kenney_rpg-audio/Audio/beltHandle1.ogg",
+      "layers": [
+        {
+          "source": "kenney/kenney_rpg-audio/Audio/metalClick.ogg",
+          "gainDb": -6,
+          "delay": 0.15
+        }
+      ]
+    },
+    {
+      "kind": "weapon_switch",
+      "variation": 1,
+      "source": "kenney/kenney_rpg-audio/Audio/beltHandle2.ogg",
+      "layers": [
+        {
+          "source": "kenney/kenney_rpg-audio/Audio/metalLatch.ogg",
+          "gainDb": -6,
+          "delay": 0.12
+        }
+      ]
+    },
+    {
+      "kind": "weapon_switch",
+      "variation": 2,
+      "source": "kenney/kenney_rpg-audio/Audio/clothBelt.ogg",
+      "layers": [
+        {
+          "source": "kenney/kenney_rpg-audio/Audio/metalClick.ogg",
+          "gainDb": -6,
+          "delay": 0.1
+        }
+      ]
+    },
+    {
+      "kind": "weapon_switch",
+      "variation": 3,
+      "source": "kenney/kenney_rpg-audio/Audio/handleSmallLeather2.ogg",
+      "layers": [
+        {
+          "source": "kenney/kenney_rpg-audio/Audio/metalLatch.ogg",
+          "gainDb": -6,
+          "delay": 0.1
+        }
+      ]
+    },
+    {
+      "kind": "hit_marker",
+      "variation": 0,
+      "source": "kenney/kenney_interface-sounds/Audio/tick_001.ogg",
+      "highpass": 1500
+    },
+    {
+      "kind": "hit_marker",
+      "variation": 1,
+      "source": "kenney/kenney_interface-sounds/Audio/tick_002.ogg",
+      "highpass": 1500
+    },
+    {
+      "kind": "hit_marker",
+      "variation": 2,
+      "source": "kenney/kenney_interface-sounds/Audio/tick_004.ogg",
+      "highpass": 1500
+    },
+    {
+      "kind": "hit_marker",
+      "variation": 3,
+      "source": "kenney/kenney_interface-sounds/Audio/tick_002.ogg",
+      "highpass": 1500
+    },
+    {
+      "kind": "kill_confirm",
+      "variation": 0,
+      "source": "kenney/kenney_impact-sounds/Audio/impactPunch_heavy_001.ogg",
+      "lowpass": 900,
+      "layers": [
+        {
+          "source": "kenney/kenney_interface-sounds/Audio/tick_001.ogg",
+          "gainDb": -3,
+          "delay": 0.04
+        }
+      ]
+    },
+    {
+      "kind": "kill_confirm",
+      "variation": 1,
+      "source": "kenney/kenney_impact-sounds/Audio/impactPunch_heavy_002.ogg",
+      "lowpass": 900,
+      "layers": [
+        {
+          "source": "kenney/kenney_interface-sounds/Audio/tick_002.ogg",
+          "gainDb": -3,
+          "delay": 0.04
+        }
+      ]
+    },
+    {
+      "kind": "kill_confirm",
+      "variation": 2,
+      "source": "kenney/kenney_impact-sounds/Audio/impactPunch_heavy_003.ogg",
+      "lowpass": 900,
+      "layers": [
+        {
+          "source": "kenney/kenney_interface-sounds/Audio/tick_001.ogg",
+          "gainDb": -3,
+          "delay": 0.04
+        }
+      ]
+    },
+    {
+      "kind": "kill_confirm",
+      "variation": 3,
+      "source": "kenney/kenney_impact-sounds/Audio/impactPunch_heavy_004.ogg",
+      "lowpass": 900,
+      "layers": [
+        {
+          "source": "kenney/kenney_interface-sounds/Audio/tick_002.ogg",
+          "gainDb": -3,
+          "delay": 0.04
+        }
+      ]
+    },
+    {
+      "kind": "bullet_flyby",
+      "variation": 0,
+      "source": "oga/Prepared SFX Library/Prepared SFX Library/AK-47/C_28P.wav",
+      "start": 0.6,
+      "end": 0.69,
+      "highpass": 2500,
+      "fadeOut": 0.05,
+      "layers": [
+        {
+          "source": "kenney/kenney_rpg-audio/Audio/knifeSlice.ogg",
+          "highpass": 1800,
+          "gainDb": -3,
+          "delay": 0.02
+        }
+      ]
+    },
+    {
+      "kind": "bullet_flyby",
+      "variation": 1,
+      "source": "oga/Prepared SFX Library/Prepared SFX Library/AR-15/D_32P.wav",
+      "start": 0.69,
+      "end": 0.78,
+      "highpass": 2500,
+      "fadeOut": 0.05,
+      "layers": [
+        {
+          "source": "kenney/kenney_rpg-audio/Audio/knifeSlice2.ogg",
+          "highpass": 1800,
+          "gainDb": -3,
+          "delay": 0.02
+        }
+      ]
+    },
+    {
+      "kind": "bullet_flyby",
+      "variation": 2,
+      "source": "oga/Prepared SFX Library/Prepared SFX Library/SKS/U_14P.wav",
+      "start": 3.56,
+      "end": 3.65,
+      "highpass": 2500,
+      "fadeOut": 0.05,
+      "layers": [
+        {
+          "source": "kenney/kenney_rpg-audio/Audio/knifeSlice.ogg",
+          "highpass": 1800,
+          "gainDb": -3,
+          "delay": 0.02
+        }
+      ]
+    },
+    {
+      "kind": "bullet_flyby",
+      "variation": 3,
+      "source": "oga/Prepared SFX Library/Prepared SFX Library/Tikka/W_29P.wav",
+      "start": 0.565,
+      "end": 0.655,
+      "highpass": 2500,
+      "fadeOut": 0.05,
+      "layers": [
+        {
+          "source": "kenney/kenney_rpg-audio/Audio/knifeSlice2.ogg",
+          "highpass": 1800,
+          "gainDb": -3,
+          "delay": 0.02
+        }
+      ]
+    },
+    {
+      "kind": "impact",
+      "variation": 0,
+      "source": "kenney/kenney_impact-sounds/Audio/impactMining_000.ogg",
+      "layers": [
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactPlate_light_001.ogg",
+          "gainDb": -8
+        }
+      ]
+    },
+    {
+      "kind": "damage_taken",
+      "variation": 0,
+      "source": "kenney/kenney_impact-sounds/Audio/impactPunch_medium_000.ogg"
+    },
+    {
+      "kind": "headshot",
+      "variation": 0,
+      "source": "kenney/kenney_impact-sounds/Audio/impactPunch_heavy_002.ogg",
+      "layers": [
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactMetal_light_001.ogg",
+          "gainDb": -5
+        }
+      ]
+    },
+    {
+      "kind": "death",
+      "variation": 0,
+      "source": "kenney/kenney_impact-sounds/Audio/impactSoft_heavy_000.ogg",
+      "layers": [
+        {
+          "source": "kenney/kenney_rpg-audio/Audio/cloth1.ogg",
+          "gainDb": -4,
+          "delay": 0.08
+        }
+      ]
+    },
+    {
+      "kind": "impact",
+      "variation": 1,
+      "source": "kenney/kenney_impact-sounds/Audio/impactMining_001.ogg",
+      "layers": [
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactPlate_light_002.ogg",
+          "gainDb": -8
+        }
+      ]
+    },
+    {
+      "kind": "damage_taken",
+      "variation": 1,
+      "source": "kenney/kenney_impact-sounds/Audio/impactPunch_medium_001.ogg"
+    },
+    {
+      "kind": "headshot",
+      "variation": 1,
+      "source": "kenney/kenney_impact-sounds/Audio/impactPunch_heavy_003.ogg",
+      "layers": [
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactMetal_light_002.ogg",
+          "gainDb": -5
+        }
+      ]
+    },
+    {
+      "kind": "death",
+      "variation": 1,
+      "source": "kenney/kenney_impact-sounds/Audio/impactSoft_heavy_001.ogg",
+      "layers": [
+        {
+          "source": "kenney/kenney_rpg-audio/Audio/cloth2.ogg",
+          "gainDb": -4,
+          "delay": 0.08
+        }
+      ]
+    },
+    {
+      "kind": "impact",
+      "variation": 2,
+      "source": "kenney/kenney_impact-sounds/Audio/impactMining_002.ogg",
+      "layers": [
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactPlate_light_003.ogg",
+          "gainDb": -8
+        }
+      ]
+    },
+    {
+      "kind": "damage_taken",
+      "variation": 2,
+      "source": "kenney/kenney_impact-sounds/Audio/impactPunch_medium_002.ogg"
+    },
+    {
+      "kind": "headshot",
+      "variation": 2,
+      "source": "kenney/kenney_impact-sounds/Audio/impactPunch_heavy_004.ogg",
+      "layers": [
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactMetal_light_003.ogg",
+          "gainDb": -5
+        }
+      ]
+    },
+    {
+      "kind": "death",
+      "variation": 2,
+      "source": "kenney/kenney_impact-sounds/Audio/impactSoft_heavy_002.ogg",
+      "layers": [
+        {
+          "source": "kenney/kenney_rpg-audio/Audio/cloth3.ogg",
+          "gainDb": -4,
+          "delay": 0.08
+        }
+      ]
+    },
+    {
+      "kind": "impact",
+      "variation": 3,
+      "source": "kenney/kenney_impact-sounds/Audio/impactMining_003.ogg",
+      "layers": [
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactPlate_light_004.ogg",
+          "gainDb": -8
+        }
+      ]
+    },
+    {
+      "kind": "damage_taken",
+      "variation": 3,
+      "source": "kenney/kenney_impact-sounds/Audio/impactPunch_medium_003.ogg"
+    },
+    {
+      "kind": "headshot",
+      "variation": 3,
+      "source": "kenney/kenney_impact-sounds/Audio/impactPunch_heavy_000.ogg",
+      "layers": [
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactMetal_light_004.ogg",
+          "gainDb": -5
+        }
+      ]
+    },
+    {
+      "kind": "death",
+      "variation": 3,
+      "source": "kenney/kenney_impact-sounds/Audio/impactSoft_heavy_003.ogg",
+      "layers": [
+        {
+          "source": "kenney/kenney_rpg-audio/Audio/cloth4.ogg",
+          "gainDb": -4,
+          "delay": 0.08
+        }
+      ]
+    },
+    {
+      "kind": "footstep",
+      "variation": 0,
+      "source": "kenney/kenney_impact-sounds/Audio/footstep_concrete_000.ogg"
+    },
+    {
+      "kind": "footstep",
+      "variation": 1,
+      "source": "kenney/kenney_impact-sounds/Audio/footstep_concrete_001.ogg"
+    },
+    {
+      "kind": "footstep",
+      "variation": 2,
+      "source": "kenney/kenney_impact-sounds/Audio/footstep_concrete_002.ogg"
+    },
+    {
+      "kind": "footstep",
+      "variation": 3,
+      "source": "kenney/kenney_impact-sounds/Audio/footstep_concrete_003.ogg"
+    },
+    {
+      "kind": "footstep",
+      "variation": 4,
+      "source": "kenney/kenney_impact-sounds/Audio/footstep_concrete_004.ogg"
+    },
+    {
+      "kind": "footstep",
+      "variation": 5,
+      "source": "kenney/kenney_rpg-audio/Audio/footstep00.ogg"
+    },
+    {
+      "kind": "footstep",
+      "variation": 6,
+      "source": "kenney/kenney_rpg-audio/Audio/footstep01.ogg"
+    },
+    {
+      "kind": "footstep",
+      "variation": 7,
+      "source": "kenney/kenney_rpg-audio/Audio/footstep02.ogg"
+    },
+    {
+      "kind": "ui",
+      "variation": 0,
+      "source": "kenney/kenney_interface-sounds/Audio/toggle_003.ogg"
+    },
+    {
+      "kind": "ui",
+      "variation": 1,
+      "source": "kenney/kenney_interface-sounds/Audio/click_001.ogg"
+    },
+    {
+      "kind": "ui",
+      "variation": 2,
+      "source": "kenney/kenney_interface-sounds/Audio/toggle_001.ogg"
+    },
+    {
+      "kind": "ui",
+      "variation": 3,
+      "source": "kenney/kenney_interface-sounds/Audio/switch_002.ogg"
+    },
+    {
+      "kind": "ui_hover",
+      "variation": 0,
+      "source": "kenney/kenney_interface-sounds/Audio/select_001.ogg"
+    },
+    {
+      "kind": "ui_hover",
+      "variation": 1,
+      "source": "kenney/kenney_interface-sounds/Audio/select_002.ogg"
+    },
+    {
+      "kind": "ui_hover",
+      "variation": 2,
+      "source": "kenney/kenney_interface-sounds/Audio/select_003.ogg"
+    },
+    {
+      "kind": "ui_click",
+      "variation": 0,
+      "source": "kenney/kenney_interface-sounds/Audio/click_001.ogg"
+    },
+    {
+      "kind": "ui_click",
+      "variation": 1,
+      "source": "kenney/kenney_interface-sounds/Audio/switch_001.ogg"
+    },
+    {
+      "kind": "ui_click",
+      "variation": 2,
+      "source": "kenney/kenney_interface-sounds/Audio/confirmation_001.ogg"
+    },
+    {
+      "kind": "ui_back",
+      "variation": 0,
+      "source": "kenney/kenney_interface-sounds/Audio/back_001.ogg"
+    },
+    {
+      "kind": "ui_back",
+      "variation": 1,
+      "source": "kenney/kenney_interface-sounds/Audio/back_002.ogg"
+    },
+    {
+      "kind": "ui_back",
+      "variation": 2,
+      "source": "kenney/kenney_interface-sounds/Audio/back_003.ogg"
+    }
+  ],
+  "music": [
+    {
+      "cue": "menu_theme",
+      "source": "oga/war theme ver 2.ogg",
+      "fadeOut": 2.0
+    },
+    {
+      "cue": "match_calm",
+      "source": "oga/Tensions.mp3",
+      "end": 345.3,
+      "fadeOut": 1.0
+    },
+    {
+      "cue": "match_tension",
+      "source": "oga/Battle.ogg",
+      "end": 88.6,
+      "loopStartSeconds": 4.6,
+      "loopEndSeconds": 88.45
+    },
+    {
+      "cue": "victory_stinger",
+      "source": "oga/thetreadofwarmix.ogg",
+      "start": 214.0,
+      "end": 227.0,
+      "fadeIn": 0.3,
+      "fadeOut": 1.5
+    },
+    {
+      "cue": "defeat_stinger",
+      "source": "oga/war theme.ogg",
+      "start": 270.0,
+      "end": 283.1,
+      "fadeIn": 0.3,
+      "fadeOut": 1.5,
+      "lowpass": 2500
+    },
+    {
+      "cue": "draw_stinger",
+      "source": "oga/Battle.ogg",
+      "start": 86.8,
+      "end": 94.0,
+      "fadeIn": 0.1,
+      "fadeOut": 1.0
+    },
+    {
+      "cue": "results_loop",
+      "source": "oga/The Precipice of Victory MP3/The Precipice of Victory MP3.mp3",
+      "end": 113.0,
+      "fadeOut": 1.5
+    }
+  ]
+}

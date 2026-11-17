@@ -366,5 +366,28 @@ namespace Shooter.Game.Contracts.Tests
             Assert.Throws<ArgumentException>(() => new UserSettings(
                 2, 1f, 1f, 0.7f, 0, 1280, 720, DisplayMode.Windowed, false, 60, 80f, 0.1f, false, 1f, false, false, 1f, false, list));
         }
+        [Fact]
+        public void MusicVolume_defaults_for_older_files_roundtrips_and_is_bounded()
+        {
+            // ADR-096: additive schema-2 key; the shipped fixture predates it.
+            string path = Path.Combine(AppContext.BaseDirectory, "Fixtures", "user-settings.valid.json");
+            Assert.True(UserSettingsJson.TryDecodeText(File.ReadAllText(path), out var legacy, out string diagnostic), diagnostic);
+            Assert.Equal(UserSettings.DefaultMusicVolume, legacy!.MusicVolume);
+            Assert.Equal(UserSettings.DefaultMusicVolume, UserSettings.Defaults.MusicVolume);
+
+            var quiet = new UserSettings(2, 1f, 1f, 0.7f, 0, 1280, 720, DisplayMode.Windowed, false, 60, 80f, 0.1f, false, 1f,
+                false, false, 1f, false, UserSettings.DefaultBindings(), musicVolume: 0.25f);
+            Assert.True(UserSettingsJson.TryDecode(UserSettingsJson.Encode(quiet), out var again, out diagnostic), diagnostic);
+            Assert.Equal(0.25f, again!.MusicVolume);
+
+            // Copies made by the editors keep the music level.
+            var edited = new InputBindingEditor(again.Bindings).WithBindings(again);
+            Assert.Equal(0.25f, edited.MusicVolume);
+
+            Assert.Throws<ArgumentException>(() => new UserSettings(2, 1f, 1f, 0.7f, 0, 1280, 720, DisplayMode.Windowed, false, 60,
+                80f, 0.1f, false, 1f, false, false, 1f, false, UserSettings.DefaultBindings(), musicVolume: 1.5f));
+            string json = Encoding.UTF8.GetString(UserSettingsJson.Encode(quiet)).Replace("\"musicVolume\":0.25", "\"musicVolume\":-1");
+            Assert.False(UserSettingsJson.TryDecodeText(json, out _, out diagnostic));
+        }
     }
 }

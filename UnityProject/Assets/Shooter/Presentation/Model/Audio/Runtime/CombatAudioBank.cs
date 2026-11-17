@@ -4,15 +4,54 @@ using System;
 namespace Shooter.Presentation.Audio
 {
     /// <summary>
-    /// Deterministic PCM combat cue bank (ADR-055 / T089). Interleaved stereo float samples at a fixed rate.
+    /// Deterministic PCM combat cue bank (ADR-055 / T089 / ADR-096). Interleaved stereo float samples at a fixed rate.
     /// </summary>
     public sealed class CombatAudioBank
     {
-        public const string RecipeId = "combat-audio-bank-v4-stereo";
-        public const int BankVersion = 4;
+        public const string RecipeId = "combat-audio-bank-v5-stereo";
+        public const int BankVersion = 5;
         public const int DefaultSampleRate = 48000;
         public const int Channels = 2;
+        /// <summary>Variations baked for the generated emergency bank.</summary>
         public const int VariationsPerCue = 4;
+        /// <summary>Upper bound on manifest variations per cue (footsteps and impacts ship more takes).</summary>
+        public const int MaxVariationsPerCue = 8;
+
+        /// <summary>Bank slot order; the folder name is the manifest <c>kind</c>. Index is stable within a bank version.</summary>
+        private static readonly (SynthVoiceKind kind, string folder)[] Slots =
+        {
+            (SynthVoiceKind.RifleShot, "rifle_shot"),
+            (SynthVoiceKind.PistolShot, "pistol_shot"),
+            (SynthVoiceKind.Impact, "impact"),
+            (SynthVoiceKind.DamageTaken, "damage_taken"),
+            (SynthVoiceKind.Footstep, "footstep"),
+            (SynthVoiceKind.ReloadStart, "reload_start"),
+            (SynthVoiceKind.ReloadComplete, "reload_complete"),
+            (SynthVoiceKind.Death, "death"),
+            (SynthVoiceKind.Ui, "ui"),
+            (SynthVoiceKind.Ambient, "ambient"),
+            (SynthVoiceKind.Headshot, "headshot"),
+            (SynthVoiceKind.KnifeSwing, "knife_swing"),
+            (SynthVoiceKind.GrenadeThrow, "grenade_throw"),
+            (SynthVoiceKind.GrenadeExplode, "grenade_explode"),
+            (SynthVoiceKind.ReloadPistol, "reload_pistol"),
+            (SynthVoiceKind.KnifeHitFlesh, "knife_hit_flesh"),
+            (SynthVoiceKind.KnifeHitHard, "knife_hit_hard"),
+            (SynthVoiceKind.GrenadePin, "grenade_pin"),
+            (SynthVoiceKind.GrenadeBounce, "grenade_bounce"),
+            (SynthVoiceKind.GrenadeExplodeFar, "grenade_explode_far"),
+            (SynthVoiceKind.DryFire, "dry_fire"),
+            (SynthVoiceKind.WeaponSwitch, "weapon_switch"),
+            (SynthVoiceKind.HitMarker, "hit_marker"),
+            (SynthVoiceKind.KillConfirm, "kill_confirm"),
+            (SynthVoiceKind.BulletFlyby, "bullet_flyby"),
+            (SynthVoiceKind.DistantBattle, "distant_battle"),
+            (SynthVoiceKind.UiHover, "ui_hover"),
+            (SynthVoiceKind.UiClick, "ui_click"),
+            (SynthVoiceKind.UiBack, "ui_back"),
+        };
+
+        public const int AmbientIndex = 9;
 
         private readonly float[][][] clips; // [kindIndex][variation][interleaved L,R…]
 
@@ -45,45 +84,37 @@ namespace Shooter.Presentation.Audio
             return samples != null && samples.Length >= Channels;
         }
 
-        public static int KindIndex(SynthVoiceKind kind) => kind switch
+        /// <summary>Number of loaded variations for a kind (0 when absent).</summary>
+        public int VariationCount(SynthVoiceKind kind)
         {
-            SynthVoiceKind.Shot => 0,
-            SynthVoiceKind.RifleShot => 0,
-            SynthVoiceKind.PistolShot => 1,
-            SynthVoiceKind.Impact => 2,
-            SynthVoiceKind.DamageTaken => 3,
-            SynthVoiceKind.Footstep => 4,
-            SynthVoiceKind.ReloadStart => 5,
-            SynthVoiceKind.ReloadComplete => 6,
-            SynthVoiceKind.Death => 7,
-            SynthVoiceKind.Ui => 8,
-            SynthVoiceKind.Ambient => 9,
-            SynthVoiceKind.Headshot => 10,
-            SynthVoiceKind.KnifeSwing => 11,
-            SynthVoiceKind.GrenadeThrow => 12,
-            SynthVoiceKind.GrenadeExplode => 13,
-            _ => -1
-        };
+            int k = KindIndex(kind);
+            return k < 0 || k >= clips.Length || clips[k] == null ? 0 : clips[k].Length;
+        }
 
-        public static string KindFolderName(SynthVoiceKind kind) => KindIndex(kind) switch
+        public static int KindIndex(SynthVoiceKind kind)
         {
-            0 => "rifle_shot",
-            1 => "pistol_shot",
-            2 => "impact",
-            3 => "damage_taken",
-            4 => "footstep",
-            5 => "reload_start",
-            6 => "reload_complete",
-            7 => "death",
-            8 => "ui",
-            9 => "ambient",
-            10 => "headshot",
-            11 => "knife_swing",
-            12 => "grenade_throw",
-            13 => "grenade_explode",
-            _ => "unknown"
-        };
+            if (kind == SynthVoiceKind.Shot) kind = SynthVoiceKind.RifleShot;
+            for (int i = 0; i < Slots.Length; i++)
+                if (Slots[i].kind == kind) return i;
+            return -1;
+        }
 
-        public static int KindCount => 14;
+        public static SynthVoiceKind KindAt(int index) =>
+            index >= 0 && index < Slots.Length ? Slots[index].kind : throw new ArgumentOutOfRangeException(nameof(index));
+
+        public static string KindFolderName(SynthVoiceKind kind)
+        {
+            int i = KindIndex(kind);
+            return i >= 0 ? Slots[i].folder : "unknown";
+        }
+
+        public static int KindFolderToIndex(string folder)
+        {
+            for (int i = 0; i < Slots.Length; i++)
+                if (string.Equals(Slots[i].folder, folder, StringComparison.Ordinal)) return i;
+            return -1;
+        }
+
+        public static int KindCount => Slots.Length;
     }
 }

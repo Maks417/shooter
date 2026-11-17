@@ -19,7 +19,23 @@ namespace Shooter.Presentation.Audio
         Headshot = 12,
         KnifeSwing = 13,
         GrenadeThrow = 14,
-        GrenadeExplode = 15
+        GrenadeExplode = 15,
+        // ADR-096 bank v5 cues.
+        ReloadPistol = 16,
+        KnifeHitFlesh = 17,
+        KnifeHitHard = 18,
+        GrenadePin = 19,
+        GrenadeBounce = 20,
+        GrenadeExplodeFar = 21,
+        DryFire = 22,
+        WeaponSwitch = 23,
+        HitMarker = 24,
+        KillConfirm = 25,
+        BulletFlyby = 26,
+        DistantBattle = 27,
+        UiHover = 28,
+        UiClick = 29,
+        UiBack = 30
     }
 
     public sealed class SynthVoice
@@ -47,12 +63,27 @@ namespace Shooter.Presentation.Audio
         public float FilterStateR { get; private set; }
         public float AgeSeconds { get; private set; }
         public float DurationSeconds { get; }
+        /// <summary>Emitting entity (0 = none) so a cancelled action can cut its own cue (ADR-096).</summary>
+        public ulong OwnerId { get; }
+        /// <summary>Source frames advanced per output frame at the bank rate; fits reload Foley to reload time.</summary>
+        public float PlaybackRate { get; }
+        private float fadeGain = 1f;
+        private float fadeSeconds;
+        public bool Stopping => fadeSeconds > 0f;
+
+        /// <summary>Short linear fade then silence; avoids a click when an action is cancelled.</summary>
+        public void BeginStop(float fadeOutSeconds = 0.03f)
+        {
+            if (fadeSeconds > 0f) return;
+            fadeSeconds = Math.Max(1e-3f, fadeOutSeconds);
+        }
 
         public bool Active
         {
             get
             {
                 if (BaseAmplitude <= 1e-4f) return false;
+                if (fadeGain <= 0f) return false;
                 if (Loop) return true;
                 return framePosition < Samples.Length / Channels + (reflection > 0f ? SampleRate * 0.137 : 0);
             }
@@ -60,9 +91,10 @@ namespace Shooter.Presentation.Audio
 
         public SynthVoice(SynthVoiceKind kind, float baseAmplitude, float pan, float lowPassCoeff, float[] samples, int sampleRate, bool loop, int channels = CombatAudioBank.Channels,
             float priority = 0f, float reflection = 0f, float body = 0f, float stereoWidth = 1f,
-            float sourceX = float.NaN, float sourceZ = float.NaN)
+            float sourceX = float.NaN, float sourceZ = float.NaN, ulong ownerId = 0, float playbackRate = 1f)
         {
             if (samples == null || samples.Length == 0) throw new ArgumentException("samples required", nameof(samples));
+            if (!(playbackRate > 0.25f && playbackRate < 4f)) throw new ArgumentOutOfRangeException(nameof(playbackRate));
             if (sampleRate < 8000) throw new ArgumentOutOfRangeException(nameof(sampleRate));
             if (baseAmplitude < 0) throw new ArgumentOutOfRangeException(nameof(baseAmplitude));
             if (channels < 1 || channels > 2) throw new ArgumentOutOfRangeException(nameof(channels));
@@ -82,7 +114,9 @@ namespace Shooter.Presentation.Audio
             this.reflection = Math.Clamp(reflection, 0f, 1f);
             this.body = Math.Clamp(body, 0f, 1f);
             this.stereoWidth = Math.Clamp(stereoWidth, 0f, 1f);
-            DurationSeconds = (samples.Length / (float)channels) / sampleRate;
+            OwnerId = ownerId;
+            PlaybackRate = playbackRate;
+            DurationSeconds = (samples.Length / (float)channels) / sampleRate / playbackRate;
         }
 
         public float ReadSample(float dt, out float left, out float right)
@@ -123,14 +157,19 @@ namespace Shooter.Presentation.Audio
             FilterStateL = filteredL;
             FilterStateR = filteredR;
 
-            float amp = BaseAmplitude;
+            if (fadeSeconds > 0f)
+            {
+                fadeGain -= dt / fadeSeconds;
+                if (fadeGain < 0f) fadeGain = 0f;
+            }
+            float amp = BaseAmplitude * fadeGain;
 
             float mid = (filteredL + filteredR) * 0.5f;
             float side = (filteredL - filteredR) * 0.5f * stereoWidth;
             // Equal-power direction for world emitters; local/ambient stereo retains full width.
             left = (mid + side) * amp * leftPanGain;
             right = (mid - side) * amp * rightPanGain;
-            framePosition += SampleRate * (double)dt;
+            framePosition += SampleRate * (double)dt * PlaybackRate;
             if (Loop) framePosition %= Samples.Length / Channels;
             FrameIndex = (int)framePosition;
             return 0.5f * (left + right);
@@ -188,6 +227,9 @@ namespace Shooter.Presentation.Audio
         private readonly CombatAudioBank bank;
         private bool ambientPlaying;
         private float limiterGain = 1f;
+        private float duck;
+        /// <summary>0..1 level that jumps on loud nearby cues and decays over ~1.5 s; music ducks under it (ADR-096).</summary>
+        public float LoudCueLevel { get { lock (gate) return duck; } }
 
         public CombatAudioBank Bank => bank;
         public int ActiveVoices { get; private set; }
@@ -237,9 +279,11 @@ namespace Shooter.Presentation.Audio
             => TryPlay(kind, distanceMeters, pan, seed, false, 0f, 0f);
 
         public bool TryPlay(SynthVoiceKind kind, float distanceMeters, float pan, ulong seed,
-            bool localPlayer, float obstruction, float reflection, float sourceX = float.NaN, float sourceZ = float.NaN)
+            bool localPlayer, float obstruction, float reflection, float sourceX = float.NaN, float sourceZ = float.NaN,
+            ulong ownerId = 0, float playbackRate = 1f)
         {
             if (distanceMeters < 0) throw new ArgumentOutOfRangeException(nameof(distanceMeters));
+            playbackRate = Math.Clamp(playbackRate, 0.5f, 2f);
             var playKind = NormalizeKind(kind);
             float max = CombatAudioDistance.MaxAudibleMeters(playKind);
             if (max > 0f && distanceMeters > max) return false;
@@ -254,9 +298,13 @@ namespace Shooter.Presentation.Audio
             float lp = CombatAudioDistance.LowPassCoeff(distanceMeters, max > 0f ? max : CombatAudioDistance.GunfireMaxMeters);
             lp *= 1f - obstruction * 0.94f;
             bool loop = playKind == SynthVoiceKind.Ambient;
-            bool gun = playKind == SynthVoiceKind.RifleShot || playKind == SynthVoiceKind.PistolShot || playKind == SynthVoiceKind.GrenadeExplode;
-            float priority = (localPlayer || playKind == SynthVoiceKind.Ui ? 100f : gun ? 70f : loop ? 0f : 35f)
+            bool gun = playKind == SynthVoiceKind.RifleShot || playKind == SynthVoiceKind.PistolShot
+                || playKind == SynthVoiceKind.GrenadeExplode || playKind == SynthVoiceKind.GrenadeExplodeFar;
+            bool ui = IsUiKind(playKind);
+            bool bed = loop || playKind == SynthVoiceKind.DistantBattle;
+            float priority = (localPlayer || ui ? 100f : gun ? 70f : bed ? 0f : 35f)
                 + Math.Min(1.5f, atten) * 10f;
+            bool loud = (gun && localPlayer) || (playKind == SynthVoiceKind.GrenadeExplode && distanceMeters < 15f);
 
             lock (gate)
             {
@@ -273,9 +321,10 @@ namespace Shooter.Presentation.Audio
                 }
                 voices[slot] = new SynthVoice(playKind, atten, pan, lp, samples, bank.SampleRate, loop, CombatAudioBank.Channels,
                     priority, gun ? reflection : 0f, gun ? Math.Max(0f, 1f - distanceMeters / 18f) : 0f,
-                    localPlayer || loop || playKind == SynthVoiceKind.Ui ? 1f : 0.15f + 0.35f * Math.Max(0f, 1f - distanceMeters / Math.Max(1f, max)),
-                    localPlayer ? float.NaN : sourceX, localPlayer ? float.NaN : sourceZ);
+                    localPlayer || bed || ui ? 1f : 0.15f + 0.35f * Math.Max(0f, 1f - distanceMeters / Math.Max(1f, max)),
+                    localPlayer ? float.NaN : sourceX, localPlayer ? float.NaN : sourceZ, ownerId, playbackRate);
                 if (loop) ambientPlaying = true;
+                if (loud) duck = 1f;
                 return true;
             }
         }
@@ -303,6 +352,35 @@ namespace Shooter.Presentation.Audio
                 for (int i = 0; i < MaxVoices; i++) voices[i]?.UpdateListener(yawRadians, x, z);
         }
 
+        /// <summary>Fade out an entity's playing cue of one kind (cancelled reload). Returns voices stopped.</summary>
+        public int StopOwner(ulong ownerId, SynthVoiceKind kind, float fadeOutSeconds = 0.03f)
+        {
+            if (ownerId == 0) return 0;
+            int stopped = 0;
+            lock (gate)
+            {
+                for (int i = 0; i < MaxVoices; i++)
+                {
+                    var v = voices[i];
+                    if (v == null || !v.Active || v.OwnerId != ownerId || v.Kind != kind || v.Stopping) continue;
+                    v.BeginStop(fadeOutSeconds);
+                    stopped++;
+                }
+            }
+            return stopped;
+        }
+
+        public bool IsPlaying(ulong ownerId, SynthVoiceKind kind)
+        {
+            lock (gate)
+                for (int i = 0; i < MaxVoices; i++)
+                {
+                    var v = voices[i];
+                    if (v != null && v.Active && !v.Stopping && v.OwnerId == ownerId && v.Kind == kind) return true;
+                }
+            return false;
+        }
+
         public void StopAll()
         {
             lock (gate)
@@ -311,6 +389,7 @@ namespace Shooter.Presentation.Audio
                 ActiveVoices = 0;
                 ambientPlaying = false;
                 limiterGain = 1f;
+                duck = 0f;
             }
         }
 
@@ -375,6 +454,7 @@ namespace Shooter.Presentation.Audio
                 active++;
             }
             ActiveVoices = active;
+            if (duck > 0f) duck = Math.Max(0f, duck - dt / 1.5f);
             // Linked stereo limiter: immediate attack, 80 ms release, 1 dB headroom.
             // Preserve the stereo image rather than clipping each channel independently.
             float peak = Math.Max(Math.Abs(left), Math.Abs(right));
@@ -387,7 +467,7 @@ namespace Shooter.Presentation.Audio
         private float ChannelGainUnlocked(SynthVoiceKind kind)
         {
             if (MasterMuted || MasterVolume <= 0f) return 0f;
-            if (kind == SynthVoiceKind.Ui)
+            if (IsUiKind(kind))
             {
                 if (UiMuted || UiVolume <= 0f) return 0f;
                 return MasterVolume * UiVolume;
@@ -395,6 +475,9 @@ namespace Shooter.Presentation.Audio
             if (EffectsMuted || EffectsVolume <= 0f) return 0f;
             return MasterVolume * EffectsVolume;
         }
+
+        public static bool IsUiKind(SynthVoiceKind kind) =>
+            kind == SynthVoiceKind.Ui || kind == SynthVoiceKind.UiHover || kind == SynthVoiceKind.UiClick || kind == SynthVoiceKind.UiBack;
 
         private static SynthVoiceKind NormalizeKind(SynthVoiceKind kind) => kind switch
         {

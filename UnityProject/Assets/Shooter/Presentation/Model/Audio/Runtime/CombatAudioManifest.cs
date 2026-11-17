@@ -88,7 +88,7 @@ namespace Shooter.Presentation.Audio
             return new CombatAudioManifest(bankId, sampleRate, channels, clips);
         }
 
-        private static string? ReadString(string json, string key)
+        internal static string? ReadString(string json, string key)
         {
             string needle = "\"" + key + "\"";
             int i = json.IndexOf(needle, StringComparison.Ordinal);
@@ -113,7 +113,7 @@ namespace Shooter.Presentation.Audio
             return null;
         }
 
-        private static int? ReadInt(string json, string key)
+        internal static int? ReadInt(string json, string key)
         {
             string needle = "\"" + key + "\"";
             int i = json.IndexOf(needle, StringComparison.Ordinal);

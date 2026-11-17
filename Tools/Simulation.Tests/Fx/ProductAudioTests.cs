@@ -497,7 +497,8 @@ namespace Shooter.Simulation.Tests.Fx
 
             Assert.Equal(1, router.ConsumeCombatEvents(new[] { knife }, new Float3(0, 0, 0)));
             Assert.Equal(1, router.ConsumeCombatEvents(new[] { throwEv }, new Float3(0, 0, 0)));
-            Assert.Equal(1, router.ConsumeCombatEvents(new[] { boom }, new Float3(0, 0, 0)));
+            // ADR-096: a blast plays the near report plus the distant layer.
+            Assert.Equal(2, router.ConsumeCombatEvents(new[] { boom }, new Float3(0, 0, 0)));
 
             Assert.True(mix.Bank.TryGetClip(SynthVoiceKind.KnifeSwing, 0, out var ks));
             Assert.True(mix.Bank.TryGetClip(SynthVoiceKind.GrenadeThrow, 0, out var gt));

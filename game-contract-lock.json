@@ -11,7 +11,7 @@
   "dependsOnContract": "C0-v1",
   "toolchainHash": "a8331fe2bc5b4293773762d829dc293c8aa5185024bd1a771543ac4eda840500",
   "sources": {
-    "UnityProject/Assets/Shooter/Game/Contracts/GameData.cs": "9e0e2c6fb7a6ac1429c3308ef50ae63c1d48b9c2d655856b988860fad8847fe6",
+    "UnityProject/Assets/Shooter/Game/Contracts/GameData.cs": "127d866d8b09d52480eef30b975b18b8ad63e9313d6e8bfa146e11cc617eca79",
     "UnityProject/Assets/Shooter/Game/Contracts/GameData.cs.meta": "da2d99bee98c3ea0a1088ded28a27e5b7e7a7da3e5df1edff7afd0239ae0d61b",
     "UnityProject/Assets/Shooter/Game/Contracts/GameIds.cs": "de861bb538da5d52da4f1136dcc64991503238ce32dce51ea1cddf300c05ba03",
     "UnityProject/Assets/Shooter/Game/Contracts/GameIds.cs.meta": "c2c91bdde4ddf87b4f89e13fdf43a704bab107522a63128711ae6d8c09dee498",
@@ -30,7 +30,7 @@
     "docs/game-fixtures/tdm-workloads.json": "00c2ef1b4470e690efa3b06e8eade076cb6dea485b7fd63e1a2a64e89e446038",
     "docs/game-fixtures/user-settings-last-weapon.valid.json": "966b8455e53df40ed67c99a175effe2cba864e90538f95fdefe443d626ed4064",
     "docs/game-fixtures/user-settings-slide.valid.json": "4a3d69069a7c212e9679d0b194c13cd6a560c6c32772753479a07bc104611f6a",
-    "docs/game-fixtures/user-settings.schema.json": "a67004574cb2223024d3b2b0242290baea10c1bc0d7918ce11f0cf673beadb6a",
+    "docs/game-fixtures/user-settings.schema.json": "d6dca67eaf9f5b3ad2c1c05f71e33334a1084d8573accd71e4193a98751108fb",
     "docs/game-fixtures/user-settings.valid.json": "5fce4b51e5cf79f2f97b10f963dd625c6f6973a8a154c2d4f67b4cbb2ae2ae01"
   }
 }

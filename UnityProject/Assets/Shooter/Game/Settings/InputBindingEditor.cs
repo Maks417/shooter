@@ -133,7 +133,8 @@ namespace Shooter.Game.Settings
                 source.ReducedFlash,
                 source.Contrast,
                 source.Subtitles,
-                ToArray());
+                ToArray(),
+                source.MusicVolume);
         }
 
         private void ApplyControl(string action, string control)

@@ -48,6 +48,11 @@
       "minimum": 0,
       "maximum": 1
     },
+    "musicVolume": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
     "qualityTier": {
       "type": "integer",
       "minimum": 0,

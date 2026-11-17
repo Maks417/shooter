@@ -48,6 +48,11 @@ namespace Shooter.Presentation.Session
         private string focused = "";
         private bool focusFirst;
         private bool focusMoved;
+        // ADR-096 UI sounds: hover is detected per Repaint pass so each newly hovered control plays once.
+        private string hoveredLastPass = "";
+        private string hoveredThisPass = "";
+        /// <summary>Receives hover/click/back cues; null keeps the shell silent (tests, gallery).</summary>
+        public System.Action<Shooter.Presentation.Audio.SynthVoiceKind>? Sound { get; set; }
         public float Width { get; private set; }
         public float Height { get; private set; }
         public Rect Safe { get; private set; }
@@ -69,6 +74,11 @@ namespace Shooter.Presentation.Session
             Safe = SafeArea(Width, Height);
             activate = "";
             focusMoved = false;
+            if (Event.current.type == EventType.Repaint)
+            {
+                hoveredLastPass = hoveredThisPass;
+                hoveredThisPass = "";
+            }
             if (screen != screenId)
             {
                 screen = screenId;
@@ -88,6 +98,7 @@ namespace Shooter.Presentation.Session
                     int index = current < 0 ? (previous ? controls.Count - 1 : 0) : (current + delta + controls.Count) % controls.Count;
                     focused = controls[index];
                     focusMoved = true;
+                    Sound?.Invoke(Shooter.Presentation.Audio.SynthVoiceKind.UiHover);
                     e.Use();
                 }
                 else if (e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter || e.keyCode == KeyCode.Space)
@@ -733,6 +744,11 @@ namespace Shooter.Presentation.Session
             bool focus = focused == id;
             if (focus && focusMoved) GUI.ScrollTo(r);
             bool hover = r.Contains(Event.current.mousePosition);
+            if (hover && GUI.enabled && Event.current.type == EventType.Repaint)
+            {
+                hoveredThisPass = id;
+                if (id != hoveredLastPass) Sound?.Invoke(Shooter.Presentation.Audio.SynthVoiceKind.UiHover);
+            }
             if (!ButtonSdf(r, id, primary, selected, quiet, focus, hover))
             {
                 Color fill = quiet
@@ -772,8 +788,16 @@ namespace Shooter.Presentation.Session
             if (GUI.enabled) controls.Add(id);
             GUI.SetNextControlName(id);
             bool clicked = GUI.Button(r, text, buttonStyle);
-            return GUI.enabled && (clicked || activate == id);
+            bool pressed = GUI.enabled && (clicked || activate == id);
+            if (pressed) Sound?.Invoke(IsBackControl(id) ? Shooter.Presentation.Audio.SynthVoiceKind.UiBack : Shooter.Presentation.Audio.SynthVoiceKind.UiClick);
+            return pressed;
         }
+
+        /// <summary>Controls that leave or cancel get the softer back cue.</summary>
+        public static bool IsBackControl(string id) =>
+            id.EndsWith(".back", System.StringComparison.Ordinal) || id.EndsWith(".cancel", System.StringComparison.Ordinal)
+            || id.EndsWith(".revert", System.StringComparison.Ordinal) || id.EndsWith(".menu", System.StringComparison.Ordinal)
+            || id.EndsWith(".quit", System.StringComparison.Ordinal) || id.EndsWith(".leave", System.StringComparison.Ordinal);
 
         public bool MapCard(Rect r, string id, Texture? image, string title, string subtitle, bool selected = false)
         {

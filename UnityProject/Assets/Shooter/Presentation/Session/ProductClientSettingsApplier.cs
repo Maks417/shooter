@@ -189,7 +189,8 @@ namespace Shooter.Presentation.Session
                 audioSource.ReducedFlash,
                 audioSource.Contrast,
                 audioSource.Subtitles,
-                CopyBindings(audioSource));
+                CopyBindings(audioSource),
+                audioSource.MusicVolume);
 
         private static UserSettings CloneSettings(UserSettings source) =>
             new UserSettings(
@@ -211,7 +212,8 @@ namespace Shooter.Presentation.Session
                 source.ReducedFlash,
                 source.Contrast,
                 source.Subtitles,
-                CopyBindings(source));
+                CopyBindings(source),
+                source.MusicVolume);
 
         private static InputBinding[] CopyBindings(UserSettings source)
         {

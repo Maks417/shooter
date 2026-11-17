@@ -500,3 +500,38 @@ Search: first full-envelope measurement 07:28:42Z, stopped at 07:47Z on gate pas
 Verification (parent `c87a20f`, sourceDirty): Generation 517/517 (`Artifacts/m1-procedural-feasibility/c87a20f19d1548fd0b4550338806243712961ba9/20261117T074703654Z-62d1ec75`, sourceDirty), Simulation 364/364 (`Artifacts/m2-combat-harness/c87a20f19d1548fd0b4550338806243712961ba9/20261117T074907727Z-80572b62`), source provenance PASS (964 entries / 482 GUIDs), feature registry PASS, Unity EditMode **87/87** with the locked editor (`Artifacts/m0-foundation/c87a20f19d1548fd0b4550338806243712961ba9/tests-editmode-20261117T074936291Z-5cb53d7b`), fixtures/docs/contract lock PASS. The second Generation run on the final lock is `20261117T075059331Z-40b6a935` (517/517).
 
 Remaining: P05 visual acceptance stays **FAIL** pending a named visual review (front/side/back/three-quarter, live near/far, both teams); the historical FAIL record is retained. Pistol sockets leave a -4.3 mm left-arm residual at reload phase 0.91 (baseline v5 with pistol sockets: -60.3 mm). Slide and death poses are outside the gate. Eight-soldier CPU on the reference laptop, client build and installer are not rerun for this change.
+
+## ADR-096 audio overhaul (bank v5, music, UI sound) — 2026-11-17
+
+Code landed. Presentation only, plus an additive `musicVolume` settings key:
+- bank v5 cue slots and routing: weapon-family reload fitted to the reload window, knife hits, grenade pin/bounce/far blast, flybys, hit/kill confirm, dry fire, weapon switch, distant-battle bed
+- `MusicDirector` + `UnityMusicOutput`: menu theme, calm/tension bed, outcome stinger, results loop, ducking
+- menu hover/click/back sounds on a session-independent mixer
+- Music slider
+
+Engine modules `unitywebrequest`/`unitywebrequestaudio` were added (lock-exempt). Game-v1 lock refrozen for `GameData.cs` and the settings schema fixture.
+
+Evidence:
+- `Test-Game` 100/100 PASS
+- `Test-Simulation` 389/389 PASS (15 new ADR-096 cases)
+- `Test-SourceProvenance` PASS
+- Unity EditMode PASS
+- docs/fixtures PASS
+
+Recordings and music landed (same day). `python Tools/build_audio_bank.py build` rendered:
+- `combat-audio-bank-v5-stereo`: 116 clips. Kept from v4: rifle/pistol shots, near grenade blasts, ambience and two knife swings. Everything else is new: OpenGameArt CC0 reload recordings, Free Firearm Sound Library mid-distance bursts (distant battle, far blast layer, flyby transients) and Kenney Impact/Interface/RPG Audio (CC0).
+- `music-bank-v1`: 7 tracks.
+  - menu: War Theme ver 2
+  - calm bed: Tensions
+  - tension bed: peastman Battle, looping 4.6–88.45 s
+  - victory: Tread of War ending
+  - defeat: War Theme ending, low-passed
+  - draw: Battle final chord
+  - results: The Precipice of Victory
+
+`build_audio_bank.py check` passes, and `Shipped_repo_banks_load_every_cue_from_recordings_and_all_music_tracks` proves the C# loaders accept both banks. The audition page is `Artifacts/audio-review/index.html`.
+
+Not done / Pending:
+- Picks were made from waveform analysis without listening, so the owner listening review decides the takes.
+- Provisional: flyby (built from gunshot transients plus a whoosh, no real whiz recording), defeat stinger (no dedicated somber track yet) and ambience (still the v4 render; no outdoor recording downloaded).
+- Client build, package and named listening review (FIX10/SET02) are Pending.

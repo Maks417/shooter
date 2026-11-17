@@ -339,6 +339,17 @@ try {
         Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $audioDest $_.Name) -Force
     }
 
+    # ADR-096 music bank (menu theme, match beds, stingers). Optional: a build without it plays no music.
+    $musicSrc = Join-Path $repoRoot 'Content/Audio/music'
+    if (Test-Path -LiteralPath (Join-Path $musicSrc 'manifest.json') -PathType Leaf) {
+        $musicDest = Join-Path $stage 'Content/Audio/music'
+        $null = New-Item -ItemType Directory -Path $musicDest -Force
+        Get-ChildItem -LiteralPath $musicSrc -Force -File | ForEach-Object {
+            Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $musicDest $_.Name) -Force
+        }
+    }
+    else { Write-Warning "No music bank at $musicSrc; the package will have no music (ADR-096)." }
+
     # ADR-066 OFL notice for the UI typeface bank (fonts themselves are embedded in the player).
     $fontLicense = Join-Path $repoRoot 'Content/Fonts/OFL-BarlowCondensed.txt'
     if (!(Test-Path -LiteralPath $fontLicense -PathType Leaf)) { throw "Missing UI font license: $fontLicense" }

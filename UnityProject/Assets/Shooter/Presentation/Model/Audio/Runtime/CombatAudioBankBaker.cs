@@ -34,20 +34,8 @@ namespace Shooter.Presentation.Audio
         {
             if (sampleRate < 8000) throw new ArgumentOutOfRangeException(nameof(sampleRate));
             var clips = new float[CombatAudioBank.KindCount][][];
-            clips[0] = BakeVariations(sampleRate, BakeRifleShot);
-            clips[1] = BakeVariations(sampleRate, BakePistolShot);
-            clips[2] = BakeVariations(sampleRate, BakeImpact);
-            clips[3] = BakeVariations(sampleRate, BakeDamageTaken);
-            clips[4] = BakeVariations(sampleRate, BakeFootstep);
-            clips[5] = BakeVariations(sampleRate, BakeReloadStart);
-            clips[6] = BakeVariations(sampleRate, BakeReloadComplete);
-            clips[7] = BakeVariations(sampleRate, BakeDeath);
-            clips[8] = BakeVariations(sampleRate, BakeUi);
-            clips[9] = BakeVariations(sampleRate, BakeAmbient, count: 1);
-            clips[10] = BakeVariations(sampleRate, BakeHeadshot);
-            clips[11] = BakeVariations(sampleRate, BakeKnifeSwing);
-            clips[12] = BakeVariations(sampleRate, BakeGrenadeThrow);
-            clips[13] = BakeVariations(sampleRate, BakeGrenadeExplode);
+            for (int k = 0; k < clips.Length; k++)
+                clips[k] = BakeVariations(sampleRate, FallbackBaker(k), count: k == CombatAudioBank.AmbientIndex ? 1 : CombatAudioBank.VariationsPerCue);
             string hash = ComputeHash(sampleRate, clips, found: false);
             return new CombatAudioBank(sampleRate, clips, hash, loadedFromFoundSamples: false);
         }
@@ -61,15 +49,15 @@ namespace Shooter.Presentation.Audio
 
             var clips = new float[CombatAudioBank.KindCount][][];
             for (int k = 0; k < clips.Length; k++)
-                clips[k] = new float[CombatAudioBank.VariationsPerCue][];
+                clips[k] = new float[CombatAudioBank.MaxVariationsPerCue][];
 
             int loaded = 0;
             for (int i = 0; i < manifest.Clips.Count; i++)
             {
                 var entry = manifest.Clips[i];
-                int kindIndex = KindFolderToIndex(entry.Kind);
+                int kindIndex = CombatAudioBank.KindFolderToIndex(entry.Kind);
                 if (kindIndex < 0) continue;
-                if (entry.Variation < 0 || entry.Variation >= CombatAudioBank.VariationsPerCue) continue;
+                if (entry.Variation < 0 || entry.Variation >= CombatAudioBank.MaxVariationsPerCue) continue;
 
                 string path = Path.Combine(root, entry.File);
                 if (!File.Exists(path)) return null;
@@ -84,7 +72,8 @@ namespace Shooter.Presentation.Audio
                 loaded++;
             }
 
-            // Ambient may ship a single variation; duplicate into slot 0 only and shrink.
+            // Compact each cue to the variations actually shipped; a cue missing from the manifest
+            // falls back to its generated emergency recipe only.
             for (int k = 0; k < clips.Length; k++)
             {
                 int present = 0;
@@ -92,27 +81,14 @@ namespace Shooter.Presentation.Audio
                     if (clips[k][v] != null && clips[k][v].Length > 0) present++;
                 if (present == 0)
                 {
-                    // Missing cue: fill from generated emergency for that kind only.
-                    clips[k] = BakeVariations(sampleRate, FallbackBaker(k), count: k == 9 ? 1 : CombatAudioBank.VariationsPerCue);
+                    clips[k] = BakeVariations(sampleRate, FallbackBaker(k), count: k == CombatAudioBank.AmbientIndex ? 1 : CombatAudioBank.VariationsPerCue);
+                    continue;
                 }
-                else if (present < clips[k].Length)
-                {
-                    // Compact to present variations (ambient=1); fill holes from v0 when possible.
-                    float[]? first = null;
-                    for (int v = 0; v < clips[k].Length; v++)
-                        if (clips[k][v] != null) { first = clips[k][v]; break; }
-                    if (first == null) return null;
-                    if (k == 9)
-                    {
-                        clips[k] = new[] { first };
-                    }
-                    else
-                    {
-                        for (int v = 0; v < clips[k].Length; v++)
-                            if (clips[k][v] == null || clips[k][v].Length == 0)
-                                clips[k][v] = first;
-                    }
-                }
+                var compact = new float[present][];
+                int w = 0;
+                for (int v = 0; v < clips[k].Length; v++)
+                    if (clips[k][v] != null && clips[k][v].Length > 0) compact[w++] = clips[k][v];
+                clips[k] = compact;
             }
 
             if (loaded == 0) return null;
@@ -120,43 +96,40 @@ namespace Shooter.Presentation.Audio
             return new CombatAudioBank(sampleRate, clips, hash, loadedFromFoundSamples: true);
         }
 
-        private static Func<int, int, float[]> FallbackBaker(int kindIndex) => kindIndex switch
+        private static Func<int, int, float[]> FallbackBaker(int kindIndex) => CombatAudioBank.KindAt(kindIndex) switch
         {
-            0 => BakeRifleShot,
-            1 => BakePistolShot,
-            2 => BakeImpact,
-            3 => BakeDamageTaken,
-            4 => BakeFootstep,
-            5 => BakeReloadStart,
-            6 => BakeReloadComplete,
-            7 => BakeDeath,
-            8 => BakeUi,
-            9 => BakeAmbient,
-            10 => BakeHeadshot,
-            11 => BakeKnifeSwing,
-            12 => BakeGrenadeThrow,
-            13 => BakeGrenadeExplode,
+            SynthVoiceKind.RifleShot => BakeRifleShot,
+            SynthVoiceKind.PistolShot => BakePistolShot,
+            SynthVoiceKind.Impact => BakeImpact,
+            SynthVoiceKind.DamageTaken => BakeDamageTaken,
+            SynthVoiceKind.Footstep => BakeFootstep,
+            SynthVoiceKind.ReloadStart => BakeReloadStart,
+            SynthVoiceKind.ReloadComplete => BakeReloadComplete,
+            SynthVoiceKind.Death => BakeDeath,
+            SynthVoiceKind.Ui => BakeUi,
+            SynthVoiceKind.Ambient => BakeAmbient,
+            SynthVoiceKind.Headshot => BakeHeadshot,
+            SynthVoiceKind.KnifeSwing => BakeKnifeSwing,
+            SynthVoiceKind.GrenadeThrow => BakeGrenadeThrow,
+            SynthVoiceKind.GrenadeExplode => BakeGrenadeExplode,
+            // ADR-096 cues: emergency fallback reuses the nearest existing recipe.
+            SynthVoiceKind.ReloadPistol => BakeReloadStart,
+            SynthVoiceKind.KnifeHitFlesh => BakeDamageTaken,
+            SynthVoiceKind.KnifeHitHard => BakeImpact,
+            SynthVoiceKind.GrenadePin => BakeReloadComplete,
+            SynthVoiceKind.GrenadeBounce => BakeImpact,
+            SynthVoiceKind.GrenadeExplodeFar => BakeGrenadeExplode,
+            SynthVoiceKind.DryFire => BakeReloadComplete,
+            SynthVoiceKind.WeaponSwitch => BakeReloadStart,
+            SynthVoiceKind.HitMarker => BakeUi,
+            SynthVoiceKind.KillConfirm => BakeUi,
+            SynthVoiceKind.BulletFlyby => BakeKnifeSwing,
+            SynthVoiceKind.DistantBattle => BakeRifleShot,
+            SynthVoiceKind.UiHover => BakeUi,
+            SynthVoiceKind.UiClick => BakeUi,
+            SynthVoiceKind.UiBack => BakeUi,
             _ => BakeImpact
         };
-
-        private static int KindFolderToIndex(string kind)
-        {
-            if (string.Equals(kind, "rifle_shot", StringComparison.Ordinal)) return 0;
-            if (string.Equals(kind, "pistol_shot", StringComparison.Ordinal)) return 1;
-            if (string.Equals(kind, "impact", StringComparison.Ordinal)) return 2;
-            if (string.Equals(kind, "damage_taken", StringComparison.Ordinal)) return 3;
-            if (string.Equals(kind, "footstep", StringComparison.Ordinal)) return 4;
-            if (string.Equals(kind, "reload_start", StringComparison.Ordinal)) return 5;
-            if (string.Equals(kind, "reload_complete", StringComparison.Ordinal)) return 6;
-            if (string.Equals(kind, "death", StringComparison.Ordinal)) return 7;
-            if (string.Equals(kind, "ui", StringComparison.Ordinal)) return 8;
-            if (string.Equals(kind, "ambient", StringComparison.Ordinal)) return 9;
-            if (string.Equals(kind, "headshot", StringComparison.Ordinal)) return 10;
-            if (string.Equals(kind, "knife_swing", StringComparison.Ordinal)) return 11;
-            if (string.Equals(kind, "grenade_throw", StringComparison.Ordinal)) return 12;
-            if (string.Equals(kind, "grenade_explode", StringComparison.Ordinal)) return 13;
-            return -1;
-        }
 
         private static float[][] BakeVariations(int sampleRate, Func<int, int, float[]> bake, int count = CombatAudioBank.VariationsPerCue)
         {

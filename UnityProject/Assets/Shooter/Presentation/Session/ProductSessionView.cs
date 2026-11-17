@@ -45,6 +45,15 @@ namespace Shooter.Presentation.Session
         private readonly List<ActorLifecycleState> footstepScratch = new List<ActorLifecycleState>(GameContractVersion.MaxParticipants);
         private readonly HashSet<string> accessibilityCueKeys = new HashSet<string>(System.StringComparer.Ordinal);
         private UnitySynthAudioOutput? audioOutput;
+        // ADR-096: menu UI clicks need sound while no match is attached, so they get their own small mixer
+        // (same immutable bank) and output; music streams through its own sources.
+        private SynthAudioMixer? shellUiMixer;
+        private UnitySynthAudioOutput? shellUiOutput;
+        private UnityMusicOutput? musicOutput;
+        private readonly MusicDirector musicDirector = new MusicDirector();
+        private ulong shellUiOrdinal;
+        private readonly LocalWeaponCueTracker localWeaponCues = new LocalWeaponCueTracker();
+        private readonly SynthVoiceKind[] localCueScratch = new SynthVoiceKind[3];
         private AnalyticFxPresenter? analyticFxPresenter;
         private Camera? camera;
         private AdsScopePipPresenter? scopePip;
@@ -152,6 +161,35 @@ namespace Shooter.Presentation.Session
             return CombatAudioSamplePaths.ResolveCombatSampleRoot();
         }
 
+        private static string? ResolveMusicFolder()
+        {
+            string? combat = ResolveCombatAudioRoot();
+            if (combat == null) return null;
+            string? parent = System.IO.Path.GetDirectoryName(combat);
+            return parent == null ? null : System.IO.Path.Combine(parent, "music");
+        }
+
+        /// <summary>Menu/shell UI cue on the session-independent UI mixer (hover, click, back).</summary>
+        public bool PlayShellUi(SynthVoiceKind kind)
+        {
+            if (shellUiMixer == null || !SynthAudioMixer.IsUiKind(kind)) return false;
+            shellUiOrdinal++;
+            return shellUiMixer.TryPlay(kind, 0f, 0f, shellUiOrdinal * 0x9E3779B97F4A7C15UL);
+        }
+
+        /// <summary>Advance the music director for this frame (shell-owned only). Never touches authority.</summary>
+        public MusicCue UpdateMusic(MusicContext context, bool tension, LocalMatchOutcome outcome, bool paused)
+        {
+            if (musicOutput == null) return MusicCue.None;
+            float duck = mixer != null ? mixer.LoudCueLevel : 0f;
+            var command = musicDirector.Update(new MusicInput(context, tension, outcome, paused, duck, musicOutput.CurrentCueEnded));
+            musicOutput.Apply(command);
+            return command.Cue;
+        }
+
+        /// <summary>Presentation-originated local cue (grenade pin, dry fire, weapon switch) while a match is attached.</summary>
+        public bool PlayLocalCue(SynthVoiceKind kind, ulong seed) => audioAttached && EnsureAudio().audio.PlayLocal(kind, seed);
+
         public static ProductSessionView Create(OfflineGameSession session, bool shellOwned = false)
         {
             var root = new GameObject("Product session view").AddComponent<ProductSessionView>();
@@ -219,6 +257,16 @@ namespace Shooter.Presentation.Session
             var audioPair = EnsureAudio();
             audioOutput = UnitySynthAudioOutput.Attach(gameObject, audioPair.mixer);
             UserSettingsAudioBinding.ApplyGains(UserSettings.Defaults, audioPair.mixer);
+            if (shellOwned)
+            {
+                shellUiMixer = new SynthAudioMixer(audioPair.mixer.Bank);
+                var uiHost = new GameObject("Shell UI audio");
+                uiHost.transform.SetParent(transform, false);
+                shellUiOutput = UnitySynthAudioOutput.Attach(uiHost, shellUiMixer);
+                UserSettingsAudioBinding.ApplyGains(UserSettings.Defaults, shellUiMixer);
+                musicOutput = UnityMusicOutput.Create(transform, ResolveMusicFolder());
+                musicOutput.SetChannelGain(UserSettingsAudioBinding.MusicGain(UserSettings.Defaults));
+            }
             TryEnableVisualReviewFromCommandLine();
             Debug.Log("SHOOTER_PRODUCT_VIEW gpu=" + SystemInfo.graphicsDeviceName + " profile=" + QualitySettings.names[profile] +
                       " shellOwned=" + (shellOwned ? 1 : 0) +
@@ -269,6 +317,8 @@ namespace Shooter.Presentation.Session
         {
             if (settings == null) throw new System.ArgumentNullException(nameof(settings));
             UserSettingsAudioBinding.ApplyGains(settings, EnsureAudio().mixer);
+            if (shellUiMixer != null) UserSettingsAudioBinding.ApplyGains(settings, shellUiMixer);
+            musicOutput?.SetChannelGain(UserSettingsAudioBinding.MusicGain(settings));
             string qualityName = settings.QualityTier < QualitySettings.names.Length
                 ? QualitySettings.names[settings.QualityTier]
                 : "Low";
@@ -881,6 +931,19 @@ namespace Shooter.Presentation.Session
             }
 
             UpdateAudioAcoustics(router, listenerFeet);
+            if (session.Phase == GameMatchPhase.Playing && session.PauseState == SessionPauseState.Running)
+            {
+                float dt = Time.unscaledDeltaTime;
+                router.TickDistantBattle(dt);
+                router.TickScheduled(dt, listenerFeet);
+                if (session.Lifecycle != null && session.Lifecycle.TryGetActorState(session.HumanEntityId, out var localHuman))
+                {
+                    bool firePressed = cursorLocked && input.Bindings.WasPressedThisFrame("Fire");
+                    int cues = localWeaponCues.Step(localHuman, firePressed, dt, localCueScratch);
+                    for (int c = 0; c < cues; c++)
+                        router.PlayLocal(localCueScratch[c], session.CompletedTick ^ ((ulong)c << 8));
+                }
+            }
 
             if (combatEvents != null)
             {
@@ -966,6 +1029,7 @@ namespace Shooter.Presentation.Session
             audioReflection = 0f;
             audioAttached = false;
             audioSessionId = 0;
+            localWeaponCues.Reset();
             accessibilityCueKeys.Clear();
             ClearGunfireReveals();
             audioOutput?.Detach();

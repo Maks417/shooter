@@ -1,0 +1,68 @@
+{
+  "bankId": "music-bank-v1",
+  "tracks": [
+    {
+      "cue": "menu_theme",
+      "file": "menu_theme.ogg",
+      "sha256": "cb1c3e9bd25c9151dbac5a503e72fd1eb27687e7d1e0e87bf9b5f5690536e5df",
+      "loopStartSeconds": 0,
+      "loopEndSeconds": 0,
+      "source": "OpenGameArt War Theme ver 2 (Spring Spring) (https://opengameart.org/sites/default/files/war%20theme%20ver%202_0.ogg)",
+      "license": "CC0-1.0"
+    },
+    {
+      "cue": "match_calm",
+      "file": "match_calm.ogg",
+      "sha256": "5c5aa0e9d8618dfc81fd6de6bbd06e4a2caed91a6fccab612eea18a2301d8ae8",
+      "loopStartSeconds": 0,
+      "loopEndSeconds": 0,
+      "source": "OpenGameArt Tensions (jobromedia) (https://opengameart.org/sites/default/files/Tensions.mp3)",
+      "license": "GPL-3.0"
+    },
+    {
+      "cue": "match_tension",
+      "file": "match_tension.ogg",
+      "sha256": "130d51a97e0bf72a8f17a80956ea0fa5a367ce79e525b3619e655c33da33913a",
+      "loopStartSeconds": 4.6,
+      "loopEndSeconds": 88.45,
+      "source": "OpenGameArt Battle Music by peastman (https://opengameart.org/sites/default/files/Battle_1.ogg)",
+      "license": "CC-BY-3.0"
+    },
+    {
+      "cue": "victory_stinger",
+      "file": "victory_stinger.ogg",
+      "sha256": "70358792258055de9efaedaddc73ac9c8ea0c607ed57b7dba625a037e90d9fbb",
+      "loopStartSeconds": 0,
+      "loopEndSeconds": 0,
+      "source": "The Tread of War composed by Jonathan Shaw (www.jshaw.co.uk), RPG Orchestral Essentials remix (https://opengameart.org/sites/default/files/thetreadofwarmix_0.ogg)",
+      "license": "CC-BY-3.0"
+    },
+    {
+      "cue": "defeat_stinger",
+      "file": "defeat_stinger.ogg",
+      "sha256": "e62da455072aba7c3da86a49ededf51e52cfad30485ea466135a480ed54b5d13",
+      "loopStartSeconds": 0,
+      "loopEndSeconds": 0,
+      "source": "OpenGameArt War Theme (Spring Spring) (https://opengameart.org/sites/default/files/war%20theme_0.ogg)",
+      "license": "CC0-1.0"
+    },
+    {
+      "cue": "draw_stinger",
+      "file": "draw_stinger.ogg",
+      "sha256": "af40413305516b5824dd191658400aa97c77ecd3bf5cd69f5949fc49662166fe",
+      "loopStartSeconds": 0,
+      "loopEndSeconds": 0,
+      "source": "OpenGameArt Battle Music by peastman (https://opengameart.org/sites/default/files/Battle_1.ogg)",
+      "license": "CC-BY-3.0"
+    },
+    {
+      "cue": "results_loop",
+      "file": "results_loop.ogg",
+      "sha256": "78ce22a68e292e87287b2a183ae31fdd2abc70666afed062d49e2ec398896b9a",
+      "loopStartSeconds": 0,
+      "loopEndSeconds": 0,
+      "source": "The Precipice of Victory composed by Jonathan Shaw (www.jshaw.co.uk) (https://opengameart.org/sites/default/files/The%20Precipice%20of%20Victory%20MP3.zip)",
+      "license": "CC-BY-3.0"
+    }
+  ]
+}
