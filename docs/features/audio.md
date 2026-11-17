@@ -88,6 +88,23 @@ Follow-up to T089 / ADR-062, authorized by the owner after the source review. Bo
 
 Validation: pure tests cover rates/pitch, direction changes during a voice, priority/cap, obstruction energy, reflection tail/stop and cull fade; a Unity integration test checks actual map-wall occlusion, cosmetic exclusion and the query budget. Exact results and build/device limits are recorded in the [M11 handoff](../milestones/m11-playable-release/handoff.md#audio-spatial-and-mix-refinement--2026-11-15). Named headset/speaker review, output-device switching and 6v6 reference CPU/quality acceptance remain Pending. No Battlefield V parity claim follows from automated tests.
 
+## Follow-up: placeholders
+
+Open T095 work, deferred by the owner on 2026-11-17. Each item needs one more small download batch: list the files with source and size, and get the owner's approval before fetching.
+
+| Slot | Current placeholder | Wanted |
+|---|---|---|
+| `bullet_flyby` (4 variations) | Near-gunshot transient (90 ms, high-passed) plus a knife whoosh | Real supersonic crack / whiz-by recordings (search freesound/OpenGameArt for "bullet whiz", "flyby", "supersonic crack") |
+| `defeat_stinger` (music) | Last 13 s of War Theme, low-passed to 2.5 kHz | A short (5–12 s) somber orchestral defeat or "mission failed" sting |
+| `ambient` (1–2 loops) | v4 project-rendered wind/hiss/hum loop | Real outdoor battlefield or quiet-town ambience loop, 30–90 s, seamless or crossfade-trimmed |
+
+Steps:
+1. Add each source to `sources[]` in `Tools/audio-sources.json` and run `python Tools/build_audio_bank.py fetch`. Use `"manual": true` for sites that need a browser download.
+2. Find slice points with `python Tools/build_audio_bank.py analyze <path>`.
+3. Point the matching `clips[]`/`music[]` entries at the new source; drop `"keep": true` for `ambient`. The bank allows up to 8 variations per cue.
+4. Run `python Tools/build_audio_bank.py build`, `check` and `review`, then `./Tools/Test-Simulation.ps1`. The `Shipped_repo_banks…` test proves the loaders accept the banks.
+5. Update this section, the M11 handoff and the T095 row in [next-playable-build](../next-playable-build.md), and refresh the docs manifest.
+
 ## Acceptance
 
 - Pure: voice cap, peak limit, gains/mute, per-kind distance cull, event-id dedupe, stereo bank load, manifest hash mismatch fallback.

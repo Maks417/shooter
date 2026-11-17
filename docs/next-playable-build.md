@@ -37,12 +37,13 @@ The deliverable is a source-matched Windows x64 installer with [in-place upgrade
 | T092 — noise primitive | FastNoiseLite port, `NoiseField`, cross-lane goldens; `material.noise` generator landed under ADR-088. | Done. |
 | T093 — runtime rig correction | Animation Rigging rejected (ADR-075 addendum); corrections stay in pure `SoldierMotion`/`TwoBoneIk`. | Collision-backed `ISoldierGround` for remote soldiers, per-profile support grip, bounded head look-at; EditMode, Client build, CPU and named review. |
 | T094 — spatial audio | Not started. | Steam Audio spike behind the stereo mixer, native-binary allowlist, Client build, CPU and named headphone review. |
+| T095 — audio overhaul | ADR-096 bank v5 (real reload/knife/grenade Foley, flybys, hit/kill confirm, menu UI sound) and music (menu, calm/tension bed, stingers, results) with a Music slider; commit `43adaca`. | Replace three placeholders after one more small download batch (owner approves the files): bullet flyby, defeat stinger, outdoor ambience. Then owner listening review of all takes. Steps: [audio follow-up](features/audio.md#follow-up-placeholders). |
 
 ## Order of remaining work
 
 1. **Deliver the visual roadmap.** Build and install a new installer that contains ADR-087–095 ([visual roadmap step 6](visual-roadmap.md)); run Unity EditMode/PlayMode on the locked editor for that source.
 2. **T071 formal playtest on that installer.** Follow the [guide](playtest-guide.md): all three maps × 5v5/6v6, at least one complete normal match per map, results and replay, missing/corrupt content recovery and a real prior-version upgrade. Record named reviewer, identities, logs and every blocker; route defects to their owning cards.
-3. **T093 and T094** when the owner assigns them.
+3. **T093, T094 and the T095 audio placeholders** when the owner assigns them.
 4. **T070 + T062 + T065 on the final stable pair.** Reference captures and soaks on the idle reference laptop, named visual/UI/audio/display reviews, eight full matches, draw fixture, provenance/regressions and the remaining installer INS checks. Missing reviewers/hardware/counters stay Pending/PendingHardware.
 
 One integrator owns Bootstrap, Contracts, settings, locks, workloads and `coordination.json`. Keep Unity 6000.3.28f1 / URP 17.3.0, C0-v1 and Game-v1; boundary changes need an ADR plus migration/fixtures before consumers.
@@ -69,3 +70,4 @@ Compact index of handoff entries. All are included in installer 0.3.17; the exac
 | ADR-071 Oil Depot, combat feel, ADR-072 weapon profiles | [Oil Depot](milestones/m11-playable-release/handoff.md#adr-071--oil-depot-third-map--elevated-routes--2026-11-15), [profiles](milestones/m11-playable-release/handoff.md#adr-072--weapon-profiles) |
 | Kill-feed icons, ADR-073 badges, ADR-074 compact maps | [ADR-074](milestones/m11-playable-release/handoff.md#adr-074--compact-64--80-m-maps-with-distinct-layouts--2026-11-15) |
 | ADR-075–086 content pipeline, post-processing, SDF UI | [delivery](milestones/m11-playable-release/handoff.md#delivery-0317) |
+| ADR-096 audio overhaul: bank v5, music, menu UI sound (T095) | [handoff](milestones/m11-playable-release/handoff.md#adr-096-audio-overhaul-bank-v5-music-ui-sound--2026-11-17) |
