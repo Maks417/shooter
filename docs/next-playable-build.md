@@ -30,7 +30,7 @@ The deliverable is a source-matched Windows x64 installer with [in-place upgrade
 | T069 — preferences | Editable bindings/accessibility, staged display persistence, device modes. | Named UI/control/display/audio review, real Keep/Revert, 20 load/replay cycles. |
 | T070 — measurement | Finish/results/replay, soak capture, honest counters; capture/soak defects found on 9f2219f fixed. | Twelve reference captures + two soaks on the final build (PendingHardware); per-tick managed allocation still fails the zero-allocation gate. |
 | T071 — owner playtest | Owner playtest sessions on 0.3.x builds drove many fixes (see M11 handoff). | Formal matrix on the newest installer: 3 maps × 2 sizes, complete matches/results/replay, recovery and prior-pair rollback. |
-| T073 — installer | Inno Setup installer with stable AppId and monotonic version check (ADR-041), shipped 0.3.1–0.3.17. | INS01–INS06 install/upgrade/repair/uninstall rehearsal on a real machine. |
+| T073 — installer | Inno Setup installer with stable AppId and monotonic version check (ADR-041), shipped 0.3.1–0.3.17. INS02 upgrade, INS03 repair, INS05 uninstall and INS06 rollback PASS as silent software exercises on the owner PC. | INS01 on a clean machine, INS04 mid-copy interruption, interactive wizard; [status](features/windows-installer.md#implementation-status). |
 | T062 — P05 soldier | ADR-095 structural shooting posture resolves the numeric P05 gate (D01–D03). | Named visual review; P05 visual acceptance stays FAIL until then. See [defect inventory](visual-defect-inventory.md). |
 | T065 — final acceptance | Operator checklist. | REL01–REL06 and FIX01–FIX14 on one stable final pair. NotClaimed. |
 | T091 — third-party provenance | ADR-075 allowlist categories enforced by `Test-SourceProvenance.ps1`. | Done (2026-11-16). |
@@ -43,7 +43,7 @@ The deliverable is a source-matched Windows x64 installer with [in-place upgrade
 1. **Deliver the visual roadmap.** Build and install a new installer that contains ADR-087–095 ([visual roadmap step 6](visual-roadmap.md)); run Unity EditMode/PlayMode on the locked editor for that source.
 2. **T071 formal playtest on that installer.** Follow the [guide](playtest-guide.md): all three maps × 5v5/6v6, at least one complete normal match per map, results and replay, missing/corrupt content recovery and a real prior-version upgrade. Record named reviewer, identities, logs and every blocker; route defects to their owning cards.
 3. **T093 and T094** when the owner assigns them.
-4. **T070 + T062 + T065 on the final stable pair.** Reference captures and soaks on the idle reference laptop, named visual/UI/audio/display reviews, eight full matches, draw fixture, provenance/regressions and installer INS01–INS06. Missing reviewers/hardware/counters stay Pending/PendingHardware.
+4. **T070 + T062 + T065 on the final stable pair.** Reference captures and soaks on the idle reference laptop, named visual/UI/audio/display reviews, eight full matches, draw fixture, provenance/regressions and the remaining installer INS checks. Missing reviewers/hardware/counters stay Pending/PendingHardware.
 
 One integrator owns Bootstrap, Contracts, settings, locks, workloads and `coordination.json`. Keep Unity 6000.3.28f1 / URP 17.3.0, C0-v1 and Game-v1; boundary changes need an ADR plus migration/fixtures before consumers.
 

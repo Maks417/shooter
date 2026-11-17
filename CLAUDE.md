@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A Unity 6 URP procedural military FPS (offline team deathmatch vs bots, dedicated-server-compatible design) where all geometry, materials, rigs and motion are generated from code/numeric recipes. The repo is spec-heavy: `docs/` is the authoritative specification and status record, and work is organized as milestones (M0–M11) and numbered tasks (T0xx). Before any edit, find the current assignment in `docs/next-playable-build.md` and the state in `docs/product-state-audit.md`; `docs/index.md` links everything else. Design changes go through ADRs in `docs/decisions.md`.
+A Unity 6 URP procedural military FPS (offline team deathmatch vs bots; networking and the dedicated server are parked under ADR-076) where all geometry, materials, rigs and motion are generated from code/numeric recipes. The repo is spec-heavy: `docs/` is the authoritative specification and status record, and work is organized as milestones (M0–M11) and numbered tasks (T0xx). Before any edit, find the current assignment in `docs/next-playable-build.md` and the state in `docs/product-state-audit.md`; `docs/index.md` links everything else; `docs/archive/` holds superseded pages that are not instructions. Design changes go through ADRs in `docs/decisions.md`.
 
 Toolchain is pinned in root `toolchain-lock.json` (Unity 6000.3.28f1 rev 8f082d2fe476, URP 17.3.0) and `global.json` (.NET SDK 10.0.301, no roll-forward). Never upgrade or substitute either.
 
@@ -21,7 +21,7 @@ All C# lives under `UnityProject/Assets/Shooter/`, split into asmdefs with stric
 - `Presentation`: client-only, read-only consumer of snapshots. It can never apply damage or mutate authority, and it is excluded under `UNITY_SERVER`.
 - `Bootstrap`: the only composition root (`Core`, `Client`, `Runtime`, `Release`, `Editor`). `ShooterBuild.*` Editor entry points (`BuildClient`, `BuildServer`, `CompileContent`, `InitializeFoundation`, `WriteSettingsProvenance`, …) live here.
 
-**Key non-obvious point:** the BCL-safe parts of these folders are also compiled outside Unity by SDK projects in `Tools/` via explicit `<Compile Include="../../UnityProject/Assets/Shooter/...">` links. Examples: `Tools/Contracts`, `Tools/Game.Contracts`, `Tools/Generation`, and `Tools/Foundation` (Bootstrap/Core, Simulation, Networking, Content/Maps, World/Runtime, Game/Session+Settings). The test projects `Tools/*.Tests` (xUnit) link more presentation folders (View, Hud, Audio, Fx, Menus…). So code in those folders must stay C# 9 / .NET Standard 2.1-compatible and Unity-free unless it is explicitly excluded in the csproj (e.g. `UnitySynthAudioOutput.cs`). If you add a Unity-dependent file under a linked folder, the pure tests break. If you move code between folders, check the csproj globs.
+**Key non-obvious point:** every pure asmdef is also compiled outside Unity by a matching SDK project `Tools/<Assembly>/Shooter.<Assembly>.csproj` (e.g. `Tools/Contracts`, `Tools/Game.Contracts`, `Tools/Generation`, `Tools/Simulation`, `Tools/World.Runtime`, `Tools/Presentation.Model`, `Tools/Bootstrap.Core`), which globs the asmdef folder with `<Compile Include="../../UnityProject/Assets/Shooter/<folder>/**/*.cs">` and mirrors its references; `Tools/verify_asmdef_graph.py` fails when the two graphs drift. The xUnit projects `Tools/*.Tests` reference those projects instead of linking source (ADR-076). So code in those folders must stay C# 9 / .NET Standard 2.1-compatible and Unity-free unless the csproj explicitly excludes it. If you add a Unity-dependent file under a pure folder, the pure tests break. If you move code between folders, check the csproj globs and the asmdef graph.
 
 ## Commands (PowerShell 7, from repo root)
 
@@ -60,7 +60,7 @@ Unity lanes need the locked editor. On a fresh checkout run Configure first: it 
 ```powershell
 ./Tools/Configure-Unity.ps1 -EditorPath '<editor>/Editor/Unity.exe'
 ./Tools/Test-Unity.ps1 -Mode EditMode     # or -Mode PlayMode; zero tests = failure
-./Tools/Build.ps1 -Target Client          # IL2CPP/D3D11; or -Target Server (Dedicated Server, Mono)
+./Tools/Build.ps1 -Target Client          # IL2CPP/D3D11; -Target Server (Mono) only on request, parked under ADR-076
 ./Tools/Smoke.ps1 -BuildRunDirectory <printed build-run dir>
 ./Tools/Compile-GameContent.ps1           # product map packages
 ./Tools/Package-Release.ps1 -ClientBuildRunDirectory <client build-run>

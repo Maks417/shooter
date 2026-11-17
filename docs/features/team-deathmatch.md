@@ -1,6 +1,6 @@
 # Feature: offline Team Deathmatch
 
-Status reviewed 2026-11-14 from 84befb9 / a54ed83: authoritative lifecycle/respawn, enemy filtering/path following, safe spawn ranking/deadlines and T070 finish/results/replay capture software are built into `7cd7e81`. Catalogs supply ≥12 slots/team. Real-map mixed-team/repeated-life/full-match evidence, remaining native-navigation publication and reference capacity are Pending per [audit](../product-state-audit.md). Use the [playtest guide](../playtest-guide.md); T065 retains full match acceptance and historical software closure does not accept it.
+Authoritative lifecycle/respawn, enemy filtering/path following, safe spawn ranking/deadlines, relaxed spawn fallback (ADR-047), the pre-match countdown (ADR-048) and finish/results/replay capture are implemented and shipped in the installers; catalogs supply ≥12 slots/team on all three maps with native navigation. Real-map mixed-team/repeated-life/full-match evidence and reference capacity are Pending per [next playable build](../next-playable-build.md). Use the [playtest guide](../playtest-guide.md); T065 retains full match acceptance and historical software closure does not accept it.
 
 ## Local release boundary
 

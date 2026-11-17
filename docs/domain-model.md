@@ -2,7 +2,7 @@
 
 M8–M11 adds implemented Game-v1 product entities in [session contracts](game-session-contracts.md). T053 committed lifecycle retirement/rebinding in 59316d3; fresh pure coverage is not actual-player acceptance. The [audit](product-state-audit.md) records remaining native-navigation publication and actual player/device/measurement acceptance. ParticipantId stays stable across lives; LifeId maps each incarnation to a fresh EntityId; team results stay separate from frozen C0 MatchState.
 
-## Planned game entities
+## Game entities
 
 | Entity | Responsibility / invariant |
 |---|---|
@@ -23,7 +23,7 @@ erDiagram
   GAME_SESSION ||--o| MATCH_RESULTS : finishes
 ```
 
-These entities are specifications until T035–T047 compile/implement them. Exact ports, thread/lease ownership, versioning and fixtures stay in the shared contract plan. Existing motor units, team filtering and content lease invariants below continue to apply.
+These entities are implemented under Game-v1 (T035–T047; `Game/Contracts`, `Game/Session`, `Game/Settings`). Exact ports, thread/lease ownership, versioning and fixtures stay in the [contracts](contract-details.md) and [session contracts](game-session-contracts.md). Existing motor units, team filtering and content lease invariants below continue to apply.
 
 Normative field shapes are in [contracts](contract-details.md); deterministic identity is in [generation](generation.md).
 
@@ -42,7 +42,7 @@ Normative field shapes are in [contracts](contract-details.md); deterministic id
 | WeaponState | owner ID, ammo, action phase, next fire tick, reload completion | Authority; ammo never negative |
 | InputCommand | tick, sequence, movement, aim, button edges | Input/network; validated before use |
 | CombatEvent | event ID, tick, instigator, target, result | Authority; deduplicated by view and transport |
-| MatchManifest | build/protocol/schema, world/collision/weapon hashes, seed | Server; clients agree before spawn |
+| MatchManifest | build/protocol/schema, world/collision/weapon hashes, seed | Authority (the offline session; a future server while networking is parked); clients agree before spawn |
 
 ```mermaid
 erDiagram

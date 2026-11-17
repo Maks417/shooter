@@ -1,6 +1,6 @@
 # M8 — Runtime composition and Game-v1 foundation — validation and acceptance
 
-**Current disposition — 2026-11-14 review from 84befb9 / a54ed83:** M8 integration validation remains open. T066 provenance/cancellation and T067 packaged catalog/visual loading are repaired; T068 authority-driven weapon/action views are landed in the retained `7cd7e81` candidate. Native-navigation publication/query semantics and actual RUN/player/repeated-life evidence remain open. See the [audit](../../product-state-audit.md), [remaining queue](../../next-playable-build.md), [playtest guide](../../playtest-guide.md) and [FIX acceptance](../../release-remediation-validation.md). Original requirements and historical evidence remain; this review creates no coding lease or waiver.
+**Disposition:** current status is kept only in the [pack index](index.md) and [next playable build](../../next-playable-build.md); the requirements below are unchanged.
 
 Current coverage, 2026-11-14: partial historical pure/build/diagnostic evidence exists; complete product acceptance is open. Scenario IDs below remain required, not blanket NotRun or PASS claims. See [audit evidence](../../product-state-audit.md) and [FIX matrix](../../release-remediation-validation.md); repaired-code checks remain NotRun until implementation. Every run records exact source/build/toolchain/content/map/profile/roster/workload/duration and artifacts.
 

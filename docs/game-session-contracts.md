@@ -21,7 +21,7 @@ Lock/fixtures: `game-contract-lock.json`, `docs/game-fixtures/`. Verify with `py
 | GameMatchPhase | Explicit byte values Loading=0, Ready=1, Playing=2, Finished=3, Stopped=4; pause is a local session service state, not a C0 MatchState enum addition |
 | MatchOutcome / FinishReason | Outcome None=0, Team1=1, Team2=2, Draw=3; reason None=0, ScoreLimit=1, TimeLimit=2, Aborted=3; aborted sessions do not produce a victory |
 | SessionRequest | MapId, ModeId, teamSize (5 or 6), seed uint64, ruleVersion=1; limits fixed 150 kills / 54000 active ticks; one local participant on Team 1; cannot carry user paths or arbitrary recipes |
-| MapCatalogEntry | MapId, display name ≤64 characters, short description ≤256, supported ModeIds, supported team sizes, fixed recipe seed/version, gameplay root hash, per-profile visual roots; ≤16 maps, ≤8 modes/map; release requires exactly the three approved entries |
+| MapCatalogEntry | MapId, display name ≤64 characters, short description ≤256, supported ModeIds, supported team sizes, fixed recipe seed/version, gameplay root hash, per-profile visual roots; ≤16 maps, ≤8 modes/map; release requires every map in the registry (`Content/Maps/<id>.map.json`, ADR-083) — currently three |
 | MapGameplayDefinition | MapId, collision/nav revision+hash, bounds, team-tagged spawn slots and patrol/combat destinations; ≤128 spawn slots, stable nonzero IDs; all coordinates finite and in map bounds; nav encoding is versioned, verified content |
 | ParticipantState | ParticipantId, display name ≤32 characters, Team byte 1/2, isHuman, current EntityId/LifeId, alive, kills/deaths uint32, personal Score uint32 (ADR-059; kill=100 / assist=HP; not team win), respawnDueActiveTick; bounded ≤12 participants |
 | MatchViewSnapshot | AuthoritySessionId, completed simulation tick, activeTicksElapsed, remaining ticks, phase/outcome/reason, two team kill counts, immutable participant rows, pending respawns; view reads one coherent publication |
@@ -35,7 +35,7 @@ For product authority's C0 snapshot compatibility, map GameMatchPhase Loading/Re
 
 ## Ports compiled at T035
 
-Concrete method signatures live in `UnityProject/Assets/Shooter/Game/Contracts/GamePorts.cs`. Tools/Game.Contracts.Tests covers a limited subset (15 audit-time cases), including reducer and fake-map scenarios; it does not certify all lifecycle/thread/publication/device requirements below. FIX01–FIX14 add missing integration coverage through reviewed seams.
+Concrete method signatures live in `UnityProject/Assets/Shooter/Game/Contracts/GamePorts.cs`. `Tools/Game.Contracts.Tests` covers a subset (99 cases at 0.3.17), including reducer, settings migration, workload and fake-map scenarios; it does not certify all lifecycle/thread/publication/device requirements below. FIX01–FIX14 add missing integration coverage through reviewed seams.
 
 | Port / owner | Responsibility and lifetime |
 |---|---|
@@ -48,7 +48,7 @@ Concrete method signatures live in `UnityProject/Assets/Shooter/Game/Contracts/G
 | IUserSettingsStore / Game/Settings | Load/validate/migrate settings, save atomically, report corrupt/newer schema/read-only storage without blocking play; storage path supplied by platform adapter, never a content-cache mutation |
 | IClientSettingsApplier / Bootstrap client adapter | Apply full UserSettings (audio/display/quality/FOV/input/accessibility), report unsupported choices, stage/confirm/revert display change with 15s real-time clock; cannot reference or mutate match/world gameplay rules. T059 menus and T061 audio bind devices to this port; pure `MemoryClientSettingsApplier` / `UserSettingsEditor` cover Apply/Cancel/defaults without Presentation ownership |
 
-Existing `CombatHarnessSimulation` is sealed with private actor state. Simulation/Session/HarnessActorLifecycle.cs now wraps the harness, but authority retirement/reset is incomplete. T053 completes the reusable lifecycle boundary, retaining diagnostic compatibility and C0 test outcomes. Do not make a parallel second damage system or let an M9 worker access harness internals with reflection. Integrator alone owns this extraction and edits to `Simulation/Foundation/`.
+Existing `CombatHarnessSimulation` is sealed with private actor state. Simulation/Session/HarnessActorLifecycle.cs wraps the harness; T053 added `RetireActor` and monotonic IDs so it retires authoritative lives and resets cleanly, retaining diagnostic compatibility and C0 test outcomes. Do not make a parallel second damage system or let an M9 worker access harness internals with reflection. Integrator alone owns this extraction and edits to `Simulation/Foundation/`.
 
 Retire dead actor records from authority snapshots before reusing bounded storage, while issuing a new EntityId for every new life. C0's 64-actor cap is not permission to retain every historical respawn actor forever. Death/life dedupe uses bounded per-participant state, not an ever-growing event set. Cosmetic corpse views are capped at four globally and expire after five active seconds; eviction cannot affect obstruction, hit tests or score. Aborted async work carries a session epoch and cannot leak a slot into the next match.
 

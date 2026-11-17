@@ -1,6 +1,6 @@
 # M9 — Team Deathmatch and bot teams — implementation pack
 
-**Current disposition — 2026-11-14 review from 84befb9 / a54ed83:** M9 integration validation remains open. Lifecycle, mixed-team AI/spawn policy and T070 finish/results/replay/counter software are in the retained `7cd7e81` candidate. Real-map combat/respawn/full-match evidence and reference captures/soaks remain Pending/PendingHardware; no online server is needed for this local-bot release. See the [audit](../../product-state-audit.md), [remaining queue](../../next-playable-build.md), [playtest guide](../../playtest-guide.md) and [FIX acceptance](../../release-remediation-validation.md). Original requirements and historical evidence remain; this review creates no coding lease or waiver.
+**Disposition — 2026-11-17:** M9 integration validation remains open. Lifecycle, mixed-team AI/spawn policy, bot tactics and finish/results/replay/counter software are shipped in the installers. Real-map combat/respawn/full-match evidence and reference captures/soaks remain Pending/PendingHardware; no server is needed for this local-bot release. See [next playable build](../../next-playable-build.md), the [audit](../../product-state-audit.md), the [playtest guide](../../playtest-guide.md) and [FIX acceptance](../../release-remediation-validation.md). Original requirements and historical evidence remain; this review creates no coding lease or waiver.
 
 ## Goal
 

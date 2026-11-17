@@ -1,6 +1,6 @@
 # Feature: procedural materials and rendering
 
-Purpose: plausible modern materials at low bandwidth cost using generated textures and conventional URP rasterization. Boundaries: [generation](../generation.md), [performance](../performance.md), [contracts](../contract-details.md). Owner: WP-03, proposed `Presentation/Rendering`, `Shaders`, material generator subfolder; compiler infrastructure stays WP-01.
+Purpose: plausible modern materials at low bandwidth cost using generated textures and conventional URP rasterization. Boundaries: [generation](../generation.md), [performance](../performance.md), [contracts](../contract-details.md). Owner: WP-03, `Presentation/Rendering`, `Shaders`, material generator subfolder; compiler infrastructure stays WP-01.
 
 ## Implementation
 

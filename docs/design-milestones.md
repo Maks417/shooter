@@ -1,10 +1,10 @@
 # Visual design milestones — Battlefield V / Bodycam / Warface quality goal
 
-**T075 implementation update — 2026-11-15:** source `7407bc4` / installer 0.3.4 extends the earlier T074 baseline with real procedural surface triplets, scene material reuse, working map overviews and near-field weapon handling. Player captures still show blockout environments/soldiers. All VD exits, exact comparison approval and P05 disposition remain unchanged. [Implementation/evidence](milestones/m11-playable-release/handoff-archive.md#t075--procedural-presentation-preview-034).
+**Status 2026-11-17:** the [visual roadmap](visual-roadmap.md) is the current execution plan (ADR-084–095: SDF UI, HUD craft, noise materials, weathering, decals, sky/grade, combat FX, soldier kit and the ADR-095 shooting posture). Its delivery in a new installer is pending; the latest installer is tracked in [next playable build](next-playable-build.md). All VD exits below remain Pending.
 
-Owner direction, 2026-11-14: **the finished visual design should be as good as Battlefield V, Bodycam and Warface**. This is the target for perceived quality, coherence, physical credibility and presentation. Current parity is **unproven**. The b531da9 / 0.3.1 preview is an implementation baseline, with final interactive visual review Pending; it does not close these milestones.
+Owner direction, 2026-11-14: **the finished visual design should be as good as Battlefield V, Bodycam and Warface**. This is the target for perceived quality, coherence, physical credibility and presentation. Current parity is **unproven**; no installer so far closes these milestones.
 
-This page is the canonical visual-quality track **VD0–VD9** inside the existing M8–M11 delivery programme. It replaces the five informal stages in the [brandbook](brandbook.md) as the execution order. M0–M7 historical closures, M8–M11 open gates, P05 FAIL and retained evidence remain unchanged. This assignment generates a plan; it creates no runtime coding lease, agent dispatch, toolchain change or acceptance waiver.
+This page is the canonical visual-quality track **VD0–VD9** inside the existing M8–M11 delivery programme. It replaces the five informal stages in the [brandbook](brandbook.md) as the execution order. M0–M7 historical closures, M8–M11 open gates and retained evidence remain unchanged.
 
 ## Quality target and constraints
 
@@ -66,7 +66,7 @@ Dependencies describe integration order. Any future parallel work needs explicit
 
 **Deliver:** an approved reference register and visual brief covering composition, architecture/props, material families, daylight/interior mood, fictional factions/kit, weapon proportions, camera/motion language and UI typography/spacing. For each reference record game/version, source, frame/timecode, resolution, the quality being compared and any unknown FOV/capture conditions. Preserve originals and separate third-party reference material from procedural source/evidence. The six small images supplied in chat establish direction; higher-quality reference frames are needed for fine surface and motion review.
 
-Capture the current source-matched menu, HUD, both maps, one soldier, both weapons and an action sequence. Record concrete gaps in [visual defects](visual-defect-inventory.md), including existing P05 defects. Define component owners, permitted paths, versions, comparison views and evidence locations. Identify any required new schema/socket/hit-pose change before dependent work. Establish the explicit scope needed for P05 work without changing its historical disposition.
+Capture the current source-matched menu, HUD, every catalog map, one soldier, each weapon and an action sequence. Record concrete gaps in [visual defects](visual-defect-inventory.md), including existing P05 defects. Define component owners, permitted paths, versions, comparison views and evidence locations. Identify any required new schema/socket/hit-pose change before dependent work. Establish the explicit scope needed for P05 work without changing its historical disposition.
 
 **Exit:** owner approves one coherent visual brief and the comparison set; a technical reviewer records constraints/budgets and the gap inventory. Exact reference frames, art approval and new coding assignments remain Pending until supplied/reviewed. Current source is b531da9 / 0.3.1, with details in the [M11 handoff](milestones/m11-playable-release/handoff-archive.md#t074--scene-led-menu-and-tactical-hud-preview).
 
@@ -102,13 +102,13 @@ Drive actions from real snapshot/event timing, retaining pauses, life IDs and ca
 
 **Exit:** uninterrupted clips show both weapons through fire → reload → ready and switch chains; full supported stance/aim range, slope/steps, slide and repeated death/respawn are reviewed. Existing pose sweeps, grip/foot limits, solver budgets and quality-independent gameplay checks pass. No snapping, detached magazine, drifting plant or life-reset residue remains in the accepted set. Sound cue synchronization uses the existing synthesized-audio policy; new recorded assets are not implied.
 
-## VD5 — production environment art on both maps
+## VD5 — production environment art on every catalog map
 
 **Deliver:** Training Compound and Depot Yard reach the accepted VD1 environment standard with distinct visual identities. Compound emphasizes believable concrete/plaster training structures and connected indoor/outdoor spaces; Depot emphasizes warehouses, steel, cargo and loading infrastructure. Add procedural architectural thickness, doors/windows/roofs/supports, curbs/drainage, believable ground transitions, bounded environmental wear and landmarks. Repetition must read as construction logic rather than repeated featureless boxes.
 
 Version the grammar/recipes and material-scale rules. Classify detail as physical or cosmetic. Changes to cover, obstruction, sight lines or walkable geometry go through authoritative collision/native-nav publication, revisions and fixtures; purely cosmetic detail must preserve fair visibility across quality tiers. Keep the approved seeds and initial density ceilings until measured changes are explicitly accepted.
 
-**Exit:** both maps pass approved near/mid/far and interior/exterior walkthrough views, readable enemy/ally silhouettes and existing MAP/T067 route/spawn/collision checks. Publish and verify complete packages, cold/warm reproduction and cross-quality gameplay equivalence. A prettier camera corner cannot accept the rest of a map. See [environment](features/environment.md) and [two-map requirements](features/playable-maps.md).
+**Exit:** every catalog map (three since ADR-071) passes approved near/mid/far and interior/exterior walkthrough views, readable enemy/ally silhouettes and existing MAP/T067 route/spawn/collision checks. Publish and verify complete packages, cold/warm reproduction and cross-quality gameplay equivalence. A prettier camera corner cannot accept the rest of a map. See [environment](features/environment.md) and [two-map requirements](features/playable-maps.md).
 
 ## VD6 — materials, lighting, atmosphere and effects
 
@@ -130,7 +130,7 @@ T074's `ProductMenuScene`, `TacticalUi`, `ProductShellHost` and `ProductSessionV
 
 **Deliver:** one stable source/content pair with coherent Low/Balanced/High LODs, material detail, shadow/effect scaling and loading behavior. Preserve silhouette, sights, team recognition and gameplay equivalence when reducing visual cost. Measure the menu scene separately and verify it is disabled/released correctly during gameplay; avoid hidden duplicate meshes, targets or skinning work.
 
-**Exit:** the existing T070/M11 matrix passes on the actual reference machine: both maps × both roster sizes × three native720p Low captures, plus the required normal-AI soaks, correct counters, memory/allocation/load budgets and hardware/GPU/thermal evidence. Preserve failed runs; missing evidence is Pending/PendingHardware. Provenance, regenerated content, schema/contract guards and Server graphics isolation pass. Higher-tier images cannot substitute for Low evidence; 60 FPS remains separately labeled.
+**Exit:** the existing T070/M11 matrix passes on the actual reference machine: every catalog map × both roster sizes × three native720p Low captures, plus the required normal-AI soaks, correct counters, memory/allocation/load budgets and hardware/GPU/thermal evidence. Preserve failed runs; missing evidence is Pending/PendingHardware. Provenance, regenerated content, schema/contract guards and Server graphics isolation pass. Higher-tier images cannot substitute for Low evidence; 60 FPS remains separately labeled.
 
 ## VD9 — comparative sign-off and final delivery
 
@@ -153,12 +153,10 @@ Review actual release-player output at native720p Low first; record higher-quali
 
 Use **0 Missing / 1 Blockout / 2 Functional / 3 Polished but below target / 4 Reference-comparable** as anchored review labels. Acceptance requires 4 in every category applicable to that milestone, the owner's written rationale and passing technical exits. Do not average away a weak character, action or environment score. These are subjective review decisions with evidence, not an objective numerical proof of AAA parity. Record reviewer names and roles; technical/AI self-review does not replace the owner's visual decision.
 
-The comparison pack must include Main/local setup/settings/pause/results; both maps' interiors/exteriors and near/mid/far views; both teams and required LODs; rifle/pistol hip/ADS/fire/reload/switch; walk/run/crouch/slide/steps/turn/death/respawn; bright/shadow combat; reduced-motion/flash and UI-scale variants; and full-roster normal play. Use uninterrupted action footage as well as stills. Link to the existing M11 full-match/performance protocol instead of shortening it for this pack.
+The comparison pack must include Main/local setup/settings/pause/results; every catalog map's interiors/exteriors and near/mid/far views; both teams and required LODs; rifle/pistol hip/ADS/fire/reload/switch; walk/run/crouch/slide/steps/turn/death/respawn; bright/shadow combat; reduced-motion/flash and UI-scale variants; and full-roster normal play. Use uninterrupted action footage as well as stills. Link to the existing M11 full-match/performance protocol instead of shortening it for this pack.
 
 For every milestone attach: base/implementation commit, approved owner/paths, recipe/generator/schema versions, toolchain hash, content roots, map seed, profile/resolution/FOV/UI scale, scenario/input or event timeline, raw evidence paths, reference frame IDs, measured results, named visual decision, defects and rollback identity. Store raw local evidence under ignored `Artifacts/visual-design/<source>/<VD-id>/<run>/`; keep shared specifications here at docs root. Use existing fixture/docs, provenance, relevant pure/Unity/build/content wrappers and final package/installer checks from the [runbook](bootstrap-runbook.md). Tests, hashes and a populated folder never replace visual review.
 
 ## Next assignment
 
-Begin with **VD0**, including review of the current 0.3.1 preview and selection of exact Bodycam/Warface comparison footage alongside the supplied Battlefield images. The working draft brief and gap register live in [visual-art-brief.md](visual-art-brief.md); owner approval and exact BODYCAM/WARFACE frame IDs remain Pending.
-
-Owner-authorized parallel presentation polish (2026-11-14) may proceed on disjoint paths that do **not** change soldier-generator clearance, contracts or content locks: map-surface/atmosphere presentation, combat FX mesh wiring and menu/HUD craft. That work targets the brief as software only; it does not close VD0–VD9. Then assign one bounded VD1 art slice and its P05-dependent scope. The immediate plan is not to declare the existing menu/three staging soldiers final or expand the same provisional fidelity across two maps. All VD exits remain Pending until their actual evidence and owner decisions exist.
+Follow the [visual roadmap](visual-roadmap.md): deliver its tranche in an installer, then run the named reviews it lists. VD0 still needs owner approval of the [working brief](visual-art-brief.md) and exact Bodycam/Warface comparison frames. All VD exits remain Pending until their actual evidence and owner decisions exist.

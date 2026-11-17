@@ -1,6 +1,6 @@
 # Additional task cards and ownership
 
-These extend [backlog](backlog.md) without renumbering T001–T025. Integrator assigns named workers in coordination.json. All shared contracts stay integrator-owned. No new artistic assets, physical destruction or public networking scope is introduced.
+These extend [backlog](backlog.md) without renumbering T001–T025. Cards end at T090; T091–T094 and current dispositions are tracked as rows in [next playable build](next-playable-build.md#task-disposition), and visual roadmap work under ADR-084–095 in the [visual roadmap](visual-roadmap.md). Integrator assigns named workers in coordination.json. All shared contracts stay integrator-owned. No new artistic assets, physical destruction or public networking scope is introduced.
 
 | Task | Owner / paths | Gate and dependencies | Deliverable / acceptance |
 |---|---|---|---|
@@ -24,7 +24,7 @@ T026/T034 first; T027 and T028 share pose schema and merge through integrator; T
 
 ## Playable release task cards — T035–T051
 
-Status reviewed 2026-11-14 from 84befb9 / a54ed83: original T035–T051 requirements remain. Later T066/T068/T069/T070 software is built into the retained `7cd7e81` candidate; T067 native-navigation publication/query validation and T071 manual handoff remain partial. Read the [audit](product-state-audit.md), [remaining queue](next-playable-build.md), [playtest guide](playtest-guide.md) and [FIX matrix](release-remediation-validation.md). Game-v1 stays frozen with ADR-036/037 extensions and ADR-038 catalog sidecar. No coding lease is created; T062/T065 acceptance remains open.
+Original T035–T051 requirements remain. Current disposition of every task (T066–T094) is in [next playable build](next-playable-build.md#task-disposition); read it with the [audit](product-state-audit.md), [playtest guide](playtest-guide.md) and [FIX matrix](release-remediation-validation.md). Game-v1 stays frozen with ADR-036/037 extensions and the ADR-038 catalog sidecar; T062/T065 acceptance remains open.
 
 | Task / milestone | Dependency | Owner / output | Required acceptance |
 |---|---|---|---|

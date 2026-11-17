@@ -1,32 +1,12 @@
 # Visual direction and UI design system
 
-## T084 — Near-field finish and composition
+This page is the visual direction and UI design system. Dated art-direction passes (T080–T084) are recorded in the [VD0 visual art brief](visual-art-brief.md); the current visual execution plan is the [visual roadmap](visual-roadmap.md).
 
-Replace the flat weapon/glove/sleeve surfaces with original numeric coated-metal, stippled-polymer, woven-cloth and glove-grain PBR triplets at a 100 mm tile scale. Keep the coated metal restrained, cloth/gloves rough, and polymer distinct from both. Sleeve taper gains shallow folds and a slight bend. Hip-held equipment uses a modest cant toward the center of the view, fading fully out for accurate ADS. No new camera shake, weapon mechanics or third-person anatomy is introduced. [ADR-053](decisions.md#adr-053--accepted-procedural-near-field-finish-triplets-and-hip-composition-t084), [evidence](milestones/m11-playable-release/handoff.md). Named visual acceptance and reference-machine cost remain separate Pending checks.
+## Presentation notes
 
 **T088 update — 2026-11-15:** `geometry.weapon` 1.0.2 adds richer rifle/pistol silhouette detail, detachable magazine and bolt/slide cycle meshes driven from authority reload/shot events, plus denser analytic muzzle/casing/tracer FX ([ADR-061](decisions.md#adr-061--accepted-geometryweapon-102-mechanical-parts-and-denser-fire-fx-t088)). Rifle ADS uses a procedural circular scope mask with mil-dot reticle and blended FOV; pistol ADS keeps iron sights with a soft vignette. Articulated fingers and named VD3 acceptance remain open.
 
 **ADR-065 update — 2026-11-15:** Rifle ADS is a screen-space PiP optic ([ADR-065](decisions.md#adr-065--accepted-screen-space-pip-rifle-scope-blurred-periphery)): sharp digital zoom inside the lens, live blurred hip-FOV world outside, soft housing + mil-dot. Still no recursive RTT optics. Pistol irons unchanged. Named optic review Pending.
-
-## T083 — First-person presence
-
-Implement original gloved trigger/support hands and long uniform sleeves as offline numeric meshes for both weapons. Palms/fingers follow existing grip coordinates; cuffs and knuckle pads separate fabric, glove and protective material. Support-hand reach follows the authority reload phase and returns continuously to the grip, with reduced-motion scaling. This closes the floating-weapon presentation gap in software; it does not solve third-person soldier anatomy or provide articulated fingers/full magazine exchange. [ADR-052](decisions.md#adr-052--accepted-packaged-first-person-glove-and-sleeve-props-t083), [delivery evidence](milestones/m11-playable-release/handoff.md).
-
-## T081 — Place and construction language
-
-Owner-requested continuation from `615b6a5`: make architecture read as constructed surfaces instead of decorated collision boxes. Compound uses pale concrete/plaster walls, dark footing bands, narrow 3.2 m panel joints and lighter coping/end protection. Depot contrasts those surfaces with muted blue/oxide cargo, steel corrugations, perimeter rails and door locking hardware. Human-scale loading-bay facades replace blank menu building faces. Weapon metal uses a dark, rougher coated finish; polymer remains matte. These are implemented numeric visual recipes, not imported art.
-
-New geometry is baked into the verified map mesh; six shared material roles reuse existing PBR planes. The collision/nav/spawn identities remain unchanged. Do not infer reference-machine cost from the 180k vertex cap or six submeshes. See [ADR-050](decisions.md#adr-050--accepted-packaged-architectural-surface-construction-t081) and [M11 handoff](milestones/m11-playable-release/handoff.md). Soldier anatomy, first-person hands and full weapon-action continuity remain unresolved. A credible environment improvement is one part of the requested BFV quality target; no visual comparison or P05 acceptance follows from this source change.
-
-## T080 review — quality priorities (2026-11-15)
-
-The source baseline is T079 / installer 0.3.8 at `07c5db7`; older top-level delivery notes below are historical. This review found four concrete source defects: inconsistent physical material scale on scaled boxes; cover textures eight times denser than architectural solids; overview cameras still sized for old 256 m maps; and card renderers losing metal/trim submesh materials. T080 corrects those presentation paths; [delivery and verification](milestones/m11-playable-release/handoff-archive.md#t080--visual-review-and-material-scale-correction) records actual results.
-
-Design direction: make Compound read as pale weathered plaster/concrete with dark structural metal and earth; make Depot read as steel logistics architecture on asphalt. Hold surface texture scale at one repeat per two metres in the world and menu. Operation cards must fill their frame with the actual arena and retain material separation; ornamental plates must remain subordinate. Keep architectural mass and combat silhouettes readable before adding surface noise or more props.
-
-The largest remaining visual deficits are soldier anatomy/uniform construction, hands and weapon-action continuity, repetitive rectangular architecture, and insufficient environmental storytelling. A material/framing fix cannot establish BFV parity. The representative-slice review must include near-field soldier/weapon footage, a doorway-to-yard transition, both sun and shade, and a normal combat view at native 720p Low. Evaluate proportion, material scale, action continuity and silhouette first, then compare the named reference frames. P05 work remains subject to its existing explicit bounded assignment; no clearance search or acceptance waiver is created here.
-
-**T075 implementation update — 2026-11-15:** source `7407bc4` / installer 0.3.4 extends the earlier T074 baseline with real procedural surface triplets, scene material reuse, working map overviews and near-field weapon handling. Player captures still show blockout environments/soldiers. All VD exits, exact comparison approval and P05 disposition remain unchanged. [Implementation/evidence](milestones/m11-playable-release/handoff-archive.md#t075--procedural-presentation-preview-034).
 
 T074 stage 1 implements the shell/HUD direction below in `Presentation/Session/TacticalUi.cs`, `Presentation/Session/ProductShellHost.cs` and `ProductSessionView.cs`. The environment, equipment and motion direction remains staged work. See [vision](vision.md), [shell](features/game-shell.md) and [rendering](features/materials-rendering.md). Implementation is separate from named visual acceptance.
 
@@ -58,11 +38,11 @@ Team tables place six rows per side with aligned Score/kills/deaths columns and 
 
 ## Shared visual principles
 
-The new [game shell](features/game-shell.md) specifies actual menu/setup/loading/pause/settings/scoreboard/results behavior and working persistence/device controls for M10. Existing HudLayout is a pure helper; its test is not interactive UI evidence. Keep the tokens below as proposed until validated in the real 720p player, including the 12-row tables and 150% scale. No image preview requirement is introduced for map selection.
+The new [game shell](features/game-shell.md) specifies actual menu/setup/loading/pause/settings/scoreboard/results behavior and working persistence/device controls for M10. Existing HudLayout is a pure helper; its test is not interactive UI evidence. The tokens below guide `Presentation/Session/TacticalUi.cs`; they stay subject to named validation in the real 720p player, including the 12-row tables and 150% scale. No image preview requirement is introduced for map selection.
 
 Grounded, functional, readable modern military training environment. Favor believable proportions, physical material scale, restrained wear and clear player silhouettes over noisy detail. Fictional insignia generated from lines/polygons, no imported logos. Realism review uses silhouette, material response, spatial scale and motion separately; a complex shader cannot compensate for implausible proportions.
 
-| UI token | Proposed value | Use |
+| UI token | Value | Use |
 |---|---|---|
 | surface | #161C20 | Menus and diagnostics |
 | text | #F1F3EF | Primary text |
@@ -93,4 +73,4 @@ Compound uses morning haze, Depot overcast and Oil Depot a low golden-hour sun; 
 
 Paint uses numeric stencil marks, warning stripes, unit chevrons and bounded stains. Combat FX use five packaged 8x8 FBm/curl flipbooks and a capped particle pool; Low reduces count and skips depth softening. Reduced flash suppresses muzzle, tracer and explosion fire/flash; reduced motion suppresses camera shake.
 
-The 1.0.3 uniform adds contoured carrier/pouch construction, sleeve detail, grouped numeric digits, faction armbands and shoulder patches from the existing emblem recipes. Legacy 1.0.2 remains reproducible. The bounded P05 correction failed; its candidate pose is diagnostic-only and the product retains the baseline solver. None of these changes establishes reference-game parity or visual acceptance.
+The 1.0.3 uniform adds contoured carrier/pouch construction, sleeve detail, grouped numeric digits, faction armbands and shoulder patches from the existing emblem recipes. Legacy 1.0.2 remains reproducible. The ADR-094 bounded correction failed; [ADR-095](decisions.md#adr-095--accepted-structural-weapon-from-eye-shooting-posture-p05-reopening) then made the structural shooting posture the product default, resolving the numeric P05 gate (visual review pending). None of these changes establishes reference-game parity or visual acceptance.

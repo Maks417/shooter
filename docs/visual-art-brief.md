@@ -1,5 +1,7 @@
 # VD0 visual art brief — Battlefield V / Bodycam / Warface
 
+Direction sections T080–T084 below are newest first; the original VD0 brief starts at the **Status** paragraph. Later direction (ADR-084–095) is recorded in the [visual roadmap](visual-roadmap.md), not here.
+
 ## T084 — Near-field finish and composition
 
 Replace the flat weapon/glove/sleeve surfaces with original numeric coated-metal, stippled-polymer, woven-cloth and glove-grain PBR triplets at a 100 mm tile scale. Keep the coated metal restrained, cloth/gloves rough, and polymer distinct from both. Sleeve taper gains shallow folds and a slight bend. Hip-held equipment uses a modest cant toward the center of the view, fading fully out for accurate ADS. No new camera shake, weapon mechanics or third-person anatomy is introduced. [ADR-053](decisions.md#adr-053--accepted-procedural-near-field-finish-triplets-and-hip-composition-t084), [evidence](milestones/m11-playable-release/handoff.md). Named visual acceptance and reference-machine cost remain separate Pending checks.
@@ -22,11 +24,9 @@ Design direction: make Compound read as pale weathered plaster/concrete with dar
 
 The largest remaining visual deficits are soldier anatomy/uniform construction, hands and weapon-action continuity, repetitive rectangular architecture, and insufficient environmental storytelling. A material/framing fix cannot establish BFV parity. The representative-slice review must include near-field soldier/weapon footage, a doorway-to-yard transition, both sun and shade, and a normal combat view at native 720p Low. Evaluate proportion, material scale, action continuity and silhouette first, then compare the named reference frames. P05 work remains subject to its existing explicit bounded assignment; no clearance search or acceptance waiver is created here.
 
-**T075 implementation update — 2026-11-15:** source `7407bc4` / installer 0.3.4 extends the earlier T074 baseline with real procedural surface triplets, scene material reuse, working map overviews and near-field weapon handling. Player captures still show blockout environments/soldiers. All VD exits, exact comparison approval and P05 disposition remain unchanged. [Implementation/evidence](milestones/m11-playable-release/handoff-archive.md#t075--procedural-presentation-preview-034).
-
 Status: **draft brief for owner approval**, 2026-11-14. Companion to [design milestones](design-milestones.md). This page records the working art direction, comparison register, current-build gaps and component ownership for parallel presentation work. It does **not** close VD0 (owner still selects exact Bodycam/Warface frames and approves the brief), does **not** accept any VD1–VD9 exit, and does **not** authorize a P05 clearance search (ADR-024).
 
-Baseline software under review: T074 preview source `b531da9` / installer 0.3.1; later HEAD may add presentation polish without claiming reference parity.
+Baseline software: the latest installer in [next playable build](next-playable-build.md); the [visual roadmap](visual-roadmap.md) (ADR-084–095) is the current execution plan built on this brief. No build claims reference parity.
 
 ## Quality emphases (project choices)
 

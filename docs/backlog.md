@@ -2,7 +2,7 @@
 
 All paths are relative to `UnityProject/Assets/Shooter` unless noted. Contracts owned by integrator. Every work package must meet [agent done rules](agent-coordination.md). Estimate after spikes; no speculative hour counts.
 
-Current next work is [T071 playtest and remaining T067 native navigation](next-playable-build.md). A verified `7cd7e81` archive exists; T066 repairs and T068/T069/T070 software are landed. Player/device evidence, native publication/query validation and T062/T065 acceptance remain open. See the [audit](product-state-audit.md) and [launch guide](playtest-guide.md). Original task IDs/requirements, T035 freeze and deferred T025 remain unchanged; historical waivers do not accept new gates.
+Current task disposition and the order of remaining work (T066–T094) are in [next playable build](next-playable-build.md); this page keeps the original work packages and ordered tasks. Networking work packages are parked under ADR-076. Original task IDs/requirements, T035 freeze and deferred T025 remain unchanged; historical waivers do not accept new gates.
 
 ## Dependency graph
 

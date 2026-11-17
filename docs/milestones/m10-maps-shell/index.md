@@ -1,6 +1,6 @@
 # M10 — Two maps, menus and settings — implementation pack
 
-**Current disposition — 2026-11-14 review from 84befb9 / a54ed83:** M10 integration validation remains open. Persisted catalog/visual packages, shell/schema-2/settings/audio and T069 editable applied bindings/accessibility are built into `7cd7e81`. Native-navigation publication and named map/UI/control/display/audio/20-cycle player review remain open. See the [audit](../../product-state-audit.md), [remaining queue](../../next-playable-build.md), [playtest guide](../../playtest-guide.md) and [FIX acceptance](../../release-remediation-validation.md). Original requirements and historical evidence remain; this review creates no coding lease or waiver.
+**Disposition — 2026-11-17:** M10 integration validation remains open. Three registered maps with native navigation, persisted catalog/visual packages, shell, schema-2 settings/audio and editable bindings/accessibility are shipped in the installers. Named map/UI/control/display/audio/20-cycle player review remains open. See [next playable build](../../next-playable-build.md), the [audit](../../product-state-audit.md), the [playtest guide](../../playtest-guide.md) and [FIX acceptance](../../release-remediation-validation.md). Original requirements and historical evidence remain; this review creates no coding lease or waiver.
 
 ## Goal
 

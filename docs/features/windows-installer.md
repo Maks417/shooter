@@ -41,7 +41,7 @@ A background auto-updater, online matchmaking and hosting service are not requir
 | Repair / rollback | Rerunning the same installer can repair missing/corrupt application files. A failed/cancelled upgrade preserves or restores the previous working pair and preferences. A deliberate previous-version rollback needs its own tested compatible pair. |
 | Uninstall | Remove installed application files and shortcuts/app registration. Preserve user settings by default unless the user explicitly chooses removal. |
 
-The installer technology/file format (EXE or MSI), version mapping and stable application identifier are implementation decisions to freeze in a delivery ADR before T073 coding. No tool/version, paid signing service, hosting or new online dependency is selected here. Existing generated-art provenance, clean-build identity checks, offline gameplay and acceptance rules remain mandatory.
+The installer technology (Inno Setup EXE), version mapping and stable application identifier are frozen in [ADR-041](../decisions.md#adr-041--accepted-inno-setup-per-user-installer-and-in-place-upgrade-t073). No paid signing service, hosting or online dependency is selected. Existing generated-art provenance, clean-build identity checks, offline gameplay and acceptance rules remain mandatory.
 
 ## Acceptance evidence
 

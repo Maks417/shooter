@@ -1,6 +1,6 @@
 # M8 — Runtime composition and Game-v1 foundation — implementation pack
 
-**Current disposition — 2026-11-14 review from 84befb9 / a54ed83:** M8 integration validation remains open. T066 provenance/cancellation and T067 packaged catalog/visual loading are repaired; T068 authority-driven weapon/action views are landed in the retained `7cd7e81` candidate. Native-navigation publication/query semantics and actual RUN/player/repeated-life evidence remain open. See the [audit](../../product-state-audit.md), [remaining queue](../../next-playable-build.md), [playtest guide](../../playtest-guide.md) and [FIX acceptance](../../release-remediation-validation.md). Original requirements and historical evidence remain; this review creates no coding lease or waiver.
+**Disposition — 2026-11-17:** M8 integration validation remains open. Provenance/cancellation repairs, packaged catalog/visual loading, native-navigation publication with truthful path outcomes and authority-driven weapon/action views are all shipped in the installers. Actual RUN/player/repeated-life evidence remains open. See [next playable build](../../next-playable-build.md), the [audit](../../product-state-audit.md), the [playtest guide](../../playtest-guide.md) and [FIX acceptance](../../release-remediation-validation.md). Original requirements and historical evidence remain; this review creates no coding lease or waiver.
 
 ## Goal
 

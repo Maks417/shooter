@@ -108,7 +108,7 @@ Training Compound and Depot Yard use only roles 0–5. Collision, navigation and
   - Each new `.cs` needs a committed `.meta` with a fresh GUID.
 - `CompoundPlan` carries an optional `ArenaLayout? Arena` (null keeps legacy behaviour) and `Features` (empty for legacy plans). `MapSpawnLayout` and `MapTopologyValidation` use the arena when present. `MapPackageBuilder`, `ReleaseCatalogDocument` and `CompoundCatalogFactory` dispatch through `ProductMapPlanner`.
 - Collision/nav hashes are derived from the actual box list (not seed-only). Stable IDs: compound 10000+, depot 20000+, oil 30000+; visual detail 50000+/60000+/70000+.
-- Code must stay C# 9 / .NET Standard 2.1 and Unity-free (it is linked by `Tools/Generation`, `Tools/Foundation` and test projects).
+- Code must stay C# 9 / .NET Standard 2.1 and Unity-free (it is compiled by `Tools/Generation` and referenced by the test projects).
 - Presentation (`ProductMapView`) is not edited; it renders from the package as before.
 
 ## Validation and evidence

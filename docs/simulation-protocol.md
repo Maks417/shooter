@@ -33,6 +33,8 @@ Restore authoritative t state, discard inputs ≤acked sequence, replay t+1 thro
 
 ## N3 historical shots
 
+**Parked (ADR-076).** Networking is parked; this section and the multiplayer missing-command rule above are retained design for a future multiplayer decision, not current gates.
+
 Server-approved shot timestamp = clamped synchronized command time, max 200 ms rewind; impossible future/stale timestamps rejected, not an entitlement to choose targets. Use historical target capsules only, static cover remains current because immutable. Shooter origin comes from server stored shooter state at approved shot time when available; reject if missing rather than accept client origin. Ammo/cadence/alive eligibility is validated at processing tick under the same alive-at-start rule; a command arriving after shooter died in a prior tick is rejected. This deliberately permits same-tick trades but does not resurrect previously dead shooters.
 
 ## Tests required

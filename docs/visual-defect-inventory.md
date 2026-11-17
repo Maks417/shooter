@@ -1,6 +1,6 @@
 # Product visual defect inventory (T062 / FIX11)
 
-Status: **tooling + inventory only**, 2026-11-14. This page records the honest product visual defect inventory against the integrated T056 client presentation path. It does **not** accept P05, does **not** authorize a fourth clearance/parameter search, and does **not** change generator/recipe sources.
+Status 2026-11-17: [ADR-095](decisions.md#adr-095--accepted-structural-weapon-from-eye-shooting-posture-p05-reopening) resolves the **numeric** P05 gate (D01–D03) with the structural shooting posture, now the product default; **visual acceptance stays FAIL until a named visual review** (see [ADR-095 section](#adr-095-structural-shooting-posture)). This page records the product visual defect inventory against the client presentation path; it does not accept P05.
 
 Authoritative stop: [ADR-024](decisions.md#adr-024--accepted-p05-soldier-visual-scope-stop-after-exhausted-clearance-iterations). Historical residuals: [soldier baseline](soldier-baseline.md#third-bounded-clearance-candidate). Repair task: [T062](archive/release-remediation-plan.md). Exit gate: [FIX11](release-remediation-validation.md).
 
@@ -10,9 +10,9 @@ Authoritative stop: [ADR-024](decisions.md#adr-024--accepted-p05-soldier-visual-
 |---|---|
 | Gate | P05 |
 | Visual acceptance | **FAIL** |
-| ADR | ADR-024 |
-| Further clearance/parameter search | ADR-094 bounded owner assignment exhausted three candidates; **no further search authorized** |
-| Soldier identity under review | Historical 1.0.2 / baseline motion remains non-accepted; 1.0.3 kit is software-only, failed correction is diagnostic-only |
+| ADR | ADR-024 stop; ADR-094 reopening (failed); ADR-095 structural posture (numeric PASS) |
+| Further clearance/parameter search | Not needed for the numeric gate after ADR-095; any further change needs a new owner decision |
+| Soldier identity under review | `soldier.loft` 1.0.3 kit with `soldier.motion.v6.shooting` (product default); historical 1.0.2 / baseline motion non-accepted |
 | FIX11 software disposition | ToolingReady |
 | REL03 | Open until named review attaches captures with defects resolved/unresolved |
 

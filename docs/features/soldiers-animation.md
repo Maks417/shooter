@@ -1,6 +1,6 @@
 # Feature: generated soldiers, rigging and motion
 
-Largest visual/engineering risk. Owner WP-04 with a dedicated early spike at M1; [risk register](../risks.md) and [performance](../performance.md) govern fallback. Proposed paths `Generation/Core/Soldiers`, `Presentation/Rig`. Gameplay pose/hit profiles live under Simulation with WP-05 ownership.
+Largest visual/engineering risk. Owner WP-04 with a dedicated early spike at M1; [risk register](../risks.md) and [performance](../performance.md) govern fallback. Paths `Generation/Core/Soldiers`, `Presentation/Rig`. Gameplay pose/hit profiles live under Simulation with WP-05 ownership.
 
 ## Model and bind pipeline
 
@@ -46,7 +46,7 @@ Use [soldier baseline](../soldier-baseline.md) for fixed anatomy, joint IDs/bind
 
 `soldier.loft` 1.0.3 adds contoured carrier/pouch lofts, sleeve folds, numeric finger forms, camo/fabric normal-mask materials and a team armband plus rasterised numeric emblem patch. Skeleton, gameplay hit volumes and the explicit 1.0.2 recipe remain unchanged. The new mesh version canonicalises numeric samples and publishes a 10-micrometre lattice; legacy recipe output keeps its original arithmetic. `CollisionSoldierGround` reads verified gameplay boxes and the foundation plane for cosmetic foot support. `WeaponVisualProfiles` supplies per-profile support sockets. Actor-root AO is read-only lighting.
 
-The bounded P05 search stopped after three measured candidates. Minimum clearance remained negative (-0.055602 / -0.057712 / -0.011462 m). The numerical eye line closes but arm penetration does not. Product presentation retains the baseline solver; failed bounded head/arm correction is opt-in via `-shooterP05Candidate`. Artifacts remain under `Artifacts/visual-design/adr-094/`. P05 is FAIL, including D01/D03; no named visual review or reference eight-soldier CPU pass is inferred. Further correction search needs a new owner decision under ADR-094.
+**Superseded by ADR-095 (next section):** the structural shooting posture is now the product default and resolves the numeric P05 gate. Historical ADR-094 record follows. The bounded P05 search stopped after three measured candidates. Minimum clearance remained negative (-0.055602 / -0.057712 / -0.011462 m). The numerical eye line closes but arm penetration does not. Product presentation retains the baseline solver; failed bounded head/arm correction is opt-in via `-shooterP05Candidate`. Artifacts remain under `Artifacts/visual-design/adr-094/`. P05 is FAIL, including D01/D03; no named visual review or reference eight-soldier CPU pass is inferred. Further correction search needs a new owner decision under ADR-094.
 
 ## ADR-095 structural shooting posture — 2026-11-17
 

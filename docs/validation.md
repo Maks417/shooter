@@ -1,8 +1,8 @@
 # Validation strategy and requirement traceability
 
-## Current product regression status — 2026-11-14
+## Current product regression status
 
-The [audit](product-state-audit.md) records fresh results at 59316d3: Contracts 72, Simulation 101 and Game 38 PASS with zero skipped; Generation FAIL (310/311) and source provenance FAIL (19 missing metadata entries). T052 resolved NU1004. Use [T066–T071](next-playable-build.md) and [FIX01–FIX14](release-remediation-validation.md) with original milestone gates. No current Unity/player/device/hardware acceptance is inferred; M8–M10 integration and M11 acceptance remain open.
+Pure-lane results are recorded per delivery in the [M11 handoff](milestones/m11-playable-release/handoff.md); the latest delivery (0.3.17) recorded Game 99, Maps 72, Generation 508 and source provenance PASS, with the earlier 59316d3 failures repaired. Wrapper reports are the source of truth for counts; this page does not track them. Use [next playable build](next-playable-build.md) and [FIX01–FIX14](release-remediation-validation.md) with original milestone gates. No Unity/player/device/hardware acceptance is inferred from pure lanes; M8–M10 integration and M11 acceptance remain open.
 
 Test through public ports with small deterministic fixtures; add integration/hardware checks where unit tests cannot establish correctness. Numerical tolerances live in fixture schemas. Avoid tests that merely duplicate implementation formulas. All tests report build, toolchain, seed, content hash and profile.
 
@@ -19,8 +19,8 @@ Test through public ports with small deterministic fixtures; add integration/har
 | V07 World/nav/stream | Four canonical seeds, border samples, reachability, 100 traversals/cancel/teleport | No missing collision, connectivity/capacity/clearance gates; world |
 | V08 AI | Occlusion/hearing/reload/stuck/cover scenarios and bounded queues | No privileged unseen knowledge, per-tick query caps, 30-min soak; AI |
 | V09 Cross-profile fairness | Same gameplay hashes/commands across all quality/rig update rates | Collision/nav/hit profile/weapon IDs equal; no cover/vision changes; integrator |
-| V10 Runtime performance | B01/B02/B03/B04 and 30-min soak | [Exact performance protocol](performance.md); perf owner |
-| V11 Networking | Seeded delay/loss/reorder/duplicate/outage, late join and malicious codec corpus | [N3 acceptance](features/networking.md); network |
+| V10 Runtime performance | B01/B02/B03, product TDM workloads and 30-min soaks (B04 parked) | [Exact performance protocol](performance.md); perf owner |
+| V11 Networking (parked, ADR-076) | Seeded delay/loss/reorder/duplicate/outage, late join and malicious codec corpus | [N3 acceptance](features/networking.md); network |
 | V12 Provenance/release | Source allowlist, manifest chain, clean regeneration and clean build | No prohibited assets, full cache trace, correct server stripping; integrator |
 | V13 UI/visual | 720p max-scale settings, reduced motion, baseline image review | No clipping; readable/contrast; visual plausibility signed review; presentation |
 | V14 Docs/contracts sync | Relative file+anchor checks, index coverage, contract/schema registry | Zero broken references; version changes documented; integrator |
@@ -53,7 +53,7 @@ Gameplay random property tests preserve ammo ≥0, health monotonic under damage
 | R13 real shell/settings/results | UI01–UI02, SET01–SET02, V13 | M10 and REL02/REL03 |
 | R14 independently playable build | REL01–REL06, V10,V12 | M11 |
 
-No tests have been executed against game code at documentation creation. Documentation delivery verification is separate: local file existence, relative links/anchors, index coverage and integrity manifest. This cannot substitute for future Unity/runtime testing.
+Game-code test results live in wrapper reports and milestone handoffs, not on this page. Documentation delivery verification is separate: local file existence, relative links/anchors, index coverage and integrity manifest. This cannot substitute for future Unity/runtime testing.
 
 That statement describes the original documentation creation. Historical M0–M7 handoffs now record actual pure and selected Unity foundation checks, with later player/hardware/visual gaps retained. New M8–M11 scenario IDs are defined in their [validation packs](milestones/index.md); they are **NotRun** until implemented/executed. Game-v1 fixture/schema validators must be added through T035, with independent C# reproduction and explicit test discovery counts. Refreshing documentation hashes does not generate any of that evidence.
 

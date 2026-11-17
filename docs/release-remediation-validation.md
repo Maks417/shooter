@@ -1,6 +1,6 @@
 # Offline release remediation — validation and evidence
 
-Applies to [original T052–T065](archive/release-remediation-plan.md) and [T066–T071 dispositions](next-playable-build.md). Latest [audit](product-state-audit.md) supersedes 59316d3 baseline failures: repairs pass and a clean `7cd7e81` candidate ZIP is verified. Remaining native-navigation publication/query work and manual player/device/reference evidence still block complete acceptance. Software annotations below retain their implementation-time scope. FIX14 / REL01–REL06 remain Open / NotClaimed until measured on one stable candidate; historical component PASS does not accept current integration.
+Applies to [original T052–T065](archive/release-remediation-plan.md) and [T066–T071 dispositions](next-playable-build.md). The 59316d3 baseline failures are repaired and native-navigation publication has landed ([audit](product-state-audit.md)); manual player, device and reference evidence still block complete acceptance. Server-isolation items are Parked under ADR-076. Software annotations below retain their implementation-time scope. FIX14 / REL01–REL06 remain Open / NotClaimed until measured on one stable candidate; historical component PASS does not accept current integration.
 
 ## Evidence contract
 

@@ -1,10 +1,10 @@
 # Feature: generated environments and streaming
 
-Owner WP-06; paths `Generation/Core/Environment`, `World/Streaming`, `World/Navigation`. Shared content pipeline is [generation](../generation.md); AI consumes [navigation port](../contract-details.md).
+Owner WP-06; paths `Generation/Core/Environment`, `World/Runtime/Streaming`, `World/Runtime/Navigation`. Shared content pipeline is [generation](../generation.md); AI consumes [navigation port](../contract-details.md).
 
 ## World recipe
 
-Initial 256×256 m bounded compound divided into 32 m chunks (8×8). Root world plan chooses roads, terrain height function, building footprints and objective areas before detail generation. Grid/graph constraints enforce player capsule clearance, walkable connectivity, spawn visibility separation and at least two traversable approaches to the objective. Cosmetic seeds cannot alter doors, cover or terrain collision. Deterministic keys identify building/room/opening/prop slots.
+Historical M3 baseline: a 256×256 m bounded compound divided into 32 m chunks (8×8); the product maps are now compact 64 × 80 m arenas ([ADR-074](../decisions.md#adr-074--accepted-compact-64--80-m-arenas-with-distinct-per-map-layouts), [map layouts](tdm-map-layouts.md)). Root world plan chooses roads, terrain height function, building footprints and objective areas before detail generation. Grid/graph constraints enforce player capsule clearance, walkable connectivity, spawn visibility separation and at least two traversable approaches to the objective. Cosmetic seeds cannot alter doors, cover or terrain collision. Deterministic keys identify building/room/opening/prop slots.
 
 Terrain uses a low-frequency analytic height field with bounded slopes, generated grid mesh, consistent border samples and crack-free LOD stitching. Combat compound stays predominantly flat for first navigation validation. Buildings use floor plans and modular procedural walls/floors/roofs/openings; structural rings align so doors and windows agree across chunks. Props include concrete barriers, crates, drums, fences and poles from primitive generators. Doors initially fixed open/closed static content; moving-door navigation is a later revision feature.
 
@@ -24,7 +24,7 @@ Prefetch 3×3 visual chunks around player plus movement look-ahead within a ≤2
 
 ## Implementation (M3)
 
-Pure planner/connectivity live in `UnityProject/Assets/Shooter/Generation/Core/Environment` (`CompoundPlanner` 1.0.0). Runtime streaming scheduler: `World/Streaming/VisualStreamingScheduler`. Nav settings/compile/revisioned adapter: `World/Navigation`. B02/B03 freeze: `Benchmarks/b02-b03-m3-freeze.json`. Milestone status: [M3 handoff](../milestones/m3-generated-compound/handoff.md).
+Pure planner/connectivity live in `UnityProject/Assets/Shooter/Generation/Core/Environment` (`CompoundPlanner` 1.0.0). Runtime streaming scheduler: `World/Runtime/Streaming/VisualStreamingScheduler`. Nav settings/compile/revisioned adapter: `World/Runtime/Navigation`. B02/B03 freeze: `Benchmarks/b02-b03-m3-freeze.json`. Milestone status: [M3 handoff](../milestones/m3-generated-compound/handoff.md).
 
 ## Acceptance
 

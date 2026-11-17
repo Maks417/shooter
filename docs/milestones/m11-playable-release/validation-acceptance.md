@@ -1,6 +1,6 @@
 # M11 — Playable build and acceptance — validation and acceptance
 
-**Current disposition — 2026-11-14 review from 84befb9 / a54ed83:** M11 acceptance remains open. Clean `7cd7e81` Client/Server reports and verified local ZIP exist; T071 manual gameplay/recovery/rollback handoff remains partial. T067 native-navigation publication/query work, T062 visual disposition and T065 match/device/reference/soak/delivery exits remain open. REL01–REL06 are NotClaimed; P05 FAIL is retained. See the [audit](../../product-state-audit.md), [remaining queue](../../next-playable-build.md), [playtest guide](../../playtest-guide.md) and [FIX acceptance](../../release-remediation-validation.md). Original requirements and historical evidence remain; this review creates no coding lease or waiver.
+**Disposition:** current status is kept only in the [pack index](index.md) and [next playable build](../../next-playable-build.md); the requirements below are unchanged.
 
 Current coverage, 2026-11-14: software remediation Present; player/device/hardware acceptance Pending/PendingHardware; REL01–REL06 NotClaimed. Scenario IDs below remain required — do not invent PASS. See [audit evidence](../../product-state-audit.md), [FIX matrix](../../release-remediation-validation.md) and the T065 operator sequence on the handoff. Every run records exact source/build/toolchain/content/map/profile/roster/workload/duration and artifacts.
 

@@ -2,13 +2,11 @@
 
 ## Current runtime versus intended architecture
 
-The component/flow/lifecycle rules below remain the intended release architecture. Current Bootstrap loads persisted ADR-038 catalog/gameplay metadata through `StaticMapCatalog.TryLoadPublished`; `ProductMapView` and `Presentation/Rig/ProductActorPresentation` consume verified visual payloads. Native editor bake bridge and runtime NavMesh installer now exist, but `Compile-GameContent.ps1` still publishes software-grid NVB1 through a pure .NET process. Installer constructs NavMeshData at runtime from packaged triangulation and permits graph fallback; partial-path semantics/load cost/clearance need T067 review. See [audit findings C01–C03](product-state-audit.md). Copied Game-v1 snapshots remain distinct from C0 leased publication; do not relax intended architecture to hide these boundaries.
+The component/flow/lifecycle rules below are the release architecture. Bootstrap loads the persisted ADR-038 catalog and map registry (ADR-083) through `StaticMapCatalog.TryLoadPublished`; `ProductMapView` and `Presentation/Rig/ProductActorPresentation` consume verified visual payloads. Map packages carry native Unity NavMesh data published by `Compile-GameContent.ps1 -Native` (`Bootstrap/Editor/ShooterNativeContentBuild.cs`); `UnityNavMeshBakeInstaller` installs it at load and `RevisionedPathAdapter` reports truthful Complete/Partial/Failed outcomes, with packaged-graph fallback diagnostics-only. Load cost and clearance on all three maps still need measurement ([audit](product-state-audit.md)). Copied Game-v1 snapshots remain distinct from C0 leased publication. Networking is parked under [ADR-076](decisions.md#adr-076--accepted-offline-only-scope-and-bounded-local-evidence): the product is a single offline client process.
 
 Read [vision](vision.md), [contracts](contract-details.md) and [repo layout](repo-layout.md) before changing boundaries.
 
-Implementation status, reviewed 2026-11-14 (T059 shell + T061 audio + ADR-036 settings bind): default Bootstrap prepares OfflineGameSession/map services but does not auto-start a match; `ProductShellHost` owns menu→load→play→pause→results and binds `UserSettingsEditor` / `ProductClientSettingsApplier` to `shooter-user-settings.json`. Floor/box remains an explicit smoke/gallery/benchmark diagnostic. Client composition binds map renderers from packaged collision plus packaged soldier/rifle/pistol views driven by ActiveWeaponSlot and combat action events (T056/T067/T068; FIX05 player captures Pending); synthesized combat/footstep/UI events reach `UnitySynthAudioOutput` with schema-2 master/effects/UI gains (named device review Pending). Pause/input repaired under T054. See the [audit](product-state-audit.md) and [remediation plan](archive/release-remediation-plan.md). P05 remains FAIL; no fresh player/server-isolation or hardware acceptance is inferred.
-
-Current paths include Game/Contracts, Game/Session, Game/Settings, Simulation/Session, Simulation/TeamDeathmatch, Content/Maps, World/Runtime and World/Foundation/CompoundMapRuntime.cs. T053 adds CombatHarnessSimulation.RetireActor and monotonic IDs; HarnessActorLifecycle retires authoritative lives, and OfflineGameSession rebinds human/bots. Actual-player evidence remains pending. The [next-build queue](next-playable-build.md) tracks remaining native publication/query validation, player/device proof and measurement acceptance; preserve one damage authority and read-only presentation.
+Default Bootstrap prepares `OfflineGameSession` and map services without auto-starting a match; `ProductShellHost` owns menu → load → play → pause → results and binds `UserSettingsEditor` / `ProductClientSettingsApplier` to `shooter-user-settings.json`. Floor/box remains an explicit smoke/gallery/benchmark diagnostic. Client composition binds packaged map, soldier and weapon views driven by the active slot and combat action events; combat, footstep and UI events reach the Unity audio output with schema-2 gains. `CombatHarnessSimulation.RetireActor` and monotonic IDs let `HarnessActorLifecycle` retire authoritative lives while `OfflineGameSession` rebinds human/bots. Player, device and hardware evidence remain pending per [next playable build](next-playable-build.md); preserve one damage authority and read-only presentation.
 
 ## Components and dependency rules
 
@@ -16,21 +14,25 @@ Current paths include Game/Contracts, Game/Session, Game/Settings, Simulation/Se
 |---|---|---|
 | Shooter.Contracts | IDs, immutable DTOs, schema constants, ports | BCL only; no UnityEngine |
 | Shooter.Game.Contracts (frozen ADR-034) | Map/session/participant/results/settings records and ports; separate Game-v1 freeze | C0 + BCL only; no Unity or remote wire requirement |
-| Shooter.Generation.Core | deterministic primitives, recipes, validation | Contracts; pure math adapter |
+| Shooter.VectorMath | BCL-only vector/quaternion math shared by generation, simulation and presentation models (`Generation/Core/Math`) | BCL only |
+| Shooter.Generation.Core | deterministic primitives, recipes, validation | Contracts, VectorMath |
 | Shooter.AssetCompiler.Editor | Unity conversion, LOD/material/nav baking, manifests | Generation.Core, Contracts, Unity Editor |
 | Shooter.Content.Runtime | verified cache loading, residency, async handles | Contracts, BCL-only Generation.Core format helpers; future Unity runtime adapter |
+| Shooter.Content.Maps | map catalog, registry, packages and spawn data (`Content/Maps`) | Contracts, Game.Contracts, Generation.Core |
 | Shooter.Simulation | tick orchestration, motor rules, weapons, damage, AI decisions | Contracts; world-query interfaces |
+| Shooter.Game.Session / Shooter.Game.Settings | offline TDM session, workloads, user settings model and persistence (`Game/Session`, `Game/Settings`) | Settings: Contracts, Game.Contracts. Session also: Simulation, Content.Maps, World.Runtime |
 | Shooter.World.Runtime | pure navigation compile/settings, revisioned path adapter, visual streaming scheduler, fake map runtime (`World/Runtime/**`) | Contracts, Game.Contracts |
 | Shooter.World.Unity | PhysX collision queries, NavMesh adapter, compound map runtime (`World/Foundation`) | World.Runtime, Generation.Core, Content.Maps, Unity |
 | Shooter.Presentation.Model | Unity-free view, HUD, menus, scoreboard, audio mixer and FX pool models (`Presentation/Model/**`); client-only by policy | Contracts, Game.Contracts, VectorMath |
 | Shooter.Presentation | URP rendering, procedural rig, input, Unity audio/FX adapters, product session views | Presentation.Model, Contracts, Content.Runtime, Unity; reads simulation snapshots |
 | Shooter.Networking (parked, ADR-076) | command/snapshot codec, prediction history, authority adapter; no Unity assembly references it while the product is offline-only | Contracts, Bootstrap.Core, Simulation |
-| Shooter.Bootstrap | composition root, mode selection, tick driver | All runtime assemblies |
+| Shooter.Bootstrap.Core / .Runtime / .Release / .Client | composition root, mode selection, tick driver, release packaging helpers and client composition | Runtime assemblies per layer |
+| Shooter.Build.Editor / Shooter.FeatureBuild.Editor | `ShooterBuild.*` editor entry points, native content build, feature compilers | Bootstrap, AssetCompiler.Editor, Unity Editor |
 | Shooter.Tools / Tests | benchmarks, provenance and verification | Respective public APIs |
 
 Every pure asmdef has a matching `Tools/<Assembly>/Shooter.<Assembly>.csproj` with the same name and references, and `Tools/verify_asmdef_graph.py` (fast CI lane) fails when the two graphs drift. The .NET lane therefore rejects a boundary violation that only Unity used to catch. Test projects reference these projects instead of linking source folders (ADR-076).
 
-Contracts never reference features. Simulation does not reference renderers, animation, Editor APIs or transport packages. Presentation cannot apply damage or mutate authoritative state. Content compiler does not depend on simulation implementation. Server excludes presentation assembly and all graphics cache payloads. Jobs/Burst are optional optimizations after profiling, not a requirement to convert the entire game to ECS.
+Contracts never reference features. Simulation does not reference renderers, animation, Editor APIs or transport packages. Presentation cannot apply damage or mutate authoritative state. Content compiler does not depend on simulation implementation. A server build (parked) excludes the presentation assembly and all graphics cache payloads. Jobs/Burst are optional optimizations after profiling, not a requirement to convert the entire game to ECS.
 
 ```mermaid
 flowchart TD

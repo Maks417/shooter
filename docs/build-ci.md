@@ -1,6 +1,8 @@
 # Build, CI and release strategy
 
-Depends on [toolchain layout](repo-layout.md), [compiler](generation.md) and [validation](validation.md). Existing client/server/diagnostic/test wrappers and pure M0–M7 feature tools have evidence in the historical handoffs; later real Unity/player/hardware checks remain pending. [M8–M11](next-playable-build.md) adds genuine two-map team-match compilation, launch/acceptance and local release packaging; diagnostic content/workloads cannot substitute for the game.
+Depends on [toolchain layout](repo-layout.md), [compiler](generation.md) and [validation](validation.md). Existing wrappers and pure feature tools have evidence in the milestone handoffs; real Unity/player/hardware checks remain pending where recorded. [M8–M11](next-playable-build.md) add the three-map team-match content, native-navigation packages, release packaging and the Windows installer; diagnostic content/workloads cannot substitute for the game.
+
+**Offline scope (ADR-076).** The Dedicated Server build, the server smoke and the Network lane are **parked**: CI (`.github/workflows/foundation.yml`) builds and smokes the Client only, and the release flow builds no server. `Build.ps1 -Target Server` still works on request. Rows and sentences below that mention the server or network describe the parked design. Wrapper runs keep only the newest output per action (`Save-ShooterRun`), with small JSON reports copied to `Artifacts/reports/`; see [ADR-076](decisions.md#adr-076--accepted-offline-only-scope-and-bounded-local-evidence).
 
 ## Pipelines
 
@@ -8,12 +10,12 @@ Depends on [toolchain layout](repo-layout.md), [compiler](generation.md) and [va
 |---|---|---|
 | Fast | Every PR; ordinary build worker | Docs/link/schema checks, pure contract/generator tests, ownership/provenance diff audit |
 | Unity edit | Every merge/feature PR; licensed pinned Windows editor | Import/compile, EditMode tests, shader checks, small fixture content compile |
-| Player smoke | Merge to main; pinned Windows with build tools | Build Windows x64 client + headless server, PlayMode/standalone smoke, stripped-server dependency audit |
-| Cold regeneration | Nightly/release; no local cache | Regenerate canonical recipes, validate hashes/provenance, full client and server build |
+| Player smoke | Merge to main; pinned Windows with build tools | Build Windows x64 client, PlayMode/standalone smoke (headless server build and stripped-server audit parked) |
+| Cold regeneration | Nightly/release; no local cache | Regenerate canonical recipes, validate hashes/provenance, full client build |
 | Hardware performance | Nightly/release and perf-sensitive PR; named reference laptop | Release B01–B03, periodically B04, three warm runs and soak; compare fixed baseline |
-| Network | Network PR/nightly; separate server/client processes | Packet simulator matrix, codec fuzz budget, late-join/resync, four-peer soak |
+| Network (parked) | Network PR/nightly; separate server/client processes | Packet simulator matrix, codec fuzz budget, late-join/resync, four-peer soak |
 
-Unity batch invocation uses exact pinned Editor executable, `-batchmode`, project path, `-runTests` with EditMode/PlayMode and result/log paths. Builds use `ShooterBuild.BuildClient` and `ShooterBuild.BuildServer`. `ShooterBuild.CompileContent` now compiles the P02 `box-collision-v1` numeric diagnostic through `Tools/Compile-Content.ps1`; cold/warm/forced/dry-run evidence exists, while slice-v1 and full slice compile gates remain pending. Parse explicit failure markers and exit codes; timeout/hung license/import is a failed job, never success from an existing output file. Do not use `-nographics` for any lane that needs GPU texture baking or shader/render validation; the future canonical CPU compiler must support genuinely headless generation.
+Unity batch invocation uses exact pinned Editor executable, `-batchmode`, project path, `-runTests` with EditMode/PlayMode and result/log paths. Builds use `ShooterBuild.BuildClient` (`ShooterBuild.BuildServer` exists but is parked). `ShooterBuild.CompileContent` now compiles the P02 `box-collision-v1` numeric diagnostic through `Tools/Compile-Content.ps1`; cold/warm/forced/dry-run evidence exists, while slice-v1 and full slice compile gates remain pending. Parse explicit failure markers and exit codes; timeout/hung license/import is a failed job, never success from an existing output file. Do not use `-nographics` for any lane that needs GPU texture baking or shader/render validation; the future canonical CPU compiler must support genuinely headless generation.
 
 ## Caching and reproducibility
 
@@ -29,11 +31,11 @@ Baseline changes need old/new metrics, workload equality, reference-machine cond
 
 ## Artifact retention and release
 
-The product clean-package obligations remain [M11 REL01–REL06](milestones/m11-playable-release/validation-acceptance.md). T064 Package-Release validates clean matching build/content identities, filters excluded files and emits archive/inventory/launcher; its extraction/corruption/rollback rehearsals do not launch the player. Test-Game remains a pure suite. [T066–T071](next-playable-build.md) complete current baseline, content, preferences, collector and independent-player gaps before T065 acceptance. Use relative packaged discovery, real recovery UI and source-matched launch/rollback evidence; public signing/upload/auto-update stay outside scope. Diagnostic smoke is separate.
+The product clean-package obligations remain [M11 REL01–REL06](milestones/m11-playable-release/validation-acceptance.md). T064 Package-Release validates clean matching build/content identities, filters excluded files and emits archive/inventory/launcher; its extraction/corruption/rollback rehearsals do not launch the player. Test-Game remains a pure suite. [Next playable build](next-playable-build.md) tracks the remaining player, device and hardware evidence before T065 acceptance. Use relative packaged discovery, real recovery UI and source-matched launch/rollback evidence; public signing/upload/auto-update stay outside scope. Diagnostic smoke is separate.
 
-PR artifacts 14 days, nightly 30 days, milestone/release manifests/reports indefinitely with matching binary/content retention. Retain previous passing release for rollback. Disk budgets and cleanup are CI-owned, never part of game code. Release candidate must install into a clean directory, launch offline without editor/cache, load source-matched content, complete objective, run headless without graphics content and reject incompatible network client.
+PR artifacts 14 days, nightly 30 days, milestone/release manifests/reports indefinitely with matching binary/content retention. Retain previous passing release for rollback. Disk budgets and cleanup are CI-owned, never part of game code. Release candidate must install into a clean directory through the installer, upgrade a previous installation in place, launch offline without editor/cache, load source-matched content and complete a match. Headless-server and network-compatibility checks are parked.
 
-Release archive contains client, required generated content, licenses/provenance, build manifest, default profiles and user-facing controls. Server archive contains gameplay definitions/collision/nav and no renderer/material caches. Integrity hashes verified at load; executable signing/update delivery are separate deployment decisions before public distribution. Rollback restores both binary and matching content/protocol, not only executable.
+Release archive contains client, required generated content, licenses/provenance, build manifest, default profiles and user-facing controls. A server archive (parked) would contain gameplay definitions/collision/nav and no renderer/material caches. Integrity hashes verified at load; in-place updates are delivered by the installer (ADR-041); executable signing is a separate decision before public distribution. Rollback restores both binary and matching content/protocol, not only executable.
 
 
 ## Foundation wrappers and fixture checks

@@ -1,104 +1,89 @@
 # Procedural military FPS — implementation documentation
 
-**Current T075 design preview — 2026-11-15:** Windows installer **0.3.4**, clean binary source `7407bc4`, implements procedural PBR map surfaces, textured menu staging, working actual-map cards and analytic first-person handling with LOD0 equipment on Low. Unity **43 EditMode / 17 PlayMode**, clean Client/Server, eight native packages, provenance and package/installer builders PASS. Automated player review observed both map cards and Compound 5v5 / Depot 6v6 loads; this is not full gameplay or comparative visual acceptance. P05 FAIL, reference performance and M8–M11/VD exits remain open. [Identities, evidence and limitations](milestones/m11-playable-release/handoff-archive.md#t075--procedural-presentation-preview-034).
+Unity 6 URP / C# / HLSL design for a realistic modern-world shooter generated from code and numeric recipes. No imported/manual meshes, painted textures, sprites or authored animation. First version: one human plus local bots, offline Team Deathmatch on three maps, delivered as a Windows installer with in-place upgrades. Networking and the dedicated server are parked under [ADR-076](decisions.md#adr-076--accepted-offline-only-scope-and-bounded-local-evidence). Reference hardware: Ryzen 5 4600H integrated Radeon, 16 GB DDR4-3200, NVMe; native 720p Low at 30 FPS, 60 FPS stretch.
 
-**Visual design goal:** quality comparable to Battlefield V, Bodycam and Warface. [VD0–VD9 design milestones](design-milestones.md) define concrete deliverables, dependencies, comparison evidence and owner/technical exit gates. Begin with art direction and one representative art slice; current software does not establish visual parity.
-
-**Prior T074 visual preview — 2026-11-14:** [T074 Windows installer 0.3.1 and handoff](milestones/m11-playable-release/handoff-archive.md#t074--scene-led-menu-and-tactical-hud-preview), binary source b531da9, includes the scene-led menu/map cards and compact tactical HUD. Clean Unity 29/16 and Client/Server/package/installer checks pass. Final interactive review was stopped by the owner; gameplay/device/reference/P05 acceptance stays open. This entry supersedes the older candidate references below.
-
-Unity 6 URP / C# / HLSL design for a realistic modern-world shooter generated from code and numeric recipes. No imported/manual meshes, painted textures, sprites or authored animation. Initial hardware target: Ryzen 5 4600H integrated Radeon, 16 GB DDR4-3200, NVMe; native 720p Low at 30 FPS, 60 FPS stretch.
-
-**Latest, 2026-11-14:** slide-enabled `5eaced5` preview is built/packaged, hash-verified and starts independently to Main; see [guide](playtest-guide.md) and [M11 delivery](milestones/m11-playable-release/handoff-archive.md#t072--slide-enabled-playtest-delivery). Manual game/device/performance acceptance remains pending; final installer/upgrades are planned T073. **Earlier review from 84befb9 / a54ed83:** a clean `7cd7e81` Windows playtest archive exists; its SHA256 and 245 inventoried file hashes were rechecked. T066 baseline and T068/T069/T070 software repairs are landed. Manual gameplay is still Pending, and T067 native-navigation publication is incomplete. M8–M10 integration validation and M11 acceptance remain open; M0–M7 waivers and P05 FAIL remain. Start with the [launch/playtest guide](playtest-guide.md), [current audit](product-state-audit.md) and [remaining-work queue](next-playable-build.md).
-
-First-version owner priority: **play locally with bots; no online multiplayer or server purchase/hosting required**. Existing network/server architecture is retained, with online delivery deferred. See [scope](vision.md#first-version-scope-local-bots-only).
-
-**T072 follow-up:** the owner authorized local sprint slide implementation (default Left Shift + F) under [ADR-039](decisions.md#adr-039--accepted-local-authoritative-sprint-slide-t072). See [combat rules](features/combat.md#local-sprint-slide--t072--adr-039) and [guide](playtest-guide.md) for actual build availability; the older 7cd7e81 archive has no slide.
-
-**Final delivery requirement:** the Windows game must have an [installer that updates an existing installation](features/windows-installer.md) when a newer installer is run, preserving settings/controls. ZIPs are playtest artifacts; T073 installer implementation is planned.
-
-## Next development
-
-Use the [remaining T067/T071 work](next-playable-build.md): play the existing archive, finish native-navigation publication/query validation, repair observed blockers and complete independent recovery/rollback handoff. T068/T069 need player/device evidence; T070 hardware and T062/T065 visual/final acceptance remain open. Original [T052–T065 cards](archive/release-remediation-plan.md) and [FIX01–FIX14](release-remediation-validation.md) remain applicable. This docs review creates no leases.
+**Current state, build and next work:** [next playable build](next-playable-build.md). It is the only page that tracks the current installer; other pages link to it instead of repeating release banners. Visual work follows the [visual roadmap](visual-roadmap.md) toward the Battlefield V / Bodycam / Warface quality target in the [design milestones](design-milestones.md).
 
 ## Reading order
 
 1. [Implementation start](implementation-start.md), then [vision and requirements](vision.md)
-2. [Architecture](architecture.md), [domain model](domain-model.md), [contracts](contract-details.md)
-3. [Generation/compiler](generation.md) and [performance](performance.md)
-4. [Agent coordination](agent-coordination.md), [backlog](backlog.md), [milestones](milestones.md)
-5. Assigned feature page, [validation](validation.md), [build/CI](build-ci.md)
+2. [Next playable build](next-playable-build.md) and [product state audit](product-state-audit.md)
+3. [Architecture](architecture.md), [domain model](domain-model.md), [contracts](contract-details.md)
+4. [Generation/compiler](generation.md) and [performance](performance.md)
+5. Assigned feature page, [validation](validation.md), [build/CI](build-ci.md) and the [bootstrap runbook](bootstrap-runbook.md)
 
-## Complete document map
+## Current state and plans
+
+| Document | Purpose |
+|---|---|
+| [Next playable build](next-playable-build.md) | Current installer, product definition, task disposition and order of remaining work |
+| [Launch and playtest guide](playtest-guide.md) | Install/launch steps, controls, known limits and manual test record |
+| [Product state audit](product-state-audit.md) | Findings, evidence and milestone disposition |
+| [Visual roadmap](visual-roadmap.md) | Current visual execution plan and ledger (ADR-084–095) |
+| [Visual design milestones](design-milestones.md) | VD0–VD9 quality track, review rubric and evidence |
+| [VD0 visual art brief](visual-art-brief.md) | Art direction and comparison register |
+| [Product visual defect inventory](visual-defect-inventory.md) | P05 soldier defects and ADR-095 outcome |
+| [Release remediation validation](release-remediation-validation.md) | FIX01–FIX14 evidence contract |
+
+## Specifications
 
 | Document | Purpose |
 |---|---|
 | [Vision, scope and requirements](vision.md) | Scope, requirements, art constraint and non-goals |
-| [Visual design milestones](design-milestones.md) | Battlefield V / Bodycam / Warface quality target; VD0–VD9 deliverables, dependencies, review rubric and evidence |
-| [Playable release review and order](next-playable-build.md) | Committed software, remaining build queue and deliverable boundary |
-| [Next playable build](next-playable-build.md) | Remaining T066–T071 cards, owner-playtest handoff and final acceptance boundary |
-| [Launch and playtest guide](playtest-guide.md) | Verified archive location/hash, menu steps, controls, limits and manual test record |
-| [Current product state audit](product-state-audit.md) | Findings, actual source/evidence and current milestone disposition |
-| [Release remediation implementation](archive/release-remediation-plan.md) | Bounded tasks T052–T065, ownership, dependencies and compatibility |
-| [Release remediation validation](release-remediation-validation.md) | FIX01–FIX14, real-player acceptance and evidence requirements |
-| [Product visual defect inventory](visual-defect-inventory.md) | T062/FIX11 capture-overlay tooling pointer; P05 FAIL retained (ADR-024); VD presentation gaps |
-| [VD0 visual art brief](visual-art-brief.md) | Working art direction, comparison register, gaps and presentation ownership (draft until owner approval) |
-| [Visual roadmap — next steps](visual-roadmap.md) | Handoff plan after ADR-084–086: conventions, pitfalls, Wave 1 verification, HUD/loading craft, world materials/lighting, combat FX, bounded P05 soldiers, delivery |
-| [Relocated view EditMode note](archive/procedural-viewmodel-editmode.md) | Historical RUN00 source-layout note |
-| [Planning validation record](archive/planning-validation.md) | Actual documentation/fixture/tool/source audit outcomes and remaining baseline blockers |
-| [Game session contract plan](game-session-contracts.md) | Frozen Game-v1 ports, intended semantics and documented integration gaps |
-| [Architecture](architecture.md) | Boundaries, dependency rules and lifecycle |
-| [Proposed repository and toolchain](repo-layout.md) | Proposed paths and exact-version pinning procedure |
+| [Architecture](architecture.md) | Assemblies, dependency rules and lifecycle |
+| [Repository layout and toolchain](repo-layout.md) | Actual paths and exact-version pinning |
 | [Domain model](domain-model.md) | Entities, units and invariants |
-| [Shared interfaces and data contracts — version 1 proposal](contract-details.md) | Shared DTOs, ports, disk/wire formats and lifetimes |
-| [Deterministic generation, compilation and caches](generation.md) | Seeds, compiler, LODs, hashing and caches |
-| [Quality profiles, budgets and measurement](performance.md) | Profiles, allocations and real-hardware benchmark gates |
-| [Feature: procedural materials and rendering](features/materials-rendering.md) | Feature implementation, edge cases and acceptance |
-| [Feature: procedural geometry and modern weapons](features/geometry-weapons.md) | Feature implementation, edge cases and acceptance |
-| [Feature: generated soldiers, rigging and motion](features/soldiers-animation.md) | Feature implementation, edge cases and acceptance |
-| [Feature: generated environments and streaming](features/environment.md) | Feature implementation, edge cases and acceptance |
-| [Feature: FPS movement and combat](features/combat.md) | Feature implementation, edge cases and acceptance |
-| [Feature: combat AI](features/ai.md) | Feature implementation, edge cases and acceptance |
-| [Feature: Team Deathmatch](features/team-deathmatch.md) | Rosters, scoring, timer, respawn, team AI and results |
-| [Feature: playable maps](features/playable-maps.md) | Approved map catalog, procedural layouts, packaging and safety |
-| [Feature: compact TDM map layouts](features/tdm-map-layouts.md) | T076 three-lane 5v5/6v6 arena design rules and per-map layouts |
-| [Feature: game shell and settings](features/game-shell.md) | Menu flows, interactive tables, persistence, audio/video/controls |
-| [Feature: combat audio (sample bank)](features/audio.md) | ADR-062 stereo WAV bank + per-kind distance (extends ADR-055); FIX10 device hearing Pending |
-| [Feature: Windows installer and upgrades](features/windows-installer.md) | Final installer, in-place updates, preference preservation and install/upgrade acceptance |
-| [Feature: staged authoritative networking](features/networking.md) | Feature implementation, edge cases and acceptance |
-| [Visual direction and UI design system](brandbook.md) | Proposed visual direction, HUD and accessibility |
-| [Architecture decision records](decisions.md) | Accepted/provisional ADRs and change process |
-| [Parallel implementation and agent rules](agent-coordination.md) | Ownership, branches, handoffs and contract freezes |
-| [Milestones and release gates](milestones.md) | Executable gate deliverables and acceptance |
-| [Work packages and sequenced implementation backlog](backlog.md) | Dependency graph, work packages and ordered tasks |
-| [Risk register and mitigation gates](risks.md) | Risk triggers, mitigation and unresolved spikes |
-| [Validation strategy and requirement traceability](validation.md) | Tests, evidence and requirement traceability |
-| [Build, CI and release strategy](build-ci.md) | Clean builds, caches, CI lanes and release strategy |
-| [Sources and version-sensitive guidance](references.md) | Primary sources and version-sensitive cautions |
+| [Contracts — C0 specification](contract-details.md) | Ports, DTOs, enums, buffers and envelopes |
+| [Game session contracts](game-session-contracts.md) | Frozen Game-v1 ports and semantics |
+| [Simulation protocol](simulation-protocol.md) | Tick order, replay and prediction state |
+| [Gameplay baseline](gameplay-baseline.md) | Numeric gameplay, objective and collision matrix |
+| [Deterministic generation, compilation and caches](generation.md) | Generators, compiler, LODs and caches |
+| [Deterministic format and asset identity](deterministic-format.md) | Seeds, canonical JSON and identity rules |
+| [Content format v1](content-format.md) | Binary artifact/codec format (hash-locked) |
+| [Weapon recipe baseline](weapon-recipe-baseline.md) | Numeric weapon sockets (hash-locked) |
+| [Soldier recipe and motion baseline](soldier-baseline.md) | Soldier recipe and motion (hash-locked) |
+| [Quality profiles, budgets and measurement](performance.md) | Profiles, allocations and benchmark gates |
+| [Benchmark fixtures](benchmark-fixtures.md) | Reproducible benchmark workloads |
+| [Visual direction and UI design system](brandbook.md) | Visual direction, HUD and accessibility |
+| [Machine-readable fixture catalog](fixtures/index.md) | Lock-pinned fixtures and schemas |
+
+## Features
+
+| Document | Purpose |
+|---|---|
+| [Procedural materials and rendering](features/materials-rendering.md) | Materials, shading, lighting and post-processing |
+| [Procedural geometry and modern weapons](features/geometry-weapons.md) | Weapon geometry and visual profiles |
+| [Generated soldiers, rigging and motion](features/soldiers-animation.md) | Soldier mesh, rig and analytic motion |
+| [Generated environments and streaming](features/environment.md) | Environment generation and streaming |
+| [FPS movement and combat](features/combat.md) | Motor, weapons and damage |
+| [Combat AI](features/ai.md) | Bot perception, tactics and navigation |
+| [Team Deathmatch](features/team-deathmatch.md) | Rosters, scoring, timer, respawn and results |
+| [Playable maps](features/playable-maps.md) | Map catalog, packaging and safety |
+| [Compact TDM map layouts](features/tdm-map-layouts.md) | 64 × 80 m arena rules and per-map layouts |
+| [Game shell and settings](features/game-shell.md) | Menus, persistence, audio/video/controls |
+| [Combat audio](features/audio.md) | Stereo sample bank and distance model |
+| [Windows installer and upgrades](features/windows-installer.md) | Installer, in-place updates and INS01–INS06 |
+| [Staged authoritative networking](features/networking.md) | Parked under ADR-076 |
+
+## Process and records
+
+| Document | Purpose |
+|---|---|
+| [Architecture decision records](decisions.md) | ADR-001–095 and the change process |
+| [Bootstrap runbook](bootstrap-runbook.md) | Wrapper commands, scopes and evidence rules |
+| [Build, CI and release strategy](build-ci.md) | Clean builds, CI lanes and release flow |
+| [Validation strategy](validation.md) | Tests, evidence and requirement traceability |
+| [Milestones and release gates](milestones.md) | M0–M11 gate definitions |
+| [Milestone packs](milestones/index.md) | Per-milestone handoffs and acceptance records |
+| [Work packages and backlog](backlog.md) | Work packages and ordered tasks T001+ |
+| [Task cards](task-supplement.md) | Task cards T026 onward |
+| [Parallel implementation and agent rules](agent-coordination.md) | Ownership, branches and handoffs |
+| [Risk register](risks.md) | Risks, triggers and mitigation |
+| [Sources and version-sensitive guidance](references.md) | External references |
+| [Documentation archive](archive/index.md) | Superseded plans and closed-milestone planning packs |
 
 ## Operating rule
 
-Freeze contracts C0 at M0. Treat paths and signatures as specifications to implement. Each future PR updates affected docs with actual code references and measured evidence. Keep generated-only art provenance, performance gates and gameplay/quality separation intact. Use [decision records](decisions.md) for changes; do not hide scope reductions in tuning.
+C0 and Game-v1 are frozen; changes go through [decision records](decisions.md) with fixture migration. Each change updates affected docs with actual code references and measured evidence, and records results in the relevant milestone handoff. Keep generated-only art provenance, performance gates and gameplay/quality separation intact; do not hide scope reductions in tuning.
 
-`documentation-manifest.json` records file hashes and `verification-report.json` records delivery integrity checks. Neither claims game tests have run. Re-run the delivered `verify_docs.py` after documentation edits; regenerate the hash manifest through the documented verifier command only when changes are intentional.
-
-## Milestone implementation packs
-
-[Open the milestone folders](milestones/index.md) for stage-specific implementation sequences, contracts, agent assignments, tests and handoff records. Each folder links to the shared specifications in the docs root. Root specifications remain authoritative; current M8–M11 acceptance is governed by the audit and repair matrix, not historical software-close labels.
-
-
-## Implementation readiness refinements — revision 1.1
-
-Begin with [implementation start](implementation-start.md), then the assigned milestone; the next owner step is T071 playtest of the retained archive; T067 native-navigation work needs its bounded implementation assignment. M0 remains the historical bootstrap reference. Shared details remain in one place.
-
-- [Start implementation here](implementation-start.md)
-- [M0 bootstrap runbook](bootstrap-runbook.md)
-- [Contract details — C0 freeze specification](contract-details.md)
-- [Simulation order, replay and prediction state](simulation-protocol.md)
-- [Gameplay baseline, objective and collision matrix](gameplay-baseline.md)
-- [Deterministic format and asset identity v1](deterministic-format.md)
-- [Soldier recipe and motion starting baseline](soldier-baseline.md)
-- [Reproducible benchmark fixtures v1](benchmark-fixtures.md)
-- [Additional task cards and ownership](task-supplement.md)
-- [Machine-readable fixture catalog](fixtures/index.md)
-
-- [Readiness review closure and remaining evidence](archive/readiness-review.md)
+`documentation-manifest.json` records file hashes and `verification-report.json` records the docs integrity check. Neither claims game tests have run. Run `python docs/verify_docs.py` after documentation edits; refresh the manifest with `--refresh-manifest` only for intentional changes.
