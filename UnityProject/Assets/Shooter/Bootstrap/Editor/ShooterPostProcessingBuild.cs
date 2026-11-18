@@ -29,8 +29,9 @@ public static class ShooterPostProcessingBuild
     private static readonly SsaoTier[] Ssao =
     {
         new SsaoTier { Enabled = false },
-        new SsaoTier { Enabled = true, Downsample = true, Samples = 2, Blur = 1, Intensity = 1.2f, Radius = 0.3f, DirectLighting = 0.25f },
-        new SsaoTier { Enabled = true, Downsample = false, Samples = 1, Blur = 0, Intensity = 1.4f, Radius = 0.4f, DirectLighting = 0.25f }
+        // ADR-116: a little more contact occlusion so props sit in the ground (1.2 -> 1.4, 1.4 -> 1.6).
+        new SsaoTier { Enabled = true, Downsample = true, Samples = 2, Blur = 1, Intensity = 1.4f, Radius = 0.3f, DirectLighting = 0.25f },
+        new SsaoTier { Enabled = true, Downsample = false, Samples = 1, Blur = 0, Intensity = 1.6f, Radius = 0.4f, DirectLighting = 0.25f }
     };
     private static readonly bool[] Hdr = { false, true, true };
 

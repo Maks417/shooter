@@ -9,24 +9,61 @@ namespace Shooter.Presentation.Rendering
     /// <summary>Loading-time adaptation of verified SGAF planes to the locked URP Lit channel layout.</summary>
     public static class ProductSurfaceMaterial
     {
-        /// <summary>Numeric painted-steel / concrete variants share verified PBR planes and texture residency.</summary>
+        /// <summary>
+        /// Numeric painted-steel / concrete variants share verified PBR planes and texture residency. ADR-116: each tint is the
+        /// target paint colour divided by the source plane's mean linear albedo, so "tank white" reads white and "safety
+        /// yellow" reads yellow whatever dark role the map's cover slot bakes (the old tints multiplied dark steel into teal
+        /// and olive).
+        /// </summary>
         public static Material[] ArchitecturalAccents(Material concrete, Material metal, Action<UnityEngine.Object> own)
         {
-            Material Variant(Material source, string name, Color tint)
+            Material Variant(Material source, string name, Color target)
             {
                 var material = new Material(source) { name = name };
                 own(material);
-                material.SetColor("_BaseColor", tint);
+                material.SetColor("_BaseColor", AccentTint(target, MeanAlbedo(source)));
                 return material;
             }
             return new[]
             {
-                Variant(metal, "Weathered depot blue", new Color(.19f, .34f, .40f)),
-                Variant(metal, "Weathered oxide paint", new Color(.43f, .22f, .13f)),
-                Variant(concrete, "Concrete footing and joints", new Color(.32f, .34f, .33f)),
-                Variant(metal, "Weathered tank enamel", new Color(.74f, .75f, .72f)),
-                Variant(metal, "Safety yellow paint", new Color(.78f, .60f, .12f))
+                Variant(metal, "Weathered depot blue", AccentTargets[0]),
+                Variant(metal, "Weathered oxide paint", AccentTargets[1]),
+                Variant(concrete, "Concrete footing and joints", AccentTargets[2]),
+                Variant(metal, "Weathered tank enamel", AccentTargets[3]),
+                Variant(metal, "Safety yellow paint", AccentTargets[4])
             };
+        }
+
+        /// <summary>ADR-116 rendered linear albedo targets: depot blue, oxide red, footing grey, tank white, safety yellow.</summary>
+        public static readonly Color[] AccentTargets =
+        {
+            new Color(.10f, .22f, .34f), new Color(.30f, .10f, .05f), new Color(.28f, .27f, .25f),
+            new Color(.70f, .70f, .66f), new Color(.62f, .42f, .04f)
+        };
+
+        /// <summary>Tint that maps a plane's mean linear albedo onto <paramref name="target"/>, clamped to the validated 0..8 range.</summary>
+        public static Color AccentTint(Color target, Color meanAlbedo)
+        {
+            float Channel(float t, float mean) => Mathf.Clamp(t / Mathf.Max(mean, .02f), 0f, 8f);
+            return new Color(Channel(target.r, meanAlbedo.r), Channel(target.g, meanAlbedo.g), Channel(target.b, meanAlbedo.b), 1f);
+        }
+
+        private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<Material, System.Runtime.CompilerServices.StrongBox<Color>> meanAlbedo =
+            new System.Runtime.CompilerServices.ConditionalWeakTable<Material, System.Runtime.CompilerServices.StrongBox<Color>>();
+
+        /// <summary>Mean linear albedo recorded when <see cref="Create(Shader, MaterialData, MaterialData?, MaterialData?, string, float, Action{UnityEngine.Object}, ProductSurfaceResponse)"/> uploaded the plane; mid grey otherwise.</summary>
+        public static Color MeanAlbedo(Material material) =>
+            material != null && meanAlbedo.TryGetValue(material, out var box) ? box.Value : new Color(.3f, .3f, .3f);
+
+        /// <summary>Linear mean of an sRGB albedo plane, read from its smallest mip (already the box-filtered average).</summary>
+        public static Color MeanLinearAlbedo(MaterialData albedo)
+        {
+            var mip = albedo.MipBytes[albedo.MipBytes.Count - 1];
+            double r = 0, g = 0, b = 0; int texels = mip.Count / 4;
+            static double Linear(byte s) { double c = s / 255.0; return c <= .04045 ? c / 12.92 : Math.Pow((c + .055) / 1.055, 2.4); }
+            for (int i = 0; i + 3 < mip.Count; i += 4) { r += Linear(mip[i]); g += Linear(mip[i + 1]); b += Linear(mip[i + 2]); }
+            texels = Math.Max(1, texels);
+            return new Color((float)(r / texels), (float)(g / texels), (float)(b / texels), 1f);
         }
 
         /// <summary>Semantic palette shared by first-person, world and source diagnostics.</summary>
@@ -115,6 +152,7 @@ namespace Shooter.Presentation.Rendering
             own(material);
             material.SetColor("_BaseColor", response.BaseColor);
             material.SetTexture("_BaseMap", Upload(albedo, label + " albedo", false, own));
+            meanAlbedo.AddOrUpdate(material, new System.Runtime.CompilerServices.StrongBox<Color>(MeanLinearAlbedo(albedo)));
             float repeats = albedo.Width <= 1 && albedo.Height <= 1 ? 1f : tileRepeats;
             material.SetTextureScale("_BaseMap", new Vector2(repeats, repeats));
             if (normal != null)

@@ -46,9 +46,10 @@ namespace Shooter.Presentation
                 // Cooler outdoor compound: deeper blue zenith, clean cool horizon, modest depth fog.
                 zenith = new Rgb(.20f, .34f, .50f);
                 horizon = new Rgb(.58f, .64f, .70f);
-                ground = new Rgb(.18f, .20f, .17f);
-                fogStartMeters = 40f;
-                fogEndMeters = 100f;
+                ground = new Rgb(.24f, .22f, .17f);
+                // ADR-116: fog starts later and thins out so distant walls keep their colour.
+                fogStartMeters = 42f;
+                fogEndMeters = 130f;
                 fogDensity = .0068f;
                 return;
             }
@@ -58,8 +59,8 @@ namespace Shooter.Presentation
                 zenith = new Rgb(.30f, .38f, .44f);
                 horizon = new Rgb(.72f, .62f, .50f);
                 ground = new Rgb(.34f, .26f, .16f);
-                fogStartMeters = 36f;
-                fogEndMeters = 92f;
+                fogStartMeters = 40f;
+                fogEndMeters = 120f;
                 fogDensity = .008f;
                 return;
             }
@@ -69,8 +70,8 @@ namespace Shooter.Presentation
                 zenith = new Rgb(.22f, .30f, .36f);
                 horizon = new Rgb(.64f, .54f, .42f);
                 ground = new Rgb(.28f, .22f, .14f);
-                fogStartMeters = 34f;
-                fogEndMeters = 88f;
+                fogStartMeters = 38f;
+                fogEndMeters = 115f;
                 fogDensity = .0085f;
                 return;
             }

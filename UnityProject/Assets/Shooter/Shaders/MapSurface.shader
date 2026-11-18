@@ -192,8 +192,16 @@ Shader "Shooter/MapSurface"
                 // Numeric macro variation: no texture fetch, ~20 m and ~7 m bands break up the 4 m tile (ADR-106).
                 // Smooth low-frequency spatial modulation avoids a visible grid at cell edges.
                 float variation = .935 + .045 * sin(world.x * .19 + sin(world.z * .13)) + .02 * sin(world.z * .61 + 1.7 * sin(world.x * .43));
-                half dirt = saturate(1-world.y/1.25) * .16h + (1-ao)*.24h;
-                surfaceData.albedo *= variation * lerp(half3(1,1,1), half3(.59,.51,.39), dirt);
+                // ADR-116: the same bands also shift hue (sun-bleached warm vs shaded cool) so large walls do not read flat grey.
+                half warmth = (half)saturate(.5 + .5 * sin(world.x * .11 + 1.3 * sin(world.z * .17)) * sin(world.z * .07 + .8));
+                half3 hueShift = lerp(half3(.96h, .98h, 1.03h), half3(1.04h, 1.0h, .93h), warmth);
+                half3 baseNormal0 = normalize(input.normalWS);
+                // Rain streaks: walls darken in vertical runs below their tops (world-space, no texture fetch).
+                half wall = (half)saturate(1 - abs(baseNormal0.y) * 3);
+                half runs = (half)saturate(sin(world.x * 2.3 + world.z * 1.9 + 3.1 * sin(world.x * .37 - world.z * .29)) * 1.6 - .6);
+                half streaks = wall * runs * (half)saturate(1 - frac(world.y * .25) * .9) * .16h;
+                half dirt = saturate(1-world.y/1.25) * .18h + (1-ao)*.26h;
+                surfaceData.albedo *= variation * hueShift * (1 - streaks) * lerp(half3(1,1,1), half3(.52h,.44h,.33h), dirt);
                 surfaceData.smoothness *= 1-dirt*.65h;
                 #ifdef _NORMALMAP
                 half3 weights = pow(abs(normalize(input.normalWS)), 4); weights /= max(dot(weights,half3(1,1,1)),.001h);
@@ -215,7 +223,7 @@ Shader "Shooter/MapSurface"
 
                 InputData inputData;
                 InitializeInputData(input, surfaceData.normalTS, inputData);
-                if(_ShooterActorMode<.5)inputData.normalWS=normalize(inputData.normalWS+(detailWorld-normalize(input.normalWS))*.10h);
+                if(_ShooterActorMode<.5)inputData.normalWS=normalize(inputData.normalWS+(detailWorld-normalize(input.normalWS))*.14h); // ADR-116: .10 -> .14 (still the gentle 0.55/m re-sample)
                 SETUP_DEBUG_TEXTURE_DATA(inputData, UNDO_TRANSFORM_TEX(input.uv, _BaseMap));
 
             #if defined(_DBUFFER)
@@ -228,7 +236,7 @@ Shader "Shooter/MapSurface"
                 color.rgb = MixFog(color.rgb, inputData.fogCoord);
                 float heightDensity=_ShooterHeightFog.x*exp(-max(0,world.y)*_ShooterHeightFog.y);
                 float heightFog=saturate(1-exp(-distance(world,_WorldSpaceCameraPos)*heightDensity));
-                color.rgb=lerp(color.rgb,_ShooterFogTint.rgb,heightFog*.35);
+                color.rgb=lerp(color.rgb,_ShooterFogTint.rgb,heightFog*.22); // ADR-116: .35 -> .22 keeps distant colour
                 color.a = OutputAlpha(color.a, IsSurfaceTypeTransparent(_Surface));
                 outColor = color;
 

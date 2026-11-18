@@ -72,6 +72,22 @@ namespace Shooter.Tests
         }
 
         [Test]
+        public void AccentTintsRenderTheirPaintColourOverDarkSteelPlanes()
+        {
+            // ADR-116: over a dark teal painted-steel mean the old fixed tints rendered "white" teal and "yellow" olive.
+            var darkTeal = new Color(.08f, .14f, .17f);
+            Color Rendered(Color target) { Color t = ProductSurfaceMaterial.AccentTint(target, darkTeal); return new Color(t.r * darkTeal.r, t.g * darkTeal.g, t.b * darkTeal.b); }
+            Color white = Rendered(ProductSurfaceMaterial.AccentTargets[3]);
+            Assert.That(.2126f * white.r + .7152f * white.g + .0722f * white.b, Is.GreaterThan(.5f), "Tank enamel must read white.");
+            Color yellow = Rendered(ProductSurfaceMaterial.AccentTargets[4]);
+            Assert.That(yellow.r, Is.GreaterThan(yellow.g)); Assert.That(yellow.g, Is.GreaterThan(yellow.b)); Assert.That(yellow.b, Is.LessThan(.15f));
+            Color tint = ProductSurfaceMaterial.AccentTint(new Color(1, 1, 1), new Color(.001f, .5f, .5f));
+            Assert.That(tint.r, Is.LessThanOrEqualTo(8f), "Tints stay inside the validated BaseColor range.");
+            var plane = new MaterialData(1, 1, "rgba8-srgb", new[] { new byte[] { 188, 188, 188, 255 } });
+            Assert.That(ProductSurfaceMaterial.MeanLinearAlbedo(plane).r, Is.EqualTo(.5f).Within(.01f));
+        }
+
+        [Test]
         public void SurfaceResponseProfilesDriveBaseColorBumpAndOcclusionWithoutMutatingMaskScalars()
         {
             var owned = new List<Object>();
@@ -143,7 +159,8 @@ namespace Shooter.Tests
                     Assert.That(solidsMats[4].GetColor("_BaseColor").r, Is.GreaterThan(solidsMats[4].GetColor("_BaseColor").b));
                 }
                 Assert.That(solidsMats.Length, Is.GreaterThanOrEqualTo(2), "Packaged solids must expose multi-material submeshes.");
-                Assert.That(solidsMats[0].GetColor("_BaseColor"), Is.EqualTo(ProductSurfaceResponse.Concrete.BaseColor));
+                Assert.That(Approximately(solidsMats[0].GetColor("_BaseColor"), ProductSurfaceResponse.Concrete.BaseColor), Is.True,
+                    "Structure submesh uses the concrete response (float round-trip tolerant).");
                 bool sawMetal = false, sawTrim = false;
                 for (int i = 0; i < solidsMats.Length; i++)
                 {

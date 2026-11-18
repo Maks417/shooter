@@ -25,7 +25,8 @@
     "ADR-102",
     "ADR-106",
     "ADR-107",
-    "ADR-115"
+    "ADR-115",
+    "ADR-116"
   ],
   "generators": [
     {
@@ -92,12 +93,18 @@
       "id": "geometry.weapon",
       "version": "1.4.0",
       "schema": "shooter.recipe.weapon.v1"
+    },
+    {
+      "id": "material.noise",
+      "version": "1.2.0",
+      "schema": "shooter.recipe.material-noise.v1"
     }
   ],
   "sources": {
     "docs/feature-fixtures/fx-flipbook-1.0.0.json": "b808d72aad924cbfbc9d303ca07da8be0679dbc6dec0e135e2c88b5f3a2bb039",
     "docs/feature-fixtures/material-noise-1.0.0.json": "e8f8e747b8626d12bfcef303522f6bf1752d63e2cd1a2019d22dbb120584e916",
     "docs/feature-fixtures/material-noise-1.1.0.json": "c4667f30affff1cc07fea8ae87dbfe209f88fcfde8418b12d7e02b26201b773e",
+    "docs/feature-fixtures/material-noise-1.2.0.json": "c4e0f0c07897d460f2cda5d124a2ba8b93b0ceef6c6671218001dd7b127e8f4b",
     "docs/feature-fixtures/metal-1.0.0.json": "b431ba2378462f26f906c0ba82a1bc0203301eec3bed67bcc40ff8bb187e7d48",
     "docs/feature-fixtures/metal-1.0.1.json": "24abac9b9122c4790a84892ad5d2c07948a2261f6de575a995395c6f9a331b54",
     "docs/feature-fixtures/rifle-1.0.0.json": "6dddf63fcc85f88d9182bb02e2125a9165ca825a9e214e6ac515e89586390d7b",
@@ -116,7 +123,7 @@
     "docs/feature-fixtures/soldier-1.0.3.json": "3e37faef4031aa2aaf4a70c5781a911e5263f56ed6c6663ceb7a5735d6da9232",
     "docs/feature-fixtures/soldier-1.1.0.json": "623002c7c21a2dbbab09f0eda191d535fc6a8870d8ce2af1b1ebe2b6b8d78cf6",
     "docs/feature-schemas/fx-flipbook.schema.json": "5b733cc892c88e178118739461b2d7d4693743236276489c87350222286e725f",
-    "docs/feature-schemas/material-noise.schema.json": "dcc72a883d0ed374934ca6d88c73a1a7ca3e5519d57fbb79ca36f8eeb4e54f1c",
+    "docs/feature-schemas/material-noise.schema.json": "6e9047cd095c2a19966e0bd2e63576b2ed359321a3c506f797ea63ea5aa273c0",
     "docs/feature-schemas/material.schema.json": "c2ff53e7e1ad1cd4f50a577b1c531c53601e02c362522315aef49341b3db33d2",
     "docs/feature-schemas/soldier.schema.json": "28a2e12cddd7fc9edb7718f892d5b9091fe474d4cff0210870d9c719ae2fed37",
     "docs/feature-schemas/weapon.schema.json": "7a9e9a38424339d050ade3cb216de880e47a40941e0e0925764b0ce902b621ce",
@@ -132,7 +139,7 @@
     "UnityProject/Assets/Shooter/Generation/Core/Materials/MaterialAssetGenerator.cs": "a6e28d0567581dd6c8b172c9cf472f0a63ed75bff8a0ba539fc63f60fa9f4623",
     "UnityProject/Assets/Shooter/Generation/Core/Materials/MaterialBaker.cs": "43fc74abfb628f2d8d244261af295fe54ca4adec403773be6e286192900e77b9",
     "UnityProject/Assets/Shooter/Generation/Core/Materials/MaterialRecipe.cs": "d5110ab488c00ed3c28589174c403e0cc14b8cb4affc24857836c299738cfde9",
-    "UnityProject/Assets/Shooter/Generation/Core/Materials/NoiseMaterial.cs": "bf074689c4912439424af352c8e1dc2371adeaf5ca680803adba05b30e76f1ad",
+    "UnityProject/Assets/Shooter/Generation/Core/Materials/NoiseMaterial.cs": "9294444479dde8a17a13752a56e45401ca26a6ea0477d472d49de820a3fbcdd5",
     "UnityProject/Assets/Shooter/Generation/Core/Materials/NumericPlanes.cs": "8cf299bf62459346e888dcac93ef260578b43539547fbe9e78f41d6084c4ed53",
     "UnityProject/Assets/Shooter/Generation/Core/SoldierMotion/ArmBodyClearance.cs": "8f2836e21108ec273d3e79190f22601acc961b6325abe772a81ff14f8fed399d",
     "UnityProject/Assets/Shooter/Generation/Core/SoldierMotion/CollisionSoldierGround.cs": "77eee05fbf90d9f00888d80be589b53e865b672fc24678c17d6214bed56d7528",

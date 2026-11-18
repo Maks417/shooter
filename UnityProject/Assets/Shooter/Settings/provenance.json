@@ -6,11 +6,11 @@
     "sources": [
         {
             "path": "UnityProject/Assets/Shooter/Bootstrap/Editor/ShooterBuild.cs",
-            "sha256": "3b2e447bdf435f244b39fbd55dee42a2f1de98bc3e053b257275f0f7984013b9"
+            "sha256": "6513cbeb9fe31d829f7efd77ac9997f445cc423872668cc1ff6ad80ba7a4c609"
         },
         {
             "path": "UnityProject/Assets/Shooter/Bootstrap/Editor/ShooterPostProcessingBuild.cs",
-            "sha256": "c982e2e5f1d75467bbcd3f12fc775316ba63493cac2c0308dba6523c70cb8e9b"
+            "sha256": "09d85c193a0d4d7d804cb908e7754bea10f9fb16d25113b43badc357f0c50086"
         }
     ],
     "artifacts": [
@@ -36,11 +36,11 @@
         },
         {
             "path": "UnityProject/Assets/Shooter/Settings/FoundationRendererBalanced.asset",
-            "sha256": "74bec67fae91a4dc6fdff38bf8ee0ef09b1c9931586b9e2ea110d815b0b0ba67"
+            "sha256": "669909f5a72f0bc84880523439c69acfe67cb1a18165c3b4a9100dc4368cde57"
         },
         {
             "path": "UnityProject/Assets/Shooter/Settings/FoundationRendererHigh.asset",
-            "sha256": "f85ad6631a1c0ddc3f154bce275d4374e3a08098c5ab7702a5e4c36f4cbebc8d"
+            "sha256": "a3e9c12d23b43bc242f1fdea745cf7d3a980a00916e355502de802bf15ef1504"
         },
         {
             "path": "UnityProject/Assets/Shooter/Settings/HarnessMaterial.mat",
@@ -52,7 +52,7 @@
         },
         {
             "path": "UnityProject/Assets/Shooter/Settings/Low.asset",
-            "sha256": "c7d7f023c5ba7ec2247b8e631c9e33b5cd25e7b26a051b7d70f705b072556d62"
+            "sha256": "5eee6ed3a14c7b0610964611a1b6adb6e9d3e71881fad6402acc2805546c60fd"
         },
         {
             "path": "UnityProject/Assets/Shooter/Settings/OrderedDither64.asset",

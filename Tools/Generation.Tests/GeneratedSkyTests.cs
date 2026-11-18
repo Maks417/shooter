@@ -98,11 +98,11 @@ public sealed class GeneratedSkyTests
         Assert.True(compoundZ.B > compoundZ.R);
         Assert.True(depotH.R > depotH.B);
         Assert.True(compoundZ.B > depotZ.B);
-        // Linear fog: mid-range Bodycam haze (~40–100 m) keeps 5v5/6v6 readable at ~50 m.
+        // Linear fog: mid-range haze keeps 5v5/6v6 readable at ~50 m; ADR-116 pushed the end out so far walls keep colour.
         Assert.InRange(cStart, 30f, 45f);
-        Assert.InRange(cEnd, 90f, 110f);
+        Assert.InRange(cEnd, 90f, 140f);
         Assert.InRange(dStart, 30f, 45f);
-        Assert.InRange(dEnd, 85f, 105f);
+        Assert.InRange(dEnd, 85f, 130f);
         Assert.InRange(LinearFogFactor(50f, cStart, cEnd), 0.05f, 0.40f);
         Assert.InRange(LinearFogFactor(50f, dStart, dEnd), 0.10f, 0.45f);
         Assert.InRange(LinearFogFactor(50f, GeneratedSkyMath.DefaultFogStartMeters, GeneratedSkyMath.DefaultFogEndMeters), 0.10f, 0.40f);
@@ -167,9 +167,9 @@ internal static class GeneratedSkyMath
         {
             zenith = new Rgb(.20f, .34f, .50f);
             horizon = new Rgb(.58f, .64f, .70f);
-            ground = new Rgb(.18f, .20f, .17f);
-            fogStartMeters = 40f;
-            fogEndMeters = 100f;
+            ground = new Rgb(.24f, .22f, .17f);
+            fogStartMeters = 42f;
+            fogEndMeters = 130f;
             fogDensity = .0068f;
             return;
         }
@@ -178,8 +178,8 @@ internal static class GeneratedSkyMath
             zenith = new Rgb(.30f, .38f, .44f);
             horizon = new Rgb(.72f, .62f, .50f);
             ground = new Rgb(.34f, .26f, .16f);
-            fogStartMeters = 36f;
-            fogEndMeters = 92f;
+            fogStartMeters = 40f;
+            fogEndMeters = 120f;
             fogDensity = .008f;
             return;
         }
@@ -188,8 +188,8 @@ internal static class GeneratedSkyMath
             zenith = new Rgb(.22f, .30f, .36f);
             horizon = new Rgb(.64f, .54f, .42f);
             ground = new Rgb(.28f, .22f, .14f);
-            fogStartMeters = 34f;
-            fogEndMeters = 88f;
+            fogStartMeters = 38f;
+            fogEndMeters = 115f;
             fogDensity = .0085f;
             return;
         }

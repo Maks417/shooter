@@ -154,8 +154,9 @@ namespace Shooter.Presentation.Rendering
                 priorSunRotation=productSun.transform.rotation;priorSunColor=productSun.color;priorSunIntensity=productSun.intensity;
                 string preset=MapRegistry.Require(mapId).SkyPreset;
                 productSun.transform.rotation=Quaternion.Euler(preset=="petroleum"?12:preset=="dusty-yard"?48:28,-32,0);
-                productSun.color=preset=="petroleum"?new Color(1,.76f,.51f):preset=="dusty-yard"?new Color(.83f,.89f,1):new Color(1,.94f,.83f);
-                productSun.intensity=preset=="dusty-yard"?.65f:1.15f;
+                // ADR-116: brighter, warm daylight so surfaces show their colour and cast defined shadows (Harbour was a flat .65).
+                productSun.color=preset=="petroleum"?new Color(1,.78f,.55f):preset=="dusty-yard"?new Color(1,.95f,.88f):new Color(1,.95f,.86f);
+                productSun.intensity=preset=="petroleum"?1.25f:preset=="dusty-yard"?1.25f:1.35f;
             }
             ProductPostProcessing.SetMapGrade(mapId);
             probe = GeneratedReflectionProbe.Apply(

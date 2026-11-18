@@ -820,6 +820,14 @@ Checks on the working tree over `27406b8`: Generation 611/611 PASS (`m1-procedur
 
 **Pending / NotClaimed:** weapon package republish, client build and installer; in-game review of the glass look (tint, rim, sheen) and the frame in ADS and in third person on all four rails.
 
+## ADR-116 map realism — 2026-11-18
+
+Owner report: every map reads almost grey. Implemented [ADR-116](../../decisions.md#adr-116--accepted-realistic-map-colour-texture-and-shadows-materialnoise-120): material.noise 1.2.0 realistic per-role albedo (warm concrete with panel variation, ochre plaster with brick spalls, chipped painted steel, galvanized and rusted sheet, aggregate asphalt, mixed gravel); presentation tints near 1; accent tints relative to the plane's mean albedo (tank white and safety yellow now read correctly); hue drift and rain streaks in `MapSurface.shader`; brighter warm sun, later fog, +10 saturation on every tier; soft 50 m / 2048 px Low shadows and stronger Balanced/High SSAO.
+
+Checks on the working tree over `6787ff1`: Generation 618/618 PASS (`m1-procedural-feasibility/6787ff1…/20261118T213911684Z-915b3107`, after the owner-approved feature-content-lock refreeze adding material.noise 1.2.0), Simulation 648/648 PASS, Game PASS, Maps 91/91 PASS, source provenance PASS, feature registry, asmdef graph and fixtures PASS. Settings regenerated in the locked editor through `ShooterBuild.InitializeFoundation` and `ShooterPostProcessingBuild.Configure` (only the Low shadow fields, the Balanced/High SSAO intensity and provenance changed). Unity EditMode 94/94 PASS (`m0-foundation/6787ff1…/tests-editmode-20261118T214841424Z-3b0b2753`), PlayMode 30/30 PASS (`tests-playmode-20261118T215148475Z-c751df49`). Native map content republished (`m8-runtime-composition/6787ff1…/compile-gamecontent-20261118T215340924Z-16cfa4f1`).
+
+**Pending / NotClaimed:** client build and installer, the owner's in-game review on all three maps at Low and High, and the Low benchmark on the 4600H (GPU p95 ≤ 27 ms with the new Low shadows).
+
 ## Delivery 0.3.23
 
 Owner requested an installer once the navigation fix was done (2026-11-18). Clean binary/content source **`1d6c2cc5f424fb9f8e3fe6b827c320289839505d`** adds to 0.3.22 [ADR-114](../../decisions.md#adr-114--accepted-corner-bob-motor-fix-nav-bake-that-respects-walls-and-a-tabbed-career-page):

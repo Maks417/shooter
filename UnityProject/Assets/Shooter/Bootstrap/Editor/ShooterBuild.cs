@@ -200,12 +200,13 @@ public static class ShooterBuild
             if (ProfileCascades[i] == 4) pipeline.cascade4Split = new Vector3(.067f, .2f, .47f);
             if (ProfileCascades[i] == 2) pipeline.cascade2Split = .25f;
             pipeline.mainLightShadowmapResolution = ProfileShadowmap[i];
-            pipeline.shadowDepthBias = 1f; pipeline.shadowNormalBias = i == 0 ? 1f : .6f;
+            pipeline.shadowDepthBias = 1f; pipeline.shadowNormalBias = .6f; // ADR-116: Low matches the sharper 2048 atlas
             pipeline.maxAdditionalLightsCount = i == 0 ? 2 : 4;
             var serializedPipeline = new SerializedObject(pipeline);
-            serializedPipeline.FindProperty("m_SoftShadowsSupported").boolValue = i > 0;
+            // ADR-116: Low gets soft shadows too, at SoftShadowQuality.Low (the owner allowed the Low-tier change).
+            serializedPipeline.FindProperty("m_SoftShadowsSupported").boolValue = true;
             var softQuality = serializedPipeline.FindProperty("m_SoftShadowQuality");
-            if (softQuality != null) softQuality.intValue = i == 2 ? 3 : 2; // SoftShadowQuality.High / Medium
+            if (softQuality != null) softQuality.intValue = i == 2 ? 3 : i == 1 ? 2 : 1; // SoftShadowQuality.High / Medium / Low
             serializedPipeline.FindProperty("m_AdditionalLightsRenderingMode").intValue = (int)LightRenderingMode.PerPixel;
             serializedPipeline.FindProperty("m_AdditionalLightShadowsSupported").boolValue = false;
             serializedPipeline.ApplyModifiedPropertiesWithoutUndo();
@@ -272,9 +273,9 @@ public static class ShooterBuild
 
     /// <summary>ADR-103 per-profile render budgets (Low, Balanced, High); FoundationEditorTests asserts the same values.</summary>
     internal static readonly int[] ProfileMsaa = { 1, 2, 4 };
-    internal static readonly float[] ProfileShadowDistance = { 40, 80, 150 };
+    internal static readonly float[] ProfileShadowDistance = { 50, 80, 150 }; // ADR-116: Low 40 -> 50 m
     internal static readonly int[] ProfileCascades = { 2, 3, 4 };
-    internal static readonly int[] ProfileShadowmap = { 1024, 2048, 4096 };
+    internal static readonly int[] ProfileShadowmap = { 2048, 2048, 4096 }; // ADR-116: Low 1024 -> 2048
 
     internal static Texture2D BakeOrderedDither(string path, int size)
     {

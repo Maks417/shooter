@@ -30,8 +30,8 @@ namespace Shooter.Tests
         {
             Assert.That(QualitySettings.names, Is.EqualTo(new[] { "Low", "Balanced", "High" }));
             Assert.That(AssetDatabase.GetAssetPath(GraphicsSettings.defaultRenderPipeline), Is.EqualTo("Assets/Shooter/Settings/Low.asset"));
-            float[] distances = { 40, 80, 150 }; int[] lights = { 2, 4, 4 }; int[] atlases = { 1024, 2048, 4096 };
-            int[] cascades = { 2, 3, 4 }; int[] msaa = { 1, 2, 4 }; // ADR-103 quality uplift; Low unchanged.
+            float[] distances = { 50, 80, 150 }; int[] lights = { 2, 4, 4 }; int[] atlases = { 2048, 2048, 4096 };
+            int[] cascades = { 2, 3, 4 }; int[] msaa = { 1, 2, 4 }; // ADR-103 quality uplift; ADR-116 Low soft 50 m / 2048 shadows.
             bool[] hdr = { false, true, true }; // ADR-080: Low stays LDR for the reference gate.
             for (int i = 0; i < 3; i++)
             {
@@ -42,6 +42,7 @@ namespace Shooter.Tests
                 Assert.That(asset.mainLightShadowmapResolution, Is.EqualTo(atlases[i])); Assert.That(asset.maxAdditionalLightsCount, Is.EqualTo(lights[i]));
                 Assert.That(asset.supportsAdditionalLightShadows, Is.False); Assert.That(asset.supportsHDR, Is.EqualTo(hdr[i])); Assert.That(asset.shadowCascadeCount, Is.EqualTo(cascades[i]));
                 Assert.That(asset.msaaSampleCount, Is.EqualTo(msaa[i]));
+                Assert.That(asset.supportsSoftShadows, Is.True, "ADR-116: every tier renders soft sun shadows");
                 int previousTier = QualitySettings.GetQualityLevel();
                 try { QualitySettings.SetQualityLevel(i, false); Assert.That(QualitySettings.renderPipeline, Is.EqualTo(asset)); }
                 finally { QualitySettings.SetQualityLevel(previousTier, false); }

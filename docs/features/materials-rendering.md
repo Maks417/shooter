@@ -44,9 +44,9 @@ URP post-processing is code-built: `ShooterPostProcessingBuild` creates the post
 
 | Tier | HDR | Tonemapping | Bloom | SSAO | Grading |
 |---|---|---|---|---|---|
-| Low | off | none | off | off | contrast +6, saturation −4, vignette 0.16 |
-| Balanced | on | Neutral | 0.25 | half-res, 4 samples | exposure +0.25, contrast +10, saturation −6, vignette 0.2 |
-| High | on | Neutral | 0.35, HQ filter | full-res, 8 samples | as Balanced |
+| Low | off | none | off | off | contrast +6, saturation +10, vignette 0.16 |
+| Balanced | on | Neutral | 0.25 | half-res, 4 samples, intensity 1.4 | exposure +0.25, contrast +10, saturation +10, vignette 0.2 |
+| High | on | Neutral | 0.35, HQ filter | full-res, 8 samples, intensity 1.6 | as Balanced |
 
 To change a value, edit `PostProcessingTier` (volume numbers) or `ShooterPostProcessingBuild` (SSAO and HDR), then run `ShooterPostProcessingBuild.Configure` in the locked editor so settings provenance is regenerated. Baked ambient occlusion is ADR-081 (next section). Low cost on the reference laptop and a named visual review of all tiers are Pending.
 
@@ -69,3 +69,7 @@ Each map visual package carries `lighting-ambient-occlusion.bin`, a sky-visibili
 ## Structured map surfaces and render polish — ADR-106 (material.noise 1.1.0)
 
 Map surfaces use material.noise 1.1.0: features sized in metres over a 4 m tile with at least six texels per noise cell, concrete panel joints, form-tie holes and sparse cracks, gentler relief, and Toksvig roughness in the mask mips so averaged bumps widen highlights instead of glittering. Planes are 256 px on Low and 512 px on Balanced/High; presentation repeats them every `MapPackageBuilder.MapNoiseTileMm` (4 m). `MapSurface.shader` detail re-sampling is 0.55/m at 0.10 (was 1.7/m at 0.18) with a second macro band, and map bump scales are about a quarter lower. HDR tiers grade in HDR, the decal feature draws to 200 m, the product reflection probe is 256 px, and Balanced/High light muzzle flashes and explosions with four pooled point lights. Visual acceptance and a High benchmark are Pending.
+
+## Realistic map colour and shadows — ADR-116 (material.noise 1.2.0)
+
+Map surfaces bake material.noise 1.2.0: the 1.1.0 relief and roughness with realistic, varied albedo. Concrete is warm grey with per-panel pour variation and damp. Plaster has ochre wash and brick spalls. Painted steel is chipped to red-oxide primer. Corrugated sheet is galvanized with rust in the troughs. Asphalt has aggregate and tar patches, and gravel mixes warm and cool stones. Presentation tints sit near 1. Architectural accents divide their target paint colour by the plane's mean albedo, so tank white and safety yellow read correctly on any cover role. `MapSurface.shader` adds warm/cool hue drift and rain streaks on walls. Sun, fog distances and saturation (+10 on every tier) were retuned so distant walls keep their colour. Low now has soft 50 m / 2048 px sun shadows, and Balanced/High SSAO is a little stronger. Low cost on the 4600H and the owner's visual review are Pending.

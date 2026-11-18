@@ -14,6 +14,9 @@ namespace Shooter.Generation
         public const string Generator = "material.noise", Version = "1.0.0", Schema = "shooter.recipe.material-noise.v1";
         /// <summary>ADR-106 structured surfaces in metres with Toksvig mask mips; 256/512 px over a 4 m tile.</summary>
         public const string StructuredVersion = "1.1.0";
+        /// <summary>ADR-116 realistic colour over the 1.1.0 relief; the version every map surface bakes.</summary>
+        public const string RealisticVersion = "1.2.0";
+        static bool Known(string version) => version == Version || version == StructuredVersion || version == RealisticVersion;
         public static readonly string[] Roles = { "concrete", "plaster", "rust", "painted-steel", "asphalt", "gravel", "corrugated-metal", "camo-fabric" };
         public RecipeDocument Document { get; }
         public string Role { get; }
@@ -23,7 +26,7 @@ namespace Shooter.Generation
         public NoiseMaterialRecipe(string role, int resolution, ulong seed, int tileMm = 2000, string version = Version)
         {
             if (Array.IndexOf(Roles, role) < 0) throw new ArgumentException("Unknown noise material role.", nameof(role));
-            if (version != Version && version != StructuredVersion) throw new ArgumentException("Unknown noise material version.", nameof(version));
+            if (!Known(version)) throw new ArgumentException("Unknown noise material version.", nameof(version));
             if (version == Version ? resolution != 128 && resolution != 256 : resolution != 256 && resolution != 512) throw new ArgumentOutOfRangeException(nameof(resolution));
             if (tileMm < 100 || tileMm > 8000) throw new ArgumentOutOfRangeException(nameof(tileMm));
             Role = role; Resolution = resolution; TileMm = tileMm;
@@ -33,7 +36,7 @@ namespace Shooter.Generation
         }
         public static NoiseMaterialRecipe FromDocument(RecipeDocument document)
         {
-            if (document.SchemaId != Schema || document.GeneratorId != Generator || document.GeneratorVersion != Version && document.GeneratorVersion != StructuredVersion || document.Dependencies.Count != 0)
+            if (document.SchemaId != Schema || document.GeneratorId != Generator || !Known(document.GeneratorVersion) || document.Dependencies.Count != 0)
                 throw new FormatException("Unsupported noise material identity/dependencies.");
             var p = JsonValue.Parse(document.Parameters).Object;
             if (p.Count != 3) throw new FormatException("Noise material requires role, resolution and tileMm only.");
@@ -82,7 +85,7 @@ namespace Shooter.Generation
         public static MaterialBake Bake(NoiseMaterialRecipe recipe, CancellationToken cancel = default)
         {
             if(recipe==null)throw new ArgumentNullException(nameof(recipe));
-            if(recipe.GeneratorVersion==NoiseMaterialRecipe.StructuredVersion)return BakeStructured(recipe,cancel);
+            if(recipe.GeneratorVersion!=NoiseMaterialRecipe.Version)return BakeStructured(recipe,cancel);
             int n = recipe.Resolution;
             var albedo = new byte[n*n*4]; var normal = new byte[albedo.Length]; var mask = new byte[albedo.Length];
             var height = new double[n*n];
@@ -171,6 +174,13 @@ namespace Shooter.Generation
             var crackMask = Field("crack-zones", NoiseBasis.Gradient, 1.3, 1);
             var stones = Field("stones", NoiseBasis.Cellular, .05, 1);
             var warp = Field("oxide", NoiseBasis.DomainWarpedFbm, .5, 3);
+            // ADR-116 material.noise 1.2.0 adds colour fields only; the 1.1.0 fields, keys and bytes are untouched.
+            bool realistic = recipe.GeneratorVersion == NoiseMaterialRecipe.RealisticVersion;
+            var hueField = realistic ? Field("hue", NoiseBasis.DomainWarpedFbm, .9, 3) : null;
+            var spallField = realistic ? Field("spall", NoiseBasis.Gradient, .7, 2) : null;
+            var dampField = realistic ? Field("damp", NoiseBasis.Gradient, 1.6, 2) : null;
+            var stoneHueField = realistic ? Field("stone-hue", NoiseBasis.Gradient, .05, 1) : null;
+            ulong panelSeed = NamedRandomStream.Derive(recipe.Document.SeedValue, NoiseMaterialRecipe.Generator + "/1.2/" + recipe.Role, "panels").InitState;
             for (int y = 0; y < n; y++)
             {
                 cancel.ThrowIfCancellationRequested();
@@ -236,6 +246,9 @@ namespace Shooter.Generation
                             rough = .94; h = g * .0002; tone = .9 + g * .15; break;
                         }
                     }
+                    if (realistic)
+                        Realistic(recipe.Role, mx, my, b, streak, stones.SamplePeriodic(u, v), hueField!.SamplePeriodic(u, v), spallField!.SamplePeriodic(u, v),
+                            dampField!.SamplePeriodic(u, v), stoneHueField!.SamplePeriodic(u, v), panelSeed, ref r, ref green, ref blue, ref tone, ref metal, ref rough, ref occlusion);
                     // Every role keeps spatial roughness/occlusion variation (wear, staining, cavities).
                     rough = Clamp(rough + (b - .5) * .10 + (g - .5) * .04 - streak * .03);
                     occlusion = Clamp(occlusion - (1 - m) * .06);
@@ -258,6 +271,90 @@ namespace Shooter.Generation
             var maskPlane = MaterialBaker.BuildPlane(n, mask, "mask", cancel);
             return new MaterialBake(SrgbPlane(MaterialBaker.BuildPlane(n, albedo, "mask", cancel)), MaterialBaker.BuildPlane(n, normal, "normal", cancel),
                 ToksvigRoughness(maskPlane, unit, n));
+        }
+
+        /// <summary>
+        /// ADR-116 material.noise 1.2.0: realistic linear albedo per role over the unchanged 1.1.0 relief. Concrete is a warm
+        /// grey with per-panel pour variation, rain efflorescence and damp darkening; plaster carries ochre wash and brick
+        /// spalls; painted steel is chipped through to red-oxide primer with rust runs; corrugated sheet is galvanized with
+        /// white-rust mottling and rust in the troughs; asphalt gains pale aggregate and tar patches; gravel mixes warm and
+        /// cool stones. Every feature keeps the 1.1.0 six-texel minimum.
+        /// </summary>
+        private static void Realistic(string role, double mx, double my, double b, double streak, double stone, double hue, double spall,
+            double damp, double stoneHue, ulong panelSeed, ref double r, ref double green, ref double blue, ref double tone,
+            ref double metal, ref double rough, ref double occlusion)
+        {
+            void Mix(double tr, double tg, double tb, double t, ref double cr, ref double cg, ref double cb)
+            { t = Clamp(t); cr += (tr - cr) * t; cg += (tg - cg) * t; cb += (tb - cb) * t; }
+            switch (role)
+            {
+                case "concrete":
+                {
+                    double panel = PanelJitter(panelSeed, (int)Math.Floor(mx / 2), (int)Math.Floor(my / 2));
+                    r = .50 + panel * .03 + (hue - .5) * .05; green = .475 + panel * .025 + (hue - .5) * .03; blue = .43 + panel * .015;
+                    double wet = Clamp((damp - .58) * 4);
+                    Mix(.36, .35, .33, wet * .6, ref r, ref green, ref blue);
+                    tone *= 1 + Clamp((streak - .6) * 3) * .10 - wet * .08;
+                    rough = Math.Max(.55, rough - wet * .12);
+                    break;
+                }
+                case "plaster":
+                {
+                    r = .72; green = .66; blue = .54;
+                    Mix(.74, .58, .36, (hue - .58) * 3.5, ref r, ref green, ref blue);
+                    double brick = Clamp((spall - .70) * 9) * Clamp((damp - .35) * 3);
+                    Mix(.46, .22, .14, brick, ref r, ref green, ref blue);
+                    Mix(.50, .47, .40, Clamp((damp - .62) * 4) * .5, ref r, ref green, ref blue);
+                    occlusion -= brick * .25; rough += brick * .04;
+                    break;
+                }
+                case "painted-steel":
+                {
+                    r = .17 + (hue - .5) * .04; green = .29; blue = .27;
+                    double chips = Clamp((spall + stoneHue * .35 - .86) * 8);
+                    double runs = Clamp((streak - .62) * 4) * .7;
+                    Mix(.38, .15, .08, chips, ref r, ref green, ref blue);
+                    Mix(.30, .14, .06, runs, ref r, ref green, ref blue);
+                    metal = chips * .3; rough = .52 + chips * .3 + runs * .2;
+                    tone = .86 + b * .2 - streak * .08;
+                    break;
+                }
+                case "corrugated-metal":
+                {
+                    double ridge = .5 - .5 * Math.Cos(2 * Math.PI * mx / .125);
+                    r = .42; green = .435; blue = .44;
+                    Mix(.58, .59, .57, Clamp((hue - .62) * 4) * .7, ref r, ref green, ref blue);
+                    double rust = Clamp((streak - .55) * 3) * (.4 + .6 * (1 - ridge)) * Clamp((damp - .3) * 2);
+                    Mix(.34, .14, .05, rust, ref r, ref green, ref blue);
+                    metal = .75 * (1 - rust); rough = .48 + rust * .4 + streak * .1;
+                    tone = .80 + b * .2 - rust * .1;
+                    break;
+                }
+                case "asphalt":
+                {
+                    r = .075 + (1 - stone) * .03; green = .074 + (1 - stone) * .028; blue = .078 + (1 - stone) * .026;
+                    double tar = Clamp((hue - .68) * 5);
+                    tone = (.80 + b * .25) * (1 - tar * .4);
+                    rough -= tar * .2;
+                    break;
+                }
+                case "gravel":
+                {
+                    r = .30; green = .26; blue = .20;
+                    if (stoneHue > .55) Mix(.36, .27, .18, (stoneHue - .55) * 4, ref r, ref green, ref blue);
+                    else Mix(.25, .25, .24, (.55 - stoneHue) * 4, ref r, ref green, ref blue);
+                    tone = .60 + (1 - stone) * .45 + b * .15;
+                    break;
+                }
+            }
+        }
+
+        /// <summary>Deterministic per-panel jitter in [-1, 1] (splitmix64 of the seed and panel cell).</summary>
+        private static double PanelJitter(ulong seed, int px, int py)
+        {
+            ulong z = seed ^ ((ulong)(uint)px * 0x9E3779B97F4A7C15UL) ^ ((ulong)(uint)py * 0xC2B2AE3D27D4EB4FUL);
+            z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9UL; z = (z ^ (z >> 27)) * 0x94D049BB133111EBUL; z ^= z >> 31;
+            return (z >> 11) * (1.0 / (1UL << 53)) * 2 - 1;
         }
 
         /// <summary>

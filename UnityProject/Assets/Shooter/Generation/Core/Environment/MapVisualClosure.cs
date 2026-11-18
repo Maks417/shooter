@@ -319,7 +319,7 @@ namespace Shooter.Generation.Environment
 
         public static MaterialData DecodeMapMaterial(PackagedVisualPayloads payloads, string path) =>
             DecodeMaterial(payloads, path, path.StartsWith("material-map-", StringComparison.Ordinal) && path != MapAmbientOcclusionVolume.Path
-                ? GeneratorFingerprint.Compute(NoiseMaterialRecipe.Generator, NoiseMaterialRecipe.StructuredVersion) // ADR-106 map surfaces
+                ? GeneratorFingerprint.Compute(NoiseMaterialRecipe.Generator, NoiseMaterialRecipe.RealisticVersion) // ADR-116 map surfaces
                 : path.Contains("-uniform") ? GeneratorFingerprint.Compute(NoiseMaterialRecipe.Generator, NoiseMaterialRecipe.Version) : MapFingerprint(payloads.MapId));
 
         /// <summary>ADR-081 baked ambient-occlusion volume (Texture3D layout, see <see cref="MapAmbientOcclusionVolume.Index"/>).</summary>

@@ -8,7 +8,7 @@ All numbers below are engineering allocations and release gates to validate, not
 |---|---|---|---|
 | Internal render | 1280×720; scale 1.0 for acceptance | 1600×900 | 1920×1080 |
 | URP path | Forward | Forward initially | Forward initially; compare Forward+ in spike |
-| Light/shadow | 1 directional shadow, 2 cascades, 40 m, 1024 atlas | 60 m, 2048 | 100 m, 2048 |
+| Light/shadow | 1 directional soft shadow, 2 cascades, 50 m, 2048 atlas (ADR-116; was 40 m, 1024, hard) | 60 m, 2048 | 100 m, 2048 |
 | Additional lights | ≤2 per object, no shadows | ≤4, no shadows | ≤4; local shadow requires budget proof |
 | MSAA / post | off, simple color grade; FXAA optional measured variant | 2× MSAA if proven | 2×; advanced post opt-in |
 | AO / SSR / volumetrics | off / off / off | cheap AO only after gate | experimental; separately budgeted |

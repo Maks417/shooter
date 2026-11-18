@@ -1971,3 +1971,22 @@ Consequences: weapon packages republish the 13 sight sets under the new sight fi
 Rollback: revert the commit and republish the weapon package.
 
 Evidence: [M11 handoff](milestones/m11-playable-release/handoff.md#adr-115-open-reflex-collimator--2026-11-18).
+
+## ADR-116 — Accepted: realistic map colour, texture and shadows (material.noise 1.2.0)
+
+Date 2026-11-18. Context: owner report: every map reads "almost grey". Four causes stacked. (1) material.noise 1.1.0 baked dark, near-neutral albedo (concrete about .37/.375/.35 linear, painted steel .085/.16/.19, asphalt .04). (2) Presentation tints were all at or below 1, so they only darkened (apron .38), and the ADR-044/050 architectural accents multiplied already-dark steel, so "tank white" rendered dark teal and "safety yellow" dark olive. (3) Every tier desaturated (Low −4 plus the map grade, Balanced/High −6 plus the LUT). (4) Grey horizon fog started at 34–40 m on 64 × 80 m maps, Harbour's sun was a cool 0.65, and Low had hard 1024 px shadows.
+
+Decision:
+- **material.noise 1.2.0** (`NoiseMaterial.cs`): the 1.1.0 relief, normals, Toksvig mask mips and noise keys are reused unchanged; 1.2.0 adds four colour fields and replaces each role's albedo. Concrete is a warm grey (~.50/.475/.43) with per-panel pour jitter, rain efflorescence and damp darkening. Plaster is ~.72/.66/.54 with ochre wash, exposed-brick spalls and damp. Painted steel is olive-teal paint chipped through to red-oxide primer with rust runs. Corrugated sheet is galvanized (~.42/.435/.44) with white-rust mottle and rust in the troughs. Asphalt (~.075) gains pale aggregate and tar patches. Gravel mixes warm and cool stones (~.30/.26/.20). Rust and camo are unchanged. 1.0.0 and 1.1.0 bytes are unchanged; every map surface (`MapPackageBuilder`, `MapVisualClosure`) now bakes 1.2.0. New fixture `docs/feature-fixtures/material-noise-1.2.0.json`; the schema enum accepts 1.2.0.
+- **Presentation tints** (`ProductSurfaceResponse`): near 1 and only nudging hue (concrete 1/.99/.97, trim 1.04/1/.92, cover .95/.96/.96, soil 1.02/.95/.84, asphalt 1/1/1.02, apron .80/.80/.82). The ordering asserted by `ProductSurfaceMaterialTests` is kept.
+- **Accent fix** (`ProductSurfaceMaterial.ArchitecturalAccents`): each tint is the target paint colour divided by the source plane's mean linear albedo (recorded at upload from the smallest mip), clamped to 0..8, the same lift the walnut and HE-band tints use. Targets: depot blue .10/.22/.34, oxide .30/.10/.05, footing .28/.27/.25, tank white .70/.70/.66, safety yellow .62/.42/.04.
+- **Shader** (`MapSurface.shader`): the macro bands also shift hue between warm and cool; walls get world-space rain-streak runs; the ground dirt tint is warmer (.52/.44/.33); the detail-normal blend is .14 (was .10, still at 0.55/m); the height-fog mix is .22 (was .35).
+- **Light and atmosphere**: sun intensity 1.35 for compound, 1.25 for Harbour (was .65) and petroleum, all warm; sun shadow strength .92 (was .85). Fog: compound 42–130 m, Harbour 40–120 m, petroleum 38–115 m, and the compound ambient ground is warmer. The 50 m readability bands in `GeneratedSkyTests` still hold.
+- **Grade**: every tier adds +10 saturation (was −4 Low, −6 Balanced/High). The map grade integers and the sky/grade golden are unchanged; the net result is slightly saturated rather than desaturated.
+- **Shadows** (amends ADR-103 "Low unchanged", as the owner allowed): Low gets soft shadows (SoftShadowQuality.Low), 50 m (was 40), a 2048 atlas (was 1024) and normal bias .6. It keeps 2 cascades and no SSAO. Balanced/High SSAO intensity is 1.4/1.6 (was 1.2/1.4).
+
+Consequences: map visual packages republish under the material.noise 1.2.0 fingerprint (gameplay roots unchanged). The feature-content-lock adds the 1.2.0 generator row and refreezes source hashes. The settings assets and `provenance.json` regenerate through `ShooterBuild.InitializeFoundation` and `ShooterPostProcessingBuild.Configure`. C0-v1, Game-v1 and content-format locks are unchanged. The Low GPU cost on the 4600H reference is Pending until measured; if Low misses the 27 ms p95 budget, drop the Low atlas back to 1024 first.
+
+Rollback: revert the commit, regenerate the settings and republish content.
+
+Evidence: [M11 handoff](milestones/m11-playable-release/handoff.md#adr-116-map-realism--2026-11-18).

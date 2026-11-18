@@ -260,7 +260,7 @@ namespace Shooter.Presentation.Session
             // ADR-103: Soft where the tier's URP asset supports it (Balanced/High); Low's asset resolves this to hard.
             // Bias comes from the pipeline asset (per-light values were silently ignored by URP before).
             sun.shadows = LightShadows.Soft;
-            sun.shadowStrength = 0.85f;
+            sun.shadowStrength = 0.92f; // ADR-116: deeper, more defined sun shadows
             sun.cullingMask &= ~(1 << ProductMenuScene.StageLayer);
             QualitySettings.vSyncCount = 0;
             Application.targetFrameRate = -1;
