@@ -812,6 +812,37 @@ Checks on the working tree over `bc3bd29` (all PASS): Contracts 79/79 (`m0-found
 
 **Pending / NotClaimed:** client build and installer; in-game review of the Career page layout, insignia legibility at 1080p in the Tab board and debrief, the debrief CP strip and promotion line, Armory lock rows, and buff feel (reload, recoil, ADS spread, equip, spare magazines). Balance of the CP scale needs real match scores.
 
+## Delivery 0.3.23
+
+Owner requested an installer once the navigation fix was done (2026-11-18). Clean binary/content source **`1d6c2cc5f424fb9f8e3fe6b827c320289839505d`** adds to 0.3.22 [ADR-114](../../decisions.md#adr-114--accepted-corner-bob-motor-fix-nav-bake-that-respects-walls-and-a-tabbed-career-page):
+- bots no longer walk into walls: a wall-respecting native bake, the `NavCollisionAudit` publishing gate, a NavMesh that installs whole, and a wall-safe fallback and corner bend;
+- the corner up-and-down motor fix;
+- the tabbed Career page.
+
+Windows installer **0.3.23**, **87,215,681 bytes**, SHA256 **`57ee07f12c11205f1b19781c39ace6c53f352cd9cd39f75c9b539d2bcc6c6c94`**. Delivery copy: `Artifacts/deliveries/Shooter-Setup-0.3.23.exe`, with hash sidecar and `installer-report-0.3.23.json`. Stable AppId `B01E0F69-2123-4D91-AB59-88864A944E39` is unchanged, and the build ran with the 0.3.22 report as the previous release. Unity 6000.3.28f1 / 8f082d2fe476, IL2CPP, Inno Setup 6.7.3.
+
+All paths below are beneath `Artifacts/`; commit roots use the full source hash above.
+
+| Check | Actual result / retained run |
+|---|---|
+| Pure lanes and Unity EditMode/PlayMode | PASS on the working tree immediately before commit `1d6c2cc` (same content); see the ADR-114 entry above. EditMode `tests-editmode-20261118T185832087Z-b2b2642b`, PlayMode 30/30 `tests-playmode-20261118T184758167Z-a62ede08`. Not rerun on the commit itself. |
+| Clean Client | PASS, `sourceDirty=false`, `m0-foundation/1d6c2cc…/build-client-20261118T191120329Z-407bc55a/`. |
+| Native packages | **12** Verified, `nativeUnityNavBake=PASS`, `-Native -Force`, nav collision audit clean; focused package tests **35/35**. `m8-runtime-composition/1d6c2cc…/compile-gamecontent-20261118T191754965Z-1a285f12/`. |
+| Release smoke | PASS, `m0-foundation/1d6c2cc…/smoke-client-20261118T192121826Z-dcab7048/`; boot/shutdown only. |
+| Package | PASS, native navigation (`-MapCacheRoot Artifacts/map-packages-native`), **1175 inventory files**, extraction and corrupt-content rehearsal PASS; previous-pair rehearsal SkippedNoPrevious. `m11-playable-release/1d6c2cc…/package-20261118T192130508Z-2bf0cc89/`. |
+| Installer | PASS, `workspaceDirty=false`; `m11-playable-release/1d6c2cc…/installer-20261118T192200285Z-3ec405bd/`. |
+
+Source hash `f3e18a86fa6fc9db8d191e98fb8e5cd16502972efb875a69dd9ac107e352cdc6`; toolchain hash `a8331fe2bc5b4293773762d829dc293c8aa5185024bd1a771543ac4eda840500`; build-content manifest `41150af53c6d7f518dd71bf59282fc28232610eb04ba1d3e9a8513ef2c34d56e`; native content closure `b177b5eed8ac349b84d27a4b4ec550605cdd2dec25aaf83df42d504626b5e380`; index `548b28e6ac5df55e7265e1355f47e372f692397e5e2a29dcfaecaa0a66494a24`; internal ZIP `a6365d84d55dc76b895de98588fef77a3dde7f067ff466a79e3f2945d32f6c6e`.
+
+Wrapper retention pruned the 0.3.22 `23008f7` installer run folder. Its JSON report and the 0.3.22 delivery copy remain in `Artifacts/deliveries/`.
+
+**Pending / NotClaimed:**
+- actual 0.3.23 installation and upgrade;
+- owner play checks: bots on all three maps (no wall-walking, no stuck bots), corners for players and bots, both Career tabs at 720p and 1080p;
+- everything still pending from 0.3.22.
+
+Building the installer does not close these gates.
+
 ## Delivery 0.3.22
 
 Owner requested a new release/installer (2026-11-18). Clean binary/content source **`23008f7dd7c576412ced89457e305c790a615087`** adds to 0.3.21 the ADR-105 dropped weapons with G pickup, ADR-106 graphics uplift v2, ADR-107 Armory and rail-mounted sights, ADR-108 career ranks with the ADR-113 progress line and emblems, ADR-109 site-planned maps (Old Town, Harbour, rebuilt Oil Depot), ADR-110 body armor, the ADR-111 knife and grenade overhaul with audio bank v8, ADR-112 crosshair-true hits and smarter bots, and the minimap circle-mask fix. Windows installer **0.3.22**, **87,111,644 bytes**, SHA256 **`7e80a351644d8bd07a1526497441451c40bb9f45b7fca54e237d7594d6f84ada`**. Delivery copy: `Artifacts/deliveries/Shooter-Setup-0.3.22.exe`, with hash sidecar and `installer-report-0.3.22.json`. Stable AppId `B01E0F69-2123-4D91-AB59-88864A944E39` is unchanged; monotonic check against the 0.3.21 report PASS. Unity 6000.3.28f1 / 8f082d2fe476, IL2CPP, Inno Setup 6.7.3; C0-v1 and Game-v1 identities verified by the wrappers.

@@ -155,9 +155,9 @@
     "milestones/m11-playable-release/agent-assignments.md": "9df1f7cb3f1ec7d602287b80806acf1db118be20b342094ce8e7bc2f0a526bad",
     "milestones/m11-playable-release/contracts-integration.md": "92ec7f423a0f51f6446c72bfb3e2c915247478b6a10d05ee47ab449fdd453c7f",
     "milestones/m11-playable-release/handoff-archive.md": "e3db424191a4fa7543db0b383eee5e8c4f100c7c5676bf723155a3773cf9e8b6",
-    "milestones/m11-playable-release/handoff.md": "44d174a0db56f03843527b72d8819ef73bf4d7140b50f5087db1eef5d2165e43",
+    "milestones/m11-playable-release/handoff.md": "f1881cc92ef8f1727c4aeeb76bf0cbb727afb7a1c5d4cb0c764671f55655e5ae",
     "milestones/m11-playable-release/implementation.md": "99e735b4d00a559e2a8c66831a37f9bf160cbea1bfb1cf33038a8a14d5ae765a",
-    "milestones/m11-playable-release/index.md": "e7a7d9248b0c12f788970a7885fa9846464d73f2d6ecdd32a740291aa9f3b235",
+    "milestones/m11-playable-release/index.md": "64386f5272f60ee96b9359408ad31658b9a4e509d6d2bbcc476f24d4b8f71599",
     "milestones/m11-playable-release/validation-acceptance.md": "ca9a71e2f30781b1d5872b69011ef0948c90e984de916889f0035e23117692c8",
     "milestones/m2-combat-harness/handoff.md": "ab5ed1b4f73e237502d24b0c2d05ef61df60147c5e605e4a0574199e286105b0",
     "milestones/m2-combat-harness/index.md": "63f0ae037ca8454f5e451e8f23e92184c242b5e760a4cbbae0a80e4f669ddee9",
@@ -190,10 +190,10 @@
     "milestones/m9-team-deathmatch/index.md": "fcb2291660b612a8ef371bd53bc771a78a59711899f0defd17b3a826a5557216",
     "milestones/m9-team-deathmatch/validation-acceptance.md": "8169801fd98eebc2989070d7598beac20625993bc987dda33f253a55ea1fca3d",
     "milestones.md": "f3b3c1198fecd0f066ffa464f51e052281f99feaeb9751c1da7136c2ef1bdd78",
-    "next-playable-build.md": "57bd1bf53ac362fc4f738c9a6a8162c09e743d43c353314e1715b81a286a9674",
+    "next-playable-build.md": "13243b98b38c41bee5d573eeed90fc20a09db4aabac55ba375a12aa26709e73f",
     "performance.md": "9872c22e2dfd52909852c76f1376f219651a5488cbf4e8327e994265c26852f8",
     "playtest-guide.md": "a559439b52c80fe589e4eb686abc0470754c6b88c0eebda9c0a7b15fccded287",
-    "product-state-audit.md": "9898100d3b30df46ab247e258e1278ad77050ac43b97b1d910fbeb55e632a9dd",
+    "product-state-audit.md": "f005887e04502e38a26c964d3007eaf8c8d6ea9103a39a422abe153d6bc6577e",
     "references.md": "c3ca67597cc5bb5d7dc61fdf2f7b75ae5b6eacfa322c7ec2b912b2bebbaf258f",
     "release-remediation-validation.md": "3615f034bfb52180faa5c21e4f14dbaa92adb7832d2706a19a54775231aeabdc",
     "repo-layout.md": "2403f168cac1deb792f6592a3bc4f405bc1efa87a49a4fa042708753d74601e5",
@@ -206,7 +206,7 @@
     "vision.md": "061b60ae3fcce8d0c5aa8ce3668cad0ab2c52fe55d40c7c228878994c9c0b55d",
     "visual-art-brief.md": "0ba69412a2a4ef6cff59c55e0a4a762999a2d2d8651b1b4d3f0342f3a7699404",
     "visual-defect-inventory.md": "025a6057dcb4ace0586dad3b267b6ac4a4346125ea1453425748d197d8b81344",
-    "visual-roadmap.md": "b71e6cee9f0a76d94b45212da54bdbb192b42dbb5a54da5529c7af74f1b9585c",
+    "visual-roadmap.md": "a27eedb15ae730654b3a71c05fb4638bb7b7f31ebea8aebd8d0aa2ffee49af33",
     "weapon-recipe-baseline.md": "7879477254413fc451bc57e25de39fbe816b9c6c46a9ec046d25288a499ff1ec"
   }
 }
