@@ -34,6 +34,8 @@ namespace Shooter.Simulation
             public float RecoilYaw;
             public float RecoilPitch;
             public ushort Health = DamageMath.MaxHealth;
+            /// <summary>ADR-110 body armor; absorbs half of each torso/limb/blast hit.</summary>
+            public ushort Armor = DamageMath.MaxArmor;
             public bool Alive = true;
             public uint LastProcessedSequence;
             public InputButtons LastButtons;
@@ -142,6 +144,16 @@ namespace Shooter.Simulation
             sight = default;
             for (int i = 0; i < actors.Count; i++)
                 if (actors[i].Id.Equals(entity)) { sight = actors[i].PrimarySight; return true; }
+            return false;
+        }
+
+        /// <summary>ADR-110: a live actor's remaining body armor (0..<see cref="DamageMath.MaxArmor"/>).</summary>
+        public bool TryGetArmor(EntityId entity, out ushort armor)
+        {
+            MainThread();
+            armor = 0;
+            for (int i = 0; i < actors.Count; i++)
+                if (actors[i].Id.Equals(entity)) { armor = actors[i].Armor; return true; }
             return false;
         }
 
@@ -285,6 +297,7 @@ namespace Shooter.Simulation
                 actor.RecoilYaw = 0;
                 actor.RecoilPitch = 0;
                 actor.Health = DamageMath.MaxHealth;
+                actor.Armor = DamageMath.MaxArmor;
                 actor.Alive = true;
                 actor.LastProcessedSequence = 0;
                 actor.LastButtons = InputButtons.None;
@@ -582,6 +595,7 @@ namespace Shooter.Simulation
                 if (dist >= radius) continue;
                 ushort amount = GrenadeSimulator.BlastDamage(boom.Definition, dist);
                 if (amount == 0) continue;
+                amount = AbsorbWithArmor(victim, amount, 2);
                 DamageMath.Apply(victim.Health, amount, out ushort remaining);
                 victim.Health = remaining;
                 tickEvents.Add(new CombatEvent(nextEvent, CombatEventKind.DamageApplied, boom.ThrowerId, victim.Id,
@@ -599,13 +613,22 @@ namespace Shooter.Simulation
             }
         }
 
+        /// <summary>ADR-110: takes the armor share of a covered hit off the actor and returns the health share.</summary>
+        private static ushort AbsorbWithArmor(Actor victim, ushort amount, ushort region)
+        {
+            if (!DamageMath.ArmorCovers(region) || victim.Armor == 0) return amount;
+            ushort health = DamageMath.SplitArmor(amount, victim.Armor, out ushort armorTaken);
+            victim.Armor = (ushort)(victim.Armor - armorTaken);
+            return health;
+        }
+
         private void ApplyDirectDamage(Actor shooter, EntityId targetId, ushort region, ushort baseDamage, ref EventId nextEvent, ref int damageEvents)
         {
             Actor? target = null;
             for (int a = 0; a < actors.Count; a++) if (actors[a].Id.Equals(targetId)) { target = actors[a]; break; }
             if (target == null || !target.Alive || target.Team == shooter.Team) return;
             if (region < 1 || region > 6) region = 2;
-            ushort amount = DamageMath.RoundDamage(baseDamage, region);
+            ushort amount = AbsorbWithArmor(target, DamageMath.RoundDamage(baseDamage, region), region);
             DamageMath.Apply(target.Health, amount, out ushort remaining);
             target.Health = remaining;
             tickEvents.Add(new CombatEvent(nextEvent, CombatEventKind.DamageApplied, shooter.Id, target.Id, new DamagePayload(amount, remaining, region)));

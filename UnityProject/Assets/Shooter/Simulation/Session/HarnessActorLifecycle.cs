@@ -68,6 +68,9 @@ namespace Shooter.Simulation.Session
         /// <summary>ADR-107: the sight mounted on this life's primary (invalid for guns without mounted sights).</summary>
         public bool TryGetPrimarySight(EntityId entity, out DefinitionId sight) => harness.TryGetPrimarySight(entity, out sight);
 
+        /// <summary>ADR-110: this life's remaining body armor.</summary>
+        public bool TryGetArmor(EntityId entity, out ushort armor) => harness.TryGetArmor(entity, out armor);
+
         /// <summary>ADR-102: the primary and sidearm issued to this life, for bots and presentation.</summary>
         public bool TryGetLoadout(EntityId entity, out DefinitionId primary, out DefinitionId sidearm)
         {

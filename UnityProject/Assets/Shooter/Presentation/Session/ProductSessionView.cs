@@ -1401,6 +1401,24 @@ namespace Shooter.Presentation.Session
                     TacticalUi.Fill(new Rect(sx, barY, Mathf.Min(1.5f, fill), barH), new Color(1f, 1f, 1f, .16f * pulse));
             }
 
+            // ADR-110 armor block to the right of HP: same segmented bar, steel-blue, dimmed once broken.
+            ushort armor = 0;
+            if (session != null) session.TryGetArmor(session.HumanEntityId, out armor);
+            {
+                float ax = hx + barW + CombatHudVisual.ArmorBlockOffset;
+                var armorInk = armor > 0 ? new Color(.62f, .74f, .86f, 1f) : TacticalUi.Muted;
+                combatUi.Label(new Rect(ax, hy - 2, 44, 26), armor.ToString(), 24, armorInk, TextAnchor.MiddleLeft);
+                combatUi.Label(new Rect(ax + 42, hy + 8, 60, 11), "AR", 9, TacticalUi.Muted, TextAnchor.MiddleLeft);
+                TacticalUi.Fill(new Rect(ax, barY, barW, barH), new Color(.05f, .07f, .08f, .7f));
+                TacticalUi.Fill(new Rect(ax, barY, barW, 1), new Color(1f, 1f, 1f, .05f));
+                for (int s = 0; s < CombatHudVisual.HealthSegments; s++)
+                {
+                    float fill = CombatHudVisual.SegmentFill(armor, s, segW);
+                    if (fill <= 0f) continue;
+                    TacticalUi.Fill(new Rect(ax + s * (segW + gap), barY, fill, barH), armorInk);
+                }
+            }
+
             // ADR-060 tightness bar above HP; authority fraction via LocalMovementView (C0 unchanged).
             float tightness01 = 1f;
             if (session != null && session.TryGetMovementView(session.HumanEntityId, out var movement))

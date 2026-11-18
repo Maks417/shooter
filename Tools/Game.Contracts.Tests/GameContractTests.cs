@@ -196,7 +196,7 @@ namespace Shooter.Game.Contracts.Tests
                 lifecycle.ResetLife(victim.EntityId, new Float3(60, 0, 5), 0);
 
                 bool killed = false;
-                for (uint fireTick = 0; fireTick < 120 && !killed; fireTick++)
+                for (uint fireTick = 0; fireTick < 360 && !killed; fireTick++) // ADR-110 armor lengthens body time-to-kill
                 {
                     var command = new InputCommand(
                         killer.EntityId,

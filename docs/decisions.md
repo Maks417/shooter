@@ -1821,3 +1821,22 @@ Consequences: collision, navigation and gameplay package identities change for a
 Rollback: revert the commit and republish map content.
 
 Evidence: `Tools/Test-Generation.ps1` (`SiteMapTests`, `ArenaRulesTests`, `MapRegistryTests`), `Tools/Test-Maps.ps1`, native content compile and the M11 handoff entry. Whether the maps play well — time to first contact, spawn pressure, bot routing, upper-floor use — is Pending the owner playtest.
+
+## ADR-110 — Accepted: body armor (100 points, torso and limbs)
+
+Date 2026-11-18. Context: owner request to add armor, 100 points like health, that covers the body. Until now every soldier had only 100 health and armor was listed as postponed in [combat](features/combat.md). Owner choices: armor covers the torso and limbs but not the head; each covered hit is split 50/50 between armor and health; everyone spawns and respawns with full armor and there are no pickups; grenade blasts are absorbed like torso hits.
+
+Decision:
+- **Pool:** every actor (human and bots) has `DamageMath.MaxArmor` = 100 armor, set on spawn and restored by `ResetActor`; `RelocateActor` (embedded-actor rescue) keeps it, like health.
+- **Coverage:** `DamageMath.ArmorCovers` is true for hit regions 2–6 (torso, arms, legs). Headshots (region 1) go straight to health, so the ADR-063 rifle/pistol head one-shot is unchanged.
+- **Split:** after region and falloff rounding, armor takes `floor(d/2)` of a covered hit, capped by the armor left; health takes the rest (`DamageMath.SplitArmor`). Broken armor (0) absorbs nothing. Grenade blasts are emitted as region 2 and follow the same split, including self-damage.
+- **Events:** `DamagePayload.Amount` and `RemainingHealth` keep meaning health damage. Health always takes `ceil(d/2) ≥ 1`, so the C0 rule `amount > 0` still holds and every accepted hit still emits exactly one `DamageApplied`. Assist credit, kill feed, hit feedback and bots read health as before.
+- **Read path:** armor lives only in the authority (`CombatHarnessSimulation.Actor.Armor`) and is read through `TryGetArmor` on `CombatHarnessSimulation`, `HarnessActorLifecycle` and `OfflineGameSession`, the ADR-107 side-channel pattern. No snapshot field.
+- **HUD:** an "AR" number and a five-segment steel-blue bar sit to the right of the HP block (`CombatHudVisual.ArmorBlockOffset`), dimmed when armor is 0.
+- **Bots:** spawn with armor like the human; AI tactics still read health only.
+
+Consequences: body time-to-kill rises (rifle torso 30 → 15 health per hit until armor breaks: about 6 hits instead of 4; limbs about 10 instead of 7); headshots are unchanged. No C0, Game-v1, content-format, feature-content, settings or network change; `contract-lock.json` and `game-contract-lock.json` are untouched.
+
+Rollback: revert the commit.
+
+Evidence: `Tools/Test-Simulation.ps1` (`CombatTests` armor split/coverage theories; `CombatHarnessTests` body hit, headshot bypass, grenade absorption, reset/relocate), the other pure lanes and the M11 handoff entry. The HUD block and the feel of the longer body time-to-kill are Pending the locked-editor run and the owner playtest.

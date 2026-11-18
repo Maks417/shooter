@@ -19,6 +19,28 @@ namespace Shooter.Simulation.Tests.Combat
             Assert.Equal(expected, DamageMath.RoundDamage(baseDamage, region));
         }
 
+        [Theory]
+        [InlineData(30, 100, 15, 15)] // rifle torso: half to armor
+        [InlineData(15, 100, 7, 8)]   // odd amount: health takes the larger half
+        [InlineData(1, 100, 0, 1)]    // minimum hit always reaches health (DamagePayload amount > 0)
+        [InlineData(30, 4, 4, 26)]    // armor nearly broken: capped by what is left
+        [InlineData(30, 0, 0, 30)]    // broken armor absorbs nothing
+        public void ArmorSplitsCoveredHitsHalfAndHalf(ushort amount, ushort armor, ushort armorTaken, ushort health)
+        {
+            Assert.Equal(health, DamageMath.SplitArmor(amount, armor, out ushort taken));
+            Assert.Equal(armorTaken, taken);
+        }
+
+        [Theory]
+        [InlineData(1, false)]
+        [InlineData(2, true)]
+        [InlineData(3, true)]
+        [InlineData(6, true)]
+        public void ArmorCoversTorsoAndLimbsButNotHead(ushort region, bool covered)
+        {
+            Assert.Equal(covered, DamageMath.ArmorCovers(region));
+        }
+
         [Fact]
         public void AutomaticRifleShotCountIsExactForHeldFire()
         {

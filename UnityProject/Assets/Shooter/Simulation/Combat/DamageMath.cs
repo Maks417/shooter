@@ -34,6 +34,23 @@ namespace Shooter.Simulation.Combat
             return (ushort)(rounded < 1 ? 1 : rounded);
         }
 
+        /// <summary>ADR-110 body armor pool every actor spawns and respawns with.</summary>
+        public const ushort MaxArmor = 100;
+
+        /// <summary>ADR-110: armor protects the torso (2) and limbs (3–6); headshots (1) bypass it.</summary>
+        public static bool ArmorCovers(ushort regionId) => regionId >= 2 && regionId <= 6;
+
+        /// <summary>
+        /// ADR-110 50/50 split: armor takes floor(amount/2), capped by the armor left; health takes the rest,
+        /// which is always ≥ 1 for amount ≥ 1 so a DamagePayload keeps amount &gt; 0.
+        /// </summary>
+        public static ushort SplitArmor(ushort amount, ushort armor, out ushort armorTaken)
+        {
+            int half = amount / 2;
+            armorTaken = (ushort)(half < armor ? half : armor);
+            return (ushort)(amount - armorTaken);
+        }
+
         public static ushort Apply(ushort health, ushort amount, out ushort remaining)
         {
             if (health == 0) { remaining = 0; return 0; }

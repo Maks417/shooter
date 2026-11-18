@@ -172,6 +172,13 @@ namespace Shooter.Game.Session
             return harness != null && harness.TryGetPrimarySight(entity, out sight);
         }
 
+        /// <summary>ADR-110: a live actor's remaining body armor (engine-side; C0/Game-v1 unchanged).</summary>
+        public bool TryGetArmor(EntityId entity, out ushort armor)
+        {
+            armor = 0;
+            return harness != null && harness.TryGetArmor(entity, out armor);
+        }
+
         /// <summary>ADR-105: monotonic count of the human's successful pickups (presentation plays a cue on change).</summary>
         public int HumanPickupCount { get; private set; }
 

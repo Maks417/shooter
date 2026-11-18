@@ -19,6 +19,8 @@ namespace Shooter.Presentation.Hud
         /// <summary>ADR-060 tightness bar drawn above the health track.</summary>
         public const float TightnessBarHeight = 3f;
         public const float TightnessBarGap = 3f;
+        /// <summary>ADR-110: the armor block sits this far right of the HP bar's end (clears the STA label).</summary>
+        public const float ArmorBlockOffset = 34f;
         public const string KillFeedSeparator = "  >  ";
         /// <summary>Elimination-row plate and icon band (720p tactical HUD).</summary>
         public const float KillFeedRowWidth = 248f;

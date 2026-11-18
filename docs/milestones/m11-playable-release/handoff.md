@@ -2,6 +2,27 @@
 
 Records from 2026-11-15 onward. Older entries — T062–T085, deliveries up to 0.3.12, historical candidates and the T065 operator runbook — are in the [handoff archive](handoff-archive.md).
 
+## ADR-110 — Body armor — 2026-11-18
+
+Owner: add armor, 100 points like health, that covers the body. Owner choices: torso and limbs (not the head), 50/50 split, full armor every spawn with no pickups, grenade blasts absorbed. [ADR-110](../../decisions.md#adr-110--accepted-body-armor-100-points-torso-and-limbs)
+
+**Implemented:**
+- `DamageMath.MaxArmor`, `ArmorCovers` (regions 2–6) and `SplitArmor` (armor `floor(d/2)` capped by what is left, health the rest).
+- `CombatHarnessSimulation`: `Actor.Armor` set at spawn, restored by `ResetActor` and kept by `RelocateActor`. `AbsorbWithArmor` runs on direct hits and grenade blasts, and `TryGetArmor` is passed through `HarnessActorLifecycle` and `OfflineGameSession`.
+- HUD: "AR" number and a five-segment bar to the right of HP (`CombatHudVisual.ArmorBlockOffset`).
+- C0-v1 and Game-v1 are unchanged.
+- `GameContractTests.RealHarness_Replaces_OneHundred_Lives_With_Bounded_Authority` now has a 360-tick kill window instead of 120, because armor lengthens body time-to-kill.
+
+**Checks (working tree on `e32496d`):**
+- Pure lanes:
+  - `Test-Simulation`: 553 PASS (14 new armor cases).
+  - `Test-Game`: 157 PASS.
+  - `Test-Contracts`: 79 PASS.
+- Contract lock, Game-v1 lock, asmdef graph and fixtures: PASS.
+- Unity EditMode (locked editor, compiles the HUD change): 93 PASS, `tests-editmode-20261118T143742112Z-474ac754`.
+
+**Pending:** an in-game check of the AR bar, body versus head hits and the respawn refill, and the owner's judgement of the longer body time-to-kill (torso about 6 rifle hits, limbs about 10).
+
 ## ADR-109 — Site-planned maps: Old Town, Harbour, rebuilt Oil Depot — 2026-11-18
 
 Owner: Oil Depot is more or less good but not good enough as map design; the other two maps are garbage (random objects, enemies visible right after the respawn, a long empty space). Re-think map generation so each map is unique and imitates a real place with no random pillars or walls. Owner choices: a small town centre and a port, Oil Depot rebuilt on the new system, a few two-storey buildings. [ADR-109](../../decisions.md#adr-109--accepted-site-planned-maps-old-town-harbour-rebuilt-oil-depot); layouts in [tdm-map-layouts.md](../../features/tdm-map-layouts.md).
