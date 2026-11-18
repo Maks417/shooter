@@ -828,6 +828,33 @@ Checks on the working tree over `6787ff1`: Generation 618/618 PASS (`m1-procedur
 
 **Pending / NotClaimed:** client build and installer, the owner's in-game review on all three maps at Low and High, and the Low benchmark on the 4600H (GPU p95 ≤ 27 ms with the new Low shadows).
 
+## Delivery 0.3.24
+
+Owner requested a release and installer after the map realism change (2026-11-18). Clean binary/content source **`53cce2682e3b5f0b3bf1bbfea11b0c95a14cc116`** adds to 0.3.23 [ADR-115](../../decisions.md#adr-115--accepted-open-reflex-collimator-with-a-clear-glass-pane) (open reflex collimator with a clear glass pane) and [ADR-116](../../decisions.md#adr-116--accepted-realistic-map-colour-texture-and-shadows-materialnoise-120) (realistic map colour, texture and shadows: material.noise 1.2.0, corrected accent paint, warmer light, later fog, +10 saturation, soft Low shadows).
+
+Windows installer **0.3.24**, **91,233,343 bytes**, SHA256 **`ad6f69d639a0ea29dcb50880299c98aafcf279bfed1c1356abf9e9d4427ea270`**. Delivery copy: `Artifacts/deliveries/Shooter-Setup-0.3.24.exe`, with hash sidecar and `installer-report-0.3.24.json`. Stable AppId `B01E0F69-2123-4D91-AB59-88864A944E39` is unchanged, and the build ran with the 0.3.23 report as the previous release. Unity 6000.3.28f1 / 8f082d2fe476, IL2CPP.
+
+All paths below are beneath `Artifacts/`; commit roots use the full source hash above.
+
+| Check | Actual result / retained run |
+|---|---|
+| Pure lanes and Unity EditMode/PlayMode | PASS on the working tree immediately before commit `53cce26` (same content); see the ADR-116 entry above. EditMode 94/94, PlayMode 30/30. Not rerun on the commit itself. |
+| Clean Client | PASS, clean tree, `m0-foundation/53cce26…/build-client-20261118T221603958Z-1c575f56/`. |
+| Native packages | **12**, `nativeUnityNavBake=PASS`, `-Native -Force`. `m8-runtime-composition/53cce26…/compile-gamecontent-20261118T221810359Z-ff931e21/`. |
+| Release smoke | PASS, `m0-foundation/53cce26…/smoke-client-20261118T222112445Z-4e88bf89/`; boot/shutdown only. |
+| Package | PASS, native navigation (`-MapCacheRoot Artifacts/map-packages-native -RequireNativeNav`), **1175 inventory files**, extraction and corrupt-content rehearsal PASS; previous-pair rehearsal SkippedNoPrevious. `m11-playable-release/53cce26…/package-20261118T222120583Z-9d2b7258/`. |
+| Installer | PASS, `workspaceDirty=false`, package validation PASS; `m11-playable-release/53cce26…/installer-20261118T222153148Z-e9db3772/`. |
+
+Source hash `e85d0fb36b76418188fd0a08e9a3e38d3f74212210b575893e756203c49cc165`; toolchain hash `a8331fe2bc5b4293773762d829dc293c8aa5185024bd1a771543ac4eda840500`.
+
+**Pending / NotClaimed:**
+- actual 0.3.24 installation and upgrade;
+- owner play checks: map colour, accents and shadows on all three maps at Low and High; the collimator glass in ADS and third person;
+- the Low benchmark on the 4600H with the new soft Low shadows (GPU p95 ≤ 27 ms);
+- everything still pending from 0.3.23.
+
+Building the installer does not close these gates.
+
 ## Delivery 0.3.23
 
 Owner requested an installer once the navigation fix was done (2026-11-18). Clean binary/content source **`1d6c2cc5f424fb9f8e3fe6b827c320289839505d`** adds to 0.3.22 [ADR-114](../../decisions.md#adr-114--accepted-corner-bob-motor-fix-nav-bake-that-respects-walls-and-a-tabbed-career-page):

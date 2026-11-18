@@ -1,6 +1,6 @@
 # M11 — Playable build and acceptance — implementation pack
 
-**Disposition — 2026-11-17:** M11 acceptance remains open. Installers 0.3.1–0.3.23 are delivered with clean Client, native packages and installer builder evidence; the formal T071 playtest, T062 named P05 visual review and T065 match/device/reference/soak/delivery exits remain open. REL01–REL06 are NotClaimed. See [next playable build](../../next-playable-build.md), the [audit](../../product-state-audit.md), the [playtest guide](../../playtest-guide.md) and [FIX acceptance](../../release-remediation-validation.md). Original requirements and historical evidence remain; this review creates no coding lease or waiver.
+**Disposition — 2026-11-17:** M11 acceptance remains open. Installers 0.3.1–0.3.24 are delivered with clean Client, native packages and installer builder evidence; the formal T071 playtest, T062 named P05 visual review and T065 match/device/reference/soak/delivery exits remain open. REL01–REL06 are NotClaimed. See [next playable build](../../next-playable-build.md), the [audit](../../product-state-audit.md), the [playtest guide](../../playtest-guide.md) and [FIX acceptance](../../release-remediation-validation.md). Original requirements and historical evidence remain; this review creates no coding lease or waiver.
 
 ## Goal
 
