@@ -64,3 +64,5 @@ T072 adds Slide (default Key.F), displayed as “Slide (hold Sprint)” in setti
 ## Last-weapon binding and local muzzle overlay (ADR-056)
 
 Owner playtest fix: additive optional `LastWeapon` (default Key.Q, settings label “Last weapon”) toggles the previous rifle/pistol slot client-side into the existing selected-slot command. Legacy schema-2 files gain `LastWeapon=Key.Q` when free, or `Unbound` when Q is already customized; multiple unbound additive actions are allowed. The cosmetic full-screen muzzle flash and “Shot” subtitle apply only to the local human’s `ShotAccepted`; bot/remote shots keep world muzzle proxies and audio without flashing the screen. See [ADR-056](../decisions.md#adr-056--accepted-last-weapon-quick-switch-q-and-local-only-muzzle-overlay).
+
+Additive optional `Pickup` (default Key.G, settings label “Pick up weapon”) takes a dropped primary in reach. Legacy schema-2 files gain `Pickup=Key.G` when free, or `Unbound` when G is already customized. See [ADR-105](../decisions.md#adr-105--accepted-dropped-primary-weapons-and-g-pickup).

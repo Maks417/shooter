@@ -96,6 +96,45 @@ namespace Shooter.Simulation
             return false;
         }
 
+        /// <summary>
+        /// ADR-105: replaces a live actor's primary (slot 0) with a picked-up gun. When the primary is in hand
+        /// the new gun is drawn (Equipping for its equip time), which also cancels any reload in progress.
+        /// </summary>
+        public bool ReplacePrimary(EntityId entity, DefinitionId definitionId, ushort magazine, ushort reserve)
+        {
+            MainThread();
+            var def = WeaponDefinition.FromId(definitionId);
+            for (int i = 0; i < actors.Count; i++)
+            {
+                var actor = actors[i];
+                if (!actor.Id.Equals(entity)) continue;
+                if (!actor.Alive) return false;
+                ushort mag = magazine > def.MagazineSize ? def.MagazineSize : magazine;
+                actor.Weapons[0] = actor.ActiveSlot == 0
+                    ? new WeaponState(definitionId, WeaponAction.Equipping, mag, reserve, tick, tick, unchecked(tick + def.EquipTicks), 0, false)
+                    : new WeaponState(definitionId, WeaponAction.Ready, mag, reserve, tick, tick, tick, 0, false);
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>ADR-105: sets a live actor's primary reserve (same-gun ammo pickup); every other field is kept.</summary>
+        public bool SetPrimaryReserve(EntityId entity, ushort reserve)
+        {
+            MainThread();
+            for (int i = 0; i < actors.Count; i++)
+            {
+                var actor = actors[i];
+                if (!actor.Id.Equals(entity)) continue;
+                if (!actor.Alive) return false;
+                var w = actor.Weapons[0];
+                actor.Weapons[0] = new WeaponState(w.DefinitionId, w.Action, w.AmmoInMagazine, reserve,
+                    w.NextAllowedFireTick, w.PhaseStartTick, w.PhaseEndTick, w.ShotIndex, w.PreviousFireHeld);
+                return true;
+            }
+            return false;
+        }
+
         public CombatHarnessSimulation(IWorldQueries world, ulong authoritySessionId = 1, ulong shotSeed = 460072030UL)
         {
             this.world = world ?? throw new ArgumentNullException(nameof(world));

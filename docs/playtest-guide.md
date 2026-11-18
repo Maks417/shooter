@@ -25,6 +25,7 @@ From `Game/Contracts/GameData.cs` (`DefaultBindings`); saved custom bindings ove
 | Reload | R |
 | Rifle / pistol / knife / grenade | 1 / 2 / 3 / 4 |
 | Last weapon | Q |
+| Pick up dropped weapon | G |
 | Sprint / crouch / jump | Left Shift / Left Ctrl / Space |
 | Slide | While sprinting forward, press F |
 | Scoreboard | Hold Tab |

@@ -325,7 +325,7 @@ namespace Shooter.Bootstrap
             else
             {
                 LocalPlayerCommand? human = productHumanSampler?.Invoke(tick);
-                var step = productSession.Step(human?.Command, human?.SlidePressed ?? false);
+                var step = productSession.Step(human?.Command, human?.SlidePressed ?? false, human?.PickupPressed ?? false);
                 if (!step.Succeeded && productSession.Phase != GameMatchPhase.Finished)
                     throw new InvalidOperationException("Product step failed: " + step.Diagnostic);
             }

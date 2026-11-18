@@ -932,6 +932,7 @@ namespace Shooter.Presentation.Session
                     : binding.Action == "LastWeapon" ? "Last weapon"
                     : binding.Action == "Slot3" ? "Knife"
                     : binding.Action == "Slot4" ? "Grenade"
+                    : binding.Action == "Pickup" ? "Pick up weapon"
                     : binding.Action;
                 bool pause = string.Equals(binding.Action, "Pause", StringComparison.Ordinal);
                 ui.Label(new Rect(0, y, width * .5f, 34), action, 18, TacticalUi.Text, TextAnchor.MiddleLeft);

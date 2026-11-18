@@ -1694,3 +1694,23 @@ Consequences: presentation only. No C0, Game-v1, content-format, sensing or auth
 Rollback: revert the commit.
 
 Evidence: Simulation pure lane and Unity EditMode; interactive review (rotation, markers, clipping, 150% UI scale) Pending owner playtest.
+
+## ADR-105 — Accepted: dropped primary weapons and G pickup
+
+Date 2026-11-18. Context: owner request: when a bot or the player dies, their main weapon should fall to the floor and stay for 15 seconds; the player walks to it and presses G to take it in place of their own main weapon; if it is the same gun, the player instead gets its ammo. Owner choices for this ADR: same-gun ammo goes to the reserve capped at the gun's reserve capacity; on a swap the old primary drops in its place; only the human picks up (bots keep their spawn loadout).
+
+Decision:
+- Authority: `Simulation/Combat/DroppedWeaponField` is a pure bounded list (32 entries; when full the entry closest to expiry is replaced) of dropped primaries with definition id, magazine, reserve, position and an expiry in **active match ticks** (`LifetimeActiveTicks = 900`, 15 s), so pause and the pre-match countdown do not run the clock. Only `WeaponFamily.PrimaryGun` with ammo drops.
+- `OfflineGameSession.Step` captures the dying actor's slot 0 and motor feet inside the ordered death batch, before `RetireLife` removes the actor. Out-of-world kill-volume deaths (no instigator) drop nothing.
+- Pickup: `TryFindPickup` picks the nearest entry within 1.75 m horizontally and 1.5 m vertically of the living human's feet. A different id is a **swap**: `CombatHarnessSimulation.ReplacePrimary` installs the dropped gun (magazine clamped to its size; `Equipping` for its equip time when slot 0 is in hand, which cancels a reload) and the old primary drops at the same spot with a fresh 15 s. The same id is an **ammo top-up**: `SetPrimaryReserve` to `min(ReserveCapacity, reserve + dropped magazine + dropped reserve)` and the drop is removed; it is offered only when it would add rounds. The pickup resolves after the death batch and retire step; the new gun first acts on the next tick.
+- Expiry runs at end of tick after `EvaluateEndOfTick`; the field is cleared on runtime release.
+- Input: like slide (ADR-039) the press travels beside the frozen C0 command: `LocalPlayerCommand.PickupPressed` → `OfflineGameSession.Step(human, slide, pickupRequested)`. C0 `InputButtons` is unchanged.
+- Game-v1 additive binding `Pickup` (default Key.G, settings label "Pick up weapon"). Legacy schema-2 settings gain `Pickup=Key.G` when G is free, otherwise `Unbound` (ADR-056 pattern). `game-contract-lock.json` refrozen for `GameData.cs`.
+- Presentation (read-only): `ProductActorPresentation.SyncDroppedWeapons` shows each drop with its packaged held mesh and palette lying on its side; it blinks in the last 3 s. `ProductSessionView.DrawPickupPrompt` shows "[G] TAKE AK-47" or "[G] TAKE AMMO" under the reticle using the same query as the authority (`TryGetHumanPickupPrompt`).
+- A picked-up gun lasts one life: respawn re-draws the ADR-102 loadout.
+
+Consequences: Game-v1 lock refreeze (bindings only); no C0, content-format, network or schema change. No new audio cue: a swap re-uses the equip timing; a pickup sound is a possible follow-up.
+
+Rollback: revert the commit and restore the prior `game-contract-lock.json`. Settings saved with `Pickup` still load in the older build, whose binding validator keeps unknown additive actions.
+
+Evidence: `Tools/Test-Simulation.ps1` (`DroppedWeaponFieldTests`), `Tools/Test-Game.ps1` (`DroppedWeaponSessionTests`, legacy Pickup migration), EditMode `InputBufferTests` pickup edge. In-game look/feel review Pending owner playtest.

@@ -27,7 +27,8 @@ namespace Shooter.Game.Contracts.Tests
             Assert.Equal(80f, s.HipFovDegrees);
             Assert.Equal(0.10f, s.MouseSensitivity);
             Assert.Equal(1f, s.UiScale);
-            Assert.Equal(18, s.Bindings.Count);
+            Assert.Equal(19, s.Bindings.Count);
+            Assert.Contains(s.Bindings, b => b.Action == "Pickup" && b.Control == "Key.G");
             Assert.Equal(GameContractVersion.SettingsSchema, 2u);
             Assert.Contains(s.Bindings, b => b.Action == "LastWeapon" && b.Control == "Key.Q");
             Assert.Contains(s.Bindings, b => b.Action == "Slot3" && b.Control == "Key.Digit3");
@@ -75,6 +76,23 @@ namespace Shooter.Game.Contracts.Tests
             Assert.Equal("Jump", editor.ConflictAction);
             Assert.True(editor.TrySwapConflict());
             Assert.Contains(editor.Working, b => b.Action == "LastWeapon" && b.Control == "Key.Space");
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void LegacyBindingsGainPickupWithoutStealingCustomizedG(bool customizedG)
+        {
+            // ADR-105: settings saved before Pickup existed gain it on G, or Unbound when G is already in use.
+            string path = Path.Combine(AppContext.BaseDirectory, "Fixtures", "user-settings-last-weapon.valid.json");
+            string legacy = File.ReadAllText(path);
+            Assert.DoesNotContain("Pickup", legacy);
+            if (customizedG) legacy = legacy.Replace("Key.R", "Key.G");
+            Assert.True(UserSettingsJson.TryDecodeText(legacy, out var settings, out string diagnostic), diagnostic);
+            Assert.Contains(settings!.Bindings, b => b.Action == "Pickup" && b.Control == (customizedG ? "Unbound" : "Key.G"));
+            Assert.Contains(settings.Bindings, b => b.Action == "Reload" && b.Control == (customizedG ? "Key.G" : "Key.R"));
+            Assert.True(UserSettingsJson.TryDecode(UserSettingsJson.Encode(settings), out var again, out diagnostic), diagnostic);
+            Assert.Equal(settings.Bindings.Count, again!.Bindings.Count);
         }
 
         [Fact]
@@ -302,9 +320,9 @@ namespace Shooter.Game.Contracts.Tests
             Assert.True(editor.IsListening);
 
             // Offer a free control.
-            Assert.True(editor.TryOfferControl("Key.G"));
+            Assert.True(editor.TryOfferControl("Key.H"));
             Assert.False(editor.IsListening);
-            Assert.Contains(editor.Working, b => b.Action == "Reload" && b.Control == "Key.G");
+            Assert.Contains(editor.Working, b => b.Action == "Reload" && b.Control == "Key.H");
 
             // Conflict with Fire (Mouse.Left): require swap/cancel.
             Assert.True(editor.TryBeginListen("Jump"));
@@ -332,7 +350,7 @@ namespace Shooter.Game.Contracts.Tests
             settingsEditor.SetDraft(editor.WithBindings(UserSettings.Defaults));
             Assert.True(settingsEditor.Apply(store, applier).Succeeded);
             Assert.True(store.Load(out var loaded).Succeeded);
-            Assert.Contains(loaded.Bindings, b => b.Action == "Reload" && b.Control == "Key.G");
+            Assert.Contains(loaded.Bindings, b => b.Action == "Reload" && b.Control == "Key.H");
             Assert.Contains(loaded.Bindings, b => b.Action == "Jump" && b.Control == "Mouse.Left");
             Assert.Contains(loaded.Bindings, b => b.Action == "Pause" && b.Control == UserSettings.ReservedEscapeControl);
         }

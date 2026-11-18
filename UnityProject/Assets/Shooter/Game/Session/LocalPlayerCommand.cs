@@ -8,11 +8,31 @@ namespace Shooter.Game.Session
     {
         public InputCommand Command { get; }
         public bool SlidePressed { get; }
+        /// <summary>ADR-105: weapon pickup press edge (default G), carried beside the frozen command like slide.</summary>
+        public bool PickupPressed { get; }
 
-        public LocalPlayerCommand(InputCommand command, bool slidePressed = false)
+        public LocalPlayerCommand(InputCommand command, bool slidePressed = false, bool pickupPressed = false)
         {
             Command = command;
             SlidePressed = slidePressed;
+            PickupPressed = pickupPressed;
+        }
+    }
+
+    /// <summary>ADR-105: read-only copy of one dropped primary for presentation (mesh, position, blink timing, prompt).</summary>
+    public readonly struct DroppedWeaponView
+    {
+        public int Id { get; }
+        public DefinitionId WeaponId { get; }
+        public Float3 Position { get; }
+        public ushort Magazine { get; }
+        public ushort Reserve { get; }
+        public float SecondsRemaining { get; }
+        public bool IsValid => WeaponId.IsValid;
+
+        public DroppedWeaponView(int id, DefinitionId weaponId, Float3 position, ushort magazine, ushort reserve, float secondsRemaining)
+        {
+            Id = id; WeaponId = weaponId; Position = position; Magazine = magazine; Reserve = reserve; SecondsRemaining = secondsRemaining;
         }
     }
 

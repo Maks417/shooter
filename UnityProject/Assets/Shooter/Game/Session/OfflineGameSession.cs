@@ -8,6 +8,7 @@ using Shooter.Contracts;
 using Shooter.Game.Contracts;
 using Shooter.Simulation;
 using Shooter.Simulation.AI;
+using Shooter.Simulation.Combat;
 using Shooter.Simulation.Session;
 using Shooter.Simulation.TeamDeathmatch;
 using Shooter.World.Runtime;
@@ -45,6 +46,9 @@ namespace Shooter.Game.Session
         private readonly List<EntityId> slideActors = new List<EntityId>();
         private readonly List<InputCommand> merged = new List<InputCommand>(64);
         private readonly List<EntityId> deathsThisTick = new List<EntityId>(GameContractVersion.MaxParticipants);
+        /// <summary>ADR-105: primaries dropped by dead soldiers, live for 15 s of active match time.</summary>
+        private readonly DroppedWeaponField droppedWeapons = new DroppedWeaponField();
+        private uint droppedWeaponsActiveTick;
         private readonly ProductMeasurementTelemetry measurement = new ProductMeasurementTelemetry();
         private QueryCountingMapRuntime? countingMap;
         private long querySamplesAtMatchStart;
@@ -128,6 +132,52 @@ namespace Shooter.Game.Session
                 state.Stance, eye, state.SlideActive, state.Tightness, horizontalSpeed, state.LocomotionDistanceMeters,
                 state.SprintActive, state.Grounded, state.Velocity.Y, hx, hz);
             return true;
+        }
+
+        /// <summary>ADR-105: monotonic count of the human's successful pickups (presentation plays a cue on change).</summary>
+        public int HumanPickupCount { get; private set; }
+
+        /// <summary>ADR-105: number of primaries currently lying on the floor.</summary>
+        public int DroppedWeaponCount => droppedWeapons.Count;
+
+        /// <summary>ADR-105: dropped primary at <paramref name="index"/> (0..<see cref="DroppedWeaponCount"/>-1).</summary>
+        public bool TryGetDroppedWeapon(int index, out DroppedWeaponView view)
+        {
+            view = default;
+            if (!droppedWeapons.TryGet(index, out var weapon)) return false;
+            view = ToView(weapon);
+            return true;
+        }
+
+        /// <summary>ADR-105: what pressing the pickup key would do for the living human right now (presentation prompt).</summary>
+        public bool TryGetHumanPickupPrompt(out DroppedWeaponView view, out bool ammoTopUp)
+        {
+            view = default;
+            ammoTopUp = false;
+            if (!TryGetHumanPickup(out var weapon, out var kind)) return false;
+            view = ToView(weapon);
+            ammoTopUp = kind == WeaponPickupKind.Ammo;
+            return true;
+        }
+
+        private DroppedWeaponView ToView(DroppedWeapon weapon)
+        {
+            uint left = weapon.ExpiresActiveTick > droppedWeaponsActiveTick ? weapon.ExpiresActiveTick - droppedWeaponsActiveTick : 0;
+            return new DroppedWeaponView(weapon.Id, weapon.DefinitionId, weapon.Position, weapon.Magazine, weapon.Reserve, left / (float)GameContractVersion.SimulationHz);
+        }
+
+        /// <summary>
+        /// ADR-105: the dropped primary the living human would take by pressing the pickup key now, and whether
+        /// that is a swap or an ammo top-up. Uses the same query as the authority pickup.
+        /// </summary>
+        internal bool TryGetHumanPickup(out DroppedWeapon weapon, out WeaponPickupKind kind)
+        {
+            weapon = default;
+            kind = WeaponPickupKind.None;
+            if (harness == null || lifecycle == null || !humanEntity.IsValid) return false;
+            if (!lifecycle.TryGetActorState(humanEntity, out var state) || !state.Alive) return false;
+            if (!harness.TryGetWeapon(humanEntity, 0, out var primary)) return false;
+            return droppedWeapons.TryFindPickup(state.Feet, primary, out weapon, out kind);
         }
 
         public bool TryGetCosmeticCorpse(int index, out ActorLifecycleState state)
@@ -271,7 +321,7 @@ namespace Shooter.Game.Session
         }
 
         /// <summary>Advance one authority tick. Local human command optional; bots planned from match snapshot.</summary>
-        public GameOperationResult Step(InputCommand? humanCommand, bool slideRequested = false)
+        public GameOperationResult Step(InputCommand? humanCommand, bool slideRequested = false, bool pickupRequested = false)
         {
             if (terminalFault != null && phase == GameMatchPhase.Stopped)
                 return GameOperationResult.Ok; // Faulted: no-op until the shell returns to the menu.
@@ -396,6 +446,7 @@ namespace Shooter.Game.Session
                             (uint)GameContractVersion.PersonalKillPoints);
                     }
                     bots.ResetLife(ev.Target);
+                    DropPrimaryOnDeath(ev, snap.ActiveTicksElapsed);
                     deathsThisTick.Add(ev.Target);
                 }
             }
@@ -406,6 +457,9 @@ namespace Shooter.Game.Session
             uint activeTick = snap.ActiveTicksElapsed;
             for (int i = 0; i < deathsThisTick.Count; i++)
                 lifecycle.RetireLife(deathsThisTick[i], activeTick);
+            // ADR-105: resolve the human's pickup after deaths are settled; the new gun applies from the next tick.
+            if (validHuman && pickupRequested)
+                TryHumanPickup(activeTick);
 
             match.EvaluateEndOfTick(tick, advanceActiveClock: true);
             var endSnap = match.AcquireSnapshot(sessionId, tick);
@@ -414,6 +468,8 @@ namespace Shooter.Game.Session
             measurement.Team2Kills = endSnap.Team2Kills;
             measurement.ActiveTicks = endSnap.ActiveTicksElapsed;
             measurement.Actors = endSnap.Participants.Count;
+            droppedWeapons.Expire(endSnap.ActiveTicksElapsed);
+            droppedWeaponsActiveTick = endSnap.ActiveTicksElapsed;
             lifecycle.AdvanceActiveTick(endSnap.ActiveTicksElapsed);
             if (match.TryAcquireResults() != null) phase = GameMatchPhase.Finished;
             tick = unchecked(tick + 1);
@@ -787,6 +843,38 @@ namespace Shooter.Game.Session
             return "Operator";
         }
 
+        /// <summary>
+        /// ADR-105: a dying soldier's primary drops at their feet with its magazine and reserve. Captured here
+        /// because <c>RetireLife</c> removes the actor (and its weapons) later this tick. Out-of-world kill-volume
+        /// deaths (no instigator) drop nothing: the body is outside the playable space.
+        /// </summary>
+        private void DropPrimaryOnDeath(CombatEvent death, uint activeTick)
+        {
+            if (harness == null || !death.Instigator.IsValid) return;
+            if (!harness.TryGetWeapon(death.Target, 0, out var primary) || !primary.IsValid) return;
+            if (!harness.TryGetMotorState(death.Target, out var motor)) return;
+            droppedWeapons.Drop(primary.DefinitionId, primary.AmmoInMagazine, primary.Reserve, motor.Feet, activeTick);
+        }
+
+        private void TryHumanPickup(uint activeTick)
+        {
+            if (harness == null || !TryGetHumanPickup(out var dropped, out var kind)) return;
+            if (!harness.TryGetWeapon(humanEntity, 0, out var held) || !harness.TryGetMotorState(humanEntity, out var motor)) return;
+            if (kind == WeaponPickupKind.Ammo)
+            {
+                if (!harness.SetPrimaryReserve(humanEntity, DroppedWeaponField.ToppedUpReserve(held, dropped))) return;
+                droppedWeapons.RemoveById(dropped.Id);
+                HumanPickupCount++;
+                return;
+            }
+            if (!harness.ReplacePrimary(humanEntity, dropped.DefinitionId, dropped.Magazine, dropped.Reserve)) return;
+            droppedWeapons.RemoveById(dropped.Id);
+            // The old primary takes the picked-up gun's place on the floor with a fresh lifetime.
+            if (held.IsValid)
+                droppedWeapons.Drop(held.DefinitionId, held.AmmoInMagazine, held.Reserve, dropped.Position, activeTick);
+            HumanPickupCount++;
+        }
+
         private void ReleaseRuntime()
         {
             rescueSlotLastUsed.Clear();
@@ -799,6 +887,8 @@ namespace Shooter.Game.Session
             lifecycle = null;
             bots = null;
             deathsThisTick.Clear();
+            droppedWeapons.Clear();
+            droppedWeaponsActiveTick = 0;
             damageByVictim.Clear();
             damageVictimLife.Clear();
             localScoreAwards.Clear();

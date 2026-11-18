@@ -15,6 +15,8 @@ Tick t consumes commands referring to tick t and reads finalized state t−1. At
 5. Resolve all shot queries against the same immutable volume set, ordered shooter ID then shot index. Queue damage; apply damage in that order after all queries. Same-tick lethal shots may trade because shots were collected before damage. Actor killed in tick t can fire its already accepted t intent, but cannot fire at t+1. Emit one death on first crossing to zero, ignore further health reduction at zero. No corpse damage target after t completion.
 6. Resolve objective/win/loss (player death takes precedence over objective success in same tick), produce stimuli and AI plans for t+1. Publish finalized snapshot/events. Hit-history sample t contains post-movement capsules plus alive-at-start and alive-at-end bits for rewind eligibility; exclude actors not yet spawned at the historical time.
 
+ADR-105 offline session additions after step 6: the TDM death batch records each dying actor's primary (slot 0) as a dropped weapon at its feet before the life is retired; then the human's pickup request resolves (swap or capped ammo top-up), taking effect from tick t+1; dropped weapons expire at the end of the tick once their 900 active-tick lifetime has passed.
+
 Order events by processing phase then actor ID then per-actor ordinal. Accepted shot, impact, damage, death and match events receive unique EventId. Limit guards abort tick/session explicitly; no partially committed tick. Implement staged state or rollback-to-prestep on failure; never continue after partial damage application.
 
 ## Missing input and clock

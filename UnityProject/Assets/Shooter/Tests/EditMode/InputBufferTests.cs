@@ -104,6 +104,23 @@ namespace Shooter.Tests
         }
 
         [Test]
+        public void PickupEdgeIsConsumedOnceAndSuppressedWhileGameplayIsDisabled()
+        {
+            var input = new LocalPlayerInput();
+            input.ResetForLife(0, 0, 0);
+            input.CaptureFrame(default, true);
+            Assert.That(input.ConsumeLocalTick(Player, 0).PickupPressed, Is.False);
+            input.CaptureFrame(new FrameInputSample(0, 0, 0, 0, pickupEdge: true), true);
+            input.CaptureFrame(default, true); // released before the tick: the edge is retained
+            Assert.That(input.ConsumeLocalTick(Player, 1).PickupPressed, Is.True);
+            Assert.That(input.ConsumeLocalTick(Player, 2).PickupPressed, Is.False);
+            input.CaptureFrame(new FrameInputSample(0, 0, 0, 0, pickupEdge: true), false);
+            Assert.That(input.ConsumeLocalTick(Player, 3).PickupPressed, Is.False);
+            Assert.That(input.Bindings.TryGetControl("Pickup", out string pickup), Is.True);
+            Assert.That(pickup, Is.EqualTo("Key.G"));
+        }
+
+        [Test]
         public void KeyboardShiftFAndAppliedSlideRebindReachLocalCommand()
         {
             using var playerUpdates = PlayerInputUpdatesInEditMode.Enable();
@@ -125,14 +142,14 @@ namespace Shooter.Tests
 
                 var bindings = new List<InputBinding>(UserSettings.DefaultBindings());
                 for (int i = 0; i < bindings.Count; i++)
-                    if (bindings[i].Action == "Slide") bindings[i] = new InputBinding("Slide", "Key.G");
+                    if (bindings[i].Action == "Slide") bindings[i] = new InputBinding("Slide", "Key.H");
                 input.ApplyBindings(bindings);
                 UnityEngine.InputSystem.InputSystem.QueueStateEvent(keyboard, new UnityEngine.InputSystem.LowLevel.KeyboardState());
                 UnityEngine.InputSystem.InputSystem.Update();
                 input.CaptureFrame(true);
                 UnityEngine.InputSystem.InputSystem.QueueStateEvent(keyboard,
                     new UnityEngine.InputSystem.LowLevel.KeyboardState(UnityEngine.InputSystem.Key.W,
-                        UnityEngine.InputSystem.Key.LeftShift, UnityEngine.InputSystem.Key.G));
+                        UnityEngine.InputSystem.Key.LeftShift, UnityEngine.InputSystem.Key.H));
                 UnityEngine.InputSystem.InputSystem.Update();
                 input.CaptureFrame(true);
                 Assert.That(input.ConsumeLocalTick(Player, 2).SlidePressed, Is.True);
@@ -222,7 +239,7 @@ namespace Shooter.Tests
                 else if (remapped[i].Action == "Scoreboard")
                     remapped[i] = new InputBinding("Scoreboard", "Key.V");
                 else if (remapped[i].Action == "LastWeapon")
-                    remapped[i] = new InputBinding("LastWeapon", "Key.G");
+                    remapped[i] = new InputBinding("LastWeapon", "Key.H");
                 else if (remapped[i].Action == "Slide")
                     remapped[i] = new InputBinding("Slide", "Unbound");
             }
@@ -232,7 +249,7 @@ namespace Shooter.Tests
             Assert.That(input.Bindings.TryGetControl("Scoreboard", out string score), Is.True);
             Assert.That(score, Is.EqualTo("Key.V"));
             Assert.That(input.Bindings.TryGetControl("LastWeapon", out lastWeapon), Is.True);
-            Assert.That(lastWeapon, Is.EqualTo("Key.G"));
+            Assert.That(lastWeapon, Is.EqualTo("Key.H"));
             Assert.That(input.Bindings.TryGetControl("Pause", out string pause), Is.True);
             Assert.That(pause, Is.EqualTo(UserSettings.ReservedEscapeControl));
 

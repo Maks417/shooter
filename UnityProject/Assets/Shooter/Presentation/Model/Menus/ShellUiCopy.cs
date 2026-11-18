@@ -74,6 +74,10 @@ namespace Shooter.Presentation.Menus
         public const string OutOfAmmo = "OUT OF AMMO";
         public const string Empty = "EMPTY";
         public const string ReloadHint = "  RELOAD";
+        /// <summary>ADR-105: pickup prompt for a same-model dropped gun (ammo top-up).</summary>
+        public const string PickupAmmo = "TAKE AMMO";
+        /// <summary>ADR-105: pickup prompt for a different dropped gun (swap the primary).</summary>
+        public static string PickupWeapon(string weaponName) => "TAKE " + weaponName;
         public const string Rifle = "RIFLE";
         public const string Sidearm = "SIDEARM";
         public const string Knife = "KNIFE";

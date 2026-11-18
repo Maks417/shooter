@@ -682,6 +682,14 @@ namespace Shooter.Presentation.Session
                         session.CompletedTick,
                         movementReader,
                         reducedMotion: reducedCameraMotion);
+                    actors.SyncDroppedWeapons(
+                        i =>
+                        {
+                            session.TryGetDroppedWeapon(i, out var dropped);
+                            return dropped;
+                        },
+                        session.DroppedWeaponCount,
+                        Time.unscaledTime);
                     visualReview?.SetContext(boundMapId, QualitySettings.names[QualitySettings.GetQualityLevel()], session.CompletedTick);
                     // Refresh FOV after Sync so this frame's optic raise matches the viewmodel blend.
                     if (camera != null && session.Lifecycle != null
@@ -1233,6 +1241,7 @@ namespace Shooter.Presentation.Session
                 DrawDamageIndicators(human);
                 DrawTacticalMap(a, human, snap);
                 DrawAmmoPanel(a, human, snap);
+                DrawPickupPrompt();
                 DrawAmmoScorePopup(a);
                 DrawKillFeed(a);
                 DrawScoreFeed(a);
@@ -1261,6 +1270,22 @@ namespace Shooter.Presentation.Session
                         hitMarkerHeadshot, reducedCameraMotion), hitMarkerHeadshot);
             }
             finally { combatUi.End(); }
+        }
+
+        /// <summary>ADR-105: "[G] TAKE AK-47" / "[G] TAKE AMMO" below the reticle while a dropped gun is in reach.</summary>
+        private void DrawPickupPrompt()
+        {
+            if (session == null || !session.TryGetHumanPickupPrompt(out var dropped, out bool ammoTopUp)) return;
+            if (!input.Bindings.TryGetControl("Pickup", out string control)
+                || string.Equals(control, "Unbound", System.StringComparison.OrdinalIgnoreCase)) return;
+            var profile = WeaponVisualProfiles.Resolve(dropped.WeaponId, 0);
+            string name = string.IsNullOrEmpty(profile.DisplayLabel) ? ShellUiCopy.Rifle : profile.DisplayLabel.ToUpperInvariant();
+            string text = ammoTopUp ? ShellUiCopy.PickupAmmo : ShellUiCopy.PickupWeapon(name);
+            const float w = 210f, h = 26f;
+            float x = combatUi.Width * .5f - w * .5f, y = combatUi.Height * .5f + 64f;
+            TacticalUi.CombatPlate(new Rect(x, y, w, h));
+            combatUi.Keycap(new Rect(x + 8, y + 6, 26, 14), TacticalUi.ControlLabel(control), TacticalUi.Accent);
+            combatUi.Label(new Rect(x + 40, y + 3, w - 48, 20), text, 12, TacticalUi.Text, TextAnchor.MiddleLeft);
         }
 
         private void DrawAmmoPanel(Rect safe, ActorLifecycleState human, MatchViewSnapshot? snapshot)

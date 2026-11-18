@@ -34,6 +34,8 @@ namespace Shooter.Presentation.Input
         public readonly bool JumpEdge;
         /// <summary>Last-weapon quick-switch press edge (default Q).</summary>
         public readonly bool SelectLastWeapon;
+        /// <summary>ADR-105: weapon pickup press edge (default G).</summary>
+        public readonly bool PickupEdge;
 
         public FrameInputSample(
             float moveX,
@@ -54,7 +56,8 @@ namespace Shooter.Presentation.Input
             bool jumpEdge = false,
             bool selectLastWeapon = false,
             bool selectKnife = false,
-            bool selectGrenade = false)
+            bool selectGrenade = false,
+            bool pickupEdge = false)
         {
             MoveX = moveX;
             MoveY = moveY;
@@ -75,6 +78,7 @@ namespace Shooter.Presentation.Input
             ReloadEdge = reloadEdge;
             JumpEdge = jumpEdge;
             SelectLastWeapon = selectLastWeapon;
+            PickupEdge = pickupEdge;
         }
     }
 
@@ -95,6 +99,7 @@ namespace Shooter.Presentation.Input
         private bool jumpWasDown;
         private bool slideWasDown;
         private bool pendingSlide;
+        private bool pendingPickup;
         private bool pendingFire;
         private bool pendingReload;
         private bool pendingJump;
@@ -190,7 +195,7 @@ namespace Shooter.Presentation.Input
 
         public void ClearCapturedInput()
         {
-            pendingFire = pendingReload = pendingJump = pendingSlide = false;
+            pendingFire = pendingReload = pendingJump = pendingSlide = pendingPickup = false;
             fireBufferTicks = 0;
             moveX = moveY = 0f;
             fireHeld = aimHeld = sprintHeld = crouchHeld = false;
@@ -227,7 +232,8 @@ namespace Shooter.Presentation.Input
                 bindings.WasPressedThisFrame("Jump"),
                 bindings.WasPressedThisFrame("LastWeapon"),
                 bindings.IsPressed("Slot3"),
-                bindings.IsPressed("Slot4")),
+                bindings.IsPressed("Slot4"),
+                bindings.WasPressedThisFrame("Pickup")),
                 acceptsGameplayInput);
         }
 
@@ -237,7 +243,7 @@ namespace Shooter.Presentation.Input
             gameplayEnabled = acceptsGameplayInput;
             if (!acceptsGameplayInput)
             {
-                pendingFire = pendingReload = pendingJump = pendingSlide = false;
+                pendingFire = pendingReload = pendingJump = pendingSlide = pendingPickup = false;
                 fireBufferTicks = 0;
                 moveX = moveY = 0f;
                 fireHeld = aimHeld = sprintHeld = crouchHeld = false;
@@ -275,6 +281,7 @@ namespace Shooter.Presentation.Input
             pendingReload |= wasEnabled && ((frame.Reload && !reloadWasDown) || frame.ReloadEdge);
             pendingJump |= wasEnabled && ((frame.Jump && !jumpWasDown) || frame.JumpEdge);
             pendingSlide |= wasEnabled && frame.Sprint && frame.Slide && !slideWasDown;
+            pendingPickup |= wasEnabled && frame.PickupEdge;
             fireHeld = acceptedFire;
             aimHeld = frame.Aim;
             sprintHeld = frame.Sprint;
@@ -304,6 +311,7 @@ namespace Shooter.Presentation.Input
         public LocalPlayerCommand ConsumeLocalTick(EntityId entity, uint tick)
         {
             bool slide = pendingSlide;
+            bool pickup = pendingPickup;
             var buttons = InputButtons.None;
             if (fireHeld) buttons |= InputButtons.FireHeld;
             // Buffer only the semi-automatic pistol slot: on the automatic rifle a buffered edge
@@ -316,10 +324,10 @@ namespace Shooter.Presentation.Input
             if (aimHeld) buttons |= InputButtons.AimHeld;
             if (sprintHeld) buttons |= InputButtons.SprintHeld;
             if (crouchHeld) buttons |= InputButtons.CrouchHeld;
-            pendingFire = pendingReload = pendingJump = pendingSlide = false;
+            pendingFire = pendingReload = pendingJump = pendingSlide = pendingPickup = false;
             sequence++;
             return new LocalPlayerCommand(
-                new InputCommand(entity, tick, sequence, moveX, moveY, yaw, pitch, buttons, selectedSlot), slide);
+                new InputCommand(entity, tick, sequence, moveX, moveY, yaw, pitch, buttons, selectedSlot), slide, pickup);
         }
 
         private void SelectAbsolute(byte slot)

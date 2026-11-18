@@ -452,6 +452,7 @@ namespace Shooter.Game.Contracts
             new InputBinding("Slot3", "Key.Digit3"),
             new InputBinding("Slot4", "Key.Digit4"),
             new InputBinding("LastWeapon", "Key.Q"),
+            new InputBinding("Pickup", "Key.G"),
             new InputBinding("Scoreboard", "Key.Tab"),
             new InputBinding("Pause", ReservedEscapeControl)
         };
@@ -459,13 +460,14 @@ namespace Shooter.Game.Contracts
         private static FrozenList<InputBinding> ValidateBindings(IReadOnlyList<InputBinding> bindings)
         {
             if (bindings == null) throw new ArgumentNullException(nameof(bindings));
-            // ADR-039 / ADR-056 / ADR-057: preserve custom controls in existing schema-2 settings.
+            // ADR-039 / ADR-056 / ADR-057 / ADR-105: preserve custom controls in existing schema-2 settings.
             GameRequire.That(bindings.Count >= 1 && bindings.Count <= GameContractVersion.MaxSettingsBindings, nameof(bindings));
             var normalized = new List<InputBinding>(Math.Min(bindings.Count + 4, GameContractVersion.MaxSettingsBindings));
             bool hasSlide = false, fUsed = false;
             bool hasLastWeapon = false, qUsed = false;
             bool hasSlot3 = false, digit3Used = false;
             bool hasSlot4 = false, digit4Used = false;
+            bool hasPickup = false, gUsed = false;
             foreach (var binding in bindings)
             {
                 normalized.Add(binding);
@@ -477,6 +479,8 @@ namespace Shooter.Game.Contracts
                 digit3Used |= string.Equals(binding.Control, "Key.Digit3", StringComparison.OrdinalIgnoreCase);
                 hasSlot4 |= binding.Action == "Slot4";
                 digit4Used |= string.Equals(binding.Control, "Key.Digit4", StringComparison.OrdinalIgnoreCase);
+                hasPickup |= binding.Action == "Pickup";
+                gUsed |= string.Equals(binding.Control, "Key.G", StringComparison.OrdinalIgnoreCase);
             }
             if (!hasSlide && normalized.Count < GameContractVersion.MaxSettingsBindings)
                 normalized.Add(new InputBinding("Slide", fUsed ? "Unbound" : "Key.F"));
@@ -486,6 +490,8 @@ namespace Shooter.Game.Contracts
                 normalized.Add(new InputBinding("Slot3", digit3Used ? "Unbound" : "Key.Digit3"));
             if (!hasSlot4 && normalized.Count < GameContractVersion.MaxSettingsBindings)
                 normalized.Add(new InputBinding("Slot4", digit4Used ? "Unbound" : "Key.Digit4"));
+            if (!hasPickup && normalized.Count < GameContractVersion.MaxSettingsBindings)
+                normalized.Add(new InputBinding("Pickup", gUsed ? "Unbound" : "Key.G"));
             var list = new FrozenList<InputBinding>(normalized, GameContractVersion.MaxSettingsBindings);
             GameRequire.That(list.Count >= 1, nameof(bindings));
             var actions = new HashSet<string>(StringComparer.Ordinal);

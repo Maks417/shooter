@@ -393,6 +393,7 @@ namespace Shooter.Presentation.Rig
             foreach (var pair in avatars)
                 if (pair.Value.Root != null) DestroyObject(pair.Value.Root.gameObject);
             avatars.Clear();
+            ClearDroppedWeapons();
             if (localWeapon != null) localWeapon.gameObject.SetActive(false);
             aggregateMinArmClearance = float.MaxValue;
             aggregateMaxEyeSightError = 0f;
@@ -1189,6 +1190,73 @@ namespace Shooter.Presentation.Rig
             avatars.Remove(id.Value);
             actions.Forget(id);
             if (avatar.Root != null) DestroyObject(avatar.Root.gameObject);
+        }
+
+        private sealed class DroppedWeaponVisual
+        {
+            public int Id;
+            public Transform Root = null!;
+            public MeshFilter Filter = null!;
+            public MeshRenderer Renderer = null!;
+        }
+
+        private readonly List<DroppedWeaponVisual> droppedVisuals = new List<DroppedWeaponVisual>();
+        /// <summary>Last 3 s of a dropped gun's lifetime blink so the player sees it is about to vanish.</summary>
+        public const float DroppedWeaponBlinkSeconds = 3f;
+
+        /// <summary>
+        /// ADR-105: shows primaries lying on the floor. Read-only mirror of the session's dropped-weapon list;
+        /// uses the same packaged held mesh and palette as the third-person weapon.
+        /// </summary>
+        public void SyncDroppedWeapons(Func<int, DroppedWeaponView> tryDropped, int count, float timeSeconds)
+        {
+            if (!ready || !visualsBound) return;
+            if (count < 0) count = 0;
+            for (int i = 0; i < count; i++)
+            {
+                var view = tryDropped(i);
+                if (!view.IsValid) { count = i; break; }
+                if (i == droppedVisuals.Count) droppedVisuals.Add(CreateDroppedVisual(i));
+                var visual = droppedVisuals[i];
+                if (visual.Id != view.Id || visual.Filter.sharedMesh == null)
+                {
+                    var profile = WeaponVisualProfiles.Resolve(view.WeaponId, 0);
+                    var mesh = HeldMeshForProfile(profile);
+                    visual.Filter.sharedMesh = mesh;
+                    visual.Renderer.sharedMaterials = WeaponPalette(mesh);
+                    visual.Id = view.Id;
+                    // Lying on its side; the yaw varies by drop so several guns never stack identically.
+                    float yaw = (view.Id * 137.5f) % 360f;
+                    visual.Root.SetPositionAndRotation(
+                        new Vector3(view.Position.X, view.Position.Y + 0.05f, view.Position.Z),
+                        Quaternion.Euler(0f, yaw, 90f));
+                }
+                bool blinkOff = view.SecondsRemaining < DroppedWeaponBlinkSeconds && Mathf.FloorToInt(timeSeconds * 6f) % 2 == 1;
+                visual.Root.gameObject.SetActive(visual.Filter.sharedMesh != null && !blinkOff);
+            }
+            for (int i = count; i < droppedVisuals.Count; i++)
+            {
+                droppedVisuals[i].Id = 0;
+                droppedVisuals[i].Root.gameObject.SetActive(false);
+            }
+        }
+
+        private DroppedWeaponVisual CreateDroppedVisual(int index)
+        {
+            var root = new GameObject("Dropped weapon " + index).transform;
+            root.SetParent(transform, false);
+            var renderer = root.gameObject.AddComponent<MeshRenderer>();
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
+            var filter = root.gameObject.AddComponent<MeshFilter>();
+            root.gameObject.SetActive(false);
+            return new DroppedWeaponVisual { Root = root, Filter = filter, Renderer = renderer };
+        }
+
+        private void ClearDroppedWeapons()
+        {
+            for (int i = 0; i < droppedVisuals.Count; i++)
+                if (droppedVisuals[i].Root != null) DestroyObject(droppedVisuals[i].Root.gameObject);
+            droppedVisuals.Clear();
         }
 
         private Material[] WeaponPalette(Mesh? mesh)
