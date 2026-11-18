@@ -102,6 +102,14 @@
       "license": "CC0-1.0",
       "note": "Kenney RPG Audio",
       "manual": true
+    },
+    {
+      "id": "bank-v6-grenade-core",
+      "url": "",
+      "file": "kept",
+      "local": true,
+      "license": "CC0-1.0",
+      "note": "Bank v6 grenade_explode core (OpenGameArt CC0 explosion.wav layered with Tabasco 10-gauge shotgun boom, https://opengameart.org/content/gunshot-sounds), kept under .local/audio-src/kept/"
     }
   ],
   "clips": [
@@ -148,22 +156,374 @@
     {
       "kind": "grenade_explode",
       "variation": 0,
-      "keep": true
+      "source": "kept/grenade_explode_00.wav",
+      "length": 2.4,
+      "tailFade": 0.8,
+      "layers": [
+        {
+          "generate": {
+            "type": "sweep",
+            "from": 45,
+            "to": 28,
+            "duration": 0.6,
+            "attack": 0.004,
+            "decay": 3.5
+          },
+          "gainDb": -3,
+          "fadeOut": 0.15
+        },
+        {
+          "source": "oga/Prepared SFX Library/Prepared SFX Library/Carl Gustav M45/G_20P.wav",
+          "start": 0.335,
+          "end": 0.495,
+          "highpass": 900,
+          "gainDb": -5,
+          "fadeOut": 0.07
+        },
+        {
+          "source": "kept/grenade_explode_00.wav",
+          "lowpass": 420,
+          "gainDb": -7,
+          "pad": 2.0,
+          "delay": 0.04,
+          "filters": "aecho=0.8:0.75:70|160|290|470:0.55|0.4|0.3|0.2,lowpass=f=900"
+        },
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactWood_medium_000.ogg",
+          "lowpass": 1800,
+          "gainDb": -21.4,
+          "pitch": 0.902,
+          "delay": 0.476
+        },
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactMining_004.ogg",
+          "lowpass": 2400,
+          "gainDb": -18.8,
+          "pitch": 1.01,
+          "delay": 0.695
+        },
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactMining_004.ogg",
+          "lowpass": 1800,
+          "gainDb": -25.3,
+          "pitch": 1.115,
+          "delay": 0.913
+        },
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactPlate_medium_000.ogg",
+          "lowpass": 2400,
+          "gainDb": -21.6,
+          "pitch": 1.067,
+          "delay": 1.062
+        },
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactWood_light_002.ogg",
+          "lowpass": 1800,
+          "gainDb": -24.2,
+          "pitch": 1.044,
+          "delay": 1.201
+        },
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactWood_medium_000.ogg",
+          "lowpass": 2400,
+          "gainDb": -24.5,
+          "pitch": 1.057,
+          "delay": 1.56
+        }
+      ]
     },
     {
       "kind": "grenade_explode",
       "variation": 1,
-      "keep": true
+      "source": "kept/grenade_explode_01.wav",
+      "length": 2.6,
+      "tailFade": 0.8,
+      "layers": [
+        {
+          "generate": {
+            "type": "sweep",
+            "from": 45,
+            "to": 28,
+            "duration": 0.6,
+            "attack": 0.004,
+            "decay": 3.5
+          },
+          "gainDb": -3,
+          "fadeOut": 0.15
+        },
+        {
+          "source": "oga/Prepared SFX Library/Prepared SFX Library/Carl Gustav M45/G_31P.wav",
+          "start": 0.29,
+          "end": 0.45,
+          "highpass": 900,
+          "gainDb": -5,
+          "fadeOut": 0.07
+        },
+        {
+          "source": "kept/grenade_explode_01.wav",
+          "lowpass": 420,
+          "gainDb": -7,
+          "pad": 2.0,
+          "delay": 0.04,
+          "filters": "aecho=0.8:0.75:70|160|290|470:0.55|0.4|0.3|0.2,lowpass=f=900"
+        },
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactWood_light_001.ogg",
+          "lowpass": 2400,
+          "gainDb": -18.7,
+          "pitch": 1.055,
+          "delay": 0.423
+        },
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactMining_004.ogg",
+          "lowpass": 2400,
+          "gainDb": -21.7,
+          "pitch": 0.837,
+          "delay": 0.635
+        },
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactWood_medium_001.ogg",
+          "lowpass": 2400,
+          "gainDb": -23.6,
+          "pitch": 0.93,
+          "delay": 0.682
+        },
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactWood_light_001.ogg",
+          "lowpass": 1800,
+          "gainDb": -25.6,
+          "pitch": 0.983,
+          "delay": 0.831
+        },
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactWood_light_003.ogg",
+          "lowpass": 1800,
+          "gainDb": -22.3,
+          "pitch": 0.848,
+          "delay": 0.982
+        },
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactPlate_light_001.ogg",
+          "lowpass": 2400,
+          "gainDb": -21.2,
+          "pitch": 0.812,
+          "delay": 1.114
+        },
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactPlate_light_004.ogg",
+          "lowpass": 3200,
+          "gainDb": -21.4,
+          "pitch": 0.936,
+          "delay": 1.203
+        },
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactWood_light_004.ogg",
+          "lowpass": 3200,
+          "gainDb": -26.3,
+          "pitch": 0.997,
+          "delay": 1.369
+        },
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactPlate_light_002.ogg",
+          "lowpass": 1800,
+          "gainDb": -25.4,
+          "pitch": 0.96,
+          "delay": 1.491
+        }
+      ]
     },
     {
       "kind": "grenade_explode",
       "variation": 2,
-      "keep": true
+      "source": "kept/grenade_explode_02.wav",
+      "length": 2.3,
+      "tailFade": 0.8,
+      "layers": [
+        {
+          "generate": {
+            "type": "sweep",
+            "from": 45,
+            "to": 28,
+            "duration": 0.6,
+            "attack": 0.004,
+            "decay": 3.5
+          },
+          "gainDb": -3,
+          "fadeOut": 0.15
+        },
+        {
+          "source": "oga/Prepared SFX Library/Prepared SFX Library/Carl Gustav M45/G_33P.wav",
+          "start": 0.282,
+          "end": 0.442,
+          "highpass": 900,
+          "gainDb": -5,
+          "fadeOut": 0.07
+        },
+        {
+          "source": "kept/grenade_explode_02.wav",
+          "lowpass": 420,
+          "gainDb": -7,
+          "pad": 2.0,
+          "delay": 0.04,
+          "filters": "aecho=0.8:0.75:70|160|290|470:0.55|0.4|0.3|0.2,lowpass=f=900"
+        },
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactWood_light_004.ogg",
+          "lowpass": 1800,
+          "gainDb": -18.7,
+          "pitch": 0.824,
+          "delay": 0.439
+        },
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactWood_light_001.ogg",
+          "lowpass": 2400,
+          "gainDb": -21.0,
+          "pitch": 1.087,
+          "delay": 0.706
+        },
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactMining_001.ogg",
+          "lowpass": 1800,
+          "gainDb": -25.4,
+          "pitch": 1.114,
+          "delay": 0.871
+        },
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactPlate_medium_001.ogg",
+          "lowpass": 3200,
+          "gainDb": -20.5,
+          "pitch": 0.897,
+          "delay": 0.942
+        },
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactPlate_light_001.ogg",
+          "lowpass": 3200,
+          "gainDb": -21.3,
+          "pitch": 1.054,
+          "delay": 1.185
+        },
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactPlate_medium_004.ogg",
+          "lowpass": 1800,
+          "gainDb": -24.4,
+          "pitch": 1.029,
+          "delay": 1.318
+        },
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactPlate_medium_002.ogg",
+          "lowpass": 3200,
+          "gainDb": -24.5,
+          "pitch": 0.973,
+          "delay": 1.5
+        }
+      ]
     },
     {
       "kind": "grenade_explode",
       "variation": 3,
-      "keep": true
+      "source": "kept/grenade_explode_03.wav",
+      "length": 2.75,
+      "tailFade": 0.8,
+      "layers": [
+        {
+          "generate": {
+            "type": "sweep",
+            "from": 45,
+            "to": 28,
+            "duration": 0.6,
+            "attack": 0.004,
+            "decay": 3.5
+          },
+          "gainDb": -3,
+          "fadeOut": 0.15
+        },
+        {
+          "source": "oga/Prepared SFX Library/Prepared SFX Library/Carl Gustav M45/G_35P.wav",
+          "start": 0.243,
+          "end": 0.403,
+          "highpass": 900,
+          "gainDb": -5,
+          "fadeOut": 0.07
+        },
+        {
+          "source": "kept/grenade_explode_03.wav",
+          "lowpass": 420,
+          "gainDb": -7,
+          "pad": 2.0,
+          "delay": 0.04,
+          "filters": "aecho=0.8:0.75:70|160|290|470:0.55|0.4|0.3|0.2,lowpass=f=900"
+        },
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactPlate_light_000.ogg",
+          "lowpass": 3200,
+          "gainDb": -15.9,
+          "pitch": 0.806,
+          "delay": 0.403
+        },
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactMining_004.ogg",
+          "lowpass": 3200,
+          "gainDb": -16.8,
+          "pitch": 0.997,
+          "delay": 0.611
+        },
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactMining_004.ogg",
+          "lowpass": 2400,
+          "gainDb": -22.4,
+          "pitch": 0.817,
+          "delay": 0.725
+        },
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactMining_004.ogg",
+          "lowpass": 1800,
+          "gainDb": -19.3,
+          "pitch": 1.06,
+          "delay": 0.77
+        },
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactWood_light_001.ogg",
+          "lowpass": 2400,
+          "gainDb": -20.5,
+          "pitch": 0.9,
+          "delay": 0.892
+        },
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactWood_light_000.ogg",
+          "lowpass": 1800,
+          "gainDb": -19.1,
+          "pitch": 0.838,
+          "delay": 1.075
+        },
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactPlate_light_002.ogg",
+          "lowpass": 3200,
+          "gainDb": -22.4,
+          "pitch": 0.826,
+          "delay": 1.144
+        },
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactWood_medium_003.ogg",
+          "lowpass": 3200,
+          "gainDb": -22.9,
+          "pitch": 0.809,
+          "delay": 1.324
+        },
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactPlate_medium_000.ogg",
+          "lowpass": 2400,
+          "gainDb": -25.9,
+          "pitch": 0.843,
+          "delay": 1.404
+        },
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactWood_light_000.ogg",
+          "lowpass": 1800,
+          "gainDb": -25.5,
+          "pitch": 0.818,
+          "delay": 1.52
+        }
+      ]
     },
     {
       "kind": "ambient",
@@ -173,12 +533,102 @@
     {
       "kind": "knife_swing",
       "variation": 0,
-      "keep": true
+      "source": "kenney/kenney_rpg-audio/Audio/knifeSlice.ogg",
+      "start": 0.07,
+      "end": 0.41,
+      "pitch": 0.96,
+      "highpass": 380,
+      "lowpass": 7500,
+      "fadeIn": 0.004,
+      "fadeOut": 0.07,
+      "layers": [
+        {
+          "source": "kenney/kenney_rpg-audio/Audio/drawKnife1.ogg",
+          "start": 0.07,
+          "end": 0.31,
+          "highpass": 2000,
+          "gainDb": -8,
+          "fadeIn": 0.003,
+          "fadeOut": 0.09,
+          "pitch": 1.0,
+          "delay": 0.03
+        }
+      ]
     },
     {
       "kind": "knife_swing",
       "variation": 1,
-      "keep": true
+      "source": "kenney/kenney_rpg-audio/Audio/knifeSlice2.ogg",
+      "start": 0.0,
+      "end": 0.34,
+      "pitch": 1.04,
+      "highpass": 380,
+      "lowpass": 7500,
+      "fadeIn": 0.004,
+      "fadeOut": 0.07,
+      "layers": [
+        {
+          "source": "kenney/kenney_rpg-audio/Audio/drawKnife3.ogg",
+          "start": 0.05,
+          "end": 0.29,
+          "highpass": 2000,
+          "gainDb": -8,
+          "fadeIn": 0.003,
+          "fadeOut": 0.09,
+          "pitch": 1.06,
+          "delay": 0.04
+        }
+      ]
+    },
+    {
+      "kind": "knife_swing",
+      "variation": 2,
+      "source": "kenney/kenney_rpg-audio/Audio/knifeSlice.ogg",
+      "start": 0.07,
+      "end": 0.41,
+      "pitch": 1.08,
+      "highpass": 380,
+      "lowpass": 7500,
+      "fadeIn": 0.004,
+      "fadeOut": 0.07,
+      "layers": [
+        {
+          "source": "kenney/kenney_rpg-audio/Audio/drawKnife2.ogg",
+          "start": 0.0,
+          "end": 0.24,
+          "highpass": 2000,
+          "gainDb": -8,
+          "fadeIn": 0.003,
+          "fadeOut": 0.09,
+          "pitch": 0.97,
+          "delay": 0.025
+        }
+      ]
+    },
+    {
+      "kind": "knife_swing",
+      "variation": 3,
+      "source": "kenney/kenney_rpg-audio/Audio/knifeSlice2.ogg",
+      "start": 0.0,
+      "end": 0.34,
+      "pitch": 0.92,
+      "highpass": 380,
+      "lowpass": 7500,
+      "fadeIn": 0.004,
+      "fadeOut": 0.07,
+      "layers": [
+        {
+          "source": "kenney/kenney_rpg-audio/Audio/drawKnife1.ogg",
+          "start": 0.07,
+          "end": 0.31,
+          "highpass": 2000,
+          "gainDb": -8,
+          "fadeIn": 0.003,
+          "fadeOut": 0.09,
+          "pitch": 1.1,
+          "delay": 0.035
+        }
+      ]
     },
     {
       "kind": "reload_start",
@@ -360,34 +810,25 @@
       ]
     },
     {
-      "kind": "knife_swing",
-      "variation": 2,
-      "source": "kenney/kenney_rpg-audio/Audio/knifeSlice.ogg"
-    },
-    {
-      "kind": "knife_swing",
-      "variation": 3,
-      "source": "kenney/kenney_rpg-audio/Audio/knifeSlice2.ogg"
-    },
-    {
       "kind": "knife_hit_flesh",
       "variation": 0,
-      "source": "kenney/kenney_impact-sounds/Audio/impactPunch_heavy_000.ogg",
+      "source": "kenney/kenney_impact-sounds/Audio/impactSoft_heavy_000.ogg",
+      "lowpass": 5000,
       "layers": [
         {
           "source": "kenney/kenney_rpg-audio/Audio/chop.ogg",
-          "gainDb": -5
-        }
-      ]
-    },
-    {
-      "kind": "knife_hit_hard",
-      "variation": 0,
-      "source": "kenney/kenney_impact-sounds/Audio/impactMetal_light_000.ogg",
-      "layers": [
+          "gainDb": -3,
+          "highpass": 250,
+          "pitch": 1.0
+        },
         {
-          "source": "kenney/kenney_impact-sounds/Audio/impactPlate_light_000.ogg",
-          "gainDb": -6
+          "source": "kenney/kenney_rpg-audio/Audio/drawKnife2.ogg",
+          "start": 0.06,
+          "end": 0.26,
+          "highpass": 2200,
+          "gainDb": -14,
+          "fadeOut": 0.08,
+          "delay": 0.05
         }
       ]
     },
@@ -395,43 +836,45 @@
       "kind": "knife_hit_flesh",
       "variation": 1,
       "source": "kenney/kenney_impact-sounds/Audio/impactPunch_heavy_001.ogg",
+      "lowpass": 5000,
       "layers": [
         {
           "source": "kenney/kenney_rpg-audio/Audio/chop.ogg",
-          "gainDb": -5
-        }
-      ]
-    },
-    {
-      "kind": "knife_hit_hard",
-      "variation": 1,
-      "source": "kenney/kenney_impact-sounds/Audio/impactMetal_light_001.ogg",
-      "layers": [
+          "gainDb": -3,
+          "highpass": 250,
+          "pitch": 0.94
+        },
         {
-          "source": "kenney/kenney_impact-sounds/Audio/impactPlate_light_001.ogg",
-          "gainDb": -6
+          "source": "kenney/kenney_rpg-audio/Audio/drawKnife3.ogg",
+          "start": 0.06,
+          "end": 0.26,
+          "highpass": 2200,
+          "gainDb": -14,
+          "fadeOut": 0.08,
+          "delay": 0.05
         }
       ]
     },
     {
       "kind": "knife_hit_flesh",
       "variation": 2,
-      "source": "kenney/kenney_impact-sounds/Audio/impactPunch_heavy_002.ogg",
+      "source": "kenney/kenney_impact-sounds/Audio/impactSoft_heavy_002.ogg",
+      "lowpass": 5000,
       "layers": [
         {
           "source": "kenney/kenney_rpg-audio/Audio/chop.ogg",
-          "gainDb": -5
-        }
-      ]
-    },
-    {
-      "kind": "knife_hit_hard",
-      "variation": 2,
-      "source": "kenney/kenney_impact-sounds/Audio/impactMetal_light_002.ogg",
-      "layers": [
+          "gainDb": -3,
+          "highpass": 250,
+          "pitch": 1.05
+        },
         {
-          "source": "kenney/kenney_impact-sounds/Audio/impactPlate_light_002.ogg",
-          "gainDb": -6
+          "source": "kenney/kenney_rpg-audio/Audio/drawKnife1.ogg",
+          "start": 0.06,
+          "end": 0.26,
+          "highpass": 2200,
+          "gainDb": -14,
+          "fadeOut": 0.08,
+          "delay": 0.05
         }
       ]
     },
@@ -439,21 +882,106 @@
       "kind": "knife_hit_flesh",
       "variation": 3,
       "source": "kenney/kenney_impact-sounds/Audio/impactPunch_heavy_003.ogg",
+      "lowpass": 5000,
       "layers": [
         {
           "source": "kenney/kenney_rpg-audio/Audio/chop.ogg",
-          "gainDb": -5
+          "gainDb": -3,
+          "highpass": 250,
+          "pitch": 0.9
+        },
+        {
+          "source": "kenney/kenney_rpg-audio/Audio/drawKnife2.ogg",
+          "start": 0.06,
+          "end": 0.26,
+          "highpass": 2200,
+          "gainDb": -14,
+          "fadeOut": 0.08,
+          "delay": 0.05
+        }
+      ]
+    },
+    {
+      "kind": "knife_hit_hard",
+      "variation": 0,
+      "source": "kenney/kenney_impact-sounds/Audio/impactMetal_heavy_000.ogg",
+      "layers": [
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactPlate_heavy_001.ogg",
+          "gainDb": -6,
+          "highpass": 600
+        },
+        {
+          "source": "kenney/kenney_rpg-audio/Audio/drawKnife1.ogg",
+          "start": 0.04,
+          "end": 0.3,
+          "highpass": 1500,
+          "gainDb": -10,
+          "fadeOut": 0.1,
+          "delay": 0.02
+        }
+      ]
+    },
+    {
+      "kind": "knife_hit_hard",
+      "variation": 1,
+      "source": "kenney/kenney_impact-sounds/Audio/impactPlate_heavy_001.ogg",
+      "layers": [
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactMetal_heavy_002.ogg",
+          "gainDb": -6,
+          "highpass": 600
+        },
+        {
+          "source": "kenney/kenney_rpg-audio/Audio/drawKnife2.ogg",
+          "start": 0.04,
+          "end": 0.3,
+          "highpass": 1500,
+          "gainDb": -10,
+          "fadeOut": 0.1,
+          "delay": 0.02
+        }
+      ]
+    },
+    {
+      "kind": "knife_hit_hard",
+      "variation": 2,
+      "source": "kenney/kenney_impact-sounds/Audio/impactMetal_heavy_002.ogg",
+      "layers": [
+        {
+          "source": "kenney/kenney_impact-sounds/Audio/impactPlate_heavy_003.ogg",
+          "gainDb": -6,
+          "highpass": 600
+        },
+        {
+          "source": "kenney/kenney_rpg-audio/Audio/drawKnife3.ogg",
+          "start": 0.04,
+          "end": 0.3,
+          "highpass": 1500,
+          "gainDb": -10,
+          "fadeOut": 0.1,
+          "delay": 0.02
         }
       ]
     },
     {
       "kind": "knife_hit_hard",
       "variation": 3,
-      "source": "kenney/kenney_impact-sounds/Audio/impactMetal_light_003.ogg",
+      "source": "kenney/kenney_impact-sounds/Audio/impactPlate_heavy_003.ogg",
       "layers": [
         {
-          "source": "kenney/kenney_impact-sounds/Audio/impactPlate_light_003.ogg",
-          "gainDb": -6
+          "source": "kenney/kenney_impact-sounds/Audio/impactMetal_heavy_004.ogg",
+          "gainDb": -6,
+          "highpass": 600
+        },
+        {
+          "source": "kenney/kenney_rpg-audio/Audio/drawKnife3.ogg",
+          "start": 0.04,
+          "end": 0.3,
+          "highpass": 1500,
+          "gainDb": -10,
+          "fadeOut": 0.1,
+          "delay": 0.02
         }
       ]
     },
@@ -596,7 +1124,25 @@
       "start": 0.7,
       "end": 2.4,
       "lowpass": 700,
-      "fadeOut": 0.4
+      "fadeOut": 0.4,
+      "pad": 1.8,
+      "filters": "aecho=0.8:0.7:180|390|720|1100:0.45|0.32|0.22|0.15,lowpass=f=800",
+      "length": 3.0,
+      "tailFade": 1.2,
+      "layers": [
+        {
+          "generate": {
+            "type": "sweep",
+            "from": 38,
+            "to": 25,
+            "duration": 1.1,
+            "attack": 0.02,
+            "decay": 2.2
+          },
+          "gainDb": -6,
+          "delay": 0.03
+        }
+      ]
     },
     {
       "kind": "grenade_explode_far",
@@ -605,7 +1151,25 @@
       "start": 4.5,
       "end": 6.2,
       "lowpass": 700,
-      "fadeOut": 0.4
+      "fadeOut": 0.4,
+      "pad": 1.8,
+      "filters": "aecho=0.8:0.7:180|390|720|1100:0.45|0.32|0.22|0.15,lowpass=f=800",
+      "length": 3.2,
+      "tailFade": 1.2,
+      "layers": [
+        {
+          "generate": {
+            "type": "sweep",
+            "from": 38,
+            "to": 25,
+            "duration": 1.1,
+            "attack": 0.02,
+            "decay": 2.2
+          },
+          "gainDb": -6,
+          "delay": 0.03
+        }
+      ]
     },
     {
       "kind": "grenade_explode_far",
@@ -614,7 +1178,25 @@
       "lowpass": 700,
       "fadeOut": 0.4,
       "start": 0.62,
-      "end": 2.35
+      "end": 2.35,
+      "pad": 1.8,
+      "filters": "aecho=0.8:0.7:180|390|720|1100:0.45|0.32|0.22|0.15,lowpass=f=800",
+      "length": 2.9,
+      "tailFade": 1.2,
+      "layers": [
+        {
+          "generate": {
+            "type": "sweep",
+            "from": 38,
+            "to": 25,
+            "duration": 1.1,
+            "attack": 0.02,
+            "decay": 2.2
+          },
+          "gainDb": -6,
+          "delay": 0.03
+        }
+      ]
     },
     {
       "kind": "grenade_explode_far",
@@ -623,7 +1205,25 @@
       "lowpass": 700,
       "fadeOut": 0.4,
       "start": 0.85,
-      "end": 2.7
+      "end": 2.7,
+      "pad": 1.8,
+      "filters": "aecho=0.8:0.7:180|390|720|1100:0.45|0.32|0.22|0.15,lowpass=f=800",
+      "length": 3.3,
+      "tailFade": 1.2,
+      "layers": [
+        {
+          "generate": {
+            "type": "sweep",
+            "from": 38,
+            "to": 25,
+            "duration": 1.1,
+            "attack": 0.02,
+            "decay": 2.2
+          },
+          "gainDb": -6,
+          "delay": 0.03
+        }
+      ]
     },
     {
       "kind": "distant_battle",

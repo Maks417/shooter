@@ -125,8 +125,9 @@ public static class ShooterFeatureBuild
                     "Arsenal source finish " + family, 10, value => owned.Add(value));
             }
             // ADR-102: seven-slot palette (wood and gold tints) so the named guns render with their furniture.
+            // ADR-111: knife and grenade finishes in slots 7-10.
             var palette = Shooter.Presentation.Rendering.ProductSurfaceMaterial.WeaponFinishes(Surface(0), Surface(1), Surface(4), Surface(5), Surface(6),
-                value => owned.Add(value));
+                Surface(7), Surface(8), Surface(9), value => owned.Add(value));
             var cameraObject = new GameObject("Arsenal capture camera"); owned.Add(cameraObject);
             var camera = cameraObject.AddComponent<Camera>();
             camera.clearFlags = CameraClearFlags.SolidColor; camera.backgroundColor = new Color(.075f, .09f, .11f);
@@ -289,6 +290,12 @@ public static class ShooterFeatureBuild
                 presentation.Sync(snapshot,lifecycle,null,0,id,true,0,Array.Empty<CombatEvent>(),10);
                 string name=new[]{"rifle","pistol","knife","grenade"}[slot];
                 RenderHandPose(camera,Path.Combine(output,name+"-ready.png"));
+                if(slot>=2)
+                {
+                    // ADR-111: one-handed knife/grenade rest after the aim blend and idle layers settle (no aim held).
+                    for(int settle=0;settle<8;settle++) presentation.Sync(snapshot,lifecycle,null,0,id,false,.1f,Array.Empty<CombatEvent>(),(uint)(11+settle));
+                    RenderHandPose(camera,Path.Combine(output,name+"-hold.png"));
+                }
                 if(slot<2)
                 {
                     var reload=new CombatEvent(new EventId(1,10,id,1),CombatEventKind.ReloadStarted,id,default,new ActionPayload(slot,10,110));
@@ -323,7 +330,7 @@ public static class ShooterFeatureBuild
                 }
             }
             File.WriteAllText(Path.Combine(output,"scope.txt"),"Editor packaged Low visual diagnostic; fixed camera and copied authority/action fixtures, no gameplay acceptance. fp.hand.v2 / geometry.weapon " + WeaponRecipe.GeneratorVersion + " / ADR-099 choreography");
-            Debug.Log("SHOOTER_HANDLING_CAPTURE files=17");
+            Debug.Log("SHOOTER_HANDLING_CAPTURE files=19");
         }
         finally { sky?.Dispose(); UnityEngine.Object.DestroyImmediate(root); }
     });

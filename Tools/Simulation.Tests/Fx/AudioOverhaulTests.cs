@@ -151,9 +151,9 @@ namespace Shooter.Simulation.Tests.Fx
         public void Grenade_bounces_land_on_the_arc_and_a_blast_cancels_them()
         {
             Assert.True(ProductAudioEventRouter.TryGroundContact(new Float3(0, 1.5f, 0), new Float3(0, 4, 10), 0f, out float t, out var landing));
-            // 1.5 + 4t - 10t^2 = 0 → t = (4 + sqrt(76)) / 20
-            Assert.Equal(0.6359f, t, 3);
-            Assert.Equal(6.359f, landing.Z, 2);
+            // g = 24 (ADR-111): 1.5 + 4t - 12t^2 = 0 → t = (4 + sqrt(88)) / 24
+            Assert.Equal(0.5575f, t, 3);
+            Assert.Equal(5.5753f, landing.Z, 2);
 
             var mix = new SynthAudioMixer(CombatAudioBankBaker.BakeGenerated());
             var router = new ProductAudioEventRouter(mix);

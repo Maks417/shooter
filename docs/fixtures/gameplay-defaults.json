@@ -60,7 +60,7 @@
       "reserve": 0,
       "damage": 100,
       "fuseTicks": 120,
-      "throwMmPerSecond": 18000,
+      "throwMmPerSecond": 28000,
       "blastRadiusMm": 5000
     }
   },

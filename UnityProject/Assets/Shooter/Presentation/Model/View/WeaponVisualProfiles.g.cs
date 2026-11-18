@@ -44,8 +44,8 @@ namespace Shooter.Presentation.View
             new WeaponVisualProfile(
                 new DefinitionId("weapons/knife"), WeaponVisualFamily.Melee, "knife",
                 WeaponOpticMode.None, hasMagazineCycle: false, shotVoice: SynthVoiceKind.KnifeSwing, killFeedGlyph: KillFeedWeapon.Knife,
-                nearFieldScale: 1.08f, nearFieldHipBias: new Float3(0.1f, -0.1f, 0.16f),
-                hipRotationDegrees: new Float3(0f, -3f, -2f), cycleTravelMeters: 0f, displayLabel: "Knife", muzzleFx: "none",
+                nearFieldScale: 1.08f, nearFieldHipBias: new Float3(0.13f, -0.095f, 0.14f),
+                hipRotationDegrees: new Float3(-18f, -14f, -28f), cycleTravelMeters: 0f, displayLabel: "Knife", muzzleFx: "none",
                 recoilPitchDegrees: 0f, recoilYawHalfDegrees: 0f,
                 equipTicks: 12, fireIntervalTicks: 24, reloadTicks: 0, fuseTicks: 0, adsSeconds: 0.15f,
                 handlingStyle: WeaponHandlingStyle.Auto, adsFovDegrees: 0f, muzzleFlashScale: -1f, muzzleFlashSideJets: false),
@@ -53,8 +53,8 @@ namespace Shooter.Presentation.View
             new WeaponVisualProfile(
                 new DefinitionId("weapons/grenade"), WeaponVisualFamily.Throwable, "grenade",
                 WeaponOpticMode.None, hasMagazineCycle: false, shotVoice: SynthVoiceKind.GrenadeThrow, killFeedGlyph: KillFeedWeapon.Grenade,
-                nearFieldScale: 1.08f, nearFieldHipBias: new Float3(0.09f, -0.09f, 0.14f),
-                hipRotationDegrees: new Float3(0f, -3f, -2f), cycleTravelMeters: 0f, displayLabel: "Grenade", muzzleFx: "none",
+                nearFieldScale: 1.08f, nearFieldHipBias: new Float3(0.1f, -0.085f, 0.16f),
+                hipRotationDegrees: new Float3(-20f, 30f, 45f), cycleTravelMeters: 0f, displayLabel: "Grenade", muzzleFx: "none",
                 recoilPitchDegrees: 0f, recoilYawHalfDegrees: 0f,
                 equipTicks: 18, fireIntervalTicks: 0, reloadTicks: 0, fuseTicks: 120, adsSeconds: 0.15f,
                 handlingStyle: WeaponHandlingStyle.Auto, adsFovDegrees: 0f, muzzleFlashScale: -1f, muzzleFlashSideJets: false),

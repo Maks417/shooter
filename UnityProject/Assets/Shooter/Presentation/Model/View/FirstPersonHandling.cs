@@ -266,6 +266,10 @@ namespace Shooter.Presentation.View
         public static bool ViewAimTarget(bool aimHeld, bool reloadEventActive, bool authorityReloading) =>
             aimHeld && !reloadEventActive && !authorityReloading;
 
+        /// <summary>ADR-111: the knife and grenade have no sights, so aiming never pulls them to the screen centre.</summary>
+        public static bool ViewAimTarget(bool aimHeld, bool reloadEventActive, bool authorityReloading, byte slot) =>
+            ProductAuthorityActionView.IsGunSlot(slot) && ViewAimTarget(aimHeld, reloadEventActive, authorityReloading);
+
         /// <summary>Camera-only support-hand reach toward the magazine; returns to its packaged grip at both endpoints.</summary>
         public static Float3 SupportHandOffset(byte slot, float reloadPhase, bool reducedMotion, bool magazineEmpty = false)
         {

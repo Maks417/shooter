@@ -18,7 +18,7 @@ Shader "Shooter/CombatParticle"
  half4 Frag(V i):SV_Target
  {
   UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i);half4 c=SAMPLE_TEXTURE2D(_BaseMap,sampler_BaseMap,i.uv)*i.color;c.rgb*=_Brightness;
-  if(_Ring>.5){float2 q=frac(i.uv*8)-.5;float r=length(q);c=half4(.6,.5,.3,saturate(1-abs(r-.36)*24)*i.color.a);}
+  if(_Ring>.5){float2 q=frac(i.uv*8)-.5;float r=length(q);c=half4(i.color.rgb*(_Brightness*.4),saturate(1-abs(r-.36)*24)*i.color.a);}
   if(_SoftParticles>.5){float scene=LinearEyeDepth(SampleSceneDepth(i.p.xy/_ScaledScreenParams.xy),_ZBufferParams);c.a*=saturate((scene-i.eye)*2);}
   return c;
  }

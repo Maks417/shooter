@@ -50,6 +50,10 @@ namespace Shooter.Presentation.Rig
             public MeshFilter? SightFilter;
             public MeshRenderer? SightRenderer;
             public float CycleOpen;
+            /// <summary>ADR-111 third-person knife cut / grenade throw overlay clocks (seconds since start; &lt;0 idle).</summary>
+            public float MeleeSeconds = -1f;
+            public float ThrowSeconds = -1f;
+            public uint MeleeSwings;
             public SoldierMotion Motion = null!;
             public Float3 PreviousFeet;
             /// <summary>Cosmetic root blend target; authority feet stay on PreviousFeet / LastFeet.</summary>
@@ -150,6 +154,10 @@ namespace Shooter.Presentation.Rig
         private MeshFilter? localCycleFilter;
         private SkinnedMeshRenderer? triggerHand;
         private SkinnedMeshRenderer? supportHand;
+        private Shooter.Presentation.Fx.KnifeBladeTrail? bladeTrail;
+        private Shooter.Presentation.Fx.GrenadeArcPresenter? grenadeArc;
+        private static readonly Vector3 KnifeEdgeBase = new Vector3(0f, -.004f, .035f);
+        private static readonly Vector3 KnifeEdgeTip = new Vector3(0f, .004f, .158f);
         private readonly Mesh?[] firstPersonHandMeshes = new Mesh?[8];
         private Material[]? firstPersonHandMaterials;
         private readonly SkeletonData?[] handSkeletons = new SkeletonData?[8];
@@ -452,6 +460,9 @@ namespace Shooter.Presentation.Rig
                     NearFieldSurface(MapVisualClosure.FirstPersonSurfacePaths[4], "Machined steel bevels and fasteners"),
                     NearFieldSurface(MapVisualClosure.FirstPersonSurfacePaths[5], "Weapon recesses and rubber"),
                     NearFieldSurface(MapVisualClosure.FirstPersonSurfacePaths[6], "Olive enamel grenade shell"),
+                    NearFieldSurface(MapVisualClosure.FirstPersonSurfacePaths[FirstPersonSurfaceBaker.BladeSteel], "Brushed blade steel"),
+                    NearFieldSurface(MapVisualClosure.FirstPersonSurfacePaths[FirstPersonSurfaceBaker.BladeEdge], "Polished edge grind"),
+                    NearFieldSurface(MapVisualClosure.FirstPersonSurfacePaths[FirstPersonSurfaceBaker.GrenadePaint], "Olive grenade enamel"),
                     value => owned.Add(value));
                 firstPersonHandMaterials = new[] { sleeve, glove, riflePolymer };
 
@@ -571,8 +582,11 @@ namespace Shooter.Presentation.Rig
                 for (int i = 0; i < combatEvents.Count; i++)
                 {
                     var ev = combatEvents[i];
+                    if (ev.Kind == CombatEventKind.ProjectileSpawned && avatars.TryGetValue(ev.Instigator.Value, out var thrower))
+                        thrower.ThrowSeconds = 0f;
                     if (ev.Kind != CombatEventKind.ShotAccepted) continue;
                     if (!avatars.TryGetValue(ev.Instigator.Value, out var shooter)) continue;
+                    if (ProductAuthorityActionView.IsKnifeSlot(shooter.WeaponSlot)) { shooter.MeleeSeconds = 0f; shooter.MeleeSwings++; }
                     if (FirstPersonWeaponMechanics.HasCyclePart(shooter.WeaponSlot))
                         shooter.CycleOpen = Mathf.Max(shooter.CycleOpen, FirstPersonWeaponMechanics.CycleImpulse);
                 }
@@ -683,7 +697,7 @@ namespace Shooter.Presentation.Rig
                 // A reload lowers the sights (presentation only): scoped ADS hides the rifle mesh, which would
                 // otherwise make the reload invisible.
                 bool viewAim = FirstPersonHandling.ViewAimTarget(aimHeld, actions.IsReloading(human.EntityId),
-                    human.WeaponAction == WeaponAction.Reloading);
+                    human.WeaponAction == WeaponAction.Reloading, slot);
                 var activeProfile = Sighted(WeaponVisualProfiles.Resolve(weaponId, slot), SightOf(human.EntityId, slot)).WithHandling(LocalHandling);
                 localView.ApplyProfile(activeProfile);
                 if (combatEvents != null)
@@ -781,6 +795,11 @@ namespace Shooter.Presentation.Rig
                     : gun && magazineEmpty ? 1f : localView.CycleOpen01;
                 float trigger = gun && reload <= 0f ? localView.CycleOpen01 : 0f;
                 PoseLocalHands(profile, shown, reloadPose, localView.SpecialSupportWrist, localView.SpecialSupportOpen, trigger);
+                // ADR-111: one-handed knife; the grenade rests in the throwing hand and the support hand appears for the pin.
+                supportHand!.enabled = FirstPersonSpecialActions.SupportHandVisible(shown, localView.Cooking, localView.CookSeconds);
+                StepBladeTrail(shown, reducedMotion, dtSeconds);
+                StepGrenadeArc(ProductAuthorityActionView.IsGrenadeSlot(shown) && localView.Cooking && !localView.Throwing,
+                    profile.FuseSeconds - localView.CookSeconds);
                 PoseLocalMechanicalParts(profile, reloadPose, cycle, reducedMotion);
                 // Full scoped ADS uses the analytic scope overlay — hide the near-field mesh so the lens stays clean.
                 // A released grenade hides only the prop; the hands finish the follow-through.
@@ -796,6 +815,7 @@ namespace Shooter.Presentation.Rig
             }
             else if (localViewHuman.IsValid)
             {
+                grenadeArc?.Step(false, default, default, default, default, 0f, 0f);
                 localView.ResetForLife();
                 localHandling.Reset(ProductAuthorityActionView.RifleSlot);
                 localLocomotion.Reset();
@@ -1038,6 +1058,7 @@ namespace Shooter.Presentation.Rig
             Quat weaponRotation = pose.WeaponRotation;
             if (heldProfile.Family != WeaponVisualFamily.PrimaryGun && !avatar.Corpse && state.Alive)
                 weaponPosition = pose.WorldPositions[RightHandJoint];
+            ApplyThirdPersonActionOverlay(avatar, slot, state.WeaponAction == WeaponAction.Cooking, dtSeconds, ref weaponPosition, ref weaponRotation);
 
             avatar.Weapon.SetPositionAndRotation(V(weaponPosition), Q(weaponRotation));
             avatar.Weapon.gameObject.SetActive(!avatar.Corpse && state.Alive);
@@ -1394,6 +1415,15 @@ namespace Shooter.Presentation.Rig
             droppedVisuals.Clear();
         }
 
+        /// <summary>ADR-111: the packaged held-LOD mesh and finish palette of a prop (e.g. the thrown grenade).</summary>
+        public bool TryGetPropVisual(string meshKey, out Mesh? mesh, out Material[] materials)
+        {
+            mesh = null; materials = Array.Empty<Material>();
+            if (!visualsBound || !weaponMeshes.TryGetValue(meshKey, out var set) || set.Held == null) return false;
+            mesh = set.Held; materials = WeaponPalette(set.Held);
+            return true;
+        }
+
         private Material[] WeaponPalette(Mesh? mesh)
         {
             if (mesh == null) return Array.Empty<Material>();
@@ -1554,9 +1584,99 @@ namespace Shooter.Presentation.Rig
             else DestroyImmediate(value);
         }
 
+        private void StepBladeTrail(byte shown, bool reducedMotion, float dtSeconds)
+        {
+            if (localWeapon == null) return;
+            float strength = ProductAuthorityActionView.IsKnifeSlot(shown) && !reducedMotion
+                ? FirstPersonSpecialActions.BladeTrailStrength(localView.MeleePhase01, localView.MeleeIsStab)
+                : 0f;
+            if (bladeTrail == null)
+            {
+                if (strength <= 0f || localWeapon.parent == null) return;
+                bladeTrail = new Shooter.Presentation.Fx.KnifeBladeTrail(localWeapon.parent, localWeapon.gameObject.layer);
+            }
+            bladeTrail.Step(localWeapon.TransformPoint(KnifeEdgeBase), localWeapon.TransformPoint(KnifeEdgeTip), strength, dtSeconds);
+        }
+
+        private const int ChestJoint = 4, RightUpperArmJoint = 12;
+
+        /// <summary>
+        /// ADR-111: knife cut and overhand throw for other players, layered on the solved pose by swinging the right
+        /// arm (upper arm, forearm, hand) and the held prop about the shoulder. Presentation only.
+        /// </summary>
+        private void ApplyThirdPersonActionOverlay(Avatar avatar, byte slot, bool cooking, float dtSeconds, ref Float3 weaponPosition, ref Quat weaponRotation)
+        {
+            float dt = float.IsFinite(dtSeconds) && dtSeconds > 0f ? dtSeconds : 0f;
+            Quaternion swing = Quaternion.identity;
+            var chest = avatar.Bones[ChestJoint].rotation;
+            Vector3 up = chest * Vector3.up, right = chest * Vector3.right;
+            if (avatar.MeleeSeconds >= 0f)
+            {
+                float t = avatar.MeleeSeconds / FirstPersonSpecialActions.MeleeDurationSeconds;
+                avatar.MeleeSeconds += dt;
+                if (t >= 1f || !ProductAuthorityActionView.IsKnifeSlot(slot)) avatar.MeleeSeconds = -1f;
+                else
+                {
+                    float side = (avatar.MeleeSwings & 1u) == 1u ? 1f : -1f;
+                    // Cock out and up, then cut across the body and recover.
+                    float yaw = t < .15f ? Mathf.Lerp(0f, 40f, t / .15f)
+                        : t < .40f ? Mathf.Lerp(40f, -70f, Mathf.SmoothStep(0f, 1f, (t - .15f) / .25f))
+                        : Mathf.Lerp(-70f, 0f, Mathf.SmoothStep(0f, 1f, (t - .40f) / .60f));
+                    float lift = Mathf.Sin(Mathf.Clamp01(t / .4f) * Mathf.PI) * -25f;
+                    swing = Quaternion.AngleAxis(yaw * side, up) * Quaternion.AngleAxis(lift, right);
+                }
+            }
+            else if (avatar.ThrowSeconds >= 0f)
+            {
+                const float duration = .45f;
+                float t = avatar.ThrowSeconds / duration;
+                avatar.ThrowSeconds += dt;
+                if (t >= 1f) avatar.ThrowSeconds = -1f;
+                else
+                {
+                    // Overhand: arm swings from behind the head forward and down through the release.
+                    float pitch = t < .45f ? Mathf.Lerp(-120f, 30f, Mathf.SmoothStep(0f, 1f, t / .45f))
+                        : Mathf.Lerp(30f, 0f, Mathf.SmoothStep(0f, 1f, (t - .45f) / .55f));
+                    swing = Quaternion.AngleAxis(pitch, right);
+                }
+            }
+            else if (ProductAuthorityActionView.IsGrenadeSlot(slot) && cooking)
+            {
+                // Cooking: the grenade arm is cocked back behind the head, ready to throw.
+                swing = Quaternion.AngleAxis(-120f, right);
+            }
+            if (swing == Quaternion.identity) return;
+            Vector3 pivot = avatar.Bones[RightUpperArmJoint].position;
+            for (int j = RightUpperArmJoint; j <= RightHandJoint; j++)
+            {
+                var bone = avatar.Bones[j];
+                bone.SetPositionAndRotation(pivot + swing * (bone.position - pivot), swing * bone.rotation);
+            }
+            var wp = pivot + swing * (V(weaponPosition) - pivot);
+            var wr = swing * Q(weaponRotation);
+            weaponPosition = new Float3(wp.x, wp.y, wp.z);
+            weaponRotation = new Quat(wr.x, wr.y, wr.z, wr.w);
+        }
+
+        private void StepGrenadeArc(bool cooking, float fuseSecondsLeft)
+        {
+            if (fpsCamera == null) return;
+            if (grenadeArc == null)
+            {
+                if (!cooking) return;
+                grenadeArc = new Shooter.Presentation.Fx.GrenadeArcPresenter(transform, Shooter.Presentation.Fx.AnalyticFxPresenter.VisualLayer);
+            }
+            var cam = fpsCamera.transform;
+            grenadeArc.Step(cooking, cam.position, cam.forward, cam.right, cam.up, fuseSecondsLeft, Time.unscaledTime);
+        }
+
         private void OnDestroy()
         {
             ClearAll();
+            grenadeArc?.Dispose();
+            grenadeArc = null;
+            bladeTrail?.Dispose();
+            bladeTrail = null;
             if (localWeapon != null) DestroyObject(localWeapon.gameObject);
             for (int i = 0; i < owned.Count; i++)
                 if (owned[i] != null) DestroyObject(owned[i]);

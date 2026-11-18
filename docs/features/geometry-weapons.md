@@ -92,7 +92,7 @@ A new rifle shape needs no code since ADR-082: give the definition `visual.geome
 
 ## Shared weapon package (ADR-078)
 
-Weapon meshes are no longer inside map packages. `WeaponPackage` publishes one `shooter.weapon-package.v1` package beside the map packages, under its content-addressed directory, and `weapons.json` (`shooter.weapon-package-index.v1`) names its root hash. It holds four LODs per mesh key plus magazine and cycle parts for recipe-backed guns, at `mesh-<key>-lod<n>.bin`, `mesh-<key>-magazine.bin` and `mesh-<key>-cycle.bin`. Guns are encoded under the `geometry.weapon` fingerprint and props under `geometry.loadout-prop` 1.0.0.
+Weapon meshes are no longer inside map packages. `WeaponPackage` publishes one `shooter.weapon-package.v1` package beside the map packages, under its content-addressed directory, and `weapons.json` (`shooter.weapon-package-index.v1`) names its root hash. It holds four LODs per mesh key plus magazine and cycle parts for recipe-backed guns, at `mesh-<key>-lod<n>.bin`, `mesh-<key>-magazine.bin` and `mesh-<key>-cycle.bin`. Guns are encoded under the `geometry.weapon` fingerprint and props under `geometry.loadout-prop` (1.0.0; 1.1.0 since ADR-111).
 
 `VerifiedMapPackageStore.TryLoadVisual` loads and hash-checks the weapon package once and attaches it to every map's `PackagedVisualPayloads` (`WithWeapons`); a missing or corrupt package fails the visual load with no regeneration fallback. Editor and test paths that use `PackagedVisualPayloads.FromBuild` attach an in-memory build. `Package-Release.ps1` verifies and ships `weapons.json` and the package, and adds `weapons:<root>` to the content closure.
 
@@ -136,3 +136,6 @@ Each sight mesh is built in the gun's own weapon space for its archetype rail (`
 
 Which sights a gun takes is data: `visual.sights { "default": ..., "allowed": [...] }` in its definition file, in loadout order (irons, collimator, scope2, scope4, scope8). The generator requires it for every 1.4.0 rail recipe, checks that `visual.optic` matches the default sight and writes `Simulation/Combat/SightCatalog.g.cs` and `Presentation/Model/View/WeaponSightChoices.g.cs`. Sights never change combat numbers.
 
+## Knife and grenade props (ADR-111)
+
+[ADR-111](../decisions.md#adr-111--accepted-knife-and-grenade-overhaul-one-handed-hold-cut-and-throw-half-map-grenade-range-sound-explosion-models) rebuilds `LoadoutPropGeometry` on `ShapeKit` (`geometry.loadout-prop` 1.1.0). Knife: clip-point blade of filleted slabs around a fuller groove, spine jimping, a separate edge-grind solid, hooked crossguard, moulded grip with palm swell and finger grooves, lathe pommel with lanyard hole. Grenade: M67-style lathe body with a rolled seam and yellow band, lathe fuse, spoon swept along a spline, pull pin and a seamless ring (`ShapeKit.ClosedTube`). Finish slots 7 blade steel, 8 edge grind, 9 grenade paint and 10 yellow band come from new `FirstPersonSurfaceBaker` families. Both are held one-handed in first person.

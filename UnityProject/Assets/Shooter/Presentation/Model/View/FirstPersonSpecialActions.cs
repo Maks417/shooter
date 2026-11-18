@@ -21,24 +21,48 @@ namespace Shooter.Presentation.View
         /// <summary>Seconds to raise the grenade into the cocked cook pose.</summary>
         public const float CookRaiseSeconds = 0.26f;
 
-        // Knife slash, authored for a right-to-left cut (direction +1); direction -1 mirrors X, yaw and roll.
-        // The authoritative swing lands on the ShotAccepted tick, so the wind-up is a short 12% and the cut is fast.
+        // ADR-111 knife slash, authored for a right-to-left cut (direction +1); direction -1 mirrors X, yaw and roll.
+        // Short cocked wind-up up and to the right, a fast diagonal cut across the screen (right-high to left-low),
+        // a heavy follow-through below the view centre, then recovery to the low ready.
         private static readonly MotionCurve SlashPosition = new MotionCurve(
-            new MotionKey(0f, 0f, 0f, 0f), new MotionKey(.12f, .05f, .03f, -.03f), new MotionKey(.30f, -.10f, -.04f, .06f),
-            new MotionKey(.42f, -.12f, -.06f, .04f), new MotionKey(.70f, -.04f, -.03f, .01f), new MotionKey(1f, 0f, 0f, 0f));
+            new MotionKey(0f, 0f, 0f, 0f), new MotionKey(.10f, .05f, .09f, -.04f), new MotionKey(.20f, -.06f, .05f, .10f),
+            new MotionKey(.32f, -.17f, -.03f, .08f), new MotionKey(.50f, -.20f, -.10f, .02f), new MotionKey(.75f, -.07f, -.05f, 0f),
+            new MotionKey(1f, 0f, 0f, 0f));
         private static readonly MotionCurve SlashRotation = new MotionCurve(
-            new MotionKey(0f, 0f, 0f, 0f), new MotionKey(.12f, -10f, 25f, -35f), new MotionKey(.30f, 12f, -40f, 55f),
-            new MotionKey(.42f, 18f, -48f, 60f), new MotionKey(.70f, 6f, -14f, 18f), new MotionKey(1f, 0f, 0f, 0f));
+            new MotionKey(0f, 0f, 0f, 0f), new MotionKey(.10f, -25f, 30f, -30f), new MotionKey(.20f, 0f, -35f, 40f),
+            new MotionKey(.32f, 18f, -70f, 60f), new MotionKey(.50f, 25f, -78f, 55f), new MotionKey(.75f, 10f, -30f, 20f),
+            new MotionKey(1f, 0f, 0f, 0f));
+        // Stab (the swing that connected): pull back, drive the point forward, hold in the target (hit-stop), withdraw.
         private static readonly MotionCurve StabPosition = new MotionCurve(
-            new MotionKey(0f, 0f, 0f, 0f), new MotionKey(.10f, 0f, .01f, -.05f), new MotionKey(.26f, .01f, -.02f, .13f),
-            new MotionKey(.40f, .01f, -.02f, .12f), new MotionKey(.70f, .005f, -.01f, .03f), new MotionKey(1f, 0f, 0f, 0f));
+            new MotionKey(0f, 0f, 0f, 0f), new MotionKey(.12f, .02f, .03f, -.08f), new MotionKey(.26f, -.03f, .01f, .20f),
+            new MotionKey(.40f, -.03f, .005f, .19f), new MotionKey(.72f, -.01f, -.01f, .04f), new MotionKey(1f, 0f, 0f, 0f));
         private static readonly MotionCurve StabRotation = new MotionCurve(
-            new MotionKey(0f, 0f, 0f, 0f), new MotionKey(.10f, 8f, 0f, 0f), new MotionKey(.26f, -26f, 8f, -12f),
-            new MotionKey(.40f, -24f, 8f, -12f), new MotionKey(.70f, -6f, 2f, -3f), new MotionKey(1f, 0f, 0f, 0f));
+            new MotionKey(0f, 0f, 0f, 0f), new MotionKey(.12f, -10f, 5f, 0f), new MotionKey(.26f, -8f, -12f, -5f),
+            new MotionKey(.40f, -7f, -12f, -5f), new MotionKey(.72f, -2f, -3f, -1f), new MotionKey(1f, 0f, 0f, 0f));
+
+        /// <summary>Phase window in which the blade trail is drawn (the cutting part of the swing).</summary>
+        public const float TrailStartPhase = .10f;
+        public const float TrailEndPhase = .52f;
+
+        /// <summary>Blade-trail opacity for a melee phase: rises through the cut and fades in the follow-through.</summary>
+        public static float BladeTrailStrength(float phase01, bool stab)
+        {
+            if (!float.IsFinite(phase01) || phase01 <= TrailStartPhase || phase01 >= TrailEndPhase) return 0f;
+            float strength = MotionCurve.Ramp(phase01, TrailStartPhase, .18f) * (1f - MotionCurve.Ramp(phase01, .34f, TrailEndPhase));
+            return stab ? strength * .45f : strength;
+        }
+
+        /// <summary>
+        /// ADR-111: the knife and the grenade are one-handed; the support hand is shown only for the guns.
+        /// The grenade pin pull is carried by its sound and the thumb tug of the throwing hand.
+        /// </summary>
+        public static bool SupportHandVisible(byte slot, bool cooking, float cookSeconds) =>
+            ProductAuthorityActionView.IsGunSlot(slot);
 
         // Grenade cocked over the shoulder while cooking.
-        private static readonly Float3 CookPosition = new Float3(0.03f, 0.08f, -0.06f);
-        private static readonly Float3 CookRotation = new Float3(-30f, 15f, 22f);
+        // ADR-111: an overhand wind-up, raised up and back beside the right shoulder.
+        private static readonly Float3 CookPosition = new Float3(0.02f, 0.03f, -0.04f);
+        private static readonly Float3 CookRotation = new Float3(-6f, 4f, 0f);
 
         // Support hand during the pin pull (seconds): reach to the ring, grip, yank out, lower away.
         private static readonly MotionCurve PinHand = new MotionCurve(

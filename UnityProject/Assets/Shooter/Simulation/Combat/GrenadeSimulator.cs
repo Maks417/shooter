@@ -38,7 +38,10 @@ namespace Shooter.Simulation.Combat
     public sealed class GrenadeSimulator
     {
         public const int MaxLive = 16;
-        public const float GravityY = -20f;
+        public const float GravityY = -24f;
+        /// <summary>Extra launch elevation added to the aim pitch so a level aim still arcs (ADR-111).</summary>
+        public const float LoftDegrees = 8f;
+        public const float MaxLaunchPitchDegrees = 80f;
         public const float BounceRetain = 0.45f;
         public const float Radius = 0.08f;
         public const float GroundFriction = 0.85f;
@@ -82,7 +85,8 @@ namespace Shooter.Simulation.Combat
             g.ThrowerTeam = throwerTeam;
             g.DefinitionId = definition.Id;
             g.Position = origin;
-            g.Velocity = new Float3(unitAim.X * speed, unitAim.Y * speed, unitAim.Z * speed);
+            Float3 launch = Loft(unitAim);
+            g.Velocity = new Float3(launch.X * speed, launch.Y * speed, launch.Z * speed);
             g.ExplodeTick = unchecked(tick + Math.Max(1u, fuseTicksRemaining));
             g.ShotIndex = shotIndex;
             g.Active = true;
@@ -139,6 +143,18 @@ namespace Shooter.Simulation.Combat
                 }
                 g.Velocity = vel;
             }
+        }
+
+        /// <summary>Raises a unit aim vector by <see cref="LoftDegrees"/>, capped at <see cref="MaxLaunchPitchDegrees"/>.</summary>
+        public static Float3 Loft(Float3 unitAim)
+        {
+            double h = Math.Sqrt(unitAim.X * (double)unitAim.X + unitAim.Z * (double)unitAim.Z);
+            if (h < 1e-6) return unitAim;
+            double pitch = Math.Atan2(unitAim.Y, h);
+            double lofted = Math.Min(pitch + LoftDegrees * Math.PI / 180.0, MaxLaunchPitchDegrees * Math.PI / 180.0);
+            if (lofted <= pitch) return unitAim;
+            double c = Math.Cos(lofted) / h;
+            return new Float3((float)(unitAim.X * c), (float)Math.Sin(lofted), (float)(unitAim.Z * c));
         }
 
         public static ushort BlastDamage(WeaponDefinition def, float distanceMeters)

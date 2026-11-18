@@ -58,7 +58,9 @@ namespace Shooter.Generation.Environment
         {
             "material-weapon-metal.bin", "material-weapon-polymer.bin",
             "material-fp-sleeve.bin", "material-fp-glove.bin",
-            "material-weapon-steel.bin", "material-weapon-recess.bin", "material-weapon-enamel.bin"
+            "material-weapon-steel.bin", "material-weapon-recess.bin", "material-weapon-enamel.bin",
+            // ADR-111 knife and grenade finishes (FirstPersonSurfaceBaker families 7-9).
+            "material-weapon-blade.bin", "material-weapon-blade-edge.bin", "material-weapon-grenade-paint.bin"
         };
 
         public static readonly string[] SoldierMaterialPaths =

@@ -37,6 +37,45 @@ namespace Shooter.Simulation.Tests.Combat
         }
 
         [Fact]
+        public void GrenadeLoftRaisesAimAndReachesHalfAMapBeforeTheFuse()
+        {
+            // ADR-111: level aim leaves 8 degrees up; a 37 degree aim leaves at 45 degrees.
+            Float3 level = GrenadeSimulator.Loft(new Float3(0, 0, 1));
+            Assert.Equal(8.0, System.Math.Atan2(level.Y, level.Z) * 180.0 / System.Math.PI, 3);
+            double a37 = 37.0 * System.Math.PI / 180.0;
+            Float3 high = GrenadeSimulator.Loft(new Float3(0, (float)System.Math.Sin(a37), (float)System.Math.Cos(a37)));
+            Assert.Equal(45.0, System.Math.Atan2(high.Y, high.Z) * 180.0 / System.Math.PI, 2);
+            Float3 up = GrenadeSimulator.Loft(new Float3(0, 1, 0));
+            Assert.Equal(1f, up.Y);
+
+            var def = WeaponDefinition.FromId(new DefinitionId("weapons/grenade"));
+            double v = def.ThrowSpeedMetersPerSecond, g = -GrenadeSimulator.GravityY, h0 = 1.6;
+            double vy = v * high.Y, vz = v * high.Z;
+            double t = (vy + System.Math.Sqrt(vy * vy + 2 * g * h0)) / g;
+            Assert.InRange(vz * t, 32.0, 40.0); // half of a 64 x 80 m arena
+            Assert.True(t * 60.0 < def.FuseTicks, "a quick full-range throw lands before the fuse");
+        }
+
+        [Fact]
+        public void BotGrenadePitchLandsTheLoftedArcOnTheTarget()
+        {
+            var def = WeaponDefinition.FromId(new DefinitionId("weapons/grenade"));
+            var eye = new Float3(0, 1.6f, 0);
+            foreach (float range in new[] { 10f, 20f, 30f })
+            {
+                var target = new Float3(0, 1.2f, range);
+                float pitch = Shooter.Simulation.AI.AimController.GrenadeLaunchPitch(
+                    eye, target, def.ThrowSpeedMetersPerSecond, GrenadeSimulator.GravityY, GrenadeSimulator.LoftDegrees);
+                // Contract pitch is negative up; aim direction (0, -sin p, cos p).
+                Float3 v = GrenadeSimulator.Loft(new Float3(0, -(float)System.Math.Sin(pitch), (float)System.Math.Cos(pitch)));
+                double s = def.ThrowSpeedMetersPerSecond, g = -GrenadeSimulator.GravityY;
+                double vy = s * v.Y, vz = s * v.Z, dy = target.Y - eye.Y;
+                double t = (vy + System.Math.Sqrt(vy * vy - 2 * g * dy)) / g;
+                Assert.InRange(vz * t, range - 0.5, range + 0.5);
+            }
+        }
+
+        [Fact]
         public void GrenadeCooksThrowsOnceAndThenIsDry()
         {
             var sim = new WeaponSimulator();

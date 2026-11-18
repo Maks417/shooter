@@ -527,6 +527,86 @@ namespace Shooter.Generation
             return mesh.Build();
         }
 
+        /// <summary>
+        /// Sweeps a circle of <paramref name="radius"/> around the closed loop <paramref name="loop"/> (the first sample is not
+        /// repeated). Parallel-transport frames seeded from <paramref name="up"/> have their holonomy spread evenly round the
+        /// loop, so the last ring welds exactly onto the first: a seamless torus-like solid with no caps.
+        /// </summary>
+        public static MeshData ClosedTube(IReadOnlyList<Float3> loop, float radius, Float3 up, int radial)
+        {
+            if (loop == null || loop.Count < 3) throw new ArgumentException("Closed tube needs at least three loop samples.");
+            if (radial < 6 || radial > 64) throw new ArgumentException("Tube resolution.");
+            if (!GeometryMath.Finite(radius) || !(radius > .0002f)) throw new ArgumentException("Closed tube radius.");
+            int m = loop.Count;
+            var P = new double[m, 3]; for (int i = 0; i < m; i++) { P[i, 0] = loop[i].X; P[i, 1] = loop[i].Y; P[i, 2] = loop[i].Z; }
+            var T = new double[m, 3]; var N = new double[m, 3]; var B = new double[m, 3];
+            for (int i = 0; i < m; i++)
+            {
+                int i0 = (i + m - 1) % m, i1 = (i + 1) % m;
+                double tx = P[i1, 0] - P[i0, 0], ty = P[i1, 1] - P[i0, 1], tz = P[i1, 2] - P[i0, 2], l = Math.Sqrt(tx * tx + ty * ty + tz * tz);
+                if (l < 1e-7) throw new ArgumentException("Closed tube has coincident samples.");
+                T[i, 0] = tx / l; T[i, 1] = ty / l; T[i, 2] = tz / l;
+            }
+            void Transport(int i, double nx, double ny, double nz)
+            {
+                double d = nx * T[i, 0] + ny * T[i, 1] + nz * T[i, 2];
+                nx -= d * T[i, 0]; ny -= d * T[i, 1]; nz -= d * T[i, 2];
+                double ln = Math.Sqrt(nx * nx + ny * ny + nz * nz);
+                if (ln < 1e-6) throw new ArgumentException("Tube up vector is parallel to the path.");
+                N[i, 0] = nx / ln; N[i, 1] = ny / ln; N[i, 2] = nz / ln;
+            }
+            Transport(0, up.X, up.Y, up.Z);
+            for (int i = 1; i < m; i++) Transport(i, N[i - 1, 0], N[i - 1, 1], N[i - 1, 2]);
+            // Holonomy: the transported frame arriving back at sample 0, measured about T[0] from the seed normal.
+            double ex = N[m - 1, 0], ey = N[m - 1, 1], ez = N[m - 1, 2];
+            double dot0 = ex * T[0, 0] + ey * T[0, 1] + ez * T[0, 2];
+            ex -= dot0 * T[0, 0]; ey -= dot0 * T[0, 1]; ez -= dot0 * T[0, 2];
+            double cx0 = N[0, 1] * ez - N[0, 2] * ey, cy0 = N[0, 2] * ex - N[0, 0] * ez, cz0 = N[0, 0] * ey - N[0, 1] * ex;
+            double twist = Math.Atan2(cx0 * T[0, 0] + cy0 * T[0, 1] + cz0 * T[0, 2], N[0, 0] * ex + N[0, 1] * ey + N[0, 2] * ez);
+            for (int i = 0; i < m; i++)
+            {
+                double phi = -twist * i / m, c = Math.Cos(phi), s = Math.Sin(phi);
+                double kx = T[i, 1] * N[i, 2] - T[i, 2] * N[i, 1], ky = T[i, 2] * N[i, 0] - T[i, 0] * N[i, 2], kz = T[i, 0] * N[i, 1] - T[i, 1] * N[i, 0];
+                double nx = N[i, 0] * c + kx * s, ny = N[i, 1] * c + ky * s, nz = N[i, 2] * c + kz * s;
+                double ln = Math.Sqrt(nx * nx + ny * ny + nz * nz);
+                N[i, 0] = nx / ln; N[i, 1] = ny / ln; N[i, 2] = nz / ln;
+                B[i, 0] = T[i, 1] * N[i, 2] - T[i, 2] * N[i, 1]; B[i, 1] = T[i, 2] * N[i, 0] - T[i, 0] * N[i, 2]; B[i, 2] = T[i, 0] * N[i, 1] - T[i, 1] * N[i, 0];
+            }
+            var pos = new double[m, radial, 3]; var nrm = new double[m, radial, 3];
+            for (int i = 0; i < m; i++)
+                for (int j = 0; j < radial; j++)
+                {
+                    double a = 2 * Math.PI * j / radial, c = j == 0 ? 1 : Math.Cos(a), sn = j == 0 ? 0 : Math.Sin(a);
+                    for (int e = 0; e < 3; e++)
+                    {
+                        nrm[i, j, e] = c * N[i, e] + sn * B[i, e];
+                        pos[i, j, e] = P[i, e] + radius * nrm[i, j, e];
+                    }
+                }
+            var mesh = new ShapeBuffer();
+            var grid = new int[m + 1, radial + 1];
+            double v = 0;
+            for (int r = 0; r <= m; r++)
+            {
+                int i = r % m;
+                if (r > 0) { int p = r - 1; v += Math.Sqrt(Sq(P[i, 0] - P[p, 0]) + Sq(P[i, 1] - P[p, 1]) + Sq(P[i, 2] - P[p, 2])); }
+                for (int j = 0; j <= radial; j++)
+                {
+                    int jj = j % radial;
+                    var normal = Unit(nrm[i, jj, 0], nrm[i, jj, 1], nrm[i, jj, 2]);
+                    double a = 2 * Math.PI * jj / radial;
+                    double ax = -Math.Sin(a) * N[i, 0] + Math.Cos(a) * B[i, 0], ay = -Math.Sin(a) * N[i, 1] + Math.Cos(a) * B[i, 1], az = -Math.Sin(a) * N[i, 2] + Math.Cos(a) * B[i, 2];
+                    var tangent = Tangent(normal, ax, ay, az, T[i, 0], T[i, 1], T[i, 2]);
+                    grid[r, j] = mesh.Positions.Count;
+                    mesh.Vertex(new Float3((float)pos[i, jj, 0], (float)pos[i, jj, 1], (float)pos[i, jj, 2]), normal, tangent,
+                        new Float2((float)(2 * Math.PI * radius * j / radial), (float)v));
+                }
+            }
+            for (int r = 0; r < m; r++)
+                for (int j = 0; j < radial; j++) Quad(mesh, grid[r, j], grid[r, j + 1], grid[r + 1, j], grid[r + 1, j + 1]);
+            return mesh.Build();
+        }
+
         private static double Sq(double x) => x * x;
 
         /// <summary>Triangle (centre, a, b) wound to face <paramref name="facing"/>.</summary>

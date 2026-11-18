@@ -71,7 +71,7 @@ namespace Shooter.Simulation.Combat
                     magazineSize: 1, reserveCapacity: 0, baseDamage: 100,
                     hipSpreadRadians: Deg(0f), adsSpreadRadians: Deg(0f),
                     recoilPitchRadians: Deg(0f), recoilYawHalfRadians: Deg(0f),
-                    maxRangeMeters: 0f, fuseTicks: 120, throwSpeedMetersPerSecond: 18f,
+                    maxRangeMeters: 0f, fuseTicks: 120, throwSpeedMetersPerSecond: 28f,
                     blastRadiusMeters: 5f, consumesAmmo: true, allowsSprintFire: false,
                     burstCount: 0, burstIntervalTicks: 0, falloffStartMeters: 0f, falloffEndMeters: 0f,
                     falloffMinScale: 1f, moveSpeedScale: 1f, spawnWeight: 1),

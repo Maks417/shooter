@@ -18,7 +18,7 @@
     "recoilYawHalfDegrees": 0,
     "maxRangeMeters": 0,
     "fuseTicks": 120,
-    "throwSpeedMetersPerSecond": 18,
+    "throwSpeedMetersPerSecond": 28,
     "blastRadiusMeters": 5,
     "consumesAmmo": true,
     "allowsSprintFire": false
@@ -29,14 +29,14 @@
     "magazineCycle": false,
     "nearFieldScale": 1.08,
     "nearFieldHipBias": [
-      0.09,
-      -0.09,
-      0.14
+      0.1,
+      -0.085,
+      0.16
     ],
     "hipRotationDegrees": [
-      0,
-      -3,
-      -2
+      -20,
+      30,
+      45
     ],
     "cycleTravelMeters": 0,
     "muzzleFx": "none"

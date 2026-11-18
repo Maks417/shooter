@@ -40,7 +40,20 @@ public sealed class MapPackageSurfaceTests : IDisposable
             if (family == 4) Assert.InRange(roughness, 65, 95);
             if (family == 5) Assert.InRange(roughness, 225, 245);
             if (family == 6) Assert.InRange(roughness, 150, 180);
-            Assert.All(mask.MipBytes[0].Where((v, i) => i % 4 == 0), m => Assert.Equal(family == 0 ? 190 : family == 4 ? 240 : family == 6 ? 30 : 0, m));
+            // ADR-111: brushed blade steel, the smoother polished edge grind, and olive enamel with sparse bare-metal chips.
+            if (family == FirstPersonSurfaceBaker.BladeSteel) Assert.InRange(roughness, 50, 75);
+            if (family == FirstPersonSurfaceBaker.BladeEdge) Assert.InRange(roughness, 28, 46);
+            if (family == FirstPersonSurfaceBaker.GrenadePaint) Assert.InRange(roughness, 125, 155);
+            var metallic = mask.MipBytes[0].Where((v, i) => i % 4 == 0).ToArray();
+            if (family == FirstPersonSurfaceBaker.GrenadePaint)
+            {
+                Assert.All(metallic, m => Assert.Contains(m, new byte[] { 0, 200 }));
+                double chipped = metallic.Count(m => m == 200) / (double)metallic.Length;
+                Assert.InRange(chipped, .005, .08);
+            }
+            else
+                Assert.All(metallic, m => Assert.Equal(family == 0 ? 190 : family == 4 ? 240 : family == 6 ? 30
+                    : family == FirstPersonSurfaceBaker.BladeSteel ? 235 : family == FirstPersonSurfaceBaker.BladeEdge ? 245 : 0, m));
         }
     }
 

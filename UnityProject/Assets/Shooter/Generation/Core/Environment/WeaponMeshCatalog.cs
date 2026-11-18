@@ -84,7 +84,7 @@ namespace Shooter.Generation.Environment
     {
         public const int LodCount = 4;
         public const string PropGeneratorId = "geometry.loadout-prop";
-        public const string PropGeneratorVersion = "1.0.0";
+        public const string PropGeneratorVersion = "1.1.0";
 
         private static readonly WeaponMeshSource[] Sources = CreateGeneratedSources();
         private static readonly Dictionary<string, WeaponMeshSource> ByKey = Index(Sources);

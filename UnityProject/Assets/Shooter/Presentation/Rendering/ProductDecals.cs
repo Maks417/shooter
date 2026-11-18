@@ -69,11 +69,11 @@ namespace Shooter.Presentation.Rendering
             var slot=impacts[cursor];
             if(slot==null)
             {
-                slot=CreateSlot(Vector3.zero,Vector3.up,scorch?2f:.22f,scorch?2f:.22f,0,scorch?2:3,true);impacts[cursor]=slot;
+                slot=CreateSlot(Vector3.zero,Vector3.up,scorch?ScorchMeters:.22f,scorch?ScorchMeters:.22f,0,scorch?2:3,true);impacts[cursor]=slot;
             }
             var n=new Vector3(normal.X,normal.Y,normal.Z).normalized;if(n.sqrMagnitude<.1f)n=Vector3.up;
             slot.Root.transform.SetPositionAndRotation(new Vector3(position.X,position.Y,position.Z)+n*ImpactLiftMeters,Quaternion.FromToRotation(Vector3.up,n));
-            float size=scorch?2f:.22f;slot.Mesh.transform.localScale=new Vector3(size,1,size);slot.Projector.size=new Vector3(size,size,.35f);
+            float size=scorch?ScorchMeters:.22f;slot.Mesh.transform.localScale=new Vector3(size,1,size);slot.Projector.size=new Vector3(size,size,.35f);
             slot.Mesh.sharedMaterial=materials[scorch?2:3];slot.Projector.material=materials[scorch?2:3];
             slot.Until=Time.unscaledTime+25;slot.Root.SetActive(true);SetTier(slot);cursor=(cursor+1)%ImpactCapacity;
         }
@@ -92,6 +92,8 @@ namespace Shooter.Presentation.Rendering
         /// <summary>ADR-103 Low quad lift (metres); with the shader's Offset -1,-1 it clears the ground at range.</summary>
         public const float LowQuadLiftMeters=.015f;
         public const float ImpactLiftMeters=.02f;
+        /// <summary>ADR-111 grenade scorch diameter (was 2 m).</summary>
+        public const float ScorchMeters=3f;
         /// <summary>ADR-103 projector draw distance per tier so scoped views keep layout paint.</summary>
         public static float DecalDrawDistance(){int q=QualitySettings.GetQualityLevel();return q>=2?200f:q==1?120f:80f;}
         private void OnDestroy()=>Release();

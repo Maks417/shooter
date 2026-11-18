@@ -5,7 +5,9 @@ using static Shooter.VectorMath.VecMath;
 
 namespace Shooter.Presentation.Fx
 {
-    public enum FxKind : byte { MuzzleFlash = 1, ImpactSpark = 2, SmokeProxy = 3, ShellCasing = 4, Tracer = 5, Dust = 6, Fireball = 7, Shockwave = 8, Debris = 9 }
+    public enum FxKind : byte { MuzzleFlash = 1, ImpactSpark = 2, SmokeProxy = 3, ShellCasing = 4, Tracer = 5, Dust = 6, Fireball = 7, Shockwave = 8, Debris = 9,
+        // ADR-111 grenade blast layers.
+        BlastFlash = 10, FirePuff = 11, Sparks = 12, Embers = 13, DustRing = 14 }
 
     public struct FxInstance
     {
@@ -21,7 +23,9 @@ namespace Shooter.Presentation.Fx
     /// <summary>Capped analytic mesh FX proxies. No sprites/images; bounded pool.</summary>
     public sealed class AnalyticFxPool
     {
-        public const int MaxInstances = 64;
+        public const int MaxInstances = 96;
+        /// <summary>ADR-111: grenade blast layers share one cap so two overlapping blasts fit without starving gunfire.</summary>
+        public const int MaxBlastProxies = 40;
         public const int MaxSmokeProxies = 16;
         public const int MaxShellCasings = 24;
         public const int MaxTracers = 16;
@@ -34,6 +38,25 @@ namespace Shooter.Presentation.Fx
         public const float ShellCasingLifetime = 0.85f;
         public const float TracerLifetime = 0.09f;
         public const float TracerLengthMeters = 9.5f;
+        // ADR-111 grenade blast timings (seconds).
+        public const float BlastFlashLifetime = 0.09f;
+        public const float FireballLifetime = 0.9f;
+        public const float FirePuffLifetime = 0.75f;
+        public const float SparksLifetime = 1.2f;
+        public const float SparkMinLifetime = 0.5f;
+        public const float EmbersLifetime = 2.5f;
+        public const float ShockwaveLifetime = 0.35f;
+        public const float DustRingLifetime = 1.6f;
+        public const float DebrisLifetime = 1.3f;
+        public const float BlastSmokeLifetime = 5.5f;
+        public const float FirePuffMaxDelay = 0.12f;
+        /// <summary>Variant on SmokeProxy/Debris marking the grenade blast (not gunfire smoke or surface impacts).</summary>
+        public const byte BlastVariant = 0xB1;
+        public const float BlastLightIntensity = 16f;
+        public const float BlastLightRange = 22f;
+        public const float BlastLightSeconds = 0.45f;
+        public const float BlastShakeRangeMeters = 25f;
+        public const float BlastShakeSeconds = 0.6f;
 
         private readonly FxInstance[] items = new FxInstance[MaxInstances];
         public int ActiveCount { get; private set; }
@@ -41,6 +64,7 @@ namespace Shooter.Presentation.Fx
         public int ShellCount { get; private set; }
         public int TracerCount { get; private set; }
         public int DustCount { get; private set; }
+        public int BlastCount { get; private set; }
         public int Evicted { get; private set; }
         public int Spawns { get; private set; }
         public int Rejected { get; private set; }
@@ -52,9 +76,52 @@ namespace Shooter.Presentation.Fx
             FxKind.SmokeProxy => SmokeProxyLifetime,
             FxKind.ShellCasing => ShellCasingLifetime,
             FxKind.Tracer => TracerLifetime,
-            FxKind.Dust => .9f, FxKind.Fireball => .65f, FxKind.Shockwave => .5f, FxKind.Debris => 1.3f,
+            FxKind.Dust => .9f, FxKind.Fireball => FireballLifetime, FxKind.Shockwave => ShockwaveLifetime, FxKind.Debris => DebrisLifetime,
+            FxKind.BlastFlash => BlastFlashLifetime, FxKind.FirePuff => FirePuffLifetime, FxKind.Sparks => SparksLifetime,
+            FxKind.Embers => EmbersLifetime, FxKind.DustRing => DustRingLifetime,
             _ => ImpactSparkLifetime
         };
+
+        /// <summary>Variant-aware lifetime: the blast smoke column outlives gunfire smoke.</summary>
+        public static float LifetimeFor(FxKind kind, byte variant) =>
+            kind == FxKind.SmokeProxy && variant == BlastVariant ? BlastSmokeLifetime : LifetimeFor(kind);
+
+        /// <summary>Blast layers share <see cref="MaxBlastProxies"/> and may evict ambient proxies.</summary>
+        public static bool IsBlast(FxKind kind) =>
+            kind == FxKind.Fireball || kind == FxKind.Shockwave || kind == FxKind.BlastFlash || kind == FxKind.FirePuff
+            || kind == FxKind.Sparks || kind == FxKind.Embers || kind == FxKind.DustRing;
+
+        /// <summary>Bright additive kinds hidden under ReducedFlash.</summary>
+        public static bool IsFlashing(FxKind kind) =>
+            kind == FxKind.MuzzleFlash || kind == FxKind.Tracer || kind == FxKind.Fireball || kind == FxKind.BlastFlash
+            || kind == FxKind.FirePuff || kind == FxKind.Sparks || kind == FxKind.Shockwave;
+
+        /// <summary>Spark streaks per quality tier (Low 40, Balanced 80, High 120).</summary>
+        public static int SparkCount(int qualityTier) => qualityTier <= 0 ? 40 : qualityTier == 1 ? 80 : 120;
+        /// <summary>Radial fire puffs per quality tier (6..10).</summary>
+        public static int FirePuffCount(int qualityTier) => qualityTier <= 0 ? 6 : qualityTier == 1 ? 8 : 10;
+        /// <summary>Blast smoke particles per tier (Low 8, otherwise 14).</summary>
+        public static int BlastSmokeParticles(int qualityTier) => qualityTier <= 0 ? 8 : 14;
+        public static int EmberCount(int qualityTier) => qualityTier <= 0 ? 8 : qualityTier == 1 ? 16 : 24;
+        public static int DustRingParticles(int qualityTier) => qualityTier <= 0 ? 10 : qualityTier == 1 ? 16 : 22;
+
+        /// <summary>Camera shake scale: 1 at the blast, quadratic falloff to 0 at 25 m.</summary>
+        public static float BlastShakeScale(float distanceMeters)
+        {
+            if (float.IsNaN(distanceMeters) || distanceMeters >= BlastShakeRangeMeters) return 0f;
+            if (distanceMeters <= 0f) return 1f;
+            float k = 1f - distanceMeters / BlastShakeRangeMeters;
+            return k * k;
+        }
+
+        /// <summary>Blast light: 16 at detonation, quadratic decay with a hot flicker, dark after 0.45 s.</summary>
+        public static float BlastLightAt(float age)
+        {
+            if (age < 0f || age >= BlastLightSeconds) return 0f;
+            float t = age / BlastLightSeconds, fade = (1f - t) * (1f - t);
+            float flicker = 0.78f + 0.22f * (0.5f + 0.5f * (float)Math.Cos(age * 71f) * (float)Math.Cos(age * 43f));
+            return BlastLightIntensity * fade * flicker;
+        }
 
         /// <summary>
         /// Peak primary-lobe scale at spawn (meters). Presenter stretches this into a thin flame cone.
@@ -130,8 +197,17 @@ namespace Shooter.Presentation.Fx
             return spawn;
         }
 
-        public bool TrySpawn(FxKind kind, Float3 position, Float3 normal, byte variant = 0)
+        public bool TrySpawn(FxKind kind, Float3 position, Float3 normal, byte variant = 0) => TrySpawn(kind, position, normal, variant, 0f);
+
+        /// <summary>
+        /// <paramref name="delaySeconds"/> staggers a layer: the instance starts at negative age and presenters show it
+        /// only once age reaches zero, so its visible lifetime is unchanged.
+        /// </summary>
+        public bool TrySpawn(FxKind kind, Float3 position, Float3 normal, byte variant, float delaySeconds)
         {
+            bool blast = IsBlast(kind);
+            // A new blast outranks the most-faded layer of an older one.
+            if (blast && BlastCount >= MaxBlastProxies && EvictWhere(IsBlast) < 0) { Rejected++; return false; }
             if (kind == FxKind.SmokeProxy && SmokeCount >= MaxSmokeProxies) { Rejected++; return false; }
             if (kind == FxKind.ShellCasing && ShellCount >= MaxShellCasings) { Rejected++; return false; }
             if (kind == FxKind.Tracer && TracerCount >= MaxTracers) { Rejected++; return false; }
@@ -140,8 +216,8 @@ namespace Shooter.Presentation.Fx
             for (int i = 0; i < MaxInstances; i++)
                 if (!items[i].Active) { slot = i; break; }
             // A saturated pool must still show the shot: flashes and blasts evict the most-faded ambient proxy.
-            if (slot < 0 && (kind == FxKind.MuzzleFlash || kind == FxKind.Fireball || kind == FxKind.Shockwave))
-                slot = EvictAmbient();
+            if (slot < 0 && (kind == FxKind.MuzzleFlash || blast))
+                slot = EvictWhere(IsAmbient);
             for (int i = slot < 0 ? MaxInstances : slot; i < MaxInstances; i++)
             {
                 if (items[i].Active) continue;
@@ -150,8 +226,8 @@ namespace Shooter.Presentation.Fx
                     Kind = kind,
                     Position = position,
                     Normal = normal.IsUnit ? normal : new Float3(0, 1, 0),
-                    Age = 0,
-                    Lifetime = LifetimeFor(kind),
+                    Age = delaySeconds > 0f ? -delaySeconds : 0f,
+                    Lifetime = LifetimeFor(kind, variant),
                     Active = true, Variant=variant
                 };
                 ActiveCount++;
@@ -159,11 +235,50 @@ namespace Shooter.Presentation.Fx
                 else if (kind == FxKind.ShellCasing) ShellCount++;
                 else if (kind == FxKind.Tracer) TracerCount++;
                 else if (IsDust(kind)) DustCount++;
+                else if (blast) BlastCount++;
                 Spawns++;
                 return true;
             }
             Rejected++;
             return false;
+        }
+
+        /// <summary>
+        /// ADR-111 grenade blast: flash core, fireball, staggered radial fire puffs, spark streaks, embers, shockwave,
+        /// ground dust ring, two debris sets and a rising smoke column. ReducedFlash drops every bright additive layer
+        /// (flash, fireball, puffs, sparks, shockwave) and keeps embers, dust, debris and smoke.
+        /// </summary>
+        public int SpawnGrenadeBlast(Float3 position, Float3 normal, bool reducedFlash, int qualityTier)
+        {
+            Float3 n = normal.IsUnit ? normal : new Float3(0f, 1f, 0f);
+            int spawned = 0;
+            if (!reducedFlash)
+            {
+                if (TrySpawn(FxKind.BlastFlash, position, n)) spawned++;
+                if (TrySpawn(FxKind.Fireball, position, n)) spawned++;
+                int puffs = FirePuffCount(qualityTier);
+                Float3 side = EjectionAxis(n), across = Cross(side, n);
+                for (int p = 0; p < puffs; p++)
+                {
+                    float turn = p * (float)(2 * Math.PI) / puffs + 0.37f * (p & 1);
+                    float c = (float)Math.Cos(turn), s = (float)Math.Sin(turn), lift = 0.35f + 0.25f * (p % 3);
+                    float x = side.X * c + across.X * s + n.X * lift, y = side.Y * c + across.Y * s + n.Y * lift, z = side.Z * c + across.Z * s + n.Z * lift;
+                    float inv = 1f / (float)Math.Sqrt(x * x + y * y + z * z);
+                    var dir = new Float3(x * inv, y * inv, z * inv);
+                    var at = new Float3(position.X + dir.X * 0.5f, position.Y + dir.Y * 0.5f, position.Z + dir.Z * 0.5f);
+                    // 7 is coprime to 6, 8 and 10: every puff gets a distinct slot in the 0..120 ms stagger.
+                    float delay = FirePuffMaxDelay * ((p * 7) % puffs) / (puffs - 1);
+                    if (TrySpawn(FxKind.FirePuff, at, dir, (byte)p, delay)) spawned++;
+                }
+                if (TrySpawn(FxKind.Sparks, position, n)) spawned++;
+                if (TrySpawn(FxKind.Shockwave, position, n)) spawned++;
+            }
+            if (TrySpawn(FxKind.Embers, position, n)) spawned++;
+            if (TrySpawn(FxKind.DustRing, position, n)) spawned++;
+            if (TrySpawn(FxKind.Debris, position, n, BlastVariant)) spawned++;
+            if (TrySpawn(FxKind.Debris, position, n, BlastVariant, 0.04f)) spawned++;
+            if (TrySpawn(FxKind.SmokeProxy, position, new Float3(0f, 1f, 0f), BlastVariant, 0.05f)) spawned++;
+            return spawned;
         }
 
         /// <summary>
@@ -264,7 +379,7 @@ namespace Shooter.Presentation.Fx
         public void Tick(float dt)
         {
             if (dt < 0) throw new ArgumentOutOfRangeException(nameof(dt));
-            int active = 0, smoke = 0, shells = 0, tracers = 0, dust = 0;
+            int active = 0, smoke = 0, shells = 0, tracers = 0, dust = 0, blast = 0;
             for (int i = 0; i < MaxInstances; i++)
             {
                 if (!items[i].Active) continue;
@@ -275,12 +390,14 @@ namespace Shooter.Presentation.Fx
                 else if (items[i].Kind == FxKind.ShellCasing) shells++;
                 else if (items[i].Kind == FxKind.Tracer) tracers++;
                 else if (IsDust(items[i].Kind)) dust++;
+                else if (IsBlast(items[i].Kind)) blast++;
             }
             ActiveCount = active;
             SmokeCount = smoke;
             ShellCount = shells;
             TracerCount = tracers;
             DustCount = dust;
+            BlastCount = blast;
         }
 
         private static bool IsDust(FxKind kind) => kind == FxKind.Dust || kind == FxKind.Debris;
@@ -288,14 +405,14 @@ namespace Shooter.Presentation.Fx
         private static bool IsAmbient(FxKind kind) =>
             kind == FxKind.SmokeProxy || kind == FxKind.Dust || kind == FxKind.Debris || kind == FxKind.ShellCasing;
 
-        /// <summary>Free the ambient proxy (smoke, dust, debris, casing) closest to the end of its life.</summary>
-        private int EvictAmbient()
+        /// <summary>Free the matching proxy closest to the end of its life (ambient: smoke, dust, debris, casing).</summary>
+        private int EvictWhere(Func<FxKind, bool> match)
         {
             int best = -1;
             float bestT = -1f;
             for (int i = 0; i < MaxInstances; i++)
             {
-                if (!items[i].Active || !IsAmbient(items[i].Kind)) continue;
+                if (!items[i].Active || !match(items[i].Kind)) continue;
                 float t = NormalizeAge(items[i].Age, items[i].Lifetime);
                 if (t > bestT) { bestT = t; best = i; }
             }
@@ -306,6 +423,7 @@ namespace Shooter.Presentation.Fx
             if (kind == FxKind.SmokeProxy) SmokeCount--;
             else if (kind == FxKind.ShellCasing) ShellCount--;
             else if (IsDust(kind)) DustCount--;
+            else if (IsBlast(kind)) BlastCount--;
             Evicted++;
             return best;
         }
@@ -319,6 +437,7 @@ namespace Shooter.Presentation.Fx
             ShellCount = 0;
             TracerCount = 0;
             DustCount = 0;
+            BlastCount = 0;
         }
 
         public FxInstance Get(int index) => items[index];

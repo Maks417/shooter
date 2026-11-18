@@ -135,7 +135,7 @@ namespace Shooter.Presentation.Audio
             SynthVoiceKind.WeaponSwitch => BakeReloadStart,
             SynthVoiceKind.HitMarker => BakeUi,
             SynthVoiceKind.KillConfirm => BakeUi,
-            SynthVoiceKind.BulletFlyby => BakeKnifeSwing,
+            SynthVoiceKind.BulletFlyby => BakeWhoosh,
             SynthVoiceKind.DistantBattle => BakeRifleShot,
             SynthVoiceKind.UiHover => BakeUi,
             SynthVoiceKind.UiClick => BakeUi,
@@ -220,6 +220,9 @@ namespace Shooter.Presentation.Audio
 
         private static float[] BakeKnifeSwing(int rate, int variation) =>
             Stereoize(BakeMonoKnifeSwing(rate, variation), rate, variation, 0.00055f);
+
+        private static float[] BakeWhoosh(int rate, int variation) =>
+            Stereoize(BakeMonoWhoosh(rate, variation), rate, variation, 0.00055f);
 
         private static float[] BakeGrenadeThrow(int rate, int variation) =>
             Stereoize(BakeMonoGrenadeThrow(rate, variation), rate, variation, 0.0004f);
@@ -322,7 +325,25 @@ namespace Shooter.Presentation.Audio
             return buf;
         }
 
+        /// <summary>
+        /// ADR-111 blade swing: a swelling band-passed air whoosh under a bright inharmonic steel "shing"
+        /// (about -8 dB) that rings past the swing, so the cue reads as a blade rather than a puff of noise.
+        /// </summary>
         private static float[] BakeMonoKnifeSwing(int rate, int variation)
+        {
+            float len = 0.32f + 0.02f * (variation % 4);
+            var buf = new float[(int)(rate * len)];
+            uint rng = MixSeed(0xA1FE0001u ^ 0x4B4E4946u, variation);
+            float pitch = 1f + 0.04f * ((variation % 4) - 1.5f);
+            AddSwellNoise(buf, rate, ref rng, 0.000f, 0.26f * len / 0.34f, 0.80f, 500f * pitch, 6500f * pitch, 0.35f);
+            AddSwellNoise(buf, rate, ref rng, 0.020f, 0.16f, 0.30f, 2500f * pitch, 11000f, 0.45f);
+            AddRing(buf, rate, 0.025f, len - 0.03f, 3150f * pitch, 0.40f, 9f, ref rng);
+            NormalizePeak(buf, 0.78f);
+            return buf;
+        }
+
+        /// <summary>The pre-ADR-111 short air swish, kept as the bullet fly-by emergency fallback.</summary>
+        private static float[] BakeMonoWhoosh(int rate, int variation)
         {
             int n = (int)(rate * 0.22f);
             var buf = new float[n];
@@ -346,15 +367,29 @@ namespace Shooter.Presentation.Audio
             return buf;
         }
 
+        /// <summary>
+        /// ADR-111 frag blast: broadband crack, 45->28 Hz sub-bass drop, mid-band body, 6-10 scattered low-passed
+        /// debris hits over 0.4-1.6 s and a long low rumble tail (2.3-2.75 s in all).
+        /// </summary>
         private static float[] BakeMonoGrenadeExplode(int rate, int variation)
         {
-            int n = (int)(rate * 0.85f);
-            var buf = new float[n];
+            float len = 2.3f + 0.15f * (variation % 4);
+            var buf = new float[(int)(rate * len)];
             uint rng = MixSeed(0xB0010001u ^ 0x424F4F4Du, variation);
-            AddNoiseBurst(buf, rate, ref rng, 0.000f, 0.040f, 1.00f, 400f, 10000f);
-            AddThump(buf, rate, 0.000f, 0.220f, 38f + variation * 3f, 0.85f);
-            AddNoiseBurst(buf, rate, ref rng, 0.020f, 0.350f, 0.70f, 80f, 2200f);
-            AddNoiseBurst(buf, rate, ref rng, 0.080f, 0.650f, 0.35f, 40f, 900f);
+            AddNoiseBurst(buf, rate, ref rng, 0.000f, 0.030f, 1.00f, 600f, 12000f);
+            AddNoiseBurst(buf, rate, ref rng, 0.000f, 0.070f, 0.70f, 300f, 6000f);
+            AddSweep(buf, rate, 0.000f, 0.600f, 45f, 28f, 0.95f, 3.5f);
+            AddNoiseBurst(buf, rate, ref rng, 0.015f, 0.450f, 0.70f, 80f, 2200f);
+            int debris = 6 + (variation * 3) % 5;
+            for (int i = 0; i < debris; i++)
+            {
+                float t = 0.4f + 1.2f * (i + NextFloat(ref rng) * 0.8f) / debris;
+                float amp = 0.16f * (1f - 0.45f * (t - 0.4f));
+                AddNoiseBurst(buf, rate, ref rng, t, 0.035f + NextFloat(ref rng) * 0.04f, amp, 150f, 1800f + NextFloat(ref rng) * 1400f);
+                AddThump(buf, rate, t, 0.05f, 140f + NextFloat(ref rng) * 160f, amp * 0.5f);
+            }
+            AddNoiseBurst(buf, rate, ref rng, 0.060f, len - 0.08f, 0.40f, 30f, 600f);
+            FadeTail(buf, rate, 0.8f);
             NormalizePeak(buf, 0.95f);
             return buf;
         }
@@ -506,6 +541,73 @@ namespace Shooter.Presentation.Audio
                 float n = (NextFloat(ref rng) * 2f - 1f) * 0.25f;
                 buf[idx] += (tone + over + n) * amp * env;
             }
+        }
+
+        /// <summary>Noise whose envelope swells to a peak at <paramref name="peakAt"/> of its length, then falls.</summary>
+        private static void AddSwellNoise(float[] buf, int rate, ref uint rng, float startSec, float durSec, float amp, float lowHz, float highHz, float peakAt)
+        {
+            int start = (int)(startSec * rate);
+            int len = Math.Max(1, (int)(durSec * rate));
+            float lp = 0f;
+            float hp = 0f;
+            float hpCoeff = Math.Clamp(highHz / (rate * 0.5f), 0.01f, 0.95f);
+            float lpCoeff = Math.Clamp(lowHz / (rate * 0.5f), 0.01f, 0.95f);
+            for (int i = 0; i < len; i++)
+            {
+                int idx = start + i;
+                if (idx < 0 || idx >= buf.Length) continue;
+                float t = i / (float)len;
+                float env = t < peakAt ? t / peakAt : (float)Math.Exp(-5.0 * (t - peakAt) / (1f - peakAt));
+                env *= env;
+                float n = NextFloat(ref rng) * 2f - 1f;
+                lp += lpCoeff * (n - lp);
+                hp += hpCoeff * ((n - lp) - hp);
+                buf[idx] += hp * amp * env;
+            }
+        }
+
+        /// <summary>Inharmonic struck-steel ring (blade "shing") with a soft attack and exponential decay.</summary>
+        private static void AddRing(float[] buf, int rate, float startSec, float durSec, float freqHz, float amp, float decay, ref uint rng)
+        {
+            int start = (int)(startSec * rate);
+            int len = Math.Max(1, (int)(durSec * rate));
+            float[] ratio = { 1f, 1.593f, 2.298f, 3.117f };
+            float[] level = { 1f, 0.6f, 0.38f, 0.22f };
+            float detune = 1f + (NextFloat(ref rng) - 0.5f) * 0.01f;
+            for (int i = 0; i < len; i++)
+            {
+                int idx = start + i;
+                if (idx < 0 || idx >= buf.Length) continue;
+                float t = i / (float)rate;
+                float env = Math.Min(1f, t / 0.004f) * (float)Math.Exp(-decay * t);
+                float s = 0f;
+                for (int p = 0; p < ratio.Length; p++)
+                    s += level[p] * (float)Math.Sin(2 * Math.PI * freqHz * ratio[p] * detune * t);
+                buf[idx] += s * amp * env * 0.45f;
+            }
+        }
+
+        /// <summary>Exponential sine sweep (sub-bass drop) with a short attack and exponential decay.</summary>
+        private static void AddSweep(float[] buf, int rate, float startSec, float durSec, float fromHz, float toHz, float amp, float decay)
+        {
+            int start = (int)(startSec * rate);
+            int len = Math.Max(1, (int)(durSec * rate));
+            double k = Math.Log(toHz / fromHz);
+            for (int i = 0; i < len; i++)
+            {
+                int idx = start + i;
+                if (idx < 0 || idx >= buf.Length) continue;
+                double t = i / (double)rate;
+                double phase = 2 * Math.PI * fromHz * durSec / k * (Math.Exp(k * t / durSec) - 1);
+                float env = Math.Min(1f, (float)(t / 0.004)) * (float)Math.Exp(-decay * t) * Math.Min(1f, (len - i) / (0.15f * rate));
+                buf[idx] += (float)Math.Sin(phase) * amp * env;
+            }
+        }
+
+        private static void FadeTail(float[] buf, int rate, float fadeSec)
+        {
+            int len = Math.Min(buf.Length, (int)(fadeSec * rate));
+            for (int i = 0; i < len; i++) buf[buf.Length - 1 - i] *= i / (float)len;
         }
 
         private static void NormalizePeak(float[] buf, float targetPeak)

@@ -52,27 +52,42 @@ public sealed class WeaponTests
     [InlineData(true)]
     public void LoadoutPropsAreClosedDeterministicAndHaveLegibleProfiles(bool grenade)
     {
+        int previous = int.MaxValue;
         for (int lod = 0; lod < 4; lod++)
         {
             var mesh = grenade ? LoadoutPropGeometry.BuildGrenade(lod) : LoadoutPropGeometry.BuildKnife(lod);
             var repeat = grenade ? LoadoutPropGeometry.BuildGrenade(lod) : LoadoutPropGeometry.BuildKnife(lod);
             MeshValidation.Check(mesh, true);
             Assert.Equal(GeometryCodec.EncodeMesh(mesh), GeometryCodec.EncodeMesh(repeat));
-            Assert.All(mesh.Submeshes, sub => Assert.InRange(sub.MaterialSlot, (ushort)0, (ushort)4));
-            Assert.InRange(mesh.Indices.Count / 3, 1, grenade ? 3000 : 1800);
+            // ADR-111 palette: 0 coated, 1 polymer, 2 steel, 3 recess, 7 blade steel, 8 edge grind, 9 grenade enamel, 10 marking band.
+            Assert.All(mesh.Submeshes, sub => Assert.Contains(sub.MaterialSlot, new ushort[] { 0, 1, 2, 3, 7, 8, 9, 10 }));
+            int triangles = mesh.Indices.Count / 3;
+            output.WriteLine((grenade ? "grenade" : "knife") + " lod" + lod + ": " + triangles + " triangles, " + mesh.Positions.Count + " vertices");
+            Assert.InRange(triangles, 1, new[] { 6500, 2800, 1300, 600 }[lod]);
+            Assert.True(triangles < previous, "Each LOD must be lighter than the one before it.");
+            previous = triangles;
             if (grenade)
             {
                 float height = mesh.Positions.Max(p => p.Y) - mesh.Positions.Min(p => p.Y);
                 float depth = mesh.Positions.Max(p => p.Z) - mesh.Positions.Min(p => p.Z);
                 Assert.True(height > depth * 1.4f, "Shell and fuse must stand upright in the hand.");
-                Assert.Contains(mesh.Submeshes, sub => sub.MaterialSlot == 4);
+                Assert.Contains(mesh.Submeshes, sub => sub.MaterialSlot == LoadoutPropGeometry.GrenadePaintSlot);
+                Assert.Contains(mesh.Submeshes, sub => sub.MaterialSlot == LoadoutPropGeometry.MarkingBandSlot);
             }
             else
             {
-                var tip = mesh.Positions.Where(p => p.Z > .158f).ToArray();
+                // Clip point at +Z on the centre plane, edge down, handle kept on the grip (-Z).
+                float reach = mesh.Positions.Max(p => p.Z);
+                Assert.InRange(reach, .157f, .1605f); // the filleted point sits just behind the nominal 160 mm tip
+                var tip = mesh.Positions.Where(p => p.Z > reach - .001f).ToArray();
                 Assert.NotEmpty(tip);
-                Assert.All(tip, p => Assert.True(Math.Abs(p.Y - .006f) < .001f && Math.Abs(p.X) < .001f));
-                Assert.Contains(mesh.Submeshes, sub => sub.MaterialSlot == 2);
+                Assert.All(tip, p => Assert.True(Math.Abs(p.Y - .004f) < .0015f && Math.Abs(p.X) < .0021f));
+                Assert.InRange(mesh.Positions.Min(p => p.Z), -.110f, -.100f);
+                Assert.Contains(mesh.Submeshes, sub => sub.MaterialSlot == LoadoutPropGeometry.BladeSteelSlot);
+                Assert.Contains(mesh.Submeshes, sub => sub.MaterialSlot == LoadoutPropGeometry.BladeEdgeSlot);
+                var edge = mesh.Positions.Where(p => p.Z > .02f && p.Z < .10f).Min(p => p.Y);
+                var spine = mesh.Positions.Where(p => p.Z > -.004f && p.Z < .105f && Math.Abs(p.X) < .0021f).Max(p => p.Y);
+                Assert.True(edge < -.012f && spine > .018f, "Edge must face down and the spine up.");
             }
         }
         Assert.Throws<ArgumentOutOfRangeException>(() => LoadoutPropGeometry.BuildKnife(4));

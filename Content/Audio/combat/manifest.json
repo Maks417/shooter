@@ -1,5 +1,5 @@
 {
-  "bankId": "combat-audio-bank-v6-stereo",
+  "bankId": "combat-audio-bank-v7-stereo",
   "sampleRate": 48000,
   "channels": 2,
   "clips": [
@@ -71,32 +71,32 @@
       "kind": "grenade_explode",
       "variation": 0,
       "file": "grenade_explode_00.wav",
-      "sha256": "6769211919f85f648849f3dcfe7cdcd1fa45745d3514de5cc331920c7e08872b",
-      "source": "OpenGameArt CC0 explosion.wav layered with Tabasco 10-gauge shotgun boom (https://opengameart.org/content/gunshot-sounds); 48 kHz stereo. Not from commercial games.",
+      "sha256": "8b060d6941b5d010a1e9b13153e66a6a2abc802d0e0c2f12c474fda9f1d63bfd",
+      "source": "Bank v6 grenade_explode core (OpenGameArt CC0 explosion.wav layered with Tabasco 10-gauge shotgun boom, https://opengameart.org/content/gunshot-sounds), kept under .local/audio-src/kept/ + The Free Firearm Sound Library (OpenGameArt) - studio firearm recordings and handling Foley (https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z) + Kenney Impact Sounds (https://kenney.nl/assets/impact-sounds) + generated sweep layer (Tools/build_audio_bank.py)",
       "license": "CC0-1.0"
     },
     {
       "kind": "grenade_explode",
       "variation": 1,
       "file": "grenade_explode_01.wav",
-      "sha256": "216fa56ba29485abedbc35b6d063449e3c0fa080ff035705d1283b351362cf20",
-      "source": "OpenGameArt CC0 explosion.wav layered with Tabasco 10-gauge shotgun boom (https://opengameart.org/content/gunshot-sounds); 48 kHz stereo. Not from commercial games.",
+      "sha256": "dc0a739bd1c3e4462a0d24dea819453006bd8633dcb0df3bd10d5ac83f785e93",
+      "source": "Bank v6 grenade_explode core (OpenGameArt CC0 explosion.wav layered with Tabasco 10-gauge shotgun boom, https://opengameart.org/content/gunshot-sounds), kept under .local/audio-src/kept/ + The Free Firearm Sound Library (OpenGameArt) - studio firearm recordings and handling Foley (https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z) + Kenney Impact Sounds (https://kenney.nl/assets/impact-sounds) + generated sweep layer (Tools/build_audio_bank.py)",
       "license": "CC0-1.0"
     },
     {
       "kind": "grenade_explode",
       "variation": 2,
       "file": "grenade_explode_02.wav",
-      "sha256": "671e3305d3f1f1ebcfffb64cac7124bb74a9e42ab68666d4a61ea529ac71b857",
-      "source": "OpenGameArt CC0 explosion.wav layered with Tabasco 10-gauge shotgun boom (https://opengameart.org/content/gunshot-sounds); 48 kHz stereo. Not from commercial games.",
+      "sha256": "4247e8439627c367598ae7d7cac6a0b9093cb1712489bcd145747ef538f70ef0",
+      "source": "Bank v6 grenade_explode core (OpenGameArt CC0 explosion.wav layered with Tabasco 10-gauge shotgun boom, https://opengameart.org/content/gunshot-sounds), kept under .local/audio-src/kept/ + The Free Firearm Sound Library (OpenGameArt) - studio firearm recordings and handling Foley (https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z) + Kenney Impact Sounds (https://kenney.nl/assets/impact-sounds) + generated sweep layer (Tools/build_audio_bank.py)",
       "license": "CC0-1.0"
     },
     {
       "kind": "grenade_explode",
       "variation": 3,
       "file": "grenade_explode_03.wav",
-      "sha256": "fd8b6b20df9f37d3f0b97d6ca998f3e08ce99dca3d30b6d446dc5a434338ebc5",
-      "source": "OpenGameArt CC0 explosion.wav layered with Tabasco 10-gauge shotgun boom (https://opengameart.org/content/gunshot-sounds); 48 kHz stereo. Not from commercial games.",
+      "sha256": "d19f9dc3b71864a31c362bb710c865bebf6a1b7d922ba53a4f0ccde378d6b5d1",
+      "source": "Bank v6 grenade_explode core (OpenGameArt CC0 explosion.wav layered with Tabasco 10-gauge shotgun boom, https://opengameart.org/content/gunshot-sounds), kept under .local/audio-src/kept/ + The Free Firearm Sound Library (OpenGameArt) - studio firearm recordings and handling Foley (https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z) + Kenney Impact Sounds (https://kenney.nl/assets/impact-sounds) + generated sweep layer (Tools/build_audio_bank.py)",
       "license": "CC0-1.0"
     },
     {
@@ -111,16 +111,32 @@
       "kind": "knife_swing",
       "variation": 0,
       "file": "knife_swing_00.wav",
-      "sha256": "2e4fdff7437441ccd20889f7bec04ee93cd8224dbc47e2e37f0a5025563b24f3",
-      "source": "OpenGameArt CC0 melee swing take (swing.wav); sliced to 48 kHz stereo knife one-shots. Not from commercial games.",
+      "sha256": "1a12e9d0ff71327d50726cb1014fa33cdf016ec647b9608be06defce4af7de59",
+      "source": "Kenney RPG Audio (https://kenney.nl/assets/rpg-audio) + Kenney RPG Audio (https://kenney.nl/assets/rpg-audio)",
       "license": "CC0-1.0"
     },
     {
       "kind": "knife_swing",
       "variation": 1,
       "file": "knife_swing_01.wav",
-      "sha256": "bee63d0adbca3b6ac9607ec25b45fb559aa39ef4cca0d6b84f7fad1b2cdac5f4",
-      "source": "OpenGameArt CC0 melee swing take (swing.wav); sliced to 48 kHz stereo knife one-shots. Not from commercial games.",
+      "sha256": "786a734d2486ff514ec5727a8f9fa2eb29201ed9db6d38c5b6ce04031f6d73bd",
+      "source": "Kenney RPG Audio (https://kenney.nl/assets/rpg-audio) + Kenney RPG Audio (https://kenney.nl/assets/rpg-audio)",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "knife_swing",
+      "variation": 2,
+      "file": "knife_swing_02.wav",
+      "sha256": "4909c1686fc9fd8824ae03504381016e2c374a4f0d9d1ad4e0075139274c0f6b",
+      "source": "Kenney RPG Audio (https://kenney.nl/assets/rpg-audio) + Kenney RPG Audio (https://kenney.nl/assets/rpg-audio)",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "knife_swing",
+      "variation": 3,
+      "file": "knife_swing_03.wav",
+      "sha256": "3aba6c3cc77cd776fb87887012a24dc2e28ffdcc724890ae452aebc29d1a056a",
+      "source": "Kenney RPG Audio (https://kenney.nl/assets/rpg-audio) + Kenney RPG Audio (https://kenney.nl/assets/rpg-audio)",
       "license": "CC0-1.0"
     },
     {
@@ -220,90 +236,74 @@
       "license": "CC0-1.0"
     },
     {
-      "kind": "knife_swing",
-      "variation": 2,
-      "file": "knife_swing_02.wav",
-      "sha256": "9d53423a25f2d0fc21a3031b43c2265df81cb784998d271dd05ae8f0913eba0d",
-      "source": "Kenney RPG Audio (https://kenney.nl/assets/rpg-audio)",
-      "license": "CC0-1.0"
-    },
-    {
-      "kind": "knife_swing",
-      "variation": 3,
-      "file": "knife_swing_03.wav",
-      "sha256": "3f25ab478a94ef303fc3eb3072684084a2c8200003317e1d71edc707c12b60a6",
-      "source": "Kenney RPG Audio (https://kenney.nl/assets/rpg-audio)",
-      "license": "CC0-1.0"
-    },
-    {
       "kind": "knife_hit_flesh",
       "variation": 0,
       "file": "knife_hit_flesh_00.wav",
-      "sha256": "f0360635f200372b92c7baff88e891ab912b5733a1add44e51afa32570b867de",
-      "source": "Kenney Impact Sounds (https://kenney.nl/assets/impact-sounds) + Kenney RPG Audio (https://kenney.nl/assets/rpg-audio)",
-      "license": "CC0-1.0"
-    },
-    {
-      "kind": "knife_hit_hard",
-      "variation": 0,
-      "file": "knife_hit_hard_00.wav",
-      "sha256": "1f5c93e76f4585b1b487ba29e4685d6ab946bf5a6b9adbb104f83a72c1398bae",
-      "source": "Kenney Impact Sounds (https://kenney.nl/assets/impact-sounds) + Kenney Impact Sounds (https://kenney.nl/assets/impact-sounds)",
+      "sha256": "effe83f4a2fd4d8c8ccbf8fb26fc3e04d7bd472e75aebab97e4b4b75bad1d364",
+      "source": "Kenney Impact Sounds (https://kenney.nl/assets/impact-sounds) + Kenney RPG Audio (https://kenney.nl/assets/rpg-audio) + Kenney RPG Audio (https://kenney.nl/assets/rpg-audio)",
       "license": "CC0-1.0"
     },
     {
       "kind": "knife_hit_flesh",
       "variation": 1,
       "file": "knife_hit_flesh_01.wav",
-      "sha256": "2ff6798457a7e6a9abf91e47e56d92ccdd65e777f23ab96312ba656786918ea0",
-      "source": "Kenney Impact Sounds (https://kenney.nl/assets/impact-sounds) + Kenney RPG Audio (https://kenney.nl/assets/rpg-audio)",
-      "license": "CC0-1.0"
-    },
-    {
-      "kind": "knife_hit_hard",
-      "variation": 1,
-      "file": "knife_hit_hard_01.wav",
-      "sha256": "80748946bf86c3dac31e67789933d62a65c2003a829bb4499edbed64ef495dc1",
-      "source": "Kenney Impact Sounds (https://kenney.nl/assets/impact-sounds) + Kenney Impact Sounds (https://kenney.nl/assets/impact-sounds)",
+      "sha256": "1c3a79c2d6b62803fb69b684f87dc978db714aaa0f52547d8bf0b508759019ea",
+      "source": "Kenney Impact Sounds (https://kenney.nl/assets/impact-sounds) + Kenney RPG Audio (https://kenney.nl/assets/rpg-audio) + Kenney RPG Audio (https://kenney.nl/assets/rpg-audio)",
       "license": "CC0-1.0"
     },
     {
       "kind": "knife_hit_flesh",
       "variation": 2,
       "file": "knife_hit_flesh_02.wav",
-      "sha256": "c6c4a23bd80bb4db5ddb81754427240957395db92ab20b4461efdbe4f1230477",
-      "source": "Kenney Impact Sounds (https://kenney.nl/assets/impact-sounds) + Kenney RPG Audio (https://kenney.nl/assets/rpg-audio)",
-      "license": "CC0-1.0"
-    },
-    {
-      "kind": "knife_hit_hard",
-      "variation": 2,
-      "file": "knife_hit_hard_02.wav",
-      "sha256": "bf5ae17a41e8e288bce2ca11197551fffb15919b23a8b9225ec0d40b39470f9e",
-      "source": "Kenney Impact Sounds (https://kenney.nl/assets/impact-sounds) + Kenney Impact Sounds (https://kenney.nl/assets/impact-sounds)",
+      "sha256": "21ae575dcd80ff41d2b5b7d3330cffe2133d64ea604308086431eea5e3485268",
+      "source": "Kenney Impact Sounds (https://kenney.nl/assets/impact-sounds) + Kenney RPG Audio (https://kenney.nl/assets/rpg-audio) + Kenney RPG Audio (https://kenney.nl/assets/rpg-audio)",
       "license": "CC0-1.0"
     },
     {
       "kind": "knife_hit_flesh",
       "variation": 3,
       "file": "knife_hit_flesh_03.wav",
-      "sha256": "a4d8064f5c7de141eb1b0d359c64e22206d02e425ced1feaca564ed787e0a8a3",
-      "source": "Kenney Impact Sounds (https://kenney.nl/assets/impact-sounds) + Kenney RPG Audio (https://kenney.nl/assets/rpg-audio)",
+      "sha256": "44033e0209b0f731d73063c377cbc5d832b433296e6089518d1fa362d614e7cc",
+      "source": "Kenney Impact Sounds (https://kenney.nl/assets/impact-sounds) + Kenney RPG Audio (https://kenney.nl/assets/rpg-audio) + Kenney RPG Audio (https://kenney.nl/assets/rpg-audio)",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "knife_hit_hard",
+      "variation": 0,
+      "file": "knife_hit_hard_00.wav",
+      "sha256": "f7270185ae30effd84d09fd5600d06b13b745be7126a2a4005f59ff0d052d9d0",
+      "source": "Kenney Impact Sounds (https://kenney.nl/assets/impact-sounds) + Kenney Impact Sounds (https://kenney.nl/assets/impact-sounds) + Kenney RPG Audio (https://kenney.nl/assets/rpg-audio)",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "knife_hit_hard",
+      "variation": 1,
+      "file": "knife_hit_hard_01.wav",
+      "sha256": "73e1b66f203e141a4023ecaf31f435d1e54eefc194a933da5f8404f6e4a956f3",
+      "source": "Kenney Impact Sounds (https://kenney.nl/assets/impact-sounds) + Kenney Impact Sounds (https://kenney.nl/assets/impact-sounds) + Kenney RPG Audio (https://kenney.nl/assets/rpg-audio)",
+      "license": "CC0-1.0"
+    },
+    {
+      "kind": "knife_hit_hard",
+      "variation": 2,
+      "file": "knife_hit_hard_02.wav",
+      "sha256": "1fe1c1c8b81143d4df9227c089f3bb0abea2786f064d9f4d3bdb3664f91435ed",
+      "source": "Kenney Impact Sounds (https://kenney.nl/assets/impact-sounds) + Kenney Impact Sounds (https://kenney.nl/assets/impact-sounds) + Kenney RPG Audio (https://kenney.nl/assets/rpg-audio)",
       "license": "CC0-1.0"
     },
     {
       "kind": "knife_hit_hard",
       "variation": 3,
       "file": "knife_hit_hard_03.wav",
-      "sha256": "59a8c68de666878983497f3aa3dc8c976729d430ce0f3a6c732b866a7a83d9dd",
-      "source": "Kenney Impact Sounds (https://kenney.nl/assets/impact-sounds) + Kenney Impact Sounds (https://kenney.nl/assets/impact-sounds)",
+      "sha256": "3ab0a28843a9e99bb8d963bae58c38e71af1f4adcaa01b4183c76c746f5a20ee",
+      "source": "Kenney Impact Sounds (https://kenney.nl/assets/impact-sounds) + Kenney Impact Sounds (https://kenney.nl/assets/impact-sounds) + Kenney RPG Audio (https://kenney.nl/assets/rpg-audio)",
       "license": "CC0-1.0"
     },
     {
       "kind": "grenade_pin",
       "variation": 0,
       "file": "grenade_pin_00.wav",
-      "sha256": "1a4b5feddd6676341029212b33273ae5e9aa888bfc3de088d098ecfcd131f866",
+      "sha256": "156dfca7dd58638db15e598ceda4862b8802d2ad67527d2741eb61fd21c39016",
       "source": "Kenney RPG Audio (https://kenney.nl/assets/rpg-audio)",
       "license": "CC0-1.0"
     },
@@ -311,7 +311,7 @@
       "kind": "grenade_pin",
       "variation": 1,
       "file": "grenade_pin_01.wav",
-      "sha256": "aaef0097ea52911dc95c21b6421912a30b64508e1552eea1e3f71693f466b8f6",
+      "sha256": "a19727d09eb08735445d11506618beac9c0f894e4e6311c839a5e802744ac0d5",
       "source": "Kenney RPG Audio (https://kenney.nl/assets/rpg-audio)",
       "license": "CC0-1.0"
     },
@@ -319,7 +319,7 @@
       "kind": "grenade_pin",
       "variation": 2,
       "file": "grenade_pin_02.wav",
-      "sha256": "59d6614c04f5d931ff67610a1795d17581c0d0b3460100e8e5dc7f6e808df131",
+      "sha256": "0e3fbcc8306b269343fb7c18791e902f9919f22d71aa0b3bd5fef2698cdbc976",
       "source": "Kenney Impact Sounds (https://kenney.nl/assets/impact-sounds) + Kenney RPG Audio (https://kenney.nl/assets/rpg-audio)",
       "license": "CC0-1.0"
     },
@@ -327,7 +327,7 @@
       "kind": "grenade_pin",
       "variation": 3,
       "file": "grenade_pin_03.wav",
-      "sha256": "cdf1991ea3a03d9148aa937fa16e44b48bfc570e7bba13fdd98b0bdf671b920b",
+      "sha256": "c90dd4415caec6b832984c0324fc0ef1c1851a55bd59703bb604fa87c13493a8",
       "source": "Kenney RPG Audio (https://kenney.nl/assets/rpg-audio) + Kenney Impact Sounds (https://kenney.nl/assets/impact-sounds)",
       "license": "CC0-1.0"
     },
@@ -335,7 +335,7 @@
       "kind": "grenade_throw",
       "variation": 0,
       "file": "grenade_throw_00.wav",
-      "sha256": "b6b87432436a326e6480fe42918c2c9ff4e7653064d93cb65b721ac727bf8474",
+      "sha256": "b199038ffd02b5c48fd2d5d43f73e72ac71d74f55042ae5a520ca9ce358fccb6",
       "source": "Kenney RPG Audio (https://kenney.nl/assets/rpg-audio) + Kenney RPG Audio (https://kenney.nl/assets/rpg-audio)",
       "license": "CC0-1.0"
     },
@@ -351,7 +351,7 @@
       "kind": "grenade_throw",
       "variation": 1,
       "file": "grenade_throw_01.wav",
-      "sha256": "1932651f33e25f37303893d23f36a81c0d3bbc6d6d025a768e53d45e01ad7de9",
+      "sha256": "505dc2908af5460eb5638c365ab512106c286c544fc6c734e90b12e2749b7cea",
       "source": "Kenney RPG Audio (https://kenney.nl/assets/rpg-audio) + Kenney RPG Audio (https://kenney.nl/assets/rpg-audio)",
       "license": "CC0-1.0"
     },
@@ -367,7 +367,7 @@
       "kind": "grenade_throw",
       "variation": 2,
       "file": "grenade_throw_02.wav",
-      "sha256": "7d96e519cf6c32eeb8c2a291071df6a2b6e2dd470eab2576f6c4be527c60cc16",
+      "sha256": "149a0722eae4097c1696b63b536122552367c51946a14633160ad6defb341634",
       "source": "Kenney RPG Audio (https://kenney.nl/assets/rpg-audio) + Kenney RPG Audio (https://kenney.nl/assets/rpg-audio)",
       "license": "CC0-1.0"
     },
@@ -383,7 +383,7 @@
       "kind": "grenade_throw",
       "variation": 3,
       "file": "grenade_throw_03.wav",
-      "sha256": "4cb152446a8e1bc74ae2eb54b57779cf674e987e4ddefa18ffd67882fde5f023",
+      "sha256": "eaabb8590bdd651b3175909bc813d156cf0c11e30bcedabd9a9163bab5141540",
       "source": "Kenney RPG Audio (https://kenney.nl/assets/rpg-audio) + Kenney RPG Audio (https://kenney.nl/assets/rpg-audio)",
       "license": "CC0-1.0"
     },
@@ -399,32 +399,32 @@
       "kind": "grenade_explode_far",
       "variation": 0,
       "file": "grenade_explode_far_00.wav",
-      "sha256": "5867115bddf7bc59ba7d6bd99e24ddbb5c8348436d3c67483f66fda5412d06ac",
-      "source": "The Free Firearm Sound Library (OpenGameArt) - studio firearm recordings and handling Foley (https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z)",
+      "sha256": "212f00599db050c89043ef1d41af8a56a2007ab13ddbc85aad3a477dd72a7a1a",
+      "source": "The Free Firearm Sound Library (OpenGameArt) - studio firearm recordings and handling Foley (https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z) + generated sweep layer (Tools/build_audio_bank.py)",
       "license": "CC0-1.0"
     },
     {
       "kind": "grenade_explode_far",
       "variation": 1,
       "file": "grenade_explode_far_01.wav",
-      "sha256": "f9610244db3ec4b9881332a2dc7b4035ea1bd2d4ea558afee373f1e3c2fe0ba7",
-      "source": "The Free Firearm Sound Library (OpenGameArt) - studio firearm recordings and handling Foley (https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z)",
+      "sha256": "280436fd40844a89d51f83dc4d695c7f250f63683656cf8091002f9854b8c10e",
+      "source": "The Free Firearm Sound Library (OpenGameArt) - studio firearm recordings and handling Foley (https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z) + generated sweep layer (Tools/build_audio_bank.py)",
       "license": "CC0-1.0"
     },
     {
       "kind": "grenade_explode_far",
       "variation": 2,
       "file": "grenade_explode_far_02.wav",
-      "sha256": "e2489197202ff7163376849669badec08682ff016478fb2ccaed8c1b4d978999",
-      "source": "The Free Firearm Sound Library (OpenGameArt) - studio firearm recordings and handling Foley (https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z)",
+      "sha256": "f5ef55da8820008fefe697b93662e33cbbfadacec24bbab78d35b40331acde72",
+      "source": "The Free Firearm Sound Library (OpenGameArt) - studio firearm recordings and handling Foley (https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z) + generated sweep layer (Tools/build_audio_bank.py)",
       "license": "CC0-1.0"
     },
     {
       "kind": "grenade_explode_far",
       "variation": 3,
       "file": "grenade_explode_far_03.wav",
-      "sha256": "85b66be83d98a138a7752a524dd788ab5903e44c0dad8aeb243fd3d9dbab3c81",
-      "source": "The Free Firearm Sound Library (OpenGameArt) - studio firearm recordings and handling Foley (https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z)",
+      "sha256": "f69acecb0ef9db2aa8f984ffec7f5e2ef1ded76d0c7b981d18a96190180b7e65",
+      "source": "The Free Firearm Sound Library (OpenGameArt) - studio firearm recordings and handling Foley (https://opengameart.org/sites/default/files/Prepared%20SFX%20Library.7z) + generated sweep layer (Tools/build_audio_bank.py)",
       "license": "CC0-1.0"
     },
     {

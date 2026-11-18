@@ -1402,6 +1402,14 @@ namespace Shooter.Simulation.AI
                 AimController.ErrorOffset(board, tick, board.TargetDistance, board.TargetSpeed, out float ey, out float ep);
                 desiredYaw = AimController.NormalizeYaw(iy + ey);
                 desiredPitch = AimController.ClampPitch(ip + ep);
+                if (board.DesiredSlot == 3)
+                {
+                    // ADR-111: lob the grenade on the ballistic arc instead of throwing along the sight line.
+                    var grenade = Combat.WeaponDefinition.FromId(new DefinitionId("weapons/grenade"));
+                    desiredPitch = AimController.ClampPitch(ep + AimController.GrenadeLaunchPitch(
+                        eye, board.VisibleTarget!.Value, grenade.ThrowSpeedMetersPerSecond,
+                        Combat.GrenadeSimulator.GravityY, Combat.GrenadeSimulator.LoftDegrees));
+                }
                 combatTurn = true;
             }
             else if ((threatLook = ThreatLook(board)).HasValue)

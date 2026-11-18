@@ -2,6 +2,19 @@
 
 Records from 2026-11-15 onward. Older entries — T062–T085, deliveries up to 0.3.12, historical candidates and the T065 operator runbook — are in the [handoff archive](handoff-archive.md).
 
+## ADR-111 — Knife and grenade overhaul — 2026-11-18
+
+Owner: knife and grenade sounds, animations, throw range, explosion and models looked and sounded cheap; hold both with one hand. Owner choices: keep the 2 s fuse, reach about half a small map, re-mix audio from sources already downloaded. [ADR-111](../../decisions.md#adr-111--accepted-knife-and-grenade-overhaul-one-handed-hold-cut-and-throw-half-map-grenade-range-sound-explosion-models)
+
+**Implemented:**
+- Grenade 28 m/s, +8° loft, gravity −24, fuse 120 ticks (about 34 m at 45°); bots solve the lob pitch and throw out to 32 m. C0 fixture `throwMmPerSecond` 28000 and its `contract-lock.json` hash refreshed (owner-approved).
+- One-handed knife and grenade, no sights on either; big diagonal knife cut with blade trail and a stab hit-stop; grenade cook trajectory arc and landing ring; thrown grenade is the real prop, tumbles and bounces; third-person cut and overhand throw.
+- Epic blast: flash, colour-ramped fireball, fire puffs, sparks, embers, dust ring, brighter shockwave, 5.5 s smoke column, stronger flickering light, distance-scaled shake, 3 m scorch.
+- Audio bank v7 knife/grenade re-mix; layered fallback synth.
+- `geometry.loadout-prop` 1.1.0 knife and grenade on ShapeKit with new blade-steel, edge-grind and grenade-paint finishes.
+
+**Evidence:** pure lanes listed in the ADR; editor `CaptureHandling` renders under `Artifacts/adr111-preview/`. **Pending:** owner playtest (feel, range, sound, explosion) and the next installer.
+
 ## ADR-110 — Body armor — 2026-11-18
 
 Owner: add armor, 100 points like health, that covers the body. Owner choices: torso and limbs (not the head), 50/50 split, full armor every spawn with no pickups, grenade blasts absorbed. [ADR-110](../../decisions.md#adr-110--accepted-body-armor-100-points-torso-and-limbs)

@@ -141,7 +141,7 @@ namespace Shooter.Simulation.AI
         // T087 knife / one grenade per life.
         public const float KnifeEngageMeters = 2.5f;
         public const float GrenadeMinMeters = 8f;
-        public const float GrenadeMaxMeters = 22f;
+        public const float GrenadeMaxMeters = 32f;
         public const uint GrenadeCookTicks = 24;
         public const float CoverArrivalMeters = 1.0f;
         public const int MaxCoverProbeRaysPerTick = 4;

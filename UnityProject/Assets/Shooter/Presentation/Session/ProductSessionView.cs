@@ -106,6 +106,7 @@ namespace Shooter.Presentation.Session
         private float hitMarkerUntil;
         private bool hitMarkerHeadshot;
         private float explosionShakeUntil;
+        private float explosionShakeScale;
         private readonly ulong[] dustLife=new ulong[12];
         private readonly float[] dustDistance=new float[12];
         private readonly float[] killFeedY = new float[4];
@@ -278,6 +279,10 @@ namespace Shooter.Presentation.Session
             actors.LocalHandling = localHandlingScale;
             analyticFxPresenter = AnalyticFxPresenter.Create(transform, analyticFxPool);
             grenadePresenter = CosmeticGrenadePresenter.Create(transform, grenadeFlight);
+            // ADR-111: the thrown grenade is the packaged prop and bounces off the map collision like the authority one.
+            grenadePresenter.PropSource = () => actors != null && actors.TryGetPropVisual(WeaponVisualProfiles.MeshKeyGrenade, out var m, out var mats)
+                ? (m, mats) : ((Mesh?)null, System.Array.Empty<Material>());
+            grenadeFlight.Probe = GrenadeArcPresenter.Sweep;
             var audioPair = EnsureAudio();
             audioOutput = UnitySynthAudioOutput.Attach(gameObject, audioPair.mixer);
             UserSettingsAudioBinding.ApplyGains(UserSettings.Defaults, audioPair.mixer);
@@ -645,7 +650,8 @@ namespace Shooter.Presentation.Session
 
                         if(!reducedCameraMotion&&!reducedFlash&&explosionShakeUntil>Time.unscaledTime)
                         {
-                            float strength=(explosionShakeUntil-Time.unscaledTime)*.045f;
+                            // ADR-111: decays over the shake window, scaled by distance to the blast (0 beyond 25 m).
+                            float strength=(explosionShakeUntil-Time.unscaledTime)/AnalyticFxPool.BlastShakeSeconds*.034f*explosionShakeScale;
                             bobLocal=new Float3(bobLocal.X+Mathf.Sin(Time.unscaledTime*47)*strength,bobLocal.Y+Mathf.Cos(Time.unscaledTime*39)*strength,bobLocal.Z);
                         }
                         float cameraYaw = acceptsGameplayInput ? input.Yaw : human.AimYaw;
@@ -826,10 +832,18 @@ namespace Shooter.Presentation.Session
                 bool blast=ProductAudioEventRouter.IsGrenadeBlastImpact(ev);
                 if(blast)
                 {
-                    if(!reducedFlash){analyticFxPool.TrySpawn(FxKind.Fireball,impact.Position,impact.Normal);analyticFxPool.TrySpawn(FxKind.Shockwave,impact.Position,impact.Normal);}
-                    analyticFxPool.TrySpawn(FxKind.SmokeProxy,impact.Position,new Float3(0,1,0));
-                    analyticFxPool.TrySpawn(FxKind.Debris,impact.Position,impact.Normal);
-                    if(!reducedCameraMotion&&!reducedFlash&&camera!=null&&Vector3.Distance(camera.transform.position,new Vector3(impact.Position.X,impact.Position.Y,impact.Position.Z))<15)explosionShakeUntil=Time.unscaledTime+.45f;
+                    // ADR-111: layered blast; ReducedFlash drops the bright layers inside the pool recipe.
+                    analyticFxPool.SpawnGrenadeBlast(impact.Position,impact.Normal,reducedFlash,QualitySettings.GetQualityLevel());
+                    if(!reducedCameraMotion&&!reducedFlash&&camera!=null)
+                    {
+                        float shake=AnalyticFxPool.BlastShakeScale(Vector3.Distance(camera.transform.position,new Vector3(impact.Position.X,impact.Position.Y,impact.Position.Z)));
+                        if(shake>0f)
+                        {
+                            // A nearer blast during an older shake takes over; a farther one cannot weaken it.
+                            float now=Time.unscaledTime,left=Mathf.Max(0f,explosionShakeUntil-now)/AnalyticFxPool.BlastShakeSeconds*explosionShakeScale;
+                            if(shake>=left){explosionShakeScale=shake;explosionShakeUntil=now+AnalyticFxPool.BlastShakeSeconds;}
+                        }
+                    }
                 }
                 else if(impact.RegionId==0)
                 {

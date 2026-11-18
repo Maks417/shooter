@@ -43,7 +43,7 @@
     "docs/fixtures/command.json": "d1160df306b0f88562dcb0452c88ae799ef293d5bf28238d0084abe06d2d05b2",
     "docs/fixtures/command.schema.json": "de991b3f48f2477924ba0efbe02dd3f63f334556fc18c13a01c5f9b9e6ad3e2f",
     "docs/fixtures/expected-cases.json": "6941b55ace22334824cda18cc778a2ae17eaad412112aa29744fabe57b15559d",
-    "docs/fixtures/gameplay-defaults.json": "849296d4b2e71e0ce1c4617e78cd236c4daa46f7ea28a3ef2d69e07cd05a48ff",
+    "docs/fixtures/gameplay-defaults.json": "c50866ec07dc02c069851f4fbf9301baeda5f64925a3508c25814f300a69b673",
     "docs/fixtures/golden-vectors.json": "3d1acda03c08910a02536c894c80e467cf5aafb03a493c16136e28a7e14236c0",
     "docs/fixtures/invalid-box-recipe.json": "cfe1253135b1af7b26900dcd5330165dd96f4cbfa6914c2bda57b53935912a39",
     "docs/fixtures/invalid-command.json": "e20ed3a2258ac299fea32d0ec0653f8337b3279e6d4a3b23e15da2ef3e5c596e",

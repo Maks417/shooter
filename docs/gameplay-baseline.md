@@ -22,7 +22,7 @@ Scope update 2026-11-13: this page and its frozen fixtures retain the historical
 | Rifle fire/reload/equip | auto interval6 ticks, reload144 ticks, equip24 ticks;30mag+90reserve |
 | Pistol fire/reload/equip | semi interval10 ticks, reload108 ticks, equip18 ticks;15mag+45reserve |
 | Knife (slot 2 / Digit3) | melee interval24 ticks, equip12; no ammo consume; range1.8 m; damage55; sprint fire allowed (ADR-057) |
-| Grenade (slot 3 / Digit4) | one per life (1/0); cook on FirePressed, throw on release; fuse120 ticks; throw18 m/s; blast5 m max100; self-damage yes, friendly0 (ADR-057) |
+| Grenade (slot 3 / Digit4) | one per life (1/0); cook on FirePressed, throw on release; fuse120 ticks; throw28 m/s with +8° loft, gravity 24 m/s² (about 34 m at 45°, ADR-111); blast5 m max100; self-damage yes, friendly0 (ADR-057) |
 | Health / damage |100; rifle30/pistol25/knife55/grenade blast; head×4,torso×1,limbs×0.5 (ADR-063) |
 | Damage rounding | floor(base×multiplier+0.5), clamp remaining health≥0 |
 | Spread cone half-angle hip/ADS | rifle1.0/0.15 deg; pistol1.5/0.3 deg |

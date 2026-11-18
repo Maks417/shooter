@@ -5,7 +5,10 @@ using UnityEngine.Rendering;
 
 namespace Shooter.Presentation.Fx
 {
-    /// <summary>World mesh proxies for <see cref="CosmeticGrenadeFlight"/> (procedural sphere stand-in).</summary>
+    /// <summary>
+    /// World meshes for <see cref="CosmeticGrenadeFlight"/>: the packaged grenade prop with its finishes, tumbling
+    /// across its travel (ADR-111); a procedural sphere stands in until packaged visuals are bound.
+    /// </summary>
     public sealed class CosmeticGrenadePresenter : MonoBehaviour
     {
         public const int VisualLayer = AnalyticFxPresenter.VisualLayer;
@@ -16,6 +19,11 @@ namespace Shooter.Presentation.Fx
         private Mesh? sphereMesh;
         private Material? material;
         private readonly MaterialPropertyBlock propertyBlock = new MaterialPropertyBlock();
+        private MeshFilter[] filters = System.Array.Empty<MeshFilter>();
+        private Mesh? propMesh;
+
+        /// <summary>Supplies the packaged grenade mesh and palette once visuals are bound.</summary>
+        public System.Func<(Mesh? mesh, Material[] materials)>? PropSource { get; set; }
 
         public static CosmeticGrenadePresenter Create(Transform parent, CosmeticGrenadeFlight flight)
         {
@@ -36,6 +44,7 @@ namespace Shooter.Presentation.Fx
             material = CreateMaterial(new Color(0.28f, 0.42f, 0.22f, 1f));
             slots = new Transform[CosmeticGrenadeFlight.MaxLive];
             renderers = new MeshRenderer[CosmeticGrenadeFlight.MaxLive];
+            filters = new MeshFilter[CosmeticGrenadeFlight.MaxLive];
             for (int i = 0; i < CosmeticGrenadeFlight.MaxLive; i++)
             {
                 var go = new GameObject("Grenade " + i) { layer = VisualLayer };
@@ -43,6 +52,7 @@ namespace Shooter.Presentation.Fx
                 go.SetActive(false);
                 var filter = go.AddComponent<MeshFilter>();
                 filter.sharedMesh = sphereMesh;
+                filters[i] = filter;
                 var renderer = go.AddComponent<MeshRenderer>();
                 renderer.sharedMaterial = material;
                 renderer.shadowCastingMode = ShadowCastingMode.Off;
@@ -57,6 +67,7 @@ namespace Shooter.Presentation.Fx
         public void Sync()
         {
             if (flight == null) return;
+            BindProp();
             for (int i = 0; i < CosmeticGrenadeFlight.MaxLive; i++)
             {
                 var live = flight[i];
@@ -68,9 +79,45 @@ namespace Shooter.Presentation.Fx
                 }
                 if (!slot.gameObject.activeSelf) slot.gameObject.SetActive(true);
                 slot.localPosition = new Vector3(live.Position.X, live.Position.Y, live.Position.Z);
-                slot.localScale = Vector3.one * 0.12f;
-                propertyBlock.SetColor("_BaseColor", new Color(0.28f, 0.42f, 0.22f, 1f));
-                renderers[i].SetPropertyBlock(propertyBlock);
+                if (propMesh != null)
+                {
+                    slot.localScale = Vector3.one;
+                    var v = new Vector3(live.Velocity.X, 0f, live.Velocity.Z);
+                    Quaternion heading = v.sqrMagnitude > 1e-4f ? Quaternion.LookRotation(v.normalized, Vector3.up) : slot.localRotation;
+                    // Fuse up, tumbling end over end about the axis across the travel direction.
+                    slot.localRotation = heading * Quaternion.AngleAxis(live.TumbleDegrees, Vector3.right) * Quaternion.Euler(-90f, 0f, 0f);
+                }
+                else
+                {
+                    slot.localScale = Vector3.one * 0.12f;
+                    propertyBlock.SetColor("_BaseColor", new Color(0.28f, 0.42f, 0.22f, 1f));
+                    renderers[i].SetPropertyBlock(propertyBlock);
+                }
+            }
+        }
+
+        private void BindProp()
+        {
+            if (propMesh != null || PropSource == null) return;
+            var (mesh, materials) = PropSource();
+            if (mesh == null || materials.Length == 0) return;
+            propMesh = mesh;
+            for (int i = 0; i < filters.Length; i++)
+            {
+                filters[i].sharedMesh = mesh;
+                renderers[i].SetPropertyBlock(null);
+                renderers[i].sharedMaterials = materials;
+            }
+        }
+
+        /// <summary>Drops the packaged mesh (visuals rebound for another map); the next Sync rebinds it.</summary>
+        public void ResetProp()
+        {
+            propMesh = null;
+            for (int i = 0; i < filters.Length; i++)
+            {
+                filters[i].sharedMesh = sphereMesh;
+                if (material != null) renderers[i].sharedMaterials = new[] { material };
             }
         }
 

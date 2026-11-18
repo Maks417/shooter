@@ -51,6 +51,26 @@ namespace Shooter.Simulation.AI
             pitch = flat < 1e-5f ? 0 : ClampPitch(-MathF.Atan2(dy, flat));
         }
 
+        /// <summary>
+        /// ADR-111: aim pitch (contract sign, negative = up) whose lofted grenade launch lands on
+        /// <paramref name="target"/> on the low arc. Falls back to the 45 degree launch when out of reach.
+        /// </summary>
+        public static float GrenadeLaunchPitch(Float3 origin, Float3 target, float speed, float gravity, float loftDegrees)
+        {
+            float dx = target.X - origin.X, dy = target.Y - origin.Y, dz = target.Z - origin.Z;
+            float d = MathF.Sqrt(dx * dx + dz * dz);
+            float g = MathF.Abs(gravity);
+            float loft = loftDegrees * MathF.PI / 180f;
+            float launch = MathF.PI / 4f;
+            if (d > 1e-3f && speed > 0f && g > 0f)
+            {
+                float v2 = speed * speed;
+                float disc = v2 * v2 - g * (g * d * d + 2f * dy * v2);
+                if (disc >= 0f) launch = MathF.Atan((v2 - MathF.Sqrt(disc)) / (g * d));
+            }
+            return ClampPitch(-(launch - loft));
+        }
+
         /// <summary>Plain look angles (no muzzle correction) toward a point.</summary>
         public static void LookAngles(Float3 eye, Float3 target, out float yaw, out float pitch)
         {

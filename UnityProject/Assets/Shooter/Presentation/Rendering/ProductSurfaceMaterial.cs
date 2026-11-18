@@ -36,9 +36,11 @@ namespace Shooter.Presentation.Rendering
         /// <summary>
         /// ADR-102 palette: the five verified finishes plus slot 5 oiled wood and slot 6 polished gold. Both are numeric
         /// tints of the verified polymer and steel planes (no new textures), like <see cref="ArchitecturalAccents"/>.
+        /// ADR-111 appends the knife and grenade finishes: slot 7 brushed blade steel, slot 8 polished edge grind, slot 9 olive
+        /// grenade enamel (verified planes of their own) and slot 10 the yellow HE marking band, a tint of the enamel.
         /// </summary>
         public static Material[] WeaponFinishes(Material coated, Material polymer, Material steel, Material recess, Material enamel,
-            Action<UnityEngine.Object> own)
+            Material blade, Material bladeEdge, Material grenadePaint, Action<UnityEngine.Object> own)
         {
             if (own == null) throw new ArgumentNullException(nameof(own));
             Material Tint(Material source, string name, Color tint, float smoothness)
@@ -52,7 +54,9 @@ namespace Shooter.Presentation.Rendering
             // The polymer albedo is near-black, so the walnut tint is above one to lift it into warm brown.
             var wood = Tint(polymer, "Oiled walnut furniture", new Color(3.1f, 1.65f, .82f), .42f);
             var gold = Tint(steel, "Polished gold plating", new Color(1.95f, 1.45f, .52f), .82f);
-            return new[] { coated, polymer, steel, recess, enamel, wood, gold };
+            // The olive enamel albedo is dark green, so the band tint lifts red and suppresses blue into marking yellow.
+            var band = Tint(grenadePaint, "Yellow HE marking band", new Color(7.2f, 4.0f, .7f), .45f);
+            return new[] { coated, polymer, steel, recess, enamel, wood, gold, blade, bladeEdge, grenadePaint, band };
         }
 
         /// <summary>Retains verified box geometry; adapts face UVs to metres after nonuniform scaling.</summary>

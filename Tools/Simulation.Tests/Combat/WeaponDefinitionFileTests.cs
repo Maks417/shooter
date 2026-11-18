@@ -64,7 +64,7 @@ namespace Shooter.Simulation.Tests.Combat
                 0f, 0f, 0f, 0f, maxRangeMeters: 1.8f, consumesAmmo: false, allowsSprintFire: true));
             AssertSame(new WeaponDefinition(
                 new DefinitionId("weapons/grenade"), FireMode.Throwable, 0, 0, 18, 1, 0, 100,
-                0f, 0f, 0f, 0f, maxRangeMeters: 0f, fuseTicks: 120, throwSpeedMetersPerSecond: 18f,
+                0f, 0f, 0f, 0f, maxRangeMeters: 0f, fuseTicks: 120, throwSpeedMetersPerSecond: 28f,
                 blastRadiusMeters: 5f, consumesAmmo: true, allowsSprintFire: false));
         }
 

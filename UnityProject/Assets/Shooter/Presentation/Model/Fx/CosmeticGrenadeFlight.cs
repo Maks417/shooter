@@ -5,15 +5,26 @@ using Shooter.Contracts;
 namespace Shooter.Presentation.Fx
 {
     /// <summary>
-    /// Presentation-only thrown grenade arcs. Mirrors GrenadeSimulator gravity; no authority mutation.
-    /// Bounce is omitted here (no world queries); despawn on nearby Impact or lifetime.
+    /// Presentation-only thrown grenade arcs. Mirrors GrenadeSimulator gravity, bounce damping and ground friction
+    /// (ADR-111); bounces need a world <see cref="Probe"/>, otherwise the arc flies on. No authority mutation;
+    /// despawn on a nearby Impact or lifetime.
     /// </summary>
     public sealed class CosmeticGrenadeFlight
     {
         public const int MaxLive = 8;
-        public const float GravityY = -20f;
+        public const float GravityY = -24f;
+        public const float BounceRetain = 0.45f;
+        public const float GroundFriction = 0.85f;
+        public const float Radius = 0.08f;
         public const float MaxLifetimeSeconds = 2.5f;
         public const float DespawnImpactRadiusMeters = 1.25f;
+        /// <summary>Tumble rate per metre travelled (degrees), so the spin slows as the grenade rolls out.</summary>
+        public const float TumbleDegreesPerMeter = 140f;
+
+        /// <summary>Sweeps a point from <paramref name="from"/> by <paramref name="delta"/>; true with the first contact.</summary>
+        public delegate bool SweepProbe(Float3 from, Float3 delta, out Float3 point, out Float3 normal);
+
+        public SweepProbe? Probe { get; set; }
 
         public readonly struct Live
         {
@@ -22,14 +33,20 @@ namespace Shooter.Presentation.Fx
             public Float3 Velocity { get; }
             public float AgeSeconds { get; }
             public bool Active { get; }
+            /// <summary>Accumulated tumble angle in degrees about the axis across the travel direction.</summary>
+            public float TumbleDegrees { get; }
+            public int Bounces { get; }
 
-            public Live(EntityId projectileId, Float3 position, Float3 velocity, float ageSeconds, bool active)
+            public Live(EntityId projectileId, Float3 position, Float3 velocity, float ageSeconds, bool active,
+                float tumbleDegrees = 0f, int bounces = 0)
             {
                 ProjectileId = projectileId;
                 Position = position;
                 Velocity = velocity;
                 AgeSeconds = ageSeconds;
                 Active = active;
+                TumbleDegrees = tumbleDegrees;
+                Bounces = bounces;
             }
         }
 
@@ -100,11 +117,30 @@ namespace Shooter.Presentation.Fx
                     continue;
                 }
                 var vel = new Float3(g.Velocity.X, g.Velocity.Y + GravityY * dtSeconds, g.Velocity.Z);
-                var pos = new Float3(
-                    g.Position.X + vel.X * dtSeconds,
-                    g.Position.Y + vel.Y * dtSeconds,
-                    g.Position.Z + vel.Z * dtSeconds);
-                slots[i] = new Live(g.ProjectileId, pos, vel, age, true);
+                var delta = new Float3(vel.X * dtSeconds, vel.Y * dtSeconds, vel.Z * dtSeconds);
+                Float3 pos;
+                int bounces = g.Bounces;
+                if (Probe != null && Probe(g.Position, delta, out var point, out var normal))
+                {
+                    float nd = vel.X * normal.X + vel.Y * normal.Y + vel.Z * normal.Z;
+                    if (nd < 0f)
+                    {
+                        vel = new Float3(
+                            (vel.X - 2f * nd * normal.X) * BounceRetain,
+                            (vel.Y - 2f * nd * normal.Y) * BounceRetain,
+                            (vel.Z - 2f * nd * normal.Z) * BounceRetain);
+                        bounces++;
+                    }
+                    if (normal.Y > 0.7f) vel = new Float3(vel.X * GroundFriction, vel.Y, vel.Z * GroundFriction);
+                    pos = new Float3(point.X + normal.X * 0.02f, point.Y + normal.Y * 0.02f, point.Z + normal.Z * 0.02f);
+                }
+                else
+                {
+                    pos = new Float3(g.Position.X + delta.X, g.Position.Y + delta.Y, g.Position.Z + delta.Z);
+                }
+                float travelled = (float)Math.Sqrt(delta.X * delta.X + delta.Y * delta.Y + delta.Z * delta.Z);
+                float tumble = (g.TumbleDegrees + travelled * TumbleDegreesPerMeter) % 360f;
+                slots[i] = new Live(g.ProjectileId, pos, vel, age, true, tumble, bounces);
             }
         }
     }

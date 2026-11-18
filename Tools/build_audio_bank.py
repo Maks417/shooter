@@ -4,7 +4,13 @@
 Recipe: Tools/audio-sources.json
   sources[]  id, url, file (under .local/audio-src/), license, note; archives are unpacked beside the file.
   clips[]    kind, variation, source (path under .local/audio-src/), start, end (seconds), gainDb, fadeIn,
-             fadeOut, optional reverse/highpass/lowpass, optional layers[] mixed in with the same fields.
+             fadeOut, optional reverse/highpass/lowpass/pitch (rate factor)/pad (seconds of silence appended
+             before filters so echoes ring out)/filters (extra ffmpeg audio filters, e.g. aecho),
+             optional layers[] mixed in with the same fields plus delay (seconds), optional length (trim the
+             mixed clip to this many seconds) and tailFade (fade-out seconds at the end of the mixed clip).
+             A layer may replace source with generate {type: sweep|tone, from, to (Hz), duration, attack,
+             decay (1/s)} for a synthesised layer (ADR-111 sub-bass drop). A source flagged local in
+             sources[] is a repo-local WAV (for example a previous bank clip kept under .local/audio-src/kept/).
   music[]    cue, source, start, end, fadeIn, fadeOut, loopStartSeconds, loopEndSeconds.
 
 Commands (run from the repo root):
@@ -36,7 +42,7 @@ SRC = ROOT / ".local" / "audio-src"
 COMBAT_OUT = ROOT / "Content" / "Audio" / "combat"
 MUSIC_OUT = ROOT / "Content" / "Audio" / "music"
 REVIEW_OUT = ROOT / "Artifacts" / "audio-review"
-BANK_ID = "combat-audio-bank-v6-stereo"
+BANK_ID = "combat-audio-bank-v7-stereo"
 MUSIC_BANK_ID = "music-bank-v1"
 RATE = 48000
 
@@ -47,7 +53,7 @@ PEAK_DB = {
     "distant_battle": -6.0, "headshot": -3.0, "impact": -4.0, "damage_taken": -4.0, "death": -4.0,
     "knife_swing": -5.0, "knife_hit_flesh": -3.0, "knife_hit_hard": -3.0,
     "reload_start": -4.0, "reload_pistol": -4.0, "reload_complete": -4.0, "dry_fire": -6.0,
-    "weapon_switch": -6.0, "grenade_pin": -6.0, "grenade_throw": -5.0, "grenade_bounce": -5.0,
+    "weapon_switch": -6.0, "grenade_pin": -4.5, "grenade_throw": -4.0, "grenade_bounce": -5.0,
     "footstep": -6.0, "bullet_flyby": -3.0, "hit_marker": -9.0, "kill_confirm": -6.0,
     "ui": -9.0, "ui_hover": -14.0, "ui_click": -9.0, "ui_back": -10.0, "ambient": -14.0,
     # ADR-102 bank v6 named-gun reports and handling Foley.
@@ -92,6 +98,10 @@ def fetch(recipe: dict) -> None:
         if SRC.resolve() not in target.parents:
             raise SystemExit("bad source file " + s["file"])
         target.parent.mkdir(parents=True, exist_ok=True)
+        if s.get("local"):
+            if not target.exists():
+                print("LOCAL: restore", target, "-", s["note"])
+            continue
         if not target.exists() and s.get("manual"):
             print("MANUAL: download", s["url"], "and save it as", target)
             continue
@@ -160,30 +170,77 @@ def filter_chain(c: dict) -> list[str]:
     return f
 
 
+def generate_expr(g: dict) -> tuple[str, float]:
+    """aevalsrc expression for a synthesised tone or exponential sweep with an attack/decay envelope."""
+    dur = float(g["duration"])
+    f0 = float(g["from"])
+    f1 = float(g.get("to", f0))
+    attack = max(1e-4, float(g.get("attack", 0.005)))
+    decay = float(g.get("decay", 0.0))
+    if g["type"] == "sweep" and abs(f1 - f0) > 1e-6:
+        import math
+        k = math.log(f1 / f0)
+        phase = "2*PI*%.9g*%.9g/%.9g*(exp(%.9g*t/%.9g)-1)" % (f0, dur, k, k, dur)
+    elif g["type"] in ("sweep", "tone"):
+        phase = "2*PI*%.9g*t" % f0
+    else:
+        raise SystemExit("unknown generate type " + str(g["type"]))
+    env = "min(1,t/%.9g)*exp(-%.9g*t)" % (attack, decay)
+    return "%s*sin(%s)" % (env, phase), dur
+
+
 def render_segment(c: dict, out: Path) -> None:
-    """One source segment → 48 kHz stereo float WAV with fades (before normalisation)."""
-    src = source_path(c["source"])
+    """One source segment (or generated layer) → 48 kHz stereo float WAV with fades (before normalisation)."""
     args = []
-    if c.get("start") is not None:
-        args += ["-ss", "%.4f" % c["start"]]
-    if c.get("end") is not None:
-        args += ["-to", "%.4f" % c["end"]]
-    args += ["-i", str(src)]
-    chain = ["aresample=%d" % RATE, "aformat=sample_fmts=flt:channel_layouts=stereo"] + filter_chain(c)
-    dur = (c["end"] - (c.get("start") or 0.0)) if c.get("end") is not None else None
+    if c.get("generate"):
+        expr, dur = generate_expr(c["generate"])
+        args += ["-f", "lavfi", "-i", "aevalsrc=exprs='%s':s=%d:d=%g:c=mono" % (expr, RATE, dur)]
+    else:
+        src = source_path(c["source"])
+        if c.get("start") is not None:
+            args += ["-ss", "%.4f" % c["start"]]
+        if c.get("end") is not None:
+            args += ["-to", "%.4f" % c["end"]]
+        args += ["-i", str(src)]
+        dur = (c["end"] - (c.get("start") or 0.0)) if c.get("end") is not None else None
+    chain = ["aresample=%d" % RATE, "aformat=sample_fmts=flt:channel_layouts=stereo"]
+    if c.get("pitch"):
+        # Rate-shift (pitch and speed together), then back to the bank rate.
+        chain += ["asetrate=%d" % round(RATE * float(c["pitch"])), "aresample=%d" % RATE]
+        if dur:
+            dur = dur / float(c["pitch"])
+    chain += filter_chain(c)
     if c.get("fadeIn"):
         chain.append("afade=t=in:d=%g" % c["fadeIn"])
     if c.get("fadeOut") and dur:
         chain.append("afade=t=out:st=%g:d=%g" % (max(0.0, dur - c["fadeOut"]), c["fadeOut"]))
+    # Pad and extra filters come after the fades so an echo tail rings past the segment's own fade-out.
+    if c.get("pad"):
+        chain.append("apad=pad_dur=%g" % c["pad"])
+    if c.get("filters"):
+        chain.append(c["filters"])
     res = ffmpeg(*args, "-af", ",".join(chain), "-c:a", "pcm_f32le", str(out))
     if res.returncode != 0:
-        raise SystemExit("ffmpeg failed for %s: %s" % (c["source"], res.stderr[-600:]))
+        raise SystemExit("ffmpeg failed for %s: %s" % (c.get("source", "generated layer"), res.stderr[-600:]))
 
 
-def peak_db(path: Path) -> float:
+
+# ADR-111: kinds normalised on the true float peak. Older kinds keep the v6 measurement (volumedetect saturates
+# at 0 dBFS, so their over-full-scale mixes still clip) until they are re-mixed and auditioned.
+FLOAT_PEAK_KINDS = {"knife_swing", "knife_hit_flesh", "knife_hit_hard", "grenade_explode", "grenade_explode_far",
+                    "grenade_pin", "grenade_throw"}
+
+
+def peak_db(path: Path, float_peak: bool = False) -> float:
     res = ffmpeg("-i", str(path), "-af", "volumedetect", "-f", "null", "-")
     m = re.search(r"max_volume: (-?[0-9.]+) dB", res.stderr)
-    return float(m.group(1)) if m else 0.0
+    level = float(m.group(1)) if m else 0.0
+    if float_peak and level > -0.05:
+        # volumedetect measures through 16-bit and saturates at full scale; a layered float mix can exceed it.
+        res = ffmpeg("-i", str(path), "-af", "astats=measure_perchannel=none:measure_overall=Peak_level", "-f", "null", "-")
+        m = re.search(r"Peak level dB: (-?[0-9.]+)", res.stderr)
+        level = float(m.group(1)) if m else level
+    return level
 
 
 def build_clip(c: dict, out: Path, tmp: Path) -> None:
@@ -211,7 +268,18 @@ def build_clip(c: dict, out: Path, tmp: Path) -> None:
                      "-c:a", "pcm_f32le", str(mixed))
         if res.returncode != 0:
             raise SystemExit(res.stderr[-400:])
-    gain = PEAK_DB.get(c["kind"], -3.0) - peak_db(mixed)
+    post = []
+    if c.get("length"):
+        post.append("atrim=end=%g" % c["length"])
+        if c.get("tailFade"):
+            post.append("afade=t=out:st=%g:d=%g" % (max(0.0, c["length"] - c["tailFade"]), c["tailFade"]))
+    if post:
+        shaped = tmp / "shaped.wav"
+        res = ffmpeg("-i", str(mixed), "-af", ",".join(post), "-c:a", "pcm_f32le", str(shaped))
+        if res.returncode != 0:
+            raise SystemExit(res.stderr[-400:])
+        mixed = shaped
+    gain = PEAK_DB.get(c["kind"], -3.0) - peak_db(mixed, c["kind"] in FLOAT_PEAK_KINDS)
     res = ffmpeg("-i", str(mixed), "-af", "volume=%gdB" % gain, "-ar", str(RATE), "-ac", "2", "-c:a", "pcm_s16le",
                  "-map_metadata", "-1", "-fflags", "+bitexact", "-flags:a", "+bitexact", str(out))
     if res.returncode != 0:
@@ -232,7 +300,7 @@ def source_note(recipe: dict, rel: str) -> tuple[str, str]:
         stem = s["file"]
         unpacked = str(Path(stem).with_suffix("")).replace("\\", "/")
         if rel == stem or rel.startswith(unpacked + "/"):
-            return s["note"] + " (" + s["url"] + ")", s["license"]
+            return (s["note"] + " (" + s["url"] + ")" if s.get("url") else s["note"]), s["license"]
     raise SystemExit("clip source not listed in sources[]: " + rel)
 
 
@@ -270,10 +338,18 @@ def build(recipe: dict) -> None:
         name = "%s_%02d.wav" % key
         build_clip(c, COMBAT_OUT / name, tmp)
         note, lic = source_note(recipe, c["source"])
+        generated = set()
         for layer in c.get("layers", []):
+            if layer.get("generate"):
+                generated.add(layer["generate"]["type"])
+                continue
             ln, ll = source_note(recipe, layer["source"])
+            if len(c["layers"]) > 3 and ln in note:
+                continue  # many-layer recipes (ADR-111 blasts) list each source once
             note += " + " + ln
             lic = lic if ll == lic else lic + " + " + ll
+        for kind in sorted(generated):
+            note += " + generated %s layer (Tools/build_audio_bank.py)" % kind
         entries.append({"kind": c["kind"], "variation": c["variation"], "file": name,
                         "sha256": sha256(COMBAT_OUT / name), "source": note, "license": lic})
         keep.add(name)
