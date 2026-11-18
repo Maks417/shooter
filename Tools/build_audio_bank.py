@@ -42,7 +42,7 @@ SRC = ROOT / ".local" / "audio-src"
 COMBAT_OUT = ROOT / "Content" / "Audio" / "combat"
 MUSIC_OUT = ROOT / "Content" / "Audio" / "music"
 REVIEW_OUT = ROOT / "Artifacts" / "audio-review"
-BANK_ID = "combat-audio-bank-v7-stereo"
+BANK_ID = "combat-audio-bank-v8-stereo"
 MUSIC_BANK_ID = "music-bank-v1"
 RATE = 48000
 
@@ -225,13 +225,9 @@ def render_segment(c: dict, out: Path) -> None:
 
 
 
-# ADR-111: kinds normalised on the true float peak. Older kinds keep the v6 measurement (volumedetect saturates
-# at 0 dBFS, so their over-full-scale mixes still clip) until they are re-mixed and auditioned.
-FLOAT_PEAK_KINDS = {"knife_swing", "knife_hit_flesh", "knife_hit_hard", "grenade_explode", "grenade_explode_far",
-                    "grenade_pin", "grenade_throw"}
-
-
-def peak_db(path: Path, float_peak: bool = False) -> float:
+# ADR-111 addendum: every kind is normalised on the true float peak. volumedetect measures through 16-bit and
+# saturates at 0 dBFS, so a layered float mix louder than full scale used to read as 0 dB and ship up to ~5 dB hot.
+def peak_db(path: Path, float_peak: bool = True) -> float:
     res = ffmpeg("-i", str(path), "-af", "volumedetect", "-f", "null", "-")
     m = re.search(r"max_volume: (-?[0-9.]+) dB", res.stderr)
     level = float(m.group(1)) if m else 0.0
@@ -279,7 +275,7 @@ def build_clip(c: dict, out: Path, tmp: Path) -> None:
         if res.returncode != 0:
             raise SystemExit(res.stderr[-400:])
         mixed = shaped
-    gain = PEAK_DB.get(c["kind"], -3.0) - peak_db(mixed, c["kind"] in FLOAT_PEAK_KINDS)
+    gain = PEAK_DB.get(c["kind"], -3.0) - peak_db(mixed)
     res = ffmpeg("-i", str(mixed), "-af", "volume=%gdB" % gain, "-ar", str(RATE), "-ac", "2", "-c:a", "pcm_s16le",
                  "-map_metadata", "-1", "-fflags", "+bitexact", "-flags:a", "+bitexact", str(out))
     if res.returncode != 0:

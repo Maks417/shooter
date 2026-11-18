@@ -118,3 +118,7 @@ Steps:
 ## Bank v7: knife and grenade re-mix (ADR-111)
 
 [ADR-111](../decisions.md#adr-111--accepted-knife-and-grenade-overhaul-one-handed-hold-cut-and-throw-half-map-grenade-range-sound-explosion-models) moves the bank to `combat-audio-bank-v7-stereo`. Only knife and grenade clips change: the swing layers a whoosh with a blade draw "shing"; flesh hits layer a heavy thud with a wet chop; hard hits layer metal impacts with a blade scrape; the 2.2–2.8 s explosion layers the v6 take with a generated sub-bass drop, a crack transient, scattered debris and a tail; the far explosion has a longer roll. Everything comes from sources already in `.local/audio-src`; the v6 explosion takes are inputs under `.local/audio-src/kept/` (restore them from git history before a rebuild). An A/B listening page is written to `.local/knife-grenade-ab.html`. Owner listening review is Pending.
+
+## Bank v8: true-peak levels (ADR-111 addendum)
+
+The builder now normalises every kind on the true float peak instead of `volumedetect`, which saturated at 0 dBFS and let over-full-scale mixes ship up to 5.4 dB above their `PEAK_DB` target. 66 older clips are re-levelled (no content change, gain only); the bank is `combat-audio-bank-v8-stereo`. No clip reaches full scale. Owner listening review is Pending.

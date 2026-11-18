@@ -13,6 +13,8 @@ Owner: knife and grenade sounds, animations, throw range, explosion and models l
 - Audio bank v7 knife/grenade re-mix; layered fallback synth.
 - `geometry.loadout-prop` 1.1.0 knife and grenade on ShapeKit with new blade-steel, edge-grind and grenade-paint finishes.
 
+- Bank v8 level fix: every kind normalised on the true float peak; 66 older clips that shipped up to 5.4 dB above target (4 at full scale) are re-levelled; no clip reaches full scale now.
+
 **Evidence:** pure lanes listed in the ADR; editor `CaptureHandling` renders under `Artifacts/adr111-preview/`. **Pending:** owner playtest (feel, range, sound, explosion) and the next installer.
 
 ## ADR-110 — Body armor — 2026-11-18

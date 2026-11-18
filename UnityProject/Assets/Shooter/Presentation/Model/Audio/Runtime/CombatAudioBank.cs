@@ -8,8 +8,8 @@ namespace Shooter.Presentation.Audio
     /// </summary>
     public sealed class CombatAudioBank
     {
-        public const string RecipeId = "combat-audio-bank-v7-stereo";
-        public const int BankVersion = 7;
+        public const string RecipeId = "combat-audio-bank-v8-stereo";
+        public const int BankVersion = 8;
         public const int DefaultSampleRate = 48000;
         public const int Channels = 2;
         /// <summary>Variations baked for the generated emergency bank.</summary>
