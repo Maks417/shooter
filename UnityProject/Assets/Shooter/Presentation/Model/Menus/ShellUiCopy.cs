@@ -95,6 +95,25 @@ namespace Shooter.Presentation.Menus
         public const string CareerActiveBuffs = "ACTIVE BUFFS";
         public const string CareerNoBuffs = "None yet.";
         public const string CareerPromoted = "PROMOTED";
+        // ADR-113 progress line and reward cards.
+        public const string CareerProgressLine = "PROGRESS LINE";
+        public const string CareerUnlocked = "UNLOCKED";
+        public const string CareerNextChip = "NEXT UNLOCK";
+        public const string CareerCurrent = "CURRENT";
+        public const string CareerRewardWeapon = "WEAPON";
+        public const string CareerRewardSight = "OPTIC";
+        public const string CareerRewardBuff = "PERK";
+        public const string CareerRewardKit = "STARTER KIT";
+        public const string CareerRewardFinal = "INSIGNIA";
+
+        /// <summary>"RANK 14".</summary>
+        public static string CareerRankChip(int rank) => "RANK " + rank;
+
+        /// <summary>"PVT  ·  RANK 1 OF 20".</summary>
+        public static string CareerRankOf(string code, int rank, int count) => code + "  ·  RANK " + rank + " OF " + count;
+
+        /// <summary>"2,600 CP TO CORPORAL".</summary>
+        public static string CareerToNext(long points, string rankName) => Thousands(points < 0 ? 0 : points) + " CP TO " + rankName.ToUpperInvariant();
 
         /// <summary>"Unlocks at Sergeant".</summary>
         public static string UnlocksAt(string rankName) => "Unlocks at " + rankName;

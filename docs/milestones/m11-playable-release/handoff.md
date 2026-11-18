@@ -2,6 +2,16 @@
 
 Records from 2026-11-15 onward. Older entries — T062–T085, deliveries up to 0.3.12, historical candidates and the T065 operator runbook — are in the [handoff archive](handoff-archive.md).
 
+## ADR-113 — Career progress line, layered rank emblems and reward art — 2026-11-18
+
+Owner: revise the career progress line, rewards and interface; icons and the whole design should look solid, like an AAA game. [ADR-113](../../decisions.md#adr-113--accepted-career-progress-line-layered-rank-emblems-and-reward-art)
+
+**Implemented:** layered metal rank emblems (enamel plate per band, metal rim, embossed insignia, wreath for generals; embossed insignia only below 34 px); recessed segmented CP bars with a lit gain segment; `CareerRewardCatalog` icon/title/tier/detail per rank; 18 new procedural glyphs (emblem plates, wreath, five side-view sights, five perks, dog tags, crown, lock, check); reward cards colour-coded by kind with locked / next / unlocked chips; Career page rebuilt as hero band, horizontal progress line with reward cards (wheel and arrow scrolling) and perk chips plus service-record tiles; main menu and Armory badges, Armory lock tags and the debrief strip restyled. Icon atlas library golden regenerated for the appended glyphs.
+
+**Checks (working tree on `22a91e1`):** `Test-Generation` 594 PASS, `Test-Game` 158 PASS, `Test-Simulation` 596 PASS, `Test-SourceProvenance` PASS; contract lock, fixtures, asmdef graph and docs PASS; Unity EditMode PASS (`tests-editmode-20261118T171517184Z-09984649`, compiles the presentation changes and checks the atlas golden on Mono). PlayMode, a client build and in-game screenshots were not run.
+
+**Pending:** owner visual review of the Career page, progress line, emblems at Tab-board size and the debrief promotion strip at 1080p and 720p; the next installer.
+
 ## ADR-112 — Crosshair-true hits, rig-aligned hit volumes, smarter and smoother bots — 2026-11-18
 
 Owner: head shots sometimes did nothing; bots stacked in one place, did not use the map, and moved and acted jerkily. Owner choices: the crosshair is the truth for hits; cover and lanes now without a content-format change; the hip crosshair shows the real spread. [ADR-112](../../decisions.md#adr-112--accepted-crosshair-true-hits-rig-aligned-hit-volumes-and-bots-that-use-map-cover-flank-and-move-smoothly)

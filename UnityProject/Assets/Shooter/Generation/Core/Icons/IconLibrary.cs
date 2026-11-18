@@ -37,6 +37,26 @@ namespace Shooter.Generation.Icons
         public const string Controls = "settings-controls";
         public const string Accessibility = "settings-accessibility";
 
+        // ADR-113 career art: emblem plates behind the insignia, reward glyphs and state marks.
+        public const string CareerPlateEnlisted = "career-plate-enlisted";
+        public const string CareerPlateOfficer = "career-plate-officer";
+        public const string CareerPlateGeneral = "career-plate-general";
+        public const string CareerWreath = "career-wreath";
+        public const string RewardSightIrons = "reward-sight-irons";
+        public const string RewardSightCollimator = "reward-sight-collimator";
+        public const string RewardSightPrism = "reward-sight-prism";
+        public const string RewardSightScope4 = "reward-sight-scope4";
+        public const string RewardSightScope8 = "reward-sight-scope8";
+        public const string RewardFastHands = "reward-buff-fast-hands";
+        public const string RewardSteadyAim = "reward-buff-steady-aim";
+        public const string RewardExtraMag = "reward-buff-extra-mag";
+        public const string RewardRecoil = "reward-buff-recoil";
+        public const string RewardQuickDraw = "reward-buff-quick-draw";
+        public const string RewardStarter = "reward-starter";
+        public const string RewardFinal = "reward-final";
+        public const string UiLock = "ui-lock";
+        public const string UiCheck = "ui-check";
+
         // Five-point star, centre (500,520), outer 430 / inner 175 (precomputed integers: no trigonometry at runtime).
         private static readonly int[] Star =
             { 500, 90, 603, 378, 909, 387, 666, 574, 753, 868, 500, 695, 247, 868, 334, 574, 91, 387, 397, 378 };
@@ -133,6 +153,134 @@ namespace Shooter.Generation.Icons
                 .Add(SmallStar(615, 400, 3, 10)).Add(SmallStar(845, 400, 3, 10));
         }
 
+        // ADR-113 sixteen-point service burst (general plate), outer 440 / inner 372 around (500,500).
+        private static readonly int[] Burst =
+        {
+            500, 60, 642, 156, 811, 189, 844, 358, 940, 500, 844, 642, 811, 811, 642, 844,
+            500, 940, 358, 844, 189, 811, 156, 642, 60, 500, 156, 358, 189, 189, 358, 156
+        };
+
+        // ADR-113 left laurel branch: stem along a 320 arc around (500,470) and leaf capsules (x0,y0,x1,y1 quads).
+        private static readonly int[] WreathStem =
+        {
+            417, 779, 365, 760, 316, 732, 274, 696, 238, 654, 210, 605, 191, 553, 181, 498, 181, 442, 191, 387,
+            210, 335, 238, 286, 274, 244, 316, 208, 365, 180
+        };
+
+        private static readonly int[] WreathLeaves =
+        {
+            350, 753, 232, 774, 350, 753, 297, 668, 248, 667, 131, 639, 248, 667, 234, 568, 190, 547, 94, 474,
+            190, 547, 217, 451, 185, 414, 128, 309, 185, 414, 249, 338, 235, 291, 225, 171, 235, 291, 325, 247,
+            321, 205, 357, 90, 321, 205, 421, 198
+        };
+
+        private static int[] MirrorX(int[] xy)
+        {
+            var r = (int[])xy.Clone();
+            for (int i = 0; i < r.Length; i += 2) r[i] = 1000 - r[i];
+            return r;
+        }
+
+        private static IconRecipe AddWreath(IconRecipe recipe)
+        {
+            foreach (var stem in new[] { WreathStem, MirrorX(WreathStem) })
+                recipe.Add(IconShape.Stroke(42, stem));
+            foreach (var leaves in new[] { WreathLeaves, MirrorX(WreathLeaves) })
+                for (int i = 0; i + 3 < leaves.Length; i += 4)
+                    recipe.Add(IconShape.Capsule(leaves[i], leaves[i + 1], leaves[i + 2], leaves[i + 3], 78));
+            return recipe;
+        }
+
+        /// <summary>
+        /// ADR-113 career art: emblem plates layered behind the rank insignia, reward glyphs for sights, buffs, the
+        /// starter kit and the final rank, and lock/check state marks. Sights and the starter kit span two cells.
+        /// </summary>
+        private static IEnumerable<IconRecipe> CareerArt()
+        {
+            yield return new IconRecipe(CareerPlateEnlisted)
+                .Add(IconShape.Polygon(150, 90, 850, 90, 870, 130, 870, 560, 500, 920, 130, 560, 130, 130));
+            yield return new IconRecipe(CareerPlateOfficer)
+                .Add(IconShape.Polygon(500, 60, 885, 280, 885, 720, 500, 940, 115, 720, 115, 280));
+            yield return new IconRecipe(CareerPlateGeneral).Add(IconShape.Polygon(Burst));
+            yield return AddWreath(new IconRecipe(CareerWreath));
+
+            // Sights, side view, muzzle to the right, on a rail stub.
+            yield return new IconRecipe(RewardSightIrons, 2)
+                .Add(IconShape.Box(150, 640, 1700, 110, 20))
+                .Add(IconShape.Box(250, 330, 280, 330, 40)).Cut(IconShape.Circle(390, 450, 70))
+                .Add(IconShape.Box(1460, 360, 280, 300, 30)).Cut(IconShape.Box(1545, 340, 110, 180, 20))
+                .Add(IconShape.Box(1575, 400, 50, 260));
+            yield return new IconRecipe(RewardSightCollimator, 2)
+                .Add(IconShape.Box(420, 660, 1160, 130, 30))
+                .Add(IconShape.Box(500, 230, 1000, 460, 150)).Cut(IconShape.Box(600, 320, 800, 280, 100))
+                .Add(IconShape.Circle(1000, 460, 60))
+                .Add(IconShape.Box(1330, 150, 130, 110, 25));
+            yield return new IconRecipe(RewardSightPrism, 2)
+                .Add(IconShape.Box(500, 680, 1000, 120, 20))
+                .Add(IconShape.Box(420, 300, 1080, 380, 60))
+                .Add(IconShape.Box(260, 350, 200, 280, 50))
+                .Add(IconShape.Box(1460, 240, 280, 500, 70))
+                .Cut(IconShape.Box(540, 390, 820, 44, 22))
+                .Add(IconShape.Box(860, 200, 180, 120, 30));
+            yield return new IconRecipe(RewardSightScope4, 2)
+                .Add(IconShape.Capsule(330, 470, 1650, 470, 190))
+                .Add(IconShape.Box(150, 320, 330, 300, 60))
+                .Add(IconShape.Box(1440, 300, 400, 340, 60))
+                .Add(IconShape.Box(880, 230, 160, 160, 30))
+                .Add(IconShape.Box(600, 540, 140, 260, 20)).Add(IconShape.Box(1260, 540, 140, 260, 20))
+                .Add(IconShape.Box(450, 790, 1100, 90, 20));
+            yield return new IconRecipe(RewardSightScope8, 2)
+                .Add(IconShape.Capsule(260, 500, 1700, 500, 170))
+                .Add(IconShape.Box(90, 370, 300, 260, 60))
+                .Add(IconShape.Box(1480, 280, 440, 440, 70))
+                .Add(IconShape.Box(800, 250, 160, 170, 30)).Add(IconShape.Box(1040, 290, 120, 130, 30))
+                .Add(IconShape.Box(560, 570, 130, 230, 20)).Add(IconShape.Box(1280, 570, 130, 230, 20))
+                .Add(IconShape.Box(420, 790, 1180, 90, 20));
+
+            // Buffs.
+            yield return new IconRecipe(RewardFastHands)
+                .Add(IconShape.Polygon(480, 150, 770, 150, 820, 860, 550, 880))
+                .Cut(IconShape.Box(550, 270, 220, 34)).Cut(IconShape.Box(560, 410, 230, 34))
+                .Add(IconShape.Capsule(140, 330, 380, 330, 70))
+                .Add(IconShape.Capsule(90, 500, 400, 500, 70))
+                .Add(IconShape.Capsule(160, 670, 420, 670, 70));
+            yield return new IconRecipe(RewardSteadyAim)
+                .Add(IconShape.Stroke(70, 150, 340, 150, 150, 340, 150)).Add(IconShape.Stroke(70, 660, 150, 850, 150, 850, 340))
+                .Add(IconShape.Stroke(70, 150, 660, 150, 850, 340, 850)).Add(IconShape.Stroke(70, 660, 850, 850, 850, 850, 660))
+                .Add(IconShape.Capsule(500, 250, 500, 390, 60)).Add(IconShape.Capsule(500, 610, 500, 750, 60))
+                .Add(IconShape.Capsule(250, 500, 390, 500, 60)).Add(IconShape.Capsule(610, 500, 750, 500, 60))
+                .Add(IconShape.Circle(500, 500, 52));
+            yield return new IconRecipe(RewardExtraMag)
+                .Add(IconShape.Polygon(150, 280, 390, 280, 420, 890, 200, 900))
+                .Add(IconShape.Polygon(440, 330, 660, 330, 690, 890, 480, 900))
+                .Cut(IconShape.Box(690, 110, 140, 330, 30)).Cut(IconShape.Box(590, 200, 340, 150, 30))
+                .Add(IconShape.Box(720, 140, 80, 270, 20)).Add(IconShape.Box(625, 235, 270, 80, 20));
+            yield return new IconRecipe(RewardRecoil)
+                .Add(IconShape.Capsule(200, 130, 800, 130, 80))
+                .Add(IconShape.Polygon(500, 900, 820, 570, 620, 570, 620, 250, 380, 250, 380, 570, 180, 570));
+            yield return new IconRecipe(RewardQuickDraw)
+                .Add(IconShape.Polygon(580, 80, 240, 560, 470, 560, 390, 920, 780, 390, 550, 390, 680, 80));
+
+            // Starter kit: two dog tags on a chain.
+            yield return new IconRecipe(RewardStarter)
+                .Add(IconShape.Box(200, 330, 320, 520, 90)).Cut(IconShape.Circle(360, 420, 45))
+                .Cut(IconShape.Box(430, 230, 380, 580, 100))
+                .Add(IconShape.Box(470, 250, 320, 520, 90)).Cut(IconShape.Circle(630, 340, 45))
+                .Add(IconShape.Stroke(46, 360, 420, 300, 230, 470, 110, 640, 160, 630, 340));
+            yield return AddWreath(new IconRecipe(RewardFinal))
+                .Add(IconShape.Polygon(330, 640, 330, 400, 420, 500, 500, 350, 580, 500, 670, 400, 670, 640))
+                .Add(IconShape.Box(330, 670, 340, 60, 20))
+                .Add(IconShape.Circle(330, 380, 40)).Add(IconShape.Circle(500, 320, 40)).Add(IconShape.Circle(670, 380, 40));
+
+            // State marks.
+            yield return new IconRecipe(UiLock)
+                .Add(IconShape.Ring(500, 400, 190, 90)).Cut(IconShape.Box(0, 400, 1000, 600))
+                .Add(IconShape.Box(265, 390, 90, 120)).Add(IconShape.Box(645, 390, 90, 120))
+                .Add(IconShape.Box(200, 480, 600, 420, 70))
+                .Cut(IconShape.Circle(500, 630, 60)).Cut(IconShape.Box(475, 630, 50, 150, 20));
+            yield return new IconRecipe(UiCheck).Add(IconShape.Stroke(150, 170, 520, 410, 760, 830, 270));
+        }
+
         /// <summary>All library glyphs in their stable atlas order.</summary>
         public static IReadOnlyList<IconRecipe> All { get; } = Build();
 
@@ -216,6 +364,7 @@ namespace Shooter.Generation.Icons
                     .Add(IconShape.Stroke(80, 380, 780, 500, 590, 620, 780)),
             };
             list.AddRange(CareerRanks());
+            list.AddRange(CareerArt());
             var names = new HashSet<string>(StringComparer.Ordinal);
             foreach (var r in list)
                 if (!names.Add(r.Name)) throw new InvalidOperationException("Duplicate icon name: " + r.Name);

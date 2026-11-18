@@ -46,6 +46,29 @@ namespace Shooter.Game.Contracts.Tests
         }
 
         [Fact]
+        public void Reward_art_matches_the_ladder()
+        {
+            Assert.Equal(CareerLadder.RankCount, CareerRewardCatalog.All.Count);
+            foreach (var rank in CareerLadder.Ranks)
+            {
+                var art = CareerRewardCatalog.For(rank);
+                Assert.Equal(rank.Index, art.Rank);
+                Assert.Equal(rank.RewardKind, art.Kind);
+                Assert.False(string.IsNullOrEmpty(art.IconName));
+                Assert.False(string.IsNullOrEmpty(art.Title));
+                Assert.False(string.IsNullOrEmpty(art.Detail));
+                if (rank.RewardKind == CareerRewardKind.Weapon) Assert.Equal("weapon." + rank.RewardId.Substring("weapons/".Length), art.IconName);
+                if (rank.RewardKind == CareerRewardKind.Buff)
+                {
+                    Assert.StartsWith(art.FullTitle, rank.RewardLabel);
+                    Assert.EndsWith(art.Detail, rank.RewardLabel, StringComparison.OrdinalIgnoreCase);
+                    Assert.Equal(art.IconName, CareerRewardCatalog.BuffIcon(rank.RewardId));
+                }
+            }
+            Assert.Equal("", CareerRewardCatalog.BuffIcon("buffs/unknown"));
+        }
+
+        [Fact]
         public void Every_rank_name_code_and_icon_is_unique()
         {
             var names = new HashSet<string>();

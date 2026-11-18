@@ -15,11 +15,15 @@ Reaching rank *n* takes `1000·(n²−1)` CP, so each step costs 2,000 CP more t
 
 | Place | What it shows |
 |---|---|
-| Main menu | Rank insignia, rank name and CP bar under the menu; click opens the Career page. |
-| Armory | The same badge in the header; locked guns and sights with the rank that unlocks them. |
-| Career page | Current rank, CP to the next rank, the next reward, active buffs, the 20-rank ladder and the service record. |
-| Tab board and debrief tables | Insignia before every name. Bots show a seeded rank within three of the player's. |
-| Debrief | CP earned with its breakdown, the bar filling, and a promotion line naming the unlocked reward. |
+| Main menu | Layered rank emblem, rank name and segmented CP bar under the menu; click opens the Career page. |
+| Armory | The same badge in the header; locked guns and sights with a lock tag and the rank emblem that unlocks them. |
+| Career page | Hero band (large emblem, rank, CP bar, CP to the next rank, next reward card); the horizontal progress line with one emblem node and reward card per rank; active-perk chips; service-record tiles. |
+| Tab board and debrief tables | Embossed insignia before every name. Bots show a seeded rank within three of the player's. |
+| Debrief | CP earned with its breakdown, the bar filling with the gain lit, and on promotion a gold edge and the unlocked reward's icon. |
+
+## Look (ADR-113)
+
+[ADR-113](../decisions.md#adr-113--accepted-career-progress-line-layered-rank-emblems-and-reward-art) draws the career with procedural art only: rank emblems layer an enamel plate (enlisted shield, officer hexagon, general burst in a laurel wreath), a metal rim and the embossed insignia in the band's metal (olive brass, steel, bronze, gold); small sizes draw just the embossed insignia. CP bars are recessed grooves with a metal fill. Every reward has an icon: gun silhouettes traced from the weapon meshes, side-view sights, perk glyphs, dog tags for the starter kit and a crown for General. Reward cards are colour-coded by kind (weapon amber, optic cyan, perk green, insignia gold) and show locked, next or unlocked.
 
 ## Service record
 
@@ -27,4 +31,4 @@ Reaching rank *n* takes `1000·(n²−1)` CP, so each step costs 2,000 CP more t
 
 ## Status
 
-Pure lanes and Unity EditMode PASS in source after 0.3.21. Unity PlayMode, client build, installer and the owner's in-game review are Pending; see the [M11 handoff](../milestones/m11-playable-release/handoff.md).
+Pure lanes and Unity EditMode PASS in source after 0.3.21; the ADR-113 redesign is in source after that. Unity PlayMode, client build, installer and the owner's in-game and visual review are Pending; see the [M11 handoff](../milestones/m11-playable-release/handoff.md).

@@ -124,6 +124,20 @@ public sealed class IconAtlasTests
     }
 
     [Fact]
+    public void Every_career_reward_icon_is_in_the_atlas()
+    {
+        var atlas = IconAtlas.Build(IconLibrary.All, GeneratedWeapons());
+        foreach (var art in Shooter.Game.Settings.CareerRewardCatalog.All)
+        {
+            Assert.True(atlas.TryGet(art.IconName, out var e), "rank " + art.Rank + " icon " + art.IconName);
+            Assert.Equal(art.Wide, e.Width > e.Height);
+        }
+        foreach (var name in new[] { IconLibrary.CareerPlateEnlisted, IconLibrary.CareerPlateOfficer, IconLibrary.CareerPlateGeneral,
+                     IconLibrary.CareerWreath, IconLibrary.UiLock, IconLibrary.UiCheck, IconLibrary.RewardSightIrons })
+            Assert.True(atlas.TryGet(name, out _), name);
+    }
+
+    [Fact]
     public void Atlas_is_deterministic_and_matches_the_golden()
     {
         var a = IconAtlas.Build(IconLibrary.All, GeneratedWeapons());
@@ -139,5 +153,5 @@ public sealed class IconAtlasTests
 /// <summary>Shared with <c>IconAtlasEditModeTests</c> so the Unity Mono lane proves the same bytes.</summary>
 internal static class IconAtlasGoldens
 {
-    public const string Library = "983eafa393ad9569e705e712c2425b8681a80bddb605065154b16005869af024";
+    public const string Library = "292eb61e5dfa460d7bd3a585e6d63ad0cbe5c0fdc85e37321936336fbb2e4de5";
 }

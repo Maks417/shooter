@@ -1,0 +1,338 @@
+#nullable enable
+using Shooter.Contracts;
+using Shooter.Game.Settings;
+using Shooter.Generation.Icons;
+using Shooter.Presentation.Menus;
+using UnityEngine;
+
+namespace Shooter.Presentation.Session
+{
+    /// <summary>
+    /// ADR-113 career art: layered metal rank emblems, recessed progress bars and reward cards, all drawn from the
+    /// procedural glyph atlas with the code-only UiSdf shader (gradients, strokes, shadows, glow and glint). No
+    /// texture is loaded. When the shader is unavailable each primitive falls back to flat fills and plain glyphs.
+    /// </summary>
+    public static class CareerArt
+    {
+        /// <summary>Metal and enamel colours for one rank band.</summary>
+        public readonly struct BandPalette
+        {
+            public readonly Color MetalTop, MetalBottom, EnamelTop, EnamelBottom;
+
+            public BandPalette(Color metalTop, Color metalBottom, Color enamelTop, Color enamelBottom)
+            {
+                MetalTop = metalTop;
+                MetalBottom = metalBottom;
+                EnamelTop = enamelTop;
+                EnamelBottom = enamelBottom;
+            }
+        }
+
+        public enum RewardState : byte { Locked = 0, Next = 1, Earned = 2 }
+
+        private static readonly BandPalette Enlisted = new BandPalette(
+            new Color32(240, 226, 164, 255), new Color32(148, 126, 68, 255), new Color32(50, 60, 42, 255), new Color32(20, 26, 18, 255));
+        private static readonly BandPalette Silver = new BandPalette(
+            new Color32(244, 247, 249, 255), new Color32(124, 136, 146, 255), new Color32(36, 50, 68, 255), new Color32(14, 20, 32, 255));
+        private static readonly BandPalette Bronze = new BandPalette(
+            new Color32(240, 186, 124, 255), new Color32(126, 74, 38, 255), new Color32(64, 32, 26, 255), new Color32(26, 12, 10, 255));
+        private static readonly BandPalette General = new BandPalette(
+            new Color32(255, 234, 152, 255), new Color32(164, 108, 32, 255), new Color32(104, 24, 28, 255), new Color32(42, 8, 12, 255));
+
+        public static readonly Color WeaponInk = new Color32(236, 168, 84, 255);
+        public static readonly Color SightInk = new Color32(108, 200, 224, 255);
+        public static readonly Color BuffInk = new Color32(132, 212, 140, 255);
+        public static readonly Color KitInk = new Color32(176, 186, 190, 255);
+
+        public static BandPalette Palette(int rank)
+        {
+            switch (CareerLadder.Get(rank).Band)
+            {
+                case CareerRankBand.General: return General;
+                case CareerRankBand.Bronze: return Bronze;
+                case CareerRankBand.Warrant:
+                case CareerRankBand.Officer: return Silver;
+                default: return Enlisted;
+            }
+        }
+
+        public static Color KindInk(CareerRewardKind kind)
+        {
+            switch (kind)
+            {
+                case CareerRewardKind.Weapon: return WeaponInk;
+                case CareerRewardKind.Sight: return SightInk;
+                case CareerRewardKind.Buff: return BuffInk;
+                case CareerRewardKind.Final: return TacticalUi.Gold;
+                default: return KitInk;
+            }
+        }
+
+        public static string KindLabel(CareerRewardKind kind)
+        {
+            switch (kind)
+            {
+                case CareerRewardKind.Weapon: return ShellUiCopy.CareerRewardWeapon;
+                case CareerRewardKind.Sight: return ShellUiCopy.CareerRewardSight;
+                case CareerRewardKind.Buff: return ShellUiCopy.CareerRewardBuff;
+                case CareerRewardKind.Final: return ShellUiCopy.CareerRewardFinal;
+                default: return ShellUiCopy.CareerRewardKit;
+            }
+        }
+
+        private static string Plate(CareerRankBand band)
+        {
+            switch (band)
+            {
+                case CareerRankBand.General: return IconLibrary.CareerPlateGeneral;
+                case CareerRankBand.Enlisted: return IconLibrary.CareerPlateEnlisted;
+                default: return IconLibrary.CareerPlateOfficer;
+            }
+        }
+
+        private static Color A(Color c, float alpha) => new Color(c.r, c.g, c.b, c.a * alpha);
+
+        /// <summary>Desaturated, darkened copy for locked art.</summary>
+        public static Color Dim(Color c)
+        {
+            float l = c.r * .3f + c.g * .59f + c.b * .11f;
+            return new Color(Mathf.Lerp(l, c.r, .2f) * .55f, Mathf.Lerp(l, c.g, .2f) * .55f, Mathf.Lerp(l, c.b, .2f) * .55f, c.a);
+        }
+
+        private static Rect Square(Rect r, float scale = 1f, float dy = 0f)
+        {
+            float s = Mathf.Min(r.width, r.height) * scale;
+            return new Rect(r.center.x - s * .5f, r.center.y - s * .5f + dy, s, s);
+        }
+
+        private static Rect Offset(Rect r, float dx, float dy) => new Rect(r.x + dx, r.y + dy, r.width, r.height);
+
+        /// <summary>
+        /// Rank emblem. At 34 px and up: enamel plate with a metal rim and inner hairline, the insignia embossed in
+        /// metal on top (dark offset under a vertical metal gradient and a light edge), a laurel wreath for generals.
+        /// Smaller sizes draw the embossed insignia only so it stays legible on the scoreboards. False when the
+        /// glyph is unavailable (callers keep their text).
+        /// </summary>
+        public static bool RankEmblem(Rect r, int rank, float alpha, float glint = -1f, bool dim = false)
+        {
+            if (rank <= 0 || alpha <= 0.01f) return false;
+            var band = CareerLadder.Get(rank).Band;
+            var pal = Palette(rank);
+            Color top = dim ? Dim(pal.MetalTop) : pal.MetalTop, bottom = dim ? Dim(pal.MetalBottom) : pal.MetalBottom;
+            string insignia = IconLibrary.CareerRank(rank);
+            if (!UiSdf.Available) return TacticalUi.Icon(r, insignia, A(top, alpha), shadow: alpha > .5f);
+            Rect sq = Square(r);
+            float s = sq.width;
+            if (s < 34f)
+            {
+                float depth = Mathf.Max(1f, s * .05f);
+                UiSdf.Icon(Offset(sq, 0f, depth), insignia, UiSdf.Style.Solid(new Color(0f, 0f, 0f, .7f * alpha)).WithShadow(.4f * alpha, 3f, 1f));
+                return UiSdf.Icon(sq, insignia, UiSdf.Style.Solid(A(top, alpha)).WithGradient(A(bottom, alpha), UiSdf.Gradient.Vertical));
+            }
+
+            Rect plate = sq;
+            if (band == CareerRankBand.General)
+            {
+                UiSdf.Icon(Offset(sq, 0f, s * .02f), IconLibrary.CareerWreath, UiSdf.Style.Solid(new Color(0f, 0f, 0f, .55f * alpha)));
+                UiSdf.Icon(sq, IconLibrary.CareerWreath, UiSdf.Style.Solid(A(top, alpha)).WithGradient(A(bottom, alpha), UiSdf.Gradient.Vertical)
+                    .WithShadow(.4f * alpha, s * .06f, s * .02f));
+                plate = Square(sq, .7f, -s * .04f);
+            }
+            string plateName = Plate(band);
+            float ps = plate.width;
+            Color enamelTop = dim ? Dim(pal.EnamelTop) : pal.EnamelTop, enamelBottom = dim ? Dim(pal.EnamelBottom) : pal.EnamelBottom;
+            // Enamel body with a soft drop shadow.
+            UiSdf.Icon(plate, plateName, UiSdf.Style.Solid(A(enamelTop, alpha)).WithGradient(A(enamelBottom, alpha), UiSdf.Gradient.Vertical)
+                .WithShadow(.55f * alpha, ps * .1f, ps * .045f));
+            // Metal rim and an inner hairline for a pressed, two-step bevel.
+            var rim = UiSdf.Style.Solid(A(top, alpha)).WithGradient(A(bottom, alpha), UiSdf.Gradient.Vertical);
+            rim.Stroke = Mathf.Max(1.5f, ps * .05f);
+            UiSdf.Icon(plate, plateName, rim);
+            var hair = UiSdf.Style.Solid(new Color(1f, 1f, 1f, .16f * alpha));
+            hair.Stroke = 1f;
+            UiSdf.Icon(Square(plate, .86f), plateName, hair);
+            // Embossed insignia: dark offset, metal body, light edge, optional glint.
+            Rect ins = Square(plate, band == CareerRankBand.General ? .5f : .56f, band == CareerRankBand.Enlisted ? -ps * .03f : 0f);
+            float depthPx = Mathf.Max(1f, ps * .025f);
+            UiSdf.Icon(Offset(ins, 0f, depthPx), insignia, UiSdf.Style.Solid(new Color(0f, 0f, 0f, .75f * alpha)));
+            var body = UiSdf.Style.Solid(A(top, alpha)).WithGradient(A(bottom, alpha), UiSdf.Gradient.Vertical);
+            if (glint >= 0f) body = body.WithGlint(glint, .75f * alpha);
+            UiSdf.Icon(ins, insignia, body);
+            var edge = UiSdf.Style.Solid(new Color(1f, 1f, .94f, .32f * alpha));
+            edge.Stroke = Mathf.Max(.8f, ps * .012f);
+            UiSdf.Icon(Offset(ins, 0f, -.5f), insignia, edge);
+            return true;
+        }
+
+        /// <summary>
+        /// Recessed progress bar: dark groove, metal fill with a bright leading edge, segment ticks, and an optional
+        /// gain segment from <paramref name="gainFrom01"/> to <paramref name="fill01"/> in the brighter accent.
+        /// </summary>
+        public static void ProgressBar(Rect r, float fill01, Color top, Color bottom, int ticks, float alpha, float gainFrom01 = -1f)
+        {
+            fill01 = Mathf.Clamp01(fill01);
+            float radius = Mathf.Min(3f, r.height * .5f);
+            if (!UiSdf.Available)
+            {
+                TacticalUi.Fill(r, new Color(1f, 1f, 1f, .1f * alpha));
+                TacticalUi.Fill(new Rect(r.x, r.y, r.width * fill01, r.height), A(top, alpha));
+                return;
+            }
+            UiSdf.Rect(r, UiSdf.Style.Solid(new Color(0f, 0f, 0f, .6f * alpha), radius)
+                .WithGradient(new Color(.07f, .09f, .1f, .8f * alpha), UiSdf.Gradient.Vertical));
+            var groove = UiSdf.Style.Solid(new Color(1f, 1f, 1f, .07f * alpha), radius);
+            groove.Stroke = 1f;
+            UiSdf.Rect(r, groove);
+            float inset = r.height >= 8f ? 1.5f : 1f;
+            Rect inner = new Rect(r.x + inset, r.y + inset, r.width - inset * 2f, r.height - inset * 2f);
+            float w = inner.width * fill01;
+            if (w > .5f)
+            {
+                float baseW = gainFrom01 >= 0f ? inner.width * Mathf.Clamp(gainFrom01, 0f, fill01) : w;
+                float innerRadius = Mathf.Max(0f, radius - inset);
+                if (baseW > .5f)
+                    UiSdf.Rect(new Rect(inner.x, inner.y, baseW, inner.height),
+                        UiSdf.Style.Solid(A(top, alpha), innerRadius).WithGradient(A(bottom, alpha), UiSdf.Gradient.Vertical));
+                if (w - baseW > .5f)
+                {
+                    Color gainTop = Color.Lerp(top, Color.white, .45f), gainBottom = Color.Lerp(bottom, TacticalUi.Accent, .5f);
+                    UiSdf.Rect(new Rect(inner.x + baseW, inner.y, w - baseW, inner.height),
+                        UiSdf.Style.Solid(A(gainTop, alpha), innerRadius).WithGradient(A(gainBottom, alpha), UiSdf.Gradient.Vertical));
+                }
+                // Top sheen and a hot leading edge.
+                UiSdf.Rect(new Rect(inner.x, inner.y, w, Mathf.Max(1f, inner.height * .3f)), UiSdf.Style.Solid(new Color(1f, 1f, 1f, .18f * alpha), innerRadius));
+                if (fill01 < .999f)
+                    UiSdf.Rect(new Rect(inner.x + w - 2f, inner.y - 1f, 2f, inner.height + 2f),
+                        UiSdf.Style.Solid(new Color(1f, .97f, .86f, .95f * alpha), 1f).WithGlow(A(top, 1f), 6f, .6f * alpha));
+            }
+            for (int i = 1; i < ticks; i++)
+            {
+                float x = inner.x + inner.width * i / ticks;
+                TacticalUi.Fill(new Rect(x, inner.y, 1f, inner.height), new Color(0f, 0f, 0f, .45f * alpha));
+            }
+        }
+
+        /// <summary>Reward glyph (or mesh-traced weapon silhouette) with a dark drop and a light metal gradient.</summary>
+        public static bool RewardIcon(Rect r, CareerRewardArt art, Color top, Color bottom, float alpha)
+        {
+            if (!UiSdf.Available || !UiIconAtlas.TryGet(art.IconName, out _))
+            {
+                if (art.Kind != CareerRewardKind.Weapon) return false;
+                var id = new DefinitionId(CareerLadder.Get(art.Rank).RewardId);
+                if (!Shooter.Presentation.View.WeaponVisualProfiles.TryGet(id, out var profile)) return false;
+                TacticalUi.KillFeedWeaponIcon(r, profile.KillFeedGlyph, A(top, alpha));
+                return true;
+            }
+            float depth = Mathf.Max(1f, r.height * .03f);
+            UiSdf.Icon(Offset(r, 0f, depth), art.IconName, UiSdf.Style.Solid(new Color(0f, 0f, 0f, .6f * alpha)).WithShadow(.35f * alpha, 5f, 1.5f));
+            return UiSdf.Icon(r, art.IconName, UiSdf.Style.Solid(A(top, alpha)).WithGradient(A(bottom, alpha), UiSdf.Gradient.Vertical));
+        }
+
+        /// <summary>
+        /// Reward card. Wide rects lay out icon left / text right (Career hero, debrief); tall rects stack band,
+        /// icon, title, detail and a state chip (progress line). <paramref name="emphasis"/> 0..1 lifts and lights it.
+        /// </summary>
+        public static void RewardCard(TacticalUi ui, Rect r, CareerRewardArt art, RewardState state, float emphasis, float alpha,
+            float glint = -1f, bool reducedFlash = false)
+        {
+            if (alpha <= 0.01f) return;
+            bool locked = state == RewardState.Locked;
+            Color kind = KindInk(art.Kind);
+            Color kindShown = locked ? Dim(kind) : kind;
+            float radius = Hud.UiShapeParams.CardRadius;
+            var plate = UiSdf.Style.Solid(A(locked ? new Color(.1f, .12f, .13f, .96f) : new Color(.13f, .16f, .17f, .97f), alpha), radius)
+                .WithGradient(A(new Color(.045f, .055f, .06f, .97f), alpha), UiSdf.Gradient.Vertical).WithShadow(.45f * alpha, 10f, 3f);
+            if (state == RewardState.Next)
+                plate = plate.WithGlow(kind, 10f, (reducedFlash ? .18f : .3f + .12f * emphasis) * alpha);
+            else if (emphasis > .01f)
+                plate = plate.WithGlow(kindShown, 8f, .2f * emphasis * alpha);
+            TacticalUi.Plate(r, plate);
+            if (UiSdf.Available)
+            {
+                var edge = UiSdf.Style.Solid(A(kindShown, (state == RewardState.Next ? .7f : .16f + .3f * emphasis) * alpha), radius);
+                edge.Stroke = 1f;
+                UiSdf.Rect(r, edge);
+            }
+            TacticalUi.Plate(new Rect(r.x + 1f, r.y + 1f, r.width - 2f, 3f), UiSdf.Style.Solid(A(kindShown, alpha), 1.5f));
+
+            Color iconTop = locked ? new Color(.46f, .5f, .52f, 1f) : Color.Lerp(Color.white, kind, .18f);
+            Color iconBottom = locked ? new Color(.26f, .29f, .31f, 1f) : Color.Lerp(new Color(.62f, .66f, .68f, 1f), kind, .35f);
+            Color title = locked ? TacticalUi.Muted : TacticalUi.Text;
+            bool wideCard = r.width > r.height * 1.7f;
+            Rect iconArea;
+            float tx, ty, tw;
+            if (wideCard)
+            {
+                iconArea = new Rect(r.x + 10f, r.y + 10f, Mathf.Min(r.width * .42f, r.height * 2.2f), r.height - 20f);
+                tx = iconArea.xMax + 14f;
+                ty = r.y + 10f;
+                tw = r.xMax - tx - 10f;
+            }
+            else
+            {
+                float iconH = Mathf.Clamp(r.height * .42f, 26f, 88f);
+                iconArea = new Rect(r.x + 8f, r.y + 10f, r.width - 16f, iconH);
+                tx = r.x + 10f;
+                ty = iconArea.yMax + 6f;
+                tw = r.width - 20f;
+            }
+            if (UiSdf.Available)
+                UiSdf.Circle(Square(iconArea, 1.25f), UiSdf.Style.Solid(A(kindShown, (locked ? .08f : .2f) * alpha))
+                    .WithGradient(A(kindShown, 0f), UiSdf.Gradient.Radial));
+            Rect icon = art.Wide ? new Rect(iconArea.x + iconArea.width * .06f, iconArea.y + iconArea.height * .1f, iconArea.width * .88f, iconArea.height * .8f)
+                : Square(iconArea, .86f);
+            RewardIcon(icon, art, iconTop, iconBottom, alpha);
+            if (glint >= 0f && !locked && UiSdf.Available)
+                UiSdf.Rect(iconArea, UiSdf.Style.Solid(new Color(1f, 1f, 1f, 0f), radius).WithGlint(glint, .25f * alpha));
+            if (locked)
+            {
+                Rect lockR = new Rect(iconArea.xMax - 22f, iconArea.y, 20f, 20f);
+                TacticalUi.Icon(lockR, IconLibrary.UiLock, A(TacticalUi.Muted, .9f * alpha), shadow: true);
+            }
+
+            bool tall = wideCard ? r.height >= 70f : r.height >= 128f;
+            float y = ty;
+            if (wideCard || tall)
+            {
+                ui.Label(new Rect(tx, y, tw, 14), KindLabel(art.Kind), 10, A(kindShown, alpha));
+                y += 14f;
+            }
+            int titleSize = wideCard ? 18 : r.width >= 150f ? 15 : 13;
+            ui.Label(new Rect(tx, y, tw, titleSize + 6), art.FullTitle.ToUpperInvariant(), titleSize, A(title, alpha));
+            y += titleSize + 5f;
+            if (wideCard || tall || r.height >= 104f)
+                ui.Label(new Rect(tx, y, tw, 16), art.Detail, 11, A(TacticalUi.Muted, alpha));
+
+            // State chip along the bottom.
+            Rect chip = new Rect(tx, r.yMax - 22f, tw, 16f);
+            string chipText;
+            Color chipInk;
+            string? chipIcon;
+            switch (state)
+            {
+                case RewardState.Earned: chipText = ShellUiCopy.CareerUnlocked; chipInk = TacticalUi.Ally; chipIcon = IconLibrary.UiCheck; break;
+                case RewardState.Next: chipText = ShellUiCopy.CareerNextChip; chipInk = TacticalUi.Accent; chipIcon = null; break;
+                default: chipText = ShellUiCopy.CareerRankChip(art.Rank); chipInk = TacticalUi.Muted; chipIcon = IconLibrary.UiLock; break;
+            }
+            if (!wideCard && y + 16f > chip.y - 2f) return;
+            float cx = chip.x;
+            if (chipIcon != null && TacticalUi.Icon(new Rect(cx, chip.y + 1f, 13f, 13f), chipIcon, A(chipInk, alpha))) cx += 17f;
+            ui.Label(new Rect(cx, chip.y, chip.xMax - cx, chip.height), chipText, 10, A(chipInk, alpha));
+        }
+
+        /// <summary>Active buff tile: icon plate and the combined value.</summary>
+        public static void BuffChip(TacticalUi ui, Rect r, string icon, string name, string value)
+        {
+            TacticalUi.Plate(r, UiSdf.Style.Solid(new Color(.12f, .15f, .16f, .95f), Hud.UiShapeParams.PlateRadius)
+                .WithGradient(new Color(.06f, .075f, .08f, .95f), UiSdf.Gradient.Vertical).WithShadow(.35f, 6f, 2f));
+            float s = r.height - 12f;
+            Rect tile = new Rect(r.x + 6f, r.y + 6f, s, s);
+            TacticalUi.Plate(tile, UiSdf.Style.Solid(new Color(BuffInk.r * .3f, BuffInk.g * .3f, BuffInk.b * .3f, 1f), 4f)
+                .WithGradient(new Color(.05f, .09f, .06f, 1f), UiSdf.Gradient.Vertical));
+            UiSdf.Icon(Square(tile, .72f), icon, UiSdf.Style.Solid(Color.Lerp(Color.white, BuffInk, .3f)).WithGradient(BuffInk, UiSdf.Gradient.Vertical));
+            float tx = tile.xMax + 10f;
+            ui.Label(new Rect(tx, r.y + 4f, r.xMax - tx - 6f, 16f), name.ToUpperInvariant(), 11, TacticalUi.Muted);
+            ui.Label(new Rect(tx, r.y + 18f, r.xMax - tx - 6f, r.height - 20f), value, 16, TacticalUi.Text);
+        }
+    }
+}
