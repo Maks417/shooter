@@ -12,15 +12,15 @@ public sealed class MapRegistryTests
 {
     private static readonly ContentId Toolchain = ContentIdentity.Hash(Encoding.ASCII.GetBytes("map-registry-golden"));
 
-    // Captured from the pre-ADR-083 C# planners (commit b1fd112); the registry and layout documents must not move them.
+    // ADR-109 site plans replace the ADR-074 arena layouts: collision, nav and gameplay roots re-frozen from the site planners.
+    // The low-profile roots are the pre-ADR-088 goldens, kept as a migration guard (visual bytes must not fall back to them).
     [Theory]
-    // ADR-101: gameplay roots change with 15 spawn slots/team; collision/nav stay frozen.
-    [InlineData("training-compound", "0acdcbcc9c56dd9297a3cf27e1c822fed158412cd012290718df1843f1220cb9", "1b506b637da07266ec4bb9ec53f3612121988965d84d2532c9f277043730cb4d",
-        "d5293e1d33eb7c84662c177a96718b7abbb12e9f18cbe8999b92de93e42548ae", "d91f0d513b4375b8a1b46287e236869a47377278d8aa2487832ea64752b2eab6")]
-    [InlineData("depot-yard", "ee0a4cae11f63649f645278b07af6ad4b3c262ab370cf2e5aeab91780f77dea0", "35855448e5203c5725a749a55f56793c3975828608849055844915eae59ec403",
-        "e456c8673208a5feb94d6cafe2ddb20296366115bf37313d8be95130fb2414fd", "764fb5808141ef3876d85feed74547c553e13d7f4ebfba6032333025f78d702c")]
-    [InlineData("oil-depot", "62017fa929c60f085fdd9e728f43b1a5f01a80b294bebcb75b0d83e0efae58a2", "f6f95df6c1bed8177fe89bb14cc8c847611b679ef653643733ed4b4e5290fb71",
-        "ed316960217cec8de2034857443f9fa26285f88904091d9193c8b5131618df3b", "ef40f57d1d82264b6ddcc00e88dd3fdbb68cb20c422dce32f45520502018a8c4")]
+    [InlineData("training-compound", "2c94e2d1959c0b2291ef46ed362ffc7719ba8dfed6d5e29eb2192cfd3c6efc44", "cf1fc0367c0750646497336bdeddd85a380d1682ae56e71bf0ac8345b62c458f",
+        "68b8aacce2c8ae0fa784683e9820f664f0539faa0e203236f65af4ecaa6304b2", "d91f0d513b4375b8a1b46287e236869a47377278d8aa2487832ea64752b2eab6")]
+    [InlineData("depot-yard", "47e3deffc76a60847d03923b96c66f6c1f0a07161a28e2db51ccfec7baaa2f73", "89aa9d46f8143f1df35fe383e9d4c0d1931e6eb221b08102da3e3802a73fd7eb",
+        "65d600b28bd7816c931214677fe311cdb6ebbe755927ae2f0e2c650e905e49f8", "764fb5808141ef3876d85feed74547c553e13d7f4ebfba6032333025f78d702c")]
+    [InlineData("oil-depot", "7531240dfac4239c7b63612d9fe520d49bf3e33e30ad79f767735904d4c3f922", "c5b0149a2660a370c7ad5195181c61392fe5da506b77c4722cff837bd9cf5098",
+        "0ec0833164eb34b41690b725088c2c600860e3c2472424c512fff8623889433f", "ef40f57d1d82264b6ddcc00e88dd3fdbb68cb20c422dce32f45520502018a8c4")]
     public void RegisteredMapsRetainGameplayAndIntentionallyMigrateVisualClosures(string mapId, string collision, string nav, string gameplayRoot, string lowRoot)
     {
         var plan = ProductMapPlanner.Generate(mapId);
@@ -51,19 +51,20 @@ public sealed class MapRegistryTests
     }
 
     [Fact]
-    public void CompoundIsALayoutDocumentWithThePlannerIdentity()
+    public void ProductMapsAreSitePlannedCodePlanners()
     {
-        var definition = MapRegistry.Require("training-compound");
-        Assert.True(definition.HasLayoutDocument);
-        var document = definition.LayoutDocument;
-        Assert.Equal(CompoundArenaPlanner.GeneratorId, document.GeneratorId);
-        Assert.Equal(CompoundArenaPlanner.GeneratorVersion, document.GeneratorVersion);
-        Assert.Equal(CompoundArenaPlanner.StableIdBase, document.StableIdBase);
-        Assert.Equal(ArenaSymmetry.Rotate180, document.Layout.Symmetry);
-        Assert.Equal(40, document.OperationCount-document.Decals.Count);
-        Assert.Equal(2,document.DocumentVersion);Assert.Equal(3,document.Decals.Count);
-        Assert.False(MapRegistry.Require("depot-yard").HasLayoutDocument);
-        Assert.Equal(new[] { "depot-arena", "oil-arena" }, MapRegistry.CodePlannerNames.OrderBy(n => n, StringComparer.Ordinal));
+        // ADR-109: every product map is a site plan (buildings, zones, box roles), not a layout document.
+        foreach (string id in MapRegistry.MapIds)
+        {
+            var definition = MapRegistry.Require(id);
+            Assert.False(definition.HasLayoutDocument);
+            Assert.StartsWith("code:", definition.Planner);
+            Assert.NotNull(definition.Generate().Site);
+        }
+        Assert.Equal("Old Town", MapRegistry.Require("training-compound").DisplayName);
+        Assert.Equal("Harbour", MapRegistry.Require("depot-yard").DisplayName);
+        Assert.Equal(ArenaSymmetry.Rotate180, OldTownSitePlanner.Layout.Symmetry);
+        Assert.Equal(new[] { "harbour-site", "oil-site", "town-site" }, MapRegistry.CodePlannerNames.OrderBy(n => n, StringComparer.Ordinal));
     }
 
     private const string Arena = "\"arena\":{\"halfExtentX\":32000,\"halfExtentZ\":40000,\"staging\":[-32000,32000,-40000,-30000],\"team1Anchor\":[0,0,-34000],\"team1Exits\":[[-20000,0,-29000]],\"lanePoints\":[[0,0,0]],\"symmetry\":\"MirrorZ\"}";

@@ -112,6 +112,8 @@ namespace Shooter.Generation.Environment
         public ArenaLayout? Arena { get; }
         /// <summary>Semantic objects (vehicles, sandbags, fences) for mesh-only dressing; empty for legacy plans.</summary>
         public IReadOnlyList<ArenaFeature> Features { get; }
+        /// <summary>ADR-109 semantic site (buildings, zones, box roles) for site-planned maps; null otherwise.</summary>
+        public SiteLayout? Site { get; }
 
         public CompoundPlan(
             ulong seed,
@@ -130,7 +132,8 @@ namespace Shooter.Generation.Environment
             IReadOnlyList<Float3> routeCorners,
             float[,] heightSamples,
             ArenaLayout? arena = null,
-            IReadOnlyList<ArenaFeature>? features = null)
+            IReadOnlyList<ArenaFeature>? features = null,
+            SiteLayout? site = null)
         {
             if (botSpawns == null || buildings == null || props == null || covers == null || collisionBoxes == null || routeCorners == null || heightSamples == null)
                 throw new ArgumentNullException(nameof(botSpawns));
@@ -144,6 +147,7 @@ namespace Shooter.Generation.Environment
             HeightResolution = heightSamples.GetLength(0);
             Arena = arena;
             Features = features ?? Array.Empty<ArenaFeature>();
+            Site = site;
         }
 
         public static ChunkCoord ChunkAt(float x, float z)

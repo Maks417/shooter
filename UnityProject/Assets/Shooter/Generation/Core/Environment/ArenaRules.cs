@@ -138,8 +138,9 @@ namespace Shooter.Generation.Environment
         public const float MinPlayableX = 56f, MaxPlayableX = 72f;
         public const float MinPlayableZ = 72f, MaxPlayableZ = 88f;
         public const float MinAnchorSeparation = 60f, MaxAnchorSeparation = 76f;
-        public const float MinPathToCenter = 26f, MaxPathToCenter = 44f;
-        public const float MinPathToEnemy = 60f, MaxPathToEnemy = 100f;
+        // ADR-109: site-planned maps route through doors and dog-leg exits; the 4-neighbour grid path overstates the walk.
+        public const float MinPathToCenter = 26f, MaxPathToCenter = 52f;
+        public const float MinPathToEnemy = 60f, MaxPathToEnemy = 110f;
 
         public static ArenaRulesReport Validate(CompoundPlan plan)
         {
@@ -178,8 +179,8 @@ namespace Shooter.Generation.Environment
             float c2 = PathLength(boxes, arena.Team2Anchor, centre2, path, clearance);
             float enemy = PathLength(boxes, arena.Team1Anchor, arena.Team2Anchor, path, clearance);
             rules.Add(new ArenaRuleResult(RulePathCenter, InRange(c1, MinPathToCenter, MaxPathToCenter) && InRange(c2, MinPathToCenter, MaxPathToCenter),
-                "t1=" + F(c1) + " t2=" + F(c2), "26-44 each"));
-            rules.Add(new ArenaRuleResult(RulePathEnemy, InRange(enemy, MinPathToEnemy, MaxPathToEnemy), F(enemy), "60-100"));
+                "t1=" + F(c1) + " t2=" + F(c2), "26-52 each"));
+            rules.Add(new ArenaRuleResult(RulePathEnemy, InRange(enemy, MinPathToEnemy, MaxPathToEnemy), F(enemy), "60-110"));
 
             // 6. Staging exits.
             int exits1 = CountReachingExits(boxes, arena, 1, centre, clearance);

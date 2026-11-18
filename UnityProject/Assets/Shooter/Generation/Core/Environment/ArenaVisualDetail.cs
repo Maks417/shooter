@@ -141,7 +141,10 @@ namespace Shooter.Generation.Environment
             EnsureBudget(b.Boxes.Count - start);
         }
 
-        /// <summary>Appends oil-depot visual-only boxes. Call after all gameplay geometry.</summary>
+        /// <summary>ADR-074 oil tank table (centre x/z, radius, height) for layout documents that use the "oil" visual-detail style.</summary>
+        private static readonly float[,] LegacyOilTanks = { { -22f, -19f, 3.4f, 5.5f }, { -27.5f, -8f, 3.0f, 5f } };
+
+        /// <summary>Appends ADR-074 oil-depot style visual-only boxes (layout documents only). Call after all gameplay geometry.</summary>
         public static void AppendOil(ArenaBoxBuilder b, ArenaLayout layout)
         {
             if (b == null) throw new ArgumentNullException(nameof(b));
@@ -159,8 +162,8 @@ namespace Shooter.Generation.Environment
             AddCornerPosts(b, 0f, 0f, 14f, 12f, 4.1f, mirror: false);
 
             // Tank crown lips (visual rings; OilDepotDressing replaces them with round crowns).
-            for (int i = 0; i < OilArenaPlanner.Tanks.GetLength(0); i++)
-                AddTankCrown(b, OilArenaPlanner.Tanks[i, 0], OilArenaPlanner.Tanks[i, 1], OilArenaPlanner.Tanks[i, 2] + 0.4f, OilArenaPlanner.Tanks[i, 3], mirror: true);
+            for (int i = 0; i < LegacyOilTanks.GetLength(0); i++)
+                AddTankCrown(b, LegacyOilTanks[i, 0], LegacyOilTanks[i, 1], LegacyOilTanks[i, 2] + 0.4f, LegacyOilTanks[i, 3], mirror: true);
 
             AddGappedCurbAlongX(b, -31.2f, -31f, 31f,
                 new[] { new ArenaGap(-19.5f, 8f), new ArenaGap(0f, 6f), new ArenaGap(19.5f, 8f) }, mirror: true);

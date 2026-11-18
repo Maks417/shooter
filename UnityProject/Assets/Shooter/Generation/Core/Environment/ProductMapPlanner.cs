@@ -16,13 +16,25 @@ namespace Shooter.Generation.Environment
         }
 
         /// <summary>Validates an arena plan with <see cref="ArenaRules"/> and <see cref="MapTopologyValidation"/>; throws on failure.</summary>
+        // Plans are deterministic and immutable: a (map, collision, nav) identity that passed once passes again.
+        private static readonly HashSet<string> Validated = new HashSet<string>(StringComparer.Ordinal);
+        private static readonly object ValidatedGate = new object();
+
         public static void ValidateOrThrow(string mapId, CompoundPlan plan)
         {
             if (plan == null) throw new ArgumentNullException(nameof(plan));
+            string key = mapId + "|" + plan.CollisionHash + "|" + plan.NavHash + "|" + plan.CollisionBoxes.Count;
+            lock (ValidatedGate) if (Validated.Contains(key)) return;
             var rules = ArenaRules.Validate(plan);
             if (!rules.Passed) throw new InvalidOperationException("Arena rules failed for " + mapId + ": " + rules.Diagnostic);
+            if (plan.Site != null)
+            {
+                var site = SiteRules.Validate(plan);
+                if (!site.Passed) throw new InvalidOperationException("Site rules failed for " + mapId + ": " + site.Diagnostic);
+            }
             var topology = MapTopologyValidation.Validate(mapId, plan);
             if (!topology.Passed) throw new InvalidOperationException("Map topology failed FIX07 checks: " + topology.Diagnostic);
+            lock (ValidatedGate) Validated.Add(key);
         }
 
         /// <summary>Combat destinations for AI/catalog consumers: enemy anchor, own anchor, centre, then lane points.</summary>

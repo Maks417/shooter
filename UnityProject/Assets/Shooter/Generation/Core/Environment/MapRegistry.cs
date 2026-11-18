@@ -73,8 +73,9 @@ namespace Shooter.Generation.Environment
         private static readonly Dictionary<string, Func<ulong, CompoundPlan>> CodePlanners =
             new Dictionary<string, Func<ulong, CompoundPlan>>(StringComparer.Ordinal)
             {
-                ["depot-arena"] = DepotArenaPlanner.Generate,
-                ["oil-arena"] = OilArenaPlanner.Generate
+                ["town-site"] = OldTownSitePlanner.Generate,
+                ["harbour-site"] = HarbourSitePlanner.Generate,
+                ["oil-site"] = OilDepotSitePlanner.Generate
             };
 
         private static readonly MapDefinition[] Definitions = CreateGeneratedDefinitions();

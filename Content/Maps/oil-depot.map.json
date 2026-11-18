@@ -3,10 +3,10 @@
   "id": "oil-depot",
   "order": 2,
   "displayName": "Oil Depot",
-  "description": "Petroleum tanks, pump house, and elevated catwalks for local TDM.",
+  "description": "Tank farm, pump house and control rooms joined by a pipe bridge for local TDM.",
   "seed": "460072032",
   "recipe": "map.oil",
-  "planner": "code:oil-arena",
+  "planner": "code:oil-site",
   "presentation": {
     "sky": "petroleum",
     "groundSurface": "asphalt",

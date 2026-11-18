@@ -384,8 +384,28 @@ namespace Shooter.Generation.Environment
             return ContentIdentity.Hash(ms.ToArray());
         }
 
+        /// <summary>
+        /// ADR-109 patrol circuit for site maps: anchor to anchor through every lane point in turn
+        /// (T1 → lane 0 → T2 → lane 1 → T1 → lane 2 → T2 …), so bots that patrol the route corners use all routes.
+        /// </summary>
+        private static void BuildPatrolCircuit(IReadOnlyList<CollisionBox> boxes, ArenaLayout layout, List<Float3> route, float clearance)
+        {
+            var leg = new List<Float3>();
+            var from = layout.Team1Anchor;
+            for (int i = 0; i < layout.LanePoints.Count; i++)
+            {
+                var to = i % 2 == 0 ? layout.Team2Anchor : layout.Team1Anchor;
+                foreach (var target in new[] { layout.LanePoints[i], to })
+                {
+                    if (!CompoundConnectivity.TryFindPath(boxes, from, target, leg, clearance)) continue;
+                    for (int k = route.Count == 0 ? 0 : 1; k < leg.Count; k++) route.Add(leg[k]);
+                    from = target;
+                }
+            }
+        }
+
         /// <summary>Assembles the immutable arena plan (anchors, bot spawns, route, hashes) from a finished builder.</summary>
-        public static CompoundPlan CreatePlan(string generatorId, string generatorVersion, ulong seed, ArenaLayout layout, ArenaBoxBuilder builder)
+        public static CompoundPlan CreatePlan(string generatorId, string generatorVersion, ulong seed, ArenaLayout layout, ArenaBoxBuilder builder, SiteLayout? site = null)
         {
             if (layout == null) throw new ArgumentNullException(nameof(layout));
             if (builder == null) throw new ArgumentNullException(nameof(builder));
@@ -407,7 +427,8 @@ namespace Shooter.Generation.Environment
             if (bots.Count == 0) bots.Add(layout.Team2Anchor);
 
             var route = new List<Float3>();
-            CompoundConnectivity.TryFindPath(boxes, layout.Team1Anchor, layout.Team2Anchor, route, clearance);
+            if (site != null && layout.LanePoints.Count > 0) BuildPatrolCircuit(boxes, layout, route, clearance);
+            else CompoundConnectivity.TryFindPath(boxes, layout.Team1Anchor, layout.Team2Anchor, route, clearance);
 
             var collisionHash = HashGameplay(generatorId, generatorVersion, seed, boxes, "collision");
             var navHash = HashGameplay(generatorId, generatorVersion, seed, boxes, "navigation");
@@ -415,7 +436,7 @@ namespace Shooter.Generation.Environment
                 seed, 1, 1, collisionHash, navHash,
                 layout.Team1Anchor, layout.Team2Anchor, 8f, bots,
                 Array.Empty<BuildingFootprint>(), Array.Empty<PropPlacement>(), covers, boxes, route,
-                new float[2, 2], layout, new List<ArenaFeature>(builder.Features));
+                new float[2, 2], layout, new List<ArenaFeature>(builder.Features), site);
         }
     }
 }

@@ -31,7 +31,7 @@ namespace Shooter.Generation.Tests
             Assert.InRange(dressed.Positions.Count, 1, MapSolidsMesh.MaxVisualVertices);
             // Flare stack reaches well above the 5 m perimeter wall.
             Assert.True(dressed.Positions.Max(p => p.Y) > 20f);
-            Assert.True(plain.Positions.Max(p => p.Y) < 8f);
+            Assert.True(plain.Positions.Max(p => p.Y) < 15f); // site roofs and parapets only; the skyline is oil dressing
             var slots = dressed.Submeshes.Select(s => s.MaterialSlot).ToArray();
             Assert.Contains((ushort)MapSolidsMaterialRole.TankWhite, slots);
             Assert.Contains((ushort)MapSolidsMaterialRole.SafetyYellow, slots);

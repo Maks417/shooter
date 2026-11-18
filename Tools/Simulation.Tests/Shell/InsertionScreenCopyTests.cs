@@ -20,11 +20,11 @@ namespace Shooter.Simulation.Tests.Shell
         [Fact]
         public void Loading_phase_and_display_name_stay_friendly()
         {
-            Assert.Equal("Loading Training Compound…", InsertionScreenCopy.LoadingPhase("training-compound"));
-            Assert.Equal("Loading Depot Yard…", InsertionScreenCopy.LoadingPhase("depot-yard"));
+            Assert.Equal("Loading Old Town…", InsertionScreenCopy.LoadingPhase("training-compound"));
+            Assert.Equal("Loading Harbour…", InsertionScreenCopy.LoadingPhase("depot-yard"));
             Assert.Equal("Loading the map…", InsertionScreenCopy.LoadingPhase(""));
             Assert.Equal("TRAINING COMPOUND", InsertionScreenCopy.DisplayNameOrFallback("TRAINING COMPOUND", "training-compound"));
-            Assert.Equal("Depot Yard", InsertionScreenCopy.DisplayNameOrFallback("  ", "depot-yard"));
+            Assert.Equal("Harbour", InsertionScreenCopy.DisplayNameOrFallback("  ", "depot-yard"));
             Assert.Equal("OPERATION", InsertionScreenCopy.DisplayNameOrFallback(null, ""));
         }
 

@@ -130,7 +130,8 @@ namespace Shooter.Generation.Environment
                     AddWallDetails(assembly, box);
             }
             ArenaFeatureDressing.Append(assembly, plan.Features);
-            if (oil) OilDepotDressing.Append(assembly, plan.Arena!);
+            if (plan.Site != null) SiteDressing.Append(assembly, plan);
+            if (oil) OilDepotDressing.Append(assembly, plan);
             if (assembly.VertexCount > MaxVisualVertices)
                 throw new InvalidOperationException("Architectural mesh exceeds the reviewed visual vertex budget.");
             return assembly.Build();

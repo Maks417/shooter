@@ -114,9 +114,13 @@ namespace Shooter.Generation.Environment
                 ? rect.minZ + (rect.maxZ - rect.minZ) * 0.45f
                 : rect.maxZ - (rect.maxZ - rect.minZ) * 0.45f;
             var candidates = new List<(float backPenalty, float xAbs, float x, float z)>();
+            // Rows start at each team's own back wall so team 2's grid is the mirror of team 1's (ADR-109 fix:
+            // quantising both from minZ gave team 2 fewer back rows when the staging depth is not a multiple of the pitch).
+            int rows = (int)Math.Floor((rect.maxZ - rect.minZ - 2f * inset) / pitch + 0.01f) + 1;
             for (float x = rect.minX + inset; x <= rect.maxX - inset + 0.01f; x += pitch)
-            for (float z = rect.minZ + inset; z <= rect.maxZ - inset + 0.01f; z += pitch)
+            for (int row = 0; row < rows; row++)
             {
+                float z = team == 1 ? rect.minZ + inset + row * pitch : rect.maxZ - inset - row * pitch;
                 if (team == 1 && z > frontLimit) continue;
                 if (team == 2 && z < frontLimit) continue;
                 float backPenalty = (z - backZ) * (z - backZ);

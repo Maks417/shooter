@@ -50,7 +50,7 @@ try {
     & dotnet test $project -c Release --no-restore --filter 'FullyQualifiedName~Catalog|FullyQualifiedName~OfflineSession|FullyQualifiedName~MapId' --logger "trx;LogFileName=maps.trx" --results-directory $reportDirectory
     if ($LASTEXITCODE -ne 0) { throw 'map-related Game-v1 tests failed' }
     # Explicit connectivity + verified map-package suite (not a mislabeled content compiler).
-    & dotnet test $generationProject -c Release --no-restore --filter 'FullyQualifiedName~Compound|FullyQualifiedName~MapPackage|FullyQualifiedName~Depot|FullyQualifiedName~MapTopology' --logger "trx;LogFileName=maps-compound.trx" --results-directory $reportDirectory
+    & dotnet test $generationProject -c Release --no-restore --filter 'FullyQualifiedName~Compound|FullyQualifiedName~MapPackage|FullyQualifiedName~Depot|FullyQualifiedName~MapTopology|FullyQualifiedName~SiteMap|FullyQualifiedName~ArenaRules' --logger "trx;LogFileName=maps-compound.trx" --results-directory $reportDirectory
     if ($LASTEXITCODE -ne 0) { throw 'compound/map-package validation failed' }
     $mapSummary = Get-StrictTrxSummary -Path (Join-Path $reportDirectory 'maps.trx') -SuiteName 'Map Game-v1 filter'
     $compoundSummary = Get-StrictTrxSummary -Path (Join-Path $reportDirectory 'maps-compound.trx') -SuiteName 'Map compound/package filter'

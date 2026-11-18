@@ -66,19 +66,25 @@ namespace Shooter.Generation.Tests
             Assert.True(removeAt >= 0);
             boxes.RemoveAt(removeAt);
             var altered = ArenaGeometry.HashGameplay(
-                mapId == "depot-yard" ? DepotArenaPlanner.GeneratorId : CompoundArenaPlanner.GeneratorId,
-                mapId == "depot-yard" ? DepotArenaPlanner.GeneratorVersion : CompoundArenaPlanner.GeneratorVersion,
+                Generator(mapId).id, Generator(mapId).version,
                 a.Seed, boxes, "collision");
             Assert.NotEqual(a.CollisionHash, altered);
             Assert.Equal(MapRecipe.ApprovedSeed(mapId), a.Seed);
         }
+
+        private static (string id, string version, ulong idBase) Generator(string mapId) => mapId switch
+        {
+            "training-compound" => (OldTownSitePlanner.GeneratorId, OldTownSitePlanner.GeneratorVersion, OldTownSitePlanner.StableIdBase),
+            "depot-yard" => (HarbourSitePlanner.GeneratorId, HarbourSitePlanner.GeneratorVersion, HarbourSitePlanner.StableIdBase),
+            _ => (OilDepotSitePlanner.GeneratorId, OilDepotSitePlanner.GeneratorVersion, OilDepotSitePlanner.StableIdBase)
+        };
 
         [Theory]
         [MemberData(nameof(ProductMaps))]
         public void Stable_ids_are_sequential_from_the_map_base(string mapId)
         {
             var plan = ProductMapPlanner.Generate(mapId);
-            ulong first = mapId == "depot-yard" ? DepotArenaPlanner.StableIdBase : CompoundArenaPlanner.StableIdBase;
+            ulong first = Generator(mapId).idBase;
             var seen = new HashSet<ulong>();
             foreach (var box in plan.CollisionBoxes) Assert.True(box.StableId >= first && seen.Add(box.StableId));
             foreach (var cover in plan.Covers) Assert.True(cover.StableId >= first && seen.Add(cover.StableId));
@@ -152,6 +158,8 @@ namespace Shooter.Generation.Tests
                 float thin = Math.Min(a.Size.X, a.Size.Z), length = Math.Max(a.Size.X, a.Size.Z);
                 if (thin >= 1f || length < 2f) continue;
                 if (plan.Features.Any(f => f.Matches(a))) continue;
+                // ADR-109: piers between a building's doors and windows belong to that building (SiteRules checks roles).
+                if (plan.Site != null && plan.Site.TryGetBox(a.StableId, out var role) && role.Role == SiteRole.Wall) continue;
                 bool touches = tall.Any(b => b.StableId != a.StableId &&
                     Math.Abs(a.Center.X - b.Center.X) <= (a.Size.X + b.Size.X) * 0.5f + 0.05f &&
                     Math.Abs(a.Center.Z - b.Center.Z) <= (a.Size.Z + b.Size.Z) * 0.5f + 0.05f);
@@ -167,7 +175,7 @@ namespace Shooter.Generation.Tests
         [Fact]
         public void Layout_helpers_mirror_and_contain()
         {
-            var layout = CompoundArenaPlanner.Layout;
+            var layout = OldTownSitePlanner.Layout;
             Assert.Equal(new Float3(1f, 2f, 3f), ArenaLayout.MirrorZ(new Float3(1f, 2f, -3f)));
             Assert.Equal(new Float3(-1f, 2f, 3f), ArenaLayout.Rotate180(new Float3(1f, 2f, -3f)));
             Assert.True(layout.StagingContains(1, 0f, -35f));
@@ -175,11 +183,11 @@ namespace Shooter.Generation.Tests
             Assert.True(layout.StagingContains(2, 0f, 35f));
             Assert.Equal(3, layout.Team2Exits.Count);
             Assert.Equal(-layout.Team1Exits[0].Z, layout.Team2Exits[0].Z);
-            // Training Compound is point-symmetric: team 2's exits are the 180-degree images of team 1's.
+            // Old Town is point-symmetric: team 2's exits are the 180-degree images of team 1's.
             Assert.Equal(ArenaSymmetry.Rotate180, layout.Symmetry);
             Assert.Equal(-layout.Team1Exits[0].X, layout.Team2Exits[0].X);
-            Assert.Equal(ArenaSymmetry.MirrorZ, DepotArenaPlanner.Layout.Symmetry);
-            Assert.Equal(DepotArenaPlanner.Layout.Team1Exits[0].X, DepotArenaPlanner.Layout.Team2Exits[0].X);
+            Assert.Equal(ArenaSymmetry.MirrorZ, HarbourSitePlanner.Layout.Symmetry);
+            Assert.Equal(HarbourSitePlanner.Layout.Team1Exits[0].X, HarbourSitePlanner.Layout.Team2Exits[0].X);
         }
 
         [Fact]
@@ -328,7 +336,7 @@ namespace Shooter.Generation.Tests
         [Fact]
         public void Oil_depot_exposes_walkable_surfaces()
         {
-            var plan = OilArenaPlanner.Generate(MapRecipe.ApprovedSeed("oil-depot"));
+            var plan = OilDepotSitePlanner.Generate(MapRecipe.ApprovedSeed("oil-depot"));
             Assert.True(CompoundConnectivity.HasWalkableSurfaces(plan.CollisionBoxes));
             Assert.Contains(plan.CollisionBoxes, x => x.Gameplay && CompoundConnectivity.IsWalkableSurface(x));
         }

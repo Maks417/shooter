@@ -52,9 +52,9 @@ namespace Shooter.Presentation.Menus
         public static string FriendlyMapName(string mapId)
         {
             if (string.Equals(mapId, "training-compound", StringComparison.OrdinalIgnoreCase))
-                return "Training Compound";
+                return "Old Town";
             if (string.Equals(mapId, "depot-yard", StringComparison.OrdinalIgnoreCase))
-                return "Depot Yard";
+                return "Harbour";
             if (string.Equals(mapId, "oil-depot", StringComparison.OrdinalIgnoreCase))
                 return "Oil Depot";
             return mapId;

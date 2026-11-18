@@ -13,7 +13,7 @@ namespace Shooter.Generation.Environment
     /// opens where collision blocks). Booths, the plinth and pipe racks keep their box and gain trim on and above it.
     /// Collision, navigation and package identity never change. Only the oil-only kinds (tanker barrel, pipe rack) use the
     /// petroleum accent roles <see cref="MapSolidsMaterialRole.TankWhite"/>/<see cref="MapSolidsMaterialRole.SafetyYellow"/>,
-    /// so Training Compound and Depot Yard keep their own palettes.
+    /// so the town and harbour maps keep their own palettes.
     /// </summary>
     public static class ArenaFeatureDressing
     {

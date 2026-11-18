@@ -10,9 +10,9 @@ namespace Shooter.Tests
     /// </summary>
     public sealed class AmbientOcclusionVolumeEditModeTests
     {
-        [TestCase("training-compound", "3d42eb63d9196b0f6df9df2e6857d8a54ad656f26a14f8a4596adab2a1f92378")]
-        [TestCase("depot-yard", "e556cad88d5c63b5b10b95f6398f3875f9ea3f84fa2d7be50e55ec65ad40c732")]
-        [TestCase("oil-depot", "8284297853928a9c722af9a55383cc31ac6a6a006994c1e4841c8572c083667b")]
+        [TestCase("training-compound", "e59f18c6edef2494f1ee767f72f58fae55233b9f5da973c71a1ac94c582c210d")]
+        [TestCase("depot-yard", "f7de906b6c16ac62a9b0bedadedc7885975c7ae08708d610c58feeab7888c284")]
+        [TestCase("oil-depot", "d4b5cdf773e7bf71e53da4a02431dbc6b576e9de8bad023090cbf15cc6dfbf89")]
         public void MonoBakeMatchesToolsLaneGolden(string mapId, string sha256)
         {
             var plan = ProductMapPlanner.Generate(mapId);

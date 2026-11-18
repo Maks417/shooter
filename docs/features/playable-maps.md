@@ -2,15 +2,15 @@
 
 Status 2026-11-17: ADR-035/038 packages include persisted catalog/gameplay metadata and actual map/soldier/weapon visual closure; runtime consumes verified bytes. Three registered maps ([ADR-083](../decisions.md#adr-083--accepted-map-registry-arena-layout-documents-and-the-generic-maparena-recipe) registry, `Content/Maps/<id>.map.json`) have ≥12 slots/team and topology/spawn policy (Compound `460072030`, Depot `460072031`, Oil Depot `460072032`). Oil Depot adds limited walkable elevation (stairs/catwalk). `Compile-GameContent.ps1 -Native` publishes native Unity NavMesh data for all 12 packages (3 maps × 4 profiles); `nativeUnityNavBake=PASS` since 0.3.16. Named route/spawn evidence on all three maps remains with the T071 playtest ([next playable build](../next-playable-build.md)).
 
-Layout note: since [ADR-074](../decisions.md#adr-074--accepted-compact-64--80-m-arenas-with-distinct-per-map-layouts) every catalog arena is a compact 64 × 80 m map with a distinct layout (Training Compound a point-symmetric garrison square, Depot Yard a rail crossing, Oil Depot a tank farm with a catwalk), specified in [compact TDM map layouts](tdm-map-layouts.md). The earlier T076 three-lane sizes and the 256 m rows below are retired; ids and seeds stay unchanged.
+Layout note: since [ADR-109](../decisions.md#adr-109--accepted-site-planned-maps-old-town-harbour-rebuilt-oil-depot) every catalog map is a site plan of a real place on the compact 64 × 80 m frame of [ADR-074](../decisions.md#adr-074--accepted-compact-64--80-m-arenas-with-distinct-per-map-layouts): `training-compound` is now **Old Town**, `depot-yard` is now **Harbour**, and Oil Depot is rebuilt with control rooms and a pipe bridge. Layouts and rules are in [TDM map layouts](tdm-map-layouts.md). The earlier T076 three-lane sizes and the 256 m rows below are retired; ids and seeds stay unchanged.
 
 ## Catalog and layouts
 
 | Stable MapId / display name | Proposed numeric layout | Gameplay |
 |---|---|---|
-| `training-compound` / Training Compound | Compact 64 × 80 m garrison square (ADR-074); seed `460072030` | Team Deathmatch, 5v5 / 8v8 / 10v10 / 15v15 |
-| `depot-yard` / Depot Yard | Compact 64 × 80 m rail crossing (ADR-074); **approved catalog seed `460072031`** (ADR-035; historical `42` remains robustness-corpus only) | Team Deathmatch, 5v5 / 8v8 / 10v10 / 15v15 |
-| `oil-depot` / Oil Depot | Compact 64 × 80 m petroleum arena with elevated catwalk (ADR-071/074); seed `460072032` | Team Deathmatch, 5v5 / 8v8 / 10v10 / 15v15 |
+| `training-compound` / Old Town | Site-planned 64 × 80 m town centre (ADR-109, point-symmetric); seed `460072030` | Team Deathmatch, 5v5 / 8v8 / 10v10 / 15v15 |
+| `depot-yard` / Harbour | Site-planned 64 × 80 m harbour (ADR-109); **approved catalog seed `460072031`** (ADR-035; historical `42` remains robustness-corpus only) | Team Deathmatch, 5v5 / 8v8 / 10v10 / 15v15 |
+| `oil-depot` / Oil Depot | Site-planned 64 × 80 m oil depot with control rooms and a pipe bridge (ADR-071/109); seed `460072032` | Team Deathmatch, 5v5 / 8v8 / 10v10 / 15v15 |
 
 These names/layouts are chosen product defaults. Seeds or lighting variants of the same topology do not count as distinct maps. Release requires every registered map (currently these three). Depot uses existing primitive/material families and procedural recipe rules, without imported props or authored meshes. Stay within the existing baseline building/prop ceilings until measured: maximum 12 building shells / 120 repeated props per map initially. Density budgets do not prove frame-time acceptance.
 
