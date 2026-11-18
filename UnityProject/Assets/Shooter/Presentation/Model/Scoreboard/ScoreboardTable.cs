@@ -17,6 +17,8 @@ namespace Shooter.Presentation.Scoreboard
         public uint Deaths { get; }
         public bool IsLocal { get; }
         public bool Alive { get; }
+        /// <summary>ADR-108 career rank shown beside the name (1..20); 0 when the row has none.</summary>
+        public int RankIndex { get; }
 
         public ScoreboardRow(
             ParticipantId participantId,
@@ -27,7 +29,8 @@ namespace Shooter.Presentation.Scoreboard
             uint kills,
             uint deaths,
             bool isLocal,
-            bool alive)
+            bool alive,
+            int rankIndex = 0)
         {
             ParticipantId = participantId;
             DisplayName = displayName ?? "";
@@ -38,6 +41,7 @@ namespace Shooter.Presentation.Scoreboard
             Deaths = deaths;
             IsLocal = isLocal;
             Alive = alive;
+            RankIndex = rankIndex < 0 ? 0 : rankIndex > 20 ? 20 : rankIndex;
         }
 
         public string RoleLabel => IsHuman ? "Human" : "Bot";
@@ -65,6 +69,9 @@ namespace Shooter.Presentation.Scoreboard
             Reason = FinishReason.None;
         }
 
+        /// <summary>ADR-108: (participant, isHuman) → career rank shown in the row; null leaves rows without a rank.</summary>
+        public Func<ParticipantId, bool, int>? RankOf { get; set; }
+
         public void BindLive(MatchViewSnapshot snapshot, EntityId localHuman)
         {
             if (snapshot == null) throw new ArgumentNullException(nameof(snapshot));
@@ -85,7 +92,8 @@ namespace Shooter.Presentation.Scoreboard
                     p.Kills,
                     p.Deaths,
                     p.EntityId.Equals(localHuman) || p.IsHuman,
-                    p.Alive));
+                    p.Alive,
+                    RankOf?.Invoke(p.ParticipantId, p.IsHuman) ?? 0));
             }
             rows.Sort(CompareRows);
         }
@@ -110,7 +118,8 @@ namespace Shooter.Presentation.Scoreboard
                     p.Kills,
                     p.Deaths,
                     p.IsHuman,
-                    p.Alive));
+                    p.Alive,
+                    RankOf?.Invoke(p.ParticipantId, p.IsHuman) ?? 0));
             }
             // FinalRows are already sorted by authority; re-sort defensively for UI immutability.
             rows.Sort(CompareRows);

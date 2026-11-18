@@ -48,7 +48,7 @@ namespace Shooter.Simulation.Session
             var id = harness.SpawnActor(feet, yaw, team);
             if (pinned.TryGetValue(participant, out var loadout)) harness.PinLoadout(id, loadout);
             var primary = PrimaryOf(id);
-            var state = new ActorLifecycleState(id, team, true, 100, feet, yaw, 0, 0, primary.MagazineSize, primary.ReserveCapacity,
+            var state = new ActorLifecycleState(id, team, true, 100, feet, yaw, 0, 0, primary.MagazineSize, ReserveOf(id, primary),
                 WeaponAction.Ready, primary.Id);
             states[id.Value] = state;
             lives[id.Value] = (participant, life);
@@ -81,6 +81,10 @@ namespace Shooter.Simulation.Session
         private WeaponDefinition PrimaryOf(EntityId id) =>
             harness.TryGetWeapon(id, 0, out var weapon) ? WeaponCatalog.RequireDefinition(weapon.DefinitionId)
                 : WeaponCatalog.RequireDefinition(WeaponLoadoutPolicy.DefaultPrimaryId);
+
+        /// <summary>The issued primary reserve (ADR-108 career magazines included), else the catalog reserve.</summary>
+        private ushort ReserveOf(EntityId id, WeaponDefinition primary) =>
+            harness.TryGetWeapon(id, 0, out var weapon) && weapon.DefinitionId.Equals(primary.Id) ? weapon.Reserve : primary.ReserveCapacity;
 
         public void DespawnLife(EntityId entity)
         {
@@ -127,7 +131,7 @@ namespace Shooter.Simulation.Session
             if (!harness.ResetActor(entity, feet, yaw)) throw new InvalidOperationException("authority entity missing");
             var primary = PrimaryOf(entity);
             states[entity.Value] = new ActorLifecycleState(entity, prev.Team, true, 100, feet, yaw, 0, 0,
-                primary.MagazineSize, primary.ReserveCapacity, WeaponAction.Ready, primary.Id);
+                primary.MagazineSize, ReserveOf(entity, primary), WeaponAction.Ready, primary.Id);
             stances[entity.Value] = Stance.Standing;
         }
 

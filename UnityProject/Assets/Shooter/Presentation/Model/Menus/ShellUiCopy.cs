@@ -79,6 +79,56 @@ namespace Shooter.Presentation.Menus
         public const string ArmoryEquipped = "EQUIPPED";
         public const string ArmoryLoadout = "LOADOUT";
         public const string ArmorySaveFailed = "Armory could not be saved; picks apply to this session only.";
+        public const string ArmoryLocked = "LOCKED";
+
+        // ADR-108 Career page and debrief.
+        public const string Career = "CAREER";
+        public const string CareerEyebrow = "SERVICE RECORD";
+        public const string CareerTitle = "Career";
+        public const string CareerRankSection = "CURRENT RANK";
+        public const string CareerLadderSection = "RANKS AND REWARDS";
+        public const string CareerStatsSection = "SERVICE RECORD";
+        public const string CareerNextReward = "NEXT REWARD";
+        public const string CareerTopRank = "Highest rank reached.";
+        public const string CareerHint = "Finish matches to earn career points: your score, +500 for finishing, +1000 for a win (+500 draw).";
+        public const string CareerSaveFailed = "Career could not be saved; progress applies to this session only.";
+        public const string CareerActiveBuffs = "ACTIVE BUFFS";
+        public const string CareerNoBuffs = "None yet.";
+        public const string CareerPromoted = "PROMOTED";
+
+        /// <summary>"Unlocks at Sergeant".</summary>
+        public static string UnlocksAt(string rankName) => "Unlocks at " + rankName;
+
+        /// <summary>"12,400 / 15,000 CP".</summary>
+        public static string CareerProgress(long points, long next) =>
+            next <= 0 ? Thousands(points) + " CP" : Thousands(points) + " / " + Thousands(next) + " CP";
+
+        /// <summary>"+3,240 CP  ·  SCORE 1,740  ·  FINISH +500  ·  WIN +1,000".</summary>
+        public static string CareerAwardLine(long total, long score, long completion, long outcome, string outcomeLabel) =>
+            "+" + Thousands(total) + " CP  ·  SCORE " + Thousands(score) + "  ·  FINISH +" + Thousands(completion)
+            + (outcome > 0 ? "  ·  " + outcomeLabel + " +" + Thousands(outcome) : "");
+
+        /// <summary>"PROMOTED: SERGEANT  ·  Golden Eagle sidearm".</summary>
+        public static string CareerPromotion(string rankName, string reward) =>
+            CareerPromoted + ": " + rankName.ToUpperInvariant() + (string.IsNullOrEmpty(reward) ? "" : "  ·  " + reward);
+
+        /// <summary>Hours and minutes of active match time from 60 Hz ticks ("3 h 07 m", "12 m").</summary>
+        public static string PlayTime(long ticks)
+        {
+            long minutes = ticks < 0 ? 0 : ticks / (60L * 60L);
+            long hours = minutes / 60;
+            return hours > 0 ? hours + " h " + (minutes % 60).ToString("00", System.Globalization.CultureInfo.InvariantCulture) + " m" : minutes + " m";
+        }
+
+        /// <summary>Ratio with two decimals ("1.85"); the numerator itself when the denominator is 0.</summary>
+        public static string Ratio(long a, long b) =>
+            (b <= 0 ? a : a / (double)b).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture);
+
+        /// <summary>Whole percent ("54%"); "0%" with no samples.</summary>
+        public static string Percent(long part, long whole) =>
+            (whole <= 0 ? 0 : (long)Math.Round(100.0 * part / whole)).ToString(System.Globalization.CultureInfo.InvariantCulture) + "%";
+
+        public static string Thousands(long value) => value.ToString("#,0", System.Globalization.CultureInfo.InvariantCulture);
 
         /// <summary>One-line loadout summary: "M16A4 · COLLIMATOR / G17".</summary>
         public static string ArmorySummary(string primary, string sight, string sidearm) =>

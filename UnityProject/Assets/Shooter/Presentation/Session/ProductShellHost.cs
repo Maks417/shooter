@@ -21,7 +21,7 @@ namespace Shooter.Presentation.Session
     /// T059 product shell: owns menu → load → play → pause → results lifecycle.
     /// Presentation binds/clears through ProductSessionView; pause goes through <see cref="IProductShellBackend"/>.
     /// </summary>
-    public sealed class ProductShellHost : MonoBehaviour
+    public sealed partial class ProductShellHost : MonoBehaviour
     {
         private IProductShellBackend? backend;
         private OfflineGameSession? session;
@@ -127,7 +127,9 @@ namespace Shooter.Presentation.Session
             uiScale = Mathf.Clamp(settingsEditor.Applied.UiScale, GameContractVersion.MinUiScale, GameContractVersion.MaxUiScale);
             menuScene?.SetReducedMotion(settingsEditor.Applied.ReducedCameraMotion);
             view.ApplyUserSettings(settingsEditor.Applied);
+            LoadCareer(System.IO.Path.Combine(Application.persistentDataPath, "shooter-career.json"));
             LoadArmory(System.IO.Path.Combine(Application.persistentDataPath, "shooter-armory.json"));
+            scoreboard.RankOf = (participant, isHuman) => session?.DisplayRankOf(participant, isHuman) ?? 0;
 
             navigation.ResetToMain();
             ApplyCursorForScreen();
@@ -161,6 +163,7 @@ namespace Shooter.Presentation.Session
             if (session.Phase == GameMatchPhase.Finished)
             {
                 var results = session.TryAcquireResults();
+                if (results != null) RecordCareer(results);
                 coordinator.MarkMatchFinished(results);
                 navigation.SyncFromAuthority(matchFinished: true, sessionPaused: false);
                 view.SetGameplayFocus(false);
@@ -261,6 +264,9 @@ namespace Shooter.Presentation.Session
                     break;
                 case ShellScreen.Armory:
                     CloseArmory();
+                    break;
+                case ShellScreen.Career:
+                    CloseCareer();
                     break;
                 case ShellScreen.Loading:
                     CancelLoading();
@@ -484,7 +490,7 @@ namespace Shooter.Presentation.Session
             Cursor.visible = !gameplay;
             view?.SetGameplayFocus(gameplay);
             bool frontEnd = navigation.Screen == ShellScreen.Main || navigation.Screen == ShellScreen.Setup
-                || navigation.Screen == ShellScreen.Armory
+                || navigation.Screen == ShellScreen.Armory || navigation.Screen == ShellScreen.Career
                 || navigation.Screen == ShellScreen.Settings && navigation.SettingsReturn != ShellScreen.Paused;
             if (menuScene != null && menuScene.gameObject.activeSelf != frontEnd) menuScene.gameObject.SetActive(frontEnd);
         }
@@ -544,6 +550,9 @@ namespace Shooter.Presentation.Session
                 case ShellScreen.Armory:
                     DrawArmory();
                     break;
+                case ShellScreen.Career:
+                    DrawCareer();
+                    break;
                 case ShellScreen.Results:
                     DrawResults(s);
                     break;
@@ -573,16 +582,19 @@ namespace Shooter.Presentation.Session
             float y = a.y + 140;
             if (ui.Button(new Rect(a.x, y, navWidth, 36), "main.play", ShellUiCopy.Play, quiet: true)) navigation.OpenSetup();
             if (ui.Button(new Rect(a.x, y + 40, navWidth, 36), "main.armory", ShellUiCopy.Armory, quiet: true)) OpenArmory();
-            if (ui.Button(new Rect(a.x, y + 80, navWidth, 36), "main.settings", ShellUiCopy.Settings, quiet: true)) OpenSettingsScreen();
-            if (ui.Button(new Rect(a.x, y + 120, navWidth, 36), "main.quit", ShellUiCopy.Quit, quiet: true))
+            if (ui.Button(new Rect(a.x, y + 80, navWidth, 36), "main.career", ShellUiCopy.Career, quiet: true)) OpenCareer();
+            if (ui.Button(new Rect(a.x, y + 120, navWidth, 36), "main.settings", ShellUiCopy.Settings, quiet: true)) OpenSettingsScreen();
+            if (ui.Button(new Rect(a.x, y + 160, navWidth, 36), "main.quit", ShellUiCopy.Quit, quiet: true))
             {
                 quitRequested = true;
                 Application.Quit();
             }
+            // ADR-108: current rank under the menu, one click from the Career page.
+            DrawRankBadge(new Rect(a.x, y + 210, navWidth + 40, 44), "main.rank");
             if (armory != null)
             {
-                ui.Section(new Rect(a.x, y + 172, navWidth, 16), ShellUiCopy.ArmoryLoadout);
-                ui.Label(new Rect(a.x, y + 192, navWidth + 40, 40), armory.Summary, 14, TacticalUi.Muted);
+                ui.Section(new Rect(a.x, y + 266, navWidth, 16), ShellUiCopy.ArmoryLoadout);
+                ui.Label(new Rect(a.x, y + 286, navWidth + 40, 40), armory.Summary, 14, TacticalUi.Muted);
             }
             float cardsX = a.x + navWidth + 28;
             float cardsWidth = a.xMax - cardsX;
@@ -739,7 +751,8 @@ namespace Shooter.Presentation.Session
         {
             armoryStore = new FileArmoryStore(path);
             var result = armoryStore.Load(out var profile);
-            armory = new ArmorySelection(ArmoryCatalog.Primaries, ArmoryCatalog.Sidearms, profile.Primary, profile.Sidearm, profile.Sights);
+            armory = new ArmorySelection(ArmoryCatalog.Primaries, ArmoryCatalog.Sidearms, profile.Primary, profile.Sidearm, profile.Sights,
+                CareerLockRule());
             armorySavedRevision = armory.Revision;
             armoryStatus = result.Succeeded ? "" : result.UserFacing;
             ApplyArmoryToSession();
@@ -749,7 +762,12 @@ namespace Shooter.Presentation.Session
         private void ApplyArmoryToSession()
         {
             if (armory == null || session == null) return;
-            session.UseArmoryLoadout(armory.Primary, armory.PrimarySight, armory.Sidearm);
+            // ADR-108: the career rank carries its buffs into every human life and sets the scoreboard insignia.
+            var buffs = CareerLadder.BuffsFor(CareerRank);
+            session.CareerRank = CareerRank;
+            session.UseArmoryLoadout(armory.Primary, armory.PrimarySight, armory.Sidearm,
+                buffs.RecoilPerMille, buffs.ReloadPerMille, buffs.AdsSpreadPerMille, buffs.EquipPerMille, buffs.ExtraMagazines);
+            if (view != null) view.LocalHandling = new WeaponHandlingScale(buffs.RecoilPerMille, buffs.ReloadPerMille, buffs.EquipPerMille);
         }
 
         private void OpenArmory()
@@ -779,8 +797,9 @@ namespace Shooter.Presentation.Session
         {
             if (armory == null) return;
             ui.Backdrop();
-            ui.Header(ShellUiCopy.ArmoryEyebrow, ShellUiCopy.ArmoryTitle);
+            ui.Header(ShellUiCopy.ArmoryEyebrow, ShellUiCopy.ArmoryTitle, "");
             Rect a = ui.Safe;
+            DrawRankBadge(new Rect(a.xMax - 320, a.y + 2, 320, 50), "armory.rank", alignRight: true);
             float top = a.y + 74;
             float bottom = a.yMax - 74;
             float slotW = Mathf.Min(220, a.width * .2f);
@@ -809,7 +828,7 @@ namespace Shooter.Presentation.Session
                 var weapon = weapons[i];
                 Rect row = new Rect(listX, top + 24 + i * (rowH + 6), listW, rowH);
                 bool equipped = armory.SelectedIn(armory.Slot).Equals(weapon);
-                if (ui.Button(row, "armory.weapon." + weapon, "", selected: equipped))
+                if (ui.Button(row, "armory.weapon." + weapon, "", selected: equipped) && !armory.IsLocked(weapon))
                 {
                     armory.SelectWeapon(weapon);
                     SaveArmoryIfChanged();
@@ -829,13 +848,16 @@ namespace Shooter.Presentation.Session
                 var sight = sights[i];
                 Rect row = new Rect(sightX, top + 24 + i * 62, sightW, 56);
                 bool on = mounted.Equals(sight.Id);
-                if (ui.Button(row, "armory.sight." + sight.Name, "", selected: on))
+                bool sightLocked = armory.IsLocked(sight.Id);
+                if (ui.Button(row, "armory.sight." + sight.Name, "", selected: on) && !sightLocked)
                 {
                     armory.SelectSight(sight.Id, gun);
                     SaveArmoryIfChanged();
                 }
-                ui.Label(new Rect(row.x + 16, row.y + 7, row.width - 24, 20), sight.DisplayLabel, 16, on ? TacticalUi.Accent : TacticalUi.Text);
-                ui.Label(new Rect(row.x + 16, row.y + 29, row.width - 24, 20), sight.Summary, 12, TacticalUi.Muted);
+                ui.Label(new Rect(row.x + 16, row.y + 7, row.width - 24, 20), sight.DisplayLabel, 16,
+                    on ? TacticalUi.Accent : sightLocked ? TacticalUi.Muted : TacticalUi.Text);
+                ui.Label(new Rect(row.x + 16, row.y + 29, row.width - 24, 20), sightLocked ? LockedText(sight.Id) : sight.Summary, 12, TacticalUi.Muted);
+                if (sightLocked) DrawLockTag(new Rect(row.xMax - 84, row.y + 7, 72, 16));
             }
 
             ui.Panel(new Rect(a.x, a.yMax - 66, a.width, 44), accentTop: true);
@@ -861,6 +883,11 @@ namespace Shooter.Presentation.Session
 
         private void DrawWeaponRow(Rect row, DefinitionId weapon, bool equipped)
         {
+            if (armory != null && armory.IsLocked(weapon))
+            {
+                DrawLockedWeaponRow(row, weapon);
+                return;
+            }
             float iconW = Mathf.Min(150, row.width * .3f);
             if (WeaponVisualProfiles.TryGet(weapon, out var profile))
                 TacticalUi.KillFeedWeaponIcon(new Rect(row.x + 14, row.y + row.height * .2f, iconW, row.height * .6f), profile.KillFeedGlyph,
@@ -1213,12 +1240,12 @@ namespace Shooter.Presentation.Session
             ui.Backdrop();
             var rows = new[]
             {
-                new ScoreboardRow(new ParticipantId(1), "Player", 1, true, 1450, 14, 5, true, true),
-                new ScoreboardRow(new ParticipantId(2), "Nora", 1, false, 1200, 12, 9, false, true),
-                new ScoreboardRow(new ParticipantId(3), "Elena", 1, false, 900, 9, 3, false, true),
-                new ScoreboardRow(new ParticipantId(4), "Cole", 2, false, 1300, 15, 11, false, true),
-                new ScoreboardRow(new ParticipantId(5), "Omar", 2, false, 700, 7, 12, false, true),
-                new ScoreboardRow(new ParticipantId(6), "Aya", 2, false, 400, 4, 13, false, true),
+                new ScoreboardRow(new ParticipantId(1), "Player", 1, true, 1450, 14, 5, true, true, 7),
+                new ScoreboardRow(new ParticipantId(2), "Nora", 1, false, 1200, 12, 9, false, true, 9),
+                new ScoreboardRow(new ParticipantId(3), "Elena", 1, false, 900, 9, 3, false, true, 4),
+                new ScoreboardRow(new ParticipantId(4), "Cole", 2, false, 1300, 15, 11, false, true, 11),
+                new ScoreboardRow(new ParticipantId(5), "Omar", 2, false, 700, 7, 12, false, true, 6),
+                new ScoreboardRow(new ParticipantId(6), "Aya", 2, false, 400, 4, 13, false, true, 5),
             };
             scoreboard.BindPreview(rows, 150, 132, MatchOutcome.Team1, FinishReason.ScoreLimit);
             DrawDebrief((Time.unscaledTime - enteredAt) % 7f);
@@ -1258,6 +1285,8 @@ namespace Shooter.Presentation.Session
 
             // Award cards: medal stamps in, card rises, staggered left to right.
             float y = band.yMax + 16;
+            // ADR-108 career strip: CP earned, the progress bar filling and any promotion.
+            y = DrawCareerStrip(new Rect(a.x, y, a.width, 46), t, reduced);
             var awards = ResultsPresentation.Awards(scoreboard.Rows);
             // Large teams / high UI scale: cards shrink, then hide, so the tables keep room above the buttons.
             var awardMode = DebriefAwardLayout.Choose(a.yMax - 64 - y, ScoreboardStats.LargestTeam(scoreboard.Rows));
@@ -1466,6 +1495,12 @@ namespace Shooter.Presentation.Session
                 TacticalUi.Fill(new Rect(mx + m - 1, my, 1, m), edge);
             }
             string name = (row.IsLocal ? "YOU / " : row.IsHuman ? "OP / " : "") + row.DisplayName;
+            // ADR-108 rank insignia before the name.
+            if (row.RankIndex > 0)
+            {
+                float icon = Mathf.Min(r.height - 4f, 18f);
+                if (DrawRankIcon(new Rect(nameX, r.y + (r.height - icon) * .5f, icon, icon), row.RankIndex, alpha)) nameX += icon + 6f;
+            }
             ui.Label(new Rect(nameX, r.y, scoreX - nameX - 4, r.height), name, font, row.IsLocal ? TacticalUi.Accent : text, TextAnchor.MiddleLeft);
             ui.Label(new Rect(scoreX, r.y, 56, r.height), row.Score.ToString(), font, new Color(TacticalUi.Accent.r, TacticalUi.Accent.g, TacticalUi.Accent.b, alpha), TextAnchor.MiddleRight);
             ui.Label(new Rect(killsX, r.y, 36, r.height), row.Kills.ToString(), font, text, TextAnchor.MiddleRight);
@@ -1532,6 +1567,8 @@ namespace Shooter.Presentation.Session
                     float nx = x + 14;
                     if (i == topRow && TacticalUi.Icon(new Rect(nx, ry + (rh - 3) * .5f - 9, 18, 18), IconLibrary.Crown, TacticalUi.Gold, shadow: true))
                         nx += 24;
+                    if (row.RankIndex > 0 && DrawRankIcon(new Rect(nx, ry + (rh - 3) * .5f - 10, 20, 20), row.RankIndex, 1f))
+                        nx += 26;
                     string name = (row.IsLocal ? "YOU / " : row.IsHuman ? "OP / " : "BOT / ") + row.DisplayName;
                     ui.Label(new Rect(nx, ry, w - 160 - (nx - x - 14), rh - 3), name, 16, TacticalUi.Text, TextAnchor.MiddleLeft);
                     ui.Label(new Rect(x + w - 140, ry, 44, rh - 3), row.Score.ToString(), 16, TacticalUi.Accent, TextAnchor.MiddleRight);

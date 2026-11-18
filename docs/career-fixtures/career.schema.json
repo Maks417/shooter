@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "shooter.career.v1",
+  "title": "Shooter career and service record (ADR-108)",
+  "description": "Career points that set the player's military rank plus a lightweight lifetime service record. Stored beside the user settings as shooter-career.json. Every counter is a non-negative integer up to 2^50; a missing counter reads as 0, unknown keys are ignored.",
+  "type": "object",
+  "required": [
+    "schema",
+    "schemaId"
+  ],
+  "properties": {
+    "schema": { "const": 1 },
+    "schemaId": { "const": "shooter.career.v1" },
+    "careerPoints": { "$ref": "#/$defs/counter" },
+    "matches": { "$ref": "#/$defs/counter" },
+    "wins": { "$ref": "#/$defs/counter" },
+    "losses": { "$ref": "#/$defs/counter" },
+    "draws": { "$ref": "#/$defs/counter" },
+    "kills": { "$ref": "#/$defs/counter" },
+    "deaths": { "$ref": "#/$defs/counter" },
+    "assists": { "$ref": "#/$defs/counter" },
+    "headshots": { "$ref": "#/$defs/counter" },
+    "scoreTotal": { "$ref": "#/$defs/counter" },
+    "bestScore": { "$ref": "#/$defs/counter" },
+    "bestStreak": { "$ref": "#/$defs/counter" },
+    "activeTicks": { "$ref": "#/$defs/counter" }
+  },
+  "$defs": {
+    "counter": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1125899906842624
+    }
+  }
+}

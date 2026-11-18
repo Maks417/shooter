@@ -148,6 +148,21 @@ namespace Shooter.Presentation.View
                 RecoilPitchDegrees, RecoilYawHalfDegrees, EquipTicks, FireIntervalTicks, ReloadTicks, FuseTicks, AdsSeconds,
                 HandlingStyle, adsFovDegrees, MuzzleFlashScale, MuzzleFlashSideJets);
 
+        /// <summary>
+        /// ADR-108: the same gun with the local player's career handling buffs, so camera recoil and the reload/equip
+        /// choreography match the authority (same per-mille rounding as the simulation). Knives and grenades are unchanged.
+        /// </summary>
+        public WeaponVisualProfile WithHandling(WeaponHandlingScale handling)
+        {
+            if (handling.IsIdentity || (Family != WeaponVisualFamily.PrimaryGun && Family != WeaponVisualFamily.Sidearm)) return this;
+            return new WeaponVisualProfile(DefinitionId, Family, MeshAssetKey, OpticMode, HasMagazineCycle, ShotVoice, KillFeedGlyph,
+                NearFieldScale, NearFieldHipBias, HipRotationDegrees, CycleTravelMeters, DisplayLabel, MuzzleFx,
+                RecoilPitchDegrees * handling.RecoilPerMille / 1000f, RecoilYawHalfDegrees * handling.RecoilPerMille / 1000f,
+                WeaponHandlingScale.ScaleTicks(EquipTicks, handling.EquipPerMille), FireIntervalTicks,
+                WeaponHandlingScale.ScaleTicks(ReloadTicks, handling.ReloadPerMille), FuseTicks, AdsSeconds,
+                HandlingStyle, AdsFovDegrees, MuzzleFlashScale, MuzzleFlashSideJets);
+        }
+
         /// <summary>Pool variant byte carrying the flash size in hundredths (10..250); 0 means no flash.</summary>
         public byte MuzzleFlashVariant => MuzzleFx == "none" || MuzzleFlashScale <= 0f ? (byte)0
             : (byte)Math.Max(10, Math.Min(250, (int)Math.Round(MuzzleFlashScale * 100f)));

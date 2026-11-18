@@ -139,5 +139,5 @@ public sealed class IconAtlasTests
 /// <summary>Shared with <c>IconAtlasEditModeTests</c> so the Unity Mono lane proves the same bytes.</summary>
 internal static class IconAtlasGoldens
 {
-    public const string Library = "22964e2db82744ad8eb33c113c4c32b6468eae2112cae07c489b470129e798f0";
+    public const string Library = "983eafa393ad9569e705e712c2425b8681a80bddb605065154b16005869af024";
 }

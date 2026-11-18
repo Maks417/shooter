@@ -36,6 +36,25 @@ namespace Shooter.Game.Session
         public void UseArmoryLoadout(DefinitionId primary, DefinitionId primarySight, DefinitionId sidearm) =>
             HumanLoadout = ArmoryCatalog.Resolve(primary, primarySight, sidearm);
 
+        /// <summary>
+        /// ADR-108: as above, carrying the player's career buffs into every human life. Scales are per mille
+        /// (1000 = unchanged; clamped to the ADR-108 caps); spare magazines are 0..2.
+        /// </summary>
+        public void UseArmoryLoadout(DefinitionId primary, DefinitionId primarySight, DefinitionId sidearm,
+            ushort recoilPerMille, ushort reloadPerMille, ushort adsSpreadPerMille, ushort equipPerMille, byte extraMagazines) =>
+            HumanLoadout = ArmoryCatalog.Resolve(primary, primarySight, sidearm)
+                .WithModifiers(new WeaponModifiers(recoilPerMille, reloadPerMille, adsSpreadPerMille, equipPerMille, extraMagazines));
+
+        /// <summary>ADR-108 career rank (1..20) of the local player; bots show seeded ranks around it. Cosmetic only.</summary>
+        public int CareerRank { get; set; } = 1;
+
+        /// <summary>
+        /// ADR-108 rank shown beside a scoreboard row: the player's own rank for the human, else a seeded cosmetic rank
+        /// within three of it (stable for the whole match; its own random stream, so no gameplay draw changes).
+        /// </summary>
+        public int DisplayRankOf(ParticipantId participant, bool isHuman) =>
+            isHuman ? BotRanks.Clamp(CareerRank) : BotRanks.Resolve(participant.Value, request?.Seed ?? 0UL, CareerRank);
+
         private readonly IMapCatalog catalog;
         private readonly Func<IWorldQueries, INavigation, IMapRuntime> mapFactory;
         private readonly bool allowFakeMapRuntime;
@@ -77,6 +96,8 @@ namespace Shooter.Game.Session
         private readonly List<ulong> assistAttackersScratch = new List<ulong>(8);
         /// <summary>Local-human enemy kills since last death (ADR-073 HUD badges).</summary>
         private byte localKillStreak;
+        /// <summary>ADR-108 human-only match counts for the career record (the frozen results rows lack them).</summary>
+        private uint localAssists, localHeadshots, localBestStreak;
 
         public OfflineGameSession(IMapCatalog catalog, Func<IWorldQueries, INavigation, IMapRuntime> mapFactory, bool allowFakeMapRuntime = false)
         {
@@ -456,6 +477,8 @@ namespace Shooter.Game.Session
                         IsEnemyOf(snap, credited, ev.Target))
                     {
                         localKillStreak = LocalKillBadgeLogic.IncrementStreak(localKillStreak);
+                        if (localKillStreak > localBestStreak) localBestStreak = localKillStreak;
+                        if (headshot) localHeadshots++;
                         LocalKillBadgeLogic.PushKillBadges(
                             PushLocalAward,
                             ResolveDisplayName(ev.Target, snap),
@@ -554,6 +577,9 @@ namespace Shooter.Game.Session
         }
 
         public MatchResults? TryAcquireResults() => match.TryAcquireResults();
+
+        /// <summary>ADR-108: the local human's assists, headshot kills and best kill streak in the current match.</summary>
+        public LocalMatchTally LocalTally => new LocalMatchTally(localAssists, localHeadshots, localBestStreak);
 
         public GameOperationResult Stop()
         {
@@ -825,7 +851,10 @@ namespace Shooter.Game.Session
                 var attacker = new EntityId(attackerKey);
                 match.AddScore(attacker, points);
                 if (humanEntity.IsValid && attacker.Equals(humanEntity))
+                {
+                    localAssists++;
                     PushLocalAward(new LocalScoreAward(LocalScoreAwardKind.Assist, points, victimName));
+                }
             }
 
             damageByVictim.Remove(victimKey);
@@ -918,6 +947,7 @@ namespace Shooter.Game.Session
             localScoreAwards.Clear();
             presentationEvents.Clear();
             localKillStreak = 0;
+            localAssists = localHeadshots = localBestStreak = 0;
             querySamplesAtMatchStart = 0;
         }
 

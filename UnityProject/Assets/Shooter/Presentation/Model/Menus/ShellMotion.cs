@@ -24,7 +24,8 @@ namespace Shooter.Presentation.Menus
 
         public static bool SlidesOnEnter(ShellScreen screen) =>
             screen == ShellScreen.Main || screen == ShellScreen.Setup || screen == ShellScreen.Settings || screen == ShellScreen.Results
-            || screen == ShellScreen.Armory;
+            || screen == ShellScreen.Armory
+            || screen == ShellScreen.Career;
 
         /// <summary>Opacity of the dark veil laid over a freshly entered screen (1 → 0).</summary>
         public static float EnterVeil(ShellScreen screen, float sinceEnter, bool reducedMotion)

@@ -27,6 +27,8 @@ namespace Shooter.Simulation
             public DefinitionId PrimarySight;
             /// <summary>ADR-107 Armory loadout this actor always spawns and resets with; null draws per <see cref="RandomLoadouts"/>.</summary>
             public PlayerLoadout? Pinned;
+            /// <summary>ADR-108 career buffs (from <see cref="Pinned"/>); identity for bots and unpinned actors.</summary>
+            public WeaponModifiers Modifiers;
             public byte ActiveSlot;
             public byte DesiredSlot;
             public float RecoilYaw;
@@ -97,10 +99,12 @@ namespace Shooter.Simulation
         {
             if (actor.Pinned != null)
             {
-                actor.Weapons = WeaponLoadoutPolicy.CreateLoadout(actor.Pinned.Primary, actor.Pinned.Sidearm);
+                actor.Modifiers = actor.Pinned.Modifiers;
+                actor.Weapons = WeaponLoadoutPolicy.CreateLoadout(actor.Pinned.Primary, actor.Pinned.Sidearm, actor.Modifiers);
                 actor.PrimarySight = actor.Pinned.PrimarySight;
                 return;
             }
+            actor.Modifiers = WeaponModifiers.Identity;
             actor.Weapons = LoadoutFor(actor.Id, atTick);
             DefinitionId primary = actor.Weapons[0].DefinitionId;
             actor.PrimarySight = RandomLoadouts
@@ -413,7 +417,7 @@ namespace Shooter.Simulation
 
                 if (nextEvent.IsEmpty) nextEvent = new EventId(authoritySessionId, requestedTick, actor.Id, 0);
                 weapons.Step(requestedTick, cmd.Buttons, cmd.SelectedSlot, actor.Alive, actor.Motor.SprintActive, actor.Weapons,
-                    ref actor.ActiveSlot, ref actor.DesiredSlot, acceptedShots, acceptedGrenades, tickEvents, ref nextEvent, actor.Id);
+                    ref actor.ActiveSlot, ref actor.DesiredSlot, acceptedShots, acceptedGrenades, tickEvents, ref nextEvent, actor.Id, actor.Modifiers);
                 for (int s = 0; s < acceptedShots.Count; s++) pendingShots.Add(new PendingShot(actor, acceptedShots[s]));
                 for (int g = 0; g < acceptedGrenades.Count; g++)
                     ResolveGrenadeAction(actor, acceptedGrenades[g], requestedTick, ref nextEvent);

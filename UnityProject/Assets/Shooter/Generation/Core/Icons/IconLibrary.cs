@@ -25,6 +25,9 @@ namespace Shooter.Generation.Icons
         public const string RankCorporal = "rank-2";
         public const string RankSergeant = "rank-3";
         public const string RankStar = "rank-star";
+        /// <summary>ADR-108 career insignia prefix: <c>rank-01</c> (Private) … <c>rank-20</c> (General).</summary>
+        public const string CareerRankPrefix = "rank-";
+        public const int CareerRankCount = 20;
         public const string EmblemAlly = "emblem-ally";
         public const string EmblemEnemy = "emblem-enemy";
         public const string MedalStar = "medal-star";
@@ -51,6 +54,84 @@ namespace Shooter.Generation.Icons
 
         private static IconShape Chevron(int y, int thickness) =>
             IconShape.Stroke(thickness, 180, y + 120, 500, y - 60, 820, y + 120);
+
+        // ADR-108 rocker: the downward arc under enlisted chevrons.
+        private static IconShape Rocker(int y, int thickness) =>
+            IconShape.Stroke(thickness, 180, y, 330, y + 70, 500, y + 95, 670, y + 70, 820, y);
+
+        private static IconShape SmallStar(int cx, int cy, int num, int den) =>
+            IconShape.Polygon(Scaled(Star, 500, 520, num, den, cx - 500, cy - 520));
+
+        // Oak leaf (field grade), point up, stem down.
+        private static readonly int[] Leaf =
+        {
+            500, 80, 590, 200, 700, 170, 680, 300, 800, 330, 720, 450, 820, 520, 700, 600, 740, 720, 600, 700, 545, 800,
+            545, 920, 455, 920, 455, 800, 400, 700, 260, 720, 300, 600, 180, 520, 280, 450, 200, 330, 320, 300, 300, 170, 410, 200
+        };
+
+        // Spread eagle (colonel): head, raised wings, tail.
+        private static readonly int[] Eagle =
+        {
+            500, 170, 570, 230, 550, 320, 650, 300, 770, 190, 910, 170, 870, 290, 930, 330, 850, 420, 890, 470, 760, 530,
+            630, 520, 610, 640, 690, 830, 565, 770, 500, 890, 435, 770, 310, 830, 390, 640, 370, 520, 240, 530, 110, 470,
+            150, 420, 70, 330, 130, 290, 90, 170, 230, 190, 350, 300, 450, 320, 430, 230
+        };
+
+        /// <summary>ADR-108: insignia name for career rank <paramref name="rank"/> (1..20).</summary>
+        public static string CareerRank(int rank) =>
+            CareerRankPrefix + Math.Max(1, Math.Min(CareerRankCount, rank)).ToString("00", System.Globalization.CultureInfo.InvariantCulture);
+
+        /// <summary>
+        /// ADR-108 career insignia, one unique silhouette per rank: enlisted chevrons and rockers (01–11), a segmented
+        /// warrant bar (12), lieutenant and captain bars (13–15), field-grade leaves and the eagle (16–18), general stars (19–20).
+        /// </summary>
+        private static IEnumerable<IconRecipe> CareerRanks()
+        {
+            yield return new IconRecipe(CareerRank(1))
+                .Add(IconShape.Box(200, 410, 600, 180, 40)).Cut(IconShape.Box(260, 470, 480, 60, 20));
+            yield return new IconRecipe(CareerRank(2)).Add(Chevron(470, 150));
+            yield return new IconRecipe(CareerRank(3)).Add(Chevron(330, 140)).Add(Rocker(650, 120));
+            yield return new IconRecipe(CareerRank(4))
+                .Add(IconShape.Polygon(220, 150, 780, 150, 780, 520, 500, 890, 220, 520))
+                .Cut(SmallStar(500, 450, 2, 5));
+            yield return new IconRecipe(CareerRank(5)).Add(Chevron(330, 140)).Add(Chevron(600, 140));
+            yield return new IconRecipe(CareerRank(6)).Add(Chevron(230, 120)).Add(Chevron(460, 120)).Add(Chevron(690, 120));
+            yield return new IconRecipe(CareerRank(7))
+                .Add(Chevron(170, 110)).Add(Chevron(350, 110)).Add(Chevron(530, 110)).Add(Rocker(790, 110));
+            yield return new IconRecipe(CareerRank(8))
+                .Add(Chevron(140, 100)).Add(Chevron(290, 100)).Add(Chevron(440, 100)).Add(Rocker(670, 95)).Add(Rocker(820, 95));
+            yield return new IconRecipe(CareerRank(9))
+                .Add(Chevron(120, 90)).Add(Chevron(250, 90)).Add(Chevron(380, 90))
+                .Add(Rocker(590, 85)).Add(Rocker(715, 85)).Add(Rocker(840, 85));
+            yield return new IconRecipe(CareerRank(10))
+                .Add(Chevron(120, 90)).Add(Chevron(250, 90)).Add(Chevron(380, 90))
+                .Add(IconShape.Polygon(500, 520, 575, 600, 500, 680, 425, 600))
+                .Add(Rocker(720, 85)).Add(Rocker(845, 85));
+            yield return new IconRecipe(CareerRank(11))
+                .Add(Chevron(120, 90)).Add(Chevron(250, 90)).Add(Chevron(380, 90))
+                .Add(SmallStar(500, 610, 1, 4))
+                .Add(Rocker(720, 85)).Add(Rocker(845, 85));
+            yield return new IconRecipe(CareerRank(12))
+                .Add(IconShape.Box(170, 390, 660, 220, 40))
+                .Cut(IconShape.Box(345, 390, 60, 220)).Cut(IconShape.Box(595, 390, 60, 220));
+            yield return new IconRecipe(CareerRank(13)).Add(IconShape.Box(400, 130, 200, 740, 40));
+            yield return new IconRecipe(CareerRank(14))
+                .Add(IconShape.Box(380, 130, 240, 740, 40)).Cut(IconShape.Box(470, 210, 60, 580, 20));
+            yield return new IconRecipe(CareerRank(15))
+                .Add(IconShape.Box(250, 130, 180, 740, 40)).Add(IconShape.Box(570, 130, 180, 740, 40));
+            yield return new IconRecipe(CareerRank(16)).Add(IconShape.Polygon(Leaf));
+            yield return new IconRecipe(CareerRank(17))
+                .Add(IconShape.Polygon(Leaf))
+                .Cut(IconShape.Capsule(500, 230, 500, 760, 50))
+                .Cut(IconShape.Capsule(500, 420, 330, 330, 40)).Cut(IconShape.Capsule(500, 420, 670, 330, 40))
+                .Cut(IconShape.Capsule(500, 580, 320, 520, 40)).Cut(IconShape.Capsule(500, 580, 680, 520, 40));
+            yield return new IconRecipe(CareerRank(18)).Add(IconShape.Polygon(Eagle));
+            yield return new IconRecipe(CareerRank(19)).Add(IconShape.Polygon(Star));
+            yield return new IconRecipe(CareerRank(20))
+                .Add(IconShape.Ring(500, 430, 430, 75)).Cut(IconShape.Box(0, 0, 1000, 560))
+                .Add(SmallStar(155, 400, 3, 10)).Add(SmallStar(385, 400, 3, 10))
+                .Add(SmallStar(615, 400, 3, 10)).Add(SmallStar(845, 400, 3, 10));
+        }
 
         /// <summary>All library glyphs in their stable atlas order.</summary>
         public static IReadOnlyList<IconRecipe> All { get; } = Build();
@@ -134,6 +215,7 @@ namespace Shooter.Generation.Icons
                     .Add(IconShape.Capsule(500, 420, 500, 590, 90))
                     .Add(IconShape.Stroke(80, 380, 780, 500, 590, 620, 780)),
             };
+            list.AddRange(CareerRanks());
             var names = new HashSet<string>(StringComparer.Ordinal);
             foreach (var r in list)
                 if (!names.Add(r.Name)) throw new InvalidOperationException("Duplicate icon name: " + r.Name);

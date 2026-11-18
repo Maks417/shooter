@@ -199,7 +199,10 @@ namespace Shooter.Presentation.Rig
         public DefinitionId LocalVisibleSight => localVisibleSight;
         /// <summary>Presentation profile of the shown weapon through its mounted sight (optic mode and ADS field of view).</summary>
         public WeaponVisualProfile LocalVisibleProfile =>
-            Sighted(WeaponVisualProfiles.Resolve(localVisibleWeaponId, localVisibleWeaponSlot), localVisibleSight);
+            Sighted(WeaponVisualProfiles.Resolve(localVisibleWeaponId, localVisibleWeaponSlot), localVisibleSight).WithHandling(LocalHandling);
+
+        /// <summary>ADR-108: the local player's career handling buffs (recoil, reload, equip); identity when none.</summary>
+        public WeaponHandlingScale LocalHandling { get; set; }
 
         /// <summary>ADR-107: reads the sight on an actor's primary from the session (read-only; null = factory sights).</summary>
         public Func<EntityId, DefinitionId>? SightReader { get; set; }
@@ -681,7 +684,7 @@ namespace Shooter.Presentation.Rig
                 // otherwise make the reload invisible.
                 bool viewAim = FirstPersonHandling.ViewAimTarget(aimHeld, actions.IsReloading(human.EntityId),
                     human.WeaponAction == WeaponAction.Reloading);
-                var activeProfile = Sighted(WeaponVisualProfiles.Resolve(weaponId, slot), SightOf(human.EntityId, slot));
+                var activeProfile = Sighted(WeaponVisualProfiles.Resolve(weaponId, slot), SightOf(human.EntityId, slot)).WithHandling(LocalHandling);
                 localView.ApplyProfile(activeProfile);
                 if (combatEvents != null)
                     localView.ConsumeEvents(combatEvents, human.EntityId, viewAim, dtSeconds);
@@ -709,7 +712,7 @@ namespace Shooter.Presentation.Rig
                 localVisibleWeaponId = shownId;
                 DefinitionId shownSight = SightOf(human.EntityId, shown);
                 localVisibleSight = shownSight;
-                var profile = Sighted(WeaponVisualProfiles.Resolve(shownId, shown), shownSight);
+                var profile = Sighted(WeaponVisualProfiles.Resolve(shownId, shown), shownSight).WithHandling(LocalHandling);
                 ApplyLocalWeaponVisual(shownId, shown, shownSight);
                 float reload = localHandling.IsSwitching ? -1f : actions.ReloadPhaseAtTick(human.EntityId, completedTick);
                 float recoilEnergy = Math.Abs(pose.RecoilPitch) + Math.Abs(pose.RecoilYaw);

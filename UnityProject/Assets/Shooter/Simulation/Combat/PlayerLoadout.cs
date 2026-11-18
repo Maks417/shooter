@@ -18,12 +18,15 @@ namespace Shooter.Simulation.Combat
         /// <summary>Mounted sight on the primary; invalid when the primary takes none.</summary>
         public DefinitionId PrimarySight { get; }
         public DefinitionId Sidearm { get; }
+        /// <summary>ADR-108 career buffs applied to every firearm this soldier holds (identity for none).</summary>
+        public WeaponModifiers Modifiers { get; }
 
-        private PlayerLoadout(DefinitionId primary, DefinitionId primarySight, DefinitionId sidearm)
+        private PlayerLoadout(DefinitionId primary, DefinitionId primarySight, DefinitionId sidearm, WeaponModifiers modifiers)
         {
             Primary = primary;
             PrimarySight = primarySight;
             Sidearm = sidearm;
+            Modifiers = modifiers;
         }
 
         public static PlayerLoadout Default => Create(DefaultPrimary, default, DefaultSidearm);
@@ -32,8 +35,11 @@ namespace Shooter.Simulation.Combat
         {
             if (!IsSelectable(primary, WeaponFamily.PrimaryGun)) primary = Fallback(DefaultPrimary, WeaponFamily.PrimaryGun, WeaponLoadoutPolicy.DefaultPrimaryId);
             if (!IsSelectable(sidearm, WeaponFamily.Sidearm)) sidearm = Fallback(DefaultSidearm, WeaponFamily.Sidearm, WeaponLoadoutPolicy.PistolId);
-            return new PlayerLoadout(primary, SightCatalog.Resolve(primary, primarySight), sidearm);
+            return new PlayerLoadout(primary, SightCatalog.Resolve(primary, primarySight), sidearm, WeaponModifiers.Identity);
         }
+
+        /// <summary>ADR-108: the same loadout carrying <paramref name="modifiers"/>.</summary>
+        public PlayerLoadout WithModifiers(WeaponModifiers modifiers) => new PlayerLoadout(Primary, PrimarySight, Sidearm, modifiers);
 
         /// <summary>Product guns the Armory offers: catalog entries of <paramref name="family"/> that also spawn (weight &gt; 0).</summary>
         public static bool IsSelectable(DefinitionId id, WeaponFamily family) =>
@@ -49,12 +55,13 @@ namespace Shooter.Simulation.Combat
         }
 
         public bool Equals(PlayerLoadout? other) =>
-            other != null && Primary.Equals(other.Primary) && PrimarySight.Equals(other.PrimarySight) && Sidearm.Equals(other.Sidearm);
+            other != null && Primary.Equals(other.Primary) && PrimarySight.Equals(other.PrimarySight) && Sidearm.Equals(other.Sidearm)
+            && Modifiers.Equals(other.Modifiers);
 
         public override bool Equals(object? obj) => obj is PlayerLoadout other && Equals(other);
 
         public override int GetHashCode() => (Primary.GetHashCode() * 397 ^ PrimarySight.GetHashCode()) * 397 ^ Sidearm.GetHashCode();
 
-        public override string ToString() => Primary + "+" + PrimarySight + "/" + Sidearm;
+        public override string ToString() => Primary + "+" + PrimarySight + "/" + Sidearm + (Modifiers.IsIdentity ? "" : " [" + Modifiers + "]");
     }
 }

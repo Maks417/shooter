@@ -179,6 +179,7 @@ namespace Shooter.Presentation.Audio
             ShellScreen.Results => MusicContext.Finished,
             ShellScreen.Settings => settingsReturn == ShellScreen.Paused ? MusicContext.Match : MusicContext.Menu,
             ShellScreen.Armory => MusicContext.Menu,
+            ShellScreen.Career => MusicContext.Menu,
             _ => MusicContext.Menu
         };
 

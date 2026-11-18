@@ -15,6 +15,8 @@ namespace Shooter.Presentation.Menus
         ConfirmRestart = 8,
         ContentRecovery = 9,
         /// <summary>ADR-107 Armory: choose the primary, its sight and the sidearm taken into every match.</summary>
-        Armory = 10
+        Armory = 10,
+        /// <summary>ADR-108 Career: rank ladder, progress to the next rank and the lifetime service record.</summary>
+        Career = 11
     }
 }

@@ -21,7 +21,11 @@ namespace Shooter.Simulation.Combat
 
         public static WeaponState[] CreateLoadout(DefinitionId primaryId) => CreateLoadout(primaryId, PistolId);
 
-        public static WeaponState[] CreateLoadout(DefinitionId primaryId, DefinitionId sidearmId)
+        public static WeaponState[] CreateLoadout(DefinitionId primaryId, DefinitionId sidearmId) =>
+            CreateLoadout(primaryId, sidearmId, WeaponModifiers.Identity);
+
+        /// <summary>ADR-108: as above, with career buffs adding spare magazines to the primary and sidearm reserve.</summary>
+        public static WeaponState[] CreateLoadout(DefinitionId primaryId, DefinitionId sidearmId, WeaponModifiers modifiers)
         {
             var primary = WeaponCatalog.Require(primaryId);
             if (primary.Family != WeaponFamily.PrimaryGun)
@@ -31,8 +35,8 @@ namespace Shooter.Simulation.Combat
                 throw new ArgumentException("Slot 1 requires a Sidearm catalog entry.", nameof(sidearmId));
             return new[]
             {
-                CreateLoaded(primary.Definition),
-                CreateLoaded(sidearm.Definition),
+                CreateLoaded(primary.Definition, modifiers),
+                CreateLoaded(sidearm.Definition, modifiers),
                 CreateLoaded(WeaponCatalog.RequireDefinition(KnifeId)),
                 CreateLoaded(WeaponCatalog.RequireDefinition(GrenadeId))
             };
@@ -92,5 +96,8 @@ namespace Shooter.Simulation.Combat
 
         public static WeaponState CreateLoaded(WeaponDefinition def) =>
             new WeaponState(def.Id, WeaponAction.Ready, def.MagazineSize, def.ReserveCapacity, 0, 0, 0, 0, false);
+
+        public static WeaponState CreateLoaded(WeaponDefinition def, WeaponModifiers modifiers) =>
+            new WeaponState(def.Id, WeaponAction.Ready, def.MagazineSize, modifiers.ReserveFor(def), 0, 0, 0, 0, false);
     }
 }

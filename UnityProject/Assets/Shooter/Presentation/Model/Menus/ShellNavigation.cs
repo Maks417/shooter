@@ -36,6 +36,20 @@ namespace Shooter.Presentation.Menus
             if (Screen == ShellScreen.Armory) Screen = ArmoryReturn;
         }
 
+        /// <summary>ADR-108: the Career page opens from the main menu (or the Armory header) and returns there.</summary>
+        public ShellScreen CareerReturn { get; private set; } = ShellScreen.Main;
+
+        public void OpenCareer()
+        {
+            CareerReturn = Screen == ShellScreen.Armory ? ShellScreen.Armory : ShellScreen.Main;
+            Screen = ShellScreen.Career;
+        }
+
+        public void CloseCareer()
+        {
+            if (Screen == ShellScreen.Career) Screen = CareerReturn;
+        }
+
         public void BeginLoading(string phaseText)
         {
             Screen = ShellScreen.Loading;

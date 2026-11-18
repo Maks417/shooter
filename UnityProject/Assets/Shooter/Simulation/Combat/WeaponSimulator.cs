@@ -46,6 +46,28 @@ namespace Shooter.Simulation.Combat
             List<CombatEvent> events,
             ref EventId nextEventId,
             EntityId actorId)
+            => Step(tick, buttons, selectedSlot, alive, sprinting, slots, ref activeSlot, ref desiredSlot, acceptedShots, acceptedGrenades,
+                events, ref nextEventId, actorId, WeaponModifiers.Identity);
+
+        /// <summary>
+        /// ADR-108: as above, with <paramref name="modifiers"/> applied to every firearm definition read this step (equip and
+        /// reload times here; spread and recoil travel to the hitscan and recoil code inside <see cref="AcceptedShot.Definition"/>).
+        /// </summary>
+        public void Step(
+            uint tick,
+            InputButtons buttons,
+            byte selectedSlot,
+            bool alive,
+            bool sprinting,
+            WeaponState[] slots,
+            ref byte activeSlot,
+            ref byte desiredSlot,
+            List<AcceptedShot> acceptedShots,
+            List<AcceptedGrenade> acceptedGrenades,
+            List<CombatEvent> events,
+            ref EventId nextEventId,
+            EntityId actorId,
+            WeaponModifiers modifiers)
         {
             if (slots == null || slots.Length != SlotCount) throw new System.ArgumentException("Four weapon slots required", nameof(slots));
             if (selectedSlot >= SlotCount) throw new System.ArgumentOutOfRangeException(nameof(selectedSlot));
@@ -75,7 +97,7 @@ namespace Shooter.Simulation.Combat
                 if (current.Action == WeaponAction.Reloading || current.Action == WeaponAction.Cooking)
                     slots[activeSlot] = Ready(current, tick);
                 var next = slots[desiredSlot];
-                var def = WeaponDefinition.FromId(next.DefinitionId);
+                var def = modifiers.Apply(WeaponDefinition.FromId(next.DefinitionId));
                 slots[desiredSlot] = new WeaponState(next.DefinitionId, WeaponAction.Equipping, next.AmmoInMagazine, next.Reserve,
                     next.NextAllowedFireTick, tick, unchecked(tick + def.EquipTicks), next.ShotIndex, false);
                 activeSlot = desiredSlot;
@@ -90,7 +112,7 @@ namespace Shooter.Simulation.Combat
 
                 if (w.Action == WeaponAction.Reloading)
                 {
-                    var def = WeaponDefinition.FromId(w.DefinitionId);
+                    var def = modifiers.Apply(WeaponDefinition.FromId(w.DefinitionId));
                     ushort need = (ushort)(def.MagazineSize - w.AmmoInMagazine);
                     ushort take = w.Reserve < need ? w.Reserve : need;
                     uint start = w.PhaseStartTick;
@@ -110,7 +132,7 @@ namespace Shooter.Simulation.Combat
             }
 
             var active = slots[activeSlot];
-            var activeDef = WeaponDefinition.FromId(active.DefinitionId);
+            var activeDef = modifiers.Apply(WeaponDefinition.FromId(active.DefinitionId));
             bool fireHeld = (buttons & InputButtons.FireHeld) != 0;
             bool firePressed = (buttons & InputButtons.FirePressed) != 0;
             bool reloadPressed = (buttons & InputButtons.ReloadPressed) != 0;
@@ -126,7 +148,7 @@ namespace Shooter.Simulation.Combat
                     && slots[3].Action != WeaponAction.Equipping)
                 {
                     var rifle = slots[0];
-                    var rifleDef = WeaponDefinition.FromId(rifle.DefinitionId);
+                    var rifleDef = modifiers.Apply(WeaponDefinition.FromId(rifle.DefinitionId));
                     slots[0] = new WeaponState(rifle.DefinitionId, WeaponAction.Equipping, rifle.AmmoInMagazine, rifle.Reserve,
                         rifle.NextAllowedFireTick, tick, unchecked(tick + rifleDef.EquipTicks), rifle.ShotIndex, false);
                     activeSlot = 0;

@@ -61,6 +61,7 @@ Unity 6 URP / C# / HLSL design for a realistic modern-world shooter generated fr
 | [Playable maps](features/playable-maps.md) | Map catalog, packaging and safety |
 | [Compact TDM map layouts](features/tdm-map-layouts.md) | 64 × 80 m arena rules and per-map layouts |
 | [Game shell and settings](features/game-shell.md) | Menus, persistence, audio/video/controls |
+| [Career ranks and service record](features/career.md) | Military ranks, unlocks, buffs and local statistics |
 | [Combat audio](features/audio.md) | Stereo sample bank and distance model |
 | [Windows installer and upgrades](features/windows-installer.md) | Installer, in-place updates and INS01–INS06 |
 | [Staged authoritative networking](features/networking.md) | Parked under ADR-076 |

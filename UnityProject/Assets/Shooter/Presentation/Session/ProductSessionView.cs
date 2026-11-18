@@ -129,6 +129,19 @@ namespace Shooter.Presentation.Session
 
         public ProductMapView? MapView => mapView;
         public ProductActorPresentation? Actors => actors;
+
+        private WeaponHandlingScale localHandlingScale;
+
+        /// <summary>ADR-108: the local player's career handling buffs mirrored into the first-person view (display only).</summary>
+        public WeaponHandlingScale LocalHandling
+        {
+            get => localHandlingScale;
+            set
+            {
+                localHandlingScale = value;
+                if (actors != null) actors.LocalHandling = value;
+            }
+        }
         public ProductVisualReviewOverlay? VisualReview => visualReview;
         public LocalPlayerInput Input => input;
         public bool GameplayFocus => cursorLocked;
@@ -262,6 +275,7 @@ namespace Shooter.Presentation.Session
             actors = ProductActorPresentation.Create(transform, camera);
             // ADR-107: read-only sight lookup so every soldier's gun shows the sight the authority issued.
             actors.SightReader = entity => session != null && session.TryGetPrimarySight(entity, out var sight) ? sight : default;
+            actors.LocalHandling = localHandlingScale;
             analyticFxPresenter = AnalyticFxPresenter.Create(transform, analyticFxPool);
             grenadePresenter = CosmeticGrenadePresenter.Create(transform, grenadeFlight);
             var audioPair = EnsureAudio();

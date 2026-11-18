@@ -13,7 +13,7 @@ namespace Shooter.Tests.EditMode
     public sealed class IconAtlasEditModeTests
     {
         // Must equal IconAtlasGoldens.Library in Tools/Generation.Tests/IconAtlasTests.cs.
-        private const string LibraryGolden = "22964e2db82744ad8eb33c113c4c32b6468eae2112cae07c489b470129e798f0";
+        private const string LibraryGolden = "983eafa393ad9569e705e712c2425b8681a80bddb605065154b16005869af024";
 
         [Test]
         public void Library_atlas_matches_the_dotnet_golden()

@@ -1250,7 +1250,7 @@ Decision:
   - scoreboard and results tables with faction emblems on team-tinted gradient headers, rounded zebra rows, a glowing YOU row and a crown on the top scorer (presentation only; it is absent while every score is 0);
   - an icon library section in the review gallery.
 
-Consequences: there is no new shipped file. The atlas is about 192 KB of texture memory, plus one atlas sample per icon pixel. Ranks have no data model (there is no progression), so the rank glyphs are available but unused. Medal tier art stays the ADR-084 composite.
+Consequences: there is no new shipped file. The atlas is about 192 KB of texture memory, plus one atlas sample per icon pixel. Ranks have no data model (there is no progression), so the rank glyphs are available but unused. (Superseded for career insignia by ADR-108, which adds `rank-01`…`rank-20`.) Medal tier art stays the ADR-084 composite.
 
 Evidence on 2026-11-16 (working tree on `41fcdaa`, recorded in the commit that adds this ADR):
 - **Pure tests.** Generation 508 PASS, including five `IconAtlasTests`:
@@ -1755,3 +1755,47 @@ Consequences: feature-content-lock refreeze (geometry.weapon 1.4.0, weapon schem
 Rollback: revert the commit and restore the 1.3.0 recipes and the prior feature-content-lock. An Armory file left behind is ignored by older builds.
 
 Evidence: `Tools/Test-Generation.ps1` (`SightGeometryTests`, `ArsenalGeometryTests`, `WeaponPackageTests`, `IconAtlasTests`), `Tools/Test-Simulation.ps1` (`SightLoadoutTests`, `ArmorySelectionTests`), `Tools/Test-Game.ps1` (`ArmoryTests`), `Tools/verify_feature_schemas.py`. In-game look (collimator dot, sight placement per gun) and Armory usability are Pending the owner playtest.
+
+## ADR-108 — Accepted: career ranks, unlocks, buffs and local service record
+
+Date 2026-11-18. Context: owner request: (1) a lightweight local statistic; (2) career progress with military ranks, earned from each match's score, where each rank opens a new weapon, a sight or a gun buff. The player starts with the default weapon without extra sights. Every rank needs a unique icon, shown in all scoreboards, and the Armory shows the rank icon and name. Owner choices: bots show seeded cosmetic ranks; buffs are global (all firearms) and small; bots keep the full arsenal and no buffs; statistics get their own Career page. This supersedes the "no progression" lines of the vision non-goals, the brandbook, the TDM feature page, ADR-059/ADR-073 (which carved progression out of score badges) and ADR-085 (rank glyphs unused).
+
+Decision:
+- **Career points (CP)** per finished match: the human's personal score (ADR-059/097) + 500 for finishing + 1000 for a win (500 for a draw). Aborted, left or restarted matches produce no `MatchResults` and earn nothing. A typical 15-minute match earns about 3–5k CP.
+- **Ladder** (`Game/Settings/CareerLadder`): 20 ranks; rank *n* needs `1000·(n²−1)` cumulative CP (step cost rises by 2k per rank; about 6 matches to Corporal, 25 to First Sergeant, 100 to General).
+
+| # | Rank | CP | Reward |
+|---|---|---|---|
+| 1 | Private | 0 | M16A4 on iron sights, G17, knife, grenade |
+| 2 | Private 2nd Class | 3,000 | Collimator sight |
+| 3 | Private First Class | 8,000 | Fast Hands I: reload −8% |
+| 4 | Specialist | 15,000 | AK-102 |
+| 5 | Corporal | 24,000 | 2x prism |
+| 6 | Sergeant | 35,000 | Golden Eagle sidearm |
+| 7 | Staff Sergeant | 48,000 | Steady Aim I: ADS spread −8% |
+| 8 | Sergeant First Class | 63,000 | AK-47 |
+| 9 | Master Sergeant | 80,000 | Extra Mag I: +1 spare magazine |
+| 10 | First Sergeant | 99,000 | 4x scope |
+| 11 | Sergeant Major | 120,000 | Mk 14 DMR |
+| 12 | Warrant Officer | 143,000 | Recoil Control I: recoil −8% |
+| 13 | Second Lieutenant | 168,000 | Quick Draw: equip −20% |
+| 14 | First Lieutenant | 195,000 | 8x scope |
+| 15 | Captain | 224,000 | M-TAC 338 |
+| 16 | Major | 255,000 | Fast Hands II: reload −15% |
+| 17 | Lieutenant Colonel | 288,000 | Recoil Control II: recoil −15% |
+| 18 | Colonel | 323,000 | Extra Mag II: +2 spare magazines |
+| 19 | Brigadier General | 360,000 | Steady Aim II: ADS spread −15% |
+| 20 | General | 399,000 | Gold insignia (no gameplay change) |
+
+- **Unlocks:** sights unlock globally and then follow each gun's ADR-107 `allowed` list; every reward gun's factory optic unlocks before the gun (4x before the Mk 14, 8x before the M-TAC). The starter M16 begins on irons (its factory prism unlocks at Corporal). `ArmorySelection` takes a lock rule: locked guns and sights are listed with "Unlocks at …" and cannot be selected; a locked saved choice falls back to the first unlocked gun or sight; promotion re-applies the rule. A picked-up gun (ADR-105) can be any gun for that life.
+- **Buffs** (human only, all firearms, never knife/grenade, never damage, fire rate or movement): `Simulation/Combat/WeaponModifiers` with integer per-mille scales (caps −15% recoil, reload and ADS spread, −20% equip, +2 magazines). It rides on `PlayerLoadout.Modifiers`, is pinned per actor next to the sight, and is applied where `WeaponSimulator.Step` reads a definition (reload/equip ticks; the buffed definition travels inside `AcceptedShot` to hitscan spread and `AuthoritativeRecoil`). Spare magazines are added at issue. `Identity` is bit-identical, so bots, harness scenarios and replays are unchanged. Presentation mirrors recoil and reload/equip timing (`WeaponHandlingScale`, `WeaponVisualProfile.WithHandling`) with the same rounding.
+- **Service record and file:** `shooter-career.json` beside the settings (`CareerProfile`, `CareerJson`, `FileCareerStore`, schema `shooter.career.v1`): CP, matches, wins/losses/draws, kills, deaths, assists, headshot kills, total and best score, best kill streak and active ticks. Same store rules as the Armory (atomic write, last-good, quarantine, newer-schema preservation) plus: an unreadable file is never overwritten. Assists, headshots and the best streak come from a human-only `OfflineGameSession.LocalTally` (the frozen results rows carry only kills, deaths and score). `CareerRecorder` applies a match once per (load epoch, authority session).
+- **Insignia:** 20 unique procedural glyphs `rank-01`…`rank-20` in `IconLibrary` (bar, chevrons and rockers, specialist shield, diamond and star for senior NCOs, segmented warrant bar, lieutenant and captain bars, oak leaves, eagle, general stars), tinted per band (enlisted khaki, warrant/officer silver, bronze, general gold). The icon atlas golden changes accordingly.
+- **Bots:** `BotRanks.Resolve(participant, seed, playerRank)` gives each bot a rank within ±3 of the player's on its own SplitMix64 stream (cosmetic; nothing in authority reads it).
+- **Shell:** `ShellScreen.Career` (from Main, the main-menu rank badge or the Armory header; Escape/Back returns): current rank card with CP bar and next reward, active buffs, a 20-row ladder and the service record. The Armory header and the main menu show insignia, rank name and CP bar. `ScoreboardRow.RankIndex` puts the insignia before every name on the Tab board and the debrief tables. The debrief shows a career strip: CP earned with its breakdown, the bar filling from the old total to the new one, and a promotion line with the unlocked reward.
+
+Consequences: no C0, Game-v1, content-format, feature-content or network change; no settings migration. The existing Armory file keeps working: a fresh career locks every gun except the M16 and G17 until earned. The icon atlas golden and its EditMode copy are updated.
+
+Rollback: revert the commit. A `shooter-career.json` left behind is ignored by older builds.
+
+Evidence: `Tools/Test-Game.ps1` (`CareerTests`: ladder, award, store, fixtures, bot ranks, buffed human loadout), `Tools/Test-Simulation.ps1` (`CareerBuffTests`, `CareerShellTests`), `Tools/Test-Generation.ps1` (`IconAtlasTests`), Unity EditMode/PlayMode. Fixtures and schema: `docs/career-fixtures/`. In-game check of the Career page, insignia legibility, the debrief strip and buff feel is Pending the owner playtest.

@@ -52,7 +52,7 @@ Fonts and sound are not 3D/surface/animation assets. Baseline UI uses an engine-
 
 ## Non-goals for the first release slice
 
-No open world, vehicles, playable aircraft, structural destruction, deformable terrain, weapon attachments marketplace, cinematic faces, lip sync, full cloth simulation, licensed brands, ranked matchmaking, persistent progression, console/mobile support, VR, full photorealistic skin or ray-traced lighting. No deterministic PhysX lockstep, whole-world ray marching, general-purpose DCC replacement or custom engine. Do not silently trade these constraints for better visuals.
+No open world, vehicles, playable aircraft, structural destruction, deformable terrain, weapon attachments marketplace, cinematic faces, lip sync, full cloth simulation, licensed brands, ranked matchmaking, online or account-bound progression (the local career ladder of [ADR-108](decisions.md#adr-108--accepted-career-ranks-unlocks-buffs-and-local-service-record) is the one exception), console/mobile support, VR, full photorealistic skin or ray-traced lighting. No deterministic PhysX lockstep, whole-world ray marching, general-purpose DCC replacement or custom engine. Do not silently trade these constraints for better visuals.
 
 ## Defaults requiring validation, not a blocking user decision
 
