@@ -2,6 +2,28 @@
 
 Records from 2026-11-15 onward. Older entries — T062–T085, deliveries up to 0.3.12, historical candidates and the T065 operator runbook — are in the [handoff archive](handoff-archive.md).
 
+## ADR-109 — Site-planned maps: Old Town, Harbour, rebuilt Oil Depot — 2026-11-18
+
+Owner: Oil Depot is more or less good but not good enough as map design; the other two maps are garbage (random objects, enemies visible right after the respawn, a long empty space). Re-think map generation so each map is unique and imitates a real place with no random pillars or walls. Owner choices: a small town centre and a port, Oil Depot rebuilt on the new system, a few two-storey buildings. [ADR-109](../../decisions.md#adr-109--accepted-site-planned-maps-old-town-harbour-rebuilt-oil-depot); layouts in [tdm-map-layouts.md](../../features/tdm-map-layouts.md).
+
+**Implemented (source `b4a556d`):**
+- `Generation/Core/Environment/Site/`: `SiteLayout`, `SiteBuilder`, `SiteRules` (+ `SiteGrid`), `SiteDressing`, `SiteMapSvg` and the planners `environment.town.site`, `environment.harbour.site`, `environment.oil.site` 1.0.0. `CompoundPlan.Site` carries the semantic site; `ProductMapPlanner.ValidateOrThrow` adds `SiteRules` (passed identities are cached).
+- `training-compound` → Old Town, `depot-yard` → Harbour (display names and loading copy); ids, seeds, recipes and the package format are unchanged. `ArenaRules` path bounds 26–52 m / 60–110 m.
+- Retired: the three ADR-074 arena planners, the compound layout document and the compound/depot layout tests.
+- Fixed in passing: team-2 spawn rows were quantised from the staging rectangle's south edge, giving team 2 fewer back-row candidates than team 1 for staging depths that are not a multiple of 2 m; rows now start at each team's own back wall.
+- Bots: site maps' route corners are a patrol circuit through every lane point.
+
+**Measured (pure rules, approved seeds):** Old Town path to centre 50 m / enemy 96 m, sightline 32.5 m, first contact 22.3 m, built 58 %; Harbour 50 / 100 / 35.5 / 23.9 / 54 %; Oil Depot 49 / 96 / 36.75 / 27.2 / 47 %. Zero spawn LOS, zero exposed spawn-exit apron points, zero orphan boxes on all three. Top-down review renders: `Artifacts/maps/<id>-site.svg|png`.
+
+**Checks (source `b4a556d` working tree before commit, then clean):**
+- `Test-Generation` 586 PASS, `Test-Maps` PASS, `Test-Simulation` 539 PASS, `Test-Game` PASS, `Test-Contracts` 79 PASS, `Test-SourceProvenance` PASS; registry `--check`, asmdef graph, contract lock, fixtures and docs checks PASS.
+- Goldens re-frozen: `MapRegistryTests` collision/nav/gameplay roots and the AO volume hashes (tools lane and the EditMode twin).
+- **Native content (clean `b4a556d`, locked editor):** `Compile-GameContent.ps1 -Native -Force` PASS, `sourceDirty=false`, all 12 packages `unity-ai-navigation-2.0.0;pinned-physx-collision-bake`. Gameplay package roots: Old Town `4be971e6…`, Harbour `2521db15…`, Oil Depot `7439686b…` (previously compound `d15c01d7…`, depot `50229906…`, oil `5a77763e…` at ADR-074). Evidence: `Artifacts/m8-runtime-composition/b4a556d…/compile-gamecontent-20261118T140653184Z-82da3e23/`.
+
+- **Unity EditMode (locked editor, clean `b4a556d`):** PASS, including the AO volume EditMode twin. Evidence: `Artifacts/m0-foundation/b4a556d…/tests-editmode-20261118T141128891Z-b33a0d6e/`.
+
+**Pending:** Unity PlayMode, client build and the next installer; owner playtest of all three maps at 5v5–15v15 (first contact, spawn pressure, bot routing on the new topologies, upper floors and the pipe bridge) and the look review of the new dressing. Rules prove geometry only. Does not close FIX/SET/REL/P05/VD exits.
+
 ## ADR-074 — Compact 64 × 80 m maps with distinct layouts — 2026-11-15
 
 Owner: the maps were too big (all fights happened in the middle) and looked alike (a box building in the middle surrounded by odd free-standing walls). Shrink all three maps, keep Oil Depot's best parts, and give Compound and Depot Yard new layouts. [ADR-074](../../decisions.md#adr-074--accepted-compact-64--80-m-arenas-with-distinct-per-map-layouts); layouts in [tdm-map-layouts.md](../../features/tdm-map-layouts.md).
