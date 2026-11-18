@@ -48,7 +48,7 @@ public sealed class SightGeometryTests
             previous = triangles;
             MeshValidation.Check(lods[i], false);
             GeometryCodec.DecodeMesh(GeometryCodec.EncodeMesh(lods[i]));
-            Assert.All(lods[i].Submeshes, s => Assert.True(s.MaterialSlot <= 3));
+            Assert.All(lods[i].Submeshes, s => Assert.True(s.MaterialSlot <= 3 || s.MaterialSlot == 11));
         }
     }
 
@@ -78,6 +78,41 @@ public sealed class SightGeometryTests
     {
         foreach (string kind in new[] { "ak", "ar", "dmr", "bolt" })
             Assert.True(WeaponSights.EyeFor(kind, "collimator").Y < WeaponSights.EyeFor(kind, "scope2").Y + .0001f, kind);
+    }
+
+    [Theory]
+    [InlineData("ak")]
+    [InlineData("ar")]
+    [InlineData("dmr")]
+    [InlineData("bolt")]
+    public void Collimator_eye_line_passes_only_through_clear_glass(string kind)
+    {
+        // ADR-115: the reflex window is open; the only surface on the line of sight is the slot-11 glass pane.
+        var eye = WeaponSights.EyeFor(kind, "collimator");
+        foreach (var mesh in WeaponSights.BuildLods(kind, "collimator"))
+        {
+            int glassHits = 0;
+            foreach (var sub in mesh.Submeshes)
+                for (int i = (int)sub.FirstIndex; i < sub.FirstIndex + sub.IndexCount; i += 3)
+                {
+                    var p0 = mesh.Positions[(int)mesh.Indices[i]];
+                    var p1 = mesh.Positions[(int)mesh.Indices[i + 1]];
+                    var p2 = mesh.Positions[(int)mesh.Indices[i + 2]];
+                    if (!RayHits(eye.X, eye.Y, p0, p1, p2)) continue;
+                    Assert.True(sub.MaterialSlot == 11, kind + ": slot " + sub.MaterialSlot + " blocks the collimator window");
+                    glassHits++;
+                }
+            Assert.True(glassHits > 0, kind + ": no glass pane on the line of sight");
+        }
+    }
+
+    /// <summary>Whether the bore-parallel line through (x, y) crosses triangle p0 p1 p2 (2D point-in-triangle in XY).</summary>
+    private static bool RayHits(float x, float y, Float3 p0, Float3 p1, Float3 p2)
+    {
+        double D(Float3 a, Float3 b) => (b.X - a.X) * (y - a.Y) - (b.Y - a.Y) * (x - a.X);
+        double d0 = D(p0, p1), d1 = D(p1, p2), d2 = D(p2, p0);
+        bool neg = d0 < 0 || d1 < 0 || d2 < 0, pos = d0 > 0 || d1 > 0 || d2 > 0;
+        return !(neg && pos) && (d0 != 0 || d1 != 0 || d2 != 0);
     }
 
     [Fact]

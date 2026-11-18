@@ -127,12 +127,12 @@ The first-person gloves (`FirstPersonHandGeometry.Build`, rig `fp.hand.v2`) are 
 | Sight | Look | ADS |
 |---|---|---|
 | `irons` | AR rear block; flip-up rear aperture and front post on the DMR and bolt rails; part of the AK body | Irons, 52/80 hip FOV, soft vignette |
-| `collimator` | Open-tube red dot on a low clamp, tinted glass, brightness turret; dot 32 mm above the rail | Collimator, 56/80, gun stays in view, lit red dot |
+| `collimator` | Open reflex sight (ADR-115): low box base, rounded-rectangle frame leaning back 8°, one clear glass pane (material slot 11); dot 32 mm above the rail | Collimator, 56/80, gun stays in view, lit red dot in the clear pane |
 | `scope2` | The M16 prism scope (unchanged 1.3.0 construction), now reusable | Scoped PiP, 40/80 (2x) |
 | `scope4` | Mk 14 scope with turrets and rings | Scoped PiP, 20/80 (4x) |
 | `scope8` | M-TAC 338 long scope | Scoped PiP, 10/80 (8x) |
 
-Each sight mesh is built in the gun's own weapon space for its archetype rail (`ArsenalGeometry.MountRail`: AR, DMR and bolt top rails; an AK dust-cover rail adapter that ends ahead of the rear leaf) and parents to the gun at its origin. `WeaponSights.EyeFor(kind, sight)` is the line of sight used for first-person ADS alignment and the third-person head solve; the AR prism keeps the 1.3.0 M16 eye (0, 153, −10) mm. Packages hold one mesh set per (sight, archetype) any gun allows (`sight-<sight>-<kind>`, four LODs, fingerprint `geometry.weapon-sight.1.0.0`).
+Each sight mesh is built in the gun's own weapon space for its archetype rail (`ArsenalGeometry.MountRail`: AR, DMR and bolt top rails; an AK dust-cover rail adapter that ends ahead of the rear leaf) and parents to the gun at its origin. `WeaponSights.EyeFor(kind, sight)` is the line of sight used for first-person ADS alignment and the third-person head solve; the AR prism keeps the 1.3.0 M16 eye (0, 153, −10) mm. Packages hold one mesh set per (sight, archetype) any gun allows (`sight-<sight>-<kind>`, four LODs, fingerprint `geometry.weapon-sight.1.1.0` since [ADR-115](../decisions.md#adr-115--accepted-open-reflex-collimator-with-a-clear-glass-pane)). Sight meshes use weapon slots 0–3 plus slot 11, the transparent `Shooter/SightGlass` pane.
 
 Which sights a gun takes is data: `visual.sights { "default": ..., "allowed": [...] }` in its definition file, in loadout order (irons, collimator, scope2, scope4, scope8). The generator requires it for every 1.4.0 rail recipe, checks that `visual.optic` matches the default sight and writes `Simulation/Combat/SightCatalog.g.cs` and `Presentation/Model/View/WeaponSightChoices.g.cs`. Sights never change combat numbers.
 

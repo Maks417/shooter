@@ -1955,3 +1955,19 @@ Evidence (navigation):
 - **Still open:** about half of bot goal points lie more than 0.74 m from the NavMesh. Those paths still use the fallback, which is now wall-safe but less smooth.
 
 Evidence (motor and Career): `Tools/Simulation.Tests` (`MotorSlopeAndStepTests` corner, ledge and step cases; `CareerLayoutTests` at 1280×720, 1366×768, 1600×900 and 1920×1080 with UI scale 1.0, 1.25 and 1.5); Unity PlayMode 25/25 PASS including the real-PhysX corner test; the M11 handoff entry. The owner's in-game feel check at corners and visual review of both Career tabs at 720p and 1080p are Pending.
+
+## ADR-115 — Accepted: open reflex collimator with a clear glass pane
+
+Date 2026-11-18. Context: owner report: in ADS the collimator shows a black disc with the red dot on it instead of a see-through lens, and the sight should look like an open reflex sight (a low base carrying a rounded-rectangle window). Cause: the ADR-107 collimator capped both ends of its tube with discs in weapon material slot 3 (recess/rubber, opaque near-black), and the dot is a screen overlay drawn on top of them.
+
+Decision:
+- **Geometry** (`ProfileArsenalGeometry.Collimator`, `geometry.weapon-sight` 1.0.0 → 1.1.0): a 28 mm box base with a chamfered nose on a rail clamp, a rear dot emitter, two brightness buttons on the right and a battery cap on the left; a full-width plinth carrying a rounded-rectangle frame (33 × 25 mm to the tube centreline, 6 mm corners, `ShapeKit.ClosedTube` of 1.6 mm radius) leaning back 8°; one 1 mm glass pane seated in the frame. The eye line stays 32 mm above the rail, so ADS alignment, `WeaponSights.EyeFor` and the third-person head solve are unchanged. The other sights are byte-identical constructions.
+- **Material slot 11, clear sight glass.** Mounted sights may use slot 11. `ProductSurfaceMaterial.WeaponFinishes` appends it as `Shooter/SightGlass`: transparent (queue 3000, alpha blend, no depth write, both faces), about 7% opacity head-on with a faint blue-cyan coating tint, a Fresnel rim toward grazing angles and a soft sky sheen. No texture planes. The shader is a preloaded build asset like the other Shooter shaders. The gallery and capture palettes never draw sight meshes and are unchanged.
+- **Dot.** `TacticalUi.CollimatorDot` is unchanged; it now sits in the middle of the clear pane.
+- **Test.** `SightGeometryTests.Collimator_eye_line_passes_only_through_clear_glass`: on every rail and LOD, the bore-parallel eye line crosses glass triangles and no other material.
+
+Consequences: weapon packages republish the 13 sight sets under the new sight fingerprint. Feature-content-lock source hashes change for `ProfileArsenalGeometry.cs`, `WeaponSights.cs` and `docs/weapon-recipe-baseline.md`. C0-v1, Game-v1 and content-format locks are unchanged; combat numbers and sight choices are unchanged.
+
+Rollback: revert the commit and republish the weapon package.
+
+Evidence: [M11 handoff](milestones/m11-playable-release/handoff.md#adr-115-open-reflex-collimator--2026-11-18).

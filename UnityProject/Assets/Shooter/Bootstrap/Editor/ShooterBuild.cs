@@ -426,6 +426,8 @@ public static class ShooterBuild
                         ?? throw new InvalidOperationException("Missing procedural decal shader"),
                     AssetDatabase.LoadAssetAtPath<Shader>("Assets/Shooter/Shaders/UiSdf.shader")
                         ?? throw new InvalidOperationException("Missing UiSdf shader"),
+                    AssetDatabase.LoadAssetAtPath<Shader>("Assets/Shooter/Shaders/SightGlass.shader")
+                        ?? throw new InvalidOperationException("Missing sight glass shader"),
                     AssetDatabase.LoadAssetAtPath<Shader>(ShooterPostProcessingBuild.MapSurfaceShaderPath)
                         ?? throw new InvalidOperationException("Missing MapSurface shader"),
                     AssetDatabase.LoadAssetAtPath<Material>(ShooterPostProcessingBuild.MapSurfaceVariantPath)

@@ -64,7 +64,7 @@
     "content-schemas/visual-decals.schema.json": "03c1ca9158e69cdff8eb0340bdbb9fc1d92bdf643b7b615a68a35fb06ba6a80d",
     "content-schemas/visual-decals.valid.json": "c74882fd0d838c0a71f17a1d0c7564fec0794aa29cb6ba641131007966c83049",
     "contract-details.md": "66a72e60c88b036c2c1a8d048da714293859e86ee0654b1a48dff6051df46383",
-    "decisions.md": "0e3d59c3f802b54efe02c68dee3f7a0a87343a0c54960ca42c9a23a3e2b15f62",
+    "decisions.md": "5e6fe88f5bf8c29747ed4ba7e710f8166ee69e5b572bbfb030132c3f63da2779",
     "design-milestones.md": "a0d7e2edb3a930f19738ef9f5721db303679d09f3c31480bc97590f173f1c666",
     "deterministic-format.md": "7f3a9be8b9c128ea2803064b649f3a23f0051b1501109d2032b6f2bc6134c7d1",
     "domain-model.md": "59cdc7dcc1f4c7c72cac974ad1a7f7246113f1d159985e4f03727b5e01744492",
@@ -99,7 +99,7 @@
     "features/combat.md": "fef7041bb8496edafbf138f04aee24ebce9701dae014b858f75e774d553368b6",
     "features/environment.md": "e1f38c43cbe55a31c4392de32b40a5dbd5f7d5cfadf2862cacc91233848edddf",
     "features/game-shell.md": "2a500afca189c9c47647104161b6e600f4f5eded8c68053ed64f8634ba056faa",
-    "features/geometry-weapons.md": "d82a27caa4724fc6dcffddb93f3bfa1f2946d42f5146b8dd81f8e336830d7974",
+    "features/geometry-weapons.md": "5d71b2a6fa499070e489ee116984999373d93cb875a3c9c900700c201ae66315",
     "features/materials-rendering.md": "1db8fd6c62bfffa6ceff18f4f4633a86b8038645d084487f5c83345d1b1723ca",
     "features/networking.md": "0854dcd04959045a4d3a8e9df468c227fe9d7c974bbf80e86f19fb5957852b65",
     "features/playable-maps.md": "bcf9ccdd6d0a6b959cf1e32efc6bd7efd2b9f027c1d352a7a228f67f3537673b",
@@ -155,7 +155,7 @@
     "milestones/m11-playable-release/agent-assignments.md": "9df1f7cb3f1ec7d602287b80806acf1db118be20b342094ce8e7bc2f0a526bad",
     "milestones/m11-playable-release/contracts-integration.md": "92ec7f423a0f51f6446c72bfb3e2c915247478b6a10d05ee47ab449fdd453c7f",
     "milestones/m11-playable-release/handoff-archive.md": "e3db424191a4fa7543db0b383eee5e8c4f100c7c5676bf723155a3773cf9e8b6",
-    "milestones/m11-playable-release/handoff.md": "f1881cc92ef8f1727c4aeeb76bf0cbb727afb7a1c5d4cb0c764671f55655e5ae",
+    "milestones/m11-playable-release/handoff.md": "460681ba3cb7c72084a2ffdabe97bc5b6233c956b311ed492ba972133d64110f",
     "milestones/m11-playable-release/implementation.md": "99e735b4d00a559e2a8c66831a37f9bf160cbea1bfb1cf33038a8a14d5ae765a",
     "milestones/m11-playable-release/index.md": "64386f5272f60ee96b9359408ad31658b9a4e509d6d2bbcc476f24d4b8f71599",
     "milestones/m11-playable-release/validation-acceptance.md": "ca9a71e2f30781b1d5872b69011ef0948c90e984de916889f0035e23117692c8",
@@ -207,6 +207,6 @@
     "visual-art-brief.md": "0ba69412a2a4ef6cff59c55e0a4a762999a2d2d8651b1b4d3f0342f3a7699404",
     "visual-defect-inventory.md": "025a6057dcb4ace0586dad3b267b6ac4a4346125ea1453425748d197d8b81344",
     "visual-roadmap.md": "a27eedb15ae730654b3a71c05fb4638bb7b7f31ebea8aebd8d0aa2ffee49af33",
-    "weapon-recipe-baseline.md": "7879477254413fc451bc57e25de39fbe816b9c6c46a9ec046d25288a499ff1ec"
+    "weapon-recipe-baseline.md": "65f1483bfff176a89ac41204c176001394f1f91b13c034a612a1bc7a0bade382"
   }
 }

@@ -12,7 +12,7 @@ namespace Shooter.Generation
     public static class WeaponSights
     {
         public const string GeneratorId = "geometry.weapon-sight";
-        public const string GeneratorVersion = "1.0.0";
+        public const string GeneratorVersion = "1.1.0";
 
         /// <summary>Every rail-mounted sight, in loadout order.</summary>
         public static string[] All => (string[])ArsenalGeometry.MountedSights.Clone();

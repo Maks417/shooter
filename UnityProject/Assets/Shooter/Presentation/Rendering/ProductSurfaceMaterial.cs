@@ -56,7 +56,17 @@ namespace Shooter.Presentation.Rendering
             var gold = Tint(steel, "Polished gold plating", new Color(1.95f, 1.45f, .52f), .82f);
             // The olive enamel albedo is dark green, so the band tint lifts red and suppresses blue into marking yellow.
             var band = Tint(grenadePaint, "Yellow HE marking band", new Color(7.2f, 4.0f, .7f), .45f);
-            return new[] { coated, polymer, steel, recess, enamel, wood, gold, blade, bladeEdge, grenadePaint, band };
+            return new[] { coated, polymer, steel, recess, enamel, wood, gold, blade, bladeEdge, grenadePaint, band, SightGlass(own) };
+        }
+
+        /// <summary>ADR-115 slot 11: the clear, faintly coated reflex-sight pane (transparent, no texture planes).</summary>
+        public static Material SightGlass(Action<UnityEngine.Object> own)
+        {
+            if (own == null) throw new ArgumentNullException(nameof(own));
+            var shader = Shader.Find("Shooter/SightGlass") ?? throw new InvalidOperationException("Sight glass shader missing.");
+            var material = new Material(shader) { name = "Clear reflex sight glass", renderQueue = 3000 };
+            own(material);
+            return material;
         }
 
         /// <summary>Retains verified box geometry; adapts face UVs to metres after nonuniform scaling.</summary>

@@ -812,6 +812,14 @@ Checks on the working tree over `bc3bd29` (all PASS): Contracts 79/79 (`m0-found
 
 **Pending / NotClaimed:** client build and installer; in-game review of the Career page layout, insignia legibility at 1080p in the Tab board and debrief, the debrief CP strip and promotion line, Armory lock rows, and buff feel (reload, recoil, ADS spread, equip, spare magazines). Balance of the CP scale needs real match scores.
 
+## ADR-115 open reflex collimator — 2026-11-18
+
+Owner report: the collimator showed a black disc around the dot instead of a see-through lens; the owner asked for an open reflex shape (low base, rounded-rectangle window). Implemented [ADR-115](../../decisions.md#adr-115--accepted-open-reflex-collimator-with-a-clear-glass-pane): new collimator geometry (`geometry.weapon-sight` 1.1.0), weapon material slot 11 with the transparent `Shooter/SightGlass` shader, and a test that the eye line crosses only glass.
+
+Checks on the working tree over `27406b8`: Generation 611/611 PASS (`m1-procedural-feasibility/27406b8…/20261118T212028424Z-448669ba`, after the owner-approved feature-content-lock refreeze of the three changed sources), Simulation 648/648 PASS (`m2-combat-harness/27406b8…/20261118T210424924Z-62cb6da4`), source provenance PASS after `ShooterBuild.WriteSettingsProvenance` (the shader imports and the project compiles in the locked editor), Unity EditMode PASS (`m0-foundation/27406b8…/tests-editmode-20261118T210637855Z-5e3126eb`). An offline flat-shaded render of the AR collimator LOD0 confirmed the shape and the open window.
+
+**Pending / NotClaimed:** weapon package republish, client build and installer; in-game review of the glass look (tint, rim, sheen) and the frame in ADS and in third person on all four rails.
+
 ## Delivery 0.3.23
 
 Owner requested an installer once the navigation fix was done (2026-11-18). Clean binary/content source **`1d6c2cc5f424fb9f8e3fe6b827c320289839505d`** adds to 0.3.22 [ADR-114](../../decisions.md#adr-114--accepted-corner-bob-motor-fix-nav-bake-that-respects-walls-and-a-tabbed-career-page):

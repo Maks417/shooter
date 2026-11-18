@@ -598,7 +598,7 @@ namespace Shooter.Presentation.Session
 
         /// <summary>
         /// ADR-107 collimator: a lit red dot with a soft bloom at the aim point. The housing itself is the real sight mesh
-        /// in view, so nothing else is drawn.
+        /// in view, so nothing else is drawn; ADR-115 puts the dot in the middle of the sight's clear glass pane.
         /// </summary>
         public static void CollimatorDot(float cx, float cy, float radius, float opacity, bool reducedFlash)
         {

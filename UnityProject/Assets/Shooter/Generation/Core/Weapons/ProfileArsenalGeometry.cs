@@ -11,11 +11,12 @@ namespace Shooter.Generation
     /// (<see cref="ShapeKit.Loft"/>) instead of bevelled boxes. Sockets, collision, envelopes and material slots are the
     /// 1.2.0 ones (<see cref="ArsenalGeometry"/>), so gameplay and hand placement are unchanged.
     /// Weapon space: +Z forward along the bore, +Y up, origin at the trigger-hand grip.
-    /// Material slots: 0 coated metal, 1 polymer, 2 machined steel, 3 recess/rubber, 5 oiled wood, 6 polished gold.
+    /// Material slots: 0 coated metal, 1 polymer, 2 machined steel, 3 recess/rubber, 5 oiled wood, 6 polished gold,
+    /// 11 clear sight glass (ADR-115, mounted sights only).
     /// </summary>
     internal static class ProfileArsenalGeometry
     {
-        private const ushort Metal = 0, Polymer = 1, Steel = 2, Recess = 3, Wood = 5, Gold = 6;
+        private const ushort Metal = 0, Polymer = 1, Steel = 2, Recess = 3, Wood = 5, Gold = 6, Glass = 11;
 
         public static WeaponBuild Build(string kind, ArsenalParts parts)
         {
@@ -338,30 +339,75 @@ namespace Shooter.Generation
             }
 
             /// <summary>
-            /// Open-tube red-dot collimator on a low clamp: a short housing with an objective hood, tinted glass at both
-            /// ends, a brightness turret and a battery cap. The dot sits <see cref="ArsenalGeometry.CollimatorEyeHeight"/>
-            /// above the rail.
+            /// ADR-115 open reflex collimator: a low box base clamped on the rail carries a thin rounded-rectangle window
+            /// frame, leaning back slightly, with one clear glass pane (slot <see cref="Glass"/>) the eye looks through. The
+            /// dot (a screen overlay) sits <see cref="ArsenalGeometry.CollimatorEyeHeight"/> above the rail, in the middle of
+            /// the pane. Nothing opaque crosses the line of sight.
             /// </summary>
             private void Collimator(float railY, float railZ)
             {
-                float cy = railY + ArsenalGeometry.CollimatorEyeHeight, rear = railZ - .028f, front = railZ + .034f;
-                // Clamp and riser.
-                Slab(metal, 0, .028f, .002f, rear + .006f, railY + .001f, .002f, front - .004f, railY + .001f, .002f, front - .006f, cy - .013f, .004f, rear + .008f, cy - .013f, .004f);
-                // Housing: a turned tube with a flared objective hood.
-                Turn(metal, 0, cy, radial, .0150f, rear, .0170f, rear + .003f, .0170f, front - .014f, .0185f, front - .006f, .0188f, front,
-                    .0170f, front, .0170f, front - .004f);
-                // Tinted objective and ocular glass, just proud of their housings.
-                Turn(Recess, 0, cy, radial, .0164f, front - .0042f, .0164f, front - .0034f);
-                Turn(Recess, 0, cy, radial, .0136f, rear - .0006f, .0136f, rear + .0004f);
+                float cy = railY + ArsenalGeometry.CollimatorEyeHeight;
+                float rear = railZ - .026f, front = railZ + .022f, top = railY + .016f;
+                // Window: half width/height to the frame tube's centreline, corner radius, tube radius, lean (top rearward).
+                const float hw = .0165f, hh = .0125f, corner = .0060f, tube = .0016f, lean = 8f;
+                float zc = railZ + .011f;
+                double t = lean * Math.PI / 180;
+                float cos = (float)Math.Cos(t), sin = (float)Math.Sin(t);
+                // Base: clamp and a box housing with a chamfered nose and a sloped rear.
+                Slab(metal, 0, .028f, .002f, rear, railY + .001f, .002f, front, railY + .001f, .002f, front, top - .006f, .003f,
+                    front - .006f, top, .003f, rear + .008f, top, .003f, rear, top - .004f, .003f);
+                // Frame foot: a full-width plinth joining the lower frame rail to the base.
+                float footY = cy - hh * cos;
+                float footZ = zc + hh * sin;
+                Slab(metal, 0, 2 * hw + .002f, .0008f, footZ - .0060f, top - .002f, .0012f, footZ + .0060f, top - .002f, .0012f,
+                    footZ + .0040f, footY + .0010f, .0012f, footZ - .0040f, footY + .0010f, .0012f);
+                // Frame: a round-section tube swept round the rounded rectangle.
+                int k = radial >= 32 ? 6 : radial >= 16 ? 4 : radial >= 10 ? 2 : 1;
+                var loop = new List<Float3>();
+                void Corner(float cx, float cv, double from)
+                {
+                    for (int i = 0; i <= k; i++)
+                    {
+                        double ang = from + (Math.PI / 2) * i / k;
+                        float x = cx + corner * (float)Math.Cos(ang), v = cv + corner * (float)Math.Sin(ang);
+                        loop.Add(new Float3(x, cy + v * cos, zc - v * sin));
+                    }
+                }
+                Corner(hw - corner, hh - corner, 0);
+                Corner(-hw + corner, hh - corner, Math.PI / 2);
+                Corner(-hw + corner, -hh + corner, Math.PI);
+                Corner(hw - corner, -hh + corner, 1.5 * Math.PI);
+                a.Add(ShapeKit.ClosedTube(loop, tube, new Float3(0, 0, 1), Math.Max(6, radial / 3)), new Float3(0, 0, 0), Quat.Identity, metal);
+                // Glass pane seated inside the frame tube, in the lean plane; local A = X, B = up, thickness along the bore.
+                float gw = hw - tube * .6f, gh = hh - tube * .6f, gr = corner - tube * .6f;
+                var pane = ShapeKit.Slab(new[]
+                {
+                    new ProfileCorner(-gw, -gh, gr), new ProfileCorner(gw, -gh, gr), new ProfileCorner(gw, gh, gr), new ProfileCorner(-gw, gh, gr)
+                }, .0010f, 0, Math.Max(2, arc * 2), 0);
+                a.Add(pane, new Float3(0, cy, zc), LeanedZToX(-lean), Glass);
                 if (detail)
                 {
-                    // Brightness turret on the right and a battery cap on the left.
-                    TurnAbout(metal, new Float3(0, cy, railZ - .004f), ZToX, radial, .0080f, .010f, .0080f, .0225f, .0068f, .0245f);
-                    if (fine)
-                        for (int i = 0; i < 6; i++)
-                            Strip(Recess, cy, .0182f, 60 * i + 30, front - .013f, front - .008f, .0012f, .0006f);
-                    Plate(Steel, -.0150f, .0020f, rear + .010f, rear + .024f, railY + .004f, railY + .011f, .0015f);
+                    // Dot emitter at the rear of the base, aimed at the pane.
+                    Slab(metal, 0, .010f, .001f, rear + .005f, top - .001f, .001f, rear + .017f, top - .001f, .001f, rear + .015f, top + .005f, .002f,
+                        rear + .007f, top + .005f, .002f);
+                    Plate(Recess, 0, .004f, rear + .0155f, rear + .0165f, top + .001f, top + .004f, .0005f);
+                    // Brightness buttons on the right, battery cap on the left, clamp cross-bolt.
+                    for (int i = 0; i < 2; i++)
+                        TurnAbout(Polymer, new Float3(.014f, railY + .010f, rear + .011f + i * .010f), ZToX, Math.Max(8, radial / 2),
+                            .0030f, -.0005f, .0030f, .0018f, .0024f, .0024f);
+                    TurnAbout(metal, new Float3(-.014f, railY + .010f, rear + .016f), new Quat(0, -.70710677f, 0, .70710677f), Math.Max(10, radial / 2),
+                        .0055f, -.0005f, .0055f, .0020f, .0048f, .0028f);
+                    Plate(Steel, .0145f, .0020f, front - .012f, front - .004f, railY + .003f, railY + .008f, .0015f);
                 }
+            }
+
+            /// <summary><see cref="ZToX"/> followed by a pitch of <paramref name="degrees"/> about +X (negative tips the top rearward).</summary>
+            private static Quat LeanedZToX(float degrees)
+            {
+                double h = degrees * Math.PI / 360;
+                float x = (float)Math.Sin(h), w = (float)Math.Cos(h), s = .70710677f;
+                // (x,0,0,w) * (0,s,0,s)
+                return new Quat(x * s, w * s, x * s, w * s);
             }
 
             /// <summary>Flip-up rear aperture and front post pair on the top rail (DMR and bolt-action irons).</summary>
