@@ -87,7 +87,7 @@ namespace Shooter.Generation.Environment
             GeneratorFingerprint.Compute(MapRecipe.GeneratorIdFor(mapId), MapRecipe.GeneratorVersion);
 
         public static ContentId SoldierFingerprint =>
-            GeneratorFingerprint.Compute(SoldierRecipe.GeneratorId, SoldierRecipe.GeneratorVersion);
+            GeneratorFingerprint.Compute(SoldierRecipe.GeneratorId, SoldierRecipe.ProfileVersion);
 
         public static string ShaderPath(string profile) => ShaderPathPrefix + profile + ".json";
 
@@ -316,8 +316,9 @@ namespace Shooter.Generation.Environment
         }
 
         public static MaterialData DecodeMapMaterial(PackagedVisualPayloads payloads, string path) =>
-            DecodeMaterial(payloads, path, (path.StartsWith("material-map-", StringComparison.Ordinal) || path.Contains("-uniform")) && path != MapAmbientOcclusionVolume.Path
-                ? GeneratorFingerprint.Compute(NoiseMaterialRecipe.Generator, NoiseMaterialRecipe.Version) : MapFingerprint(payloads.MapId));
+            DecodeMaterial(payloads, path, path.StartsWith("material-map-", StringComparison.Ordinal) && path != MapAmbientOcclusionVolume.Path
+                ? GeneratorFingerprint.Compute(NoiseMaterialRecipe.Generator, NoiseMaterialRecipe.StructuredVersion) // ADR-106 map surfaces
+                : path.Contains("-uniform") ? GeneratorFingerprint.Compute(NoiseMaterialRecipe.Generator, NoiseMaterialRecipe.Version) : MapFingerprint(payloads.MapId));
 
         /// <summary>ADR-081 baked ambient-occlusion volume (Texture3D layout, see <see cref="MapAmbientOcclusionVolume.Index"/>).</summary>
         public static byte[] DecodeAmbientOcclusionVolume(PackagedVisualPayloads payloads) =>

@@ -68,20 +68,21 @@ public sealed class MapPackageSurfaceTests : IDisposable
             {
                 string planePath = plane == "albedo" ? path : MapVisualClosure.MaterialCompanionPath(path, plane);
                 var data = MapVisualClosure.DecodeMapMaterial(payloads, planePath);
-                Assert.Equal(128, data.Width);
-                Assert.Equal(128, data.Height);
-                Assert.Equal(8, data.MipBytes.Count);
+                // ADR-106: material.noise 1.1.0 Low surfaces are 256 px over a 4 m tile.
+                Assert.Equal(256, data.Width);
+                Assert.Equal(256, data.Height);
+                Assert.Equal(9, data.MipBytes.Count);
                 Assert.Equal(plane == "albedo" ? "rgba8-srgb" : "rgba8-linear", data.ChannelFormat);
-                int size = 128;
+                int size = 256;
                 for (int mip = 0; mip < data.MipBytes.Count; mip++)
                 {
                     Assert.Equal(size * size * 4, data.MipBytes[mip].Count);
                     size = Math.Max(1, size / 2);
                 }
-                var pixels = Enumerable.Range(0, 128 * 128).Select(i =>
+                var pixels = Enumerable.Range(0, 256 * 256).Select(i =>
                     (data.MipBytes[0][i * 4], data.MipBytes[0][i * 4 + 1], data.MipBytes[0][i * 4 + 2]));
                 Assert.True(pixels.Distinct().Take(2).Count() > 1, planePath + " must not be a flat color placeholder.");
-                Assert.All(Enumerable.Range(0, 128 * 128), i => Assert.Equal(255, data.MipBytes[0][i * 4 + 3]));
+                Assert.All(Enumerable.Range(0, 256 * 256), i => Assert.Equal(255, data.MipBytes[0][i * 4 + 3]));
             }
         }
     }
@@ -109,7 +110,7 @@ public sealed class MapPackageSurfaceTests : IDisposable
                 string companion = MapVisualClosure.MaterialCompanionPath(path, plane);
                 Assert.True(loaded.Has(companion));
                 Assert.Equal(firstBytes[companion], loaded.Bytes(companion));
-                Assert.Equal(128, MapVisualClosure.DecodeMapMaterial(loaded, companion).Width);
+                Assert.Equal(256, MapVisualClosure.DecodeMapMaterial(loaded, companion).Width);
             }
     }
 
@@ -154,12 +155,12 @@ public sealed class MapPackageSurfaceTests : IDisposable
             {
                 foreach(string planePath in new[]{path,MapVisualClosure.MaterialCompanionPath(path,"normal"),MapVisualClosure.MaterialCompanionPath(path,"mask")})
                 {
-                    if(profile!="high")Assert.Equal(low.Bytes(planePath),payloads.Bytes(planePath));
+                    if(profile=="low")Assert.Equal(low.Bytes(planePath),payloads.Bytes(planePath));
                     else
                     {
-                        // ADR-088 deliberately adds 256px High presentation; gameplay equality above is unchanged.
+                        // ADR-106 deliberately adds 512px Balanced/High presentation; gameplay equality above is unchanged.
                         var data=MapVisualClosure.DecodeMapMaterial(payloads,planePath);
-                        Assert.Equal(256,data.Width);Assert.Equal(256,data.Height);Assert.Equal(9,data.MipBytes.Count);
+                        Assert.Equal(512,data.Width);Assert.Equal(512,data.Height);Assert.Equal(10,data.MipBytes.Count);
                         Assert.NotEqual(low.Bytes(planePath),payloads.Bytes(planePath));
                     }
                 }

@@ -189,18 +189,18 @@ Shader "Shooter/MapSurface"
                 half3 detailWorld=normalize(input.normalWS);
                 if(_ShooterActorMode<.5)
                 {
-                // Numeric macro variation: no texture fetch, approximately twenty-metre features.
-
+                // Numeric macro variation: no texture fetch, ~20 m and ~7 m bands break up the 4 m tile (ADR-106).
                 // Smooth low-frequency spatial modulation avoids a visible grid at cell edges.
-                float variation = .96 + .04 * sin(world.x * .19 + sin(world.z * .13));
+                float variation = .935 + .045 * sin(world.x * .19 + sin(world.z * .13)) + .02 * sin(world.z * .61 + 1.7 * sin(world.x * .43));
                 half dirt = saturate(1-world.y/1.25) * .16h + (1-ao)*.24h;
                 surfaceData.albedo *= variation * lerp(half3(1,1,1), half3(.59,.51,.39), dirt);
                 surfaceData.smoothness *= 1-dirt*.65h;
                 #ifdef _NORMALMAP
                 half3 weights = pow(abs(normalize(input.normalWS)), 4); weights /= max(dot(weights,half3(1,1,1)),.001h);
-                half3 nx = SampleNormal(world.zy * 1.7, TEXTURE2D_ARGS(_BumpMap,sampler_BumpMap));
-                half3 ny = SampleNormal(world.xz * 1.7, TEXTURE2D_ARGS(_BumpMap,sampler_BumpMap));
-                half3 nz = SampleNormal(world.xy * 1.7, TEXTURE2D_ARGS(_BumpMap,sampler_BumpMap));
+                // ADR-106: a gentle 0.55/m re-sample (was 1.7/m) adds near variation without high-frequency glitter.
+                half3 nx = SampleNormal(world.zy * .55, TEXTURE2D_ARGS(_BumpMap,sampler_BumpMap));
+                half3 ny = SampleNormal(world.xz * .55, TEXTURE2D_ARGS(_BumpMap,sampler_BumpMap));
+                half3 nz = SampleNormal(world.xy * .55, TEXTURE2D_ARGS(_BumpMap,sampler_BumpMap));
                 half3 baseNormal=normalize(input.normalWS);
                 half3 xWorld=half3(nx.z*sign(baseNormal.x),nx.y,nx.x);
                 half3 yWorld=half3(ny.x,ny.z*sign(baseNormal.y),ny.y);
@@ -215,7 +215,7 @@ Shader "Shooter/MapSurface"
 
                 InputData inputData;
                 InitializeInputData(input, surfaceData.normalTS, inputData);
-                if(_ShooterActorMode<.5)inputData.normalWS=normalize(inputData.normalWS+(detailWorld-normalize(input.normalWS))*.18h);
+                if(_ShooterActorMode<.5)inputData.normalWS=normalize(inputData.normalWS+(detailWorld-normalize(input.normalWS))*.10h);
                 SETUP_DEBUG_TEXTURE_DATA(inputData, UNDO_TRANSFORM_TEX(input.uv, _BaseMap));
 
             #if defined(_DBUFFER)

@@ -182,6 +182,74 @@ public static class ShooterFeatureBuild
         finally { foreach (var value in owned) if (value != null) UnityEngine.Object.DestroyImmediate(value); }
     });
 
+    // ADR-106 offline source diagnostic: the product soldier (soldier.loft 1.0.3 and 1.1.0) in bind pose with flat
+    // stand-in colours. Not packaged-player, skinning, material or P05 visual acceptance.
+    public static void CaptureSoldierKit() => Guard(() =>
+    {
+        ShooterBuild.CheckToolchain();
+        string output = Path.GetFullPath(ShooterBuild.Argument("-shooterCaptureRoot"));
+        RequireArtifacts(output); Directory.CreateDirectory(output);
+        EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+        QualitySettings.SetQualityLevel(0, true); // same as the other captures, so ProjectSettings are not rewritten
+        var owned = new List<UnityEngine.Object>();
+        try
+        {
+            var shader = Shader.Find("Universal Render Pipeline/Lit");
+            if (shader == null) throw new InvalidOperationException("Required URP Lit unavailable.");
+            Material Flat(Color color, float smoothness)
+            { var m = new Material(shader); m.SetColor("_BaseColor", color); m.SetFloat("_Smoothness", smoothness); owned.Add(m); return m; }
+            var palette = new[] { Flat(new Color(.30f, .33f, .22f), .15f), Flat(new Color(.36f, .31f, .23f), .25f), Flat(new Color(.62f, .48f, .38f), .3f),
+                Flat(new Color(.08f, .09f, .10f), .85f), Flat(new Color(.55f, .12f, .10f), .2f), Flat(new Color(.20f, .25f, .45f), .2f) };
+            var cameraObject = new GameObject("Soldier capture camera"); owned.Add(cameraObject);
+            var camera = cameraObject.AddComponent<Camera>();
+            camera.clearFlags = CameraClearFlags.SolidColor; camera.backgroundColor = new Color(.16f, .20f, .25f);
+            camera.nearClipPlane = .01f; camera.farClipPlane = 20; camera.fieldOfView = 30;
+            var lightObject = new GameObject("Soldier key"); owned.Add(lightObject);
+            var key = lightObject.AddComponent<Light>(); key.type = LightType.Directional; key.intensity = 1.8f; key.shadows = LightShadows.Soft;
+            key.transform.rotation = Quaternion.Euler(40, -30, 0);
+            RenderSettings.ambientMode = AmbientMode.Trilight; RenderSettings.ambientSkyColor = new Color(.42f, .46f, .52f);
+            RenderSettings.ambientEquatorColor = new Color(.30f, .30f, .30f); RenderSettings.ambientGroundColor = new Color(.18f, .16f, .14f);
+            var paths = new List<string>();
+            foreach (string version in new[] { SoldierRecipe.GeneratorVersion, SoldierRecipe.ProfileVersion })
+            {
+                var recipe = SoldierRecipe.Parse(Encoding.ASCII.GetBytes("{\"schemaId\":\"shooter.soldier.v1\",\"recipeId\":\"soldiers/baseline\",\"generatorId\":\"soldier.loft\",\"generatorVersion\":\"" +
+                    version + "\",\"seed\":\"460072030\",\"parameters\":" + SoldierRecipe.ParametersJson + ",\"dependencies\":[]}"));
+                var build = SoldierGeometry.Build(recipe);
+                for (int lod = 0; lod < 3; lod++)
+                {
+                    var data = build.Lods[lod];
+                    var mesh = new Mesh { indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 }; owned.Add(mesh);
+                    mesh.vertices = data.Positions.Select(v => new Vector3(v.X, v.Y, v.Z)).ToArray();
+                    mesh.normals = data.Normals.Select(v => new Vector3(v.X, v.Y, v.Z)).ToArray();
+                    mesh.tangents = data.Tangents.Select(v => new Vector4(v.X, v.Y, v.Z, v.W)).ToArray();
+                    mesh.uv = data.Uv.Select(v => new Vector2(v.X, v.Y)).ToArray();
+                    mesh.subMeshCount = data.Submeshes.Count;
+                    for (int i = 0; i < data.Submeshes.Count; i++)
+                    {
+                        var sub = data.Submeshes[i];
+                        mesh.SetIndices(data.Indices.Skip((int)sub.FirstIndex).Take((int)sub.IndexCount).Select(v => (int)v).ToArray(), MeshTopology.Triangles, i);
+                    }
+                    mesh.RecalculateBounds();
+                    var root = new GameObject("Soldier " + version + " lod" + lod); owned.Add(root);
+                    root.AddComponent<MeshFilter>().sharedMesh = mesh;
+                    root.AddComponent<MeshRenderer>().sharedMaterials = data.Submeshes.Select(sub => palette[Math.Min(5, (int)sub.MaterialSlot)]).ToArray();
+                    var shots = lod == 0 ? new[] { "front", "three-quarter", "back", "head" } : new[] { "three-quarter" };
+                    foreach (string angle in shots)
+                    {
+                        Vector3 target = angle == "head" ? new Vector3(0, 1.62f, 0) : new Vector3(0, .95f, 0);
+                        Vector3 direction = angle == "front" ? Vector3.forward : angle == "back" ? Vector3.back : new Vector3(.75f, .25f, .85f).normalized;
+                        camera.transform.position = target + direction * (angle == "head" ? 1.0f : 4.4f);
+                        camera.transform.LookAt(target);
+                        string path = Path.Combine(output, "soldier-" + version + "-lod" + lod + "-" + angle + ".png"); Render(camera, path); paths.Add(path);
+                    }
+                    root.SetActive(false);
+                }
+            }
+            Debug.Log("SHOOTER_SOLDIER_KIT_CAPTURE files=" + paths.Count);
+        }
+        finally { foreach (var value in owned) if (value != null) UnityEngine.Object.DestroyImmediate(value); }
+    });
+
     // Editor-only data fixture: no authority/fake adapter can ship from this assembly.
     private sealed class HandCaptureLifecycle : Shooter.Game.Contracts.IActorLifecycle
     {

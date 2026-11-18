@@ -20,9 +20,9 @@ def main():
     outcomes = []
     sources = [(p, True) for p in sorted((ROOT / "UnityProject/Assets/Shooter/Generation/FeatureRecipes").glob("*.json"))]
     # Versions each generator still accepts (ADR-075 material.surface 1.1.0, ADR-082 geometry.weapon 1.1.0,
-    # ADR-102 geometry.weapon 1.2.0); older
+    # ADR-102 geometry.weapon 1.2.0, ADR-106 geometry.weapon 1.3.0, soldier.loft 1.1.0 and material.noise 1.1.0); older
     # fixtures are migration evidence and must be rejected by the current schema.
-    current_versions = {"geometry.weapon": {"1.0.5", "1.1.0", "1.2.0"}, "material.surface": {"1.0.1", "1.1.0"}, "soldier.loft": {"1.0.2", "1.0.3"}, "material.noise": {"1.0.0"}, "fx.flipbook": {"1.0.0"}}
+    current_versions = {"geometry.weapon": {"1.0.5", "1.1.0", "1.2.0", "1.3.0"}, "material.surface": {"1.0.1", "1.1.0"}, "soldier.loft": {"1.0.2", "1.0.3", "1.1.0"}, "material.noise": {"1.0.0", "1.1.0"}, "fx.flipbook": {"1.0.0"}}
     sources += [(p, json.loads(p.read_text(encoding="utf-8"))["generatorVersion"] in
                  current_versions[json.loads(p.read_text(encoding="utf-8"))["generatorId"]])
                 for p in sorted((ROOT / "docs/feature-fixtures").glob("*.json"))]

@@ -22,8 +22,8 @@ namespace Shooter.Generation
             try
             {
                 kind = WeaponRecipe.Validate(request.Recipe).kind;
-                if (request.Recipe.GeneratorVersion == WeaponRecipe.ArsenalVersion)
-                    arsenalRecipe = WeaponRecipe.Parse(System.Text.Encoding.UTF8.GetBytes("{\"schemaId\":\"" + WeaponRecipe.Schema + "\",\"recipeId\":\"" + request.Recipe.RecipeId + "\",\"generatorId\":\"" + WeaponRecipe.GeneratorId + "\",\"generatorVersion\":\"" + WeaponRecipe.ArsenalVersion + "\",\"seed\":\"" + request.Recipe.Seed + "\",\"parameters\":" + System.Text.Encoding.UTF8.GetString(request.Recipe.Parameters) + ",\"dependencies\":[]}"));
+                if (WeaponRecipe.IsArsenalVersion(request.Recipe.GeneratorVersion))
+                    arsenalRecipe = WeaponRecipe.Parse(System.Text.Encoding.UTF8.GetBytes("{\"schemaId\":\"" + WeaponRecipe.Schema + "\",\"recipeId\":\"" + request.Recipe.RecipeId + "\",\"generatorId\":\"" + WeaponRecipe.GeneratorId + "\",\"generatorVersion\":\"" + request.Recipe.GeneratorVersion + "\",\"seed\":\"" + request.Recipe.Seed + "\",\"parameters\":" + System.Text.Encoding.UTF8.GetString(request.Recipe.Parameters) + ",\"dependencies\":[]}"));
             }
             catch (Exception error) when (error is FormatException || error is ArgumentException) { return Fail(ErrorCode.InvalidInput, error.Message); }
             var artifacts = new List<GeneratedArtifact>();

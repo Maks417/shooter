@@ -14,7 +14,10 @@
       "const": "material.noise"
     },
     "generatorVersion": {
-      "const": "1.0.0"
+      "enum": [
+        "1.0.0",
+        "1.1.0"
+      ]
     },
     "seed": {
       "type": "string",
@@ -27,7 +30,8 @@
         "resolution": {
           "enum": [
             128,
-            256
+            256,
+            512
           ]
         },
         "tileMm": {

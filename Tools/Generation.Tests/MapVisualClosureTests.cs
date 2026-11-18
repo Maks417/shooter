@@ -99,7 +99,7 @@ public sealed class MapVisualClosureTests : IDisposable
             Assert.True(payloads.Has(path), path);
         foreach (string path in MapVisualClosure.MapMaterialPaths)
         {
-            Assert.Equal(128, MapVisualClosure.DecodeMapMaterial(payloads, path).Width);
+            Assert.Equal(256, MapVisualClosure.DecodeMapMaterial(payloads, path).Width); // ADR-106 Low surface
             Assert.True(payloads.Has(MapVisualClosure.MaterialCompanionPath(path, "normal")));
             Assert.True(payloads.Has(MapVisualClosure.MaterialCompanionPath(path, "mask")));
         }

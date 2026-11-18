@@ -8,7 +8,7 @@ using Shooter.Generation;
 using Xunit;
 using Xunit.Abstractions;
 
-/// <summary>ADR-102 geometry.weapon 1.2.0 archetypes built from the shipped feature recipes.</summary>
+/// <summary>ADR-102 archetypes built from the shipped feature recipes (ADR-106 geometry.weapon 1.3.0 profile build).</summary>
 public sealed class ArsenalGeometryTests
 {
     private readonly ITestOutputHelper output;
@@ -31,11 +31,11 @@ public sealed class ArsenalGeometryTests
     public void Archetype_lods_are_valid_ordered_and_inside_the_envelope(string name)
     {
         var recipe = Load(name);
-        Assert.Equal(WeaponRecipe.ArsenalVersion, recipe.Version);
+        Assert.Equal(WeaponRecipe.ProfileVersion, recipe.Version);
         Assert.NotNull(recipe.Arsenal);
         var build = WeaponGeometry.Build(recipe);
         bool pistol = !recipe.IsLongGun;
-        int[] ceilings = pistol ? new[] { 8000, 4000, 1500, 600 } : new[] { 18000, 8000, 3000, 1000 };
+        int[] ceilings = pistol ? new[] { 16000, 7000, 2500, 1200 } : new[] { 34000, 14000, 5000, 2500 };
         int previous = int.MaxValue;
         for (int i = 0; i < 4; i++)
         {
@@ -50,7 +50,7 @@ public sealed class ArsenalGeometryTests
         }
         foreach (var part in new[] { build.Magazine, build.CyclePart }) MeshValidation.Check(part, true);
         int assembled = (build.Lods[0].Indices.Count + build.Magazine.Indices.Count + build.CyclePart.Indices.Count) / 3;
-        Assert.InRange(assembled, 1, pistol ? 8000 : 18000);
+        Assert.InRange(assembled, 1, pistol ? 24000 : 40000);
     }
 
     [Theory, MemberData(nameof(Recipes))]

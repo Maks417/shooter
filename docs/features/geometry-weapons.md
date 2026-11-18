@@ -113,3 +113,9 @@ Definition files may also set:
 - `visual.handlingStyle` (`Rifle`, `Ak`, `Bolt`, `Pistol`), `visual.adsFovDegrees`, `visual.muzzleFlashScale` and `visual.muzzleFlashSideJets`.
 
 Every life draws a random primary and sidearm in product sessions. The generic rifle, carbine and pistol remain catalogued with `spawnWeight 0` as the fixed test loadout.
+
+## Kernel-built arsenal and gloves — ADR-106 (geometry.weapon 1.3.0)
+
+[ADR-106](../decisions.md#adr-106--accepted-kernel-built-weapons-gloves-soldiers-and-structured-map-surfaces) moves the seven named recipes to geometry.weapon 1.3.0 (`Generation/Core/Weapons/ProfileArsenalGeometry.cs`). Parts come from the `Generation/Core/Geometry/ShapeKit.cs` kernel instead of bevelled boxes: rounded side-profile slabs for receivers, guards, slides and stocks; turned barrels, muzzle devices, scopes, turrets and rings; superellipse lofts for handguards and wooden/polymer stocks; a sampled grip loft with palm swell and finger ridges; curved extruded magazines with a raised spine; real rail teeth. Sockets, collision, envelopes, magazine/cycle parts and material slots are the 1.2.0 ones, so hands and gameplay are unchanged; 1.2.0 remains buildable for its fixtures.
+
+The first-person gloves (`FirstPersonHandGeometry.Build`, rig `fp.hand.v2`) are a pillow-shaped palm, one swept tube per finger and the thumb through the rig joints with two-joint smoothstep skinning across each knuckle (`ChainWeights`), a knuckle guard, a back-of-hand pad and a wrist cuff. Offline renders: `ShooterFeatureBuild.CaptureArsenal` and `CaptureHandling` (`Artifacts/adr106-preview/`). In-game look review is Pending the next installer.

@@ -27,6 +27,7 @@ namespace Shooter.Presentation.Rig
         private sealed class Avatar
         {
             public EntityId EntityId;
+            public int BodyLod = -1;
             public byte Team;
             public bool Corpse;
             public byte WeaponSlot;
@@ -104,6 +105,9 @@ namespace Shooter.Presentation.Rig
         private readonly List<EntityId> corpseEnsureScratch = new List<EntityId>(4);
         private readonly List<UnityEngine.Object> owned = new List<UnityEngine.Object>();
         private Mesh? bodyMesh;
+        // ADR-106: every packaged soldier LOD at or coarser than the tier's own, chosen per avatar by camera distance.
+        private readonly Mesh?[] bodyLods = new Mesh?[3];
+        private int bodyBaseLod;
         /// <summary>Uploaded packaged weapon meshes keyed by visual profile MeshAssetKey (ADR-078).</summary>
         private sealed class WeaponMeshSet
         {
@@ -267,7 +271,7 @@ namespace Shooter.Presentation.Rig
             visualsBound=false;
             ClearAll();
             foreach(var value in owned)DestroyObject(value);owned.Clear();
-            bodyMesh=null;contactMesh=null;contactMaterial=null;weaponMeshes.Clear();weaponPalettes.Clear();
+            bodyMesh=null;Array.Clear(bodyLods,0,bodyLods.Length);contactMesh=null;contactMaterial=null;weaponMeshes.Clear();weaponPalettes.Clear();
             weaponMaterials=Array.Empty<Material>();team1Palette=null;team2Palette=null;firstPersonHandMaterials=null;
             if (visuals == null) throw new ArgumentNullException(nameof(visuals));
             var shader = Shader.Find("Shooter/MapSurface");
@@ -296,6 +300,10 @@ namespace Shooter.Presentation.Rig
                 int soldierLod = showcase ? 0 : MapVisualClosure.SoldierLodIndex(visuals.Profile);
                 int weaponLod = showcase ? 0 : MapVisualClosure.WeaponLodIndex(visuals.Profile);
                 bodyMesh = Own(Upload(MapVisualClosure.DecodeSoldierLod(visuals, soldierLod), true));
+                Array.Clear(bodyLods, 0, bodyLods.Length); bodyBaseLod = soldierLod; bodyLods[soldierLod] = bodyMesh;
+                if (!showcase)
+                    for (int lod = soldierLod + 1; lod < bodyLods.Length; lod++)
+                    { bodyLods[lod] = Own(Upload(MapVisualClosure.DecodeSoldierLod(visuals, lod), true)); yield return 0; }
                 weaponMeshes.Clear();
                 var silhouettes = new List<WeaponSilhouetteSource>();
                 foreach (var source in WeaponMeshCatalog.All)
@@ -380,7 +388,7 @@ namespace Shooter.Presentation.Rig
                 Debug.Log("SHOOTER_PRODUCT_ACTOR_VIEW packaged visuals ready profile=" + visuals.Profile +
                           " soldierLod=" + soldierLod + " weaponLod=" + weaponLod);
             }
-            finally { if(!complete&&epoch==packagedBindEpoch){visualsBound=false;bodyMesh=null;weaponMeshes.Clear();} }
+            finally { if(!complete&&epoch==packagedBindEpoch){visualsBound=false;bodyMesh=null;Array.Clear(bodyLods,0,bodyLods.Length);weaponMeshes.Clear();} }
         }
 
         public void ClearAll()
@@ -804,6 +812,24 @@ namespace Shooter.Presentation.Rig
             PoseAvatar(avatar, state, 0f, 0u);
         }
 
+        /// <summary>
+        /// ADR-106 distance LOD (presentation only): finest packaged LOD within 15 m, the next to 40 m, the coarsest
+        /// beyond, never finer than the tier's own LOD; 1.5 m hysteresis keeps meshes from flickering at the boundary.
+        /// </summary>
+        private void SelectBodyLod(Avatar avatar)
+        {
+            if (avatar.Body == null || bodyLods[bodyBaseLod] == null) return;
+            float distance = fpsCamera != null ? Vector3.Distance(fpsCamera.transform.position, avatar.Root.position) : 0f;
+            int current = avatar.BodyLod < 0 ? bodyBaseLod : avatar.BodyLod;
+            float bias = 1.5f;
+            int wanted = distance > 40f + (current >= 2 ? -bias : bias) ? 2 : distance > 15f + (current >= 1 ? -bias : bias) ? 1 : 0;
+            wanted = Mathf.Clamp(wanted, bodyBaseLod, bodyLods.Length - 1);
+            while (wanted > bodyBaseLod && bodyLods[wanted] == null) wanted--;
+            if (wanted == avatar.BodyLod) return;
+            avatar.BodyLod = wanted;
+            avatar.Body.sharedMesh = bodyLods[wanted];
+        }
+
         private void PoseAvatar(Avatar avatar, ActorLifecycleState state, float dtSeconds, uint completedTick, LocalMovementView? movement = null)
         {
             float speed = 0f;
@@ -913,6 +939,7 @@ namespace Shooter.Presentation.Rig
                 Mathf.Clamp(movement.HasValue ? movement.Value.VerticalSpeedMetersPerSecond : 0f, -30f, 30f),
                 dying ? -1f : locomotion.Land);
             avatar.Root.position = V(displayFeet);
+            SelectBodyLod(avatar);
             float visibility=AmbientVisibility?.Invoke(displayFeet)??1f;
             ApplyAmbient(avatar.Body,visibility);ApplyAmbient(avatar.WeaponRenderer,visibility);ApplyAmbient(avatar.MagazineRenderer,visibility);ApplyAmbient(avatar.CycleRenderer,visibility);
             if(avatar.Contact==null)avatar.Contact=CreateContact(avatar.Root);

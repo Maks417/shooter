@@ -103,6 +103,8 @@ public static class ShooterPostProcessingBuild
             var pipeline = AssetDatabase.LoadAssetAtPath<UniversalRenderPipelineAsset>(PipelinePaths[tier])
                 ?? throw new InvalidOperationException("Missing pipeline " + PipelinePaths[tier]);
             pipeline.supportsHDR = Hdr[tier];
+            // ADR-106: HDR tiers grade in HDR so bright sky/flash values keep their range through tonemapping.
+            pipeline.colorGradingMode = Hdr[tier] ? ColorGradingMode.HighDynamicRange : ColorGradingMode.LowDynamicRange;
             var serialized = new SerializedObject(pipeline);
             var list = serialized.FindProperty("m_RendererDataList");
             list.arraySize = 1;
@@ -135,7 +137,7 @@ public static class ShooterPostProcessingBuild
         }
         var serialized=new SerializedObject(feature);
         serialized.FindProperty("m_Settings.technique").enumValueIndex=2;
-        serialized.FindProperty("m_Settings.maxDrawDistance").floatValue=80;
+        serialized.FindProperty("m_Settings.maxDrawDistance").floatValue=200; // ADR-106: the 120/200 m projectors were clamped at 80 m
         serialized.ApplyModifiedPropertiesWithoutUndo();feature.SetActive(true);EditorUtility.SetDirty(feature);
         var data=new SerializedObject(renderer);var ids=data.FindProperty("m_RendererFeatureMap");ids.arraySize=renderer.rendererFeatures.Count;
         for(int i=0;i<renderer.rendererFeatures.Count;i++){AssetDatabase.TryGetGUIDAndLocalFileIdentifier(renderer.rendererFeatures[i],out string guid,out long id);ids.GetArrayElementAtIndex(i).longValue=id;}

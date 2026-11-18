@@ -11,6 +11,8 @@ namespace Shooter.Presentation.Fx
         private ParticleSystem[] systems=Array.Empty<ParticleSystem>();private ParticleSystemRenderer[] renderers=Array.Empty<ParticleSystemRenderer>();
         private readonly Material[] materials=new Material[5];private float[] age=Array.Empty<float>();private bool[] active=Array.Empty<bool>();private FxKind[] kind=Array.Empty<FxKind>();
         private bool bound;private int tier=-1;private Material? ringMaterial;
+        // ADR-106: up to four short-lived point lights so muzzle flashes and explosions light their surroundings (Balanced/High).
+        private readonly Light[] flashLights=new Light[4];private readonly int[] flashSlots=new int[4];
         private AnimationCurve FadeSize=null!;
         private AnimationCurve SmokeSize=null!;
         private AnimationCurve RingSize=null!;
@@ -31,6 +33,12 @@ namespace Shooter.Presentation.Fx
                 var emission=ps.emission;emission.enabled=false;var shape=ps.shape;shape.enabled=false;var sheet=ps.textureSheetAnimation;sheet.enabled=true;sheet.numTilesX=8;sheet.numTilesY=8;sheet.cycleCount=1;sheet.frameOverTime=new ParticleSystem.MinMaxCurve(1,AnimationCurve.Linear(0,0,1,1));
                 var renderer=ps.GetComponent<ParticleSystemRenderer>();renderer.renderMode=ParticleSystemRenderMode.Billboard;renderer.shadowCastingMode=ShadowCastingMode.Off;renderer.receiveShadows=false;renderer.lightProbeUsage=LightProbeUsage.Off;renderer.reflectionProbeUsage=ReflectionProbeUsage.Off;
                 systems[i]=ps;renderers[i]=renderer;ps.useAutoRandomSeed=false;ps.randomSeed=(uint)i+1;ps.Pause();
+            }
+            for(int l=0;l<flashLights.Length;l++)
+            {
+                var go=new GameObject("Flash light "+l);go.transform.SetParent(transform,false);var light=go.AddComponent<Light>();
+                light.type=LightType.Point;light.shadows=LightShadows.None;light.color=new Color(1f,.74f,.46f);light.renderMode=LightRenderMode.ForcePixel;light.enabled=false;
+                flashLights[l]=light;
             }
         }
         public void BindVerifiedVisuals(PackagedVisualPayloads visuals){foreach(var step in BindVerifiedVisualSteps(visuals)) { }}
@@ -82,6 +90,30 @@ namespace Shooter.Presentation.Fx
                 }
                 else if(fx.Age>age[i])ps.Simulate(fx.Age-age[i],false,false,false);
                 active[i]=true;age[i]=fx.Age;kind[i]=fx.Kind;
+            }
+            SyncFlashLights();
+        }
+        /// <summary>Lights the youngest flashes: muzzle 60 ms over 5 m, explosions 300 ms over 14 m, quadratic fade. Low has none.</summary>
+        private void SyncFlashLights()
+        {
+            int used=0;
+            if(tier>0&&pool!=null)
+                for(int i=0;i<systems.Length;i++)
+                {
+                    if(!active[i]||kind[i]!=FxKind.MuzzleFlash&&kind[i]!=FxKind.Fireball)continue;
+                    float window=kind[i]==FxKind.Fireball?.30f:.06f;if(age[i]>=window)continue;
+                    if(used<flashSlots.Length){flashSlots[used++]=i;continue;}
+                    int oldest=0;for(int k=1;k<used;k++)if(age[flashSlots[k]]>age[flashSlots[oldest]])oldest=k;
+                    if(age[i]<age[flashSlots[oldest]])flashSlots[oldest]=i;
+                }
+            for(int l=0;l<flashLights.Length;l++)
+            {
+                var light=flashLights[l];if(light==null)continue;
+                if(l>=used){if(light.enabled)light.enabled=false;continue;}
+                int i=flashSlots[l];var fx=pool!.Get(i);bool fire=kind[i]==FxKind.Fireball;
+                float t=Mathf.Clamp01(age[i]/(fire?.30f:.06f)),fade=(1-t)*(1-t);
+                light.transform.position=new Vector3(fx.Position.X,fx.Position.Y,fx.Position.Z);
+                light.range=fire?14f:5f;light.intensity=(fire?9f:3.2f)*fade;light.enabled=true;
             }
         }
         /// <summary>Variants 0..2 are the legacy rifle/pistol/carbine flashes; 10+ carry the ADR-102 size in hundredths.</summary>

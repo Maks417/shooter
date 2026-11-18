@@ -12,28 +12,32 @@ namespace Shooter.Generation
     public sealed class NoiseMaterialRecipe
     {
         public const string Generator = "material.noise", Version = "1.0.0", Schema = "shooter.recipe.material-noise.v1";
+        /// <summary>ADR-106 structured surfaces in metres with Toksvig mask mips; 256/512 px over a 4 m tile.</summary>
+        public const string StructuredVersion = "1.1.0";
         public static readonly string[] Roles = { "concrete", "plaster", "rust", "painted-steel", "asphalt", "gravel", "corrugated-metal", "camo-fabric" };
         public RecipeDocument Document { get; }
         public string Role { get; }
         public int Resolution { get; }
         public int TileMm { get; }
-        public NoiseMaterialRecipe(string role, int resolution, ulong seed, int tileMm = 2000)
+        public string GeneratorVersion => Document.GeneratorVersion;
+        public NoiseMaterialRecipe(string role, int resolution, ulong seed, int tileMm = 2000, string version = Version)
         {
             if (Array.IndexOf(Roles, role) < 0) throw new ArgumentException("Unknown noise material role.", nameof(role));
-            if (resolution != 128 && resolution != 256) throw new ArgumentOutOfRangeException(nameof(resolution));
+            if (version != Version && version != StructuredVersion) throw new ArgumentException("Unknown noise material version.", nameof(version));
+            if (version == Version ? resolution != 128 && resolution != 256 : resolution != 256 && resolution != 512) throw new ArgumentOutOfRangeException(nameof(resolution));
             if (tileMm < 100 || tileMm > 8000) throw new ArgumentOutOfRangeException(nameof(tileMm));
             Role = role; Resolution = resolution; TileMm = tileMm;
             var parameters = Encoding.UTF8.GetBytes("{\"resolution\":" + resolution + ",\"role\":\"" + role + "\",\"tileMm\":" + tileMm + "}");
-            Document = new RecipeDocument(new DefinitionId("materials/noise-" + role), Schema, Generator, Version,
+            Document = new RecipeDocument(new DefinitionId("materials/noise-" + role), Schema, Generator, version,
                 seed.ToString(System.Globalization.CultureInfo.InvariantCulture), parameters, Array.Empty<ContentId>());
         }
         public static NoiseMaterialRecipe FromDocument(RecipeDocument document)
         {
-            if (document.SchemaId != Schema || document.GeneratorId != Generator || document.GeneratorVersion != Version || document.Dependencies.Count != 0)
+            if (document.SchemaId != Schema || document.GeneratorId != Generator || document.GeneratorVersion != Version && document.GeneratorVersion != StructuredVersion || document.Dependencies.Count != 0)
                 throw new FormatException("Unsupported noise material identity/dependencies.");
             var p = JsonValue.Parse(document.Parameters).Object;
             if (p.Count != 3) throw new FormatException("Noise material requires role, resolution and tileMm only.");
-            var recipe = new NoiseMaterialRecipe(p["role"].String, p["resolution"].Number, document.SeedValue, p["tileMm"].Number);
+            var recipe = new NoiseMaterialRecipe(p["role"].String, p["resolution"].Number, document.SeedValue, p["tileMm"].Number, document.GeneratorVersion);
             if (!document.Parameters.SequenceEqual(recipe.Document.Parameters)) throw new FormatException("Noise parameters must be canonical.");
             return recipe;
         }
@@ -57,7 +61,7 @@ namespace Shooter.Generation
                 cancel.ThrowIfCancellationRequested();
                 if(request==null || request.VisualProfile!="Low"&&request.VisualProfile!="Balanced"&&request.VisualProfile!="High")return Fail(ErrorCode.InvalidInput);
                 var bake = NoiseMaterialBaker.Bake(NoiseMaterialRecipe.FromDocument(request.Recipe), cancel);
-                var fp = GeneratorFingerprint.Compute(NoiseMaterialRecipe.Generator, NoiseMaterialRecipe.Version);
+                var fp = GeneratorFingerprint.Compute(NoiseMaterialRecipe.Generator, request.Recipe.GeneratorVersion);
                 GeneratedArtifact Plane(MaterialData plane, string name)
                 {
                     var bytes = ArtifactCodec.Encode(ContentKind.Material, GeometryCodec.EncodeMaterial(plane), fp, request.ToolchainHash);
@@ -78,6 +82,7 @@ namespace Shooter.Generation
         public static MaterialBake Bake(NoiseMaterialRecipe recipe, CancellationToken cancel = default)
         {
             if(recipe==null)throw new ArgumentNullException(nameof(recipe));
+            if(recipe.GeneratorVersion==NoiseMaterialRecipe.StructuredVersion)return BakeStructured(recipe,cancel);
             int n = recipe.Resolution;
             var albedo = new byte[n*n*4]; var normal = new byte[albedo.Length]; var mask = new byte[albedo.Length];
             var height = new double[n*n];
@@ -141,6 +146,150 @@ namespace Shooter.Generation
             }
             return new MaterialBake(SrgbPlane(MaterialBaker.BuildPlane(n,albedo,"mask",cancel)),MaterialBaker.BuildPlane(n,normal,"normal",cancel),MaterialBaker.BuildPlane(n,mask,"mask",cancel));
         }
+        /// <summary>
+        /// ADR-106 material.noise 1.1.0: structured surfaces sized in metres over a 4 m tile. Every noise feature spans at
+        /// least six texels (no near-Nyquist grain), normal relief is gentler, concrete gains panel joints, form-tie holes
+        /// and sparse cracks, and the mask mips carry Toksvig roughness so averaged-out bumps turn into broader highlights
+        /// instead of glitter.
+        /// </summary>
+        private static MaterialBake BakeStructured(NoiseMaterialRecipe recipe, CancellationToken cancel)
+        {
+            int n = recipe.Resolution;
+            double tile = recipe.TileMm / 1000.0;
+            var albedo = new byte[n * n * 4]; var mask = new byte[albedo.Length];
+            var height = new double[n * n];
+            NoiseField Field(string key, NoiseBasis basis, double featureMeters, int octaves)
+            {
+                // Cells per tile from the requested feature size, never finer than six texels per cell.
+                int period = Math.Max(1, Math.Min((int)Math.Round(tile / featureMeters), n / 6));
+                return NoiseField.Create(basis, NamedRandomStream.Derive(recipe.Document.SeedValue, NoiseMaterialRecipe.Generator + "/1.1/" + recipe.Role, key), period, octaves);
+            }
+            var broad = Field("staining", NoiseBasis.DomainWarpedFbm, 1.4, 3);
+            var macro = Field("macro", NoiseBasis.Gradient, .6, 2);
+            var grain = Field("aggregate", NoiseBasis.Gradient, .045, 2);
+            var cells = Field("cracks", NoiseBasis.Cellular, .45, 1);
+            var crackMask = Field("crack-zones", NoiseBasis.Gradient, 1.3, 1);
+            var stones = Field("stones", NoiseBasis.Cellular, .05, 1);
+            var warp = Field("oxide", NoiseBasis.DomainWarpedFbm, .5, 3);
+            for (int y = 0; y < n; y++)
+            {
+                cancel.ThrowIfCancellationRequested();
+                for (int x = 0; x < n; x++)
+                {
+                    double u = (x + .5) / n, v = (y + .5) / n, mx = u * tile, my = v * tile;
+                    double b = broad.SamplePeriodic(u, v), m = macro.SamplePeriodic(u, v), g = grain.SamplePeriodic(u, v), c = cells.SamplePeriodic(u, v);
+                    double zones = Clamp((crackMask.SamplePeriodic(u, v) - .55) * 5);
+                    double crack = Clamp((.07 - c) * 22) * zones;
+                    double streak = warp.SamplePeriodic(u, .12) * .8 + b * .2;
+                    double r = .32, green = .33, blue = .31, rough = .85, metal = 0, h = 0, occlusion = 1, tone = 1;
+                    switch (recipe.Role)
+                    {
+                        case "concrete":
+                        {
+                            // Cast panels every 2 m with recessed joints, form-tie holes on a 0.6 m grid, stains and sparse cracks.
+                            double jx = Math.Abs(mx - Math.Round(mx / 2) * 2), jy = Math.Abs(my - Math.Round(my / 2) * 2);
+                            double joint = Clamp(1 - Math.Min(jx, jy) / .009);
+                            double tx = mx - (Math.Floor(mx / .6) * .6 + .3), ty = my - (Math.Floor(my / .6) * .6 + .3);
+                            double tie = Clamp(1 - Math.Sqrt(tx * tx + ty * ty) / .011);
+                            r = .37; green = .375; blue = .35; rough = .88;
+                            h = g * .0007 + m * .0012 - crack * .0008 - joint * .0025 - tie * .002;
+                            tone = .78 + b * .26 + m * .06 - crack * .28 - streak * .07 - joint * .22 - tie * .35;
+                            occlusion = 1 - joint * .45 - tie * .5 - crack * .2; rough += joint * .08;
+                            break;
+                        }
+                        case "plaster":
+                            r = .60; green = .57; blue = .49; rough = .9;
+                            h = g * .0004 + m * .0008; tone = .84 + b * .2 + m * .05 - streak * .05; break;
+                        case "rust":
+                            r = .29; green = .10; blue = .035; rough = .95;
+                            h = g * .0008 + m * .0006; tone = .58 + b * .4 + streak * .25; break;
+                        case "painted-steel":
+                        {
+                            double chips = Clamp((g * .6 + b * .5 - .74) * 7);
+                            r = .085 * (1 - chips) + .22 * chips; green = .16 * (1 - chips) + .12 * chips; blue = .19 * (1 - chips) + .065 * chips;
+                            metal = chips * .8; rough = .58 + chips * .2; h = chips * .00025 + m * .0003;
+                            tone = .78 + b * .32 - streak * .16; break;
+                        }
+                        case "asphalt":
+                        {
+                            double s = stones.SamplePeriodic(u, v);
+                            r = .040; green = .042; blue = .045; rough = .93;
+                            h = (1 - s) * .0012 + m * .0008 - crack * .0012;
+                            tone = .62 + (1 - s) * .35 + b * .25 - crack * .45; occlusion = 1 - crack * .3; break;
+                        }
+                        case "gravel":
+                        {
+                            double s = stones.SamplePeriodic(u, v);
+                            r = .14; green = .098; blue = .058; rough = .96;
+                            h = (1 - s) * .004 + m * .0015; tone = .55 + (1 - s) * .45 + b * .2; occlusion = .75 + .25 * (1 - s); break;
+                        }
+                        case "corrugated-metal":
+                        {
+                            double ridge = .5 - .5 * Math.Cos(2 * Math.PI * mx / .125);
+                            r = .16; green = .19; blue = .20; metal = .65; rough = .66 + streak * .15;
+                            h = ridge * .006 + m * .0003; tone = .70 + b * .25 - streak * .28; occlusion = .8 + .2 * ridge; break;
+                        }
+                        case "camo-fabric":
+                        {
+                            bool dark = b < .44, light = b > .58;
+                            r = dark ? .035 : light ? .22 : .095; green = dark ? .045 : light ? .20 : .12; blue = dark ? .025 : light ? .12 : .055;
+                            rough = .94; h = g * .0002; tone = .9 + g * .15; break;
+                        }
+                    }
+                    // Every role keeps spatial roughness/occlusion variation (wear, staining, cavities).
+                    rough = Clamp(rough + (b - .5) * .10 + (g - .5) * .04 - streak * .03);
+                    occlusion = Clamp(occlusion - (1 - m) * .06);
+                    int p = (y * n + x) * 4; height[y * n + x] = h;
+                    albedo[p] = Byte(r * tone); albedo[p + 1] = Byte(green * tone); albedo[p + 2] = Byte(blue * tone); albedo[p + 3] = 255;
+                    mask[p] = Byte(metal); mask[p + 1] = Byte(occlusion); mask[p + 2] = Byte(rough); mask[p + 3] = 255;
+                }
+            }
+            var normal = new byte[albedo.Length];
+            var unit = new double[n * n * 3];
+            double spacing = 2 * tile / n;
+            for (int y = 0; y < n; y++) for (int x = 0; x < n; x++)
+            {
+                double du = (height[y * n + (x + 1) % n] - height[y * n + (x + n - 1) % n]) / spacing;
+                double dv = (height[((y + 1) % n) * n + x] - height[((y + n - 1) % n) * n + x]) / spacing;
+                double len = Math.Sqrt(du * du + dv * dv + 1); int p = (y * n + x) * 4, q = (y * n + x) * 3;
+                unit[q] = -du / len; unit[q + 1] = -dv / len; unit[q + 2] = 1 / len;
+                normal[p] = Byte(.5 - du / len * .5); normal[p + 1] = Byte(.5 - dv / len * .5); normal[p + 2] = Byte(.5 + .5 / len); normal[p + 3] = 255;
+            }
+            var maskPlane = MaterialBaker.BuildPlane(n, mask, "mask", cancel);
+            return new MaterialBake(SrgbPlane(MaterialBaker.BuildPlane(n, albedo, "mask", cancel)), MaterialBaker.BuildPlane(n, normal, "normal", cancel),
+                ToksvigRoughness(maskPlane, unit, n));
+        }
+
+        /// <summary>
+        /// Specular anti-aliasing: each mask mip's roughness grows with the spread of the base normals it averages
+        /// (Toksvig: alpha^2 + 2(1 - |mean n|) / |mean n|), so distant or grazing bumps cannot sparkle.
+        /// </summary>
+        private static MaterialData ToksvigRoughness(MaterialData mask, double[] unit, int n)
+        {
+            var mips = new List<byte[]>();
+            for (int level = 0; level < mask.MipBytes.Count; level++)
+            {
+                var data = new byte[mask.MipBytes[level].Count]; for (int i = 0; i < data.Length; i++) data[i] = mask.MipBytes[level][i];
+                if (level > 0)
+                {
+                    int size = Math.Max(1, n >> level), block = n / size;
+                    for (int y = 0; y < size; y++) for (int x = 0; x < size; x++)
+                    {
+                        double sx = 0, sy = 0, sz = 0;
+                        for (int dy = 0; dy < block; dy++) for (int dx = 0; dx < block; dx++)
+                        { int q = ((y * block + dy) * n + x * block + dx) * 3; sx += unit[q]; sy += unit[q + 1]; sz += unit[q + 2]; }
+                        double count = block * (double)block, length = Math.Sqrt(sx * sx + sy * sy + sz * sz) / count;
+                        int p = (y * size + x) * 4 + 2;
+                        double rough = data[p] / 255.0, alpha = rough * rough;
+                        double spread = 2 * (1 - length) / Math.Max(length, .05);
+                        data[p] = Byte(Math.Pow(Math.Min(1, alpha * alpha + spread), .25));
+                    }
+                }
+                mips.Add(data);
+            }
+            return new MaterialData(mask.Width, mask.Height, mask.ChannelFormat, mips);
+        }
+
         private static MaterialData SrgbPlane(MaterialData linear)
         {
             var mips=new List<byte[]>();

@@ -77,6 +77,8 @@ namespace Shooter.Generation.Environment
         public static readonly string[] VisualProfiles = { "gameplay", "low", "balanced", "high" };
         public const int MapSurfaceResolution = 128;
         public const int MapSurfaceTileMm = 2000;
+        /// <summary>ADR-106 map surfaces: material.noise 1.1.0 repeating every four metres (presentation reads this).</summary>
+        public const int MapNoiseTileMm = 4000;
         public const ulong MapSurfaceSeed = 460072030UL;
         // Exactly four immutable bakes shared by the two maps and all graphics profiles.
         // Lazy publication is thread safe; package encoders copy the frozen plane bytes.
@@ -183,7 +185,7 @@ namespace Shooter.Generation.Environment
             AddSgaf(dependencies, "skeleton", MapVisualClosure.SoldierSkeletonPath, ContentKind.Skeleton,
                 GeometryCodec.EncodeSkeleton(SoldierSkeleton.Definition), soldierFp, toolchainHash);
             var soldierRecipe = SoldierRecipe.Parse(Encoding.ASCII.GetBytes(
-                "{\"schemaId\":\"shooter.soldier.v1\",\"recipeId\":\"soldiers/baseline\",\"generatorId\":\"soldier.loft\",\"generatorVersion\":\"1.0.3\",\"seed\":\"460072030\",\"parameters\":{\"heightMm\":1800,\"shoulderWidthMm\":420,\"hipWidthMm\":280,\"uniformOffsetMm\":6,\"nearTorsoSegments\":16,\"nearLimbSegments\":12,\"walkCycleMm\":1400,\"runCycleMm\":2200,\"walkDutyPpm\":500000,\"runDutyPpm\":350000},\"dependencies\":[]}"));
+                "{\"schemaId\":\"shooter.soldier.v1\",\"recipeId\":\"soldiers/baseline\",\"generatorId\":\"soldier.loft\",\"generatorVersion\":\"1.1.0\",\"seed\":\"460072030\",\"parameters\":{\"heightMm\":1800,\"shoulderWidthMm\":420,\"hipWidthMm\":280,\"uniformOffsetMm\":6,\"nearTorsoSegments\":16,\"nearLimbSegments\":12,\"walkCycleMm\":1400,\"runCycleMm\":2200,\"walkDutyPpm\":500000,\"runDutyPpm\":350000},\"dependencies\":[]}"));
             var soldierBuild = SoldierGeometry.Build(soldierRecipe);
             for (int lod = 0; lod < MapVisualClosure.SoldierLodPaths.Length; lod++)
                 AddSgaf(dependencies, "mesh", MapVisualClosure.SoldierLodPaths[lod], ContentKind.Mesh,
@@ -208,7 +210,7 @@ namespace Shooter.Generation.Environment
             {
                 string path = MapVisualClosure.MapMaterialPaths[i];
                 MaterialBake bake = NoiseSurface(mapId, profile, i);
-                var surfaceFingerprint = GeneratorFingerprint.Compute(NoiseMaterialRecipe.Generator, NoiseMaterialRecipe.Version);
+                var surfaceFingerprint = GeneratorFingerprint.Compute(NoiseMaterialRecipe.Generator, NoiseMaterialRecipe.StructuredVersion);
                 AddSgaf(dependencies, "material", path, ContentKind.Material, GeometryCodec.EncodeMaterial(bake.Albedo), surfaceFingerprint, toolchainHash);
                 AddSgaf(dependencies, "material", MapVisualClosure.MaterialCompanionPath(path, "normal"), ContentKind.Material,
                     GeometryCodec.EncodeMaterial(bake.Normal), surfaceFingerprint, toolchainHash);
@@ -283,12 +285,12 @@ namespace Shooter.Generation.Environment
         private static readonly Dictionary<string, MaterialBake> noiseBakes = new Dictionary<string, MaterialBake>(StringComparer.Ordinal);
         private static MaterialBake NoiseSurface(string mapId, string profile, int slot)
         {
-            string role = MapRegistry.Require(mapId).MaterialRoles[slot]; int n = profile == "high" ? 256 : 128;
+            string role = MapRegistry.Require(mapId).MaterialRoles[slot]; int n = profile == "low" ? 256 : 512;
             string key = role + ":" + n;
             lock (noiseBakes)
             {
                 if (!noiseBakes.TryGetValue(key, out var bake))
-                    noiseBakes.Add(key, bake = NoiseMaterialBaker.Bake(new NoiseMaterialRecipe(role, n, MapSurfaceSeed)));
+                    noiseBakes.Add(key, bake = NoiseMaterialBaker.Bake(new NoiseMaterialRecipe(role, n, MapSurfaceSeed, MapNoiseTileMm, NoiseMaterialRecipe.StructuredVersion)));
                 return bake;
             }
         }
@@ -398,8 +400,9 @@ namespace Shooter.Generation.Environment
             {
                 RequireMaterial(path);
                 var albedo = MapVisualClosure.DecodeMapMaterial(payloads, path);
-                if (albedo.Width != (profile=="high"?256:128) || albedo.Height != albedo.Width ||
-                    albedo.ChannelFormat != "rgba8-srgb" || albedo.MipBytes.Count != (profile=="high"?9:8))
+                // ADR-106: material.noise 1.1.0 surfaces are 256 px on Low and 512 px on Balanced/High.
+                if (albedo.Width != (profile=="low"?256:512) || albedo.Height != albedo.Width ||
+                    albedo.ChannelFormat != "rgba8-srgb" || albedo.MipBytes.Count != (profile=="low"?9:10))
                     throw new InvalidOperationException("Map surface albedo is not a complete production plane: " + path);
                 foreach (string plane in new[] { "normal", "mask" })
                 {

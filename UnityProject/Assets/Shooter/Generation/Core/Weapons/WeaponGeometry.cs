@@ -42,7 +42,8 @@ namespace Shooter.Generation
         public static WeaponBuild Build(WeaponRecipe recipe)
         {
             if (recipe == null) throw new ArgumentNullException(nameof(recipe));
-            if (recipe.Arsenal != null) return ArsenalGeometry.Build(recipe.Kind, recipe.Arsenal);
+            if (recipe.Arsenal != null)
+                return recipe.Version == WeaponRecipe.ProfileVersion ? ProfileArsenalGeometry.Build(recipe.Kind, recipe.Arsenal) : ArsenalGeometry.Build(recipe.Kind, recipe.Arsenal);
             var lods = new MeshData[4];
             for (int i = 0; i < 4; i++) lods[i] = BuildLod(recipe.Kind, recipe.Parts, i);
             var magazine = BuildMagazine(recipe.Kind, 0);

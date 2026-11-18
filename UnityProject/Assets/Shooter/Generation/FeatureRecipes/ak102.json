@@ -2,7 +2,7 @@
   "schemaId": "shooter.recipe.weapon.v1",
   "recipeId": "weapons/ak102",
   "generatorId": "geometry.weapon",
-  "generatorVersion": "1.2.0",
+  "generatorVersion": "1.3.0",
   "seed": "460072030",
   "parameters": {
     "kind": "ak",

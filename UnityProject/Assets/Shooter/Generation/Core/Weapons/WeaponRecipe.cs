@@ -131,8 +131,11 @@ namespace Shooter.Generation
         public const string PartsVersion = "1.1.0";
         /// <summary>Named real-world archetypes (ADR-102).</summary>
         public const string ArsenalVersion = "1.2.0";
+        /// <summary>Same arsenal parts rebuilt from rounded profiles, lathes and lofts (ADR-106). Shipped recipes use it.</summary>
+        public const string ProfileVersion = "1.3.0";
+        public static bool IsArsenalVersion(string? version) => version == ArsenalVersion || version == ProfileVersion;
         public static readonly string[] ArsenalKinds = { "ak", "ar", "bolt", "dmr", "pistol-eagle", "pistol-striker" };
-        public static bool IsSupportedVersion(string? version) => version == GeneratorVersion || version == PartsVersion || version == ArsenalVersion;
+        public static bool IsSupportedVersion(string? version) => version == GeneratorVersion || version == PartsVersion || IsArsenalVersion(version);
         public static bool IsArsenalKind(string? kind) => kind != null && Array.IndexOf(ArsenalKinds, kind) >= 0;
         /// <summary>Shouldered weapons: the 1.0.5/1.1.0 rifle and every 1.2.0 long-gun archetype.</summary>
         public static bool IsLongGunKind(string? kind) => kind == "rifle" || kind == "ak" || kind == "ar" || kind == "dmr" || kind == "bolt";
@@ -163,7 +166,7 @@ namespace Shooter.Generation
                 throw new FormatException("Unsupported weapon schema/generator version.");
             ArsenalParts? arsenal = null;
             (string kind, string silhouette, WeaponParts? parts) parsed;
-            if (version == ArsenalVersion) { arsenal = ArsenalParameters(root["parameters"], out string arsenalKind); parsed = (arsenalKind, "arsenal", null); }
+            if (IsArsenalVersion(version)) { arsenal = ArsenalParameters(root["parameters"], out string arsenalKind); parsed = (arsenalKind, "arsenal", null); }
             else parsed = Parameters(version, root["parameters"]);
             string seed = root["seed"].String;
             try
@@ -192,7 +195,7 @@ namespace Shooter.Generation
             ContentIdentity.ParseSeed(document.Seed);
             ArsenalParts? arsenal = null;
             (string kind, string silhouette, WeaponParts? parts) parsed;
-            if (document.GeneratorVersion == ArsenalVersion)
+            if (IsArsenalVersion(document.GeneratorVersion))
             { arsenal = ArsenalParameters(JsonValue.Parse(document.Parameters), out string arsenalKind); parsed = (arsenalKind, "arsenal", null); }
             else parsed = Parameters(document.GeneratorVersion, JsonValue.Parse(document.Parameters));
             if (!document.Parameters.SequenceEqual(ParameterBytes(document.GeneratorVersion, parsed.kind, parsed.silhouette, parsed.parts, arsenal)))
@@ -248,7 +251,7 @@ namespace Shooter.Generation
         private static byte[] ParameterBytes(string version, string kind, string silhouette, WeaponParts? parts, ArsenalParts? arsenal = null) =>
             Encoding.UTF8.GetBytes(version == GeneratorVersion
                 ? "{\"kind\":\"" + kind + "\",\"silhouette\":\"" + silhouette + "\"}"
-                : version == ArsenalVersion
+                : IsArsenalVersion(version)
                 ? "{\"kind\":\"" + kind + "\",\"parts\":" + arsenal!.ToCanonicalJson() + "}"
                 : "{\"kind\":\"" + kind + "\",\"parts\":" + (parts == null ? "{}" : parts.ToCanonicalJson()) + "}");
 

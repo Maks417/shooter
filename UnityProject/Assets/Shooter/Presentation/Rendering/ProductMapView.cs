@@ -162,7 +162,7 @@ namespace Shooter.Presentation.Rendering
                 transform,
                 GeneratedReflectionProbe.ProductMapBoxSizeMeters,
                 GeneratedReflectionProbe.ProductMapIntensity,
-                GeneratedReflectionProbe.DefaultResolution);
+                GeneratedReflectionProbe.ProductMapResolution);
             Debug.Log("SHOOTER_PRODUCT_MAP_VIEW map=" + mapId + " solids=" + solidCount + " covers=" + coverCount + " packaged=1");
         }
 
@@ -182,30 +182,30 @@ namespace Shooter.Presentation.Rendering
                 mapSolids = Own(UploadMesh(solidsMeshData, "Product map solids"));
                 yield return 0;
                 unitBox = Own(UploadMesh(MapVisualClosure.DecodeMapMesh(visuals, MapVisualClosure.UnitBoxMeshPath), "Product unit box", true));
-                // Combined map solids retain metric UVs, so .5 repeats/m matches the two-metre recipe.
-                // Scaled unit boxes receive metric UVs too: all families repeat every two metres.
+                // Combined map solids and scaled unit boxes carry metric UVs; ADR-106 surfaces repeat every four metres.
+                float surfaceRepeats = 1000f / MapPackageBuilder.MapNoiseTileMm;
                 // Scalar metallic/smoothness only apply when packaged mask planes are absent; T075 masks own response.
                 yield return 0;
                 concrete = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[0], "Numeric concrete",
-                    ProductSurfaceResponse.Concrete, .5f);
+                    ProductSurfaceResponse.Concrete, surfaceRepeats);
                 // Trim reuses packaged concrete planes with a warmer plaster response (no extra material path).
                 yield return 0;
                 trim = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[0], "Numeric trim plaster",
-                    ProductSurfaceResponse.TrimPlaster, .5f);
+                    ProductSurfaceResponse.TrimPlaster, surfaceRepeats);
                 yield return 0;
                 cover = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[1], "Numeric cover",
-                    ProductSurfaceResponse.CoverMetal, .5f);
+                    ProductSurfaceResponse.CoverMetal, surfaceRepeats);
                 architecturalAccents = ProductSurfaceMaterial.ArchitecturalAccents(concrete, cover, value => owned.Add(value));
                 yield return 0;
                 ground = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[2], "Numeric soil ground",
-                    ProductSurfaceResponse.Soil, .5f);
+                    ProductSurfaceResponse.Soil, surfaceRepeats);
                 yield return 0;
                 asphalt = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[3], "Numeric asphalt",
-                    ProductSurfaceResponse.Asphalt, .5f);
+                    ProductSurfaceResponse.Asphalt, surfaceRepeats);
                 // Apron reuses asphalt albedo/normal/mask planes with a darker BaseColor response.
                 yield return 0;
                 apron = FromPackaged(visuals, MapVisualClosure.MapMaterialPaths[3], "Numeric apron asphalt",
-                    ProductSurfaceResponse.Apron, .5f);
+                    ProductSurfaceResponse.Apron, surfaceRepeats);
                 yield return 0;
                 BindAmbientOcclusion(visuals);
                 visualsBound = true;complete=true;

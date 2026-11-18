@@ -194,8 +194,8 @@ namespace Shooter.Tests
                 ProductMapView view = ProductMapView.Create(root.transform);
                 view.Install(boxes, null, "training-compound", visuals);
                 Assert.That(view.transform.Find("Product map solids").GetComponent<MeshRenderer>()
-                    .sharedMaterial.GetTextureScale("_BaseMap"), Is.EqualTo(new Vector2(.5f, .5f)),
-                    "Metric map UVs must retain the numeric two-metre material scale.");
+                    .sharedMaterial.GetTextureScale("_BaseMap"), Is.EqualTo(new Vector2(.25f, .25f)),
+                    "Metric map UVs must retain the numeric four-metre material scale (ADR-106).");
                 Material previous = view.transform.Find("Product ground").GetComponent<MeshRenderer>().sharedMaterial;
                 Texture previousTexture = previous.GetTexture("_BaseMap");
                 Mesh previousMesh = view.transform.Find("Product ground").GetComponent<MeshFilter>().sharedMesh;

@@ -13,7 +13,9 @@ namespace Shooter.Generation
         public const string GeneratorId = "soldier.loft";
         public const string GeneratorVersion = "1.0.3";
         public const string LegacyVersion = "1.0.2";
-        public static bool Supports(string version)=>version==GeneratorVersion||version==LegacyVersion;
+        /// <summary>ADR-106 kernel-built kit (balaclava, turned helmet, gloves, boots, plate carrier). Product soldiers use it.</summary>
+        public const string ProfileVersion = "1.1.0";
+        public static bool Supports(string version)=>version==GeneratorVersion||version==LegacyVersion||version==ProfileVersion;
         public const string ParametersJson = "{\"heightMm\":1800,\"hipWidthMm\":280,\"nearLimbSegments\":12,\"nearTorsoSegments\":16,\"runCycleMm\":2200,\"runDutyPpm\":350000,\"shoulderWidthMm\":420,\"uniformOffsetMm\":6,\"walkCycleMm\":1400,\"walkDutyPpm\":500000}";
         public RecipeDocument Document { get; }
         public ContentId SourceHash { get; }

@@ -29,25 +29,26 @@ namespace Shooter.Presentation.Rendering
             SmoothnessFallback = smoothnessFallback;
         }
 
-        // Cool plaster/concrete walls vs warm yard soil and darker asphalt lanes (Bodycam/BFV place craft).
+        // Cool plaster/concrete walls vs warm yard soil and darker asphalt lanes. ADR-106 lowered every bump scale
+        // about a quarter: the structured 1.1.0 surfaces carry real relief, so strong bumps only read as noise.
         public static readonly ProductSurfaceResponse Concrete = new ProductSurfaceResponse(
-            new Color(0.90f, 0.91f, 0.93f, 1f), 1.38f, 1f, 0.02f, 0.18f);
+            new Color(0.90f, 0.91f, 0.93f, 1f), 1.05f, 1f, 0.02f, 0.18f);
 
         /// <summary>Warmer plaster for door/window frames and curb trim (reuses packaged concrete planes).</summary>
         public static readonly ProductSurfaceResponse TrimPlaster = new ProductSurfaceResponse(
-            new Color(0.86f, 0.84f, 0.78f, 1f), 1.22f, 0.94f, 0.01f, 0.22f);
+            new Color(0.86f, 0.84f, 0.78f, 1f), 0.95f, 0.94f, 0.01f, 0.22f);
 
         public static readonly ProductSurfaceResponse CoverMetal = new ProductSurfaceResponse(
-            new Color(0.70f, 0.74f, 0.78f, 1f), 1.18f, 0.82f, 0.72f, 0.50f);
+            new Color(0.70f, 0.74f, 0.78f, 1f), 1.00f, 0.82f, 0.72f, 0.50f);
 
         public static readonly ProductSurfaceResponse Soil = new ProductSurfaceResponse(
-            new Color(0.78f, 0.72f, 0.58f, 1f), 1.48f, 1f, 0f, 0.045f);
+            new Color(0.78f, 0.72f, 0.58f, 1f), 1.15f, 1f, 0f, 0.045f);
 
         public static readonly ProductSurfaceResponse Asphalt = new ProductSurfaceResponse(
-            new Color(0.52f, 0.53f, 0.55f, 1f), 1.22f, 1f, 0.03f, 0.11f);
+            new Color(0.52f, 0.53f, 0.55f, 1f), 1.00f, 1f, 0.03f, 0.11f);
 
         /// <summary>Darker outer ring so the playable apron reads against the inner yard pad.</summary>
         public static readonly ProductSurfaceResponse Apron = new ProductSurfaceResponse(
-            new Color(0.38f, 0.39f, 0.40f, 1f), 1.15f, 1f, 0.04f, 0.09f);
+            new Color(0.38f, 0.39f, 0.40f, 1f), 0.95f, 1f, 0.04f, 0.09f);
     }
 }

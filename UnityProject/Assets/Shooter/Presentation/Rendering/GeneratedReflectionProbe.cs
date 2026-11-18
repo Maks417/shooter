@@ -11,6 +11,8 @@ namespace Shooter.Presentation
         public const float DefaultBoxSizeMeters = 12f;
         public const float DefaultIntensity = 1f;
         public const int DefaultResolution = 128;
+        /// <summary>ADR-106: the product map probe renders at 256 px (rendered once at map install).</summary>
+        public const int ProductMapResolution = 256;
         /// <summary>Product map outdoor probe: larger capture volume for arena compounds; bake once, never per frame.</summary>
         public const float ProductMapBoxSizeMeters = 48f;
         /// <summary>Product maps: slightly hotter probe so metal cover and asphalt specular read without HDR.</summary>
