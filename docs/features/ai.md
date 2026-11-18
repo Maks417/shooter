@@ -29,7 +29,7 @@ Queue path requests with priority, max two new path solves/tick initially; poll 
 - **Aim** (`AimController.cs`). Turning has a bounded rate and acceleration: about 420°/s in combat, with a time-optimal stop.
   - Bots aim at a seeded error point. The miss distance starts at about 1.1 m when a target is acquired and recovers over about 0.7 s, scaled by a per-bot skill factor between 0.8 and 1.25.
   - The settled error grows by 0.9 cm per metre of range. Own movement, target motion and a 0.5 s flinch after being hit add to it.
-  - The muzzle-offset correction is kept.
+  - The muzzle-offset correction was removed by ADR-112: shots resolve along the eye ray.
 - **Reaction.** The cold-acquisition delay is 250–500 ms. Range adds up to 200 ms for distant targets, and switching targets mid-fight takes 133–216 ms.
   - A target seen again within 0.5 s keeps its reaction and accuracy state. The old code re-armed the delay on any one-tick dropout.
 - **Trigger** (`FireDiscipline.cs`). A burst starts only when aim is within about a torso half-width (at least 1.5°). A burst continues within 2.5× that tolerance.
@@ -93,7 +93,19 @@ Known limits (narrowed by T090): footstep speed still comes from planner positio
 
 New counters: `CoverPeekRays`, `CoverPeekAccepted`, `HearingOcclusionRays`, `HearingOccluded`, `StrafeLedgeFlips`, `RouteCorridorPenalties`.
 
-Known residuals: cover still has no authored map proxies; peek is a single side sample without exposure scoring over time; hearing occlusion uses the vision layer mask; footstep teleport spike remains; AI CPU 1.5 ms mean and owner feel review remain Pending.
+Known residuals (authored map cover is used since ADR-112): peek is a single side sample without exposure scoring over time; hearing occlusion uses the vision layer mask; footstep teleport spike remains; AI CPU 1.5 ms mean and owner feel review remain Pending.
+
+## Map cover, flanking and smooth movement (ADR-112, 2026-11-18)
+
+Owner report: bots stacked in one place and shot; they should use the map and move more smoothly. Budgets, contracts and the planner seam are unchanged ([ADR-112](../decisions.md#adr-112--accepted-crosshair-true-hits-rig-aligned-hit-volumes-and-bots-that-use-map-cover-flank-and-move-smoothly)).
+
+- **Flicker (root cause of the jerky look).** With up to 29 bots and 16 rays per tick, many bots got no look on a given tick, and each such tick cleared the target: the aim jumped to a different point, the strafe stopped and the burst was cut. A target seen within 12 ticks is now held through starved ticks; a real "not visible" answer still ends it (`VisibleHolds` counter).
+- **Aim and movement.** Aim error glides between seeded points; direction changes between moving ticks ease over about three ticks; routes bend into the next leg within 1.5 m of a corner and the look leads into it; strafe leash ±3 m. A long-range or crouch shooter standing still is not "stuck".
+- **Authored cover.** Package cover boxes reach the bots through `IMapCoverSource`. The hiding spot is the face away from the live threat, nearest the bot; scored by travel ≤18 m, hard cover and ally spacing, never next to or past the threat. After a 2–4 s exchange in the open a bot moves to cover, and behind low cover ducks and peeks in a 1.5 s cycle. Runtime probes remain the fallback (`MapCoverClaims`, `CoverRepositions`).
+- **Flanking instead of piling on.** Allies already engaging or searching near a contact count toward the crowd limit; the extra bots take a route/lane point 8–30 m from the contact, 45–135° off their own approach, spread from each other (`FlankMoves`). Losing sight of an enemy that allies already press also sends the bot round a flank.
+- **Team-aware destinations.** Destinations avoid the own spawn, lean toward the enemy side and avoid spots where two or more allies already fight.
+
+Known residuals: high ground, upper floors, zones and lane identity are not published to the bots (content-format ADR needed); peek over tall cover is not modelled; owner feel review is Pending.
 
 ## Knife and grenade loadout (T087, 2026-11-15)
 

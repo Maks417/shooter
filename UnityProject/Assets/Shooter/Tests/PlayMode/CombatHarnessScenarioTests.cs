@@ -236,13 +236,13 @@ namespace Shooter.Tests
             var pose = new GameplayPoseEvaluator();
             var hitscan = new HitscanResolver(CollisionLayers.MotorMask, CollisionLayers.BulletObstructionMask);
             var volumes = new List<HitVolume>();
-            // Align target with canonical muzzle X (+0.18) so sphere-end hitscan intersects torso/head.
-            var targetFeet = new Float3(0.18f, 0, 3f);
+            // ADR-112: the eye ray decides the hit; aim slightly down at the torso of a target straight ahead.
+            var targetFeet = new Float3(0f, 0, 3f);
             pose.Evaluate(new EntityId(2), targetFeet, 0, 0, Stance.Standing, 1.8f, 1, volumes);
 
             var eye = pose.EyePosition(new Float3(0, 0, 0), Stance.Standing, 1.8f);
-            var muzzle = pose.CanonicalMuzzle(eye, 0, 0);
-            var aim = pose.AimDirection(0, 0);
+            var muzzle = pose.CanonicalMuzzle(eye, 0, 0.15f);
+            var aim = pose.AimDirection(0, 0.15f);
             var request = new HitscanRequest(new EntityId(1), eye, muzzle, aim, WeaponDefinition.Rifle, 1, true, 460072030UL, 1);
 
             int previous = QualitySettings.GetQualityLevel();

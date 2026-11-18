@@ -36,20 +36,20 @@ namespace Shooter.Simulation.Combat
         }
     }
 
-    /// <summary>Eye ray selects aim point to 300 m; muzzle→target cannot pass through static cover. Muzzle-inside rejects.</summary>
+    /// <summary>ADR-112: the eye (crosshair) ray resolves the hit against world and hostile actor capsules up to 300 m;
+    /// a muzzle inside or behind a wall rejects the shot; the muzzle is the tracer origin only.</summary>
     public sealed class HitscanResolver
     {
         public const float MaxMeters = 300f;
         private readonly QueryFilter coverFilter;
-        private readonly QueryFilter bulletFilter;
 
         public HitscanResolver(uint worldSolidMask, uint bulletMask)
         {
             coverFilter = new QueryFilter(worldSolidMask, default, false);
-            bulletFilter = new QueryFilter(bulletMask, default, false);
+            _ = bulletMask;
         }
 
-        public HitscanResult Resolve(HitscanRequest request, IWorldQueries world, IReadOnlyList<HitVolume>? volumes = null)
+        public HitscanResult Resolve(HitscanRequest request, IWorldQueries world, IReadOnlyList<HitVolume>? volumes = null, IReadOnlyList<EntityId>? ignore = null)
         {
             if (world == null) throw new ArgumentNullException(nameof(world));
             float spread = request.Ads ? request.Definition.AdsSpreadRadians : request.Definition.HipSpreadRadians;
@@ -79,27 +79,15 @@ namespace Shooter.Simulation.Combat
             float maxRange = request.Definition.MaxRangeMeters > 0f
                 ? Math.Min(MaxMeters, request.Definition.MaxRangeMeters)
                 : MaxMeters;
-            var eyeHit = world.Raycast(request.Eye, dir, maxRange, coverFilter);
-            Float3 targetPoint;
-            if (eyeHit.Status == QueryStatus.Hit)
-                targetPoint = eyeHit.Hit.Point;
-            else
-                targetPoint = new Float3(request.Eye.X + dir.X * maxRange, request.Eye.Y + dir.Y * maxRange, request.Eye.Z + dir.Z * maxRange);
 
-            Float3 toTarget = new Float3(targetPoint.X - request.Muzzle.X, targetPoint.Y - request.Muzzle.Y, targetPoint.Z - request.Muzzle.Z);
-            double len2 = toTarget.LengthSquared;
-            if (len2 <= 1e-10)
-                return new HitscanResult(true, false, request.Muzzle, dir, false, default);
-            float len = (float)Math.Sqrt(len2);
-            Float3 muzzleDir = new Float3(toTarget.X / len, toTarget.Y / len, toTarget.Z / len);
-            var muzzleRay = world.Raycast(request.Muzzle, muzzleDir, len + 0.01f, coverFilter);
-            if (muzzleRay.Status == QueryStatus.Hit && muzzleRay.Hit.DistanceMeters + 1e-3f < len)
-            {
-                // Cover between muzzle and eye target — blocked, no damage target.
-                return new HitscanResult(false, true, request.Muzzle, muzzleDir, true, muzzleRay.Hit);
-            }
+            // ADR-112: the crosshair is the truth. The eye ray alone decides what the shot hits: the nearest of the
+            // static world and every hostile actor capsule along it. The muzzle only gates the gun being pushed into
+            // a wall (above) and is the visible origin of the tracer. Before ADR-112 the bullet flew from the muzzle
+            // toward whatever the eye ray met behind the target, so a centred head shot against open sky passed
+            // about 0.22 m off the 0.12 m head sphere.
+            var worldHit = world.Raycast(request.Eye, dir, maxRange, coverFilter);
+            float limit = worldHit.Status == QueryStatus.Hit ? worldHit.Hit.DistanceMeters : maxRange;
 
-            // Actor hit volumes (mathematical capsules) — closest region along aim.
             QueryHit best = default; bool any = false;
             if (volumes != null)
             {
@@ -107,25 +95,47 @@ namespace Shooter.Simulation.Combat
                 {
                     var vol = volumes[i];
                     if (vol.EntityId.Equals(request.Shooter)) continue;
-                    if (!RayCapsule(request.Muzzle, muzzleDir, maxRange, vol.Capsule, out float t, out Float3 point, out Float3 normal)) continue;
+                    if (IsIgnored(ignore, vol.EntityId)) continue;
+                    if (!RayCapsule(request.Eye, dir, limit, vol.Capsule, out float t, out Float3 point, out Float3 normal)) continue;
                     var hit = new QueryHit(t, point, normal, vol.EntityId, default, vol.EntityId.Value * 10 + vol.RegionId, vol.RegionId, request.CollisionRevision);
                     if (!any || QueryOrder.CompareClosest(hit, best) < 0) { best = hit; any = true; }
                 }
             }
 
+            QueryHit impact;
+            bool impacted;
+            Float3 targetPoint;
             if (any)
             {
-                // Ensure no cover closer than actor hit.
-                var cover = world.Raycast(request.Muzzle, muzzleDir, best.DistanceMeters, coverFilter);
-                if (cover.Status == QueryStatus.Hit && cover.Hit.DistanceMeters + 1e-3f < best.DistanceMeters)
-                    return new HitscanResult(false, true, request.Muzzle, muzzleDir, true, cover.Hit);
-                return new HitscanResult(false, true, request.Muzzle, muzzleDir, true, best);
+                impact = best; impacted = true; targetPoint = best.Point;
+            }
+            else if (worldHit.Status == QueryStatus.Hit)
+            {
+                impact = worldHit.Hit; impacted = true; targetPoint = worldHit.Hit.Point;
+            }
+            else
+            {
+                impact = default; impacted = false;
+                targetPoint = new Float3(request.Eye.X + dir.X * maxRange, request.Eye.Y + dir.Y * maxRange, request.Eye.Z + dir.Z * maxRange);
             }
 
-            var far = world.Raycast(request.Muzzle, muzzleDir, maxRange, bulletFilter);
-            if (far.Status == QueryStatus.Hit)
-                return new HitscanResult(false, true, request.Muzzle, muzzleDir, true, far.Hit);
-            return new HitscanResult(false, true, request.Muzzle, muzzleDir, false, default);
+            Float3 toTarget = new Float3(targetPoint.X - request.Muzzle.X, targetPoint.Y - request.Muzzle.Y, targetPoint.Z - request.Muzzle.Z);
+            double len2 = toTarget.LengthSquared;
+            Float3 tracerDir = dir;
+            if (len2 > 1e-10)
+            {
+                float len = (float)Math.Sqrt(len2);
+                tracerDir = new Float3(toTarget.X / len, toTarget.Y / len, toTarget.Z / len);
+            }
+            return new HitscanResult(false, true, request.Muzzle, tracerDir, impacted, impact);
+        }
+
+        private static bool IsIgnored(IReadOnlyList<EntityId>? ignore, EntityId id)
+        {
+            if (ignore == null) return false;
+            for (int i = 0; i < ignore.Count; i++)
+                if (ignore[i].Equals(id)) return true;
+            return false;
         }
 
         /// <summary>Ray vs capsule (finite cylinder plus hemispherical caps). Nearest entry t in [0, max].</summary>

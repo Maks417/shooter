@@ -45,7 +45,7 @@ namespace Shooter.Simulation.AI
         /// <summary>Settled error grows with range so long shots are not laser-accurate.</summary>
         public const float SettledErrorPerMeter = 0.005f;
         /// <summary>Counted from the first tick the bot may fire, so the opening shots are visibly off target (T085).</summary>
-        public const uint AccuracyRecoveryTicks = 60;
+        public const uint AccuracyRecoveryTicks = 66;  // ADR-112: eye-ray hits land where aimed; settle slightly slower
         public const float MinErrorRadians = 0.005f;
         public const float MaxErrorRadians = 0.14f;      // ~8 deg
         public const float MovingErrorMeters = 0.18f;
@@ -71,7 +71,7 @@ namespace Shooter.Simulation.AI
         // Combat movement.
         public const uint StrafeFlipMinTicks = 24;
         public const uint StrafeFlipSpreadTicks = 49;
-        public const float StrafeMaxOffset = 2.0f;       // oscillate around the nav point where the fight started
+        public const float StrafeMaxOffset = 3.0f;       // oscillate around the nav point where the fight started (ADR-112 wider)
         public const uint StrafeBlockedCheckTicks = 12;
         public const float StrafeBlockedMeters = 0.15f;
         /// <summary>Entity ids with (id % CrouchShooterModulo) == 0 crouch-burst at mid range instead of strafing.</summary>
@@ -158,5 +158,42 @@ namespace Shooter.Simulation.AI
         // T090 wall-aware hearing (occlusion samples; footsteps use leftover AI ray budget when available).
         /// <summary>Minimum ticks between footstep occlusion samples for one bot.</summary>
         public const uint HearOcclusionIntervalTicks = 12;
+
+        // ADR-112 smoothness.
+        /// <summary>Ticks a seen target stays engaged through budget-starved (no-ray) ticks: the fair-sense window.</summary>
+        public const uint VisibleHoldTicks = 12;
+        /// <summary>Per-tick ease of the world move vector (time constant about three ticks).</summary>
+        public const float MoveEaseAlpha = 0.3f;
+        /// <summary>Distance from a path corner at which the route direction starts bending into the next leg.</summary>
+        public const float CornerBlendMeters = 1.5f;
+
+        // ADR-112 map tactics.
+        /// <summary>Authored cover farther than this from the bot is not considered.</summary>
+        public const float MapCoverSearchMeters = 18f;
+        /// <summary>A hiding spot this close to the threat is no hiding spot.</summary>
+        public const float MapCoverMinThreatMeters = 6f;
+        /// <summary>How much closer to the threat a cover move may take the bot.</summary>
+        public const float MapCoverMaxAdvanceMeters = 6f;
+        /// <summary>Allies (or their cover spots) within this of a spot make it less attractive.</summary>
+        public const float MapCoverAllySpacing = 3f;
+        /// <summary>Cover at least this tall hides a standing body: no peeking up over it.</summary>
+        public const float StandingCoverHeight = 1.6f;
+        /// <summary>In low cover: a peek cycle of this many ticks, standing for the last <see cref="CoverPeekStandTicks"/>.</summary>
+        public const uint CoverPeekCycleTicks = 90;
+        public const uint CoverPeekStandTicks = 36;
+        /// <summary>Open-ground exchange before moving to cover: base plus a seeded spread (ticks).</summary>
+        public const uint EngageInOpenTicks = 120;
+        public const uint EngageInOpenSpreadTicks = 120;
+        public const uint CoverRepositionCooldownTicks = 480;
+        /// <summary>Allies engaging/searching within this of a contact are "pressing" it.</summary>
+        public const float PressRadiusMeters = 12f;
+        public const float FlankMinMeters = 8f;
+        public const float FlankMaxMeters = 30f;
+        public const float FlankPreferredMeters = 16f;
+        public const float FlankArrivalMeters = 2f;
+        /// <summary>Destinations this close to the bot's own spawn are avoided (no loitering at home).</summary>
+        public const float OwnSpawnAvoidMeters = 15f;
+        /// <summary>Two or more allies fighting within this of a destination make it a hot spot to avoid.</summary>
+        public const float HotSpotMeters = 15f;
     }
 }

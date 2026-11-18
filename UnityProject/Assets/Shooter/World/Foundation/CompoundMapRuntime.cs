@@ -10,6 +10,7 @@ using Shooter.Game.Contracts;
 using Shooter.Generation;
 using Shooter.Generation.Environment;
 using Shooter.World.Navigation;
+using Shooter.World.Runtime;
 using UnityEngine;
 using EntityId = Shooter.Contracts.EntityId;
 
@@ -19,7 +20,7 @@ namespace Shooter.World
     /// Shipping map runtime: installs verified map-package collision/nav/metadata.
     /// Never regenerates recipes from seeds on the release path (ADR-035 / T055).
     /// </summary>
-    public sealed class CompoundMapRuntime : IMapRuntime, IDisposable
+    public sealed class CompoundMapRuntime : IMapRuntime, IMapCoverSource, IDisposable
     {
         private readonly List<GameObject> solids = new List<GameObject>();
 
@@ -44,6 +45,7 @@ namespace Shooter.World
         private readonly Func<MapId, ContentId>? gameplayRootResolver;
         private MapGameplayDefinition? definition;
         private List<CollisionBox>? packagedBoxes;
+        private readonly List<MapCoverProxy> packagedCovers = new List<MapCoverProxy>();
         private UnityWorldQueries? world;
         private RevisionedPathAdapter? navigation;
         private UnityNavMeshBakeInstaller? navInstall;
@@ -60,6 +62,8 @@ namespace Shooter.World
         public IWorldQueries WorldQueries => world ?? throw new InvalidOperationException("Map not loaded.");
         public INavigation Navigation => navigation ?? throw new InvalidOperationException("Map not loaded.");
         public IReadOnlyList<CollisionBox>? PackagedBoxes => packagedBoxes;
+        /// <summary>ADR-112: the package's authored cover objects (empty before a load or for packages without any).</summary>
+        public IReadOnlyList<MapCoverProxy> Covers => packagedCovers;
         public PublishedMapPackage? LoadedPackage => loadedPackage;
         public uint CollisionRevision => definition?.CollisionRevision ?? 0;
         public uint NavRevision => definition?.NavRevision ?? 0;
@@ -122,6 +126,22 @@ namespace Shooter.World
                     if (stableId == 0 || surfaceId == 0) throw new InvalidOperationException("Stable IDs must be nonzero.");
                     var shape = collision.Boxes[i].Shape;
                     boxes.Add(new CollisionBox(stableId, surfaceId, collision.Boxes[i].SurfaceTag, shape.Center, shape.Size, true));
+                }
+
+                packagedCovers.Clear();
+                if (meta.TryGetValue("covers", out var coverRows))
+                {
+                    foreach (var coverValue in coverRows.Array)
+                    {
+                        var row = coverValue.Object;
+                        ulong coverId = ulong.Parse(row["stableId"].String, CultureInfo.InvariantCulture);
+                        var center = row["centerMeters"].Array;
+                        var size = row["sizeMeters"].Array;
+                        packagedCovers.Add(new MapCoverProxy(coverId,
+                            new Shooter.Contracts.Float3((float)center[0].Number, (float)center[1].Number, (float)center[2].Number),
+                            new Shooter.Contracts.Float3((float)size[0].Number, (float)size[1].Number, (float)size[2].Number),
+                            row["hardCover"].Boolean));
+                    }
                 }
 
                 loadedPackage = published;
@@ -240,6 +260,7 @@ namespace Shooter.World
             navInstall?.Dispose();
             navInstall = null;
             packagedBoxes = null;
+            packagedCovers.Clear();
             definition = null;
             loadedPackage = null;
         }

@@ -561,6 +561,13 @@ namespace Shooter.Presentation.Session
         {
             if (session == null) return;
 
+            // ADR-112: development builds and the editor toggle the authoritative hitbox overlay with F8.
+            if (Debug.isDebugBuild)
+            {
+                var debugKeyboard = Keyboard.current;
+                if (debugKeyboard != null && debugKeyboard.f8Key.wasPressedThisFrame) hitboxOverlay = !hitboxOverlay;
+            }
+
             // Legacy Escape pause only when shell does not own the session lifecycle.
             if (!shellOwned)
             {
@@ -1180,6 +1187,7 @@ namespace Shooter.Presentation.Session
         private void OnGUI()
         {
             DrawAccessibilityOverlays();
+            DrawHitboxOverlay();
             // Shell host draws menus/scoreboard/results; keep a minimal combat HUD only while playing under shell.
             if (session == null) return;
             if (shellOwned)
@@ -1294,7 +1302,9 @@ namespace Shooter.Presentation.Session
                 // Hip reticle yields once the optic/irons take the aim picture.
                 if (!AdsOpticVisual.HideHipReticle(adsPresent))
                 {
-                    const float arm = 6f, gap = 3.5f, w = 1.5f;
+                    // ADR-112: the gap is the real hip-fire cone edge, so a shot that lands off the crosshair is explainable.
+                    const float arm = 6f, w = 1.5f;
+                    float gap = HipReticleGap(opticId, combatUi.Height);
                     TacticalUi.ReticleArm(new Rect(cx - gap - arm, cy - w * .5f, arm, w));
                     TacticalUi.ReticleArm(new Rect(cx + gap, cy - w * .5f, arm, w));
                     TacticalUi.ReticleArm(new Rect(cx - w * .5f, cy - gap - arm, w, arm));
@@ -1306,6 +1316,77 @@ namespace Shooter.Presentation.Session
                         hitMarkerHeadshot, reducedCameraMotion), hitMarkerHeadshot);
             }
             finally { combatUi.End(); }
+        }
+
+        private bool hitboxOverlay;
+        private readonly List<HitVolume> overlayVolumes = new List<HitVolume>();
+
+        /// <summary>
+        /// ADR-112 development overlay: outlines every authoritative hit capsule of the last tick in screen space (head
+        /// red, body yellow) so hit registration can be checked against the drawn soldiers. Debug builds only.
+        /// </summary>
+        private void DrawHitboxOverlay()
+        {
+            if (!hitboxOverlay || !Debug.isDebugBuild || session == null || camera == null || Event.current.type != EventType.Repaint) return;
+            if (session.CopyHitVolumes(overlayVolumes) == 0) return;
+            var saved = GUI.matrix; var savedColor = GUI.color;
+            GUI.matrix = Matrix4x4.identity;
+            float focal = Screen.height * .5f / Mathf.Tan(camera.fieldOfView * .5f * Mathf.Deg2Rad);
+            var human = session.HumanEntityId;
+            for (int i = 0; i < overlayVolumes.Count; i++)
+            {
+                var volume = overlayVolumes[i];
+                if (volume.EntityId.Equals(human)) continue;
+                GUI.color = volume.RegionId == 1 ? new Color(1f, .25f, .2f, .9f) : new Color(1f, .9f, .2f, .75f);
+                var a = volume.Capsule.BottomSphereCenter; var b = volume.Capsule.TopSphereCenter;
+                var sa = camera.WorldToScreenPoint(new Vector3(a.X, a.Y, a.Z));
+                var sb = camera.WorldToScreenPoint(new Vector3(b.X, b.Y, b.Z));
+                if (sa.z <= .1f || sb.z <= .1f) continue;
+                float ra = volume.Capsule.Radius * focal / sa.z, rb = volume.Capsule.Radius * focal / sb.z;
+                OverlayCircle(sa, ra);
+                if ((sa - sb).sqrMagnitude < 1f) continue;
+                OverlayCircle(sb, rb);
+                Vector2 axis = new Vector2(sb.x - sa.x, sb.y - sa.y).normalized;
+                Vector2 side = new Vector2(-axis.y, axis.x);
+                OverlayLine(new Vector2(sa.x, sa.y) + side * ra, new Vector2(sb.x, sb.y) + side * rb);
+                OverlayLine(new Vector2(sa.x, sa.y) - side * ra, new Vector2(sb.x, sb.y) - side * rb);
+            }
+            GUI.matrix = saved; GUI.color = savedColor;
+        }
+
+        private static void OverlayCircle(Vector3 screen, float radius)
+        {
+            int steps = Mathf.Clamp((int)(radius * .8f), 12, 48);
+            Vector2 c = new Vector2(screen.x, screen.y);
+            for (int i = 0; i < steps; i++)
+            {
+                float t0 = i * Mathf.PI * 2f / steps, t1 = (i + 1) * Mathf.PI * 2f / steps;
+                OverlayLine(c + new Vector2(Mathf.Cos(t0), Mathf.Sin(t0)) * radius, c + new Vector2(Mathf.Cos(t1), Mathf.Sin(t1)) * radius);
+            }
+        }
+
+        /// <summary>Screen-space segment (Unity screen y-up), drawn as a rotated 1.5 px bar.</summary>
+        private static void OverlayLine(Vector2 from, Vector2 to)
+        {
+            from.y = Screen.height - from.y; to.y = Screen.height - to.y;
+            Vector2 d = to - from; float length = d.magnitude;
+            if (length < .5f) return;
+            float angle = Mathf.Atan2(d.y, d.x) * Mathf.Rad2Deg;
+            var matrix = GUI.matrix;
+            GUIUtility.RotateAroundPivot(angle, from);
+            GUI.DrawTexture(new Rect(from.x, from.y - .75f, length, 1.5f), Texture2D.whiteTexture);
+            GUI.matrix = matrix;
+        }
+
+        /// <summary>ADR-112: logical-pixel radius of the weapon's hip-fire cone at the current vertical field of view.</summary>
+        private float HipReticleGap(DefinitionId weapon, float logicalHeight)
+        {
+            const float minimum = 3.5f;
+            float spread = OfflineGameSession.HipSpreadRadians(weapon);
+            if (spread <= 0f || camera == null) return minimum;
+            float halfFov = camera.fieldOfView * .5f * Mathf.Deg2Rad;
+            float gap = Mathf.Tan(spread) / Mathf.Tan(halfFov) * logicalHeight * .5f;
+            return Mathf.Clamp(gap, minimum, logicalHeight * .25f);
         }
 
         /// <summary>ADR-105: "[G] TAKE AK-47" / "[G] TAKE AMMO" below the reticle while a dropped gun is in reach.</summary>

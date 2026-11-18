@@ -95,6 +95,78 @@ namespace Shooter.Simulation.Tests.Combat
         }
     }
 
+    /// <summary>ADR-112: the crosshair (eye ray) decides the hit; the muzzle offset no longer throws head shots off.</summary>
+    public sealed class EyeRayHitscanTests
+    {
+        private static HitscanResult HeadShot(float distance, UnityLikeBoxWorld world, float targetSpeed, IReadOnlyList<EntityId>? ignore = null,
+            List<HitVolume>? extra = null)
+        {
+            var pose = new GameplayPoseEvaluator();
+            var volumes = new List<HitVolume>();
+            if (extra != null) volumes.AddRange(extra);
+            // Target faces the shooter (yaw pi) and is either still or walking.
+            pose.Evaluate(new EntityId(2), new Float3(0, 0, distance), (float)Math.PI, 0, Stance.Standing, 1.8f, targetSpeed, 1, volumes);
+            Float3 head = default;
+            foreach (var v in volumes) if (v.EntityId.Equals(new EntityId(2)) && v.RegionId == 1) head = v.Capsule.BottomSphereCenter;
+            var eye = pose.EyePosition(default, Stance.Standing, 1.8f);
+            float dx = head.X - eye.X, dy = head.Y - eye.Y, dz = head.Z - eye.Z;
+            float len = (float)Math.Sqrt(dx * dx + dy * dy + dz * dz);
+            var aim = new Float3(dx / len, dy / len, dz / len);
+            float yaw = (float)Math.Atan2(aim.X, aim.Z), pitch = -(float)Math.Asin(aim.Y);
+            var muzzle = pose.CanonicalMuzzle(eye, yaw, pitch);
+            var hitscan = new HitscanResolver(CollisionLayers.MotorMask, CollisionLayers.BulletObstructionMask);
+            return hitscan.Resolve(new HitscanRequest(new EntityId(1), eye, muzzle, aim, WeaponDefinition.Rifle, 1, true, 460072030UL, 1),
+                world, volumes, ignore);
+        }
+
+        [Theory]
+        [InlineData(5f, 0f)]
+        [InlineData(20f, 0f)]
+        [InlineData(40f, 0f)]
+        [InlineData(20f, 3.5f)]
+        public void CentredHeadShotAgainstOpenSkyHitsTheHead(float distance, float speed)
+        {
+            var result = HeadShot(distance, new UnityLikeBoxWorld(), speed);
+            Assert.True(result.Fired);
+            Assert.True(result.Impacted);
+            Assert.Equal(new EntityId(2), result.Impact.EntityId);
+            Assert.Equal((ushort)1, result.Impact.SurfaceTag);
+        }
+
+        [Fact]
+        public void CentredHeadShotWithAWallBehindHitsTheHead()
+        {
+            var world = new UnityLikeBoxWorld();
+            world.AddBox(new Float3(-3, 0, 21), new Float3(3, 3, 21.5f), 5);
+            var result = HeadShot(20f, world, 0f);
+            Assert.Equal(new EntityId(2), result.Impact.EntityId);
+            Assert.Equal((ushort)1, result.Impact.SurfaceTag);
+        }
+
+        [Fact]
+        public void IgnoredTeammateDoesNotSoakTheShot()
+        {
+            var pose = new GameplayPoseEvaluator();
+            var mate = new List<HitVolume>();
+            pose.Evaluate(new EntityId(3), new Float3(0, 0, 10), (float)Math.PI, 0, Stance.Standing, 1.8f, 0f, 1, mate);
+            var blocked = HeadShot(20f, new UnityLikeBoxWorld(), 0f, null, mate);
+            Assert.Equal(new EntityId(3), blocked.Impact.EntityId);
+            var through = HeadShot(20f, new UnityLikeBoxWorld(), 0f, new[] { new EntityId(3) }, mate);
+            Assert.Equal(new EntityId(2), through.Impact.EntityId);
+        }
+
+        [Fact]
+        public void CoverInFrontOfTheHeadStillBlocks()
+        {
+            var world = new UnityLikeBoxWorld();
+            world.AddBox(new Float3(-3, 0, 10), new Float3(3, 3, 10.5f), 9);
+            var result = HeadShot(20f, world, 0f);
+            Assert.True(result.Impacted);
+            Assert.False(result.Impact.EntityId.IsValid);
+            Assert.Equal(9UL, result.Impact.ColliderStableId);
+        }
+    }
+
     /// <summary>Test fake mimicking Physics.RaycastNonAlloc: boxes are reported only when the ray starts outside them.</summary>
     internal sealed class UnityLikeBoxWorld : IWorldQueries, IFakeAdapter
     {

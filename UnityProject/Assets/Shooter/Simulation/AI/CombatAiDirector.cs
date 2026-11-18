@@ -19,6 +19,23 @@ namespace Shooter.Simulation.AI
     }
 
     /// <summary>
+    /// ADR-112: an authored map cover object (axis-aligned box). The hiding spot is not fixed: it is chosen against
+    /// the live threat, on the face of the box away from it, so the same crate covers either team.
+    /// </summary>
+    public readonly struct MapCover
+    {
+        public ulong Id { get; }
+        public Float3 Center { get; }
+        public Float3 Size { get; }
+        public bool Hard { get; }
+        public MapCover(ulong id, Float3 center, Float3 size, bool hard)
+        {
+            if (id == 0 || (id & CoverFinder.DynamicCoverIdFlag) != 0) throw new ArgumentOutOfRangeException(nameof(id));
+            Id = id; Center = center; Size = size; Hard = hard;
+        }
+    }
+
+    /// <summary>
     /// Team AI: ≤16 AI rays (vision + T082 cover probes + T090 peeks/hearing) and ≤2 new paths per tick;
     /// cover/reload/stuck through normal commands. Capacity 29 for ADR-101 15v15. T082/T085/T090 add aim, fire,
     /// strafing with ledge probes, sticky targeting, wall-aware hearing, spread, cover peeks and callouts.
@@ -38,14 +55,12 @@ namespace Shooter.Simulation.AI
         // Eye / aim heights matching MotorConfig eyes and GameplayPoseEvaluator hit volumes.
         public const float StandingEyeHeight = 1.65f;
         public const float CrouchedEyeHeight = 1.05f;
-        /// <summary>Upper chest inside the standing torso capsule (hip 0.9 .. shoulder 1.4).</summary>
-        public const float StandingAimHeight = 1.30f;
-        /// <summary>Upper chest inside the crouched/sliding torso capsule (hip 0.55 .. shoulder 0.8).</summary>
-        public const float CrouchedAimHeight = 0.70f;
+        /// <summary>Chest inside the ADR-112 standing torso whether the target is still (0.76 .. 1.45 m) or moving
+        /// (0.60 .. 1.29 m).</summary>
+        public const float StandingAimHeight = 1.15f;
+        /// <summary>Chest inside the ADR-112 crouched/sliding torso capsule (0.48 .. 1.17 m).</summary>
+        public const float CrouchedAimHeight = 0.80f;
 
-        /// <summary>Canonical gameplay muzzle offsets from GameplayPoseEvaluator.CanonicalMuzzle (right +0.18, up -0.15).</summary>
-        public const float MuzzleRightOffset = 0.18f;
-        public const float MuzzleDownOffset = 0.15f;
 
         // Movement abilities (all deterministic from entity id / tick / authority feedback).
         /// <summary>Engagements at or beyond this range are fought crouched and stationary with taps.</summary>
@@ -123,6 +138,16 @@ namespace Shooter.Simulation.AI
             if (sites == null) return;
             for (int i = 0; i < sites.Count; i++) coverSites.Add(sites[i]);
         }
+
+        /// <summary>ADR-112: authored map cover. Replaces the previous set; null or empty clears it.</summary>
+        public void SetMapCovers(IReadOnlyList<MapCover>? covers)
+        {
+            mapCovers.Clear();
+            if (covers == null) return;
+            for (int i = 0; i < covers.Count; i++) mapCovers.Add(covers[i]);
+        }
+
+        public int MapCoverCount => mapCovers.Count;
 
         public void SetNavigationDestinations(
             IReadOnlyList<Float3>? patrol,
@@ -323,7 +348,21 @@ namespace Shooter.Simulation.AI
                 if (!PerceptionSystem.IsAlliedTeam(board.Team, other.Team)) continue;
                 if (Within(other.LastHeard.Value, p, AiTuning.InvestigateCrowdMeters)) crowd++;
             }
-            if (crowd >= AiTuning.InvestigateCrowdLimit) { counters.CrowdedStimuliHeld++; return; }
+            // ADR-112: allies already fighting at the spot count toward the crowd too.
+            crowd += AlliesPressing(board, p);
+            if (crowd >= AiTuning.InvestigateCrowdLimit)
+            {
+                counters.CrowdedStimuliHeld++;
+                // Enough allies are on it: take a flanking point round the contact instead of joining the queue.
+                var flank = ChooseFlankGoal(board, p);
+                if (flank.HasValue && IsCalm(board.State) && board.State != AiState.Reposition)
+                {
+                    board.FlankGoal = flank;
+                    counters.FlankMoves++;
+                    Enter(board, AiState.Reposition);
+                }
+                return;
+            }
             Enter(board, AiState.Investigate);
         }
 
@@ -376,6 +415,10 @@ namespace Shooter.Simulation.AI
             board.DestinationCursor = 0;
             board.RetryAfterTick = 0;
             board.PatrolGoal = null;
+            board.SpawnPoint = feet;
+            board.FlankGoal = null;
+            board.CoverLow = false;
+            board.NextRepositionTick = 0;
             board.PatrolGoalCursor = -1;
             board.PatrolIndex = -1;
             board.PreviousPatrolIndex = -1;
@@ -388,6 +431,7 @@ namespace Shooter.Simulation.AI
         {
             board.Crouched = false;
             board.HasPrevFeet = false;
+            board.SmoothMoveX = 0; board.SmoothMoveZ = 0;
             board.PrevFeet = board.Feet;
             board.SpeedMps = 0;
             board.SprintTicks = 0;
@@ -484,6 +528,7 @@ namespace Shooter.Simulation.AI
                 AdvancePathCorners(board);
                 UpdateSpeed(board);
                 UpdateStuck(board);
+                EntityId? heldTarget = board.HasVisibleTarget ? board.VisibleTargetId : null;
                 board.HasVisibleTarget = false;
                 board.VisibleTargetId = null;
                 board.VisibleTarget = null;
@@ -491,7 +536,10 @@ namespace Shooter.Simulation.AI
                 counters.SenseOpportunitiesThisTick++;
                 if (enemies != null && enemyCount > 0)
                 {
+                    senseHeldTarget = heldTarget;
+                    senseHeldLost = false;
                     Sense(board, enemies, enemyCount);
+                    if (!board.HasVisibleTarget) HoldVisibleTarget(board, heldTarget, enemies, enemyCount);
                     if (!board.HasVisibleTarget) HearFootsteps(board, enemies, enemyCount);
                 }
                 ExpireStimuli(board);
@@ -676,7 +724,10 @@ namespace Shooter.Simulation.AI
                 var savedLastSeen = board.LastSeenEnemy;
                 float savedConfidence = board.Confidence;
                 int raysBefore = perception.RaysUsedThisTick;
-                if (perception.TrySense(board, eye, board.Yaw, candidate, counters, out bool acquired) && acquired)
+                bool sensed = perception.TrySense(board, eye, board.Yaw, candidate, counters, out bool acquired);
+                // A real negative answer (a ray, range or field-of-view verdict) on the held target ends the hold.
+                if (sensed && !acquired && senseHeldTarget.HasValue && candidate.Id == senseHeldTarget.Value) senseHeldLost = true;
+                if (sensed && acquired)
                 {
                     float d = Distance(eye, candidate.Point);
                     bool challenger = scan && stickyIdx >= 0 && candidate.Id != enemies[stickyIdx].Id &&
@@ -702,6 +753,34 @@ namespace Shooter.Simulation.AI
             {
                 board.Confidence = Math.Max(0, board.Confidence - 0.02f);
                 if (board.Confidence <= 0 && board.State == AiState.Engage) Enter(board, AiState.Search);
+            }
+        }
+
+        private readonly List<MapCover> mapCovers = new List<MapCover>();
+        private EntityId? senseHeldTarget;
+        private bool senseHeldLost;
+
+        /// <summary>
+        /// ADR-112: a bot that saw its target within <see cref="AiTuning.VisibleHoldTicks"/> keeps tracking it on a tick
+        /// where the shared vision budget gave it no ray (or a target re-scan left the sticky target unconfirmed).
+        /// Before this, every budget-starved tick dropped the engagement: the aim jumped to a different point, the
+        /// strafe stopped and the burst was cut, so engaged bots flickered. A ray that says "not visible" ends it.
+        /// </summary>
+        private void HoldVisibleTarget(AiBlackboard board, EntityId? held, SenseTarget[] enemies, int enemyCount)
+        {
+            if (!held.HasValue || senseHeldLost || board.LastSeenTick == 0) return;
+            if (unchecked(tick - board.LastSeenTick) > AiTuning.VisibleHoldTicks) return;
+            for (int k = 0; k < enemyCount; k++)
+            {
+                var candidate = enemies[k];
+                if (candidate.Id != held.Value) continue;
+                if (!PerceptionSystem.IsOpponent(board, candidate)) return;
+                board.HasVisibleTarget = true;
+                board.VisibleTargetId = candidate.Id;
+                board.VisibleTarget = candidate.Point;
+                board.Confidence = Math.Max(board.Confidence, 0.5f);
+                counters.VisibleHolds++;
+                return;
             }
         }
 
@@ -799,7 +878,8 @@ namespace Shooter.Simulation.AI
                 board.ReloadStartMag = 0;
                 Enter(board, AiState.Reload);
                 if (recentlyFighting && board.LastSeenEnemy.HasValue && coverSites.Count == 0 &&
-                    !board.CoverPoint.HasValue && !board.CoverProbeActive)
+                    !board.CoverPoint.HasValue && !board.CoverProbeActive &&
+                    !TryClaimMapCover(board, board.LastSeenEnemy.Value))
                     CoverFinder.Start(board, board.LastSeenEnemy.Value);
             }
             else if (board.MagAmmo < TacticalReloadThreshold(board) && board.ReserveAmmo > 0 && !board.HasVisibleTarget &&
@@ -826,6 +906,20 @@ namespace Shooter.Simulation.AI
                 board.RetreatAllowedTick = tick + AiTuning.RetreatCooldownTicks;
                 counters.Retreats++;
                 Enter(board, AiState.SeekCover);
+            }
+            // ADR-112: fights move. After a seeded 2-4 s exchange in the open, a bot with authored cover in reach
+            // moves to it (the hiding face away from its target) and fights from there by peeking.
+            else if (board.State == AiState.Engage && board.HasVisibleTarget && board.VisibleTarget.HasValue && mapCovers.Count > 0 &&
+                     tick >= board.NextRepositionTick && board.TargetDistance > AiTuning.CloseRange &&
+                     unchecked(tick - board.StateEnteredTick) >= AiTuning.EngageInOpenTicks +
+                        AiNoise.Range(board.Self.Value, board.StateEnteredTick, AiNoise.SaltCover, AiTuning.EngageInOpenSpreadTicks))
+            {
+                board.NextRepositionTick = tick + AiTuning.CoverRepositionCooldownTicks;
+                if (!board.InCover && TryClaimMapCover(board, board.VisibleTarget.Value))
+                {
+                    counters.CoverRepositions++;
+                    Enter(board, AiState.SeekCover);
+                }
             }
         }
 
@@ -858,6 +952,11 @@ namespace Shooter.Simulation.AI
                     break;
                 case AiState.Reposition:
                 case AiState.Search:
+                    if (board.FlankGoal.HasValue)
+                    {
+                        if (Within(board.Feet, board.FlankGoal.Value, AiTuning.FlankArrivalMeters)) board.FlankGoal = null;
+                        else { EnsurePath(board, board.FlankGoal.Value, retarget: true); break; }
+                    }
                     if (board.LastSeenEnemy.HasValue) EnsurePath(board, SearchPoint(board), retarget: true);
                     else if (combatDestinations.Count > 0) EnsurePath(board, ChooseCombatDestination(board));
                     else Enter(board, AiState.Patrol);
@@ -883,7 +982,9 @@ namespace Shooter.Simulation.AI
             {
                 if (!board.InCover) { MoveToCover(board); return; }
                 if (board.HasVisibleTarget && board.TargetDistance < AiTuning.CloseRange) { Enter(board, AiState.Engage); return; }
-                if (unchecked(tick - board.InCoverSinceTick) >= AiTuning.CoverHoldTicks) Enter(board, AiState.Reposition);
+                // ADR-112: a bot trading shots from cover keeps the spot; it moves on once the fight goes quiet.
+                uint quietSince = board.LastSeenTick > board.InCoverSinceTick ? board.LastSeenTick : board.InCoverSinceTick;
+                if (unchecked(tick - quietSince) >= AiTuning.CoverHoldTicks) Enter(board, AiState.Reposition);
                 return;
             }
             if (board.CoverProbeActive) return; // probes run with leftover rays at the end of this tick
@@ -939,6 +1040,7 @@ namespace Shooter.Simulation.AI
             if (count == 1) return 0;
             int best = Rotate(board, count);
             float bestScore = float.MinValue;
+            bool hasEnemyHome = EnemyHome(board, out Float3 enemyHome);
             for (int k = 0; k < count; k++)
             {
                 if ((k == last || k == previous) && count > 2) continue;
@@ -948,6 +1050,7 @@ namespace Shooter.Simulation.AI
                 if (leg < 3f) continue;
                 float score = -Math.Abs(leg - AiTuning.PatrolPreferredMeters) / AiTuning.PatrolPreferredMeters;
                 score += 0.6f * AiNoise.Unit(board.Self.Value, (ulong)(uint)board.DestinationCursor * 131UL + (ulong)k, AiNoise.SaltPatrol);
+                score += TeamTerrainScore(board, c, hasEnemyHome, enemyHome);
                 for (int i = 0; i < botCount; i++)
                 {
                     var other = boards[i];
@@ -1178,7 +1281,9 @@ namespace Shooter.Simulation.AI
             || board.State == AiState.SeekCover
             || board.State == AiState.Reposition
             || board.State == AiState.Search
-            || (board.State == AiState.Engage && board.HasVisibleTarget);
+            // ADR-112: an engaged bot only expects progress when it actually asked to move last tick; a long-range or
+            // crouch shooter holding still is not stuck (it used to fall into SeekCover and spawn relocation).
+            || (board.State == AiState.Engage && board.HasVisibleTarget && board.CommandedMove);
 
         /// <summary>Copy living bots that need a spawn-slot rescue into <paramref name="destination"/>.</summary>
         public int CollectRelocationRequests(List<EntityId> destination)
@@ -1225,6 +1330,192 @@ namespace Shooter.Simulation.AI
             for (int i = 0; i < coverSites.Count; i++)
                 if (coverSites[i].Id == id) return coverSites[i];
             return null;
+        }
+
+        // ---------------------------------------------------------------- ADR-112 map tactics
+
+        /// <summary>
+        /// Claims the best authored cover against <paramref name="threat"/>: the hiding spot is on the box face away
+        /// from the threat, nearest the bot's own lateral position. Scored by travel distance, hard cover and ally
+        /// spacing; never a spot that is behind the threat or that the threat stands next to. No rays.
+        /// </summary>
+        private bool TryClaimMapCover(AiBlackboard board, Float3 threat)
+        {
+            if (mapCovers.Count == 0) return false;
+            float botThreat = Distance2D(board.Feet, threat);
+            int best = -1; float bestScore = float.MinValue; Float3 bestSpot = default;
+            for (int k = 0; k < mapCovers.Count; k++)
+            {
+                var cover = mapCovers[k];
+                if (covers.IsClaimed(cover.Id)) continue;
+                var spot = HideSpot(cover, threat, board.Feet);
+                float travel = Distance2D(board.Feet, spot);
+                if (travel > AiTuning.MapCoverSearchMeters) continue;
+                float spotThreat = Distance2D(spot, threat);
+                if (spotThreat < AiTuning.MapCoverMinThreatMeters) continue;
+                // The box must sit between the threat and the spot, and the spot must not be a charge at the enemy.
+                if (Distance2D(cover.Center, threat) >= spotThreat) continue;
+                if (spotThreat < botThreat - AiTuning.MapCoverMaxAdvanceMeters) continue;
+                float score = -travel / AiTuning.MapCoverSearchMeters;
+                if (cover.Hard) score += 0.25f;
+                score += 0.1f * AiNoise.Unit(board.Self.Value, cover.Id, AiNoise.SaltCover);
+                for (int i = 0; i < botCount; i++)
+                {
+                    var other = boards[i];
+                    if (other == board || !other.Alive || other.State == AiState.Dead) continue;
+                    if (board.Team != 0 && !PerceptionSystem.IsAlliedTeam(board.Team, other.Team)) continue;
+                    if (Within(other.Feet, spot, AiTuning.MapCoverAllySpacing)) score -= 0.6f;
+                    if (other.CoverPoint.HasValue && Within(other.CoverPoint.Value, spot, AiTuning.MapCoverAllySpacing)) score -= 0.6f;
+                }
+                if (score > bestScore) { bestScore = score; best = k; bestSpot = spot; }
+            }
+            if (best < 0) return false;
+            var chosen = mapCovers[best];
+            if (!covers.TryClaim(chosen.Id, board.Self)) return false;
+            if (board.CoverReservation.HasValue && board.CoverReservation.Value != chosen.Id)
+                covers.Release(board.CoverReservation.Value, board.Self);
+            board.CoverReservation = chosen.Id;
+            board.CoverPoint = bestSpot;
+            board.CoverThreat = threat;
+            board.CoverLow = chosen.Size.Y < AiTuning.StandingCoverHeight;
+            board.InCover = false;
+            board.CoverProbeActive = false;
+            counters.CoverClaims++;
+            counters.MapCoverClaims++;
+            return true;
+        }
+
+        /// <summary>Spot 0.6 m off the box face that looks away from the threat, slid toward the bot along it.</summary>
+        public static Float3 HideSpot(MapCover cover, Float3 threat, Float3 bot)
+        {
+            float hx = cover.Size.X * 0.5f, hz = cover.Size.Z * 0.5f;
+            float dx = cover.Center.X - threat.X, dz = cover.Center.Z - threat.Z;
+            float baseY = cover.Center.Y - cover.Size.Y * 0.5f;
+            const float standOff = 0.6f, inset = 0.4f;
+            // Which face the threat looks at, normalised by the box's extents (a long wall is hidden behind its length).
+            if (Math.Abs(dx) * Math.Max(hz, 0.05f) >= Math.Abs(dz) * Math.Max(hx, 0.05f))
+            {
+                float x = cover.Center.X + (dx >= 0f ? 1f : -1f) * (hx + standOff);
+                float z = Clamp(bot.Z, cover.Center.Z - Math.Max(0f, hz - inset), cover.Center.Z + Math.Max(0f, hz - inset));
+                return new Float3(x, baseY, z);
+            }
+            else
+            {
+                float z = cover.Center.Z + (dz >= 0f ? 1f : -1f) * (hz + standOff);
+                float x = Clamp(bot.X, cover.Center.X - Math.Max(0f, hx - inset), cover.Center.X + Math.Max(0f, hx - inset));
+                return new Float3(x, baseY, z);
+            }
+        }
+
+        private static float Clamp(float v, float lo, float hi) => v < lo ? lo : v > hi ? hi : v;
+
+        private static float Distance2D(Float3 a, Float3 b)
+        {
+            float dx = a.X - b.X, dz = a.Z - b.Z;
+            return MathF.Sqrt(dx * dx + dz * dz);
+        }
+
+        /// <summary>Allies (bots) engaging or searching within the press radius of <paramref name="point"/> (investigators are
+        /// counted separately by the stimulus crowd check).</summary>
+        private int AlliesPressing(AiBlackboard board, Float3 point)
+        {
+            if (board.Team == 0) return 0;
+            int n = 0;
+            for (int i = 0; i < botCount; i++)
+            {
+                var other = boards[i];
+                if (other == board || !other.Alive || other.State == AiState.Dead) continue;
+                if (!PerceptionSystem.IsAlliedTeam(board.Team, other.Team)) continue;
+                bool pressing = other.State == AiState.Engage || other.State == AiState.Search;
+                if (!pressing) continue;
+                var at = other.LastSeenEnemy ?? other.LastHeard;
+                if (at.HasValue && Within(at.Value, point, AiTuning.PressRadiusMeters)) n++;
+            }
+            return n;
+        }
+
+        /// <summary>
+        /// A route/lane point beside the contact rather than on the straight line to it: 8-30 m from the contact,
+        /// at a 45-135 degree angle off the bot's own approach, away from allies' goals. Null when none fits.
+        /// </summary>
+        private Float3? ChooseFlankGoal(AiBlackboard board, Float3 contact)
+        {
+            float ax = board.Feet.X - contact.X, az = board.Feet.Z - contact.Z;
+            float alen = MathF.Sqrt(ax * ax + az * az);
+            if (alen < 1e-3f) return null;
+            ax /= alen; az /= alen;
+            Float3? best = null; float bestScore = float.MinValue;
+            for (int list = 0; list < 2; list++)
+            {
+                var points = list == 0 ? combatDestinations : patrolDestinations;
+                for (int k = 0; k < points.Count; k++)
+                {
+                    var c = points[k];
+                    float cx = c.X - contact.X, cz = c.Z - contact.Z;
+                    float clen = MathF.Sqrt(cx * cx + cz * cz);
+                    if (clen < AiTuning.FlankMinMeters || clen > AiTuning.FlankMaxMeters) continue;
+                    float cos = (cx * ax + cz * az) / clen;
+                    if (cos > 0.7071f || cos < -0.7071f) continue; // not ahead or behind the contact: beside it
+                    if (Distance2D(board.Feet, c) > alen + AiTuning.FlankMaxMeters) continue;
+                    float score = -Math.Abs(clen - AiTuning.FlankPreferredMeters) / AiTuning.FlankPreferredMeters;
+                    score += 0.4f * AiNoise.Unit(board.Self.Value, (ulong)k * 7919UL + (ulong)list, AiNoise.SaltCover);
+                    for (int i = 0; i < botCount; i++)
+                    {
+                        var other = boards[i];
+                        if (other == board || !other.Alive || other.State == AiState.Dead) continue;
+                        if (board.Team != 0 && !PerceptionSystem.IsAlliedTeam(board.Team, other.Team)) continue;
+                        if (other.FlankGoal.HasValue && Within(other.FlankGoal.Value, c, AiTuning.SpreadMeters)) score -= 1.5f;
+                        if (Within(other.Feet, c, AiTuning.SpreadMeters * 0.5f)) score -= 0.5f;
+                    }
+                    if (score > bestScore) { bestScore = score; best = c; }
+                }
+            }
+            return best;
+        }
+
+        /// <summary>Centroid of the opposing bots' spawn points (their home side); false when none are known.</summary>
+        private bool EnemyHome(AiBlackboard board, out Float3 home)
+        {
+            home = default;
+            if (board.Team == 0) return false;
+            float x = 0, y = 0, z = 0; int n = 0;
+            for (int i = 0; i < botCount; i++)
+            {
+                var other = boards[i];
+                if (other.Team == 0 || PerceptionSystem.IsAlliedTeam(board.Team, other.Team)) continue;
+                x += other.SpawnPoint.X; y += other.SpawnPoint.Y; z += other.SpawnPoint.Z; n++;
+            }
+            if (n == 0) return false;
+            home = new Float3(x / n, y / n, z / n);
+            return true;
+        }
+
+        /// <summary>
+        /// ADR-112 team-aware destination term: avoid loitering in the own spawn, lean toward the enemy's side, and
+        /// avoid spots where two or more allies are already fighting (they do not need a third body there).
+        /// </summary>
+        private float TeamTerrainScore(AiBlackboard board, Float3 c, bool hasEnemyHome, Float3 enemyHome)
+        {
+            if (board.Team == 0) return 0f;
+            float score = 0f;
+            float own = Distance2D(c, board.SpawnPoint);
+            if (own < AiTuning.OwnSpawnAvoidMeters) score -= 1f;
+            if (hasEnemyHome)
+            {
+                // -1 at the own spawn, +1 at the enemy's, whatever the map size.
+                float span = Math.Max(20f, Distance2D(board.SpawnPoint, enemyHome));
+                score += 0.5f * Clamp((own - Distance2D(c, enemyHome)) / span, -1f, 1f);
+            }
+            int engaged = 0;
+            for (int i = 0; i < botCount; i++)
+            {
+                var other = boards[i];
+                if (other == board || !other.Alive || other.State != AiState.Engage) continue;
+                if (!PerceptionSystem.IsAlliedTeam(board.Team, other.Team)) continue;
+                if (Within(other.Feet, c, AiTuning.HotSpotMeters)) engaged++;
+            }
+            if (engaged >= 2) score -= 1.5f;
+            return score;
         }
 
         private void ReleaseCover(AiBlackboard board)
@@ -1286,7 +1577,7 @@ namespace Shooter.Simulation.AI
             board.State = state;
             board.StateEnteredTick = tick;
             counters.StateChanges++;
-            if (state == AiState.Engage) board.HasStrafeCenter = false;
+            if (state == AiState.Engage) { board.HasStrafeCenter = false; board.FlankGoal = null; }
             if (state == AiState.SeekCover)
             {
                 if (coverSites.Count > 0) ClaimBestCover(board);
@@ -1294,9 +1585,14 @@ namespace Shooter.Simulation.AI
                 {
                     Float3? threat = board.VisibleTarget ?? board.LastSeenEnemy ??
                         (board.Heard == HeardClass.Damage ? board.LastHeard : null);
-                    if (threat.HasValue) CoverFinder.Start(board, threat.Value);
+                    if (threat.HasValue && !TryClaimMapCover(board, threat.Value)) CoverFinder.Start(board, threat.Value);
                 }
             }
+            // ADR-112: losing sight of an enemy that allies are already pressing sends this bot round a flank
+            // instead of down the same line to the same last-seen point.
+            if ((state == AiState.Search || state == AiState.Reposition) && !board.FlankGoal.HasValue && board.LastSeenEnemy.HasValue &&
+                AlliesPressing(board, board.LastSeenEnemy.Value) >= 1)
+                board.FlankGoal = ChooseFlankGoal(board, board.LastSeenEnemy.Value);
         }
 
         private Float3 PatrolPoint(AiBlackboard board)
@@ -1425,8 +1721,10 @@ namespace Shooter.Simulation.AI
                 float dx = movementTarget.Value.X - board.Feet.X, dz = movementTarget.Value.Z - board.Feet.Z;
                 if (dx * dx + dz * dz > 0.04f)
                 {
-                    // Without a threat, look where we walk so the forward vision cone sweeps the route.
-                    desiredYaw = ContractYaw(dx, dz);
+                    // Without a threat, look where we walk so the forward vision cone sweeps the route; ADR-112 looks
+                    // into the next leg as the corner nears so the head turns before the feet.
+                    RouteDirection(board, movementTarget.Value, out float lx, out float lz);
+                    if (lx != 0 || lz != 0) desiredYaw = ContractYaw(lx, lz);
                     desiredPitch = 0;
                 }
             }
@@ -1439,6 +1737,7 @@ namespace Shooter.Simulation.AI
             board.StrafeFlippedThisTick = false;
             var range = FireDiscipline.Classify(board.TargetDistance);
             bool crouchShooter = board.Self.Value % AiTuning.CrouchShooterModulo == 0;
+            int ledgeFlipsBefore = counters.StrafeLedgeFlips;
             if (engaging && board.TargetDistance < AiTuning.AdvanceRange)
             {
                 holdStill = range == EngageRange.Long ||
@@ -1448,12 +1747,18 @@ namespace Shooter.Simulation.AI
             }
             else if (movementTarget.HasValue)
             {
-                float dx = movementTarget.Value.X - board.Feet.X;
-                float dz = movementTarget.Value.Z - board.Feet.Z;
-                float len = MathF.Sqrt(dx * dx + dz * dz);
-                if (len > 0.2f) { wx = dx / len; wz = dz / len; }
+                RouteDirection(board, movementTarget.Value, out wx, out wz);
             }
-            if (!engaging && board.InCover && (board.State == AiState.SeekCover || board.State == AiState.Reload)) crouch = true;
+            // ADR-112: ease the world move vector (strafe reversals and corner turns ramp over a few ticks instead of
+            // flipping in one); a ledge flip snaps so the bot never coasts toward a drop.
+            SmoothMove(board, ref wx, ref wz, counters.StrafeLedgeFlips != ledgeFlipsBefore || holdStill);
+            if (!engaging && board.InCover && (board.State == AiState.SeekCover || board.State == AiState.Reload))
+            {
+                // ADR-112: behind low authored cover a bot rises to peek and shoot, then ducks again.
+                bool peeking = board.State == AiState.SeekCover && board.CoverLow &&
+                    unchecked(tick - board.InCoverSinceTick) % AiTuning.CoverPeekCycleTicks >= AiTuning.CoverPeekCycleTicks - AiTuning.CoverPeekStandTicks;
+                crouch = !peeking;
+            }
 
             float mx = 0, my = 0;
             if (wx != 0 || wz != 0)
@@ -1464,13 +1769,15 @@ namespace Shooter.Simulation.AI
                 mx = wx * rx + wz * rz;
                 my = wx * fx + wz * fz;
                 float mlen = MathF.Sqrt(mx * mx + my * my);
-                if (mlen > 1e-5f) { mx /= mlen; my /= mlen; }
-                else { mx = 0; my = 0; }
+                // The eased vector keeps its magnitude (a reversal passes through a slow-down), capped to the disk.
+                if (mlen > 1f) { mx /= mlen; my /= mlen; }
+                else if (mlen <= 1e-5f) { mx = 0; my = 0; }
                 // Keep strictly inside the contract unit-disk tolerance (≤1.0000001).
                 double disk = (double)mx * mx + (double)my * my;
                 if (disk > 0.999999) { double s = Math.Sqrt(0.999999 / disk); mx = (float)(mx * s); my = (float)(my * s); }
             }
             bool moving = mx != 0 || my != 0;
+            board.CommandedMove = moving;
 
             // 3. Sprint on a route with no visible enemy and no threat to watch, mostly forward.
             bool travelState = board.State == AiState.Patrol || board.State == AiState.Investigate || board.State == AiState.Search
@@ -1665,6 +1972,47 @@ namespace Shooter.Simulation.AI
             }
             board.DesiredSlot = 2;
             board.CookingGrenade = false;
+        }
+
+        /// <summary>
+        /// ADR-112: unit world direction along the route. Inside <see cref="AiTuning.CornerBlendMeters"/> of the
+        /// current corner it bends toward the following leg, so corners become short arcs instead of hard turns.
+        /// </summary>
+        private static void RouteDirection(AiBlackboard board, Float3 corner, out float wx, out float wz)
+        {
+            wx = 0; wz = 0;
+            float dx = corner.X - board.Feet.X, dz = corner.Z - board.Feet.Z;
+            float len = MathF.Sqrt(dx * dx + dz * dz);
+            if (len <= 0.2f) return;
+            wx = dx / len; wz = dz / len;
+            int next = board.PathCornerIndex + 1;
+            if (len >= AiTuning.CornerBlendMeters || next >= board.PathCornerCount) return;
+            var after = board.PathCorners[next];
+            float nx = after.X - corner.X, nz = after.Z - corner.Z;
+            float nlen = MathF.Sqrt(nx * nx + nz * nz);
+            if (nlen < 0.05f) return;
+            nx /= nlen; nz /= nlen;
+            float t = 0.5f * (1f - len / AiTuning.CornerBlendMeters);
+            float bx = wx + (nx - wx) * t, bz = wz + (nz - wz) * t;
+            float blen = MathF.Sqrt(bx * bx + bz * bz);
+            if (blen > 1e-4f) { wx = bx / blen; wz = bz / blen; }
+        }
+
+        private static void SmoothMove(AiBlackboard board, ref float wx, ref float wz, bool snap)
+        {
+            // Starting and stopping are left to the motor's own acceleration; only a change of direction between two
+            // moving ticks is eased (strafe reversals pass through a short slow-down, corners bend).
+            bool fromStop = board.SmoothMoveX * board.SmoothMoveX + board.SmoothMoveZ * board.SmoothMoveZ < 0.0025f;
+            if (snap || fromStop || (wx == 0 && wz == 0))
+            {
+                board.SmoothMoveX = wx; board.SmoothMoveZ = wz;
+                return;
+            }
+            float a = AiTuning.MoveEaseAlpha;
+            float sx = board.SmoothMoveX + (wx - board.SmoothMoveX) * a;
+            float sz = board.SmoothMoveZ + (wz - board.SmoothMoveZ) * a;
+            board.SmoothMoveX = sx; board.SmoothMoveZ = sz;
+            wx = sx; wz = sz;
         }
 
         /// <summary>

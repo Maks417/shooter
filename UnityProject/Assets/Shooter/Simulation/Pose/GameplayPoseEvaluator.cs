@@ -6,42 +6,70 @@ using static Shooter.VectorMath.VecMath;
 
 namespace Shooter.Simulation.Pose
 {
-    /// <summary>Versioned mathematical hit capsules independent of visual rig LOD.</summary>
+    /// <summary>
+    /// Versioned mathematical hit capsules independent of visual rig LOD. ADR-112 (v2): the capsules follow the drawn
+    /// soldier (Generation <c>SoldierMotion</c> with the ADR-095 shooting posture) instead of a fixed upright figure:
+    /// the head sits where the rendered head is for standing still, moving and crouched bodies, offset to the
+    /// shooting side and pitched with the aim; the torso spans the drawn pelvis to chest. The numbers are measured
+    /// from the rig and guarded by <c>Tools/Generation.Tests/HitVolumeRigAlignmentTests</c>.
+    /// </summary>
     public sealed class GameplayPoseEvaluator
     {
-        public const uint Version = 1;
+        public const uint Version = 2;
+
+        /// <summary>Drawn pelvis heights on flat ground (SoldierMotion, including the still-stance foot IK correction):
+        /// standing still, any locomotion, full crouch.</summary>
+        public const float PelvisStill = 0.943f, PelvisMoving = 0.78f, PelvisCrouch = 0.66f;
+        /// <summary>Head-sphere centre above the drawn pelvis at level aim: the head joint (0.629 m, the same at every
+        /// stance) plus 0.02 m to the middle of the balaclava-and-helmet silhouette.</summary>
+        public const float HeadAbovePelvis = 0.649f;
+        /// <summary>Chest joint above the pelvis (SoldierSkeleton spine 3 × 0.14 m).</summary>
+        public const float ChestAbovePelvis = 0.42f;
+        /// <summary>Speed above which the rig uses its bent-knee locomotion pelvis (SoldierMotion: any motion).</summary>
+        public const float MovingSpeed = 0.001f;
+        public const float HeadRadius = 0.13f;
 
         public uint PoseVersion => Version;
 
-        public void Evaluate(EntityId entityId, Float3 feet, float yaw, float pitch, Stance stance, float capsuleHeight, uint tick, List<HitVolume> destination)
+        public void Evaluate(EntityId entityId, Float3 feet, float yaw, float pitch, Stance stance, float capsuleHeight, uint tick, List<HitVolume> destination) =>
+            Evaluate(entityId, feet, yaw, pitch, stance, capsuleHeight, 0f, tick, destination);
+
+        public void Evaluate(EntityId entityId, Float3 feet, float yaw, float pitch, Stance stance, float capsuleHeight, float planarSpeed, uint tick, List<HitVolume> destination)
         {
             if (destination == null) throw new ArgumentNullException(nameof(destination));
             if (stance == Stance.Dead) return;
 
-            float standFactor = stance == Stance.Crouching ? (capsuleHeight / 1.2f) : (capsuleHeight / 1.8f);
+            bool crouch = stance == Stance.Crouching;
+            float standFactor = crouch ? (capsuleHeight / 1.2f) : (capsuleHeight / 1.8f);
             float s = (float)Math.Sin(yaw);
             float c = (float)Math.Cos(yaw);
             Float3 forward = new Float3(s, 0, c);
             Float3 right = new Float3(c, 0, -s);
 
-            // Approximate body proportions from soldier baseline (meters).
-            float headR = 0.12f * standFactor;
+            float pelvis = (crouch ? PelvisCrouch : planarSpeed > MovingSpeed ? PelvisMoving : PelvisStill) * standFactor;
+            // Presentation clamps the drawn aim pitch to ±25°; the head follows the sight line (linear fit of the rig).
+            float p = Math.Max(-0.436f, Math.Min(0.436f, pitch));
+            float headY = pelvis + (HeadAbovePelvis - 0.163f * p * p) * standFactor;
+            float headRight = (0.094f - 0.156f * p) * standFactor;
+            float headForward = (-0.101f - 0.293f * p) * standFactor;
+            var head = new Float3(feet.X + right.X * headRight + forward.X * headForward, feet.Y + headY,
+                feet.Z + right.Z * headRight + forward.Z * headForward);
+
+            float headR = HeadRadius * standFactor;
             float torsoR = 0.18f * standFactor;
             float armR = 0.055f * standFactor;
             float legR = 0.08f * standFactor;
-            float eye = stance == Stance.Crouching ? 1.05f * standFactor : 1.65f * standFactor;
-            float hip = stance == Stance.Crouching ? 0.55f * standFactor : 0.9f * standFactor;
-            float shoulder = eye - 0.25f * standFactor;
+            float chest = pelvis + ChestAbovePelvis * standFactor;
+            float shoulder = chest + 0.07f * standFactor;
+            // Sphere centres, so the torso's rounded top ends at the shoulders and stays below the head sphere.
+            float torsoTop = Math.Min(shoulder + 0.02f * standFactor, headY - headR) - torsoR;
 
-            Add(destination, entityId, 1, Sphere(feet, eye, headR), tick);
-            Add(destination, entityId, 2, CapsuleVertical(feet, hip, shoulder, torsoR), tick);
+            Add(destination, entityId, 1, new Capsule(head, head, headR), tick);
+            Add(destination, entityId, 2, CapsuleVertical(feet, pelvis, torsoTop, torsoR), tick);
             Add(destination, entityId, 3, Limb(feet, shoulder, right, forward, -1, armR, 0.35f * standFactor), tick);
             Add(destination, entityId, 4, Limb(feet, shoulder, right, forward, +1, armR, 0.35f * standFactor), tick);
-            Add(destination, entityId, 5, CapsuleVertical(feet, legR, hip - legR, legR), tick);
-            Add(destination, entityId, 6, CapsuleVertical(Offset(feet, right, 0.12f * standFactor), legR, hip - legR, legR), tick);
-
-            // Pitch currently reserved for aim-driven upper body; v1 keeps upright capsules for stability.
-            _ = pitch;
+            Add(destination, entityId, 5, CapsuleVertical(Offset(feet, right, -0.1f * standFactor), legR, pelvis - legR, legR), tick);
+            Add(destination, entityId, 6, CapsuleVertical(Offset(feet, right, 0.1f * standFactor), legR, pelvis - legR, legR), tick);
         }
 
         public Float3 EyePosition(Float3 feet, Stance stance, float capsuleHeight)
@@ -76,12 +104,6 @@ namespace Shooter.Simulation.Pose
 
         private static void Add(List<HitVolume> list, EntityId id, ushort region, Capsule capsule, uint tick) =>
             list.Add(new HitVolume(id, region, capsule, tick));
-
-        private static Capsule Sphere(Float3 feet, float y, float r)
-        {
-            var c = new Float3(feet.X, feet.Y + y, feet.Z);
-            return new Capsule(c, c, r);
-        }
 
         private static Capsule CapsuleVertical(Float3 feet, float y0, float y1, float r)
         {

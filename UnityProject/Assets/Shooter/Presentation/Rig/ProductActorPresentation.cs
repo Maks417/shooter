@@ -1012,15 +1012,29 @@ namespace Shooter.Presentation.Rig
                 : Mathf.Clamp(state.AimPitch, -SoldierMotion.MaxAimPitchRadians, SoldierMotion.MaxAimPitchRadians);
             float aimYaw = Mathf.Clamp(0f, -SoldierMotion.MaxAimYawRadians, SoldierMotion.MaxAimYawRadians);
 
-            // Cosmetic root blend toward authoritative feet (hit capsules stay tick-snapped).
+            // Cosmetic root blend toward authoritative feet (hit capsules stay tick-snapped). ADR-112: the displayed root
+            // first advances by the authoritative horizontal velocity, so a moving body no longer trails its hit
+            // capsules by speed/18 m (0.3 m at sprint); the blend then only removes the per-tick stair-step.
             Float3 displayFeet = state.Feet;
             if (avatar.HasPrevious && !dying && dtSeconds > 1e-4f)
             {
+                Float3 from = avatar.DisplayedFeet;
+                if (movement.HasValue)
+                {
+                    var mv = movement.Value;
+                    from = new Float3(from.X + mv.VelocityXMetersPerSecond * dtSeconds, from.Y, from.Z + mv.VelocityZMetersPerSecond * dtSeconds);
+                }
                 float blend = Mathf.Clamp01(dtSeconds * 18f);
                 displayFeet = new Float3(
-                    Mathf.Lerp(avatar.DisplayedFeet.X, state.Feet.X, blend),
-                    Mathf.Lerp(avatar.DisplayedFeet.Y, state.Feet.Y, blend),
-                    Mathf.Lerp(avatar.DisplayedFeet.Z, state.Feet.Z, blend));
+                    Mathf.Lerp(from.X, state.Feet.X, blend),
+                    Mathf.Lerp(from.Y, state.Feet.Y, blend),
+                    Mathf.Lerp(from.Z, state.Feet.Z, blend));
+                // Never drift more than a sprint tick away from the authoritative feet (teleports, stops).
+                float ex = displayFeet.X - state.Feet.X, ez = displayFeet.Z - state.Feet.Z;
+                float err = Mathf.Sqrt(ex * ex + ez * ez);
+                const float maxError = 0.25f;
+                if (err > maxError)
+                    displayFeet = new Float3(state.Feet.X + ex * maxError / err, displayFeet.Y, state.Feet.Z + ez * maxError / err);
             }
             avatar.DisplayedFeet = displayFeet;
 

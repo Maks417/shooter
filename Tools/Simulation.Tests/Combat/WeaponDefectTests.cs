@@ -33,10 +33,11 @@ namespace Shooter.Simulation.Tests.Combat
         {
             var v = Pose(Stance.Standing);
             Assert.Equal((ushort)2, Probe(v, 0, 1.15f)); // torso gap between cap spheres
-            Assert.Equal((ushort)5, Probe(v, 0, 0.45f)); // mid-thigh/leg
+            Assert.Equal((ushort)5, Probe(v, -0.1f, 0.45f)); // mid-thigh/leg (ADR-112 symmetric legs at ±0.1 m)
             Assert.Equal((ushort)3, Probe(v, -0.245f, 1.225f)); // mid-arm
             Assert.Null(Probe(v, -0.33f, 1.225f)); // just outside arm radius
             Assert.Null(Probe(v, 0.21f, 0.45f)); // just outside leg radius
+            Assert.Null(Probe(v, 0f, 0.45f)); // between the legs
         }
 
         [Fact]
@@ -44,9 +45,9 @@ namespace Shooter.Simulation.Tests.Combat
         {
             var v = Pose(Stance.Crouching);
             Assert.Equal((ushort)2, Probe(v, 0, 0.675f));
-            Assert.Equal((ushort)5, Probe(v, 0, 0.28f));
-            Assert.Equal((ushort)3, Probe(v, -0.245f, 0.625f));
-            Assert.Null(Probe(v, -0.33f, 0.625f));
+            Assert.Equal((ushort)5, Probe(v, -0.1f, 0.28f));
+            Assert.Equal((ushort)3, Probe(v, -0.245f, 0.975f));
+            Assert.Null(Probe(v, -0.33f, 0.975f));
         }
 
         [Fact]

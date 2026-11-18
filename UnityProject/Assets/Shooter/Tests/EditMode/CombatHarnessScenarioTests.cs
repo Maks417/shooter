@@ -23,11 +23,12 @@ namespace Shooter.Tests
             var volumes = new List<HitVolume>();
             eval.Evaluate(new EntityId(1), default, 0, 0, Stance.Standing, 1.8f, 1, volumes);
             Assert.That(volumes.Count, Is.EqualTo(6));
-            AssertCenter(volumes, 1, new Float3(0, 1.65f, 0), 0.05f);
-            AssertCenter(volumes, 2, new Float3(0, 1.15f, 0), 0.05f);
-            AssertCenter(volumes, 3, new Float3(-0.22f, 1.225f, 0), 0.10f);
-            AssertCenter(volumes, 4, new Float3(0.22f, 1.225f, 0), 0.10f);
-            AssertCenter(volumes, 5, new Float3(0, 0.49f, 0), 0.10f);
+            // ADR-112: markers of the drawn soldier standing still at level aim.
+            AssertCenter(volumes, 1, new Float3(0.094f, 1.592f, -0.101f), 0.05f);
+            AssertCenter(volumes, 2, new Float3(0, 1.11f, 0), 0.05f);
+            AssertCenter(volumes, 3, new Float3(-0.22f, 1.26f, 0), 0.10f);
+            AssertCenter(volumes, 4, new Float3(0.22f, 1.26f, 0), 0.10f);
+            AssertCenter(volumes, 5, new Float3(-0.1f, 0.47f, 0), 0.10f);
         }
 
         [Test]

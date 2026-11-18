@@ -2,6 +2,18 @@
 
 Records from 2026-11-15 onward. Older entries — T062–T085, deliveries up to 0.3.12, historical candidates and the T065 operator runbook — are in the [handoff archive](handoff-archive.md).
 
+## ADR-112 — Crosshair-true hits, rig-aligned hit volumes, smarter and smoother bots — 2026-11-18
+
+Owner: head shots sometimes did nothing; bots stacked in one place, did not use the map, and moved and acted jerkily. Owner choices: the crosshair is the truth for hits; cover and lanes now without a content-format change; the hip crosshair shows the real spread. [ADR-112](../../decisions.md#adr-112--accepted-crosshair-true-hits-rig-aligned-hit-volumes-and-bots-that-use-map-cover-flank-and-move-smoothly)
+
+**Root causes found:** the bullet flew from the muzzle toward whatever was behind the target (about 0.22 m off at range against open sky); the head sphere sat 0.22 m below a crouched soldier's drawn head and 0.16 m above a moving one's; drawn bodies trailed their hit volumes by up to 0.3 m; teammates silently absorbed shots. Bots: every budget-starved vision tick dropped the engagement (aim jump, strafe stop, burst cut); destinations, stimuli and searches all pulled to the same point; authored map cover was in every package but never reached the bots.
+
+**Implemented:** eye-ray hitscan, teammates pass-through, `GameplayPoseEvaluator` v2 measured from the rig, velocity-led drawn root, spread-sized hip crosshair, F8 hitbox overlay in development builds; bot target hold through starved ticks, gliding aim error, eased direction changes, corner look-ahead, stuck fix for still shooters, authored cover with threat-relative hiding spots and low-cover peeking, engage-then-cover cycle, flank goals instead of pile-ons, team-aware destinations.
+
+**Checks (working tree on `9f8a22c`):** `Test-Simulation` 596 PASS, `Test-Generation` 593 PASS, `Test-Game` 157 PASS, `Test-Maps` PASS, `Test-Contracts` 79 PASS, `Test-SourceProvenance` PASS; contract lock, fixtures, asmdef graph and docs PASS; Unity EditMode PASS (`tests-editmode-20261118T165241232Z-d8643cc8`, compiles the presentation changes). PlayMode, a client build and in-game checks were not run.
+
+**Pending:** owner playtest (head shots on still, moving and crouched bots; bots spreading over lanes, using cover and flanking; smoothness) and the next installer.
+
 ## ADR-111 — Knife and grenade overhaul — 2026-11-18
 
 Owner: knife and grenade sounds, animations, throw range, explosion and models looked and sounded cheap; hold both with one hand. Owner choices: keep the 2 s fuse, reach about half a small map, re-mix audio from sources already downloaded. [ADR-111](../../decisions.md#adr-111--accepted-knife-and-grenade-overhaul-one-handed-hold-cut-and-throw-half-map-grenade-range-sound-explosion-models)

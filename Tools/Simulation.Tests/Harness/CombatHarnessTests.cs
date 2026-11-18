@@ -143,14 +143,14 @@ namespace Shooter.Simulation.Tests.Harness
         }
 
         [Theory]
-        [InlineData(0.12f)] // torso
-        [InlineData(0.30f)] // legs
-        public void BodyHitSplitsDamageBetweenArmorAndHealth(float pitch)
+        [InlineData(0.12f, 0f)] // torso
+        [InlineData(0.30f, 0.025f)] // legs (ADR-112: legs at ±0.1 m, so aim at one of them)
+        public void BodyHitSplitsDamageBetweenArmorAndHealth(float pitch, float yaw)
         {
             var sim = new CombatHarnessSimulation(new StaticPlaneWorld());
             var shooter = sim.SpawnActor(default, 0, 1);
             var target = sim.SpawnActor(new Float3(0, 0, 4), 0, 2);
-            var hit = FireOnce(sim, shooter, pitch);
+            var hit = FireOnce(sim, shooter, pitch, yaw);
             Assert.NotNull(hit);
             var damage = Assert.IsType<DamagePayload>(hit!.Payload);
             Assert.True(DamageMath.ArmorCovers(damage.RegionId), $"expected a body hit, got region {damage.RegionId}");
@@ -165,7 +165,7 @@ namespace Shooter.Simulation.Tests.Harness
         [Fact]
         public void HeadshotBypassesArmor()
         {
-            // The muzzle sits off the eye line, so sweep yaw and pitch until a shot lands on the head (region 1).
+            // Sweep yaw and pitch until a shot lands on the head (region 1); ADR-112 resolves along the eye ray.
             for (float yaw = -0.1f; yaw <= 0.1f; yaw += 0.01f)
             for (float pitch = -0.06f; pitch <= 0.06f; pitch += 0.005f)
             {

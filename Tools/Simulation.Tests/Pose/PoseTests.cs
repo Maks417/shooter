@@ -10,7 +10,7 @@ namespace Shooter.Simulation.Tests.Pose
     public sealed class PoseTests
     {
         [Fact]
-        public void EvaluatorEmitsSixOrderedRegionsIndependentOfPitchLodProxy()
+        public void EvaluatorEmitsSixOrderedRegionsAndOnlyTheHeadFollowsPitch()
         {
             var eval = new GameplayPoseEvaluator();
             var a = new List<HitVolume>();
@@ -19,9 +19,11 @@ namespace Shooter.Simulation.Tests.Pose
             eval.Evaluate(new EntityId(1), default, 0, 0.5f, Stance.Standing, 1.8f, 7, b);
             Assert.Equal(6, a.Count);
             Assert.Equal(GameplayPoseEvaluator.Version, eval.PoseVersion);
+            Assert.NotEqual(a[0].Capsule.BottomSphereCenter.Z, b[0].Capsule.BottomSphereCenter.Z);
             for (int i = 0; i < 6; i++)
             {
                 Assert.Equal((ushort)(i + 1), a[i].RegionId);
+                if (i == 0) continue;
                 Assert.Equal(a[i].Capsule.BottomSphereCenter.X, b[i].Capsule.BottomSphereCenter.X);
                 Assert.Equal(a[i].Capsule.BottomSphereCenter.Y, b[i].Capsule.BottomSphereCenter.Y);
                 Assert.Equal(a[i].Capsule.BottomSphereCenter.Z, b[i].Capsule.BottomSphereCenter.Z);
@@ -35,12 +37,27 @@ namespace Shooter.Simulation.Tests.Pose
             var volumes = new List<HitVolume>();
             var feet = new Float3(0, 0, 0);
             eval.Evaluate(new EntityId(2), feet, 0, 0, Stance.Standing, 1.8f, 1, volumes);
-            // Reference markers for standing bind-like sample (not skinned mesh).
-            AssertCenter(volumes, 1, new Float3(0, 1.65f, 0), 0.05f); // head ≤5cm
-            AssertCenter(volumes, 2, new Float3(0, 1.15f, 0), 0.05f); // torso ≤5cm (hip..shoulder)
-            AssertCenter(volumes, 3, new Float3(-0.22f, 1.225f, 0), 0.10f); // limb ≤10cm
-            AssertCenter(volumes, 4, new Float3(0.22f, 1.225f, 0), 0.10f);
-            AssertCenter(volumes, 5, new Float3(0, 0.49f, 0), 0.10f);
+            // ADR-112 reference markers: the drawn soldier standing still at level aim (SoldierMotion head joint
+            // 1.572 m, 0.094 m to the shooting side, 0.101 m back; pelvis 0.943 m).
+            AssertCenter(volumes, 1, new Float3(0.094f, 1.592f, -0.101f), 0.05f); // head ≤5cm
+            AssertCenter(volumes, 2, new Float3(0, 1.11f, 0), 0.05f); // torso ≤5cm (pelvis..shoulder)
+            AssertCenter(volumes, 3, new Float3(-0.22f, 1.26f, 0), 0.10f); // limb ≤10cm
+            AssertCenter(volumes, 4, new Float3(0.22f, 1.26f, 0), 0.10f);
+            AssertCenter(volumes, 5, new Float3(-0.1f, 0.47f, 0), 0.10f);
+            AssertCenter(volumes, 6, new Float3(0.1f, 0.47f, 0), 0.10f);
+        }
+
+        [Theory]
+        [InlineData(Stance.Standing, 1.8f, 0f, 1.592f)]   // still: drawn head joint 1.572 + 0.02
+        [InlineData(Stance.Standing, 1.8f, 3.5f, 1.429f)] // moving: bent-knee pelvis 0.78
+        [InlineData(Stance.Crouching, 1.2f, 0f, 1.309f)]  // crouched: pelvis 0.66
+        public void HeadSphereFollowsTheDrawnHeadForEachStance(Stance stance, float height, float speed, float headY)
+        {
+            var eval = new GameplayPoseEvaluator();
+            var volumes = new List<HitVolume>();
+            eval.Evaluate(new EntityId(2), default, 0, 0, stance, height, speed, 1, volumes);
+            AssertCenter(volumes, 1, new Float3(0.094f, headY, -0.101f), 0.01f);
+            Assert.Equal(GameplayPoseEvaluator.HeadRadius, volumes[0].Capsule.Radius, 4);
         }
 
         [Fact]

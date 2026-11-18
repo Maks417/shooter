@@ -194,6 +194,17 @@ namespace Shooter.Game.Session
             return true;
         }
 
+        /// <summary>
+        /// ADR-112: hip-fire cone half-angle of a weapon (radians) so the presentation reticle can show the real spread.
+        /// Zero for weapons without a hitscan cone (knife, grenade) or unknown ids.
+        /// </summary>
+        public static float HipSpreadRadians(DefinitionId weapon)
+        {
+            if (!weapon.IsValid || !WeaponCatalog.TryGet(weapon, out var entry)) return 0f;
+            var definition = entry.Definition;
+            return definition.FireMode == FireMode.Melee || definition.FireMode == FireMode.Throwable ? 0f : definition.HipSpreadRadians;
+        }
+
         /// <summary>ADR-105: what pressing the pickup key would do for the living human right now (presentation prompt).</summary>
         public bool TryGetHumanPickupPrompt(out DroppedWeaponView view, out bool ammoTopUp)
         {
@@ -299,6 +310,7 @@ namespace Shooter.Game.Session
             lifecycle = new HarnessActorLifecycle(harness);
             bots = new TeamBotPlanner(queries, mapRuntime.Navigation, 0, gameplay.NavRevision);
             ApplyMapDestinations(bots, gameplay);
+            ApplyMapCover(bots, mapRuntime);
 
             var roster = BuildRoster(request, gameplay, lifecycle, bots);
             match.ConfigureIdentities("catalog.v1", gameplay.MapId.Value + ".gameplay", "local-dev");
@@ -555,6 +567,25 @@ namespace Shooter.Game.Session
             return Stop();
         }
 
+        /// <summary>
+        /// ADR-112 development aid: copies the authoritative hit volumes of the last completed tick (read-only; the
+        /// presentation hitbox overlay draws them). Returns the count, zero when no tick has completed.
+        /// </summary>
+        public int CopyHitVolumes(List<HitVolume> destination)
+        {
+            if (destination == null) throw new ArgumentNullException(nameof(destination));
+            destination.Clear();
+            if (harness == null || phase == GameMatchPhase.Stopped || phase == GameMatchPhase.Loading) return 0;
+            try
+            {
+                using var lease = harness.AcquireSnapshot();
+                var volumes = lease.Snapshot.HitVolumes;
+                for (int i = 0; i < volumes.Count; i++) destination.Add(volumes[i]);
+            }
+            catch (InvalidOperationException) { destination.Clear(); }
+            return destination.Count;
+        }
+
         public MatchViewSnapshot? TryAcquireSnapshot()
         {
             if (phase == GameMatchPhase.Stopped || phase == GameMatchPhase.Loading) return null;
@@ -774,6 +805,7 @@ namespace Shooter.Game.Session
                 0,
                 gameplayDefinition?.NavRevision ?? 1);
             if (gameplayDefinition != null) ApplyMapDestinations(planner, gameplayDefinition);
+            ApplyMapCover(planner, runtime);
             for (int i = 0; i < snapshot.Participants.Count; i++)
             {
                 var participant = snapshot.Participants[i];
@@ -792,6 +824,24 @@ namespace Shooter.Game.Session
         /// </summary>
         private static void ApplyMapDestinations(TeamBotPlanner planner, MapGameplayDefinition gameplay) =>
             planner.SetNavigationDestinations(gameplay.PatrolDestinations, gameplay.CombatDestinations);
+
+        /// <summary>
+        /// ADR-112: the package's authored cover objects become bot cover (scored against the live threat at run
+        /// time); runtimes without packaged cover leave the bots on their runtime cover probes.
+        /// </summary>
+        private static void ApplyMapCover(TeamBotPlanner planner, IMapRuntime runtime)
+        {
+            if (!(runtime is IMapCoverSource source)) return;
+            var proxies = source.Covers;
+            if (proxies.Count == 0) return;
+            var covers = new List<MapCover>(proxies.Count);
+            for (int i = 0; i < proxies.Count; i++)
+            {
+                var proxy = proxies[i];
+                covers.Add(new MapCover(proxy.StableId, proxy.Center, proxy.Size, proxy.HardCover));
+            }
+            planner.SetMapCovers(covers);
+        }
 
         /// <summary>Read-only AI diagnostics for capture summaries; null when no match is loaded.</summary>
         public AiCounters? BotCounters => bots?.Counters;

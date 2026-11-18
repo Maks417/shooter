@@ -32,24 +32,11 @@ namespace Shooter.Simulation.AI
             pitch > AiTuning.MaxPitch ? AiTuning.MaxPitch : pitch < -AiTuning.MaxPitch ? -AiTuning.MaxPitch : pitch;
 
         /// <summary>
-        /// Exact yaw/pitch so the hitscan ray (canonical muzzle: eye + 0.18 m right, 0.15 m down, parallel to aim)
-        /// passes through <paramref name="target"/>.
+        /// Exact yaw/pitch so the hitscan ray passes through <paramref name="target"/>. ADR-112: shots resolve along
+        /// the eye ray, so this is the plain look direction (no muzzle parallax correction).
         /// </summary>
-        public static void IdealAngles(Float3 eye, Float3 target, out float yaw, out float pitch)
-        {
-            float dx = target.X - eye.X, dy = target.Y - eye.Y, dz = target.Z - eye.Z;
-            float bearing = MathF.Sqrt(dx * dx + dz * dz);
-            if (bearing > 1e-4f)
-            {
-                float rx = dz / bearing, rz = -dx / bearing;
-                dx -= rx * CombatAiDirector.MuzzleRightOffset;
-                dz -= rz * CombatAiDirector.MuzzleRightOffset;
-            }
-            dy += CombatAiDirector.MuzzleDownOffset;
-            yaw = CombatAiDirector.ContractYaw(dx, dz);
-            float flat = MathF.Sqrt(dx * dx + dz * dz);
-            pitch = flat < 1e-5f ? 0 : ClampPitch(-MathF.Atan2(dy, flat));
-        }
+        public static void IdealAngles(Float3 eye, Float3 target, out float yaw, out float pitch) =>
+            LookAngles(eye, target, out yaw, out pitch);
 
         /// <summary>
         /// ADR-111: aim pitch (contract sign, negative = up) whose lofted grenade launch lands on
@@ -147,11 +134,25 @@ namespace Shooter.Simulation.AI
             if (angle < AiTuning.MinErrorRadians) angle = AiTuning.MinErrorRadians;
             if (angle > AiTuning.MaxErrorRadians) angle = AiTuning.MaxErrorRadians;
 
-            ulong bucket = (tick / AiTuning.ErrorBucketTicks) ^ ((ulong)board.AcquiredTick << 24);
-            float phi = AiNoise.Signed(board.Self.Value, bucket, AiNoise.SaltErrorAngle) * MathF.PI;
-            float radius = 0.5f + 0.5f * AiNoise.Unit(board.Self.Value, bucket, AiNoise.SaltErrorAngle + 1);
+            // ADR-112: glide between consecutive seeded error points instead of jumping to a new one every bucket, so the
+            // aim drifts like a hand instead of twitching about six times a second. Interpolating in polar form (the
+            // shorter way round, radius kept in [0.5, 1]) keeps the miss size the jumping version had.
+            uint index = tick / AiTuning.ErrorBucketTicks;
+            float f = (tick - index * AiTuning.ErrorBucketTicks) / (float)AiTuning.ErrorBucketTicks;
+            f = f * f * (3f - 2f * f);
+            ErrorPoint(board, index, out float phi0, out float r0);
+            ErrorPoint(board, index + 1, out float phi1, out float r1);
+            float phi = phi0 + WrapPi(phi1 - phi0) * f;
+            float radius = r0 + (r1 - r0) * f;
             yawError = angle * radius * MathF.Cos(phi);
             pitchError = angle * radius * MathF.Sin(phi) * 0.8f;
+        }
+
+        private static void ErrorPoint(AiBlackboard board, uint index, out float phi, out float radius)
+        {
+            ulong bucket = index ^ ((ulong)board.AcquiredTick << 24);
+            phi = AiNoise.Signed(board.Self.Value, bucket, AiNoise.SaltErrorAngle) * MathF.PI;
+            radius = 0.5f + 0.5f * AiNoise.Unit(board.Self.Value, bucket, AiNoise.SaltErrorAngle + 1);
         }
 
         /// <summary>Angular distance between two aim directions given as yaw/pitch pairs.</summary>

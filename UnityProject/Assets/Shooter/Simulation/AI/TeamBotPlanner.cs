@@ -38,6 +38,8 @@ namespace Shooter.Simulation.AI
         }
 
         public void SetCoverSites(IReadOnlyList<CoverSite> sites) => director.SetCoverSites(sites);
+        /// <summary>ADR-112: authored map cover boxes, scored against the live threat when a bot wants cover.</summary>
+        public void SetMapCovers(IReadOnlyList<MapCover>? covers) => director.SetMapCovers(covers);
         public void SetNavigationDestinations(
             IReadOnlyList<Float3>? patrol,
             IReadOnlyList<Float3>? combat) =>

@@ -70,6 +70,18 @@ namespace Shooter.Simulation.AI
         public uint LastReplanTick { get; set; }
         public uint SenseAgeTicks { get; set; }
         public bool HasVisibleTarget { get; set; }
+        /// <summary>ADR-112 eased world move vector (XZ) carried between ticks.</summary>
+        public float SmoothMoveX { get; set; }
+        public float SmoothMoveZ { get; set; }
+        /// <summary>ADR-112: the last built command asked for horizontal movement.</summary>
+        public bool CommandedMove { get; set; }
+        /// <summary>ADR-112: where this life started (own side of the map).</summary>
+        public Float3 SpawnPoint { get; set; }
+        /// <summary>ADR-112: a lane point beside the contact this bot is taking instead of the direct line.</summary>
+        public Float3? FlankGoal { get; set; }
+        /// <summary>ADR-112: the claimed cover is low (peek over it).</summary>
+        public bool CoverLow { get; set; }
+        public uint NextRepositionTick { get; set; }
         public Float3? VisibleTarget { get; set; }
         public uint ReactionReadyTick { get; set; }
         public uint StateEnteredTick { get; set; }
@@ -168,6 +180,11 @@ namespace Shooter.Simulation.AI
         public int StateChanges;
         public int ShotsRequested;
         public int CoverClaims;
+        /// <summary>ADR-112: ticks an engaged bot kept its target through a budget-starved sense.</summary>
+        public int VisibleHolds;
+        public int MapCoverClaims;
+        public int CoverRepositions;
+        public int FlankMoves;
         public int CoverReleases;
         public int OrphanReleases;
         public int StuckEvents;

@@ -1,5 +1,6 @@
 #nullable enable
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Shooter.Contracts;
@@ -8,12 +9,15 @@ using Shooter.Game.Contracts;
 namespace Shooter.World.Runtime
 {
     /// <summary>Test-only map runtime. Shipping Bootstrap must reject this adapter.</summary>
-    public sealed class FakeMapRuntime : IMapRuntime
+    public sealed class FakeMapRuntime : IMapRuntime, IMapCoverSource
     {
         private MapGameplayDefinition? loaded;
         private readonly IWorldQueries world;
         private readonly INavigation navigation;
         public bool RejectAllSpawns { get; set; }
+        /// <summary>ADR-112: authored cover a test map exposes to the bots.</summary>
+        public List<MapCoverProxy> CoverProxies { get; } = new List<MapCoverProxy>();
+        public IReadOnlyList<MapCoverProxy> Covers => CoverProxies;
 
         public FakeMapRuntime(IWorldQueries world, INavigation navigation)
         {

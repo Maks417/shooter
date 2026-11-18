@@ -56,6 +56,7 @@ namespace Shooter.Simulation
         private readonly WeaponSimulator weapons = new WeaponSimulator();
         private readonly GrenadeSimulator grenades = new GrenadeSimulator();
         private readonly HitscanResolver hitscan = new HitscanResolver(CollisionLayers.MotorMask, CollisionLayers.BulletObstructionMask);
+        private readonly List<EntityId> friendlyIgnore = new List<EntityId>();
         private readonly GameplayPoseEvaluator pose = new GameplayPoseEvaluator();
         private readonly List<Actor> actors = new List<Actor>();
         private readonly List<CombatEvent> tickEvents = new List<CombatEvent>();
@@ -444,7 +445,9 @@ namespace Shooter.Simulation
             {
                 var actor = actors[a];
                 if (!actor.Alive) continue;
-                pose.Evaluate(actor.Id, actor.Motor.Feet, actor.Motor.AimYaw, actor.Motor.AimPitch, actor.Motor.Stance, actor.Motor.CapsuleHeight, requestedTick, hitVolumes);
+                var v = actor.Motor.Velocity;
+                float planarSpeed = (float)Math.Sqrt(v.X * v.X + v.Z * v.Z);
+                pose.Evaluate(actor.Id, actor.Motor.Feet, actor.Motor.AimYaw, actor.Motor.AimPitch, actor.Motor.Stance, actor.Motor.CapsuleHeight, planarSpeed, requestedTick, hitVolumes);
             }
             var volumeSnapshot = hitVolumes.ToArray();
 
@@ -462,7 +465,11 @@ namespace Shooter.Simulation
                 // Knife: strike from the eye along aim so short range is measured from the player, not the rifle muzzle.
                 Float3 origin = shot.Definition.FireMode == FireMode.Melee ? eye : pose.CanonicalMuzzle(eye, aimYaw, aimPitch);
                 Float3 muzzleForProbe = shot.Definition.FireMode == FireMode.Melee ? eye : origin;
-                var result = hitscan.Resolve(new HitscanRequest(shooter.Id, eye, muzzleForProbe, aim, shot.Definition, shot.ShotIndex, shot.Ads, shotSeed, 1), world, volumeSnapshot);
+                // ADR-112: bullets pass through teammates (no friendly damage, so they must not soak the shot either).
+                friendlyIgnore.Clear();
+                for (int a = 0; a < actors.Count; a++)
+                    if (actors[a].Team == shooter.Team && !actors[a].Id.Equals(shooter.Id)) friendlyIgnore.Add(actors[a].Id);
+                var result = hitscan.Resolve(new HitscanRequest(shooter.Id, eye, muzzleForProbe, aim, shot.Definition, shot.ShotIndex, shot.Ads, shotSeed, 1), world, volumeSnapshot, friendlyIgnore);
                 if (result.BlockedAtMuzzle) continue;
                 tickEvents.Add(new CombatEvent(nextEvent, CombatEventKind.ShotAccepted, shooter.Id, default,
                     new ShotPayload(shot.Definition.Id, shot.ShotIndex, result.Origin, result.UnitDirection, shotSeed, 1)));

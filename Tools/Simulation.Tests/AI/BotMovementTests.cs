@@ -235,8 +235,6 @@ namespace Shooter.Simulation.Tests.AI
                 foreach (var v in volumes) if (v.RegionId == 2) torso = v;
                 var cap = torso.Capsule;
                 Assert.True(y >= cap.BottomSphereCenter.Y - cap.Radius && y <= cap.TopSphereCenter.Y + cap.Radius, stance + " aim height outside torso");
-                // The old standing-eye point (1.65 m) is above the crouched head (eye 1.05 + 0.12).
-                if (stance == Stance.Crouching) Assert.True(1.65f > 1.05f + 0.12f);
             }
 
             // Own eye: a crouched bot aiming at a point at its own eye level looks level (pitch 0).
@@ -247,13 +245,13 @@ namespace Shooter.Simulation.Tests.AI
             var enemy = new[] { new SenseTarget(new EntityId(99), new Float3(0, CombatAiDirector.CrouchedEyeHeight, 20), 2) };
             for (uint t = 1; t <= 60; t++) ai.PlanEnemies(t, enemy, 1, cmds, 0);
             Assert.Equal(AiState.Engage, bot.State);
-            // Level target at own crouched eye height; the muzzle-offset compensation lifts the aim by 0.15 m.
-            float expected = -(float)Math.Atan2(CombatAiDirector.MuzzleDownOffset, 20f);
+            // Level target at own crouched eye height; ADR-112 shots fly along the eye ray, so the aim is level.
+            float expected = 0f;
             // Within the bot's settled seeded error (pitch share ≤ 0.8 × settled miss distance × personality ≤ 1.25).
             float settled = (AiTuning.SettledErrorMeters + AiTuning.SettledErrorPerMeter * 20f) * 1.25f * 0.8f;
             Assert.InRange(cmds[0].AimPitch, expected - (float)Math.Atan2(settled, 20f) - 0.002f, expected + (float)Math.Atan2(settled, 20f) + 0.002f);
             // ...and clearly not the standing-eye answer (aiming 0.6 m lower).
-            Assert.True(Math.Abs(cmds[0].AimPitch - (float)Math.Atan2(0.6f - CombatAiDirector.MuzzleDownOffset, 20f)) > 0.005f);
+            Assert.True(Math.Abs(cmds[0].AimPitch - (float)Math.Atan2(0.6f, 20f)) > 0.005f);
         }
 
         private static float DamageDealtToTarget(bool targetCrouches)

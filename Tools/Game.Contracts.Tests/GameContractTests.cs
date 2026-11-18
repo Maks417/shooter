@@ -403,7 +403,10 @@ namespace Shooter.Game.Contracts.Tests
             var botReplacement = FindById(session.TryAcquireSnapshot()!, botVictim.ParticipantId);
             Assert.True(botReplacement.Alive);
             Assert.NotEqual(botVictim.EntityId, botReplacement.EntityId);
-            Assert.Equal(request.ParticipantCount, lifecycle.ActiveActorCount);
+            // The floorless fake world drops the parked bystanders out of the map while the victim waits to respawn
+            // (ADR-112 eye-ray shots kill it on the first trigger pull, before they fall), so the invariant is
+            // that the authority holds exactly the living participants, not all of them.
+            Assert.Equal(CountAlive(session.TryAcquireSnapshot()!), lifecycle.ActiveActorCount);
 
             var beforeHumanDeath = session.TryAcquireSnapshot()!;
             human = FindById(beforeHumanDeath, human.ParticipantId);
