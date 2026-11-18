@@ -260,6 +260,8 @@ namespace Shooter.Presentation.Session
 
             mapView = ProductMapView.Create(transform);
             actors = ProductActorPresentation.Create(transform, camera);
+            // ADR-107: read-only sight lookup so every soldier's gun shows the sight the authority issued.
+            actors.SightReader = entity => session != null && session.TryGetPrimarySight(entity, out var sight) ? sight : default;
             analyticFxPresenter = AnalyticFxPresenter.Create(transform, analyticFxPool);
             grenadePresenter = CosmeticGrenadePresenter.Create(transform, grenadeFlight);
             var audioPair = EnsureAudio();
@@ -364,7 +366,10 @@ namespace Shooter.Presentation.Session
         private void ApplyPresentationFov(float adsPresentationBlend, byte weaponSlot, DefinitionId weaponId = default)
         {
             if (camera == null) return;
-            var profile = WeaponVisualProfiles.Resolve(weaponId, weaponSlot);
+            // ADR-107: the mounted sight decides optic mode and ADS framing for the gun actually shown.
+            var profile = actors != null && actors.LocalVisibleWeaponId.Equals(weaponId) && actors.LocalVisibleWeaponSlot == weaponSlot
+                ? actors.LocalVisibleProfile
+                : WeaponVisualProfiles.Resolve(weaponId, weaponSlot);
             float hip = hud.Settings.HipFov;
             float ads = AdsOpticVisual.AdsFieldOfViewDegrees(hip, profile);
             adsFovDegrees = ads;
@@ -1250,11 +1255,14 @@ namespace Shooter.Presentation.Session
                 float adsPresent = actors != null ? actors.LocalAdsPresentationBlend : (input.AimHeld ? 1f : 0f);
                 byte opticSlot = actors != null ? actors.LocalVisibleWeaponSlot : human.ActiveWeaponSlot;
                 DefinitionId opticId = actors != null ? actors.LocalVisibleWeaponId : human.ActiveWeaponDefinition;
-                var opticProfile = WeaponVisualProfiles.Resolve(opticId, opticSlot);
+                var opticProfile = actors != null ? actors.LocalVisibleProfile : WeaponVisualProfiles.Resolve(opticId, opticSlot);
                 if (AdsOpticVisual.UsesScopedOptic(opticProfile))
                     TacticalUi.AdsScope(combatUi.Width, combatUi.Height, AdsOpticVisual.ScopeMaskOpacity(adsPresent));
                 else if (AdsOpticVisual.UsesIronSightOptic(opticProfile))
                     TacticalUi.AdsIronVignette(combatUi.Width, combatUi.Height, AdsOpticVisual.IronVignetteOpacity(adsPresent));
+                else if (AdsOpticVisual.UsesCollimatorOptic(opticProfile))
+                    TacticalUi.CollimatorDot(cx, cy, AdsOpticVisual.CollimatorDotRadiusPixels(combatUi.Height),
+                        AdsOpticVisual.CollimatorDotOpacity(opticProfile, adsPresent), reducedFlash);
                 // Hip reticle yields once the optic/irons take the aim picture.
                 if (!AdsOpticVisual.HideHipReticle(adsPresent))
                 {

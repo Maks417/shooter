@@ -23,6 +23,10 @@ namespace Shooter.Simulation
             public byte Team;
             public MotorBodyState Motor;
             public WeaponState[] Weapons = WeaponSimulator.CreateDefaultLoadout();
+            /// <summary>ADR-107 sight mounted on the slot-0 primary (invalid for guns without mounted sights).</summary>
+            public DefinitionId PrimarySight;
+            /// <summary>ADR-107 Armory loadout this actor always spawns and resets with; null draws per <see cref="RandomLoadouts"/>.</summary>
+            public PlayerLoadout? Pinned;
             public byte ActiveSlot;
             public byte DesiredSlot;
             public float RecoilYaw;
@@ -85,6 +89,58 @@ namespace Shooter.Simulation
         private WeaponState[] LoadoutFor(EntityId id, uint atTick) =>
             RandomLoadouts ? WeaponLoadoutPolicy.CreateRandomLoadout(shotSeed, id, atTick) : WeaponSimulator.CreateDefaultLoadout();
 
+        /// <summary>
+        /// Issues a life's guns and primary sight: the pinned Armory loadout when set (ADR-107), otherwise the random
+        /// (ADR-102) or default loadout with a seeded random or factory sight.
+        /// </summary>
+        private void IssueLoadout(Actor actor, uint atTick)
+        {
+            if (actor.Pinned != null)
+            {
+                actor.Weapons = WeaponLoadoutPolicy.CreateLoadout(actor.Pinned.Primary, actor.Pinned.Sidearm);
+                actor.PrimarySight = actor.Pinned.PrimarySight;
+                return;
+            }
+            actor.Weapons = LoadoutFor(actor.Id, atTick);
+            DefinitionId primary = actor.Weapons[0].DefinitionId;
+            actor.PrimarySight = RandomLoadouts
+                ? WeaponLoadoutPolicy.RandomSight(shotSeed, actor.Id, atTick, primary)
+                : SightCatalog.DefaultFor(primary);
+        }
+
+        /// <summary>
+        /// ADR-107: pins <paramref name="loadout"/> (the human's Armory choice) to a live actor and reissues its guns
+        /// now; every later <see cref="ResetActor"/> issues the same loadout. Null unpins (next life draws normally).
+        /// </summary>
+        public bool PinLoadout(EntityId entity, PlayerLoadout? loadout)
+        {
+            MainThread();
+            for (int i = 0; i < actors.Count; i++)
+            {
+                var actor = actors[i];
+                if (!actor.Id.Equals(entity)) continue;
+                actor.Pinned = loadout;
+                if (loadout != null)
+                {
+                    IssueLoadout(actor, tick);
+                    actor.ActiveSlot = 0;
+                    actor.DesiredSlot = 0;
+                }
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>ADR-107: the sight mounted on a live actor's primary (invalid when the gun takes none).</summary>
+        public bool TryGetPrimarySight(EntityId entity, out DefinitionId sight)
+        {
+            MainThread();
+            sight = default;
+            for (int i = 0; i < actors.Count; i++)
+                if (actors[i].Id.Equals(entity)) { sight = actors[i].PrimarySight; return true; }
+            return false;
+        }
+
         /// <summary>Weapon state of <paramref name="slot"/> for a live actor (lifecycle bookkeeping).</summary>
         public bool TryGetWeapon(EntityId entity, byte slot, out WeaponState weapon)
         {
@@ -101,6 +157,10 @@ namespace Shooter.Simulation
         /// the new gun is drawn (Equipping for its equip time), which also cancels any reload in progress.
         /// </summary>
         public bool ReplacePrimary(EntityId entity, DefinitionId definitionId, ushort magazine, ushort reserve)
+            => ReplacePrimary(entity, definitionId, magazine, reserve, SightCatalog.DefaultFor(definitionId));
+
+        /// <summary>ADR-105/107: as above, keeping the picked-up gun's own mounted sight.</summary>
+        public bool ReplacePrimary(EntityId entity, DefinitionId definitionId, ushort magazine, ushort reserve, DefinitionId sight)
         {
             MainThread();
             var def = WeaponDefinition.FromId(definitionId);
@@ -113,6 +173,7 @@ namespace Shooter.Simulation
                 actor.Weapons[0] = actor.ActiveSlot == 0
                     ? new WeaponState(definitionId, WeaponAction.Equipping, mag, reserve, tick, tick, unchecked(tick + def.EquipTicks), 0, false)
                     : new WeaponState(definitionId, WeaponAction.Ready, mag, reserve, tick, tick, tick, 0, false);
+                actor.PrimarySight = SightCatalog.Resolve(definitionId, sight);
                 return true;
             }
             return false;
@@ -150,13 +211,14 @@ namespace Shooter.Simulation
             if (actors.Count >= ContractVersion.MaxActors)
                 throw new InvalidOperationException("Actor capacity exhausted");
             var id = new EntityId(nextEntityId++);
-            actors.Add(new Actor
+            var spawned = new Actor
             {
                 Id = id,
                 Team = team,
-                Motor = new MotorBodyState(feet, default, yaw, 0, Stance.Standing, 1.8f, true, new SurfaceId(100), new Float3(0, 1, 0), 0, 0, 0, false),
-                Weapons = LoadoutFor(id, tick)
-            });
+                Motor = new MotorBodyState(feet, default, yaw, 0, Stance.Standing, 1.8f, true, new SurfaceId(100), new Float3(0, 1, 0), 0, 0, 0, false)
+            };
+            IssueLoadout(spawned, tick);
+            actors.Add(spawned);
             matchState = MatchState.Playing;
             return id;
         }
@@ -213,7 +275,7 @@ namespace Shooter.Simulation
                     0,
                     0,
                     false);
-                actor.Weapons = LoadoutFor(entity, tick);
+                IssueLoadout(actor, tick);
                 actor.ActiveSlot = 0;
                 actor.DesiredSlot = 0;
                 actor.RecoilYaw = 0;

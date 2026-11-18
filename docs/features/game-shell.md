@@ -10,6 +10,9 @@ Status reviewed after T069: ProductShellHost implements Main/Setup/Loading/Playi
 flowchart LR
   Launch --> Main[Main menu]
   Main --> Setup[Map / mode / team size]
+  Main --> Armory[Armory loadout]
+  Setup --> Armory
+  Armory --> Main
   Main --> Settings
   Setup --> Load[Loading with cancel]
   Load --> Match[Playing with HUD]
@@ -23,7 +26,7 @@ flowchart LR
   Results --> Main
 ```
 
-Main menu: Play, Settings, Quit. Setup shows catalog map names and text descriptions, mode selector containing only Team Deathmatch for each map, team-size choice 5v5/8v8/10v10/15v15 (ADR-101), fixed “150 kills / 15 minutes” summary and Start/Back. No external screenshots, preview sprites, disabled future modes or networking controls are required. Show only maps with valid packaged dependencies; if none, show a recoverable content error. Start validates map/mode compatibility before loading and disables double submission.
+Main menu: Play, Armory, Settings, Quit, with the current loadout under the buttons. Setup shows catalog map names and text descriptions, mode selector containing only Team Deathmatch for each map, team-size choice 5v5/8v8/10v10/15v15 (ADR-101), fixed “150 kills / 15 minutes” summary and Start/Back. No external screenshots, preview sprites, disabled future modes or networking controls are required. Show only maps with valid packaged dependencies; if none, show a recoverable content error. Start validates map/mode compatibility before loading and disables double submission.
 
 Loading uses the shared tactical insertion briefing (`TacticalUi.DrawInsertionScreen`): charcoal contour backdrop, map display name, TDM rules line, live phase text (`Loading Training Compound…` / friendly map name, then `Linking the battlefield…`), optional packaged map-card media, and an indeterminate bracketed activity bar (never a guessed percentage). Boot copy uses `Standing by` / `Loading your arsenal…` / `SOLO OPS · NO NETWORK`. Shell chrome and HUD strings live in `ShellUiCopy` / `InsertionScreenCopy` (short military FPS voice; no schema jargon). UI typefaces are Barlow Condensed under [ADR-066](../decisions.md#adr-066--accepted-non-commercial-ui-typeface-bank-barlow-condensed). `StartSelectedMatch` yields so the Loading screen paints before synchronous package/nav and visual bind work. Cancel remains available between those phases; errors return to setup/main with retry and a short message. Cold start shows the same insertion layout via `BootLoadingHost` for at least one painted frame before Main. Escape in gameplay pauses all local simulation and unlocks/shows the cursor. Pause offers Resume, Settings, Restart match and Main menu. Restart/leave confirm loss of current progress, using the same input focus rules. Focus loss pauses. Opening the live scoreboard does not pause or unlock aiming; at finish the [results table](team-deathmatch.md) takes focus. Escape/Back returns to the prior screen without leaking clicks or firing the weapon. Text entry and modal dialogs consume input before gameplay.
 
@@ -66,3 +69,7 @@ T072 adds Slide (default Key.F), displayed as “Slide (hold Sprint)” in setti
 Owner playtest fix: additive optional `LastWeapon` (default Key.Q, settings label “Last weapon”) toggles the previous rifle/pistol slot client-side into the existing selected-slot command. Legacy schema-2 files gain `LastWeapon=Key.Q` when free, or `Unbound` when Q is already customized; multiple unbound additive actions are allowed. The cosmetic full-screen muzzle flash and “Shot” subtitle apply only to the local human’s `ShotAccepted`; bot/remote shots keep world muzzle proxies and audio without flashing the screen. See [ADR-056](../decisions.md#adr-056--accepted-last-weapon-quick-switch-q-and-local-only-muzzle-overlay).
 
 Additive optional `Pickup` (default Key.G, settings label “Pick up weapon”) takes a dropped primary in reach. Legacy schema-2 files gain `Pickup=Key.G` when free, or `Unbound` when G is already customized. See [ADR-105](../decisions.md#adr-105--accepted-dropped-primary-weapons-and-g-pickup).
+
+## Armory (ADR-107)
+
+The Armory page (`ShellScreen.Armory`, from Main or from Setup's loadout button; Escape/Back returns there) chooses what the player takes into every match. Left: slot tabs for Primary and Sidearm, with Knife and Grenade shown as standard issue. Middle: the guns that also spawn for bots (`ArmoryCatalog`), each with its mesh-traced icon, fire mode, damage, magazine and rate of fire. Right: the sights the equipped primary can mount (iron sights, collimator, 2x prism, and the 4x/8x scope on the Mk 14/M-TAC 338), each with a one-line effect; sidearms keep their own irons. Each gun remembers its own sight. Every change saves at once to `shooter-armory.json` beside the settings (`shooter.armory.v1`, same atomic/last-good/quarantine/newer-schema rules as settings; schema and fixtures in `docs/armory-fixtures/`). Unknown or stale ids fall back per field (M16 with the 2x prism, G17). Start Match passes the loadout to `OfflineGameSession.UseArmoryLoadout`; the human spawns and respawns with it, while bots keep random guns and random sights. A save failure keeps the picks for the session and shows a footer message.

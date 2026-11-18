@@ -25,25 +25,51 @@ namespace Shooter.Generation.Environment
             WeaponMeshSource.Prop("grenade"),
             // Content/Weapons/ak47.weapon.json
             WeaponMeshSource.FromRecipe("ak47",
-                "{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/ak47\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.3.0\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"ak\",\"parts\":{\"barrelFrontMm\":520,\"furniture\":\"wood\",\"muzzle\":\"slant\",\"optic\":\"irons\",\"stock\":\"wood\"}},\"dependencies\":[]}"),
+                "{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/ak47\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.4.0\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"ak\",\"parts\":{\"barrelFrontMm\":520,\"furniture\":\"wood\",\"muzzle\":\"slant\",\"optic\":\"mount\",\"stock\":\"wood\"}},\"dependencies\":[]}"),
             // Content/Weapons/ak102.weapon.json
             WeaponMeshSource.FromRecipe("ak102",
-                "{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/ak102\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.3.0\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"ak\",\"parts\":{\"barrelFrontMm\":380,\"furniture\":\"polymer\",\"muzzle\":\"flash\",\"optic\":\"irons\",\"stock\":\"folding\"}},\"dependencies\":[]}"),
+                "{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/ak102\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.4.0\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"ak\",\"parts\":{\"barrelFrontMm\":380,\"furniture\":\"polymer\",\"muzzle\":\"flash\",\"optic\":\"mount\",\"stock\":\"folding\"}},\"dependencies\":[]}"),
             // Content/Weapons/m16.weapon.json
             WeaponMeshSource.FromRecipe("m16",
-                "{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/m16\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.3.0\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"ar\",\"parts\":{\"barrelFrontMm\":640,\"furniture\":\"black\",\"muzzle\":\"birdcage\",\"optic\":\"scope2\",\"stock\":\"fixed\"}},\"dependencies\":[]}"),
+                "{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/m16\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.4.0\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"ar\",\"parts\":{\"barrelFrontMm\":640,\"furniture\":\"black\",\"muzzle\":\"birdcage\",\"optic\":\"mount\",\"stock\":\"fixed\"}},\"dependencies\":[]}"),
             // Content/Weapons/mk14.weapon.json
             WeaponMeshSource.FromRecipe("mk14",
-                "{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/mk14\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.3.0\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"dmr\",\"parts\":{\"barrelFrontMm\":600,\"furniture\":\"black\",\"muzzle\":\"brake\",\"optic\":\"scope4\",\"stock\":\"chassis\"}},\"dependencies\":[]}"),
+                "{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/mk14\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.4.0\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"dmr\",\"parts\":{\"barrelFrontMm\":600,\"furniture\":\"black\",\"muzzle\":\"brake\",\"optic\":\"mount\",\"stock\":\"chassis\"}},\"dependencies\":[]}"),
             // Content/Weapons/mtac338.weapon.json
             WeaponMeshSource.FromRecipe("mtac338",
-                "{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/mtac338\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.3.0\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"bolt\",\"parts\":{\"barrelFrontMm\":820,\"furniture\":\"polymer\",\"muzzle\":\"brake\",\"optic\":\"scope8\",\"stock\":\"folding\"}},\"dependencies\":[]}"),
+                "{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/mtac338\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.4.0\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"bolt\",\"parts\":{\"barrelFrontMm\":820,\"furniture\":\"polymer\",\"muzzle\":\"brake\",\"optic\":\"mount\",\"stock\":\"folding\"}},\"dependencies\":[]}"),
             // Content/Weapons/g17.weapon.json
             WeaponMeshSource.FromRecipe("g17",
                 "{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/g17\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.3.0\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"pistol-striker\",\"parts\":{\"barrelFrontMm\":125,\"furniture\":\"black\",\"muzzle\":\"none\",\"optic\":\"irons\",\"stock\":\"none\"}},\"dependencies\":[]}"),
             // Content/Weapons/golden-eagle.weapon.json
             WeaponMeshSource.FromRecipe("golden-eagle",
-                "{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/golden-eagle\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.3.0\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"pistol-eagle\",\"parts\":{\"barrelFrontMm\":185,\"furniture\":\"gold\",\"muzzle\":\"none\",\"optic\":\"irons\",\"stock\":\"none\"}},\"dependencies\":[]}")
+                "{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/golden-eagle\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"1.3.0\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"pistol-eagle\",\"parts\":{\"barrelFrontMm\":185,\"furniture\":\"gold\",\"muzzle\":\"none\",\"optic\":\"irons\",\"stock\":\"none\"}},\"dependencies\":[]}"),
+            // ADR-107 collimator on the ak rail (Content/Weapons/ak47.weapon.json)
+            WeaponMeshSource.MountedSight("collimator", "ak"),
+            // ADR-107 scope2 on the ak rail (Content/Weapons/ak47.weapon.json)
+            WeaponMeshSource.MountedSight("scope2", "ak"),
+            // ADR-107 irons on the ar rail (Content/Weapons/m16.weapon.json)
+            WeaponMeshSource.MountedSight("irons", "ar"),
+            // ADR-107 collimator on the ar rail (Content/Weapons/m16.weapon.json)
+            WeaponMeshSource.MountedSight("collimator", "ar"),
+            // ADR-107 scope2 on the ar rail (Content/Weapons/m16.weapon.json)
+            WeaponMeshSource.MountedSight("scope2", "ar"),
+            // ADR-107 irons on the dmr rail (Content/Weapons/mk14.weapon.json)
+            WeaponMeshSource.MountedSight("irons", "dmr"),
+            // ADR-107 collimator on the dmr rail (Content/Weapons/mk14.weapon.json)
+            WeaponMeshSource.MountedSight("collimator", "dmr"),
+            // ADR-107 scope2 on the dmr rail (Content/Weapons/mk14.weapon.json)
+            WeaponMeshSource.MountedSight("scope2", "dmr"),
+            // ADR-107 scope4 on the dmr rail (Content/Weapons/mk14.weapon.json)
+            WeaponMeshSource.MountedSight("scope4", "dmr"),
+            // ADR-107 irons on the bolt rail (Content/Weapons/mtac338.weapon.json)
+            WeaponMeshSource.MountedSight("irons", "bolt"),
+            // ADR-107 collimator on the bolt rail (Content/Weapons/mtac338.weapon.json)
+            WeaponMeshSource.MountedSight("collimator", "bolt"),
+            // ADR-107 scope2 on the bolt rail (Content/Weapons/mtac338.weapon.json)
+            WeaponMeshSource.MountedSight("scope2", "bolt"),
+            // ADR-107 scope8 on the bolt rail (Content/Weapons/mtac338.weapon.json)
+            WeaponMeshSource.MountedSight("scope8", "bolt")
         };
     }
 }

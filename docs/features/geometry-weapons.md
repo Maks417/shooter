@@ -112,10 +112,27 @@ Definition files may also set:
 - `combat.moveSpeedScale` and `combat.spawnWeight` (0 keeps a weapon out of random loadouts);
 - `visual.handlingStyle` (`Rifle`, `Ak`, `Bolt`, `Pistol`), `visual.adsFovDegrees`, `visual.muzzleFlashScale` and `visual.muzzleFlashSideJets`.
 
-Every life draws a random primary and sidearm in product sessions. The generic rifle, carbine and pistol remain catalogued with `spawnWeight 0` as the fixed test loadout.
+Every bot life draws a random primary and sidearm in product sessions; since [ADR-107](../decisions.md#adr-107--accepted-armory-loadouts-and-reusable-rail-mounted-sights) the human uses the Armory loadout instead. The generic rifle, carbine and pistol remain catalogued with `spawnWeight 0` as the fixed test loadout.
 
 ## Kernel-built arsenal and gloves — ADR-106 (geometry.weapon 1.3.0)
 
 [ADR-106](../decisions.md#adr-106--accepted-kernel-built-weapons-gloves-soldiers-and-structured-map-surfaces) moves the seven named recipes to geometry.weapon 1.3.0 (`Generation/Core/Weapons/ProfileArsenalGeometry.cs`). Parts come from the `Generation/Core/Geometry/ShapeKit.cs` kernel instead of bevelled boxes: rounded side-profile slabs for receivers, guards, slides and stocks; turned barrels, muzzle devices, scopes, turrets and rings; superellipse lofts for handguards and wooden/polymer stocks; a sampled grip loft with palm swell and finger ridges; curved extruded magazines with a raised spine; real rail teeth. Sockets, collision, envelopes, magazine/cycle parts and material slots are the 1.2.0 ones, so hands and gameplay are unchanged; 1.2.0 remains buildable for its fixtures.
 
 The first-person gloves (`FirstPersonHandGeometry.Build`, rig `fp.hand.v2`) are a pillow-shaped palm, one swept tube per finger and the thumb through the rig joints with two-joint smoothstep skinning across each knuckle (`ChainWeights`), a knuckle guard, a back-of-hand pad and a wrist cuff. Offline renders: `ShooterFeatureBuild.CaptureArsenal` and `CaptureHandling` (`Artifacts/adr106-preview/`). In-game look review is Pending the next installer.
+
+## Rail-mounted sights (ADR-107)
+
+[ADR-107](../decisions.md#adr-107--accepted-armory-loadouts-and-reusable-rail-mounted-sights) takes the optic off the five primaries: their recipes move to geometry.weapon 1.4.0 with `optic: "mount"`, the 1.3.0 profile body without its scope (the AR keeps its A2 front tower, the AK its rear leaf and front post). Sights are separate meshes built by `ProfileArsenalGeometry.BuildSight` and exposed through `Generation/Core/Weapons/WeaponSights.cs`:
+
+| Sight | Look | ADS |
+|---|---|---|
+| `irons` | AR rear block; flip-up rear aperture and front post on the DMR and bolt rails; part of the AK body | Irons, 52/80 hip FOV, soft vignette |
+| `collimator` | Open-tube red dot on a low clamp, tinted glass, brightness turret; dot 32 mm above the rail | Collimator, 56/80, gun stays in view, lit red dot |
+| `scope2` | The M16 prism scope (unchanged 1.3.0 construction), now reusable | Scoped PiP, 40/80 (2x) |
+| `scope4` | Mk 14 scope with turrets and rings | Scoped PiP, 20/80 (4x) |
+| `scope8` | M-TAC 338 long scope | Scoped PiP, 10/80 (8x) |
+
+Each sight mesh is built in the gun's own weapon space for its archetype rail (`ArsenalGeometry.MountRail`: AR, DMR and bolt top rails; an AK dust-cover rail adapter that ends ahead of the rear leaf) and parents to the gun at its origin. `WeaponSights.EyeFor(kind, sight)` is the line of sight used for first-person ADS alignment and the third-person head solve; the AR prism keeps the 1.3.0 M16 eye (0, 153, −10) mm. Packages hold one mesh set per (sight, archetype) any gun allows (`sight-<sight>-<kind>`, four LODs, fingerprint `geometry.weapon-sight.1.0.0`).
+
+Which sights a gun takes is data: `visual.sights { "default": ..., "allowed": [...] }` in its definition file, in loadout order (irons, collimator, scope2, scope4, scope8). The generator requires it for every 1.4.0 rail recipe, checks that `visual.optic` matches the default sight and writes `Simulation/Combat/SightCatalog.g.cs` and `Presentation/Model/View/WeaponSightChoices.g.cs`. Sights never change combat numbers.
+

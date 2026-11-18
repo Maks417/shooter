@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "schemaId": "shooter.armory.v1",
+  "primary": "weapons/m16",
+  "sidearm": "weapons/g17",
+  "sights": {
+    "weapons/ak47": "sights/collimator",
+    "weapons/m16": "sights/scope2"
+  }
+}

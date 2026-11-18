@@ -28,6 +28,25 @@ namespace Shooter.Presentation.View
         public static bool UsesIronSightOptic(in WeaponVisualProfile profile) =>
             profile.OpticMode == WeaponOpticMode.Irons;
 
+        /// <summary>ADR-107 red-dot collimator: the gun stays in view, the camera narrows slightly and a dot marks the aim point.</summary>
+        public static bool UsesCollimatorOptic(in WeaponVisualProfile profile) =>
+            profile.OpticMode == WeaponOpticMode.Collimator;
+
+        /// <summary>Blend at which the collimator dot is lit (the sight has risen to the eye).</summary>
+        public const float CollimatorDotBlend = 0.8f;
+
+        /// <summary>Collimator dot opacity: off until the sight reaches the eye, then fades in quickly.</summary>
+        public static float CollimatorDotOpacity(in WeaponVisualProfile profile, float adsPresentationBlend)
+        {
+            if (!UsesCollimatorOptic(profile)) return 0f;
+            float s = OpticStrength(adsPresentationBlend);
+            if (s < CollimatorDotBlend) return 0f;
+            return Math.Min(1f, (s - CollimatorDotBlend) / (1f - CollimatorDotBlend) * 1.6f);
+        }
+
+        /// <summary>Collimator dot radius in pixels: a small fixed angular size (about 2 MOA scaled to the view).</summary>
+        public static float CollimatorDotRadiusPixels(float height) => Math.Max(2f, height * 0.0042f);
+
         public static bool UsesScopedOptic(DefinitionId weaponId, byte weaponSlot) =>
             UsesScopedOptic(WeaponVisualProfiles.Resolve(weaponId, weaponSlot));
 
@@ -83,6 +102,7 @@ namespace Shooter.Presentation.View
             if (profile.AdsFovDegrees > 0f) return hipFovDegrees * (profile.AdsFovDegrees / 80f);
             float ratio = UsesScopedOptic(profile) ? (42f / 80f)
                 : UsesIronSightOptic(profile) ? (52f / 80f)
+                : UsesCollimatorOptic(profile) ? (56f / 80f)
                 : (58f / 80f);
             return hipFovDegrees * ratio;
         }

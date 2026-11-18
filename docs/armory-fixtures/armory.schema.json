@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "shooter.armory.v1",
+  "title": "Shooter Armory loadout (ADR-107)",
+  "description": "Primary, sidearm and per-primary sight the player takes into every match. Stored beside the user settings as shooter-armory.json. Ids are resolved against the weapon and sight catalogs at match start; unknown or disallowed ids fall back per field.",
+  "type": "object",
+  "required": [
+    "schema",
+    "schemaId",
+    "primary",
+    "sidearm"
+  ],
+  "properties": {
+    "schema": {
+      "const": 1
+    },
+    "schemaId": {
+      "const": "shooter.armory.v1"
+    },
+    "primary": {
+      "$ref": "#/$defs/id"
+    },
+    "sidearm": {
+      "$ref": "#/$defs/id"
+    },
+    "sights": {
+      "type": "object",
+      "maxProperties": 64,
+      "propertyNames": {
+        "$ref": "#/$defs/id"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/id"
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "maxLength": 64,
+      "pattern": "^[a-z0-9_.-]+(/[a-z0-9_.-]+)+$"
+    }
+  }
+}

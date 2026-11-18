@@ -50,6 +50,16 @@ namespace Shooter.Simulation.Combat
             return CreateLoadout(primary, sidearm);
         }
 
+        /// <summary>
+        /// ADR-107: a uniform deterministic draw among <paramref name="primary"/>'s allowed sights for the same life as
+        /// <see cref="CreateRandomLoadout"/> (its own stream, so the gun draw is unchanged). Invalid for guns without options.
+        /// </summary>
+        public static DefinitionId RandomSight(ulong seed, EntityId actor, uint tick, DefinitionId primary)
+        {
+            ulong state = Mix(seed ^ Mix(actor.Value + 0x9E3779B97F4A7C15UL) ^ Mix(tick + 0xD1B54A32D192ED03UL));
+            return SightCatalog.Pick(primary, Mix(state + 2));
+        }
+
         /// <summary>Weighted pick among catalog entries of <paramref name="family"/> in catalog order.</summary>
         public static DefinitionId Pick(WeaponFamily family, ulong roll, DefinitionId fallback)
         {

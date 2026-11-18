@@ -44,6 +44,11 @@ namespace Shooter.Presentation.Rig
             public Transform? CyclePart;
             public MeshFilter? CycleFilter;
             public MeshRenderer? CycleRenderer;
+            /// <summary>ADR-107 sight mounted on the held primary (invalid: none / factory sight).</summary>
+            public DefinitionId Sight;
+            public Transform? SightPart;
+            public MeshFilter? SightFilter;
+            public MeshRenderer? SightRenderer;
             public float CycleOpen;
             public SoldierMotion Motion = null!;
             public Float3 PreviousFeet;
@@ -118,6 +123,11 @@ namespace Shooter.Presentation.Rig
             public bool HasSupportSocket;
         }
         private readonly Dictionary<string, WeaponMeshSet> weaponMeshes = new Dictionary<string, WeaponMeshSet>(StringComparer.Ordinal);
+        /// <summary>ADR-107 rail-mounted sight meshes by key (<c>sight-&lt;sight&gt;-&lt;kind&gt;</c>): world LOD and arm's-length LOD0.</summary>
+        private readonly Dictionary<string, (Mesh held, Mesh local)> sightMeshes = new Dictionary<string, (Mesh held, Mesh local)>(StringComparer.Ordinal);
+        private Transform? localSight;
+        private MeshFilter? localSightFilter;
+        private DefinitionId localVisibleSight;
         private Material[]? team1Palette;
         private Material[]? team2Palette;
         private Material? rifleMetal;
@@ -185,6 +195,46 @@ namespace Shooter.Presentation.Rig
         public byte LocalVisibleWeaponSlot => localVisibleWeaponSlot;
         /// <summary>DefinitionId for the mesh currently shown (ADR-072).</summary>
         public DefinitionId LocalVisibleWeaponId => localVisibleWeaponId;
+        /// <summary>ADR-107 sight mounted on the shown weapon (invalid when it carries its factory sight or none).</summary>
+        public DefinitionId LocalVisibleSight => localVisibleSight;
+        /// <summary>Presentation profile of the shown weapon through its mounted sight (optic mode and ADS field of view).</summary>
+        public WeaponVisualProfile LocalVisibleProfile =>
+            Sighted(WeaponVisualProfiles.Resolve(localVisibleWeaponId, localVisibleWeaponSlot), localVisibleSight);
+
+        /// <summary>ADR-107: reads the sight on an actor's primary from the session (read-only; null = factory sights).</summary>
+        public Func<EntityId, DefinitionId>? SightReader { get; set; }
+
+        private DefinitionId SightOf(EntityId entity, byte slot) =>
+            slot == ProductAuthorityActionView.RifleSlot && SightReader != null ? SightReader(entity) : default;
+
+        /// <summary>The profile ADS presents with: the gun's own row, its optic taken from the mounted sight when known.</summary>
+        public static WeaponVisualProfile Sighted(in WeaponVisualProfile profile, DefinitionId sight) =>
+            sight.IsValid ? WeaponSightChoices.Apply(profile, sight) : profile;
+
+        /// <summary>The sight a gun actually carries: <paramref name="sight"/> when allowed, else its factory sight.</summary>
+        private static DefinitionId EffectiveSight(DefinitionId weapon, DefinitionId sight, out WeaponSightChoice? choice)
+        {
+            if (!WeaponSightChoices.TryGet(weapon, out var found)) { choice = null; return default; }
+            choice = found;
+            return found.Allows(sight) ? sight : found.Default;
+        }
+
+        private Mesh? SightMeshFor(DefinitionId weapon, DefinitionId sight, bool local)
+        {
+            var effective = EffectiveSight(weapon, sight, out var choice);
+            string? key = choice?.MeshKeyFor(effective);
+            if (key == null || !sightMeshes.TryGetValue(key, out var meshes)) return null;
+            return local ? meshes.local : meshes.held;
+        }
+
+        /// <summary>Line of sight in weapon space through the mounted sight (ADR-107), else the gun's own sight-eye socket.</summary>
+        private Float3 SightEyeFor(in WeaponVisualProfile profile, DefinitionId sight)
+        {
+            var effective = EffectiveSight(profile.DefinitionId, sight, out var choice);
+            if (choice != null && WeaponSightChoices.TryGetSight(effective, out var optic))
+                return WeaponSights.EyeFor(choice.MountKind, optic.Name);
+            return SightSocketForProfile(profile);
+        }
 
         public int CorpseAvatarCount
         {
@@ -230,6 +280,7 @@ namespace Shooter.Presentation.Rig
             localFreshMagazineFilter = CreateWeaponChild(localWeapon, "FP fresh magazine", out localFreshMagazine);
             localFreshMagazine.gameObject.SetActive(false);
             localCycleFilter = CreateWeaponChild(localWeapon, "FP cycle", out localCycle);
+            localSightFilter = CreateWeaponChild(localWeapon, "FP sight", out localSight);
             SkinnedMeshRenderer CreateHand(string name, int handIndex)
             {
                 var hand = new GameObject(name);
@@ -271,7 +322,7 @@ namespace Shooter.Presentation.Rig
             visualsBound=false;
             ClearAll();
             foreach(var value in owned)DestroyObject(value);owned.Clear();
-            bodyMesh=null;Array.Clear(bodyLods,0,bodyLods.Length);contactMesh=null;contactMaterial=null;weaponMeshes.Clear();weaponPalettes.Clear();
+            bodyMesh=null;Array.Clear(bodyLods,0,bodyLods.Length);contactMesh=null;contactMaterial=null;weaponMeshes.Clear();sightMeshes.Clear();weaponPalettes.Clear();
             weaponMaterials=Array.Empty<Material>();team1Palette=null;team2Palette=null;firstPersonHandMaterials=null;
             if (visuals == null) throw new ArgumentNullException(nameof(visuals));
             var shader = Shader.Find("Shooter/MapSurface");
@@ -306,8 +357,19 @@ namespace Shooter.Presentation.Rig
                     { bodyLods[lod] = Own(Upload(MapVisualClosure.DecodeSoldierLod(visuals, lod), true)); yield return 0; }
                 weaponMeshes.Clear();
                 var silhouettes = new List<WeaponSilhouetteSource>();
+                sightMeshes.Clear();
                 foreach (var source in WeaponMeshCatalog.All)
                 {
+                    if (source.IsSight)
+                    {
+                        // ADR-107: sights parent to the gun at its origin; same LOD policy as the gun meshes.
+                        var heldSight = MapVisualClosure.DecodeWeaponLod(visuals, source.MeshKey, weaponLod);
+                        Mesh held = Own(Upload(heldSight, false));
+                        Mesh near = weaponLod == 0 ? held : Own(Upload(MapVisualClosure.DecodeWeaponLod(visuals, source.MeshKey, 0), false));
+                        sightMeshes[source.MeshKey] = (held, near);
+                        yield return 0;
+                        continue;
+                    }
                     var set = new WeaponMeshSet();
                     var heldData = MapVisualClosure.DecodeWeaponLod(visuals, source.MeshKey, weaponLod);
                     set.Held = Own(Upload(heldData, false));
@@ -320,6 +382,14 @@ namespace Shooter.Presentation.Rig
                     if (magazine != null) { set.Magazine = Own(Upload(magazine, false)); silhouetteParts.Add(magazine); }
                     var cycle = MapVisualClosure.DecodeWeaponCycle(visuals, source.MeshKey);
                     if (cycle != null) { set.Cycle = Own(Upload(cycle, false)); silhouetteParts.Add(cycle); }
+                    // ADR-107: a gun's icon includes its factory sight, decoded straight from the package.
+                    foreach (var row in WeaponVisualProfiles.All)
+                    {
+                        if (row.MeshAssetKey != source.MeshKey || !WeaponSightChoices.TryGet(row.DefinitionId, out var factory)) continue;
+                        string? sightKey = factory.MeshKeyFor(factory.Default);
+                        if (sightKey != null) silhouetteParts.Add(MapVisualClosure.DecodeWeaponLod(visuals, sightKey, 0));
+                        break;
+                    }
                     // ADR-085: HUD weapon icons are traced from these same packaged LOD0 meshes.
                     silhouettes.Add(new WeaponSilhouetteSource(source.MeshKey, WeaponSilhouetteSource.SpanFor(source.MeshKey), silhouetteParts));
                     if (source.Recipe != null) { var sockets = WeaponGeometry.Sockets(source.Recipe); set.SightSocket = FindSocket(sockets, "sight-eye"); set.MuzzleSocket = FindSocket(sockets, "muzzle"); set.SupportSocket = FindSocket(sockets, "left-hand-grip"); set.HasSupportSocket = true; }
@@ -611,7 +681,7 @@ namespace Shooter.Presentation.Rig
                 // otherwise make the reload invisible.
                 bool viewAim = FirstPersonHandling.ViewAimTarget(aimHeld, actions.IsReloading(human.EntityId),
                     human.WeaponAction == WeaponAction.Reloading);
-                var activeProfile = WeaponVisualProfiles.Resolve(weaponId, slot);
+                var activeProfile = Sighted(WeaponVisualProfiles.Resolve(weaponId, slot), SightOf(human.EntityId, slot));
                 localView.ApplyProfile(activeProfile);
                 if (combatEvents != null)
                     localView.ConsumeEvents(combatEvents, human.EntityId, viewAim, dtSeconds);
@@ -637,8 +707,10 @@ namespace Shooter.Presentation.Rig
                 localHandling.VisibleWeaponId = shownId;
                 localVisibleWeaponSlot = shown;
                 localVisibleWeaponId = shownId;
-                var profile = WeaponVisualProfiles.Resolve(shownId, shown);
-                ApplyLocalWeaponVisual(shownId, shown);
+                DefinitionId shownSight = SightOf(human.EntityId, shown);
+                localVisibleSight = shownSight;
+                var profile = Sighted(WeaponVisualProfiles.Resolve(shownId, shown), shownSight);
+                ApplyLocalWeaponVisual(shownId, shown, shownSight);
                 float reload = localHandling.IsSwitching ? -1f : actions.ReloadPhaseAtTick(human.EntityId, completedTick);
                 float recoilEnergy = Math.Abs(pose.RecoilPitch) + Math.Abs(pose.RecoilYaw);
                 // Ammo refills only at ReloadCompleted, so an empty magazine marks an empty reload for its whole window.
@@ -681,7 +753,7 @@ namespace Shooter.Presentation.Rig
                 var moveOffset = localLocomotion.PositionOffset(shown, adsPresent, reducedMotion);
                 var moveRotation = localLocomotion.RotationDegrees(shown, adsPresent, reducedMotion);
 
-                Float3 sight = SightSocketForProfile(profile);
+                Float3 sight = SightEyeFor(profile, shownSight);
                 float scale = FirstPersonHandling.NearFieldScale(profile);
                 Float3 hipBias = FirstPersonHandling.NearFieldHipBias(profile);
                 Vector3 hip = new Vector3(pose.RightHand.X, pose.RightHand.Y, pose.RightHand.Z);
@@ -727,6 +799,7 @@ namespace Shooter.Presentation.Rig
                 hasLookSample = false;
                 localAdsPresentation = 0f;
                 localVisibleWeaponSlot = ProductAuthorityActionView.RifleSlot;
+                localVisibleSight = default;
                 localViewHuman = default;
             }
 
@@ -801,6 +874,9 @@ namespace Shooter.Presentation.Rig
             avatar.MagazineRenderer = avatar.MagazinePart!.GetComponent<MeshRenderer>();
             avatar.CycleFilter = CreateWeaponChild(avatar.Weapon, "Held cycle", out avatar.CyclePart);
             avatar.CycleRenderer = avatar.CyclePart!.GetComponent<MeshRenderer>();
+            avatar.SightFilter = CreateWeaponChild(avatar.Weapon, "Held sight", out avatar.SightPart);
+            avatar.SightRenderer = avatar.SightPart!.GetComponent<MeshRenderer>();
+            avatar.Sight = SightOf(state.EntityId, slot);
             DefinitionId createId = state.ActiveWeaponDefinition.IsValid
                 ? state.ActiveWeaponDefinition
                 : WeaponVisualProfiles.DefaultIdForSlot(slot);
@@ -867,10 +943,13 @@ namespace Shooter.Presentation.Rig
                 : WeaponVisualProfiles.DefaultIdForSlot(slot);
             var heldProfile = WeaponVisualProfiles.Resolve(weaponId, slot);
             actions.SyncLifecycle(state.EntityId, slot, state.Alive && !avatar.Corpse);
-            if (slot != avatar.WeaponSlot || !avatar.WeaponDefinition.Equals(weaponId))
+            // A corpse keeps the sight it died with; the retired actor no longer reports one.
+            DefinitionId heldSight = avatar.Corpse || !state.Alive ? avatar.Sight : SightOf(state.EntityId, slot);
+            if (slot != avatar.WeaponSlot || !avatar.WeaponDefinition.Equals(weaponId) || !avatar.Sight.Equals(heldSight))
             {
                 avatar.WeaponSlot = slot;
                 avatar.WeaponDefinition = weaponId;
+                avatar.Sight = heldSight;
                 ApplyHeldWeaponVisual(avatar, weaponId, slot);
             }
 
@@ -941,7 +1020,7 @@ namespace Shooter.Presentation.Rig
             avatar.Root.position = V(displayFeet);
             SelectBodyLod(avatar);
             float visibility=AmbientVisibility?.Invoke(displayFeet)??1f;
-            ApplyAmbient(avatar.Body,visibility);ApplyAmbient(avatar.WeaponRenderer,visibility);ApplyAmbient(avatar.MagazineRenderer,visibility);ApplyAmbient(avatar.CycleRenderer,visibility);
+            ApplyAmbient(avatar.Body,visibility);ApplyAmbient(avatar.WeaponRenderer,visibility);ApplyAmbient(avatar.MagazineRenderer,visibility);ApplyAmbient(avatar.CycleRenderer,visibility);ApplyAmbient(avatar.SightRenderer,visibility);
             if(avatar.Contact==null)avatar.Contact=CreateContact(avatar.Root);
             avatar.Contact.SetActive(QualitySettings.GetQualityLevel()==0&&!dying);
             avatar.Contact.transform.position=V(new Float3(displayFeet.X,displayFeet.Y+.025f,displayFeet.Z));
@@ -963,7 +1042,7 @@ namespace Shooter.Presentation.Rig
             // Re-assert each pose so respawn / corpse flip keeps local FP body+weapon ShadowsOnly.
             ApplyLocalHumanShadowMode(avatar, state.EntityId.Equals(localHuman) && !avatar.Corpse && state.Alive);
 
-            Float3 sightLocal = SightSocketForProfile(heldProfile);
+            Float3 sightLocal = SightEyeFor(heldProfile, avatar.Sight);
             avatar.LastArmBodyClearance = pose.ArmBodyClearanceMeters;
             avatar.LastEyeSightLineError = pose.EyeSightLineErrorMeters;
             avatar.LastLeftGripError = pose.LeftGripError;
@@ -990,7 +1069,16 @@ namespace Shooter.Presentation.Rig
         {
             var profile = WeaponVisualProfiles.Resolve(weaponId, slot);
             var meshDefinition=WeaponMeshCatalog.Require(profile.MeshAssetKey);
-            if(meshDefinition.Recipe!=null)avatar.Motion.SetVisualWeapon(meshDefinition.Recipe);
+            // ADR-107: the head solves onto the mounted sight's line, not the bare rail.
+            if(meshDefinition.Recipe!=null)avatar.Motion.SetVisualWeapon(meshDefinition.Recipe,
+                WeaponSightChoices.TryGet(profile.DefinitionId,out _)?SightEyeFor(profile,avatar.Sight):(Float3?)null);
+            if (avatar.SightFilter != null && avatar.SightPart != null)
+            {
+                avatar.SightFilter.sharedMesh = slot == ProductAuthorityActionView.RifleSlot ? SightMeshFor(profile.DefinitionId, avatar.Sight, false) : null;
+                if (avatar.SightRenderer != null) avatar.SightRenderer.sharedMaterials = WeaponPalette(avatar.SightFilter.sharedMesh);
+                avatar.SightPart.gameObject.SetActive(avatar.SightFilter.sharedMesh != null);
+                avatar.SightPart.localPosition = Vector3.zero;
+            }
             avatar.Weapon.name = WeaponDisplayName(profile, false);
             avatar.WeaponFilter.sharedMesh = HeldMeshForProfile(profile);
             avatar.WeaponRenderer.sharedMaterials = WeaponPalette(avatar.WeaponFilter.sharedMesh);
@@ -1014,11 +1102,19 @@ namespace Shooter.Presentation.Rig
             avatar.CycleOpen = 0f;
         }
 
-        private void ApplyLocalWeaponVisual(DefinitionId weaponId, byte slot)
+        private void ApplyLocalWeaponVisual(DefinitionId weaponId, byte slot, DefinitionId sight = default)
         {
             if (localWeapon == null || !visualsBound) return;
             var profile = WeaponVisualProfiles.Resolve(weaponId, slot);
             localWeapon.name = WeaponDisplayName(profile, true);
+            if (localSightFilter != null && localSight != null)
+            {
+                Mesh? sightMesh = slot == ProductAuthorityActionView.RifleSlot ? SightMeshFor(profile.DefinitionId, sight, true) : null;
+                localSightFilter.sharedMesh = sightMesh;
+                localSight.GetComponent<MeshRenderer>().sharedMaterials = WeaponPalette(sightMesh);
+                localSight.gameObject.SetActive(sightMesh != null);
+                localSight.localPosition = Vector3.zero;
+            }
             localWeapon.GetComponent<MeshFilter>().sharedMesh = LocalMeshForProfile(profile);
             localWeapon.GetComponent<MeshRenderer>().sharedMaterials = WeaponPalette(localWeapon.GetComponent<MeshFilter>().sharedMesh);
             bool guns = FirstPersonWeaponMechanics.HasMagazinePart(profile);
@@ -1225,6 +1321,8 @@ namespace Shooter.Presentation.Rig
             public Transform Root = null!;
             public MeshFilter Filter = null!;
             public MeshRenderer Renderer = null!;
+            public MeshFilter SightFilter = null!;
+            public Transform SightPart = null!;
         }
 
         private readonly List<DroppedWeaponVisual> droppedVisuals = new List<DroppedWeaponVisual>();
@@ -1251,6 +1349,11 @@ namespace Shooter.Presentation.Rig
                     var mesh = HeldMeshForProfile(profile);
                     visual.Filter.sharedMesh = mesh;
                     visual.Renderer.sharedMaterials = WeaponPalette(mesh);
+                    // ADR-107: the gun lies on the floor with the sight it carried.
+                    var sightMesh = SightMeshFor(profile.DefinitionId, view.SightId, false);
+                    visual.SightFilter.sharedMesh = sightMesh;
+                    visual.SightPart.GetComponent<MeshRenderer>().sharedMaterials = WeaponPalette(sightMesh);
+                    visual.SightPart.gameObject.SetActive(sightMesh != null);
                     visual.Id = view.Id;
                     // Lying on its side; the yaw varies by drop so several guns never stack identically.
                     float yaw = (view.Id * 137.5f) % 360f;
@@ -1275,8 +1378,10 @@ namespace Shooter.Presentation.Rig
             var renderer = root.gameObject.AddComponent<MeshRenderer>();
             renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
             var filter = root.gameObject.AddComponent<MeshFilter>();
+            var sightFilter = CreateWeaponChild(root, "Dropped sight", out var sightPart);
+            sightPart.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
             root.gameObject.SetActive(false);
-            return new DroppedWeaponVisual { Root = root, Filter = filter, Renderer = renderer };
+            return new DroppedWeaponVisual { Root = root, Filter = filter, Renderer = renderer, SightFilter = sightFilter, SightPart = sightPart };
         }
 
         private void ClearDroppedWeapons()
@@ -1428,6 +1533,7 @@ namespace Shooter.Presentation.Rig
             if (avatar.WeaponRenderer != null) avatar.WeaponRenderer.shadowCastingMode = mode;
             if (avatar.MagazineRenderer != null) avatar.MagazineRenderer.shadowCastingMode = mode;
             if (avatar.CycleRenderer != null) avatar.CycleRenderer.shadowCastingMode = mode;
+            if (avatar.SightRenderer != null) avatar.SightRenderer.shadowCastingMode = mode;
         }
 
         private static Vector3 V(Float3 v) => new Vector3(v.X, v.Y, v.Z);

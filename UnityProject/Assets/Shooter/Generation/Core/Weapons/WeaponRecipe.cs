@@ -80,7 +80,8 @@ namespace Shooter.Generation
     {
         public static readonly string[] Furnitures = { "black", "gold", "polymer", "wood" };
         public static readonly string[] Muzzles = { "birdcage", "brake", "flash", "none", "slant" };
-        public static readonly string[] Optics = { "irons", "scope2", "scope4", "scope8" };
+        /// <summary><c>mount</c> (ADR-107, 1.4.0 long guns only): bare rail, the sight is a separate rail-mounted mesh.</summary>
+        public static readonly string[] Optics = { "irons", "mount", "scope2", "scope4", "scope8" };
         public static readonly string[] Stocks = { "chassis", "fixed", "folding", "none", "wood" };
         public int BarrelFrontMm { get; }
         public string Furniture { get; }
@@ -133,7 +134,14 @@ namespace Shooter.Generation
         public const string ArsenalVersion = "1.2.0";
         /// <summary>Same arsenal parts rebuilt from rounded profiles, lathes and lofts (ADR-106). Shipped recipes use it.</summary>
         public const string ProfileVersion = "1.3.0";
-        public static bool IsArsenalVersion(string? version) => version == ArsenalVersion || version == ProfileVersion;
+        /// <summary>
+        /// ADR-107: the 1.3.0 profile bodies with the optic taken off (<c>optic: mount</c>); sights are separate
+        /// rail-mounted meshes (<see cref="ProfileArsenalGeometry.BuildSight"/>) chosen per loadout.
+        /// </summary>
+        public const string MountVersion = "1.4.0";
+        public static bool IsArsenalVersion(string? version) => version == ArsenalVersion || version == ProfileVersion || version == MountVersion;
+        /// <summary>Versions built by <see cref="ProfileArsenalGeometry"/>.</summary>
+        public static bool IsProfileVersion(string? version) => version == ProfileVersion || version == MountVersion;
         public static readonly string[] ArsenalKinds = { "ak", "ar", "bolt", "dmr", "pistol-eagle", "pistol-striker" };
         public static bool IsSupportedVersion(string? version) => version == GeneratorVersion || version == PartsVersion || IsArsenalVersion(version);
         public static bool IsArsenalKind(string? kind) => kind != null && Array.IndexOf(ArsenalKinds, kind) >= 0;
@@ -166,7 +174,7 @@ namespace Shooter.Generation
                 throw new FormatException("Unsupported weapon schema/generator version.");
             ArsenalParts? arsenal = null;
             (string kind, string silhouette, WeaponParts? parts) parsed;
-            if (IsArsenalVersion(version)) { arsenal = ArsenalParameters(root["parameters"], out string arsenalKind); parsed = (arsenalKind, "arsenal", null); }
+            if (IsArsenalVersion(version)) { arsenal = ArsenalParameters(version, root["parameters"], out string arsenalKind); parsed = (arsenalKind, "arsenal", null); }
             else parsed = Parameters(version, root["parameters"]);
             string seed = root["seed"].String;
             try
@@ -196,7 +204,7 @@ namespace Shooter.Generation
             ArsenalParts? arsenal = null;
             (string kind, string silhouette, WeaponParts? parts) parsed;
             if (IsArsenalVersion(document.GeneratorVersion))
-            { arsenal = ArsenalParameters(JsonValue.Parse(document.Parameters), out string arsenalKind); parsed = (arsenalKind, "arsenal", null); }
+            { arsenal = ArsenalParameters(document.GeneratorVersion, JsonValue.Parse(document.Parameters), out string arsenalKind); parsed = (arsenalKind, "arsenal", null); }
             else parsed = Parameters(document.GeneratorVersion, JsonValue.Parse(document.Parameters));
             if (!document.Parameters.SequenceEqual(ParameterBytes(document.GeneratorVersion, parsed.kind, parsed.silhouette, parsed.parts, arsenal)))
                 throw new FormatException("Weapon parameters must be canonical.");
@@ -237,15 +245,21 @@ namespace Shooter.Generation
 
         private static int Int(IReadOnlyDictionary<string, JsonValue> values, string name) => values[name].Number;
 
-        private static ArsenalParts ArsenalParameters(JsonValue value, out string kind)
+        private static ArsenalParts ArsenalParameters(string version, JsonValue value, out string kind)
         {
             Fields(value.Object, "kind", "parts");
             kind = value.Object["kind"].String;
             if (!IsArsenalKind(kind)) throw new FormatException("Weapon kind must be one of the 1.2.0 arsenal archetypes.");
             var parts = value.Object["parts"].Object;
             Fields(parts, "barrelFrontMm", "furniture", "muzzle", "optic", "stock");
-            return new ArsenalParts(kind, Int(parts, "barrelFrontMm"), parts["furniture"].String, parts["muzzle"].String,
+            var resolved = new ArsenalParts(kind, Int(parts, "barrelFrontMm"), parts["furniture"].String, parts["muzzle"].String,
                 parts["optic"].String, parts["stock"].String);
+            bool pistol = kind == "pistol-striker" || kind == "pistol-eagle";
+            if (version == MountVersion && !pistol && resolved.Optic != "mount")
+                throw new FormatException("Weapon 1.4.0 long guns take optic mount (sights are separate meshes).");
+            if (version != MountVersion && resolved.Optic == "mount")
+                throw new FormatException("Weapon part optic mount needs generator 1.4.0.");
+            return resolved;
         }
 
         private static byte[] ParameterBytes(string version, string kind, string silhouette, WeaponParts? parts, ArsenalParts? arsenal = null) =>

@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "schemaId": "shooter.armory.v1",
+  "primary": "weapons/m16",
+  "sidearm": "weapons/g17",
+  "sights": {
+    "weapons/m16": "Red Dot"
+  }
+}

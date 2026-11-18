@@ -34,6 +34,15 @@
       -12,
       -5
     ],
+    "sights": {
+      "default": "scope8",
+      "allowed": [
+        "irons",
+        "collimator",
+        "scope2",
+        "scope8"
+      ]
+    },
     "optic": "ScopedPip",
     "adsFovDegrees": 10,
     "cycleTravelMeters": 0.09,

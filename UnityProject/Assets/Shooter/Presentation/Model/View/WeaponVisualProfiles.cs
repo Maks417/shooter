@@ -11,7 +11,9 @@ namespace Shooter.Presentation.View
     {
         None = 0,
         ScopedPip = 1,
-        Irons = 2
+        Irons = 2,
+        /// <summary>ADR-107 1x red-dot collimator: the gun stays in view and a lit dot marks the aim point.</summary>
+        Collimator = 3
     }
 
     /// <summary>
@@ -138,6 +140,13 @@ namespace Shooter.Presentation.View
             MuzzleFlashScale = muzzleFlashScale;
             MuzzleFlashSideJets = muzzleFlashSideJets;
         }
+
+        /// <summary>ADR-107: the same gun presenting through a different mounted sight (optic mode and ADS field of view).</summary>
+        public WeaponVisualProfile WithOptic(WeaponOpticMode opticMode, float adsFovDegrees) =>
+            new WeaponVisualProfile(DefinitionId, Family, MeshAssetKey, opticMode, HasMagazineCycle, ShotVoice, KillFeedGlyph,
+                NearFieldScale, NearFieldHipBias, HipRotationDegrees, CycleTravelMeters, DisplayLabel, MuzzleFx,
+                RecoilPitchDegrees, RecoilYawHalfDegrees, EquipTicks, FireIntervalTicks, ReloadTicks, FuseTicks, AdsSeconds,
+                HandlingStyle, adsFovDegrees, MuzzleFlashScale, MuzzleFlashSideJets);
 
         /// <summary>Pool variant byte carrying the flash size in hundredths (10..250); 0 means no flash.</summary>
         public byte MuzzleFlashVariant => MuzzleFx == "none" || MuzzleFlashScale <= 0f ? (byte)0

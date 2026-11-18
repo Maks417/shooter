@@ -80,6 +80,13 @@ namespace Shooter.Generation.Environment
             foreach (var source in WeaponMeshCatalog.All)
             {
                 keys.Add(source.MeshKey);
+                if (source.IsSight)
+                {
+                    var sight = WeaponSights.BuildLods(source.MountKind!, source.Sight!);
+                    for (int lod = 0; lod < WeaponMeshCatalog.LodCount; lod++)
+                        Add(dependencies, WeaponMeshCatalog.LodPath(source.MeshKey, lod), sight[lod], source.Fingerprint, toolchainHash);
+                    continue;
+                }
                 if (source.IsProp)
                 {
                     for (int lod = 0; lod < WeaponMeshCatalog.LodCount; lod++)
@@ -102,6 +109,7 @@ namespace Shooter.Generation.Environment
                 ["toolchainHash"] = toolchainHash.ToString(),
                 ["gunGenerator"] = WeaponRecipe.GeneratorId + "." + WeaponRecipe.GeneratorVersion,
                 ["propGenerator"] = WeaponMeshCatalog.PropGeneratorId + "." + WeaponMeshCatalog.PropGeneratorVersion,
+                ["sightGenerator"] = WeaponSights.GeneratorId + "." + WeaponSights.GeneratorVersion,
                 ["meshKeys"] = keys,
                 ["dependencies"] = rows
             });

@@ -22,6 +22,8 @@ public sealed class IconAtlasTests
         var list = new List<WeaponSilhouetteSource>();
         foreach (var source in WeaponMeshCatalog.All)
         {
+            // ADR-107 sight meshes are parts of a gun icon, never icons of their own.
+            if (source.IsSight) continue;
             MeshData[] meshes;
             if (source.Recipe != null)
             {

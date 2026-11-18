@@ -13,6 +13,8 @@ namespace Shooter.Presentation.Menus
         Settings = 6,
         ConfirmLeave = 7,
         ConfirmRestart = 8,
-        ContentRecovery = 9
+        ContentRecovery = 9,
+        /// <summary>ADR-107 Armory: choose the primary, its sight and the sidearm taken into every match.</summary>
+        Armory = 10
     }
 }

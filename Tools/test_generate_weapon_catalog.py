@@ -58,7 +58,7 @@ class GeneratorTests(unittest.TestCase):
 
     def test_write_then_check_is_clean_and_deterministic(self):
         written = gen.run(self.repo.root, check=False)
-        self.assertEqual(6, len(written))
+        self.assertEqual(10, len(written))  # five generated catalogs (ADR-107 adds the two sight files) and their .meta
         self.assertEqual([], gen.run(self.repo.root, check=True))
         first = (self.repo.root / gen.CATALOG_OUT).read_bytes()
         gen.run(self.repo.root, check=False)
@@ -73,7 +73,7 @@ class GeneratorTests(unittest.TestCase):
     def test_new_weapon_is_one_file(self):
         doc = json.loads(self.repo.path("rifle.weapon.json").read_text(encoding="utf-8"))
         doc["id"] = "weapons/dmr"
-        doc["order"] = 9
+        doc["order"] = 20
         doc["displayLabel"] = "DMR"
         doc["combat"]["fireMode"] = "SemiAutomatic"
         self.repo.write_raw("dmr.weapon.json", json.dumps(doc, indent=2) + "\n")
@@ -152,7 +152,7 @@ class GeneratorTests(unittest.TestCase):
 
     def test_new_weapon_can_reuse_existing_geometry(self):
         doc = json.loads(self.repo.path("rifle-carbine.weapon.json").read_text(encoding="utf-8"))
-        doc.update(id="weapons/smg", order=9, displayLabel="SMG")
+        doc.update(id="weapons/smg", order=20, displayLabel="SMG")
         self.repo.write_raw("smg.weapon.json", json.dumps(doc, indent=2) + "\n")
         gen.run(self.repo.root, check=False)
         meshes = (self.repo.root / gen.MESHES_OUT).read_text(encoding="utf-8")
@@ -169,7 +169,7 @@ class GeneratorTests(unittest.TestCase):
 
     def test_inline_geometry_parts_make_a_new_shape_from_one_file(self):
         doc = json.loads(self.repo.path("rifle-carbine.weapon.json").read_text(encoding="utf-8"))
-        doc.update(id="weapons/pdw", order=9, displayLabel="PDW")
+        doc.update(id="weapons/pdw", order=20, displayLabel="PDW")
         del doc["visual"]["geometryRecipe"]
         doc["visual"]["meshKey"] = "pdw"
         doc["visual"]["optic"] = "Irons"

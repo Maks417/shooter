@@ -357,7 +357,7 @@ namespace Shooter.Game.Settings
             sb.Append('"');
         }
 
-        private static bool TryParseObject(string text, out Dictionary<string, object?> obj, out string diagnostic)
+        internal static bool TryParseObject(string text, out Dictionary<string, object?> obj, out string diagnostic)
         {
             obj = new Dictionary<string, object?>(StringComparer.Ordinal);
             diagnostic = "ok";

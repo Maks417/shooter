@@ -24,11 +24,14 @@ namespace Shooter.Simulation.Combat
         public Float3 Position { get; }
         public uint DroppedActiveTick { get; }
         public uint ExpiresActiveTick { get; }
+        /// <summary>ADR-107: the sight mounted on the dropped gun; a pickup keeps it.</summary>
+        public DefinitionId SightId { get; }
 
-        public DroppedWeapon(int id, DefinitionId definitionId, ushort magazine, ushort reserve, Float3 position, uint droppedActiveTick, uint expiresActiveTick)
+        public DroppedWeapon(int id, DefinitionId definitionId, ushort magazine, ushort reserve, Float3 position, uint droppedActiveTick, uint expiresActiveTick,
+            DefinitionId sightId = default)
         {
             Id = id; DefinitionId = definitionId; Magazine = magazine; Reserve = reserve; Position = position;
-            DroppedActiveTick = droppedActiveTick; ExpiresActiveTick = expiresActiveTick;
+            DroppedActiveTick = droppedActiveTick; ExpiresActiveTick = expiresActiveTick; SightId = sightId;
         }
 
         public bool IsValid => DefinitionId.IsValid;
@@ -70,13 +73,14 @@ namespace Shooter.Simulation.Combat
         /// Drops a primary at <paramref name="position"/>. Only primaries are accepted; empty guns are not dropped.
         /// When the field is full the entry closest to expiry is replaced. Returns false when nothing was dropped.
         /// </summary>
-        public bool Drop(DefinitionId definitionId, ushort magazine, ushort reserve, Float3 position, uint activeTick)
+        public bool Drop(DefinitionId definitionId, ushort magazine, ushort reserve, Float3 position, uint activeTick,
+            DefinitionId sightId = default)
         {
             if (!definitionId.IsValid) return false;
             if (!WeaponCatalog.TryGet(definitionId, out var entry) || entry.Family != WeaponFamily.PrimaryGun) return false;
             if (magazine == 0 && reserve == 0) return false;
             var weapon = new DroppedWeapon(nextId++, definitionId, magazine, reserve, position, activeTick,
-                unchecked(activeTick + LifetimeActiveTicks));
+                unchecked(activeTick + LifetimeActiveTicks), SightCatalog.Resolve(definitionId, sightId));
             if (count < Capacity)
             {
                 entries[count++] = weapon;

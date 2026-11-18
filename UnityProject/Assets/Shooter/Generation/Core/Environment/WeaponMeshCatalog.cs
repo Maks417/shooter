@@ -12,24 +12,50 @@ namespace Shooter.Generation.Environment
     /// </summary>
     public sealed class WeaponMeshSource
     {
-        private WeaponMeshSource(string meshKey, WeaponRecipe? recipe)
+        private WeaponMeshSource(string meshKey, WeaponRecipe? recipe, string? sight = null, string? mountKind = null)
         {
             if (string.IsNullOrEmpty(meshKey)) throw new ArgumentException("Mesh key required.", nameof(meshKey));
             MeshKey = meshKey;
             Recipe = recipe;
+            Sight = sight;
+            MountKind = mountKind;
         }
 
         public string MeshKey { get; }
 
-        /// <summary>Gun recipe; null for a built-in loadout prop.</summary>
+        /// <summary>Gun recipe; null for a built-in loadout prop or a mounted sight.</summary>
         public WeaponRecipe? Recipe { get; }
 
-        public bool IsProp => Recipe == null;
+        /// <summary>ADR-107 rail-mounted sight name (<c>collimator</c>, <c>scope2</c>…); null for guns and props.</summary>
+        public string? Sight { get; }
+
+        /// <summary>ADR-107 archetype whose rail the sight is built for; null for guns and props.</summary>
+        public string? MountKind { get; }
+
+        public bool IsSight => Sight != null;
+        public bool IsProp => Recipe == null && !IsSight;
         public bool HasMagazineCycle => Recipe != null;
 
         /// <summary>SGAF generator fingerprint the package stores this source's meshes under.</summary>
-        public ContentId Fingerprint => IsProp ? WeaponMeshCatalog.PropFingerprint
+        public ContentId Fingerprint => IsSight ? WeaponMeshCatalog.SightFingerprint
+            : IsProp ? WeaponMeshCatalog.PropFingerprint
             : GeneratorFingerprint.Compute(WeaponRecipe.GeneratorId, Recipe!.Version);
+
+        /// <summary>ADR-107: a sight mesh set keyed <c>sight-&lt;sight&gt;-&lt;kind&gt;</c>, built in that gun's weapon space.</summary>
+        internal static WeaponMeshSource MountedSight(string sight, string mountKind)
+        {
+            if (!WeaponSights.IsSight(sight)) throw new ArgumentOutOfRangeException(nameof(sight), sight, "Unknown mounted sight.");
+            if (!WeaponSights.IsMountKind(mountKind) || !WeaponSights.HasMesh(mountKind, sight))
+                throw new ArgumentOutOfRangeException(nameof(mountKind), mountKind, "Sight has no mesh on this archetype.");
+            return new WeaponMeshSource(WeaponSights.MeshKey(sight, mountKind), null, sight, mountKind);
+        }
+
+        /// <summary>Compile-time sight geometry (package builder, editor, tests); shipping players load packaged bytes.</summary>
+        public MeshData BuildSightLod(int lod)
+        {
+            if (!IsSight) throw new InvalidOperationException("Not a sight mesh source: " + MeshKey);
+            return WeaponSights.BuildLods(MountKind!, Sight!)[lod];
+        }
 
         internal static WeaponMeshSource FromRecipe(string meshKey, string recipeJson) =>
             new WeaponMeshSource(meshKey, WeaponRecipe.Parse(Encoding.ASCII.GetBytes(recipeJson)));
@@ -65,6 +91,7 @@ namespace Shooter.Generation.Environment
 
         public static ContentId GunFingerprint => GeneratorFingerprint.Compute(WeaponRecipe.GeneratorId, WeaponRecipe.GeneratorVersion);
         public static ContentId PropFingerprint => GeneratorFingerprint.Compute(PropGeneratorId, PropGeneratorVersion);
+        public static ContentId SightFingerprint => GeneratorFingerprint.Compute(WeaponSights.GeneratorId, WeaponSights.GeneratorVersion);
 
         public static IReadOnlyList<WeaponMeshSource> All => Sources;
 

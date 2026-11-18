@@ -22,6 +22,20 @@ namespace Shooter.Presentation.Menus
 
         public void OpenSetup() => Screen = ShellScreen.Setup;
 
+        /// <summary>ADR-107: the Armory opens from the main menu or match setup and returns there.</summary>
+        public ShellScreen ArmoryReturn { get; private set; } = ShellScreen.Main;
+
+        public void OpenArmory()
+        {
+            ArmoryReturn = Screen == ShellScreen.Setup ? ShellScreen.Setup : ShellScreen.Main;
+            Screen = ShellScreen.Armory;
+        }
+
+        public void CloseArmory()
+        {
+            if (Screen == ShellScreen.Armory) Screen = ArmoryReturn;
+        }
+
         public void BeginLoading(string phaseText)
         {
             Screen = ShellScreen.Loading;

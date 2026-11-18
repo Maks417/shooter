@@ -66,6 +66,8 @@ namespace Shooter.Generation
         private static (float y, float z) SightEye(string kind, ArsenalParts parts)
         {
             var rail = Rail(kind);
+            // ADR-107: a bare 1.4.0 body's own line of sight is its iron sights; mounted sights move it per loadout.
+            if (parts.Optic == "mount") { var irons = MountedSightEye(kind, "irons"); return (irons.Y, irons.Z); }
             if (parts.Optic == "scope2") return (rail.y + .035f, rail.z - .085f);
             if (parts.Optic == "scope4") return (rail.y + (kind == "dmr" ? .039f : .036f), rail.z - .19f);
             if (parts.Optic == "scope8") return (rail.y + .055f, rail.z - .21f);
@@ -77,6 +79,57 @@ namespace Shooter.Generation
                 "pistol-eagle" => (.124f, -.07f),
                 _ => (.12f, -.04f)
             };
+        }
+
+        /// <summary>ADR-107 rail-mounted sights, in loadout order.</summary>
+        public static readonly string[] MountedSights = { "irons", "collimator", "scope2", "scope4", "scope8" };
+
+        /// <summary>Long-gun archetypes that accept a rail-mounted sight (ADR-107).</summary>
+        public static bool IsMountKind(string kind) => kind == "ak" || kind == "ar" || kind == "dmr" || kind == "bolt";
+
+        /// <summary>
+        /// ADR-107 sight rail (y top, z centre). AR, DMR and bolt guns use their own top rail; the AK carries a
+        /// dust-cover rail adapter that ends ahead of its rear sight leaf.
+        /// </summary>
+        internal static (float y, float z) MountRail(string kind) => kind == "ak" ? (.123f, .05f) : Rail(kind);
+
+        /// <summary>Whether <paramref name="sight"/> needs its own mesh on <paramref name="kind"/> (AK irons are part of the body).</summary>
+        public static bool SightHasMesh(string kind, string sight) => !(kind == "ak" && sight == "irons");
+
+        /// <summary>
+        /// ADR-107 line of sight (weapon space) through <paramref name="sight"/> mounted on a 1.4.0 <paramref name="kind"/> body.
+        /// The AR scope2 eye equals the 1.3.0 M16 sight-eye socket, so its ADS alignment is unchanged.
+        /// </summary>
+        public static Float3 MountedSightEye(string kind, string sight)
+        {
+            if (!IsMountKind(kind)) throw new ArgumentException("Kind takes no mounted sight: " + kind, nameof(kind));
+            var rail = MountRail(kind);
+            (float y, float z) eye = sight switch
+            {
+                "irons" => kind switch
+                {
+                    "ak" => (.118f, -.03f),
+                    "ar" => (.131f, -.05f),
+                    "dmr" => (rail.y + .018f, -.05f),
+                    _ => (.1115f + .018f, -.06f)
+                },
+                "collimator" => (rail.y + CollimatorEyeHeight, rail.z - .02f),
+                "scope2" => (rail.y + .035f, rail.z - .085f),
+                "scope4" => (rail.y + (kind == "dmr" ? .039f : .036f), rail.z - .19f),
+                "scope8" => (rail.y + .055f, rail.z - .21f),
+                _ => throw new ArgumentException("Unknown mounted sight: " + sight, nameof(sight))
+            };
+            return new Float3(0, Mm(eye.y) / 1000f, Mm(eye.z) / 1000f);
+        }
+
+        /// <summary>Collimator dot height above its rail (metres).</summary>
+        internal const float CollimatorEyeHeight = .032f;
+
+        /// <summary>Construction envelope of a mounted sight: the gun's own width and length, taller for scopes.</summary>
+        public static Aabb SightBoundsFor(string kind)
+        {
+            var gun = BoundsFor(kind, new ArsenalParts(kind, ArsenalParts.BarrelRange(kind).max, "black", "none", "mount", kind == "ak" ? "wood" : "fixed"));
+            return new Aabb(gun.Min, new Float3(gun.Max.X, .27f, gun.Max.Z));
         }
 
         public static WeaponSocket[] Sockets(string kind, ArsenalParts parts)

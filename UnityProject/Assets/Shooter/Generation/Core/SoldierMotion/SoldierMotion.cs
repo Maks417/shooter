@@ -219,7 +219,10 @@ namespace Shooter.Generation
         }
         private static readonly Float3 EyeOffset=new Float3(.035f,-.005f,.103f);
 
-        public void SetVisualWeapon(WeaponRecipe recipe)
+        public void SetVisualWeapon(WeaponRecipe recipe) => SetVisualWeapon(recipe, null);
+
+        /// <summary>ADR-107: as above, with the line of sight of a rail-mounted sight replacing the body's own sight-eye.</summary>
+        public void SetVisualWeapon(WeaponRecipe recipe, Float3? sightEye)
         {
             foreach(var socket in WeaponGeometry.Sockets(recipe))
             {
@@ -229,6 +232,7 @@ namespace Shooter.Generation
                 else if(socket.Id=="shoulder")stock=socket.Position;
                 else if(socket.Id=="sight-eye")sight=socket.Position;
             }
+            if(sightEye.HasValue)sight=sightEye.Value;
             upperCacheValid=false;
         }
         private void AlignHeadToSight(SoldierMotionInput input)

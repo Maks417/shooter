@@ -61,7 +61,28 @@ namespace Shooter.Presentation.Menus
         public const string TeamDeathmatch = "TEAM DEATHMATCH";
 
         public const string Play = "PLAY";
+        public const string Armory = "ARMORY";
         public const string Settings = "SETTINGS";
+
+        // ADR-107 Armory page.
+        public const string ArmoryEyebrow = "LOADOUT";
+        public const string ArmoryTitle = "Armory";
+        public const string ArmoryHint = "Your picks are saved and used every life. Bots draw random weapons and sights.";
+        public const string ArmorySlotPrimary = "PRIMARY";
+        public const string ArmorySlotSidearm = "SIDEARM";
+        public const string ArmorySlotKnife = "KNIFE";
+        public const string ArmorySlotGrenade = "GRENADE";
+        public const string ArmoryFixed = "STANDARD ISSUE";
+        public const string ArmoryWeapons = "WEAPONS";
+        public const string ArmorySights = "SIGHT";
+        public const string ArmorySidearmSights = "Sidearms use their own iron sights.";
+        public const string ArmoryEquipped = "EQUIPPED";
+        public const string ArmoryLoadout = "LOADOUT";
+        public const string ArmorySaveFailed = "Armory could not be saved; picks apply to this session only.";
+
+        /// <summary>One-line loadout summary: "M16A4 · COLLIMATOR / G17".</summary>
+        public static string ArmorySummary(string primary, string sight, string sidearm) =>
+            string.IsNullOrEmpty(sight) ? primary + " / " + sidearm : primary + " · " + sight + " / " + sidearm;
         public const string Quit = "QUIT";
         public const string Resume = "RESUME";
         public const string RestartMatch = "RESTART MATCH";

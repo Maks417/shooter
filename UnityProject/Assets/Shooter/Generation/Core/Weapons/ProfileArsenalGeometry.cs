@@ -31,6 +31,28 @@ namespace Shooter.Generation
             return new WeaponBuild(lods, magazine, cycle, ArsenalGeometry.Collision(kind, parts), bounds, ArsenalGeometry.Sockets(kind, parts));
         }
 
+        /// <summary>
+        /// ADR-107: LOD0..3 of <paramref name="sight"/> built on <paramref name="kind"/>'s sight rail, in that gun's weapon
+        /// space (the mesh parents to the gun at its origin). The scope bodies are the 1.3.0 optic constructions unchanged.
+        /// </summary>
+        public static MeshData[] BuildSight(string kind, string sight)
+        {
+            if (!ArsenalGeometry.IsMountKind(kind)) throw new ArgumentException("Kind takes no mounted sight: " + kind, nameof(kind));
+            if (Array.IndexOf(ArsenalGeometry.MountedSights, sight) < 0) throw new ArgumentException("Unknown mounted sight: " + sight, nameof(sight));
+            if (!ArsenalGeometry.SightHasMesh(kind, sight)) throw new ArgumentException("The " + kind + " irons are part of the body.", nameof(sight));
+            var parts = new ArsenalParts(kind, ArsenalParts.BarrelRange(kind).min, "black", "none", "mount", kind == "ak" ? "wood" : "fixed");
+            var bounds = ArsenalGeometry.SightBoundsFor(kind);
+            var lods = new MeshData[4];
+            for (int i = 0; i < 4; i++)
+            {
+                lods[i] = new Builder(kind, parts, i).Sight(sight);
+                foreach (var p in lods[i].Positions)
+                    if (p.X < bounds.Min.X || p.X > bounds.Max.X || p.Y < bounds.Min.Y || p.Y > bounds.Max.Y || p.Z < bounds.Min.Z || p.Z > bounds.Max.Z)
+                        throw new InvalidOperationException("Mounted sight escaped its declared envelope (" + sight + " on " + kind + ").");
+            }
+            return lods;
+        }
+
         private static readonly Quat ZToY = new Quat(-.70710677f, 0, 0, .70710677f);
         private static readonly Quat ZToX = new Quat(0, .70710677f, 0, .70710677f);
 
@@ -208,9 +230,11 @@ namespace Shooter.Generation
                 }
             }
 
-            private void Optic(float railY, float railZ)
+            private void Optic(float railY, float railZ) => Optic(p.Optic, railY, railZ);
+
+            private void Optic(string optic, float railY, float railZ)
             {
-                switch (p.Optic)
+                switch (optic)
                 {
                     case "scope2":
                     {
@@ -272,6 +296,87 @@ namespace Shooter.Generation
                 float step = fine ? pitch : pitch * 2;
                 for (float z = z0; z + .0052f <= z1; z += step)
                     Slab(metal, 0, width, .0006f, z, top - .0005f, .0007f, z + .0052f, top - .0005f, .0007f, z + .0052f, top + .0050f, .0009f, z, top + .0050f, .0009f);
+            }
+
+            // ------------------------------------------------------------ ADR-107 mounted sights
+
+            public MeshData Sight(string sight)
+            {
+                var rail = ArsenalGeometry.MountRail(kind);
+                if (kind == "ak" && sight != "irons") AkRailAdapter(rail.y);
+                switch (sight)
+                {
+                    case "irons":
+                        if (kind == "ar")
+                        {
+                            // The 1.3.0 AR rear-sight block, now a rail part.
+                            Slab(metal, 0, .022f, .002f, -.026f, .111f, .003f, .006f, .111f, .003f, .004f, .136f, .004f, -.024f, .136f, .004f);
+                            if (detail) Plate(Recess, 0, .023f, -.015f, -.009f, .128f, .132f, .0015f);
+                        }
+                        else if (kind == "dmr") BackUpIrons(rail.y, -.05f, .33f);
+                        else BackUpIrons(.1115f, -.06f, .15f);
+                        break;
+                    case "collimator":
+                        Collimator(rail.y, rail.z - .02f);
+                        break;
+                    default:
+                        Optic(sight, rail.y, rail.z);
+                        break;
+                }
+                return a.Build();
+            }
+
+            /// <summary>Dust-cover rail adapter: a low railed plate clamped on the AK top cover ahead of the rear sight leaf.</summary>
+            private void AkRailAdapter(float top)
+            {
+                Slab(metal, 0, .026f, .002f, -.045f, .1085f, .003f, .165f, .1085f, .003f, .165f, top - .005f, .002f, -.045f, top - .005f, .002f);
+                Slab(metal, 0, .020f, .0015f, -.040f, top - .006f, .0016f, .160f, top - .006f, .0016f, .160f, top, .0016f, -.040f, top, .0016f);
+                RailTeeth(-.036f, .156f, top - .0005f, .019f, .010f);
+                if (detail)
+                    for (int side = -1; side <= 1; side += 2)
+                        Plate(Steel, side * .0136f, .0016f, .055f, .075f, .1080f, .1150f, .0015f);
+            }
+
+            /// <summary>
+            /// Open-tube red-dot collimator on a low clamp: a short housing with an objective hood, tinted glass at both
+            /// ends, a brightness turret and a battery cap. The dot sits <see cref="ArsenalGeometry.CollimatorEyeHeight"/>
+            /// above the rail.
+            /// </summary>
+            private void Collimator(float railY, float railZ)
+            {
+                float cy = railY + ArsenalGeometry.CollimatorEyeHeight, rear = railZ - .028f, front = railZ + .034f;
+                // Clamp and riser.
+                Slab(metal, 0, .028f, .002f, rear + .006f, railY + .001f, .002f, front - .004f, railY + .001f, .002f, front - .006f, cy - .013f, .004f, rear + .008f, cy - .013f, .004f);
+                // Housing: a turned tube with a flared objective hood.
+                Turn(metal, 0, cy, radial, .0150f, rear, .0170f, rear + .003f, .0170f, front - .014f, .0185f, front - .006f, .0188f, front,
+                    .0170f, front, .0170f, front - .004f);
+                // Tinted objective and ocular glass, just proud of their housings.
+                Turn(Recess, 0, cy, radial, .0164f, front - .0042f, .0164f, front - .0034f);
+                Turn(Recess, 0, cy, radial, .0136f, rear - .0006f, .0136f, rear + .0004f);
+                if (detail)
+                {
+                    // Brightness turret on the right and a battery cap on the left.
+                    TurnAbout(metal, new Float3(0, cy, railZ - .004f), ZToX, radial, .0080f, .010f, .0080f, .0225f, .0068f, .0245f);
+                    if (fine)
+                        for (int i = 0; i < 6; i++)
+                            Strip(Recess, cy, .0182f, 60 * i + 30, front - .013f, front - .008f, .0012f, .0006f);
+                    Plate(Steel, -.0150f, .0020f, rear + .010f, rear + .024f, railY + .004f, railY + .011f, .0015f);
+                }
+            }
+
+            /// <summary>Flip-up rear aperture and front post pair on the top rail (DMR and bolt-action irons).</summary>
+            private void BackUpIrons(float railTop, float rearZ, float frontZ)
+            {
+                float line = railTop + .018f;
+                // Rear: clamp, upright and an aperture ring.
+                Slab(metal, 0, .022f, .002f, rearZ - .012f, railTop, .002f, rearZ + .014f, railTop, .002f, rearZ + .014f, railTop + .006f, .002f, rearZ - .012f, railTop + .006f, .002f);
+                Slab(metal, 0, .016f, .0015f, rearZ - .004f, railTop + .005f, .002f, rearZ + .004f, railTop + .005f, .002f, rearZ + .003f, line + .006f, .002f, rearZ - .003f, line + .006f, .002f);
+                TurnAbout(Steel, new Float3(0, line, rearZ), Quat.Identity, Math.Max(10, radial / 2), .0050f, -.0025f, .0050f, .0025f);
+                // Front: clamp, protective ears and the post.
+                Slab(metal, 0, .020f, .002f, frontZ - .012f, railTop, .002f, frontZ + .012f, railTop, .002f, frontZ + .012f, railTop + .006f, .002f, frontZ - .012f, railTop + .006f, .002f);
+                for (int side = -1; side <= 1; side += 2)
+                    Slab(metal, side * .0060f, .0025f, .0006f, frontZ - .005f, railTop + .005f, .0015f, frontZ + .005f, railTop + .005f, .0015f, frontZ + .004f, line + .004f, .0015f, frontZ - .004f, line + .004f, .0015f);
+                Slab(Steel, 0, .0022f, .0005f, frontZ - .0015f, railTop + .005f, .0006f, frontZ + .0015f, railTop + .005f, .0006f, frontZ + .0010f, line, .0006f, frontZ - .0010f, line, .0006f);
             }
 
             // ------------------------------------------------------------ dispatch

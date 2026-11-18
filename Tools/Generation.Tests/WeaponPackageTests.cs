@@ -34,7 +34,12 @@ public sealed class WeaponPackageTests : IDisposable
             Assert.Equal(source.HasMagazineCycle, WeaponMeshCatalog.MagazinePath(source.MeshKey) != null);
         }
         Assert.Equal(new[] { "rifle", "rifle-carbine", "pistol", "knife", "grenade", "ak47", "ak102", "m16", "mk14", "mtac338", "g17", "golden-eagle" },
-            WeaponMeshCatalog.All.Select(s => s.MeshKey));
+            WeaponMeshCatalog.All.Where(s => !s.IsSight).Select(s => s.MeshKey));
+        // ADR-107: rail-mounted sights follow the guns, one mesh set per (sight, archetype) any gun allows.
+        Assert.Equal(new[] { "sight-collimator-ak", "sight-scope2-ak", "sight-irons-ar", "sight-collimator-ar", "sight-scope2-ar",
+                "sight-irons-dmr", "sight-collimator-dmr", "sight-scope2-dmr", "sight-scope4-dmr",
+                "sight-irons-bolt", "sight-collimator-bolt", "sight-scope2-bolt", "sight-scope8-bolt" },
+            WeaponMeshCatalog.All.Where(s => s.IsSight).Select(s => s.MeshKey));
         Assert.Equal("mesh-rifle-carbine-lod2.bin", WeaponMeshCatalog.LodPath("rifle-carbine", 2));
     }
 
@@ -42,7 +47,13 @@ public sealed class WeaponPackageTests : IDisposable
     public void GunMeshesAreByteIdenticalToTheirGeometryWeaponRecipes()
     {
         var bytes = WeaponPackage.Build(toolchain).Dependencies.ToDictionary(d => d.Path, d => d.Bytes);
-        foreach (var source in WeaponMeshCatalog.All.Where(s => !s.IsProp))
+        foreach (var source in WeaponMeshCatalog.All.Where(s => s.IsSight))
+        {
+            byte[] sight = ArtifactCodec.Encode(ContentKind.Mesh, GeometryCodec.EncodeMesh(WeaponSights.BuildLods(source.MountKind!, source.Sight!)[0]),
+                WeaponMeshCatalog.SightFingerprint, toolchain);
+            Assert.Equal(sight, bytes[WeaponMeshCatalog.LodPath(source.MeshKey, 0)]);
+        }
+        foreach (var source in WeaponMeshCatalog.All.Where(s => s.Recipe != null))
         {
             var gun = WeaponGeometry.Build(source.Recipe!);
             // Meshes carry their recipe's own generator version (ADR-082; 1.2.0 arsenal recipes under ADR-102).

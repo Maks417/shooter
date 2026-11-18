@@ -1,11 +1,14 @@
 """Generate the frozen in-process weapon catalogs from Content/Weapons/*.weapon.json (ADR-077).
 
 One definition file per weapon holds its combat stats, visual/handling profile, audio voice and kill-feed glyph.
-This script validates every file and writes three C# partial classes:
+This script validates every file and writes five C# partial classes:
 
   UnityProject/Assets/Shooter/Simulation/Combat/WeaponCatalog.g.cs              (combat rows, Simulation)
+  UnityProject/Assets/Shooter/Simulation/Combat/SightCatalog.g.cs               (ADR-107 sight options, Simulation)
   UnityProject/Assets/Shooter/Presentation/Model/View/WeaponVisualProfiles.g.cs (presentation rows)
-  UnityProject/Assets/Shooter/Generation/Core/Environment/WeaponMeshCatalog.g.cs (meshes for the weapon package, ADR-078)
+  UnityProject/Assets/Shooter/Presentation/Model/View/WeaponSightChoices.g.cs   (ADR-107 sight options, presentation)
+  UnityProject/Assets/Shooter/Generation/Core/Environment/WeaponMeshCatalog.g.cs (meshes for the weapon package, ADR-078;
+                                                                                  ADR-107 rail-mounted sight meshes)
 
 The catalogs stay compiled C# (ADR-072 forbids runtime JSON combat tables). Numbers are emitted with the exact
 literal text from the JSON file, so the generated expressions are bit-identical to hand-written ones.
@@ -26,10 +29,18 @@ ASSETS = Path("UnityProject/Assets/Shooter")
 CATALOG_OUT = ASSETS / "Simulation/Combat/WeaponCatalog.g.cs"
 PROFILES_OUT = ASSETS / "Presentation/Model/View/WeaponVisualProfiles.g.cs"
 MESHES_OUT = ASSETS / "Generation/Core/Environment/WeaponMeshCatalog.g.cs"
+SIGHTS_OUT = ASSETS / "Simulation/Combat/SightCatalog.g.cs"
+SIGHT_CHOICES_OUT = ASSETS / "Presentation/Model/View/WeaponSightChoices.g.cs"
 FEATURE_RECIPES = ASSETS / "Generation/FeatureRecipes"
 SCHEMA_ID = "shooter.weapon.v1"
 # Mesh keys built by LoadoutPropGeometry instead of a geometry.weapon recipe (no magazine or cycle part).
 PROP_MESH_KEYS = {"knife", "grenade"}
+# ADR-107 rail-mounted sights (loadout order) and the optic mode each one presents with.
+SIGHT_OPTICS = {"irons": "Irons", "collimator": "Collimator", "scope2": "ScopedPip", "scope4": "ScopedPip", "scope8": "ScopedPip"}
+SIGHT_ORDER = ["irons", "collimator", "scope2", "scope4", "scope8"]
+# geometry.weapon 1.4.0 bare-rail bodies take a separate sight; these archetypes have a rail.
+MOUNT_VERSION = "1.4.0"
+MOUNT_KINDS = {"ak", "ar", "dmr", "bolt"}
 
 # Enum names are read from the C# sources so the generator can never drift from the code it feeds.
 ENUM_SOURCES = {
@@ -54,7 +65,9 @@ VISUAL_REQUIRED = ["meshKey", "optic", "magazineCycle", "nearFieldScale", "nearF
                    "cycleTravelMeters"]
 VISUAL_OPTIONAL = {"geometryRecipe", "geometryParts", "muzzleFx", "adsSeconds",
                    # ADR-102: handling choreography, magnified-optic FOV and muzzle flash size.
-                   "handlingStyle", "adsFovDegrees", "muzzleFlashScale", "muzzleFlashSideJets"}
+                   "handlingStyle", "adsFovDegrees", "muzzleFlashScale", "muzzleFlashSideJets",
+                   # ADR-107: rail-mounted sight choices {"default": name, "allowed": [names]}.
+                   "sights"}
 # ADR-082 geometry.weapon 1.1.0 numeric rifle parts (millimetres or counts).
 GEOMETRY_PART_NUMBERS = ["handguardFrontMm", "barrelFrontMm", "topRailTeeth", "gasBlockZMm", "gasTubeZMm",
                          "gasTubeLengthMm", "frontSightZMm"]
@@ -230,6 +243,7 @@ def validate(root: Path, path: Path, doc, enums) -> dict:
     if muzzle_fx not in {"none", "rifle", "pistol", "carbine"}:
         raise DefinitionError(v + "muzzleFx: unknown profile")
     recipe_source = None
+    recipe_version = recipe_kind = None
     if "geometryRecipe" in visual and "geometryParts" in visual:
         raise DefinitionError(v + "use geometryRecipe or geometryParts, not both")
     if "geometryParts" in visual:
@@ -269,6 +283,32 @@ def validate(root: Path, path: Path, doc, enums) -> dict:
         if recipe.get("generatorId") != "geometry.weapon":
             raise DefinitionError(v + "geometryRecipe: " + recipe_name + " is not a geometry.weapon recipe")
         recipe_source = json.dumps(recipe, separators=(",", ":"), ensure_ascii=True)
+        recipe_version = recipe.get("generatorVersion")
+        recipe_kind = recipe.get("parameters", {}).get("kind")
+
+    sights = None
+    mounted = "geometryRecipe" in visual and recipe_version == MOUNT_VERSION and recipe_kind in MOUNT_KINDS
+    if "sights" in visual:
+        if not mounted or family != "PrimaryGun":
+            raise DefinitionError(v + "sights: only primary guns built from a geometry.weapon " + MOUNT_VERSION
+                                  + " rail recipe take mounted sights")
+        spec = visual["sights"]
+        keys(spec, v + "sights", ["default", "allowed"])
+        allowed = spec["allowed"]
+        if not isinstance(allowed, list) or not allowed:
+            raise DefinitionError(v + "sights.allowed: expected a non-empty list")
+        for i, name in enumerate(allowed):
+            choice(name, v + "sights.allowed[" + str(i) + "]", set(SIGHT_OPTICS))
+        if len(set(allowed)) != len(allowed):
+            raise DefinitionError(v + "sights.allowed: duplicate sight")
+        if allowed != sorted(allowed, key=SIGHT_ORDER.index):
+            raise DefinitionError(v + "sights.allowed: list sights in loadout order (" + ", ".join(SIGHT_ORDER) + ")")
+        default = choice(spec["default"], v + "sights.default", set(allowed))
+        if optic != SIGHT_OPTICS[default]:
+            raise DefinitionError(v + "optic: the default sight " + default + " presents as " + SIGHT_OPTICS[default])
+        sights = {"kind": recipe_kind, "default": default, "allowed": list(allowed)}
+    elif mounted:
+        raise DefinitionError(v + "sights: required for a geometry.weapon " + MOUNT_VERSION + " rail recipe")
 
     audio = doc["audio"]
     keys(audio, where + ".audio", ["shot"])
@@ -294,6 +334,7 @@ def validate(root: Path, path: Path, doc, enums) -> dict:
         "shotVoice": choice(audio["shot"], where + ".audio.shot", enums["SynthVoiceKind"]),
         "glyph": glyph,
         "recipeSource": recipe_source,
+        "sights": sights,
     }
 
 
@@ -404,6 +445,37 @@ def render_profiles(weapons) -> str:
             + ",\n".join(rows) + "\n        };\n    }\n}\n")
 
 
+def sight_id(name: str) -> str:
+    return "new DefinitionId(\"sights/" + name + "\")"
+
+
+def render_sight_rows(weapons, row_type) -> str:
+    rows = []
+    for w in weapons:
+        if w["sights"] is None:
+            continue
+        sight = w["sights"]
+        rows.append("            // " + w["source"] + "\n"
+                    "            new " + row_type + "(new DefinitionId(\"" + w["id"] + "\"), \"" + sight["kind"] + "\", "
+                    + sight_id(sight["default"]) + ",\n"
+                    "                new[] { " + ", ".join(sight_id(n) for n in sight["allowed"]) + " })")
+    return ",\n".join(rows)
+
+
+def render_sights(weapons) -> str:
+    return (HEADER + "#nullable enable\nusing Shooter.Contracts;\n\nnamespace Shooter.Simulation.Combat\n{\n"
+            "    public static partial class SightCatalog\n    {\n"
+            "        private static WeaponSightOptions[] CreateGeneratedOptions() => new[]\n        {\n"
+            + render_sight_rows(weapons, "WeaponSightOptions") + "\n        };\n    }\n}\n")
+
+
+def render_sight_choices(weapons) -> str:
+    return (HEADER + "#nullable enable\nusing Shooter.Contracts;\n\nnamespace Shooter.Presentation.View\n{\n"
+            "    public static partial class WeaponSightChoices\n    {\n"
+            "        private static WeaponSightChoice[] CreateGeneratedChoices() => new[]\n        {\n"
+            + render_sight_rows(weapons, "WeaponSightChoice") + "\n        };\n    }\n}\n")
+
+
 def csharp_string(value: str) -> str:
     return '"' + value.replace("\\", "\\\\").replace('"', '\\"') + '"'
 
@@ -421,6 +493,18 @@ def render_meshes(weapons) -> str:
             rows.append("            // " + w["source"] + "\n"
                         "            WeaponMeshSource.FromRecipe(\"" + w["meshKey"] + "\",\n"
                         "                " + csharp_string(w["recipeSource"]) + ")")
+    # ADR-107: one mesh set per (sight, archetype) any gun allows; AK irons are part of the body.
+    for w in weapons:
+        if w["sights"] is None:
+            continue
+        kind = w["sights"]["kind"]
+        for name in w["sights"]["allowed"]:
+            key = "sight-" + name + "-" + kind
+            if (kind == "ak" and name == "irons") or key in seen:
+                continue
+            seen.add(key)
+            rows.append("            // ADR-107 " + name + " on the " + kind + " rail (" + w["source"] + ")\n"
+                        "            WeaponMeshSource.MountedSight(\"" + name + "\", \"" + kind + "\")")
     return (HEADER + "#nullable enable\n\nnamespace Shooter.Generation.Environment\n{\n"
             "    public static partial class WeaponMeshCatalog\n    {\n"
             "        private static WeaponMeshSource[] CreateGeneratedSources() => new[]\n        {\n"
@@ -436,7 +520,8 @@ def outputs(root: Path) -> dict:
     weapons = load(root)
     result = {}
     for relative, text in ((CATALOG_OUT, render_catalog(weapons)), (PROFILES_OUT, render_profiles(weapons)),
-                           (MESHES_OUT, render_meshes(weapons))):
+                           (MESHES_OUT, render_meshes(weapons)), (SIGHTS_OUT, render_sights(weapons)),
+                           (SIGHT_CHOICES_OUT, render_sight_choices(weapons))):
         result[relative] = text
         result[Path(str(relative) + ".meta")] = meta_for(relative)
     return result

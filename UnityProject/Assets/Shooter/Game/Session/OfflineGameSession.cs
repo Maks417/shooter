@@ -26,6 +26,16 @@ namespace Shooter.Game.Session
         /// </summary>
         public bool RandomLoadouts { get; set; } = true;
 
+        /// <summary>
+        /// ADR-107: the human's Armory loadout (primary + sight, sidearm). Every human life spawns with it; bots keep
+        /// drawing random guns and sights. Null keeps the human on the same draw as the bots. Read at load.
+        /// </summary>
+        public PlayerLoadout? HumanLoadout { get; set; }
+
+        /// <summary>ADR-107 shell entry: sets <see cref="HumanLoadout"/> from Armory ids (resolved with per-field fallback).</summary>
+        public void UseArmoryLoadout(DefinitionId primary, DefinitionId primarySight, DefinitionId sidearm) =>
+            HumanLoadout = ArmoryCatalog.Resolve(primary, primarySight, sidearm);
+
         private readonly IMapCatalog catalog;
         private readonly Func<IWorldQueries, INavigation, IMapRuntime> mapFactory;
         private readonly bool allowFakeMapRuntime;
@@ -134,6 +144,13 @@ namespace Shooter.Game.Session
             return true;
         }
 
+        /// <summary>ADR-107: the sight mounted on a live actor's primary (invalid when that gun takes no mounted sight).</summary>
+        public bool TryGetPrimarySight(EntityId entity, out DefinitionId sight)
+        {
+            sight = default;
+            return harness != null && harness.TryGetPrimarySight(entity, out sight);
+        }
+
         /// <summary>ADR-105: monotonic count of the human's successful pickups (presentation plays a cue on change).</summary>
         public int HumanPickupCount { get; private set; }
 
@@ -163,7 +180,8 @@ namespace Shooter.Game.Session
         private DroppedWeaponView ToView(DroppedWeapon weapon)
         {
             uint left = weapon.ExpiresActiveTick > droppedWeaponsActiveTick ? weapon.ExpiresActiveTick - droppedWeaponsActiveTick : 0;
-            return new DroppedWeaponView(weapon.Id, weapon.DefinitionId, weapon.Position, weapon.Magazine, weapon.Reserve, left / (float)GameContractVersion.SimulationHz);
+            return new DroppedWeaponView(weapon.Id, weapon.DefinitionId, weapon.Position, weapon.Magazine, weapon.Reserve, left / (float)GameContractVersion.SimulationHz,
+                weapon.SightId);
         }
 
         /// <summary>
@@ -601,6 +619,9 @@ namespace Shooter.Game.Session
                 }
 
                 var life = new LifeId(1);
+                // ADR-107: pin the Armory loadout before the first life spawns, so respawns reuse it.
+                if (human && lifecycle is HarnessActorLifecycle harnessLifecycle)
+                    harnessLifecycle.PinLoadout(new ParticipantId(participant), HumanLoadout);
                 var entity = lifecycle.SpawnLife(new ParticipantId(participant), life, slot.Position, slot.Yaw, team);
                 string name = human
                     ? "Player"
@@ -853,13 +874,15 @@ namespace Shooter.Game.Session
             if (harness == null || !death.Instigator.IsValid) return;
             if (!harness.TryGetWeapon(death.Target, 0, out var primary) || !primary.IsValid) return;
             if (!harness.TryGetMotorState(death.Target, out var motor)) return;
-            droppedWeapons.Drop(primary.DefinitionId, primary.AmmoInMagazine, primary.Reserve, motor.Feet, activeTick);
+            harness.TryGetPrimarySight(death.Target, out var sight);
+            droppedWeapons.Drop(primary.DefinitionId, primary.AmmoInMagazine, primary.Reserve, motor.Feet, activeTick, sight);
         }
 
         private void TryHumanPickup(uint activeTick)
         {
             if (harness == null || !TryGetHumanPickup(out var dropped, out var kind)) return;
             if (!harness.TryGetWeapon(humanEntity, 0, out var held) || !harness.TryGetMotorState(humanEntity, out var motor)) return;
+            harness.TryGetPrimarySight(humanEntity, out var heldSight);
             if (kind == WeaponPickupKind.Ammo)
             {
                 if (!harness.SetPrimaryReserve(humanEntity, DroppedWeaponField.ToppedUpReserve(held, dropped))) return;
@@ -867,11 +890,12 @@ namespace Shooter.Game.Session
                 HumanPickupCount++;
                 return;
             }
-            if (!harness.ReplacePrimary(humanEntity, dropped.DefinitionId, dropped.Magazine, dropped.Reserve)) return;
+            // ADR-107: a picked-up gun keeps the sight it was dropped with; the old gun drops with its own sight.
+            if (!harness.ReplacePrimary(humanEntity, dropped.DefinitionId, dropped.Magazine, dropped.Reserve, dropped.SightId)) return;
             droppedWeapons.RemoveById(dropped.Id);
             // The old primary takes the picked-up gun's place on the floor with a fresh lifetime.
             if (held.IsValid)
-                droppedWeapons.Drop(held.DefinitionId, held.AmmoInMagazine, held.Reserve, dropped.Position, activeTick);
+                droppedWeapons.Drop(held.DefinitionId, held.AmmoInMagazine, held.Reserve, dropped.Position, activeTick, heldSight);
             HumanPickupCount++;
         }
 

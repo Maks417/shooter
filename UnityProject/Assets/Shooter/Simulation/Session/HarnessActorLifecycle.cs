@@ -28,6 +28,8 @@ namespace Shooter.Simulation.Session
         private readonly Dictionary<ulong, (ParticipantId participant, LifeId life)> lives = new Dictionary<ulong, (ParticipantId, LifeId)>();
         private readonly Dictionary<ulong, Stance> stances = new Dictionary<ulong, Stance>();
         private readonly List<Corpse> corpses = new List<Corpse>(MaxCosmeticCorpses);
+        /// <summary>ADR-107 Armory loadouts by participant, applied to every life that participant spawns.</summary>
+        private readonly Dictionary<ParticipantId, PlayerLoadout> pinned = new Dictionary<ParticipantId, PlayerLoadout>();
         private uint currentActiveTick;
 
         public HarnessActorLifecycle(CombatHarnessSimulation harness)
@@ -44,6 +46,7 @@ namespace Shooter.Simulation.Session
             if (states.Count >= GameContractVersion.MaxActiveActors)
                 throw new InvalidOperationException("actor capacity");
             var id = harness.SpawnActor(feet, yaw, team);
+            if (pinned.TryGetValue(participant, out var loadout)) harness.PinLoadout(id, loadout);
             var primary = PrimaryOf(id);
             var state = new ActorLifecycleState(id, team, true, 100, feet, yaw, 0, 0, primary.MagazineSize, primary.ReserveCapacity,
                 WeaponAction.Ready, primary.Id);
@@ -51,6 +54,19 @@ namespace Shooter.Simulation.Session
             lives[id.Value] = (participant, life);
             return id;
         }
+
+        /// <summary>
+        /// ADR-107: every life <paramref name="participant"/> spawns from now on carries <paramref name="loadout"/> (the
+        /// human's Armory choice); null returns it to the random/default draw. Lives already spawned keep their guns.
+        /// </summary>
+        public void PinLoadout(ParticipantId participant, PlayerLoadout? loadout)
+        {
+            if (loadout == null) pinned.Remove(participant);
+            else pinned[participant] = loadout;
+        }
+
+        /// <summary>ADR-107: the sight mounted on this life's primary (invalid for guns without mounted sights).</summary>
+        public bool TryGetPrimarySight(EntityId entity, out DefinitionId sight) => harness.TryGetPrimarySight(entity, out sight);
 
         /// <summary>ADR-102: the primary and sidearm issued to this life, for bots and presentation.</summary>
         public bool TryGetLoadout(EntityId entity, out DefinitionId primary, out DefinitionId sidearm)

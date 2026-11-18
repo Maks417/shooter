@@ -2,7 +2,7 @@
   "schemaId": "shooter.recipe.weapon.v1",
   "recipeId": "weapons/ak47",
   "generatorId": "geometry.weapon",
-  "generatorVersion": "1.3.0",
+  "generatorVersion": "1.4.0",
   "seed": "460072030",
   "parameters": {
     "kind": "ak",
@@ -10,7 +10,7 @@
       "barrelFrontMm": 520,
       "furniture": "wood",
       "muzzle": "slant",
-      "optic": "irons",
+      "optic": "mount",
       "stock": "wood"
     }
   },

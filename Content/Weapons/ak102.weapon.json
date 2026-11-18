@@ -36,6 +36,14 @@
       -12,
       -5
     ],
+    "sights": {
+      "default": "irons",
+      "allowed": [
+        "irons",
+        "collimator",
+        "scope2"
+      ]
+    },
     "optic": "Irons",
     "cycleTravelMeters": 0.08,
     "adsSeconds": 0.18,

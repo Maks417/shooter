@@ -28,11 +28,15 @@ namespace Shooter.Game.Session
         public ushort Magazine { get; }
         public ushort Reserve { get; }
         public float SecondsRemaining { get; }
+        /// <summary>ADR-107: sight mounted on the dropped gun (invalid when it takes none).</summary>
+        public DefinitionId SightId { get; }
         public bool IsValid => WeaponId.IsValid;
 
-        public DroppedWeaponView(int id, DefinitionId weaponId, Float3 position, ushort magazine, ushort reserve, float secondsRemaining)
+        public DroppedWeaponView(int id, DefinitionId weaponId, Float3 position, ushort magazine, ushort reserve, float secondsRemaining,
+            DefinitionId sightId = default)
         {
             Id = id; WeaponId = weaponId; Position = position; Magazine = magazine; Reserve = reserve; SecondsRemaining = secondsRemaining;
+            SightId = sightId;
         }
     }
 

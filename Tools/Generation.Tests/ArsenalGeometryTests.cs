@@ -31,7 +31,8 @@ public sealed class ArsenalGeometryTests
     public void Archetype_lods_are_valid_ordered_and_inside_the_envelope(string name)
     {
         var recipe = Load(name);
-        Assert.Equal(WeaponRecipe.ProfileVersion, recipe.Version);
+        // ADR-107: long guns ship as bare-rail 1.4.0 bodies (sights are separate meshes); pistols stay on 1.3.0.
+        Assert.Equal(recipe.IsLongGun ? WeaponRecipe.MountVersion : WeaponRecipe.ProfileVersion, recipe.Version);
         Assert.NotNull(recipe.Arsenal);
         var build = WeaponGeometry.Build(recipe);
         bool pistol = !recipe.IsLongGun;

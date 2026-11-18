@@ -2,7 +2,7 @@
   "schemaId": "shooter.recipe.weapon.v1",
   "recipeId": "weapons/mk14",
   "generatorId": "geometry.weapon",
-  "generatorVersion": "1.3.0",
+  "generatorVersion": "1.4.0",
   "seed": "460072030",
   "parameters": {
     "kind": "dmr",
@@ -10,7 +10,7 @@
       "barrelFrontMm": 600,
       "furniture": "black",
       "muzzle": "brake",
-      "optic": "scope4",
+      "optic": "mount",
       "stock": "chassis"
     }
   },
