@@ -526,7 +526,8 @@ namespace Shooter.Presentation.Session
             {
                 case ShellScreen.Main:
                     if (uiGalleryMode == "results") DrawDebriefPreview();
-                    else if (uiGallery) ui.DrawUiGallery();
+                    else if (uiGalleryMode == "career" && !careerGalleryOpened) { OpenCareerGallery(); DrawMain(s); }
+                    else if (uiGallery && uiGalleryMode != "career") ui.DrawUiGallery();
                     else DrawMain(s);
                     break;
                 case ShellScreen.Setup:
@@ -994,21 +995,12 @@ namespace Shooter.Presentation.Session
             ui.Backdrop(navigation.SettingsReturn == ShellScreen.Paused);
             ui.Header(ShellUiCopy.EyebrowPreferences, ShellUiCopy.SettingsTitle);
             Rect a = ui.Safe;
-            string[] tabs = SettingsTabs;
-            float tw = (a.width - 18) / 4;
-            float tabY = a.y + 74;
-            ui.Panel(new Rect(a.x, tabY, a.width, 36));
-            string[] tabIcons = { IconLibrary.Audio, IconLibrary.Video, IconLibrary.Controls, IconLibrary.Accessibility };
-            for (int i = 0; i < tabs.Length; i++)
+            // ADR-085 category glyphs; ADR-114 shared tab strip.
+            int pickedTab = ui.TabStrip(new Rect(a.x, a.y + 74, a.width, 36), "settings.tab", SettingsTabs, SettingsTabIcons, settingsTab);
+            if (pickedTab != settingsTab)
             {
-                Rect tab = new Rect(a.x + i * (tw + 6), tabY + 1, tw, 34);
-                if (ui.Button(tab, "settings.tab." + i, tabs[i], selected: settingsTab == i, quiet: true))
-                {
-                    settingsTab = i;
-                    settingsScroll = Vector2.zero;
-                }
-                // ADR-085 category glyph on the tab's right edge.
-                TacticalUi.Icon(new Rect(tab.xMax - 34, tab.y + 7, 20, 20), tabIcons[i], settingsTab == i ? TacticalUi.Accent : TacticalUi.Muted);
+                settingsTab = pickedTab;
+                settingsScroll = Vector2.zero;
             }
 
             var draft = settingsEditor.Draft;
@@ -1157,6 +1149,7 @@ namespace Shooter.Presentation.Session
 
         private static string QualityLabel(byte tier) => tier switch { 0 => "Low", 1 => "Balanced", _ => "High" };
         private static readonly string[] SettingsTabs = { "AUDIO", "VIDEO", "CONTROLS", "ACCESSIBILITY" };
+        private static readonly string[] SettingsTabIcons = { IconLibrary.Audio, IconLibrary.Video, IconLibrary.Controls, IconLibrary.Accessibility };
 
         private void CycleResolution(ref int width, ref int height)
         {

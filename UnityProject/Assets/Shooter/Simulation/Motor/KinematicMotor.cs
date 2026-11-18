@@ -51,6 +51,8 @@ namespace Shooter.Simulation.Motor
         private readonly QueryFilter motorFilter = new QueryFilter(CollisionLayers.MotorMask, default, false);
         private const float OverlapEpsilon = 1e-4f;
         private const float ContactDistance = 1e-3f;
+        /// <summary>Smallest rise above the current feet that counts as a step top (ADR-114).</summary>
+        private const float MinStepRise = 0.005f;
         private readonly HitBuffer overlapBuffer = new HitBuffer(16);
 
         public KinematicMotor(MotorConfig? config = null) { this.config = config ?? MotorConfig.BaselineV1; }
@@ -294,7 +296,7 @@ namespace Shooter.Simulation.Motor
             // Standing up: sweep the current capsule upward by the growth delta so off-centre ledges within the radius block it.
             float grow = toHeight - fromHeight;
             var capsule = MotorMath.BodyCapsule(feet, fromHeight, config.Radius);
-            var sweep = world.SweepCapsule(capsule, new Float3(0, grow, 0), motorFilter);
+            var sweep = Sweep(capsule, new Float3(0, grow, 0), world);
             if (sweep.Status == QueryStatus.Hit && sweep.Hit.DistanceMeters < grow - config.Skin)
                 return false;
             height = toHeight;
@@ -309,7 +311,7 @@ namespace Shooter.Simulation.Motor
             {
                 if (displacement.LengthSquared <= 1e-12) break;
                 var capsule = MotorMath.BodyCapsule(feet, height, config.Radius);
-                var sweep = world.SweepCapsule(capsule, displacement, motorFilter);
+                var sweep = Sweep(capsule, displacement, world);
                 if (sweep.Status != QueryStatus.Hit)
                 {
                     feet = VecMath.Add(feet, displacement);
@@ -335,6 +337,12 @@ namespace Shooter.Simulation.Motor
                 velocity = MotorMath.ProjectOnPlane(velocity, hit.Normal);
                 if (hit.Normal.Y < walkableY)
                 {
+                    // ADR-114: the same holds for the position. A rounded top edge of an obstacle between StepHeight and
+                    // Radius tall tilts the contact normal upward; projecting onto it would lift a ground-following actor
+                    // a little every tick (it then falls back: the corner up/down cycle).
+                    float maxRise = Math.Max(0f, remaining.Y);
+                    if (allowStep && displacement.Y > maxRise)
+                        displacement = new Float3(displacement.X, maxRise, displacement.Z);
                     // Non-walkable wall/corner: never convert horizontal sprint into upward launch.
                     if (velocity.Y > vyBefore)
                         velocity = new Float3(velocity.X, vyBefore, velocity.Z);
@@ -352,7 +360,7 @@ namespace Shooter.Simulation.Motor
             float lift = config.StepHeight + config.Skin;
             Float3 up = new Float3(0, lift, 0);
             var upCapsule = MotorMath.BodyCapsule(feet, height, config.Radius);
-            var upSweep = world.SweepCapsule(upCapsule, up, motorFilter);
+            var upSweep = Sweep(upCapsule, up, world);
             if (upSweep.Status == QueryStatus.Hit) return false;
             Float3 raised = VecMath.Add(feet, up);
             float hLen = VecMath.Length(horizontal);
@@ -367,24 +375,53 @@ namespace Shooter.Simulation.Motor
             if (topRay.Status != QueryStatus.Hit || topRay.Hit.Normal.Y < Math.Cos(config.MaxSlopeRadians)) return false;
             float topY = rayOrigin.Y - topRay.Hit.DistanceMeters;
             if (topY - feet.Y > lift + 1e-4f) return false;
+            // ADR-114: a step needs a surface above the one the actor stands on. At a vertical box corner the ray passes
+            // beside the box and lands on the floor; that is a wall, not a step.
+            if (topY <= feet.Y + MinStepRise) return false;
             var forwardCapsule = MotorMath.BodyCapsule(raised, height, config.Radius);
-            var forward = world.SweepCapsule(forwardCapsule, horizontal, motorFilter);
+            var forward = Sweep(forwardCapsule, horizontal, world);
             if (forward.Status == QueryStatus.Hit && forward.Hit.DistanceMeters < hLen - config.Skin)
                 return false;
             Float3 over = VecMath.Add(raised, horizontal);
             // Snap down onto the step top (or its edge): at most the lift plus the usual snap distance.
             var downCapsule = MotorMath.BodyCapsule(over, height, config.Radius);
-            var down = world.SweepCapsule(downCapsule, new Float3(0, -(lift + config.Snap + config.Skin), 0), motorFilter);
+            var down = Sweep(downCapsule, new Float3(0, -(lift + config.Snap + config.Skin), 0), world);
             if (down.Status != QueryStatus.Hit) return false;
             // Reject ceilings/near-horizontal walls; rounded step-edge normals stay accepted (≥0.1).
             if (down.Hit.Normal.Y < 0.1f) return false;
             float drop = Math.Max(0f, down.Hit.DistanceMeters - config.Skin);
             result = new Float3(over.X, over.Y - drop, over.Z);
+            // Never end higher than the measured step top plus the usual skin gap.
+            if (result.Y > topY + config.Skin + 1e-3f) result = new Float3(result.X, topY + config.Skin, result.Z);
             // Must actually be a rise (otherwise ordinary sliding handles it) and no higher than a step.
             float rise = result.Y - feet.Y;
             if (rise <= 1e-4f || rise > lift + 1e-4f) return false;
             surface = down.Hit.StaticSurfaceId;
             return true;
+        }
+
+        /// <summary>
+        /// Capsule sweep with PhysX start contact resolved (ADR-114). A capsule that already touches a collider (gap below
+        /// the backend contact offset) gets Hit at distance 0 with normal = -direction for every direction, which says
+        /// nothing about where the contact is: at a box corner it looked like walkable ground under the feet and like an
+        /// open step top. Re-sweep a capsule inset by Skin: no hit means the motion leaves the touch; a hit gives the real
+        /// normal and, minus the inset, the real distance. Only if the inset capsule also starts in contact is the raw
+        /// hit kept (genuine penetration, left to overlap recovery).
+        /// </summary>
+        private SweepHit Sweep(Capsule capsule, Float3 displacement, IWorldQueries world)
+        {
+            var sweep = world.SweepCapsule(capsule, displacement, motorFilter);
+            if (sweep.Status != QueryStatus.Hit || sweep.Hit.DistanceMeters > ContactDistance) return sweep;
+            float inset = config.Skin;
+            if (capsule.Radius - inset <= 0.05f) return sweep;
+            var inner = new Capsule(capsule.BottomSphereCenter, capsule.TopSphereCenter, capsule.Radius - inset);
+            var retry = world.SweepCapsule(inner, displacement, motorFilter);
+            if (retry.Status == QueryStatus.NoHit) return retry;
+            if (retry.Status != QueryStatus.Hit || retry.Hit.DistanceMeters <= ContactDistance) return sweep;
+            var h = retry.Hit;
+            return new SweepHit(QueryStatus.Hit, new QueryHit(
+                Math.Max(0f, h.DistanceMeters - inset), h.Point, h.Normal, h.EntityId, h.StaticSurfaceId,
+                h.ColliderStableId, h.SurfaceTag, h.CollisionRevision));
         }
 
         private void ProbeGround(Float3 feet, float height, float verticalVelocity, float extraProbe, IWorldQueries world,
@@ -394,20 +431,30 @@ namespace Shooter.Simulation.Motor
             if (verticalVelocity > 0.01f) return;
             float probe = config.Snap + config.Skin + extraProbe;
             var capsule = MotorMath.BodyCapsule(feet, height, config.Radius);
-            var sweep = world.SweepCapsule(capsule, new Float3(0, -probe, 0), motorFilter);
+            var sweep = Sweep(capsule, new Float3(0, -probe, 0), world);
             if (sweep.Status != QueryStatus.Hit) return;
             var hit = sweep.Hit;
-            if (hit.Normal.Y < Math.Cos(config.MaxSlopeRadians)) return;
+            float walkable = (float)Math.Cos(config.MaxSlopeRadians);
+            if (hit.Normal.Y < walkable)
+            {
+                // ADR-114: pressed against a wall or ledge face, the down sweep grazes that face first (PhysX contact
+                // offset) and the floor two centimetres below was missed, so the actor flickered airborne. Look past
+                // side contacts with a capsule inset by Skin; only a walkable surface under it counts.
+                var inner = new Capsule(capsule.BottomSphereCenter, capsule.TopSphereCenter, capsule.Radius - config.Skin);
+                var retry = world.SweepCapsule(inner, new Float3(0, -(probe + config.Skin), 0), motorFilter);
+                if (retry.Status != QueryStatus.Hit || retry.Hit.Normal.Y < walkable || retry.Hit.DistanceMeters <= ContactDistance) return;
+                var h = retry.Hit;
+                float d = Math.Max(0f, h.DistanceMeters - config.Skin);
+                if (d > probe) return;
+                hit = new QueryHit(d, h.Point, h.Normal, h.EntityId, h.StaticSurfaceId, h.ColliderStableId, h.SurfaceTag, h.CollisionRevision);
+            }
             grounded = true;
             groundId = hit.StaticSurfaceId;
             groundNormal = hit.Normal;
-            // Never rest in initial contact. PhysX CapsuleCast reports an already-touching collider (feet exactly on the
-            // floor: a spawn placed on the surface, a rescue/relocation) as distance 0 with normal = -direction, which blocks
-            // every horizontal, upward (jump) and step sweep from that pose and froze sprint, jump and slide for good.
-            // Lift such a body by Skin so later sweeps start clear of the surface.
-            float drop = hit.DistanceMeters <= ContactDistance
-                ? hit.DistanceMeters - config.Skin
-                : Math.Max(0f, hit.DistanceMeters - config.Skin);
+            // Never rest in contact: settle Skin above the surface so later sweeps start clear of it (0.3.5 spawn freeze).
+            // Sweep() resolves PhysX start contacts to the true distance and normal (ADR-114), so this lift is at most
+            // Skin and idempotent; it can no longer ratchet an actor up the side of a box one Skin per tick.
+            float drop = hit.DistanceMeters - config.Skin;
             snappedFeet = new Float3(feet.X, feet.Y - drop, feet.Z);
         }
     }

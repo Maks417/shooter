@@ -32,7 +32,6 @@ namespace Shooter.Build
         {
             if (boxes == null) throw new ArgumentNullException(nameof(boxes));
             if (halfExtent <= 0f || agentRadius <= 0f || agentHeight <= 0f) return null;
-            _ = clearanceMargin;
 
             // Copy the built-in agent (ID 0) instead of NavMesh.CreateSettings(): creating an agent type bumps
             // m_LastAgentTypeID, which makes Unity reserialize ProjectSettings/NavMeshAreas.asset and dirty the
@@ -46,6 +45,10 @@ namespace Shooter.Build
             buildSettings.voxelSize = Mathf.Clamp(agentRadius / 3f, 0.05f, 0.2f);
             buildSettings.overrideTileSize = true;
             buildSettings.tileSize = 64;
+            // ADR-114: pad each solid's Not-Walkable footprint by the locked clearance margin plus a quarter voxel. The
+            // agent-radius erosion is voxel-quantized and chamfered at convex wall ends (measured 0.259 m from a corner
+            // with the margin alone), so without the pad a nav vertex lands closer than radius - 0.05 to the wall.
+            float pad = Math.Max(0f, clearanceMargin) + buildSettings.voxelSize * 0.25f;
 
             var sources = new List<NavMeshBuildSource>(boxes.Count + 1)
             {
@@ -76,13 +79,23 @@ namespace Shooter.Build
                     });
                     continue;
                 }
+                // Tall solids are Not-Walkable modifier volumes (they add no geometry). Unity marks a surface only when
+                // its voxel top lies inside the volume, so a volume that starts exactly on the floor top (y = 0) leaves
+                // the floor walkable inside every wall (ADR-114). The volume therefore reaches from one agent height
+                // below the box (any surface whose standing capsule would hit the box) to just under the box top
+                // (a deck resting on the box is not cut). A ground wall therefore cuts the floor down to -agentHeight,
+                // while a high beam (base above agent height) leaves the walkway beneath it walkable.
+                float minY = box.Center.Y - box.Size.Y * 0.5f;
+                float maxY = box.Center.Y + box.Size.Y * 0.5f;
+                float bottom = minY - agentHeight;
+                float top = Math.Max(maxY - 0.1f, bottom + 0.2f);
                 sources.Add(new NavMeshBuildSource
                 {
                     shape = NavMeshBuildSourceShape.ModifierBox,
-                    size = new Vector3(box.Size.X, Math.Max(box.Size.Y, 2f), box.Size.Z),
+                    size = new Vector3(box.Size.X + 2f * pad, top - bottom, box.Size.Z + 2f * pad),
                     area = 1,
                     transform = Matrix4x4.TRS(
-                        new Vector3(box.Center.X, box.Center.Y, box.Center.Z),
+                        new Vector3(box.Center.X, (bottom + top) * 0.5f, box.Center.Z),
                         Quaternion.identity,
                         Vector3.one)
                 });
@@ -150,7 +163,8 @@ namespace Shooter.Build
             finally
             {
                 if (instance.valid) instance.Remove();
-                if (data != null) UnityEngine.Object.DestroyImmediate(data);            }
+                if (data != null) UnityEngine.Object.DestroyImmediate(data);
+            }
         }
     }
 }

@@ -17,7 +17,7 @@ Reaching rank *n* takes `1000·(n²−1)` CP, so each step costs 2,000 CP more t
 |---|---|
 | Main menu | Layered rank emblem, rank name and segmented CP bar under the menu; click opens the Career page. |
 | Armory | The same badge in the header; locked guns and sights with a lock tag and the rank emblem that unlocks them. |
-| Career page | Hero band (large emblem, rank, CP bar, CP to the next rank, next reward card); the horizontal progress line with one emblem node and reward card per rank; active-perk chips; service-record tiles. |
+| Career page | Two tabs ([ADR-114](../decisions.md#adr-114--accepted-corner-bob-motor-fix-nav-bake-that-respects-walls-and-a-tabbed-career-page), Q / E switch). **Progress:** hero band (large emblem, rank, CP bar, CP to the next rank, next reward card) and the horizontal progress line with one emblem node and reward card per rank. **Statistics:** active-perk chips and service-record tiles. |
 | Tab board and debrief tables | Embossed insignia before every name. Bots show a seeded rank within three of the player's. |
 | Debrief | CP earned with its breakdown, the bar filling with the gain lit, and on promotion a gold edge and the unlocked reward's icon. |
 
@@ -31,4 +31,4 @@ Reaching rank *n* takes `1000·(n²−1)` CP, so each step costs 2,000 CP more t
 
 ## Status
 
-Pure lanes and Unity EditMode PASS in source after 0.3.21; the ADR-113 redesign is in source after that. Unity PlayMode, client build, installer and the owner's in-game and visual review are Pending; see the [M11 handoff](../milestones/m11-playable-release/handoff.md).
+Pure lanes and Unity EditMode PASS in source after 0.3.21; the ADR-113 redesign is in source after that. ADR-114 splits the page into tabs on a pure layout tested for overlap at 720p–1080p and 100–150% UI scale. Unity PlayMode, client build, installer and the owner's in-game and visual review are Pending; see the [M11 handoff](../milestones/m11-playable-release/handoff.md).

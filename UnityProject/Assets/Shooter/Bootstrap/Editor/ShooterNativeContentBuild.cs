@@ -97,6 +97,9 @@ public static class ShooterNativeContentBuild
             var second = inner(boxes, CompoundPlan.MapHalfExtent, AgentRadius, AgentHeight, MaxStep, MaxSlope, ClearanceMargin);
             bool repeat = second != null && firstBytes.AsSpan().SequenceEqual(UnityNavMeshBakeCodec.Encode(second.Bake));
             if (!repeat) throw new InvalidOperationException("Native bake for " + mapId + " is not reproducible (repeat bake bytes differ); not publishable as release content.");
+            // ADR-114: no walkable surface inside a solid, no nav vertex closer to a solid than the agent radius.
+            var audit = NavCollisionAudit.ThrowIfLeaky(mapId, first.Bake, boxes, AgentRadius, AgentHeight, MaxStep);
+            Debug.Log("SHOOTER_NAV_COLLISION_AUDIT map=" + mapId + " " + audit.Summary());
 
             string key = NavBakeStage.InputKey(boxes, CompoundPlan.MapHalfExtent, AgentRadius, AgentHeight, MaxStep, MaxSlope, ClearanceMargin);
             var collisionHash = ContentIdentity.Hash(opened.CollisionSgaf);

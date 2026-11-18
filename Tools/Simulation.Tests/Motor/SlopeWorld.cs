@@ -19,6 +19,14 @@ namespace Shooter.Simulation.Tests.Motor
         private readonly float tan;
         private readonly Float3 planeNormal;
 
+        /// <summary>
+        /// PhysX CapsuleCast start-contact emulation: when either end sphere already touches a primitive (gap below
+        /// <see cref="ContactOffset"/>) the sweep reports Hit with distance 0 and normal = -sweep direction, for every direction,
+        /// exactly like the shipped backend (see InitialContactWorld). Off by default to keep the older exact-normal tests.
+        /// </summary>
+        public bool PhysxStartContact { get; set; }
+        public const float ContactOffset = 0.005f;
+
         public SlopeWorld(float angleDegrees = 0f, bool plane = true)
         {
             hasPlane = plane;
@@ -92,6 +100,18 @@ namespace Shooter.Simulation.Tests.Motor
             float len = (float)Math.Sqrt(displacement.LengthSquared);
             if (len == 0) return new SweepHit(QueryStatus.NoHit);
             var dir = new Float3(displacement.X / len, displacement.Y / len, displacement.Z / len);
+            if (PhysxStartContact)
+            {
+                foreach (var c in new[] { capsule.BottomSphereCenter, capsule.TopSphereCenter })
+                {
+                    Nearest(c, out float d0, out _, out ulong id0);
+                    if (d0 - capsule.Radius < ContactOffset)
+                    {
+                        var n0 = new Float3(-dir.X, -dir.Y, -dir.Z);
+                        return new SweepHit(QueryStatus.Hit, new QueryHit(0f, default, n0, default, new SurfaceId(id0 + 100), id0, 1, 1));
+                    }
+                }
+            }
             bool hit = false; float best = float.MaxValue; Float3 bn = default; ulong bid = 0;
             foreach (var c in new[] { capsule.BottomSphereCenter, capsule.TopSphereCenter })
             {
@@ -111,6 +131,64 @@ namespace Shooter.Simulation.Tests.Motor
             return new RayHit(QueryStatus.Hit, qh);
         }
 
-        public OverlapResult Overlap(Capsule capsule, QueryFilter filter, HitBuffer callerOwned) => new OverlapResult(QueryStatus.NoHit, 0, 0);
+        /// <summary>
+        /// Without <see cref="PhysxStartContact"/>: always NoHit (legacy fake). With it, a ComputePenetration-like answer:
+        /// the deepest sphere-versus-primitive penetration along the capsule segment, one hit per primitive.
+        /// </summary>
+        public OverlapResult Overlap(Capsule capsule, QueryFilter filter, HitBuffer callerOwned)
+        {
+            if (!PhysxStartContact) return new OverlapResult(QueryStatus.NoHit, 0, 0);
+            var hits = new List<QueryHit>();
+            const int samples = 9;
+            if (hasPlane)
+            {
+                float best = 0f;
+                for (int i = 0; i < samples; i++)
+                {
+                    var c = Lerp(capsule.BottomSphereCenter, capsule.TopSphereCenter, i / (float)(samples - 1));
+                    float d = c.X * planeNormal.X + c.Y * planeNormal.Y + c.Z * planeNormal.Z;
+                    best = Math.Max(best, capsule.Radius - d);
+                }
+                if (best > 1e-4f) hits.Add(new QueryHit(best, default, planeNormal, default, new SurfaceId(101), 1, 1, 1));
+            }
+            foreach (var b in boxes)
+            {
+                float best = 0f; Float3 bestN = new Float3(0, 1, 0);
+                for (int i = 0; i < samples; i++)
+                {
+                    var c = Lerp(capsule.BottomSphereCenter, capsule.TopSphereCenter, i / (float)(samples - 1));
+                    BoxDistance(c, b.Min, b.Max, out float d, out Float3 n);
+                    if (capsule.Radius - d > best) { best = capsule.Radius - d; bestN = n; }
+                }
+                if (best > 1e-4f) hits.Add(new QueryHit(best, default, bestN, default, new SurfaceId(b.Id + 100), b.Id, 1, 1));
+            }
+            if (hits.Count == 0) return new OverlapResult(QueryStatus.NoHit, 0, 0);
+            int written = Math.Min(hits.Count, callerOwned.Capacity);
+            for (int i = 0; i < written; i++) callerOwned[i] = hits[i];
+            var result = new OverlapResult(QueryStatus.Hit, written, written);
+            callerOwned.SortComplete(result);
+            return result;
+        }
+
+        private static Float3 Lerp(Float3 a, Float3 b, float t) =>
+            new Float3(a.X + (b.X - a.X) * t, a.Y + (b.Y - a.Y) * t, a.Z + (b.Z - a.Z) * t);
+
+        /// <summary>Signed distance from a point to an AABB with the outward push normal (inside: negative, nearest face).</summary>
+        private static void BoxDistance(Float3 c, Float3 min, Float3 max, out float dist, out Float3 normal)
+        {
+            float px = Math.Min(Math.Max(c.X, min.X), max.X);
+            float py = Math.Min(Math.Max(c.Y, min.Y), max.Y);
+            float pz = Math.Min(Math.Max(c.Z, min.Z), max.Z);
+            float dx = c.X - px, dy = c.Y - py, dz = c.Z - pz;
+            float d = (float)Math.Sqrt(dx * dx + dy * dy + dz * dz);
+            if (d > 1e-6f) { dist = d; normal = new Float3(dx / d, dy / d, dz / d); return; }
+            float best = c.X - min.X; normal = new Float3(-1, 0, 0);
+            if (max.X - c.X < best) { best = max.X - c.X; normal = new Float3(1, 0, 0); }
+            if (c.Y - min.Y < best) { best = c.Y - min.Y; normal = new Float3(0, -1, 0); }
+            if (max.Y - c.Y < best) { best = max.Y - c.Y; normal = new Float3(0, 1, 0); }
+            if (c.Z - min.Z < best) { best = c.Z - min.Z; normal = new Float3(0, 0, -1); }
+            if (max.Z - c.Z < best) { best = max.Z - c.Z; normal = new Float3(0, 0, 1); }
+            dist = -best;
+        }
     }
 }

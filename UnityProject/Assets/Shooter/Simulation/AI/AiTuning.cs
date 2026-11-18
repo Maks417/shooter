@@ -166,6 +166,10 @@ namespace Shooter.Simulation.AI
         public const float MoveEaseAlpha = 0.3f;
         /// <summary>Distance from a path corner at which the route direction starts bending into the next leg.</summary>
         public const float CornerBlendMeters = 1.5f;
+        /// <summary>ADR-114: corner-bend clearance rays run this high above the feet (above the motor step).</summary>
+        public const float CornerBendProbeHeightMeters = 0.5f;
+        /// <summary>ADR-114: side offset of the corner-bend clearance rays (capsule radius plus margin).</summary>
+        public const float CornerBendProbeRadiusMeters = 0.37f;
 
         // ADR-112 map tactics.
         /// <summary>Authored cover farther than this from the bot is not considered.</summary>

@@ -208,12 +208,24 @@ namespace Shooter.Generation.Environment
         /// when querying packaged triangulation corners without re-baking against collision.
         /// </summary>
         public static bool TryFindPath(Bake bake, Float3 start, Float3 goal, List<Float3> corners)
+            => TryFindPath(bake, start, goal, corners, GridMaxSnapMeters);
+
+        /// <summary>Snap reach for the coarse software grid (one 8 m cell plus margin); generation-side validation only.</summary>
+        public const float GridMaxSnapMeters = 8.1f;
+        /// <summary>
+        /// ADR-114: runtime fallback snap reach. A start or goal farther than this from the published surface (inside a
+        /// building, behind a wall) is unreachable instead of being pulled across the wall onto the nearest polygon.
+        /// </summary>
+        public const float RuntimeMaxSnapMeters = 1.5f;
+
+        public static bool TryFindPath(Bake bake, Float3 start, Float3 goal, List<Float3> corners, float maxSnapMeters)
         {
             if (bake == null) throw new ArgumentNullException(nameof(bake));
             if (corners == null) throw new ArgumentNullException(nameof(corners));
+            if (!(maxSnapMeters >= 0f)) throw new ArgumentOutOfRangeException(nameof(maxSnapMeters));
             corners.Clear();
-            if (!TryNearestPolygon(bake, start.X, start.Z, out int startPoly, out Float3 startPoint)) return false;
-            if (!TryNearestPolygon(bake, goal.X, goal.Z, out int goalPoly, out Float3 goalPoint)) return false;
+            if (!TryNearestPolygon(bake, start.X, start.Z, maxSnapMeters, out int startPoly, out Float3 startPoint)) return false;
+            if (!TryNearestPolygon(bake, goal.X, goal.Z, maxSnapMeters, out int goalPoly, out Float3 goalPoint)) return false;
             if (startPoly == goalPoly)
             {
                 corners.Add(startPoint);
@@ -317,6 +329,35 @@ namespace Shooter.Generation.Environment
             corners.AddRange(kept);
         }
 
+        /// <summary>
+        /// Greedy string pull: from each kept corner, skip ahead to the farthest later corner whose straight shortcut is
+        /// clear. Without a clearance query nothing is skipped. Corners beyond <paramref name="maxCorners"/> are dropped
+        /// (a shorter, wall-safe partial route) instead of being evenly decimated across walls.
+        /// </summary>
+        public static void ThinVisibleCorners(List<Float3> corners, int maxCorners, Func<Float3, Float3, bool>? shortcutClear)
+        {
+            if (corners == null) throw new ArgumentNullException(nameof(corners));
+            if (maxCorners < 2) throw new ArgumentOutOfRangeException(nameof(maxCorners));
+            if (corners.Count <= 2 && corners.Count <= maxCorners) return;
+            var kept = new List<Float3>(Math.Min(corners.Count, maxCorners)) { corners[0] };
+            int anchor = 0;
+            while (anchor < corners.Count - 1 && kept.Count < maxCorners)
+            {
+                int next = anchor + 1;
+                if (shortcutClear != null)
+                {
+                    for (int j = corners.Count - 1; j > anchor + 1; j--)
+                    {
+                        if (shortcutClear(corners[anchor], corners[j])) { next = j; break; }
+                    }
+                }
+                kept.Add(corners[next]);
+                anchor = next;
+            }
+            corners.Clear();
+            corners.AddRange(kept);
+        }
+
         private static List<int>[] BuildAdjacency(Bake bake)
         {
             int n = bake.Polygons.Count;
@@ -365,7 +406,7 @@ namespace Shooter.Generation.Environment
 
         private static long Quantize(float v) => (long)MathF.Round(v * 1000f);
 
-        private static bool TryNearestPolygon(Bake bake, float x, float z, out int polyIndex, out Float3 point)
+        private static bool TryNearestPolygon(Bake bake, float x, float z, float maxSnapMeters, out int polyIndex, out Float3 point)
         {
             polyIndex = -1;
             point = default;
@@ -390,7 +431,7 @@ namespace Shooter.Generation.Environment
                 }
             }
             // Snap onto the bake surface; keep holes larger than this threshold blocked.
-            return polyIndex >= 0 && best <= 8.1f;
+            return polyIndex >= 0 && best <= maxSnapMeters;
         }
 
         private static Float3 ClosestPointOnPolygonXZ(Bake bake, Polygon poly, float x, float z)

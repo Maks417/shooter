@@ -692,6 +692,69 @@ namespace Shooter.Presentation.Session
             return tex;
         }
 
+        private readonly Dictionary<int, GUIStyle> fitLabels = new Dictionary<int, GUIStyle>();
+
+        /// <summary>
+        /// ADR-114 one-line label: no wrapping; the font steps down to <paramref name="minSize"/> until the text fits the
+        /// width, then the tail is cut with an ellipsis. Text never spills out of its rect.
+        /// </summary>
+        public void LabelFit(Rect r, string text, int size, Color? color = null, TextAnchor align = TextAnchor.UpperLeft, int minSize = 10)
+        {
+            if (r.width <= 1f || string.IsNullOrEmpty(text)) return;
+            GUIStyle style = FitStyle(size);
+            int s = size;
+            while (s > minSize && style.CalcSize(new GUIContent(text)).x > r.width) style = FitStyle(--s);
+            string shown = text;
+            if (style.CalcSize(new GUIContent(shown)).x > r.width)
+            {
+                int keep = text.Length;
+                while (keep > 1 && style.CalcSize(new GUIContent(text.Substring(0, keep).TrimEnd() + "…")).x > r.width) keep--;
+                shown = text.Substring(0, keep).TrimEnd() + "…";
+            }
+            style.normal.textColor = StyleInk(color ?? Text);
+            style.alignment = align;
+            GUI.Label(r, shown, style);
+        }
+
+        private GUIStyle FitStyle(int size)
+        {
+            if (fitLabels.TryGetValue(size, out var style)) return style;
+            style = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = size,
+                fontStyle = FontStyle.Normal,
+                wordWrap = false,
+                clipping = TextClipping.Clip,
+                padding = new RectOffset(0, 0, 0, 0),
+                richText = false
+            };
+            Font? face = UiFonts.ForLabelSize(size);
+            if (face != null) style.font = face;
+            else if (size >= 28) style.fontStyle = FontStyle.Bold;
+            fitLabels.Add(size, style);
+            return style;
+        }
+
+        /// <summary>
+        /// ADR-114 shared tab strip (Settings, Career): equal quiet buttons on a panel, an optional category glyph on each
+        /// tab's right edge. Returns the selected index (changed when a tab is clicked).
+        /// </summary>
+        public int TabStrip(Rect r, string id, string[] labels, string[]? icons, int selected)
+        {
+            Panel(r);
+            int n = labels.Length;
+            const float gap = 6f;
+            float tw = (r.width - gap * (n - 1)) / n;
+            for (int i = 0; i < n; i++)
+            {
+                Rect tab = new Rect(r.x + i * (tw + gap), r.y + 1, tw, r.height - 2);
+                if (Button(tab, id + "." + i, labels[i], selected: selected == i, quiet: true)) selected = i;
+                if (icons != null && i < icons.Length)
+                    Icon(new Rect(tab.xMax - 34, tab.y + (tab.height - 20f) * .5f, 20, 20), icons[i], selected == i ? Accent : Muted);
+            }
+            return selected;
+        }
+
         public void Section(Rect r, string title)
         {
             Label(r, title, 12, Accent);

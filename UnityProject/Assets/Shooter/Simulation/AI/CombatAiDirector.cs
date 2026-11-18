@@ -1977,8 +1977,10 @@ namespace Shooter.Simulation.AI
         /// <summary>
         /// ADR-112: unit world direction along the route. Inside <see cref="AiTuning.CornerBlendMeters"/> of the
         /// current corner it bends toward the following leg, so corners become short arcs instead of hard turns.
+        /// ADR-114: the bend is taken only when the bent line to the blended point is clear of collision for the
+        /// bot's body width; otherwise the bot follows the leg to the corner (never shaves a wall corner).
         /// </summary>
-        private static void RouteDirection(AiBlackboard board, Float3 corner, out float wx, out float wz)
+        private void RouteDirection(AiBlackboard board, Float3 corner, out float wx, out float wz)
         {
             wx = 0; wz = 0;
             float dx = corner.X - board.Feet.X, dz = corner.Z - board.Feet.Z;
@@ -1995,7 +1997,40 @@ namespace Shooter.Simulation.AI
             float t = 0.5f * (1f - len / AiTuning.CornerBlendMeters);
             float bx = wx + (nx - wx) * t, bz = wz + (nz - wz) * t;
             float blen = MathF.Sqrt(bx * bx + bz * bz);
-            if (blen > 1e-4f) { wx = bx / blen; wz = bz / blen; }
+            if (blen <= 1e-4f) return;
+            bx /= blen; bz /= blen;
+            if (!CornerBendClear(board, bx, bz, len)) return;
+            wx = bx; wz = bz;
+        }
+
+        // One clearance answer per bot, tick and corner: RouteDirection runs for the look and again for the move.
+        private ulong bendCacheSelf;
+        private uint bendCacheTick;
+        private int bendCacheCorner = -1;
+        private bool bendCacheClear;
+
+        /// <summary>
+        /// ADR-114: three horizontal collision rays (centre and both body edges, at knee height above the step) from
+        /// the feet along the bent direction, as far as the blended point plus the body radius.
+        /// </summary>
+        private bool CornerBendClear(AiBlackboard board, float bx, float bz, float len)
+        {
+            if (bendCacheTick == tick && bendCacheSelf == board.Self.Value && bendCacheCorner == board.PathCornerIndex)
+                return bendCacheClear;
+            var filter = new QueryFilter(visionMask, board.Self, false);
+            var dir = new Float3(bx, 0f, bz);
+            float y = board.Feet.Y + AiTuning.CornerBendProbeHeightMeters;
+            float r = AiTuning.CornerBendProbeRadiusMeters;
+            float reach = len + r;
+            bool clear = true;
+            for (int side = -1; side <= 1 && clear; side++)
+            {
+                // Perpendicular offset in XZ: (bz, -bx) is the right-hand side of the bent direction.
+                var origin = new Float3(board.Feet.X + bz * r * side, y, board.Feet.Z - bx * r * side);
+                clear = world.Raycast(origin, dir, reach, filter).Status != QueryStatus.Hit;
+            }
+            bendCacheTick = tick; bendCacheSelf = board.Self.Value; bendCacheCorner = board.PathCornerIndex; bendCacheClear = clear;
+            return clear;
         }
 
         private static void SmoothMove(AiBlackboard board, ref float wx, ref float wz, bool snap)

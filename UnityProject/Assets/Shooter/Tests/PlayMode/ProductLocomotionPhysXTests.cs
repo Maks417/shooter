@@ -24,6 +24,7 @@ namespace Shooter.Tests
     {
         private GameObject? floor;
         private UnityWorldQueries? world;
+        private readonly System.Collections.Generic.List<GameObject> solids = new System.Collections.Generic.List<GameObject>();
 
         [SetUp]
         public void Setup() { Physics.simulationMode = SimulationMode.Script; }
@@ -34,6 +35,8 @@ namespace Shooter.Tests
             world?.Dispose(); world = null;
             if (floor != null) UnityEngine.Object.DestroyImmediate(floor);
             floor = null;
+            foreach (var g in solids) if (g != null) UnityEngine.Object.DestroyImmediate(g);
+            solids.Clear();
         }
 
         private static string F(Float3 v) => $"({v.X:F3},{v.Y:F3},{v.Z:F3})";
@@ -87,6 +90,70 @@ namespace Shooter.Tests
             Step(InputButtons.JumpPressed, 0);
             for (int i = 0; i < 40; i++) { Step(InputButtons.None, 0); maxY = Math.Max(maxY, state.Feet.Y); }
             Assert.That(maxY - y0, Is.GreaterThan(0.5f), "jump rise\n" + log);
+        }
+
+        private void Solid(string name, Vector3 min, Vector3 max, ulong stableId)
+        {
+            var g = new GameObject(name) { layer = 8, isStatic = true };
+            g.transform.position = (min + max) * 0.5f;
+            g.AddComponent<BoxCollider>().size = max - min;
+            g.AddComponent<StableSurface>().Initialize(stableId, (uint)(100 + stableId), 1);
+            solids.Add(g);
+        }
+
+        /// <summary>
+        /// ADR-114: pressing into the vertical corner of a tall box, or a ledge just over step height, against real PhysX
+        /// start-contact sweeps must keep the feet on the floor (the owner's corner up/down bug).
+        /// </summary>
+        [TestCase(0.05f, 0f, false)]
+        [TestCase(0.15f, 0f, true)]
+        [TestCase(0.25f, 0.3f, true)]
+        [TestCase(0.30f, -0.5f, false)]
+        public void PushingIntoBoxCornerAgainstPhysXDoesNotBob(float overlapX, float strafe, bool sprint)
+        {
+            floor = new GameObject("Packaged floor") { layer = 8, isStatic = true };
+            floor.transform.position = new Vector3(0, -0.05f, 0);
+            floor.AddComponent<BoxCollider>().size = new Vector3(200, 0.1f, 200);
+            floor.AddComponent<StableSurface>().Initialize(1, 100, 1);
+            var motor = new KinematicMotor();
+            float r = motor.Config.Radius;
+            Solid("corner box", new Vector3(r - overlapX, 0f, 1.0f), new Vector3(3f, 3f, 2.5f), 2);
+            Solid("ledge", new Vector3(-6f, 0f, 1.0f), new Vector3(-2f, 0.30f, 2.5f), 3);
+            Physics.SyncTransforms();
+            world = new UnityWorldQueries(1);
+
+            var id = new EntityId(1);
+            var log = new StringBuilder();
+            foreach (float startX in new[] { 0f, -4f })
+            {
+                var state = new MotorBodyState(new Float3(startX, 0, 0), default, 0, 0, Stance.Standing, motor.Config.StandingHeight, false,
+                    default, new Float3(0, 1, 0), 0, 0, 0, false);
+                uint tick = 0;
+                for (int i = 0; i < 20; i++, tick++)
+                    state = motor.Step(state, new InputCommand(id, tick, tick + 1, 0, 0, 0, 0, InputButtons.None, 0), tick, world);
+                float floorY = state.Feet.Y, maxY = floorY;
+                int flips = 0; bool was = state.Grounded;
+                for (int i = 0; i < 300; i++, tick++)
+                {
+                    float mx = (startX == 0f ? strafe : 0f) + (i % 7 - 3) * 0.05f, my = 1f;
+                    float len = (float)Math.Sqrt(mx * mx + my * my) * 1.001f;
+                    state = motor.Step(state, new InputCommand(id, tick, tick + 1, mx / len, my / len, 0, 0,
+                        sprint ? InputButtons.SprintHeld : InputButtons.None, 0), tick, world);
+                    string probe = "";
+                    if (!state.Grounded)
+                    {
+                        var full = MotorMath.BodyCapsule(state.Feet, state.CapsuleHeight, r);
+                        var inset = new Capsule(full.BottomSphereCenter, full.TopSphereCenter, r - motor.Config.Skin);
+                        var filter = new QueryFilter(CollisionLayers.MotorMask, default, false);
+                        probe = $" vy={state.Velocity.Y:F3} full={H(world.SweepCapsule(full, new Float3(0, -0.1f, 0), filter))} inset={H(world.SweepCapsule(inset, new Float3(0, -0.1f, 0), filter))}";
+                    }
+                    log.AppendLine($"x0={startX} t{tick} feet={F(state.Feet)} g={state.Grounded} n={F(state.GroundNormal)}{probe}");
+                    maxY = Math.Max(maxY, state.Feet.Y);
+                    if (state.Grounded != was) { flips++; was = state.Grounded; }
+                }
+                Assert.That(maxY - floorY, Is.LessThan(0.01f), $"feet rose {maxY - floorY:F3} m (start x {startX})" + Environment.NewLine + log);
+                Assert.That(flips, Is.LessThanOrEqualTo(1), $"grounded flapped {flips} times (start x {startX})" + Environment.NewLine + log);
+            }
         }
 
         [Test]

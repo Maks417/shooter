@@ -1906,3 +1906,52 @@ Consequences: C0-v1, Game-v1, content-format and feature-content locks are uncha
 Rollback: revert the commit.
 
 Evidence: `Tools/Test-Generation.ps1` (`IconAtlasTests` including `Every_career_reward_icon_is_in_the_atlas`), `Tools/Test-Game.ps1` (`CareerTests.Reward_art_matches_the_ladder`), Unity EditMode, and the M11 handoff entry. The owner's visual review of the Career page, emblems and debrief strip at 1080p and 720p is Pending.
+
+
+## ADR-114 — Accepted: corner-bob motor fix, nav bake that respects walls, and a tabbed Career page
+
+Date 2026-11-18. Context: owner report on 0.3.22: on the new maps bots run into walls and get stuck; a player or bot pushing into the corner of an object still rises and falls for a few seconds; the Career page is crowded, and progress and statistics should be on separate tabs with a progress line that is not overlapped.
+
+Decision:
+- **Corner bobbing (motor).** A PhysX `CapsuleCast` that starts already touching a collider reports distance 0 with normal = −direction in every direction. At a convex box corner this looked like walkable ground under the feet and like an open step top, so `TryStep` lifted the actor a full 0.27 m. `ProbeGround` then raised it by Skin every tick while it touched the box, and the actor fell and repeated. ADR-067 had clamped velocity only, never position. `KinematicMotor` now:
+  - routes every sweep through `Sweep()`. On a start contact it re-sweeps a capsule inset by Skin: no hit means the motion leaves the touch; a hit gives the real normal and distance; only genuine penetration keeps the raw hit, and overlap recovery handles that;
+  - `TryStep` requires a measured step top above the current feet, and never ends higher than that top plus Skin;
+  - `ProbeGround` settles to Skin from the true distance, and when the down sweep grazes a wall or ledge face it looks past it with the inset capsule;
+  - `SlideMove` never lifts a ground-following actor's position off a non-walkable contact, matching the existing velocity clamp.
+- **Test world.** `SlopeWorld.PhysxStartContact` imitates the PhysX start-contact hits and adds a ComputePenetration-like overlap. New motor tests: a convex box corner at several overlaps, strafes and jitters; a 0.30 m ledge; and a real step still climbed. Six of them fail on the old motor. A real-PhysX PlayMode test (`ProductLocomotionPhysXTests.PushingIntoBoxCornerAgainstPhysXDoesNotBob`) runs the same box corner and ledge through `UnityWorldQueries`.
+- **Bot navigation.** Two defects sent bots into walls on the ADR-109 maps:
+  - **The bake.** The native bake marked tall solids Not-Walkable with modifier volumes that started exactly on the floor top, so Unity left the floor walkable inside most walls. The shipped Harbour bake had walkable floor inside 151 of its 225 blocking solids.
+  - **The runtime install.** `UnityNavMeshBakeInstaller` installed only about 1% of every product bake. The packaged ground is a zero-thickness surface at y = 0.0133, which Unity drops between voxel layers. Every runtime NavMesh query therefore missed, and every bot path came from the packaged fallback, which snapped up to 8.1 m and thinned corners straight across walls.
+
+  Fixes:
+  - **Bake** (`UnityNavMeshBakeEditorBridge`): each solid's Not-Walkable volume spans from one agent height below the solid to 0.1 m under its top. A deck resting on a box top and the floor under high beams stay walkable. Its footprint is padded by the 0.05 m clearance margin plus a quarter voxel.
+  - **Gate:** the pure `Generation/Core/Environment/NavCollisionAudit` rejects a native bake that has a nav triangle inside a blocking solid's footprint (covered area ≥ 0.001 m²), or a nav vertex closer to such a solid than agentRadius − 0.05. It runs in `MapPackageBuilder.Build` for every native bake and in `ShooterNativeContentBuild`, which logs `SHOOTER_NAV_COLLISION_AUDIT`. Stage and publication tests now inject a clean test bake instead of the coarse software grid labelled native.
+  - **Install:** heights are snapped to 5 cm (`InstallHeightQuantum`, at most 2.5 cm of movement), so the whole bake installs.
+  - **Fallback:** the packaged fallback snaps at most 1.5 m at runtime (`RuntimeMaxSnapMeters`), and it skips a corner only when `NavMesh.Raycast` says the shortcut is clear (`ThinVisibleCorners`).
+  - **Bots** (`CombatAiDirector.RouteDirection`): the ADR-112 corner bend applies only when three horizontal probes toward the bent point are clear.
+
+  Native packages are republished. No tracked lock or golden file changed.
+- **Career page (presentation only).**
+  - A tab strip under the header switches between **PROGRESS** (hero band and the progress line) and **STATISTICS** (active perks and the service record). Q / E switch tabs, and the page opens on PROGRESS.
+  - Settings and Career share the new `TacticalUi.TabStrip`.
+  - Geometry comes from the pure `Presentation/Model/Menus/CareerLayout` and `CareerLineLayout`:
+    - the node row sits below the section label by the full halo radius;
+    - the rank code and CP labels sit below the halo ring, which used to overlap them;
+    - cards start below the lowest label with room for the hover lift, and are left out only under 56 px;
+    - the hero collapses to one row on short screens;
+    - service-record tiles always stack label over value, and switch to 6 × 2 when 4 × 3 tiles would be too short.
+  - `TacticalUi.LabelFit` draws one-line labels that shrink, then cut with an ellipsis, so card titles, chips and values never spill.
+  - `-shooterUiGallery career` opens the page on a seeded mid-ladder profile that is never saved, for UI captures.
+
+Consequences: C0-v1, Game-v1, content-format and feature-content locks are unchanged; the native map packages are republished with the wall-respecting bake. The motor change affects players and bots alike. Step-up, ramps and the 0.3.5 spawn-contact behaviour are kept, covered by the existing tests.
+
+Rollback: revert the commit.
+
+Evidence (navigation):
+- **Republish:** `Compile-GameContent -Native` PASS with 0 leaks and 0 clearance violations. Minimum clearance is 0.27 / 0.32 / 0.349 m for Old Town / Harbour / Oil Depot (`m8-runtime-composition/32390a6…/compile-gamecontent-20261118T182602124Z-fd3de305`).
+- **Installed NavMesh samples:** 550/550, 556/556 and 583/583, up from 9, 6 and 12.
+- **PlayMode `ProductBotNavigationTests`, 30 s of 5v5 per map:** stuck 0 / 1 / 0 with no relocations, down from 55 / 37 / 20.
+- **Tests:** `NavCollisionAuditTests`, `NavFallbackPathTests`, `BotCornerBendTests`, `ProductNavMeshInstallTests`.
+- **Still open:** about half of bot goal points lie more than 0.74 m from the NavMesh. Those paths still use the fallback, which is now wall-safe but less smooth.
+
+Evidence (motor and Career): `Tools/Simulation.Tests` (`MotorSlopeAndStepTests` corner, ledge and step cases; `CareerLayoutTests` at 1280×720, 1366×768, 1600×900 and 1920×1080 with UI scale 1.0, 1.25 and 1.5); Unity PlayMode 25/25 PASS including the real-PhysX corner test; the M11 handoff entry. The owner's in-game feel check at corners and visual review of both Career tabs at 720p and 1080p are Pending.

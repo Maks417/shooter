@@ -40,7 +40,7 @@ public sealed class NavBakeProvenanceDocumentTests : IDisposable
     public void NativeProviderPublicationRecordsNativeToolIdentityAndValidates()
     {
         NavBakePublication.NativeProvider = (boxes, half, radius, height, step, slope, margin) =>
-            new NavBakePublication.NativeBake(UnityNavMeshBakeCodec.BuildWalkableGrid(boxes, half, 8f, radius + margin), NavBakePublication.NativeProvenance);
+            new NavBakePublication.NativeBake(CleanNavBake.Build(boxes, half, 2f), NavBakePublication.NativeProvenance);
         NavBakePublication.NativeToolIdentity = "unity=test;revision=abc";
         var result = MapPackagePublisher.Publish(root, toolchain, new[] { "depot-yard" }, new[] { "gameplay" }, false, CancellationToken.None);
         Assert.Equal(ErrorCode.None, result.Error);
@@ -54,7 +54,7 @@ public sealed class NavBakeProvenanceDocumentTests : IDisposable
     public void NativeClaimWithoutToolIdentityOrWithTamperedNavigationHashIsRejected()
     {
         NavBakePublication.NativeProvider = (boxes, half, radius, height, step, slope, margin) =>
-            new NavBakePublication.NativeBake(UnityNavMeshBakeCodec.BuildWalkableGrid(boxes, half, 8f, radius + margin), NavBakePublication.NativeProvenance);
+            new NavBakePublication.NativeBake(CleanNavBake.Build(boxes, half, 2f), NavBakePublication.NativeProvenance);
         NavBakePublication.NativeToolIdentity = null;
         var result = MapPackagePublisher.Publish(root, toolchain, new[] { "depot-yard" }, new[] { "gameplay" }, false, CancellationToken.None);
         Assert.Equal(ErrorCode.None, result.Error);

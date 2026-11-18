@@ -45,7 +45,7 @@ public sealed class NavBakePublicationTests
         {
             NavBakePublication.NativeProvider = (boxes, half, radius, height, step, slope, margin) =>
             {
-                var bake = UnityNavMeshBakeCodec.BuildWalkableGrid(boxes, half, 8f, radius + margin);
+                var bake = CleanNavBake.Build(boxes, half, 2f);
                 return new NavBakePublication.NativeBake(bake, NavBakePublication.NativeProvenance);
             };
             var package = MapPackageBuilder.Build("depot-yard", "gameplay", toolchain);

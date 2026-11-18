@@ -88,6 +88,8 @@ namespace Shooter.Presentation.Menus
         public const string CareerRankSection = "CURRENT RANK";
         public const string CareerLadderSection = "RANKS AND REWARDS";
         public const string CareerStatsSection = "SERVICE RECORD";
+        public const string CareerTabProgress = "PROGRESS";
+        public const string CareerTabStatistics = "STATISTICS";
         public const string CareerNextReward = "NEXT REWARD";
         public const string CareerTopRank = "Highest rank reached.";
         public const string CareerHint = "Finish matches to earn career points: your score, +500 for finishing, +1000 for a win (+500 draw).";

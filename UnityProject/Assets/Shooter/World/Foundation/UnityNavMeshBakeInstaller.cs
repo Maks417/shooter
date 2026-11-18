@@ -52,7 +52,9 @@ namespace Shooter.World
 
                 // Triangulation already accounts for agent radius from the publisher bake.
                 // Install with a near-zero radius so BuildNavMeshData does not shrink the surface again.
-                var buildSettings = NavMesh.CreateSettings();
+                // ADR-114: copy the built-in agent type (ID 0) like the publisher bake: no transient agent type is registered
+                // at runtime, and the area-mask queries below (SamplePosition / CalculatePath / Raycast) target this agent.
+                var buildSettings = NavMesh.GetSettingsByID(0);
                 buildSettings.agentRadius = 0.05f;
                 buildSettings.agentHeight = settings.AgentHeight;
                 buildSettings.agentClimb = settings.MaxStep;
@@ -63,8 +65,8 @@ namespace Shooter.World
                 buildSettings.overrideTileSize = true;
                 buildSettings.tileSize = 64;
 
-                Vector3 min = new Vector3(bake.BoundsMin.X, bake.BoundsMin.Y, bake.BoundsMin.Z);
-                Vector3 max = new Vector3(bake.BoundsMax.X, bake.BoundsMax.Y, bake.BoundsMax.Z);
+                Vector3 min = new Vector3(bake.BoundsMin.X, SnapHeight(bake.BoundsMin.Y) - InstallHeightQuantum, bake.BoundsMin.Z);
+                Vector3 max = new Vector3(bake.BoundsMax.X, SnapHeight(bake.BoundsMax.Y) + InstallHeightQuantum, bake.BoundsMax.Z);
                 var bounds = new Bounds((min + max) * 0.5f, (max - min) + Vector3.one * 2f);
                 NavMeshData data = NavMeshBuilder.BuildNavMeshData(
                     buildSettings,
@@ -124,19 +126,27 @@ namespace Shooter.World
             return NavPathOutcome.Failed;
         }
 
-        /// <summary>Packaged-graph path only (no native query), capped to the contract corner limit.</summary>
+        /// <summary>
+        /// Packaged-graph path only (no native query), capped to the contract corner limit. ADR-114: start and goal
+        /// snap at most <see cref="UnityNavMeshBakeCodec.RuntimeMaxSnapMeters"/>, and corners are thinned only where
+        /// <c>NavMesh.Raycast</c> confirms the shortcut stays on the installed surface (never across a wall). A path
+        /// that still exceeds the corner limit is cut short; the bot re-plans from where it ends.
+        /// </summary>
         public bool TryCalculatePackagedPath(Float3 start, Float3 goal, List<Float3> corners)
         {
             if (corners == null) throw new ArgumentNullException(nameof(corners));
             corners.Clear();
-            if (!UnityNavMeshBakeCodec.TryFindPath(Bake, start, goal, corners) || corners.Count == 0)
+            if (!UnityNavMeshBakeCodec.TryFindPath(Bake, start, goal, corners, UnityNavMeshBakeCodec.RuntimeMaxSnapMeters) || corners.Count == 0)
             {
                 corners.Clear();
                 return false;
             }
-            UnityNavMeshBakeCodec.DecimateCorners(corners, ContractVersion.MaxPathCorners - 8);
+            UnityNavMeshBakeCodec.ThinVisibleCorners(corners, ContractVersion.MaxPathCorners - 8, IsInstalled ? ShortcutClear : (Func<Float3, Float3, bool>?)null);
             return true;
         }
+
+        private static bool ShortcutClear(Float3 a, Float3 b) =>
+            !NavMesh.Raycast(UnityWorldQueries.V(a), UnityWorldQueries.V(b), out _, NavMesh.AllAreas);
 
         public void Dispose()
         {
@@ -151,6 +161,16 @@ namespace Shooter.World
             }
         }
 
+        /// <summary>
+        /// ADR-114: install heights are snapped to this grid. The packaged triangulation is a zero-thickness surface, and
+        /// Unity's rasterizer drops such a surface when it lies between voxel layers: the published ground sits at
+        /// y = 0.0133 and only ~1% of the map installed, so every runtime query missed and every bot path came from the
+        /// packaged fallback. On the grid the whole surface installs (ProductNavMeshInstallTests). Max shift 2.5 cm.
+        /// </summary>
+        public const float InstallHeightQuantum = 0.05f;
+
+        public static float SnapHeight(float y) => Mathf.Round(y / InstallHeightQuantum) * InstallHeightQuantum;
+
         private static Mesh BuildMesh(UnityNavMeshBakeCodec.Bake bake)
         {
             var mesh = new Mesh { name = "NVB1-install" };
@@ -158,7 +178,7 @@ namespace Shooter.World
             for (int i = 0; i < bake.Vertices.Count; i++)
             {
                 var v = bake.Vertices[i];
-                verts[i] = new Vector3(v.X, v.Y, v.Z);
+                verts[i] = new Vector3(v.X, SnapHeight(v.Y), v.Z);
             }
             // Winding is chosen per triangle so the surface faces +Y whether the bake is native (clockwise) or software grid (counter-clockwise).
             var indices = new List<int>(UnityNavMeshBakeCodec.BuildUpFacingTriangleIndices(bake));

@@ -290,21 +290,23 @@ namespace Shooter.Presentation.Session
                 TacticalUi.Icon(lockR, IconLibrary.UiLock, A(TacticalUi.Muted, .9f * alpha), shadow: true);
             }
 
-            bool tall = wideCard ? r.height >= 70f : r.height >= 128f;
+            // ADR-114: every line is one fitted line (no wrapping past the card), and each one is drawn only when it
+            // clears the state chip at the bottom.
+            bool tall = wideCard ? r.height >= 86f : r.height >= 128f;
+            Rect chip = new Rect(tx, r.yMax - 22f, tw, 16f);
             float y = ty;
-            if (wideCard || tall)
+            if (tall)
             {
-                ui.Label(new Rect(tx, y, tw, 14), KindLabel(art.Kind), 10, A(kindShown, alpha));
+                ui.LabelFit(new Rect(tx, y, tw, 14), KindLabel(art.Kind), 10, A(kindShown, alpha), TextAnchor.UpperLeft, 9);
                 y += 14f;
             }
-            int titleSize = wideCard ? 18 : r.width >= 150f ? 15 : 13;
-            ui.Label(new Rect(tx, y, tw, titleSize + 6), art.FullTitle.ToUpperInvariant(), titleSize, A(title, alpha));
+            int titleSize = wideCard ? (r.height >= 80f ? 18 : 14) : r.width >= 150f ? 15 : 13;
+            ui.LabelFit(new Rect(tx, y, tw, titleSize + 6), art.FullTitle.ToUpperInvariant(), titleSize, A(title, alpha), TextAnchor.UpperLeft, 10);
             y += titleSize + 5f;
-            if (wideCard || tall || r.height >= 104f)
-                ui.Label(new Rect(tx, y, tw, 16), art.Detail, 11, A(TacticalUi.Muted, alpha));
+            if ((wideCard || tall || r.height >= 104f) && y + 16f <= chip.y - 2f)
+                ui.LabelFit(new Rect(tx, y, tw, 16), art.Detail, 11, A(TacticalUi.Muted, alpha), TextAnchor.UpperLeft, 9);
 
             // State chip along the bottom.
-            Rect chip = new Rect(tx, r.yMax - 22f, tw, 16f);
             string chipText;
             Color chipInk;
             string? chipIcon;
@@ -314,10 +316,10 @@ namespace Shooter.Presentation.Session
                 case RewardState.Next: chipText = ShellUiCopy.CareerNextChip; chipInk = TacticalUi.Accent; chipIcon = null; break;
                 default: chipText = ShellUiCopy.CareerRankChip(art.Rank); chipInk = TacticalUi.Muted; chipIcon = IconLibrary.UiLock; break;
             }
-            if (!wideCard && y + 16f > chip.y - 2f) return;
+            if (y > chip.y) return;
             float cx = chip.x;
             if (chipIcon != null && TacticalUi.Icon(new Rect(cx, chip.y + 1f, 13f, 13f), chipIcon, A(chipInk, alpha))) cx += 17f;
-            ui.Label(new Rect(cx, chip.y, chip.xMax - cx, chip.height), chipText, 10, A(chipInk, alpha));
+            ui.LabelFit(new Rect(cx, chip.y, chip.xMax - cx, chip.height), chipText, 10, A(chipInk, alpha), TextAnchor.UpperLeft, 9);
         }
 
         /// <summary>Active buff tile: icon plate and the combined value.</summary>
@@ -331,8 +333,10 @@ namespace Shooter.Presentation.Session
                 .WithGradient(new Color(.05f, .09f, .06f, 1f), UiSdf.Gradient.Vertical));
             UiSdf.Icon(Square(tile, .72f), icon, UiSdf.Style.Solid(Color.Lerp(Color.white, BuffInk, .3f)).WithGradient(BuffInk, UiSdf.Gradient.Vertical));
             float tx = tile.xMax + 10f;
-            ui.Label(new Rect(tx, r.y + 4f, r.xMax - tx - 6f, 16f), name.ToUpperInvariant(), 11, TacticalUi.Muted);
-            ui.Label(new Rect(tx, r.y + 18f, r.xMax - tx - 6f, r.height - 20f), value, 16, TacticalUi.Text);
+            // ADR-114: name and value split the chip height, so the value never drops out of a short chip.
+            float half = (r.height - 8f) * .5f;
+            ui.LabelFit(new Rect(tx, r.y + 4f, r.xMax - tx - 6f, half), name.ToUpperInvariant(), 11, TacticalUi.Muted, TextAnchor.MiddleLeft, 9);
+            ui.LabelFit(new Rect(tx, r.y + 4f + half, r.xMax - tx - 6f, half), value, half >= 20f ? 16 : 13, TacticalUi.Text, TextAnchor.MiddleLeft, 11);
         }
     }
 }

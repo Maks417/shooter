@@ -2,6 +2,24 @@
 
 Records from 2026-11-15 onward. Older entries — T062–T085, deliveries up to 0.3.12, historical candidates and the T065 operator runbook — are in the [handoff archive](handoff-archive.md).
 
+## ADR-114 — Corner bobbing, bot walls on the new maps, Career tabs — 2026-11-18
+
+Owner: on the new maps bots run into walls and get stuck; players and bots pushing into an object's corner rise and fall for a few seconds; split career progress and statistics onto tabs and keep the progress line clear. [ADR-114](../../decisions.md#adr-114--accepted-corner-bob-motor-fix-nav-bake-that-respects-walls-and-a-tabbed-career-page)
+
+**Implemented:** motor start-contact resolution (inset re-sweep), measured step tops, ground probe that looks past wall faces, no position lift off non-walkable contacts; PhysX start-contact test world plus corner, ledge and step tests; real-PhysX PlayMode corner test. Career page PROGRESS / STATISTICS tabs on the pure `CareerLayout` / `CareerLineLayout`, shared `TacticalUi.TabStrip`, one-line fitted labels, `-shooterUiGallery career`. Bot navigation:
+- walls now cut the native bake;
+- `NavCollisionAudit` blocks leaky bakes from publishing;
+- the runtime NavMesh installs whole, where it used to install about 1% and leave every bot path to the wall-cutting fallback;
+- the fallback snaps at most 1.5 m and only shortcuts a corner when the NavMesh says the line is clear;
+- the ADR-112 corner bend is probed first;
+- native packages are republished: 0 leaks, and stuck bots per 30 s of 5v5 dropped from 55/37/20 to 0/1/0.
+
+**Checks (working tree on `32390a6`):** `Test-Simulation` 646 PASS (with `CareerLayoutTests` and the new motor tests); the new corner/ledge tests fail on the old motor (6) and pass on the new one; Unity PlayMode 25/25 PASS (`tests-playmode-20261118T181053673Z-1ca2736d`, includes the real-PhysX corner test and compiles the Career page).
+
+**Full working tree (motor + Career + navigation, on `32390a6`):** Unity EditMode PASS (`tests-editmode-20261118T185832087Z-b2b2642b`); PlayMode 30/30 PASS (`tests-playmode-20261118T184758167Z-a62ede08`, includes the real-PhysX corner, NavMesh install and per-map bot navigation tests); `Test-Contracts` 79, `Test-Generation` 607, `Test-Game` 158, `Test-Maps` 91, `Test-Simulation` 648, `Test-SourceProvenance`, fixtures, contract lock, asmdef graph and docs PASS.
+
+**Pending:** owner bot playtest on all three maps; owner feel check at corners in play; owner visual review of both Career tabs at 720p and 1080p; the next installer.
+
 ## ADR-113 — Career progress line, layered rank emblems and reward art — 2026-11-18
 
 Owner: revise the career progress line, rewards and interface; icons and the whole design should look solid, like an AAA game. [ADR-113](../../decisions.md#adr-113--accepted-career-progress-line-layered-rank-emblems-and-reward-art)

@@ -31,7 +31,7 @@ public sealed class NavBakeStageTests
     private NavBakeStage.Entry StageFor(string mapId, string? provenance = null, bool repeat = true, byte[]? bytes = null, string identity = Identity)
     {
         var boxes = GameplayBoxes(mapId);
-        var grid = UnityNavMeshBakeCodec.BuildWalkableGrid(boxes, CompoundPlan.MapHalfExtent, 12f, R + Margin);
+        var grid = CleanNavBake.Build(boxes, CompoundPlan.MapHalfExtent, 2f);
         var gameplay = MapPackageBuilder.Build(mapId, "gameplay", toolchain);
         return new NavBakeStage.Entry(mapId, KeyFor(boxes), ContentIdentity.Hash(gameplay.CollisionSgaf),
             provenance ?? NavBakePublication.NativeProvenance, identity, repeat, bytes ?? UnityNavMeshBakeCodec.Encode(grid));
@@ -171,7 +171,7 @@ public sealed class NavBakeStageTests
         var boxes = GameplayBoxes("depot-yard");
         string key = KeyFor(boxes);
         var collision = ContentIdentity.Hash(new byte[] { 1 });
-        byte[] good = UnityNavMeshBakeCodec.Encode(UnityNavMeshBakeCodec.BuildWalkableGrid(boxes, CompoundPlan.MapHalfExtent, 12f, R + Margin));
+        byte[] good = UnityNavMeshBakeCodec.Encode(CleanNavBake.Build(boxes, CompoundPlan.MapHalfExtent, 2f));
 
         _ = new NavBakeStage.Entry("depot-yard", key, collision, NavBakePublication.NativeProvenance, Identity, true, good);
         Assert.Throws<FormatException>(() => new NavBakeStage.Entry("depot-yard", key, collision, NavBakePublication.NativeProvenance, Identity, true, new byte[] { 1, 2, 3 }));

@@ -283,5 +283,79 @@ namespace Shooter.Simulation.Tests.Motor
             Assert.True(s.Grounded);
             Assert.True(s.Feet.Z < 1.2f - Cfg.Radius + 0.1f, $"passed through wall z={s.Feet.Z}");
         }
+            // ---------------- E. convex box corner bobbing (ADR-114) ----------------
+        // A player or bot pressing into the vertical corner of a tall box must stay on the floor: no false step-up, no
+        // per-tick Skin creep from start-contact hits, no up/down cycle. Uses PhysX start-contact emulation.
+        [Theory]
+        [InlineData(0.05f, 0f, false)]
+        [InlineData(0.15f, 0f, false)]
+        [InlineData(0.25f, 0f, true)]
+        [InlineData(0.30f, 0.5f, true)]
+        [InlineData(0.15f, -0.7f, false)]
+        [InlineData(0.20f, 0.3f, true)]
+        public void PushingIntoConvexBoxCornerDoesNotBob(float overlapX, float strafe, bool sprint)
+        {
+            var world = new SlopeWorld { PhysxStartContact = true };
+            // Tall box whose -X/-Z vertical edge sits in front of the actor, overlapping its path by overlapX.
+            world.AddBox(new Float3(Cfg.Radius - overlapX, 0f, 1.0f), new Float3(3f, 3f, 2.5f), 21);
+            var motor = new KinematicMotor();
+            uint tick = 0;
+            float floorY = world.GroundHeightAt(0);
+            var s = SpawnAt(floorY + Cfg.Skin);
+            float maxY = s.Feet.Y;
+            int flips = 0; bool wasGrounded = s.Grounded;
+            var b = sprint ? InputButtons.SprintHeld : InputButtons.None;
+            for (int i = 0; i < 300; i++)
+            {
+                tick++;
+                // Bot-style steering jitter around the push direction.
+                float jitter = (i % 7 - 3) * 0.05f;
+                float mx = strafe + jitter;
+                float my = 1f;
+                float len = (float)Math.Sqrt(mx * mx + my * my) * 1.001f;
+                s = motor.Step(s, Cmd(tick, my / len, b, mx / len), tick, world);
+                maxY = Math.Max(maxY, s.Feet.Y);
+                if (s.Grounded != wasGrounded) { flips++; wasGrounded = s.Grounded; }
+            }
+            Assert.True(maxY <= floorY + Cfg.Skin + 0.01f, $"feet rose to {maxY} (floor {floorY})");
+            Assert.True(flips <= 1, $"grounded state flapped {flips} times");
+            Assert.True(s.Grounded);
+        }
+
+        [Fact]
+        public void PushingIntoShortLedgeAboveStepHeightDoesNotRise()
+        {
+            var world = new SlopeWorld { PhysxStartContact = true };
+            // 0.3 m ledge: taller than StepHeight (0.25), shorter than the capsule radius (0.32).
+            world.AddBox(new Float3(-3f, 0f, 1.0f), new Float3(3f, 0.30f, 2.5f), 22);
+            var motor = new KinematicMotor();
+            uint tick = 0;
+            float floorY = world.GroundHeightAt(0);
+            var s = SpawnAt(floorY + Cfg.Skin);
+            float maxY = s.Feet.Y;
+            for (int i = 0; i < 240; i++)
+            {
+                tick++;
+                float mx = (i % 5 - 2) * 0.05f;
+                s = motor.Step(s, Cmd(tick, 0.99f - Math.Abs(mx), InputButtons.SprintHeld, mx: mx), tick, world);
+                maxY = Math.Max(maxY, s.Feet.Y);
+            }
+            Assert.True(maxY <= floorY + Cfg.Skin + 0.01f, $"feet rose to {maxY} on a ledge taller than a step");
+            Assert.True(s.Feet.Z < 1.0f, $"climbed the ledge z={s.Feet.Z}");
+        }
+
+        [Fact]
+        public void RealStepIsStillClimbedWithStartContactBackend()
+        {
+            var world = new SlopeWorld { PhysxStartContact = true };
+            world.AddBox(new Float3(-3f, 0f, 1.0f), new Float3(3f, 0.20f, 20f), 23);
+            var motor = new KinematicMotor();
+            uint tick = 0;
+            var s = SpawnAt(world.GroundHeightAt(0) + Cfg.Skin);
+            s = Run(motor, world, s, ref tick, 120, 1f, InputButtons.None);
+            Assert.True(s.Feet.Z > 2f, $"blocked by a 0.20 m step z={s.Feet.Z}");
+            Assert.InRange(s.Feet.Y, 0.19f, 0.20f + Cfg.Skin + 0.01f);
+            Assert.True(s.Grounded);
+        }
     }
 }

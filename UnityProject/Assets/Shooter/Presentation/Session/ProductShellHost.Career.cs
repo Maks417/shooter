@@ -4,6 +4,7 @@ using Shooter.Contracts;
 using Shooter.Game.Contracts;
 using Shooter.Game.Settings;
 using Shooter.Generation.Icons;
+using Shooter.Presentation.Hud;
 using Shooter.Presentation.Menus;
 using UnityEngine;
 
@@ -24,6 +25,7 @@ namespace Shooter.Presentation.Session
         // First visible rank (0-based) of the progress line; -1 recentres on the current rank.
         private int careerFirstRow = -1;
         private float careerOpenedAt = -1f;
+        private CareerTab careerTab = CareerTab.Progress;
 
         private int CareerRank => career.Profile.Rank;
 
@@ -67,8 +69,26 @@ namespace Shooter.Presentation.Session
             if (navigation.Screen == ShellScreen.Armory) SaveArmoryIfChanged();
             careerFirstRow = -1;
             careerOpenedAt = -1f;
+            careerTab = CareerTab.Progress;
             navigation.OpenCareer();
             ApplyCursorForScreen();
+        }
+
+        private bool careerGalleryOpened;
+
+        /// <summary>
+        /// Review-only (<c>-shooterUiGallery career</c>): opens the Career page on a seeded mid-ladder profile that is
+        /// never saved, so UI captures show both tabs with real numbers (ADR-114).
+        /// </summary>
+        private void OpenCareerGallery()
+        {
+            careerGalleryOpened = true;
+            careerStore = null;
+            long from = CareerLadder.Get(8).Threshold, to = CareerLadder.Get(9).Threshold;
+            career = new CareerRecorder(new CareerProfile(from + (to - from) * 3 / 5, matches: 214, wins: 117, losses: 88, draws: 9,
+                kills: 3127, deaths: 2410, assists: 846, headshots: 1094, scoreTotal: 428600, bestScore: 4210, bestStreak: 17,
+                activeTicks: 60L * 60 * 60 * 41));
+            OpenCareer();
         }
 
         private void CloseCareer()
@@ -135,43 +155,63 @@ namespace Shooter.Presentation.Session
 
         // ------------------------------------------------------------ Career page
 
+        private static Rect R(HudRect h) => new Rect(h.X, h.Y, h.Width, h.Height);
+
+        private static readonly string[] CareerTabLabels = { ShellUiCopy.CareerTabProgress, ShellUiCopy.CareerTabStatistics };
+        private static readonly string[] CareerTabIcons = { IconLibrary.RankStar, IconLibrary.MedalStar };
+
+        /// <summary>
+        /// ADR-114 Career page: a tab strip under the header switches between PROGRESS (hero band and the progress line)
+        /// and STATISTICS (active perks and the service record); Q / E switch tabs. Every rect comes from the pure
+        /// <see cref="CareerLayout"/> and <see cref="CareerLineLayout"/>, tested for overlap at 720p-1080p and 100-150% UI scale.
+        /// </summary>
         private void DrawCareer()
         {
             ui.Backdrop();
             ui.Header(ShellUiCopy.CareerEyebrow, ShellUiCopy.CareerTitle, "");
-            Rect a = ui.Safe;
+            var layout = CareerLayout.Build(new HudRect(ui.Safe.x, ui.Safe.y, ui.Safe.width, ui.Safe.height));
             var profile = career.Profile;
-            float top = a.y + 74;
-            float bottom = a.yMax - 74;
-            float content = bottom - top;
             if (careerOpenedAt < 0f) careerOpenedAt = Time.unscaledTime;
             float opened = Time.unscaledTime - careerOpenedAt;
 
-            float heroH = Mathf.Clamp(content * .27f, 124f, 160f);
-            float lowerH = Mathf.Clamp(content * .25f, 120f, 196f);
-            const float gap = 14f;
-            Rect hero = new Rect(a.x, top, a.width, heroH);
-            Rect lower = new Rect(a.x, bottom - lowerH, a.width, lowerH);
-            Rect track = new Rect(a.x, hero.yMax + gap, a.width, lower.y - gap - hero.yMax - gap);
+            var ev = Event.current;
+            if (ev != null && ev.type == EventType.KeyDown && (ev.keyCode == KeyCode.Q || ev.keyCode == KeyCode.E))
+            {
+                SelectCareerTab(CareerTabs.Step(careerTab, ev.keyCode == KeyCode.E ? 1 : -1));
+                ev.Use();
+            }
+            int picked = ui.TabStrip(R(layout.Tabs), "career.tab", CareerTabLabels, CareerTabIcons, (int)careerTab);
+            if (picked != (int)careerTab) SelectCareerTab((CareerTab)picked);
 
-            DrawCareerHero(hero, profile, opened);
-            DrawProgressLine(track, profile, opened);
+            if (careerTab == CareerTab.Progress)
+            {
+                DrawCareerHero(R(layout.Hero), layout.CompactHero, profile, opened);
+                DrawProgressLine(CareerLineLayout.Build(layout.Track, CareerLadder.RankCount), profile, opened);
+            }
+            else
+            {
+                ui.Section(R(layout.PerksLabel), ShellUiCopy.CareerActiveBuffs);
+                DrawActiveBuffs(layout, CareerLadder.BuffsFor(profile.Rank));
+                ui.Section(R(layout.RecordLabel), ShellUiCopy.CareerStatsSection);
+                DrawServiceRecord(layout, profile);
+            }
 
-            float buffsW = Mathf.Min(a.width * .38f, 520f);
-            ui.Section(new Rect(lower.x, lower.y, buffsW, 18), ShellUiCopy.CareerActiveBuffs);
-            DrawActiveBuffs(new Rect(lower.x, lower.y + 24, buffsW, lower.height - 24), CareerLadder.BuffsFor(profile.Rank));
-            float recordX = lower.x + buffsW + 18f;
-            ui.Section(new Rect(recordX, lower.y, lower.xMax - recordX, 18), ShellUiCopy.CareerStatsSection);
-            DrawServiceRecord(new Rect(recordX, lower.y + 24, lower.xMax - recordX, lower.height - 24), profile);
-
-            ui.Panel(new Rect(a.x, a.yMax - 66, a.width, 44), accentTop: true);
-            ui.Label(new Rect(a.x + 170, a.yMax - 56, a.width - 190, 30), ShellUiCopy.CareerHint, 13, TacticalUi.Muted, TextAnchor.MiddleLeft);
-            if (ui.Button(new Rect(a.x, a.yMax - 66, 150, 44), "career.back", ShellUiCopy.SetupBack)) CloseCareer();
+            Rect back = R(layout.Back);
+            ui.Panel(back, accentTop: true);
+            ui.LabelFit(new Rect(back.x + 170, back.y + 7, back.width - 190, 30), ShellUiCopy.CareerHint, 13, TacticalUi.Muted, TextAnchor.MiddleLeft, 10);
+            if (ui.Button(new Rect(back.x, back.y, 150, back.height), "career.back", ShellUiCopy.SetupBack)) CloseCareer();
             DrawFooter(careerStatus);
         }
 
-        /// <summary>Hero band: big emblem, rank, CP bar and the next reward card.</summary>
-        private void DrawCareerHero(Rect hero, CareerProfile profile, float opened)
+        private void SelectCareerTab(CareerTab tab)
+        {
+            if (tab == careerTab) return;
+            careerTab = tab;
+            careerOpenedAt = Time.unscaledTime;
+        }
+
+        /// <summary>Hero band: big emblem, rank, CP bar and the next reward card; one compact row on short screens.</summary>
+        private void DrawCareerHero(Rect hero, bool compact, CareerProfile profile, float opened)
         {
             int rank = profile.Rank;
             var def = CareerLadder.Get(rank);
@@ -185,25 +225,44 @@ namespace Shooter.Presentation.Session
                     UiSdf.Style.Solid(new Color(wash.r, wash.g, wash.b, .14f), Hud.UiShapeParams.PlateRadius)
                         .WithGradient(new Color(wash.r, wash.g, wash.b, 0f), UiSdf.Gradient.Horizontal));
             }
-            float emblem = hero.height - 20f;
             float glint = ui.ReducedFlash || ui.ReducedMotion ? -1f : Hud.UiMotion.GlintPosition(opened, ui.ReducedFlash);
-            DrawRankIcon(new Rect(hero.x + 16, hero.y + 10, emblem, emblem), rank, 1f, glint);
+            string progress = next == null ? ShellUiCopy.CareerTopRank : ShellUiCopy.CareerProgress(profile.CareerPoints, next.Threshold);
+            float progress01 = CareerLadder.Progress01(profile.CareerPoints);
 
+            if (compact)
+            {
+                float e = hero.height - 12f;
+                DrawRankIcon(new Rect(hero.x + 12, hero.y + 6, e, e), rank, 1f, glint);
+                float cx = hero.x + e + 26f;
+                float sideW = Mathf.Min(300f, hero.width * .34f);
+                float nameW = hero.xMax - cx - sideW - 24f;
+                ui.LabelFit(new Rect(cx, hero.y + 8, nameW, 14), ShellUiCopy.CareerRankOf(def.Code, rank, CareerLadder.RankCount), 11, TacticalUi.Muted);
+                ui.LabelFit(new Rect(cx, hero.y + 22, nameW, 30), def.Name.ToUpperInvariant(), 24, pal.MetalTop, TextAnchor.UpperLeft, 14);
+                Rect side = new Rect(hero.xMax - sideW - 14f, hero.y + 10, sideW, 18);
+                ui.LabelFit(side, progress, 13, TacticalUi.Text, TextAnchor.UpperRight);
+                if (next != null)
+                    ui.LabelFit(new Rect(side.x, side.y + 20, sideW, 16), ShellUiCopy.CareerToNext(next.Threshold - profile.CareerPoints, next.Name), 12,
+                        TacticalUi.Accent, TextAnchor.UpperRight);
+                CareerArt.ProgressBar(new Rect(cx, hero.yMax - 18f, hero.xMax - cx - 14f, 9f), progress01, pal.MetalTop, pal.MetalBottom, 10, 1f);
+                return;
+            }
+
+            float emblem = hero.height - 20f;
+            DrawRankIcon(new Rect(hero.x + 16, hero.y + 10, emblem, emblem), rank, 1f, glint);
             float cardW = next == null ? 0f : Mathf.Min(360f, hero.width * .32f);
             float tx = hero.x + emblem + 34f;
             float tw = hero.xMax - tx - cardW - 36f;
-            ui.Label(new Rect(tx, hero.y + 14, tw, 14), ShellUiCopy.CareerRankOf(def.Code, rank, CareerLadder.RankCount), 11, TacticalUi.Muted);
-            ui.Label(new Rect(tx, hero.y + 28, tw, 38), def.Name.ToUpperInvariant(), 30, pal.MetalTop);
+            ui.LabelFit(new Rect(tx, hero.y + 14, tw, 14), ShellUiCopy.CareerRankOf(def.Code, rank, CareerLadder.RankCount), 11, TacticalUi.Muted);
+            ui.LabelFit(new Rect(tx, hero.y + 28, tw, 38), def.Name.ToUpperInvariant(), 30, pal.MetalTop, TextAnchor.UpperLeft, 18);
             float barY = hero.y + Mathf.Max(74f, hero.height * .56f);
-            CareerArt.ProgressBar(new Rect(tx, barY, tw, 14), CareerLadder.Progress01(profile.CareerPoints), pal.MetalTop, pal.MetalBottom, 10, 1f);
-            ui.Label(new Rect(tx, barY + 20, tw * .5f, 18),
-                next == null ? ShellUiCopy.CareerTopRank : ShellUiCopy.CareerProgress(profile.CareerPoints, next.Threshold), 13, TacticalUi.Text);
+            CareerArt.ProgressBar(new Rect(tx, barY, tw, 14), progress01, pal.MetalTop, pal.MetalBottom, 10, 1f);
+            ui.LabelFit(new Rect(tx, barY + 20, tw * .48f, 18), progress, 13, TacticalUi.Text);
             if (next == null) return;
-            ui.Label(new Rect(tx + tw * .5f, barY + 20, tw * .5f, 18), ShellUiCopy.CareerToNext(next.Threshold - profile.CareerPoints, next.Name), 12,
+            ui.LabelFit(new Rect(tx + tw * .52f, barY + 20, tw * .48f, 18), ShellUiCopy.CareerToNext(next.Threshold - profile.CareerPoints, next.Name), 12,
                 TacticalUi.Accent, TextAnchor.UpperRight);
 
             Rect card = new Rect(hero.xMax - cardW - 14f, hero.y + 30f, cardW, hero.height - 42f);
-            ui.Label(new Rect(card.x, hero.y + 10, card.width, 16), ShellUiCopy.CareerNextReward + "  ·  " + next.Name.ToUpperInvariant(), 11, TacticalUi.Accent);
+            ui.LabelFit(new Rect(card.x, hero.y + 10, card.width, 16), ShellUiCopy.CareerNextReward + "  ·  " + next.Name.ToUpperInvariant(), 11, TacticalUi.Accent);
             float pulse = ui.ReducedFlash ? 0f : Hud.UiMotion.Pulse(Time.unscaledTime, 2.4f, ui.ReducedFlash);
             CareerArt.RewardCard(ui, card, CareerRewardCatalog.For(next), CareerArt.RewardState.Next, pulse, 1f, -1f, ui.ReducedFlash);
         }
@@ -211,15 +270,15 @@ namespace Shooter.Presentation.Session
         /// <summary>
         /// ADR-113 horizontal progress line: a recessed rail through one emblem node per rank, filled up to the
         /// current CP, with each rank's reward card under its node. Scrolls with the wheel and the end arrows.
+        /// Geometry comes from <see cref="CareerLineLayout"/> (ADR-114).
         /// </summary>
-        private void DrawProgressLine(Rect r, CareerProfile profile, float opened)
+        private void DrawProgressLine(CareerLineLayout line, CareerProfile profile, float opened)
         {
             int rank = profile.Rank;
-            const float arrowW = 30f;
-            Rect inner = new Rect(r.x + arrowW + 10f, r.y, r.width - (arrowW + 10f) * 2f, r.height);
-            int visible = Mathf.Clamp(Mathf.FloorToInt(inner.width / 170f), 3, 8);
+            Rect r = R(line.Track);
+            int visible = line.Visible;
             int maxFirst = CareerLadder.RankCount - visible;
-            if (careerFirstRow < 0) careerFirstRow = Mathf.Clamp(rank - visible / 2, 0, maxFirst);
+            if (careerFirstRow < 0) careerFirstRow = Mathf.Clamp(rank - 1 - visible / 2, 0, maxFirst);
             var ev = Event.current;
             if (ev != null && ev.type == EventType.ScrollWheel && r.Contains(ev.mousePosition))
             {
@@ -230,28 +289,23 @@ namespace Shooter.Presentation.Session
             careerFirstRow = Mathf.Clamp(careerFirstRow, 0, maxFirst);
 
             ui.Panel(r);
-            ui.Label(new Rect(inner.x, r.y + 8, inner.width * .5f, 16), ShellUiCopy.CareerLadderSection, 12, TacticalUi.Accent);
+            ui.LabelFit(R(line.SectionLabel), ShellUiCopy.CareerLadderSection, 12, TacticalUi.Accent);
             bool wasEnabled = GUI.enabled;
             GUI.enabled = wasEnabled && careerFirstRow > 0;
-            if (ui.Button(new Rect(r.x + 6, r.center.y - 30, arrowW, 60), "career.prev", "<", quiet: true)) careerFirstRow--;
+            if (ui.Button(R(line.PrevArrow), "career.prev", "<", quiet: true)) careerFirstRow--;
             GUI.enabled = wasEnabled && careerFirstRow < maxFirst;
-            if (ui.Button(new Rect(r.xMax - arrowW - 6, r.center.y - 30, arrowW, 60), "career.next", ">", quiet: true)) careerFirstRow++;
+            if (ui.Button(R(line.NextArrow), "career.next", ">", quiet: true)) careerFirstRow++;
             GUI.enabled = wasEnabled;
             careerFirstRow = Mathf.Clamp(careerFirstRow, 0, maxFirst);
 
-            float colW = inner.width / visible;
-            float node = Mathf.Clamp(Mathf.Min(colW * .36f, r.height * .2f), 34f, 64f);
-            float lineY = r.y + 34f + node * .5f;
             var pal = CareerArt.Palette(rank);
-
             // Rail: groove across the window, filled up to the current CP position measured in rank units.
-            float x0 = inner.x + colW * .5f;
-            Rect rail = new Rect(inner.x + 4f, lineY - 4f, inner.width - 8f, 8f);
+            Rect rail = R(line.Rail);
+            float x0 = line.ColumnCenter(0);
             float position = (rank - 1) + (rank >= CareerLadder.RankCount ? 0f : CareerLadder.Progress01(profile.CareerPoints));
-            float fillX = Mathf.Clamp(x0 + (position - careerFirstRow) * colW, rail.x, rail.xMax);
+            float fillX = Mathf.Clamp(x0 + (position - careerFirstRow) * line.ColumnWidth, rail.x, rail.xMax);
             CareerArt.ProgressBar(rail, (fillX - rail.x) / rail.width, pal.MetalTop, pal.MetalBottom, 0, 1f);
 
-            float cardBottom = r.yMax - 16f;
             Vector2 mouse = Event.current != null ? Event.current.mousePosition : new Vector2(-1f, -1f);
             for (int slot = 0; slot < visible; slot++)
             {
@@ -260,16 +314,12 @@ namespace Shooter.Presentation.Session
                 bool reached = index <= rank;
                 bool current = index == rank;
                 bool isNext = index == rank + 1;
-                float cx = x0 + slot * colW;
-                Rect column = new Rect(cx - colW * .5f, r.y + 26f, colW, r.height - 30f);
+                Rect column = R(line.Column(slot));
                 float emphasis = ui.Emphasis("career.rank." + index, column.Contains(mouse));
 
-                float size = current ? node * 1.22f : node;
-                Rect nodeR = new Rect(cx - size * .5f, lineY - size * .5f, size, size);
                 if (UiSdf.Available)
                 {
-                    float disc = current ? size * 1.32f : size * 1.08f;
-                    Rect discR = new Rect(cx - disc * .5f, lineY - disc * .5f, disc, disc);
+                    Rect discR = R(line.HaloRect(slot, current));
                     UiSdf.Circle(discR, UiSdf.Style.Solid(new Color(.02f, .03f, .035f, .85f)));
                     if (current)
                     {
@@ -279,33 +329,31 @@ namespace Shooter.Presentation.Session
                     }
                 }
                 float glint = current && !ui.ReducedFlash && !ui.ReducedMotion ? Hud.UiMotion.GlintPosition(opened + .4f, false) : -1f;
-                DrawRankIcon(nodeR, index, reached ? 1f : .85f, glint, dim: !reached);
+                DrawRankIcon(R(line.NodeRect(slot, current)), index, reached ? 1f : .85f, glint, dim: !reached);
 
                 Color nameInk = reached ? CareerArt.Palette(index).MetalTop : TacticalUi.Muted;
-                float labelY = lineY + size * .5f + (current ? 10f : 6f);
-                ui.Label(new Rect(column.x + 4, labelY, column.width - 8, 16), current ? ShellUiCopy.CareerCurrent : step.Code, 12,
+                ui.LabelFit(R(line.CodeLabel(slot, current)), current ? ShellUiCopy.CareerCurrent : step.Code, 12,
                     current ? TacticalUi.Accent : nameInk, TextAnchor.UpperCenter);
-                ui.Label(new Rect(column.x + 4, labelY + 15, column.width - 8, 14), ShellUiCopy.Thousands(step.Threshold) + " CP", 10,
-                    TacticalUi.Muted, TextAnchor.UpperCenter);
+                ui.LabelFit(R(line.CpLabel(slot, current)), ShellUiCopy.Thousands(step.Threshold) + " CP", 10,
+                    TacticalUi.Muted, TextAnchor.UpperCenter, 9);
 
-                float cardY = lineY + node * .61f + 50f;
-                float lift = ui.ReducedMotion ? 0f : 4f * emphasis;
-                Rect card = new Rect(column.x + 6f, cardY - lift, column.width - 12f, cardBottom - cardY);
-                if (card.height < 52f) continue;
+                if (!line.CardsShown) continue;
+                Rect card = R(line.Card(slot));
+                card.y -= ui.ReducedMotion ? 0f : CareerLineLayout.HoverLift * emphasis;
                 var state = reached ? CareerArt.RewardState.Earned : isNext ? CareerArt.RewardState.Next : CareerArt.RewardState.Locked;
                 float alpha = ui.ReducedMotion ? 1f : Hud.UiMotion.EnterAlpha(opened - slot * .04f);
                 CareerArt.RewardCard(ui, card, CareerRewardCatalog.For(index), state, emphasis, alpha, -1f, ui.ReducedFlash);
             }
 
             // Window position rail.
-            Rect pos = new Rect(inner.x + inner.width * .25f, r.yMax - 8f, inner.width * .5f, 3f);
+            Rect pos = R(line.PositionRail);
             TacticalUi.Plate(pos, UiSdf.Style.Solid(new Color(1f, 1f, 1f, .08f), 1.5f));
             float thumbW = pos.width * visible / CareerLadder.RankCount;
             float thumbX = pos.x + (pos.width - thumbW) * (maxFirst <= 0 ? 0f : careerFirstRow / (float)maxFirst);
             TacticalUi.Plate(new Rect(thumbX, pos.y, thumbW, pos.height), UiSdf.Style.Solid(TacticalUi.Accent, 1.5f));
         }
 
-        private void DrawActiveBuffs(Rect r, CareerBuffs b)
+        private void DrawActiveBuffs(CareerLayout layout, CareerBuffs b)
         {
             var chips = new System.Collections.Generic.List<(string Icon, string Name, string Value)>(5);
             if (b.ReloadPerMille < 1000) chips.Add((IconLibrary.RewardFastHands, "Reload", "-" + Percent(b.ReloadPerMille)));
@@ -315,26 +363,18 @@ namespace Shooter.Presentation.Session
             if (b.ExtraMagazines > 0) chips.Add((IconLibrary.RewardExtraMag, "Spare mags", "+" + b.ExtraMagazines));
             if (chips.Count == 0)
             {
-                Rect empty = new Rect(r.x, r.y, r.width, Mathf.Min(44f, r.height));
+                Rect empty = R(layout.Perks);
                 TacticalUi.Plate(empty, UiSdf.Style.Solid(new Color(0f, 0f, 0f, .25f), Hud.UiShapeParams.PlateRadius));
-                ui.Label(new Rect(empty.x + 12, empty.y, empty.width - 24, empty.height), ShellUiCopy.CareerNoBuffs, 13, TacticalUi.Muted, TextAnchor.MiddleLeft);
+                ui.LabelFit(new Rect(empty.x + 12, empty.y, empty.width - 24, empty.height), ShellUiCopy.CareerNoBuffs, 13, TacticalUi.Muted, TextAnchor.MiddleLeft);
                 return;
             }
-            const int columns = 2;
-            int rows = (chips.Count + columns - 1) / columns;
-            float chipH = Mathf.Clamp((r.height - (rows - 1) * 6f) / rows, 28f, 46f);
-            float chipW = (r.width - 6f) / columns;
             for (int i = 0; i < chips.Count; i++)
-            {
-                Rect c = new Rect(r.x + (i % columns) * (chipW + 6f), r.y + (i / columns) * (chipH + 6f), chipW, chipH);
-                if (c.yMax > r.yMax + 1f) break;
-                CareerArt.BuffChip(ui, c, chips[i].Icon, chips[i].Name, chips[i].Value);
-            }
+                CareerArt.BuffChip(ui, R(layout.PerkChip(i, chips.Count)), chips[i].Icon, chips[i].Name, chips[i].Value);
         }
 
         private static string Percent(ushort perMille) => ((1000 - perMille + 5) / 10) + "%";
 
-        private void DrawServiceRecord(Rect r, CareerProfile p)
+        private void DrawServiceRecord(CareerLayout layout, CareerProfile p)
         {
             long matches = p.Matches;
             var cells = new[]
@@ -352,30 +392,19 @@ namespace Shooter.Presentation.Session
                 ("BEST STREAK", ShellUiCopy.Thousands(p.BestStreak)),
                 ("TIME PLAYED", ShellUiCopy.PlayTime(p.ActiveTicks)),
             };
-            const int columns = 4;
-            int rows = (cells.Length + columns - 1) / columns;
-            const float g = 6f;
-            float cellH = (r.height - (rows - 1) * g) / rows;
-            float cellW = (r.width - (columns - 1) * g) / columns;
-            bool stacked = cellH >= 40f;
             Color rule = new Color(TacticalUi.Accent.r, TacticalUi.Accent.g, TacticalUi.Accent.b, .7f);
             for (int i = 0; i < cells.Length; i++)
             {
-                int row = i / columns, col = i % columns;
-                Rect c = new Rect(r.x + col * (cellW + g), r.y + row * (cellH + g), cellW, cellH);
+                Rect c = R(layout.RecordTile(i));
                 TacticalUi.Plate(c, UiSdf.Style.Solid(new Color(.12f, .15f, .16f, .92f), Hud.UiShapeParams.PlateRadius)
                     .WithGradient(new Color(.06f, .075f, .08f, .92f), UiSdf.Gradient.Vertical));
                 TacticalUi.Fill(new Rect(c.x, c.y + 4f, 2f, c.height - 8f), rule);
-                if (stacked)
-                {
-                    ui.Label(new Rect(c.x + 10, c.y + 4, c.width - 14, 14), cells[i].Item1, 10, TacticalUi.Muted);
-                    ui.Label(new Rect(c.x + 10, c.y + 17, c.width - 14, c.height - 19), cells[i].Item2, 17, TacticalUi.Text, TextAnchor.MiddleLeft);
-                }
-                else
-                {
-                    ui.Label(new Rect(c.x + 10, c.y, c.width * .5f, c.height), cells[i].Item1, 10, TacticalUi.Muted, TextAnchor.MiddleLeft);
-                    ui.Label(new Rect(c.x + c.width * .4f, c.y, c.width * .6f - 8, c.height), cells[i].Item2, 14, TacticalUi.Text, TextAnchor.MiddleRight);
-                }
+                // Always stacked: label on top, value below at a size the tile can hold (ADR-114).
+                float labelH = c.height >= 80f ? 16f : 14f;
+                ui.LabelFit(new Rect(c.x + 12, c.y + 6, c.width - 18, labelH), cells[i].Item1, c.height >= 80f ? 12 : 10, TacticalUi.Muted);
+                int valueSize = Mathf.Clamp(Mathf.RoundToInt((c.height - labelH - 10f) * .62f), 14, 30);
+                ui.LabelFit(new Rect(c.x + 12, c.y + 6 + labelH, c.width - 18, c.height - labelH - 10), cells[i].Item2, valueSize, TacticalUi.Text,
+                    TextAnchor.MiddleLeft, 12);
             }
         }
 

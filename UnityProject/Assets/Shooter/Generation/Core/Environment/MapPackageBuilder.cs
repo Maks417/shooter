@@ -116,6 +116,8 @@ namespace Shooter.Generation.Environment
                     out var nativeBake,
                     out navProvenance))
             {
+                // A native bake is published only when no walkable polygon lies inside, or brushes, solid collision.
+                NavCollisionAudit.ThrowIfLeaky(mapId, nativeBake, plan.CollisionBoxes, agentRadius, agentHeight, maxStep);
                 bake = nativeBake;
             }
             else
