@@ -39,7 +39,7 @@ Shader "Shooter/UiSdf"
             float4 _GlowColor;
             float4 _Arc;       // start rad, sweep rad, thickness, unused
             float4 _Fade;      // band, strength, unused, unused
-            float4 _ClipCircle; // ADR-104 circular mask: centre x, y, radius, anti-alias (view-space device px; radius 0 = off)
+            float4 _ClipCircle; // ADR-104 circular mask: centre x, y, radius, anti-alias in this quad's centred logical frame (same as p; radius 0 = off)
 
             struct Attributes { float4 positionOS : POSITION; float2 uv : TEXCOORD0; };
             struct Varyings
@@ -47,7 +47,6 @@ Shader "Shooter/UiSdf"
                 float4 positionCS : SV_POSITION;
                 float2 uv : TEXCOORD0;
                 float2 clipUV : TEXCOORD1;
-                float2 viewXY : TEXCOORD2;
             };
 
             Varyings Vert(Attributes input)
@@ -56,16 +55,17 @@ Shader "Shooter/UiSdf"
                 o.positionCS = TransformObjectToHClip(input.positionOS.xyz);
                 float3 viewPos = TransformWorldToView(TransformObjectToWorld(input.positionOS.xyz));
                 o.clipUV = mul(unity_GUIClipTextureMatrix, float4(viewPos.xy, 0, 1)).xy;
-                o.viewXY = viewPos.xy;
                 o.uv = input.uv;
                 return o;
             }
 
-            float CircleMask(float2 viewXY)
+            // Evaluated in the quad's own local frame (rotation-invariant), not in view space: inside IMGUI the
+            // pipeline's view matrices are not a reliable device-pixel frame, which masked out all minimap content.
+            float CircleMask(float2 p)
             {
                 if (_ClipCircle.z <= 0) return 1;
                 float aa = max(_ClipCircle.w, 1e-3);
-                return saturate((_ClipCircle.z - length(viewXY - _ClipCircle.xy)) / aa + 0.5);
+                return saturate((_ClipCircle.z - length(p - _ClipCircle.xy)) / aa + 0.5);
             }
 
             static const float Tau = 6.28318530718;
@@ -135,7 +135,7 @@ Shader "Shooter/UiSdf"
                 float2 p = float2(input.uv.x - 0.5, 0.5 - input.uv.y) * size;  // logical px, y down, centred
                 float2 h = max(size * 0.5 - pad, 0.5);
                 float kind = _ShapeA.x;
-                float clipMask = SAMPLE_TEXTURE2D(_GUIClipTexture, sampler_GUIClipTexture, input.clipUV).a * CircleMask(input.viewXY);
+                float clipMask = SAMPLE_TEXTURE2D(_GUIClipTexture, sampler_GUIClipTexture, input.clipUV).a * CircleMask(p);
 
                 if (kind > 1.5 && kind < 2.5)
                 {

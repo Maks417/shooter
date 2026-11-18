@@ -80,12 +80,24 @@ namespace Shooter.Tests.EditMode
         public void Circle_clip_masks_outside_the_disc()
         {
             const int size = 64;
-            var clipped = Render((int)UiShapeKind.RoundedRect, 0f, 0f, Color.white, size, new Vector4(32f, 32f, 16f, 1f));
+            // The mask lives in the quad's centred local frame (UiSdf.LocalClip), so (0, 0) is the quad centre.
+            var clipped = Render((int)UiShapeKind.RoundedRect, 0f, 0f, Color.white, size, new Vector4(0f, 0f, 16f, 1f));
             Assert.That(clipped[(size / 2) * size + size / 2].a, Is.GreaterThan(250), "centre stays inside the mask");
             Assert.That(clipped[0].a, Is.LessThan(5), "corner is masked");
             Assert.That(clipped[(size / 2) * size + 4].a, Is.LessThan(5), "edge beyond the radius is masked");
             var open = Render((int)UiShapeKind.RoundedRect, 0f, 0f, Color.white, size);
             Assert.That(open[0].a, Is.GreaterThan(250), "radius 0 leaves the mask off");
+        }
+
+        [Test]
+        public void Circle_clip_follows_an_off_centre_local_centre()
+        {
+            // Minimap structures are separate quads offset from the disc centre: the mask must track that offset.
+            const int size = 64;
+            var px = Render((int)UiShapeKind.RoundedRect, 0f, 0f, Color.white, size, new Vector4(-16f, 0f, 10f, 1f));
+            int row = (size / 2) * size;
+            Assert.That(px[row + 16].a, Is.GreaterThan(250), "left half around the clip centre is kept");
+            Assert.That(px[row + 48].a, Is.LessThan(5), "right half outside the clip is masked");
         }
 
         [Test]
