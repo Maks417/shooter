@@ -1,6 +1,6 @@
 # M1 weapon recipe baseline v1
 
-Initial numeric construction and socket assignment for P03, 2026-11-12. This is an additive generator/recipe registry, not a C0 DTO or SGAF layout change. See [geometry/weapons](features/geometry-weapons.md), [format v1](content-format.md) and M1 handoff. Visual review and final gameplay/view integration remain required; no combat mechanics are implemented by these generators.
+Initial numeric construction and socket assignment for P03, 2026-11-12. This is an additive generator/recipe registry, not a C0 DTO or SGAF layout change. See [geometry/weapons](features/geometry-weapons.md), [format v1](content-format.md) and [M1 handoff](milestones/m1-procedural-feasibility/handoff.md). Visual review and final gameplay/view integration remain required; no combat mechanics are implemented by these generators.
 
 Coordinates are meters internally, integer millimeters in recipes. +Z points forward, +Y up, +X right. Weapon origin is the right-hand grip. Rigid sockets use unit quaternion rotations and no scale; initial rotations are identity. Stable semantic names: muzzle, chamber-ejection, magazine-grip, left-hand-grip, right-hand-grip, shoulder, sight-eye, attachment-rail. Rifle requires all eight; pistol requires all except shoulder. Socket transforms derive from the numeric construction, remain identical for all four LODs and all visual profiles, and do not consume cosmetic RNG.
 

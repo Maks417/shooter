@@ -13,7 +13,7 @@
     "career-fixtures/career.invalid-negative.json": "1aca6a8a6f6e2c4b6b2bf2a3ecbb3d32fe020bcb751ccedb2611b14001e40bac",
     "career-fixtures/career.schema.json": "227ab429dc6c65e547423ad0e037defea82c1eda99a898b3bc9b646fe366df2c",
     "career-fixtures/career.valid.json": "a158f86a8748eb41d4691c27be39fdf89c8b37967c032c66535eead52f7187d5",
-    "content-format.md": "8d6fb4b40ba751f9392fcbfe99ea0cb1985d94dd0c6b4ebdde73bf7529a4d163",
+    "content-format.md": "0bfd487fc3cac0a262a5ebfa0e6eea34eeba116185db58eb9facfef592419081",
     "content-schemas/box-collision.schema.json": "17277a6adf06647ded09757975b580646a4eab572c754c148c0142e8f803d5d6",
     "content-schemas/manifest.schema.json": "75a05692bc925f130dd4ff27874cff51cce5018b2421c71b21dbe8e293ec931c",
     "content-schemas/map-metadata.schema.json": "2714c227ade707379bdf4cc68e5288ea3f3a9c746cc1314e6f354af4b85947b1",
@@ -102,6 +102,7 @@
     "gameplay-baseline.md": "a23a818fb4efe861356281b7f78c3f1c7c080244037ef51f4df5ad2f32396175",
     "generation.md": "9523f27a06665da6b13122760fcfb0f168f59d78f252b54fe2bc42d32568d812",
     "index.md": "bae03add45f47c4c0bbacac0b94a62d520773875cdbdec94f65ed8fa49424c80",
+    "milestones/m1-procedural-feasibility/handoff.md": "9147076b5fd30d8edefbe3be041ad8a16c9bd2adb23812a12bf5bed68a0614ef",
     "milestones/m10-maps-shell/handoff.md": "4dd67dc80e607d866968dabb84c87555c0a1bdb6193f7f69686db731e5148e3c",
     "milestones/m11-playable-release/handoff.md": "fd0feb1db5422e7919beca5d71ee7d84b2ff9115df0b203949fc46165209dccc",
     "milestones/m8-runtime-composition/handoff.md": "d84cc35f4a58939cc8ac6c3fda19f1c58f5578993f5fd62b0a13d4d43257d9ec",
@@ -119,6 +120,6 @@
     "vision.md": "9c5b841b76bb6d0a565c2c705778d2d030c23526c9a34d6f85890a65e3ea3976",
     "visual-defect-inventory.md": "9b3823be546b9d8be075b5c600d83d1be30a398edcc861c84b2a948381d8eb74",
     "visual-direction.md": "2b823565e93af4b81e9391b327b4a527ad3babe0193ad19fdeef5b99cd1b97b0",
-    "weapon-recipe-baseline.md": "f72d31fce7f5e0fb54cd9fe0c4a0b833c71e64dfb3dea803043cc65bd0b0ea15"
+    "weapon-recipe-baseline.md": "ab4ce2b74eee42ff1b85582e5a5d8da6b4aa87ebb320871dba82fd9c0dee0563"
   }
 }

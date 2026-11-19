@@ -1,6 +1,6 @@
 # Compiler artifact format v1
 
-P02 initial format freeze, 2026-11-12. This additive compiler format leaves frozen C0 DTOs and specification-v1.1 fixtures unchanged. No shipping content existed in P01. The compiler owner is the integrator. All five codecs passed their independent golden and negative checks before generator integration; the numeric collision diagnostic has actual cold/warm/forced/dry-run editor evidence. Full M1 content and hardware gates remain pending. See [generation](generation.md), [deterministic identities](deterministic-format.md) and M1 handoff.
+P02 initial format freeze, 2026-11-12. This additive compiler format leaves frozen C0 DTOs and specification-v1.1 fixtures unchanged. No shipping content existed in P01. The compiler owner is the integrator. All five codecs passed their independent golden and negative checks before generator integration; the numeric collision diagnostic has actual cold/warm/forced/dry-run editor evidence. Full M1 content and hardware gates remain pending. See [generation](generation.md), [deterministic identities](deterministic-format.md) and [M1 handoff](milestones/m1-procedural-feasibility/handoff.md).
 
 ## Envelope and primitive encoding
 
