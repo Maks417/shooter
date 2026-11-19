@@ -25,11 +25,11 @@ $null = New-Item -ItemType Directory -Path $deliverDir -Force
 $report = [ordered]@{ schemaVersion = 1; action = 'Deliver'; sourceCommit = $commit; result = 'FAIL'; steps = @(); failure = $null
     scope = 'Builder chain only. Builder, smoke and package PASS are not gameplay or release acceptance.' }
 
-function Invoke-Step([string]$Name, [string]$Script, [string[]]$Arguments) {
+function Invoke-Step([string]$Name, [string]$Script, [hashtable]$Arguments) {
     $clock = [Diagnostics.Stopwatch]::StartNew()
     & (Join-Path $PSScriptRoot $Script) @Arguments
     $code = $LASTEXITCODE
-    $report.steps += [ordered]@{ step = $Name; arguments = $Arguments; exitCode = $code; seconds = [math]::Round($clock.Elapsed.TotalSeconds, 1) }
+    $report.steps += [ordered]@{ step = $Name; arguments = $Arguments.Clone(); exitCode = $code; seconds = [math]::Round($clock.Elapsed.TotalSeconds, 1) }
     if ($code -ne 0) { throw "$Name failed with exit code $code." }
 }
 
@@ -41,8 +41,7 @@ function Get-NewestRun([string]$Area, [string]$Prefix) {
 }
 
 try {
-    $contentArgs = @('-Native', '-AndBuildClient')
-    if ($ForceContent) { $contentArgs += '-Force' }
+    $contentArgs = @{ Native = $true; AndBuildClient = $true; Force = [bool]$ForceContent }
     Invoke-Step 'content+build' 'Compile-GameContent.ps1' $contentArgs
     $contentRun = Get-NewestRun 'm8-runtime-composition' 'compile-gamecontent'
     $buildRun = [string](Get-Content -LiteralPath (Join-Path $contentRun 'validation.json') -Raw | ConvertFrom-Json).buildRunDirectory
@@ -50,17 +49,16 @@ try {
     $report.contentRunDirectory = $contentRun
     $report.buildRunDirectory = $buildRun
 
-    Invoke-Step 'smoke' 'Smoke.ps1' @('-BuildRunDirectory', $buildRun)
+    Invoke-Step 'smoke' 'Smoke.ps1' @{ BuildRunDirectory = $buildRun }
 
-    $packageArgs = @('-ClientBuildRunDirectory', $buildRun, '-MapCacheRoot', (Join-Path $repoRoot 'Artifacts/map-packages-native'), '-RequireNativeNav')
-    if ($PreviousPackageDirectory) { $packageArgs += @('-PreviousPackageDirectory', $PreviousPackageDirectory) }
-    if ($Zip) { $packageArgs += '-Zip' }
+    $packageArgs = @{ ClientBuildRunDirectory = $buildRun; MapCacheRoot = (Join-Path $repoRoot 'Artifacts/map-packages-native'); RequireNativeNav = $true; Zip = [bool]$Zip }
+    if ($PreviousPackageDirectory) { $packageArgs.PreviousPackageDirectory = $PreviousPackageDirectory }
     Invoke-Step 'package' 'Package-Release.ps1' $packageArgs
     $report.packageDirectory = Get-NewestRun 'm11-playable-release' 'package'
 
     if ($ReleaseVersion) {
-        $installerArgs = @('-PackageDirectory', $report.packageDirectory, '-ReleaseVersion', $ReleaseVersion)
-        if ($PreviousInstallerReport) { $installerArgs += @('-PreviousInstallerReport', $PreviousInstallerReport) }
+        $installerArgs = @{ PackageDirectory = $report.packageDirectory; ReleaseVersion = $ReleaseVersion }
+        if ($PreviousInstallerReport) { $installerArgs.PreviousInstallerReport = $PreviousInstallerReport }
         Invoke-Step 'installer' 'Build-Installer.ps1' $installerArgs
         $report.installerDirectory = Get-NewestRun 'm11-playable-release' 'installer'
     }
