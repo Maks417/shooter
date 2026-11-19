@@ -25,6 +25,21 @@ ADR-105 offline session additions after step 6: the TDM death batch records each
 
 Order events by processing phase then actor ID then per-actor ordinal. Accepted shot, impact, damage, death and match events receive unique EventId. Limit guards abort tick/session explicitly; no partially committed tick. Implement staged state or rollback-to-prestep on failure; never continue after partial damage application.
 
+## Offline session phases
+
+`OfflineGameSession.Step` runs one live tick as this ordered phase list (T195). Each phase is a method; `TickPhaseNames` reports the live order, and `TickPhaseOrderTests` pins it to this list:
+
+1. `ScheduleRespawns`: install due respawns before movement. A spawn failure aborts the match here.
+2. `PlanBots`: count respawns, rebind or rebuild bot slots, then plan bot commands from the snapshot taken at the start of the tick (finalized state t−1).
+3. `MergeCommands`: the human command, if valid for the human's current entity, then the bot commands; slide requests.
+4. `StepHarness`: steps 1–5 above inside the simulation harness.
+5. `SyncLifecycle`: sync the lifecycle from the harness snapshot, then rescue actors embedded in geometry.
+6. `ResolveCombatEvents`: the event batch in order through the combat-event handlers (gunfire stimulus, damage stimulus and contribution, death resolution with scores and drops).
+7. `SettleDeaths`: reset the human streak, retire the dead lives, then resolve the human pickup (ADR-105).
+8. `EndOfTick`: evaluate the match end, advance active time, expire dropped weapons, and advance the tick.
+
+A new tick-level feature is a new phase in this list (and here); a new reaction to combat events is a new handler.
+
 ## Missing input and clock
 
 Offline play generates one command every tick, even when render frames lag. Each edge event is consumed once. Pause stops tick time and clears pending one-shot inputs on resume.

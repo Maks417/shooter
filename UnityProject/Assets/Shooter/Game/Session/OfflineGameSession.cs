@@ -425,10 +425,72 @@ namespace Shooter.Game.Session
             if (preMatchTicksRemaining > 0)
                 return StepPreMatch();
 
-            // Install due respawns before movement (Game-v1 tick order).
+            tickState.Begin(humanCommand, slideRequested, pickupRequested);
+            var order = TickPhases;
+            for (int i = 0; i < order.Length; i++)
+                if (!order[i](tickState)) break;
+            return GameOperationResult.Ok;
+        }
+
+        /// <summary>
+        /// T195: one live tick as an ordered list of named phases (Game-v1 tick order; see docs/simulation-protocol.md).
+        /// A phase returns false to end the tick early (spawn-failure abort). Add a feature as a phase or as a
+        /// <see cref="CombatEventHandlers"/> entry instead of editing the middle of <see cref="Step"/>.
+        /// </summary>
+        private delegate bool TickPhase(TickState state);
+
+        /// <summary>Per-tick values shared by the phases; one instance is reused so a tick allocates nothing for it.</summary>
+        private sealed class TickState
+        {
+            public InputCommand? HumanCommand;
+            public bool SlideRequested, PickupRequested, ValidHuman;
+            public MatchViewSnapshot Pre = null!, Snap = null!;
+            public int BotCount;
+            public uint ActiveTick;
+
+            public void Begin(InputCommand? humanCommand, bool slideRequested, bool pickupRequested)
+            {
+                HumanCommand = humanCommand;
+                SlideRequested = slideRequested;
+                PickupRequested = pickupRequested;
+                ValidHuman = false;
+                BotCount = 0;
+                ActiveTick = 0;
+            }
+        }
+
+        private readonly TickState tickState = new TickState();
+        private TickPhase[]? tickPhases;
+        private TickPhase[] TickPhases => tickPhases ??= new TickPhase[]
+        {
+            ScheduleRespawnsPhase,
+            PlanBotsPhase,
+            MergeCommandsPhase,
+            StepHarnessPhase,
+            SyncLifecyclePhase,
+            ResolveCombatEventsPhase,
+            SettleDeathsPhase,
+            EndOfTickPhase
+        };
+
+        /// <summary>Phase names in execution order, read from the live phase list (a test pins them to the documented order).</summary>
+        public IReadOnlyList<string> TickPhaseNames
+        {
+            get
+            {
+                var phases = TickPhases;
+                var names = new string[phases.Length];
+                for (int i = 0; i < phases.Length; i++) names[i] = phases[i].Method.Name.Replace("Phase", "");
+                return names;
+            }
+        }
+
+        // Install due respawns before movement (Game-v1 tick order).
+        private bool ScheduleRespawnsPhase(TickState s)
+        {
             var pre = match.AcquireSnapshot(sessionId, tick);
             measurement.LeaseAcquires++;
-            match.ScheduleDueRespawns(pre.ActiveTicksElapsed, lifecycle, mapRuntime);
+            match.ScheduleDueRespawns(pre.ActiveTicksElapsed, lifecycle!, mapRuntime!);
 
             var snap = match.AcquireSnapshot(sessionId, tick);
             measurement.LeaseAcquires++;
@@ -437,37 +499,53 @@ namespace Shooter.Game.Session
                 terminalFault = new GameOperationResult(GameErrorCode.SpawnFailure, "spawn-failure", "No safe spawn available. Returning to the menu.");
                 phase = GameMatchPhase.Stopped;
                 pause = SessionPauseState.Running;
-                return GameOperationResult.Ok;
+                return false;
             }
+            s.Pre = pre;
+            s.Snap = snap;
+            return true;
+        }
+
+        private bool PlanBotsPhase(TickState s)
+        {
             // Real respawn semantics: count life/entity replacements, not net alive growth
             // (same-tick death elsewhere must not cancel a successful respawn event).
-            measurement.Respawns += CountRespawnEvents(pre, snap);
+            measurement.Respawns += CountRespawnEvents(s.Pre, s.Snap);
             // T082: a respawn rebinds only the replaced bot's slot. Rebuilding the planner wiped every other
             // bot's targets, paths and cover several times a minute; it stays as the fallback only.
-            if (RebindReplacements(pre, snap) && !RebindBotLives(pre, snap, lifecycle))
+            if (RebindReplacements(s.Pre, s.Snap) && !RebindBotLives(s.Pre, s.Snap, lifecycle!))
             {
-                bots = RebuildBotPlanner(snap, lifecycle, mapRuntime);
+                bots = RebuildBotPlanner(s.Snap, lifecycle!, mapRuntime!);
             }
-            int botCount = bots.Plan(tick, snap, lifecycle, botCommands);
+            s.BotCount = bots!.Plan(tick, s.Snap, lifecycle!, botCommands);
             measurement.AiRays += bots.Counters.VisionRaysThisTick;
             measurement.PathRequests += bots.Counters.PathsRequestedThisTick;
+            return true;
+        }
 
+        private bool MergeCommandsPhase(TickState s)
+        {
             merged.Clear();
-            var sampledHuman = humanCommand.GetValueOrDefault();
-            bool validHuman = humanCommand.HasValue &&
+            var sampledHuman = s.HumanCommand.GetValueOrDefault();
+            s.ValidHuman = s.HumanCommand.HasValue &&
                 sampledHuman.IsValid &&
                 sampledHuman.EntityId.Equals(humanEntity);
-            if (validHuman)
+            if (s.ValidHuman)
             {
                 merged.Add(sampledHuman);
             }
-            for (int i = 0; i < botCount; i++) merged.Add(botCommands[i]);
+            for (int i = 0; i < s.BotCount; i++) merged.Add(botCommands[i]);
 
             slideActors.Clear();
-            if (validHuman && slideRequested) slideActors.Add(humanEntity);
-            var botSlides = bots.SlideActors;
+            if (s.ValidHuman && s.SlideRequested) slideActors.Add(humanEntity);
+            var botSlides = bots!.SlideActors;
             for (int i = 0; i < botSlides.Count; i++) slideActors.Add(botSlides[i]);
-            var result = harness.StepWithSlideActors(tick, merged.ToArray(), slideActors);
+            return true;
+        }
+
+        private bool StepHarnessPhase(TickState s)
+        {
+            var result = harness!.StepWithSlideActors(tick, merged.ToArray(), slideActors);
             measurement.Shots += result.Counters.Shots;
             measurement.DamageEvents += result.Counters.DamageEvents;
             // querySamples after Plan + harness.Step so motor/hitscan samples are included
@@ -477,84 +555,130 @@ namespace Shooter.Game.Session
                 long total = countingMap.CountingQueries.TotalSamples;
                 measurement.QuerySamples = total - querySamplesAtMatchStart;
             }
-            using (var lease = harness.AcquireSnapshot())
+            return true;
+        }
+
+        private bool SyncLifecyclePhase(TickState s)
+        {
+            using (var lease = harness!.AcquireSnapshot())
             {
                 measurement.LeaseAcquires++;
-                lifecycle.SyncFromSnapshot(lease.Snapshot);
+                lifecycle!.SyncFromSnapshot(lease.Snapshot);
             }
             // Ordering: the out-of-world kill volume already ran inside harness.Step (after movement and bullets), so a
             // fallen actor is Alive=false after the sync above and is skipped by the rescue below (never rescued).
             // Position rescue runs after the motor step and snapshot sync (so the sync cannot overwrite the new feet
             // with the pre-rescue snapshot) and before bot planning / spawn-safety checks of the next tick, which
             // therefore see the relocated feet. Actors killed this tick are Alive=false after the sync and skipped.
-            RescueEmbeddedActors(snap, lifecycle, harness, mapRuntime);
+            RescueEmbeddedActors(s.Snap, lifecycle!, harness!, mapRuntime!);
+            return true;
+        }
+
+        /// <summary>
+        /// T195: one combat event of the tick's batch. Returns true when the event is fully handled (later handlers are
+        /// skipped for it). Handlers run in <see cref="CombatEventHandlers"/> order for every event.
+        /// </summary>
+        private delegate bool CombatEventHandler(IReadOnlyList<CombatEvent> batch, int index, TickState state);
+
+        private CombatEventHandler[]? combatEventHandlers;
+        private CombatEventHandler[] CombatEventHandlers => combatEventHandlers ??= new CombatEventHandler[]
+        {
+            ObserveGunfireHandler,
+            ObserveDamageHandler,
+            ResolveDeathHandler
+        };
+
+        private bool ResolveCombatEventsPhase(TickState s)
+        {
             deathsThisTick.Clear();
-            using (var events = harness.AcquireEvents())
+            var handlers = CombatEventHandlers;
+            using (var events = harness!.AcquireEvents())
             {
                 measurement.LeaseAcquires++;
                 IReadOnlyList<CombatEvent> batch = events.Events;
                 CapturePresentationEvents(batch);
                 for (int i = 0; i < batch.Count; i++)
-                {
-                    var ev = batch[i];
-                    // T082 stimuli from tick t; the planner consumes them when it plans t+1.
-                    if (ev.Kind == CombatEventKind.ShotAccepted && ev.Payload is ShotPayload shot)
-                    {
-                        bots.ObserveGunfire(ev.Instigator, shot.Origin);
-                        continue;
-                    }
-                    if (ev.Kind == CombatEventKind.DamageApplied)
-                    {
-                        bots.ObserveDamage(ev.Target, ev.Instigator, lifecycle);
-                        RecordDamageContribution(ev, lifecycle);
-                        continue;
-                    }
-                    if (ev.Kind != CombatEventKind.Death) continue;
-                    if (!lifecycle.TryGetLife(ev.Target, out _, out var life)) continue;
-                    if (ContainsEntity(deathsThisTick, ev.Target)) continue;
-                    if (!IsParticipantAlive(snap, ev.Target, life)) continue;
-                    EntityId? killer = ev.Instigator.IsValid ? ev.Instigator : (EntityId?)null;
-                    SettlePersonalScores(ev.Target, life, killer, snap);
-                    match.ProcessDeath(new DeathResolution(sessionId, ev.Id, ev.Target, life, killer, tick));
-                    // ADR-097: +20 for an enemy kill whose fatal hit was the head (bots included). The match is still
-                    // Playing here (the phase flips only in EvaluateEndOfTick), so a match-ending headshot keeps it.
-                    bool headshot = killer is EntityId killerEntity &&
-                        IsEnemyOf(snap, killerEntity, ev.Target) &&
-                        LocalKillBadgeLogic.IsFatalHeadshot(batch, i);
-                    if (headshot)
-                        match.AddScore(killer.GetValueOrDefault(),LocalKillBadgeLogic.HeadshotBonusPoints);
-                    // Kill Score is applied inside ProcessDeath; mirror a local HUD award when the human got the kill.
-                    if (killer is EntityId credited &&
-                        credited.Equals(humanEntity) &&
-                        humanEntity.IsValid &&
-                        IsEnemyOf(snap, credited, ev.Target))
-                    {
-                        localKillStreak = LocalKillBadgeLogic.IncrementStreak(localKillStreak);
-                        if (localKillStreak > localBestStreak) localBestStreak = localKillStreak;
-                        if (headshot) localHeadshots++;
-                        LocalKillBadgeLogic.PushKillBadges(
-                            PushLocalAward,
-                            ResolveDisplayName(ev.Target, snap),
-                            localKillStreak,
-                            headshot,
-                            (uint)GameContractVersion.PersonalKillPoints);
-                    }
-                    bots.ResetLife(ev.Target);
-                    DropPrimaryOnDeath(ev, snap.ActiveTicksElapsed);
-                    deathsThisTick.Add(ev.Target);
-                }
+                    for (int h = 0; h < handlers.Length; h++)
+                        if (handlers[h](batch, i, s)) break;
             }
+            return true;
+        }
+
+        // T082 stimuli from tick t; the planner consumes them when it plans t+1.
+        private bool ObserveGunfireHandler(IReadOnlyList<CombatEvent> batch, int index, TickState s)
+        {
+            var ev = batch[index];
+            if (ev.Kind != CombatEventKind.ShotAccepted || !(ev.Payload is ShotPayload shot)) return false;
+            bots!.ObserveGunfire(ev.Instigator, shot.Origin);
+            return true;
+        }
+
+        private bool ObserveDamageHandler(IReadOnlyList<CombatEvent> batch, int index, TickState s)
+        {
+            var ev = batch[index];
+            if (ev.Kind != CombatEventKind.DamageApplied) return false;
+            bots!.ObserveDamage(ev.Target, ev.Instigator, lifecycle!);
+            RecordDamageContribution(ev, lifecycle!);
+            return true;
+        }
+
+        private bool ResolveDeathHandler(IReadOnlyList<CombatEvent> batch, int index, TickState s)
+        {
+            var ev = batch[index];
+            if (ev.Kind != CombatEventKind.Death) return true;
+            var snap = s.Snap;
+            if (!lifecycle!.TryGetLife(ev.Target, out _, out var life)) return true;
+            if (ContainsEntity(deathsThisTick, ev.Target)) return true;
+            if (!IsParticipantAlive(snap, ev.Target, life)) return true;
+            EntityId? killer = ev.Instigator.IsValid ? ev.Instigator : (EntityId?)null;
+            SettlePersonalScores(ev.Target, life, killer, snap);
+            match.ProcessDeath(new DeathResolution(sessionId, ev.Id, ev.Target, life, killer, tick));
+            // ADR-097: +20 for an enemy kill whose fatal hit was the head (bots included). The match is still
+            // Playing here (the phase flips only in EvaluateEndOfTick), so a match-ending headshot keeps it.
+            bool headshot = killer is EntityId killerEntity &&
+                IsEnemyOf(snap, killerEntity, ev.Target) &&
+                LocalKillBadgeLogic.IsFatalHeadshot(batch, index);
+            if (headshot)
+                match.AddScore(killer.GetValueOrDefault(),LocalKillBadgeLogic.HeadshotBonusPoints);
+            // Kill Score is applied inside ProcessDeath; mirror a local HUD award when the human got the kill.
+            if (killer is EntityId credited &&
+                credited.Equals(humanEntity) &&
+                humanEntity.IsValid &&
+                IsEnemyOf(snap, credited, ev.Target))
+            {
+                localKillStreak = LocalKillBadgeLogic.IncrementStreak(localKillStreak);
+                if (localKillStreak > localBestStreak) localBestStreak = localKillStreak;
+                if (headshot) localHeadshots++;
+                LocalKillBadgeLogic.PushKillBadges(
+                    PushLocalAward,
+                    ResolveDisplayName(ev.Target, snap),
+                    localKillStreak,
+                    headshot,
+                    (uint)GameContractVersion.PersonalKillPoints);
+            }
+            bots!.ResetLife(ev.Target);
+            DropPrimaryOnDeath(ev, snap.ActiveTicksElapsed);
+            deathsThisTick.Add(ev.Target);
+            return true;
+        }
+
+        private bool SettleDeathsPhase(TickState s)
+        {
             // ADR-073: reset after the full death batch so a same-tick trade cannot leave a post-death streak.
             if (humanEntity.IsValid && ContainsEntity(deathsThisTick, humanEntity))
                 localKillStreak = 0;
             // Preserve ordered scoring for every same-tick death before retiring any old life.
-            uint activeTick = snap.ActiveTicksElapsed;
+            s.ActiveTick = s.Snap.ActiveTicksElapsed;
             for (int i = 0; i < deathsThisTick.Count; i++)
-                lifecycle.RetireLife(deathsThisTick[i], activeTick);
+                lifecycle!.RetireLife(deathsThisTick[i], s.ActiveTick);
             // ADR-105: resolve the human's pickup after deaths are settled; the new gun applies from the next tick.
-            if (validHuman && pickupRequested)
-                TryHumanPickup(activeTick);
+            if (s.ValidHuman && s.PickupRequested)
+                TryHumanPickup(s.ActiveTick);
+            return true;
+        }
 
+        private bool EndOfTickPhase(TickState s)
+        {
             match.EvaluateEndOfTick(tick, advanceActiveClock: true);
             var endSnap = match.AcquireSnapshot(sessionId, tick);
             measurement.LeaseAcquires++;
@@ -564,10 +688,10 @@ namespace Shooter.Game.Session
             measurement.Actors = endSnap.Participants.Count;
             droppedWeapons.Expire(endSnap.ActiveTicksElapsed);
             droppedWeaponsActiveTick = endSnap.ActiveTicksElapsed;
-            lifecycle.AdvanceActiveTick(endSnap.ActiveTicksElapsed);
+            lifecycle!.AdvanceActiveTick(endSnap.ActiveTicksElapsed);
             if (match.TryAcquireResults() != null) phase = GameMatchPhase.Finished;
             tick = unchecked(tick + 1);
-            return GameOperationResult.Ok;
+            return true;
         }
 
         /// <summary>
