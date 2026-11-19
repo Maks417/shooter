@@ -82,7 +82,8 @@ namespace Shooter.Generation
         public static readonly string[] Muzzles = { "birdcage", "brake", "flash", "none", "slant" };
         /// <summary><c>mount</c> (ADR-107, 1.4.0 long guns only): bare rail, the sight is a separate rail-mounted mesh.</summary>
         public static readonly string[] Optics = { "irons", "mount", "scope2", "scope4", "scope8" };
-        public static readonly string[] Stocks = { "chassis", "fixed", "folding", "none", "wood" };
+        /// <summary><c>collapsible</c> (ADR-118, 1.5.0 AR and SCAR only): buffer tube with a sliding carbine stock.</summary>
+        public static readonly string[] Stocks = { "chassis", "collapsible", "fixed", "folding", "none", "wood" };
         public int BarrelFrontMm { get; }
         public string Furniture { get; }
         public string Muzzle { get; }
@@ -112,6 +113,8 @@ namespace Shooter.Generation
             "ar" => (420, 780),
             "dmr" => (480, 760),
             "bolt" => (700, 960),
+            "scar" => (480, 680),
+            "pump" => (560, 760),
             "pistol-striker" => (110, 140),
             "pistol-eagle" => (150, 200),
             _ => throw new FormatException("Unknown arsenal kind.")
@@ -139,14 +142,25 @@ namespace Shooter.Generation
         /// rail-mounted meshes (<see cref="ProfileArsenalGeometry.BuildSight"/>) chosen per loadout.
         /// </summary>
         public const string MountVersion = "1.4.0";
-        public static bool IsArsenalVersion(string? version) => version == ArsenalVersion || version == ProfileVersion || version == MountVersion;
+        /// <summary>
+        /// ADR-118: the 1.4.0 bare-rail bodies plus the <c>scar</c> (Mk 16) and <c>pump</c> (M870 shotgun) archetypes and
+        /// the <c>collapsible</c> carbine stock (an AR with it gets the M4 carbine handguard). Every 1.4.0 recipe builds
+        /// byte-identical meshes under 1.5.0's code; the new kinds and stock are rejected below 1.5.0.
+        /// </summary>
+        public const string ExtendedVersion = "1.5.0";
+        public static bool IsArsenalVersion(string? version) => version == ArsenalVersion || IsProfileVersion(version);
         /// <summary>Versions built by <see cref="ProfileArsenalGeometry"/>.</summary>
-        public static bool IsProfileVersion(string? version) => version == ProfileVersion || version == MountVersion;
-        public static readonly string[] ArsenalKinds = { "ak", "ar", "bolt", "dmr", "pistol-eagle", "pistol-striker" };
+        public static bool IsProfileVersion(string? version) => version == ProfileVersion || IsMountVersion(version);
+        /// <summary>Versions whose long guns are bare-rail bodies with separately mounted sights (ADR-107, ADR-118).</summary>
+        public static bool IsMountVersion(string? version) => version == MountVersion || version == ExtendedVersion;
+        public static readonly string[] ArsenalKinds = { "ak", "ar", "bolt", "dmr", "pistol-eagle", "pistol-striker", "pump", "scar" };
+        /// <summary>Kinds introduced by <see cref="ExtendedVersion"/>.</summary>
+        public static bool IsExtendedKind(string? kind) => kind == "scar" || kind == "pump";
         public static bool IsSupportedVersion(string? version) => version == GeneratorVersion || version == PartsVersion || IsArsenalVersion(version);
         public static bool IsArsenalKind(string? kind) => kind != null && Array.IndexOf(ArsenalKinds, kind) >= 0;
         /// <summary>Shouldered weapons: the 1.0.5/1.1.0 rifle and every 1.2.0 long-gun archetype.</summary>
-        public static bool IsLongGunKind(string? kind) => kind == "rifle" || kind == "ak" || kind == "ar" || kind == "dmr" || kind == "bolt";
+        public static bool IsLongGunKind(string? kind) => kind == "rifle" || kind == "ak" || kind == "ar" || kind == "dmr" || kind == "bolt"
+            || IsExtendedKind(kind);
         public bool IsLongGun => IsLongGunKind(Kind);
 
         public RecipeDocument Document { get; }
@@ -255,10 +269,14 @@ namespace Shooter.Generation
             var resolved = new ArsenalParts(kind, Int(parts, "barrelFrontMm"), parts["furniture"].String, parts["muzzle"].String,
                 parts["optic"].String, parts["stock"].String);
             bool pistol = kind == "pistol-striker" || kind == "pistol-eagle";
-            if (version == MountVersion && !pistol && resolved.Optic != "mount")
-                throw new FormatException("Weapon 1.4.0 long guns take optic mount (sights are separate meshes).");
-            if (version != MountVersion && resolved.Optic == "mount")
-                throw new FormatException("Weapon part optic mount needs generator 1.4.0.");
+            if (IsMountVersion(version) && !pistol && resolved.Optic != "mount")
+                throw new FormatException("Weapon 1.4.0/1.5.0 long guns take optic mount (sights are separate meshes).");
+            if (!IsMountVersion(version) && resolved.Optic == "mount")
+                throw new FormatException("Weapon part optic mount needs generator 1.4.0 or later.");
+            if (IsExtendedKind(kind) && version != ExtendedVersion)
+                throw new FormatException("Weapon kind " + kind + " needs generator 1.5.0.");
+            if (resolved.Stock == "collapsible" && (version != ExtendedVersion || (kind != "ar" && kind != "scar")))
+                throw new FormatException("Weapon part stock collapsible needs generator 1.5.0 and kind ar or scar.");
             return resolved;
         }
 

@@ -836,6 +836,14 @@ Checks on the working tree over `e5d976b`: Simulation 648/648 PASS (`m2-combat-h
 
 **Pending / NotClaimed:** Unity compile of the changed `TacticalUi`/`ProductSessionView` (folded into the next Unity lane run), client build and installer, and the owner's in-game look at the dot and the 1.2x zoom.
 
+## ADR-118 new weapons — 2026-11-19
+
+Owner request: add a bolt sniper, a shotgun and two famous rifles (picked: M24 SWS, Remington 870 as "M870", M4A1, FN SCAR-L as "Mk 16"). Implemented [ADR-118](../../decisions.md#adr-118--accepted-m4a1-mk-16-m24-sws-and-m870-pellets-shell-reloads-and-geometryweapon-150) in steps: simulation pellets and shell reloads; geometry.weapon 1.5.0 (`scar`, `pump`, collapsible stock) with the owner-approved feature-content-lock refreeze; then content, presentation, audio and bots.
+
+Checks so far: Simulation 652/652 PASS (`m2-combat-harness/2925ad3…/20261119T073545640Z-28e1c76c`), Generation 650/650 PASS (`m1-procedural-feasibility/f16407f…/20261119T074848515Z-2813eb4c`), feature registry and feature schemas PASS, weapon catalog generator tests PASS. An offline flat-shaded side/top render of the four new LOD0 bodies with their magazine and cycle parts confirmed the M4 carbine handguard and stock, the Mk 16 upper and folding stock, the M870 receiver, rib, tube and forend, and the M24 body.
+
+**Pending / NotClaimed:** weapon package republish, Unity EditMode/PlayMode, client build and installer; the owner's in-game review of the four guns (look in first and third person, pump and shell-insert choreography, sounds) and of shotgun balance.
+
 ## Delivery 0.3.24
 
 Owner requested a release and installer after the map realism change (2026-11-18). Clean binary/content source **`53cce2682e3b5f0b3bf1bbfea11b0c95a14cc116`** adds to 0.3.23 [ADR-115](../../decisions.md#adr-115--accepted-open-reflex-collimator-with-a-clear-glass-pane) (open reflex collimator with a clear glass pane) and [ADR-116](../../decisions.md#adr-116--accepted-realistic-map-colour-texture-and-shadows-materialnoise-120) (realistic map colour, texture and shadows: material.noise 1.2.0, corrected accent paint, warmer light, later fog, +10 saturation, soft Low shadows).

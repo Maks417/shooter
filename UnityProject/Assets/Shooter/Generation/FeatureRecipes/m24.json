@@ -1,0 +1,18 @@
+{
+  "schemaId": "shooter.recipe.weapon.v1",
+  "recipeId": "weapons/m24",
+  "generatorId": "geometry.weapon",
+  "generatorVersion": "1.4.0",
+  "seed": "460072030",
+  "parameters": {
+    "kind": "bolt",
+    "parts": {
+      "barrelFrontMm": 780,
+      "furniture": "polymer",
+      "muzzle": "none",
+      "optic": "mount",
+      "stock": "fixed"
+    }
+  },
+  "dependencies": []
+}

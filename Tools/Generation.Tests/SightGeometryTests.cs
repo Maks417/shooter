@@ -17,7 +17,7 @@ public sealed class SightGeometryTests
     public static TheoryData<string, string> Mounts()
     {
         var data = new TheoryData<string, string>();
-        foreach (string kind in new[] { "ak", "ar", "dmr", "bolt" })
+        foreach (string kind in new[] { "ak", "ar", "dmr", "bolt", "scar", "pump" })
             foreach (string sight in WeaponSights.All)
                 if (WeaponSights.HasMesh(kind, sight)) data.Add(kind, sight);
         return data;
@@ -76,7 +76,7 @@ public sealed class SightGeometryTests
     [Fact]
     public void Collimator_sits_no_higher_than_the_prism_on_every_rail()
     {
-        foreach (string kind in new[] { "ak", "ar", "dmr", "bolt" })
+        foreach (string kind in new[] { "ak", "ar", "dmr", "bolt", "scar", "pump" })
             Assert.True(WeaponSights.EyeFor(kind, "collimator").Y < WeaponSights.EyeFor(kind, "scope2").Y + .0001f, kind);
     }
 
@@ -85,6 +85,8 @@ public sealed class SightGeometryTests
     [InlineData("ar")]
     [InlineData("dmr")]
     [InlineData("bolt")]
+    [InlineData("scar")]
+    [InlineData("pump")]
     public void Collimator_eye_line_passes_only_through_clear_glass(string kind)
     {
         // ADR-115: the reflex window is open; the only surface on the line of sight is the slot-11 glass pane.
@@ -129,7 +131,7 @@ public sealed class SightGeometryTests
     [Fact]
     public void Bare_bodies_carry_no_optic_and_use_their_irons_line_of_sight()
     {
-        foreach (var (name, kind) in new[] { ("m16", "ar"), ("mk14", "dmr"), ("mtac338", "bolt"), ("ak47", "ak") })
+        foreach (var (name, kind) in new[] { ("m16", "ar"), ("mk14", "dmr"), ("mtac338", "bolt"), ("ak47", "ak"), ("m4a1", "ar"), ("m24", "bolt"), ("mk16", "scar"), ("m870", "pump") })
         {
             var recipe = Load(name);
             Assert.Equal("mount", recipe.Arsenal!.Optic);

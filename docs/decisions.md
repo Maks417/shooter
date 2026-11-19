@@ -2006,3 +2006,50 @@ Consequences: Presentation only. No lock, contract, fixture or content change. `
 Rollback: revert the commit.
 
 Evidence: [M11 handoff](milestones/m11-playable-release/handoff.md#adr-117-collimator-dot-and-zoom--2026-11-19). The in-game look is Pending owner playtest.
+
+## ADR-118 — Accepted: M4A1, Mk 16, M24 SWS and M870: pellets, shell reloads and geometry.weapon 1.5.0
+
+Date 2026-11-19. Context: the owner asked for a bolt-action sniper, a shotgun and a couple of famous rifles, and picked the M24 SWS, the Remington 870 pump shotgun, the M4A1 and the FN SCAR-L from a shortlist. Following ADR-102, brand names are avoided: the SCAR-L appears under its US designation **Mk 16** and the 870 as **M870**. The M24 and M4A1 fit existing bodies (`bolt`, `ar`). The shotgun needed engine work: there was one hitscan ray per shot, a whole-magazine reload and no pump handling. The SCAR needed a new body.
+
+Decision:
+- **Simulation (pellets, shell reloads).** `WeaponDefinition` gains optional `PelletCount` (default 1), `PelletSpreadRadians` and `ReloadPerRound`.
+  - A multi-pellet shot emits one `ShotAccepted` and one recoil impulse. It then resolves each pellet inside the pellet cone around the aimed direction, using its own spread channels (16 + 2p, 17 + 2p), with an impact and falloff damage per pellet.
+  - Pellet 0 decides whether the muzzle is blocked.
+  - Single-projectile guns never take the pellet path, so they are bit-identical.
+  - A tube-fed gun loads one round per `ReloadTicks` phase and chains phases until full or out of reserve. A trigger press with at least one round loaded cancels the reload and can fire on the same tick. The frozen C0 `WeaponState` is unchanged.
+  - `WeaponModifiers.Apply` copies the new fields. A reflection test checks that every unscaled field survives.
+  - The catalog generator accepts `pelletCount` (1–16), `pelletSpreadDegrees` (0–15) and `reloadPerRound`. Pellets need a cone and semi-automatic fire. Older rows generate byte-identically.
+- **geometry.weapon 1.5.0** builds every 1.4.0 recipe byte-identically and adds kinds `scar` and `pump` and the stock `collapsible` (AR and SCAR), all rejected below 1.5.0.
+  - Sockets, envelopes and collision are declared for each new kind, so nothing falls through to the pistol case.
+  - Both new kinds take rail-mounted sights: Mk 16 flip-up irons, and an M870 ghost ring with a barrel blade.
+  - The M870's cycle part is the pump forend and its magazine part is a single shell lying in the loading port.
+  - Recipes: `m4a1` (ar 1.5.0, 540 mm, collapsible), `m24` (bolt 1.4.0, 780 mm), `mk16` (scar 1.5.0, 560 mm, folding) and `m870` (pump 1.5.0, 680 mm).
+  - New fixture `docs/feature-fixtures/rifle-1.5.0.json`; the schema accepts 1.5.0.
+  - `Tools/verify_feature_registry.py --refreeze ADR-NNN [--generator id@version@schema]` is the explicit, reviewed way to refreeze the source registry.
+- **Content.** Four definition files are added (orders 12–15). Stats at 60 Hz:
+
+  | Weapon | Fire | Damage | Magazine | Range |
+  |---|---|---|---|---|
+  | M4A1 | full auto, 5-tick interval (720 rpm) | 29 | 30/90 | falloff 20–55 m to 0.75 |
+  | Mk 16 | full auto, 6 ticks (600 rpm) | 31 | 30/90 | falloff 30–70 m to 0.80 |
+  | M24 SWS | bolt, 60 ticks | 100 | 5/30 | — |
+  | M870 | pump, 36 ticks | 8 pellets × 25 in a 2.6° cone | 7/28, one shell per 28 ticks | falloff 8–30 m to 0.30, max range 60 m |
+
+  - Spawn weights: M4A1 3, Mk 16 2, M24 1, M870 2.
+  - Sights: M4A1 and Mk 16 take irons, collimator and 2x; the M24 takes 8x (default), irons, collimator, 2x and 4x; the M870 takes irons and collimator.
+- **Presentation and bots.**
+  - A `Pump` handling style: the forend runs back and forward after each shot, and the shell-insert reload track lifts one shell per reload phase.
+  - New kill-feed glyphs and shot sounds for the four guns, plus pump-cycle and shell-insert sounds.
+  - The Armory shows "8 × 25" damage and a PUMP action.
+  - Bots treat a multi-pellet gun as close range: no long-range fire, close in past the falloff end, no aiming down sights up close.
+
+Consequences:
+- The feature-content-lock adds the geometry.weapon 1.5.0 generator row and refreezes the source hashes. C0-v1, Game-v1 and content-format locks are unchanged.
+- The weapon package republishes with the new meshes and sight sets.
+- Seeded bot loadouts change, because the total spawn weight changes, so earlier TDM benchmark runs are not comparable.
+- Networking (parked, ADR-076) would not replicate individual pellets.
+- The look, feel, sound and balance are Pending owner playtest.
+
+Rollback: revert the ADR-118 commits, refreeze the feature registry and republish content.
+
+Evidence: [M11 handoff](milestones/m11-playable-release/handoff.md#adr-118-new-weapons--2026-11-19).

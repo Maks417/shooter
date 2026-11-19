@@ -14,7 +14,7 @@ public sealed class ArsenalGeometryTests
     private readonly ITestOutputHelper output;
     public ArsenalGeometryTests(ITestOutputHelper output) { this.output = output; }
 
-    public static readonly string[] Names = { "ak47", "ak102", "m16", "mk14", "mtac338", "g17", "golden-eagle" };
+    public static readonly string[] Names = { "ak47", "ak102", "m16", "mk14", "mtac338", "g17", "golden-eagle", "m4a1", "m24", "mk16", "m870" };
     public static TheoryData<string> Recipes() { var data = new TheoryData<string>(); foreach (var n in Names) data.Add(n); return data; }
 
     private static string RepoRoot()
@@ -31,8 +31,9 @@ public sealed class ArsenalGeometryTests
     public void Archetype_lods_are_valid_ordered_and_inside_the_envelope(string name)
     {
         var recipe = Load(name);
-        // ADR-107: long guns ship as bare-rail 1.4.0 bodies (sights are separate meshes); pistols stay on 1.3.0.
-        Assert.Equal(recipe.IsLongGun ? WeaponRecipe.MountVersion : WeaponRecipe.ProfileVersion, recipe.Version);
+        // ADR-107: long guns ship as bare-rail 1.4.0/1.5.0 bodies (sights are separate meshes); pistols stay on 1.3.0.
+        if (recipe.IsLongGun) Assert.True(WeaponRecipe.IsMountVersion(recipe.Version), name + " " + recipe.Version);
+        else Assert.Equal(WeaponRecipe.ProfileVersion, recipe.Version);
         Assert.NotNull(recipe.Arsenal);
         var build = WeaponGeometry.Build(recipe);
         bool pistol = !recipe.IsLongGun;
@@ -79,6 +80,48 @@ public sealed class ArsenalGeometryTests
         Assert.True(lengths["ak47"] > lengths["ak102"]);
         Assert.True(lengths["golden-eagle"] > lengths["g17"]);
         Assert.True(lengths["ak102"] > 0.75f && lengths["mtac338"] > 1.2f);
+        // ADR-118: the carbine is shorter than the M16 and the Mk 16 sits between them; the M24 is the long bolt gun.
+        Assert.True(lengths["m16"] > lengths["mk16"] && lengths["mk16"] > lengths["m4a1"]);
+        Assert.True(lengths["m24"] > lengths["m870"] && lengths["m24"] > lengths["m16"]);
+    }
+
+    [Fact]
+    public void New_1_5_0_kinds_and_stock_are_rejected_on_older_generators()
+    {
+        string Recipe(string version, string kind, int barrel, string stock) => "{\"schemaId\":\"shooter.recipe.weapon.v1\",\"recipeId\":\"weapons/x\",\"generatorId\":\"geometry.weapon\",\"generatorVersion\":\"" + version +
+            "\",\"seed\":\"460072030\",\"parameters\":{\"kind\":\"" + kind + "\",\"parts\":{\"barrelFrontMm\":" + barrel + ",\"furniture\":\"black\",\"muzzle\":\"none\",\"optic\":\"mount\",\"stock\":\"" + stock + "\"}},\"dependencies\":[]}";
+        WeaponRecipe Parse(string s) => WeaponRecipe.Parse(Encoding.UTF8.GetBytes(s));
+        Assert.Throws<FormatException>(() => Parse(Recipe("1.4.0", "scar", 560, "folding")));
+        Assert.Throws<FormatException>(() => Parse(Recipe("1.4.0", "pump", 680, "fixed")));
+        Assert.Throws<FormatException>(() => Parse(Recipe("1.4.0", "ar", 540, "collapsible")));
+        Assert.Throws<FormatException>(() => Parse(Recipe("1.5.0", "dmr", 540, "collapsible")));
+        Assert.Throws<FormatException>(() => Parse(Recipe("1.5.0", "pump", 900, "fixed")));
+        Assert.Equal("scar", Parse(Recipe("1.5.0", "scar", 560, "collapsible")).Kind);
+        // Every 1.4.0 body builds the same meshes when its recipe is lifted to 1.5.0.
+        foreach (var (name, kind, barrel, stock) in new[] { ("m16", "ar", 640, "fixed") })
+        {
+            var a = WeaponGeometry.Build(Load(name)).Lods[0];
+            var src = File.ReadAllText(Path.Combine(RepoRoot(), "UnityProject", "Assets", "Shooter", "Generation", "FeatureRecipes", name + ".json")).Replace("\"1.4.0\"", "\"1.5.0\"");
+            var b = WeaponGeometry.Build(WeaponRecipe.Parse(Encoding.UTF8.GetBytes(src))).Lods[0];
+            Assert.Equal(GeometryCodec.EncodeMesh(a), GeometryCodec.EncodeMesh(b));
+        }
+    }
+
+    [Fact]
+    public void New_kinds_declare_their_own_sockets_and_envelopes()
+    {
+        // ArsenalGeometry switches used to fall through to the pistol case; the ADR-118 kinds must not.
+        foreach (var name in new[] { "mk16", "m870", "m4a1" })
+        {
+            var recipe = Load(name);
+            var build = WeaponGeometry.Build(recipe);
+            Assert.Contains(build.Sockets, s => s.Id == "shoulder");
+            Assert.True(build.Bounds.Min.Z < -.3f, name + " envelope is a pistol's");
+            float butt = build.Lods[0].Positions.Min(p => p.Z);
+            var shoulder = build.Sockets.Single(s => s.Id == "shoulder").Position;
+            Assert.InRange(shoulder.Z - butt, -.001f, .045f);
+        }
+        Assert.InRange(WeaponGeometry.Build(Load("m4a1")).Sockets.Single(s => s.Id == "shoulder").Position.Z, -.37f, -.35f);
     }
 
     [Fact]

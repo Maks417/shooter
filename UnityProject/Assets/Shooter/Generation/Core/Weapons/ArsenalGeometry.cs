@@ -47,6 +47,8 @@ namespace Shooter.Generation
                 "ar" => new Aabb(new Float3(-.075f, -.21f, -.45f), new Float3(.075f, .20f, front)),
                 "dmr" => new Aabb(new Float3(-.075f, -.21f, -.44f), new Float3(.075f, .21f, front)),
                 "bolt" => new Aabb(new Float3(-.08f, -.17f, -.49f), new Float3(.08f, .215f, front)),
+                "scar" => new Aabb(new Float3(-.075f, -.21f, -.45f), new Float3(.075f, .20f, front)),
+                "pump" => new Aabb(new Float3(-.07f, -.20f, -.47f), new Float3(.07f, .20f, front)),
                 "pistol-striker" => new Aabb(new Float3(-.04f, -.105f, -.085f), new Float3(.04f, .105f, parts.BarrelFront / 1f + .012f)),
                 _ => new Aabb(new Float3(-.046f, -.125f, -.095f), new Float3(.046f, .145f, parts.BarrelFront + .012f))
             };
@@ -59,6 +61,9 @@ namespace Shooter.Generation
         {
             "ar" => (.118f, .075f),
             "dmr" => (.124f, .14f),
+            // ADR-118: the Mk 16 monolithic upper rail and the M870 receiver rail.
+            "scar" => (.120f, .075f),
+            "pump" => (.112f, .05f),
             _ => (.107f, .04f)
         };
 
@@ -85,7 +90,8 @@ namespace Shooter.Generation
         public static readonly string[] MountedSights = { "irons", "collimator", "scope2", "scope4", "scope8" };
 
         /// <summary>Long-gun archetypes that accept a rail-mounted sight (ADR-107).</summary>
-        public static bool IsMountKind(string kind) => kind == "ak" || kind == "ar" || kind == "dmr" || kind == "bolt";
+        public static bool IsMountKind(string kind) => kind == "ak" || kind == "ar" || kind == "dmr" || kind == "bolt"
+            || kind == "scar" || kind == "pump";
 
         /// <summary>
         /// ADR-107 sight rail (y top, z centre). AR, DMR and bolt guns use their own top rail; the AK carries a
@@ -111,6 +117,8 @@ namespace Shooter.Generation
                     "ak" => (.118f, -.03f),
                     "ar" => (.131f, -.05f),
                     "dmr" => (rail.y + .018f, -.05f),
+                    "scar" => (rail.y + .018f, -.05f),
+                    "pump" => (rail.y + .018f, -.06f),
                     _ => (.1115f + .018f, -.06f)
                 },
                 "collimator" => (rail.y + CollimatorEyeHeight, rail.z - .02f),
@@ -152,7 +160,7 @@ namespace Shooter.Generation
                         new WeaponSocket("attachment-rail", 0, 120, 80), new WeaponSocket("chamber-ejection", 28, 85, 70),
                         new WeaponSocket("left-hand-grip", 0, 10, 340), new WeaponSocket("magazine-grip", 0, -75, 75),
                         new WeaponSocket("muzzle", 0, 80, muzzleZ), new WeaponSocket("right-hand-grip", 0, 0, 0),
-                        new WeaponSocket("shoulder", 0, 60, -425), new WeaponSocket("sight-eye", 0, Mm(sight.y), Mm(sight.z))
+                        new WeaponSocket("shoulder", 0, 60, Mm(-StockEnd(kind, parts))), new WeaponSocket("sight-eye", 0, Mm(sight.y), Mm(sight.z))
                     };
                 case "dmr":
                     return new[]
@@ -169,6 +177,23 @@ namespace Shooter.Generation
                         new WeaponSocket("left-hand-grip", 0, -15, 330), new WeaponSocket("magazine-grip", 0, -30, 20),
                         new WeaponSocket("muzzle", 0, 85, muzzleZ), new WeaponSocket("right-hand-grip", 0, 0, 0),
                         new WeaponSocket("shoulder", 0, 50, -460), new WeaponSocket("sight-eye", 0, Mm(sight.y), Mm(sight.z))
+                    };
+                case "scar":
+                    return new[]
+                    {
+                        new WeaponSocket("attachment-rail", 0, 120, 80), new WeaponSocket("chamber-ejection", 28, 85, 70),
+                        new WeaponSocket("left-hand-grip", 0, 10, 300), new WeaponSocket("magazine-grip", 0, -75, 75),
+                        new WeaponSocket("muzzle", 0, 80, muzzleZ), new WeaponSocket("right-hand-grip", 0, 0, 0),
+                        new WeaponSocket("shoulder", 0, 60, Mm(-StockEnd(kind, parts))), new WeaponSocket("sight-eye", 0, Mm(sight.y), Mm(sight.z))
+                    };
+                case "pump":
+                    return new[]
+                    {
+                        // The support hand rides the pump forend; the shell hand feeds the loading port under the receiver.
+                        new WeaponSocket("attachment-rail", 0, 112, 50), new WeaponSocket("chamber-ejection", 22, 85, 95),
+                        new WeaponSocket("left-hand-grip", 0, 10, 305), new WeaponSocket("magazine-grip", 0, 0, 85),
+                        new WeaponSocket("muzzle", 0, 78, muzzleZ), new WeaponSocket("right-hand-grip", 0, 0, 0),
+                        new WeaponSocket("shoulder", 0, 40, -445), new WeaponSocket("sight-eye", 0, Mm(sight.y), Mm(sight.z))
                     };
                 case "pistol-striker":
                     return new[]
@@ -191,6 +216,13 @@ namespace Shooter.Generation
 
         internal static float AkHandguardFront(ArsenalParts parts) => Math.Min(.355f, parts.BarrelFront - .07f);
 
+        /// <summary>
+        /// Distance (metres) from the grip back to the butt the shoulder socket sits on: the A2 stock's .425, the ADR-118
+        /// collapsible carbine stock's .360 (AR and Mk 16) and the Mk 16 folding stock's .415.
+        /// </summary>
+        internal static float StockEnd(string kind, ArsenalParts parts) =>
+            parts.Stock == "collapsible" ? .360f : kind == "scar" ? .415f : .425f;
+
         public static CollisionData Collision(string kind, ArsenalParts parts)
         {
             var boxes = new List<TaggedBox>();
@@ -203,6 +235,14 @@ namespace Shooter.Generation
                     Add(.07f, .075f, .05f, .065f, .29f); Add(.08f, .29f, .056f, .065f, .16f); Add(.035f, -.24f, .046f, .075f, .33f);
                     Add(-.045f, -.025f, .032f, .105f, .042f, 18); Add(-.07f, .14f, .03f, .2f, .07f, -18);
                     return new CollisionData(new[] { new TaggedCapsule(new Capsule(new Float3(0, .08f, .22f), new Float3(0, .08f, front), .012f), 0) }, boxes, Array.Empty<TaggedHeightGrid>());
+                case "scar":
+                    Add(.08f, .08f, .055f, .09f, .30f); Add(.087f, .30f, .052f, .046f, .18f); Add(.06f, -.25f, .045f, .11f, .30f);
+                    Add(-.045f, -.02f, .032f, .11f, .042f, 18); Add(-.06f, .075f, .032f, .16f, .07f, -6);
+                    return new CollisionData(new[] { new TaggedCapsule(new Capsule(new Float3(0, .08f, .22f), new Float3(0, .08f, front), .012f), 0) }, boxes, Array.Empty<TaggedHeightGrid>());
+                case "pump":
+                    Add(.065f, .06f, .044f, .08f, .24f); Add(.048f, .31f, .056f, .056f, .18f); Add(.03f, -.26f, .046f, .15f, .38f);
+                    Add(-.06f, -.03f, .034f, .11f, .045f, 20);
+                    return new CollisionData(new[] { new TaggedCapsule(new Capsule(new Float3(0, .078f, .17f), new Float3(0, .078f, front), .013f), 0) }, boxes, Array.Empty<TaggedHeightGrid>());
                 case "ar":
                 case "dmr":
                     Add(.07f, .08f, .055f, .09f, .28f); Add(.08f, .36f, .06f, .065f, .28f); Add(.06f, -.26f, .05f, .11f, .3f);

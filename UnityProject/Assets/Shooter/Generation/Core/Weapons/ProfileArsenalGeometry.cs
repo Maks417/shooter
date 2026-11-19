@@ -314,7 +314,8 @@ namespace Shooter.Generation
                             Slab(metal, 0, .022f, .002f, -.026f, .111f, .003f, .006f, .111f, .003f, .004f, .136f, .004f, -.024f, .136f, .004f);
                             if (detail) Plate(Recess, 0, .023f, -.015f, -.009f, .128f, .132f, .0015f);
                         }
-                        else if (kind == "dmr") BackUpIrons(rail.y, -.05f, .33f);
+                        else if (kind == "dmr" || kind == "scar") BackUpIrons(rail.y, -.05f, .33f);
+                        else if (kind == "pump") GhostRing(rail.y);
                         else BackUpIrons(.1115f, -.06f, .15f);
                         break;
                     case "collimator":
@@ -425,6 +426,25 @@ namespace Shooter.Generation
                 Slab(Steel, 0, .0022f, .0005f, frontZ - .0015f, railTop + .005f, .0006f, frontZ + .0015f, railTop + .005f, .0006f, frontZ + .0010f, line, .0006f, frontZ - .0010f, line, .0006f);
             }
 
+            /// <summary>
+            /// ADR-118 M870 ghost-ring irons: a protected aperture on the receiver rail and a tall blade clamped on the
+            /// barrel, both on the line <see cref="ArsenalGeometry.MountedSightEye"/> reports (rail + 18 mm).
+            /// </summary>
+            private void GhostRing(float railTop)
+            {
+                float line = railTop + .018f, rearZ = -.035f, frontZ = .520f, barrelTop = .078f + .0112f;
+                Slab(metal, 0, .022f, .002f, rearZ - .014f, railTop, .002f, rearZ + .014f, railTop, .002f, rearZ + .014f, railTop + .006f, .002f, rearZ - .014f, railTop + .006f, .002f);
+                for (int side = -1; side <= 1; side += 2)
+                    Slab(metal, side * .0105f, .0030f, .0006f, rearZ - .006f, railTop + .005f, .0015f, rearZ + .006f, railTop + .005f, .0015f, rearZ + .004f, line + .009f, .002f, rearZ - .004f, line + .009f, .002f);
+                TurnAbout(Steel, new Float3(0, line, rearZ), Quat.Identity, Math.Max(10, radial / 2), .0065f, -.0020f, .0065f, .0020f);
+                // Front: barrel clamp, then the blade with its protective wings.
+                Turn(metal, 0, .078f, radial, .0135f, frontZ - .010f, .0135f, frontZ + .010f);
+                Slab(metal, 0, .008f, .001f, frontZ - .008f, barrelTop, .002f, frontZ + .008f, barrelTop, .002f, frontZ + .004f, line - .004f, .002f, frontZ - .004f, line - .004f, .002f);
+                for (int side = -1; side <= 1; side += 2)
+                    Slab(metal, side * .0070f, .0025f, .0006f, frontZ - .006f, barrelTop + .006f, .0015f, frontZ + .006f, barrelTop + .006f, .0015f, frontZ + .004f, line + .003f, .0015f, frontZ - .004f, line + .003f, .0015f);
+                Slab(Steel, 0, .0024f, .0005f, frontZ - .0015f, line - .006f, .0006f, frontZ + .0015f, line - .006f, .0006f, frontZ + .0010f, line, .0006f, frontZ - .0010f, line, .0006f);
+            }
+
             // ------------------------------------------------------------ dispatch
 
             public MeshData Main()
@@ -435,6 +455,8 @@ namespace Shooter.Generation
                     case "ar": Ar(); break;
                     case "dmr": Dmr(); break;
                     case "bolt": Bolt(); break;
+                    case "scar": Scar(); break;
+                    case "pump": Pump(); break;
                     case "pistol-striker": Striker(); break;
                     default: Eagle(); break;
                 }
@@ -531,13 +553,28 @@ namespace Shooter.Generation
                         foreach (float rz in new[] { -.045f, .140f })
                             TurnAbout(Steel, new Float3(side * .0225f, .058f, rz), side > 0 ? ZToX : new Quat(0, -.70710677f, 0, .70710677f), 10, .0032f, .0005f, .0032f, .0028f);
                 }
-                // A2 round handguard with lengthwise ribs, delta ring and cap.
-                Loft(furniture, S(.215f, y, .0290f, .0290f, 2), S(.224f, y, .0312f, .0312f, 2), S(.360f, y, .0308f, .0308f, 2), S(.488f, y, .0298f, .0298f, 2), S(.499f, y, .0284f, .0284f, 2));
-                if (detail)
-                    foreach (float angle in fine ? new[] { 20f, 50f, 130f, 160f, 200f, 230f, 310f, 340f } : new[] { 35f, 145f, 215f, 325f })
-                        Strip(furniture, y, .0303f, angle, .232f, .480f, .0026f, .0024f);
-                Turn(metal, 0, y, radial, .0240f, .200f, .0340f, .205f, .0340f, .216f, .0280f, .221f);
-                Turn(metal, 0, y, radial, .0290f, .497f, .0290f, .506f, .0150f, .512f, .0120f, .512f);
+                bool carbine = p.Stock == "collapsible";
+                if (carbine)
+                {
+                    // ADR-118 M4 carbine handguard: shorter, ending well behind the front sight base.
+                    float hg = Math.Min(.385f, sightZ - .030f);
+                    Loft(furniture, S(.215f, y, .0290f, .0290f, 2), S(.224f, y, .0312f, .0312f, 2), S((.224f + hg) / 2, y, .0310f, .0310f, 2), S(hg - .011f, y, .0300f, .0300f, 2), S(hg, y, .0284f, .0284f, 2));
+                    if (detail)
+                        foreach (float angle in fine ? new[] { 20f, 50f, 130f, 160f, 200f, 230f, 310f, 340f } : new[] { 35f, 145f, 215f, 325f })
+                            Strip(furniture, y, .0305f, angle, .232f, hg - .019f, .0026f, .0024f);
+                    Turn(metal, 0, y, radial, .0240f, .200f, .0340f, .205f, .0340f, .216f, .0280f, .221f);
+                    Turn(metal, 0, y, radial, .0290f, hg - .002f, .0290f, hg + .007f, .0150f, hg + .013f, .0120f, hg + .013f);
+                }
+                else
+                {
+                    // A2 round handguard with lengthwise ribs, delta ring and cap.
+                    Loft(furniture, S(.215f, y, .0290f, .0290f, 2), S(.224f, y, .0312f, .0312f, 2), S(.360f, y, .0308f, .0308f, 2), S(.488f, y, .0298f, .0298f, 2), S(.499f, y, .0284f, .0284f, 2));
+                    if (detail)
+                        foreach (float angle in fine ? new[] { 20f, 50f, 130f, 160f, 200f, 230f, 310f, 340f } : new[] { 35f, 145f, 215f, 325f })
+                            Strip(furniture, y, .0303f, angle, .232f, .480f, .0026f, .0024f);
+                    Turn(metal, 0, y, radial, .0240f, .200f, .0340f, .205f, .0340f, .216f, .0280f, .221f);
+                    Turn(metal, 0, y, radial, .0290f, .497f, .0290f, .506f, .0150f, .512f, .0120f, .512f);
+                }
                 Barrel(y, .205f, front, .0090f, sightZ, .0108f);
                 // A2 front sight base, tower, ears, post and bayonet lug.
                 Slab(metal, 0, .028f, .003f, sightZ - .017f, .067f, .003f, sightZ + .017f, .067f, .003f, sightZ + .017f, .095f, .004f, sightZ + .008f, .100f, .003f,
@@ -554,10 +591,14 @@ namespace Shooter.Generation
                 Grip(Polymer, -.022f, -.022f, 18);
                 Guard(metal, .004f, .084f, -.008f, .0165f, .0045f, .012f, .006f);
                 Trigger(.045f, .017f);
-                // A2 fixed stock and rubber buttplate.
-                Loft(Polymer, S(-.426f, .060f, .0250f, .0710f, 3.4f), S(-.410f, .061f, .0260f, .0700f, 3.4f), S(-.300f, .065f, .0230f, .0560f, 3.4f),
-                    S(-.170f, .071f, .0205f, .0390f, 3.4f), S(-.061f, .074f, .0180f, .0290f, 3.4f));
-                Loft(Recess, S(-.4365f, .060f, .0250f, .0715f, 3.4f), S(-.4255f, .060f, .0254f, .0712f, 3.4f));
+                if (carbine) CollapsibleStock(.074f);
+                else
+                {
+                    // A2 fixed stock and rubber buttplate.
+                    Loft(Polymer, S(-.426f, .060f, .0250f, .0710f, 3.4f), S(-.410f, .061f, .0260f, .0700f, 3.4f), S(-.300f, .065f, .0230f, .0560f, 3.4f),
+                        S(-.170f, .071f, .0205f, .0390f, 3.4f), S(-.061f, .074f, .0180f, .0290f, 3.4f));
+                    Loft(Recess, S(-.4365f, .060f, .0250f, .0715f, 3.4f), S(-.4255f, .060f, .0254f, .0712f, 3.4f));
+                }
                 if (p.Optic == "irons")
                 {
                     Slab(metal, 0, .022f, .002f, -.026f, .111f, .003f, .006f, .111f, .003f, .004f, .136f, .004f, -.024f, .136f, .004f);
@@ -565,6 +606,123 @@ namespace Shooter.Generation
                 }
                 else Optic(.118f, .075f);
             }
+
+            /// <summary>
+            /// ADR-118 collapsible carbine stock: a receiver extension (buffer tube) with a sliding polymer stock body, a
+            /// latch lever underneath and a rubber butt pad; the butt sits at <see cref="ArsenalGeometry.StockEnd"/>.
+            /// </summary>
+            private void CollapsibleStock(float tubeY)
+            {
+                float butt = -.360f;
+                Turn(metal, 0, tubeY, radial, .0146f, butt + .060f, .0146f, -.080f, .0162f, -.074f, .0162f, -.066f, .0150f, -.062f);
+                Slab(Polymer, 0, .034f, .005f, -.230f, tubeY + .020f, .006f, butt + .006f, tubeY + .026f, .008f, butt + .006f, tubeY - .064f, .008f,
+                    butt + .040f, tubeY - .064f, .010f, -.255f, tubeY - .020f, .010f, -.230f, tubeY - .018f, .006f);
+                Loft(Polymer, S(-.236f, tubeY, .0215f, .0215f, 2.6f), S(-.226f, tubeY, .0215f, .0215f, 2.6f));
+                Slab(Recess, 0, .036f, .003f, butt - .006f, tubeY + .026f, .004f, butt + .006f, tubeY + .026f, .004f, butt + .006f, tubeY - .066f, .004f, butt - .006f, tubeY - .066f, .004f);
+                if (detail)
+                {
+                    Slab(Steel, 0, .008f, .0012f, -.250f, tubeY - .022f, .002f, -.215f, tubeY - .022f, .002f, -.218f, tubeY - .016f, .002f, -.250f, tubeY - .016f, .002f);
+                    for (int side = -1; side <= 1; side += 2) Plate(Recess, side * .0172f, .0012f, -.330f, -.270f, tubeY - .045f, tubeY + .010f, .006f);
+                }
+            }
+
+            // ------------------------------------------------------------ ADR-118 Mk 16 (SCAR-L)
+
+            private void Scar()
+            {
+                float y = .080f, front = p.BarrelFront, hg = Math.Min(.380f, front - .090f);
+                // Monolithic aluminium upper: receiver and handguard in one squared extrusion with chamfered corners.
+                Loft(metal, S(-.072f, .087f, .0250f, .0205f, 5), S(-.064f, .087f, .0262f, .0218f, 5), S(.190f, .087f, .0262f, .0218f, 5),
+                    S(.205f, .087f, .0242f, .0212f, 5), S(hg - .010f, .087f, .0242f, .0212f, 5), S(hg, .087f, .0226f, .0196f, 5));
+                // Full-length top rail.
+                Slab(metal, 0, .021f, .0015f, -.070f, .107f, .0016f, hg - .004f, .107f, .0016f, hg - .004f, .114f, .0016f, -.070f, .114f, .0016f);
+                RailTeeth(-.066f, hg - .008f, .114f, .020f, .010f);
+                // Polymer lower: magazine well flare, trigger area and stock hinge boss.
+                Slab(Polymer, 0, .048f, .003f, -.062f, .068f, .003f, .165f, .068f, .003f, .165f, .045f, .004f, .122f, .003f, .004f, .038f, .003f, .004f,
+                    .030f, .016f, .004f, -.012f, .016f, .005f, -.040f, .034f, .006f, -.062f, .044f, .004f);
+                if (detail)
+                {
+                    // Side and bottom accessory rails on the handguard, ejection port, charging slot and receiver pins.
+                    for (int side = -1; side <= 1; side += 2)
+                    {
+                        Plate(metal, side * .0262f, .0040f, .215f, hg - .014f, .081f, .093f, .0012f);
+                        TurnAbout(Steel, new Float3(side * .0242f, .040f, .118f), side > 0 ? ZToX : new Quat(0, -.70710677f, 0, .70710677f), 10, .0032f, .0005f, .0032f, .0028f);
+                        TurnAbout(Steel, new Float3(side * .0242f, .052f, -.045f), side > 0 ? ZToX : new Quat(0, -.70710677f, 0, .70710677f), 10, .0032f, .0005f, .0032f, .0028f);
+                    }
+                    Plate(metal, 0, .016f, .215f, hg - .014f, .0645f, .0685f, .0012f);
+                    Plate(Recess, .0262f, .0012f, .040f, .105f, .072f, .090f, .002f);
+                    Plate(Recess, -.0262f, .0012f, .050f, .205f, .092f, .099f, .002f);
+                    Slab(Polymer, 0, .050f, .0015f, .036f, -.003f, .002f, .124f, -.003f, .002f, .124f, .010f, .002f, .036f, .010f, .002f);
+                    Plate(Steel, -.0250f, .0030f, .020f, .040f, .046f, .058f, .002f);
+                }
+                Barrel(y, hg - .006f, front, .0090f);
+                MuzzleDevice(y, front);
+                Grip(Polymer, -.022f, -.022f, 18);
+                Guard(Polymer, .004f, .084f, -.008f, .0165f, .0050f, .012f, .006f);
+                Trigger(.045f, .017f);
+                // Stock hinge block, then the side-folding polymer stock or the collapsible stock.
+                Slab(Polymer, 0, .036f, .003f, -.084f, .050f, .004f, -.060f, .050f, .004f, -.060f, .104f, .004f, -.084f, .104f, .004f);
+                if (p.Stock == "collapsible") CollapsibleStock(.078f);
+                else
+                {
+                    float butt = -.415f;
+                    Slab(Polymer, 0, .036f, .006f, -.084f, .102f, .006f, -.300f, .104f, .010f, butt + .006f, .108f, .008f, butt + .006f, -.036f, .010f,
+                        butt + .030f, -.044f, .012f, -.300f, .028f, .016f, -.200f, .056f, .014f, -.084f, .058f, .006f);
+                    Slab(Recess, 0, .038f, .003f, butt - .006f, .108f, .004f, butt + .006f, .108f, .004f, butt + .006f, -.040f, .004f, butt - .006f, -.040f, .004f);
+                    if (detail)
+                    {
+                        // Cheek riser and lightening panels moulded into the stock sides.
+                        Slab(Polymer, 0, .030f, .003f, -.330f, .104f, .004f, -.190f, .104f, .004f, -.200f, .114f, .004f, -.320f, .116f, .004f);
+                        for (int side = -1; side <= 1; side += 2) Plate(Recess, side * .0182f, .0012f, -.290f, -.130f, .064f, .090f, .008f);
+                    }
+                }
+            }
+
+            // ------------------------------------------------------------ ADR-118 M870 pump shotgun
+
+            private void Pump()
+            {
+                float y = .078f, front = p.BarrelFront, tubeY = PumpTubeY, tubeFront = Math.Min(front - .020f, .560f);
+                // Milled steel receiver with a rounded top, and the trigger plate housing underneath.
+                Slab(metal, 0, .040f, .0025f, -.060f, .030f, .004f, .175f, .030f, .004f, .175f, .094f, .006f, .155f, .100f, .008f, -.045f, .100f, .008f, -.060f, .090f, .006f);
+                Slab(metal, 0, .034f, .002f, -.050f, .009f, .004f, .085f, .009f, .004f, .095f, .031f, .003f, -.055f, .031f, .003f);
+                // Receiver rail.
+                Slab(metal, 0, .020f, .0015f, -.050f, .099f, .0016f, .150f, .099f, .0016f, .150f, .106f, .0016f, -.050f, .106f, .0016f);
+                RailTeeth(-.046f, .146f, .106f, .019f, .010f);
+                if (detail)
+                {
+                    // Ejection port (right), loading port (bottom), action release, safety and trigger-group pins.
+                    Plate(Recess, .0202f, .0012f, .060f, .135f, .062f, .088f, .004f);
+                    Plate(Recess, 0, .034f, .045f, .150f, .0300f, .0320f, .003f);
+                    Plate(Steel, -.0202f, .0015f, .072f, .088f, .036f, .042f, .001f);
+                    TurnAbout(Steel, new Float3(0, .022f, .062f), ZToX, 10, .0040f, -.0175f, .0040f, .0175f);
+                    for (int side = -1; side <= 1; side += 2)
+                        foreach (float pz in new[] { -.030f, .060f })
+                            TurnAbout(Steel, new Float3(side * .0172f, .020f, pz), side > 0 ? ZToX : new Quat(0, -.70710677f, 0, .70710677f), 10, .0028f, .0005f, .0028f, .0024f);
+                }
+                Guard(metal, .000f, .076f, -.016f, .010f, .0045f, .012f, .006f);
+                Trigger(.036f, .010f);
+                // Barrel with a ventilated rib and front bead.
+                Turn(metal, 0, y, radial, .0125f, .170f, .0125f, .200f, .0112f, .212f, .0112f, front);
+                Slab(metal, 0, .008f, .0008f, .180f, y + .0105f, .001f, front - .004f, y + .0105f, .001f, front - .004f, y + .0148f, .001f, .180f, y + .0148f, .001f);
+                if (detail)
+                    for (float vz = .215f; vz < front - .030f; vz += fine ? .030f : .060f)
+                        Plate(Recess, 0, .0084f, vz, vz + .012f, y + .0118f, y + .0136f, .0006f);
+                Turn(Steel, 0, y + .0170f, Math.Max(8, radial / 2), .0008f, front - .014f, .0024f, front - .012f, .0024f, front - .009f, .0008f, front - .007f);
+                MuzzleDevice(y, front);
+                // Magazine tube under the barrel, its cap and the barrel clamp.
+                Turn(metal, 0, tubeY, radial, .0110f, .170f, .0110f, tubeFront - .030f);
+                Turn(metal, 0, tubeY, radial, .0120f, tubeFront - .030f, .0125f, tubeFront - .026f, .0125f, tubeFront - .004f, .0100f, tubeFront);
+                Slab(metal, 0, .018f, .002f, tubeFront - .062f, tubeY - .008f, .003f, tubeFront - .046f, tubeY - .008f, .003f, tubeFront - .046f, y + .008f, .003f, tubeFront - .062f, y + .008f, .003f);
+                // Pistol grip and a one-piece polymer butt with a rubber recoil pad.
+                Grip(furniture, -.008f, -.030f, 20);
+                Slab(furniture, 0, .044f, .010f, -.058f, .036f, .008f, -.058f, .094f, .008f, -.240f, .090f, .016f, -.440f, .100f, .012f, -.440f, -.040f, .012f,
+                    -.405f, -.046f, .014f, -.250f, .004f, .020f, -.110f, .026f, .016f);
+                Slab(Recess, 0, .046f, .004f, -.455f, -.042f, .005f, -.440f, -.042f, .005f, -.440f, .100f, .005f, -.455f, .100f, .005f);
+            }
+
+            /// <summary>Axis height of the M870 magazine tube (the forend and the shell part ride on it).</summary>
+            private const float PumpTubeY = .048f;
 
             // ------------------------------------------------------------ M14 EBR chassis
 
@@ -682,7 +840,14 @@ namespace Shooter.Generation
                         CurvedMagazine(p.Furniture == "polymer" ? Polymer : Metal, .045f, .100f, .046f, 5, 6, 6, .031f, .028f, -30);
                         break;
                     case "ar":
+                    case "scar":
                         CurvedMagazine(Metal, .040f, .075f, .060f, 3, 4, 4, .032f, .026f, -12, Polymer);
+                        break;
+                    case "pump":
+                        // ADR-118: one 12-gauge shell lying in the loading port (inside the receiver until a reload lifts it
+                        // to the hand): plastic hull with crimp and a brass head.
+                        Turn(Polymer, 0, .044f, radial, .0090f, .064f, .0094f, .068f, .0094f, .126f, .0080f, .132f, .0040f, .133f);
+                        Turn(Gold, 0, .044f, radial, .0040f, .049f, .0101f, .050f, .0101f, .053f, .0094f, .054f, .0094f, .066f, .0090f, .066f);
                         break;
                     case "dmr":
                         SlabPitched(Metal, 0, .032f, .003f, .075f, -.055f, -4, -.0375f, -.065f, .004f, .0375f, -.065f, .004f, .0375f, .065f, .003f, -.0375f, .065f, .003f);
@@ -754,6 +919,25 @@ namespace Shooter.Generation
                         Slab(Steel, .026f, .008f, .0015f, .110f, .080f, .002f, .210f, .080f, .002f, .210f, .096f, .003f, .110f, .096f, .003f);
                         TurnAbout(Steel, new Float3(0, .088f, .205f), ZToX, radial, .0042f, .026f, .0042f, .048f, .0072f, .051f, .0076f, .060f, .0060f, .064f);
                         break;
+                    case "scar":
+                        // Reciprocating left-side charging handle and the bolt carrier seen through the ejection port.
+                        Slab(Steel, -.0270f, .006f, .0012f, .160f, .090f, .002f, .190f, .090f, .002f, .190f, .101f, .002f, .160f, .101f, .002f);
+                        TurnAbout(Polymer, new Float3(-.030f, .0955f, .176f), new Quat(0, -.70710677f, 0, .70710677f), radial, .0040f, 0, .0040f, .010f, .0062f, .012f, .0062f, .022f, .0050f, .024f);
+                        Slab(Steel, .022f, .006f, .0015f, .040f, .075f, .002f, .100f, .075f, .002f, .100f, .091f, .002f, .040f, .091f, .002f);
+                        break;
+                    case "pump":
+                    {
+                        // The pump forend around the magazine tube, with grip grooves and the twin action bars into the receiver.
+                        float ty = PumpTubeY + .003f;
+                        Loft(furniture, S(.222f, ty, .0215f, .0225f, 2.8f), S(.232f, ty, .0255f, .0262f, 2.8f), S(.300f, ty, .0262f, .0268f, 2.8f),
+                            S(.380f, ty, .0255f, .0262f, 2.8f), S(.392f, ty, .0215f, .0225f, 2.8f));
+                        for (int i = 0; i < 6; i++)
+                            for (int side = -1; side <= 1; side += 2)
+                                Plate(Recess, side * .0258f, .0012f, .248f + i * .022f, .258f + i * .022f, ty - .016f, ty + .010f, .002f);
+                        for (int side = -1; side <= 1; side += 2)
+                            Plate(Steel, side * .0130f, .0018f, .120f, .228f, ty + .004f, ty + .010f, .001f);
+                        break;
+                    }
                     case "ar":
                         Slab(Steel, 0, .012f, .0015f, -.090f, .101f, .002f, -.040f, .101f, .002f, -.040f, .109f, .002f, -.090f, .109f, .002f);
                         Slab(Steel, 0, .050f, .002f, -.098f, .101f, .003f, -.086f, .101f, .003f, -.086f, .109f, .003f, -.098f, .109f, .003f);

@@ -40,5 +40,32 @@ def verify(root=ROOT):
             "scope": "M1 feature source registry identity only; no visual, gameplay or hardware acceptance"}
 
 
+def refreeze(decision, generator=None, root=ROOT):
+    """Deliberate, reviewed refreeze: record the ADR, optionally a new generator row, and the current source hashes."""
+    path = root / "feature-content-lock.json"
+    registry = json.loads(path.read_text(encoding="utf-8"))
+    if not decision.startswith("ADR-"):
+        raise ValueError("A refreeze names the ADR that approved it")
+    if decision not in registry["decisions"]:
+        registry["decisions"].append(decision)
+    if generator is not None and generator not in registry["generators"]:
+        registry["generators"].append(generator)
+    registry["sources"] = inventory(root)
+    path.write_text(json.dumps(registry, indent=2) + "\n", encoding="utf-8", newline="\n")
+    return verify(root)
+
+
 if __name__ == "__main__":
-    print(json.dumps(verify(), indent=2))
+    import argparse
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--refreeze", metavar="ADR", help="record a reviewed source change approved by this ADR")
+    parser.add_argument("--generator", metavar="ID@VERSION@SCHEMA", help="with --refreeze: add a generator row")
+    args = parser.parse_args()
+    if args.refreeze:
+        row = None
+        if args.generator:
+            gid, version, schema = args.generator.split("@")
+            row = {"id": gid, "version": version, "schema": schema}
+        print(json.dumps(refreeze(args.refreeze, row), indent=2))
+    else:
+        print(json.dumps(verify(), indent=2))

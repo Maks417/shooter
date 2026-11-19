@@ -136,6 +136,16 @@ Each sight mesh is built in the gun's own weapon space for its archetype rail (`
 
 Which sights a gun takes is data: `visual.sights { "default": ..., "allowed": [...] }` in its definition file, in loadout order (irons, collimator, scope2, scope4, scope8). The generator requires it for every 1.4.0 rail recipe, checks that `visual.optic` matches the default sight and writes `Simulation/Combat/SightCatalog.g.cs` and `Presentation/Model/View/WeaponSightChoices.g.cs`. Sights never change combat numbers.
 
+## Mk 16, M870, M4A1 and M24 — geometry.weapon 1.5.0 (ADR-118)
+
+[ADR-118](../decisions.md#adr-118--accepted-m4a1-mk-16-m24-sws-and-m870-pellets-shell-reloads-and-geometryweapon-150) adds four primaries. The M24 SWS is a 1.4.0 `bolt` recipe (780 mm barrel, polymer stock, no muzzle device, fixed stock). The other three use geometry.weapon 1.5.0, which builds every 1.4.0 recipe byte-identically and adds:
+
+- `scar` (Mk 16): monolithic railed upper with side and bottom rails, polymer lower, left-side charging handle as the cycle part, STANAG magazine, side-folding stock (shoulder 415 mm behind the grip). Irons are the DMR flip-up pair.
+- `pump` (M870): milled receiver with a short top rail, vent-ribbed barrel with a bead, magazine tube and barrel clamp, pistol-grip butt. The cycle part is the pump forend; the magazine part is one 12-gauge shell lying in the loading port. Irons are a ghost ring on the rail and a blade clamped on the barrel.
+- `collapsible` stock (AR and Mk 16): buffer tube and sliding carbine stock, shoulder 360 mm behind the grip. On the AR it also shortens the handguard to the M4 carbine length (M4A1: 540 mm barrel, birdcage).
+
+Sockets, envelopes and collision are declared per kind (the `ArsenalGeometry` switches no longer fall through to the pistol case for them). Recipe details: [weapon recipe baseline](../weapon-recipe-baseline.md#geometryweapon-150-mk-16-m870-and-the-carbine-stock-adr-118).
+
 ## Knife and grenade props (ADR-111)
 
 [ADR-111](../decisions.md#adr-111--accepted-knife-and-grenade-overhaul-one-handed-hold-cut-and-throw-half-map-grenade-range-sound-explosion-models) rebuilds `LoadoutPropGeometry` on `ShapeKit` (`geometry.loadout-prop` 1.1.0). Knife: clip-point blade of filleted slabs around a fuller groove, spine jimping, a separate edge-grind solid, hooked crossguard, moulded grip with palm swell and finger grooves, lathe pommel with lanyard hole. Grenade: M67-style lathe body with a rolled seam and yellow band, lathe fuse, spoon swept along a spline, pull pin and a seamless ring (`ShapeKit.ClosedTube`). Finish slots 7 blade steel, 8 edge grind, 9 grenade paint and 10 yellow band come from new `FirstPersonSurfaceBaker` families. Both are held one-handed in first person.

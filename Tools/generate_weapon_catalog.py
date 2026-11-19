@@ -39,8 +39,8 @@ PROP_MESH_KEYS = {"knife", "grenade"}
 SIGHT_OPTICS = {"irons": "Irons", "collimator": "Collimator", "scope2": "ScopedPip", "scope4": "ScopedPip", "scope8": "ScopedPip"}
 SIGHT_ORDER = ["irons", "collimator", "scope2", "scope4", "scope8"]
 # geometry.weapon 1.4.0 bare-rail bodies take a separate sight; these archetypes have a rail.
-MOUNT_VERSION = "1.4.0"
-MOUNT_KINDS = {"ak", "ar", "dmr", "bolt"}
+MOUNT_VERSIONS = {"1.4.0", "1.5.0"}  # ADR-107 bare-rail bodies; ADR-118 adds 1.5.0 and its kinds
+MOUNT_KINDS = {"ak", "ar", "dmr", "bolt", "scar", "pump"}
 
 # Enum names are read from the C# sources so the generator can never drift from the code it feeds.
 ENUM_SOURCES = {
@@ -300,10 +300,10 @@ def validate(root: Path, path: Path, doc, enums) -> dict:
         recipe_kind = recipe.get("parameters", {}).get("kind")
 
     sights = None
-    mounted = "geometryRecipe" in visual and recipe_version == MOUNT_VERSION and recipe_kind in MOUNT_KINDS
+    mounted = "geometryRecipe" in visual and recipe_version in MOUNT_VERSIONS and recipe_kind in MOUNT_KINDS
     if "sights" in visual:
         if not mounted or family != "PrimaryGun":
-            raise DefinitionError(v + "sights: only primary guns built from a geometry.weapon " + MOUNT_VERSION
+            raise DefinitionError(v + "sights: only primary guns built from a geometry.weapon 1.4.0/1.5.0"
                                   + " rail recipe take mounted sights")
         spec = visual["sights"]
         keys(spec, v + "sights", ["default", "allowed"])
@@ -321,7 +321,7 @@ def validate(root: Path, path: Path, doc, enums) -> dict:
             raise DefinitionError(v + "optic: the default sight " + default + " presents as " + SIGHT_OPTICS[default])
         sights = {"kind": recipe_kind, "default": default, "allowed": list(allowed)}
     elif mounted:
-        raise DefinitionError(v + "sights: required for a geometry.weapon " + MOUNT_VERSION + " rail recipe")
+        raise DefinitionError(v + "sights: required for a geometry.weapon 1.4.0/1.5.0 rail recipe")
 
     audio = doc["audio"]
     keys(audio, where + ".audio", ["shot"])
