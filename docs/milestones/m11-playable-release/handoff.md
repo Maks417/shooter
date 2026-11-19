@@ -834,7 +834,7 @@ Owner request: the collimator should show only one small red point (no red area 
 
 Checks on the working tree over `e5d976b`: Simulation 648/648 PASS (`m2-combat-harness/e5d976b…/20261119T073153702Z-7eb37c23`), including the updated `ArmorySelectionTests` field-of-view and dot-size assertions.
 
-**Pending / NotClaimed:** Unity compile of the changed `TacticalUi`/`ProductSessionView` (folded into the next Unity lane run), client build and installer, and the owner's in-game look at the dot and the 1.2x zoom.
+**Pending / NotClaimed:** (Unity compile now covered by the ADR-119 EditMode run) client build and installer, and the owner's in-game look at the dot and the 1.2x zoom.
 
 ## ADR-118 new weapons — 2026-11-19
 
@@ -870,7 +870,9 @@ New tests:
 - The new perks scale only their fields and respect the caps; identity modifiers leave every gun bit-identical.
 - Every rank-count mirror agrees.
 
-**Pending / NotClaimed:** Unity EditMode (icon golden mirror) and PlayMode, client build and installer; the owner's look at the 30 insignia and the Career page at 720p–1080p, and perk balance.
+Unity on commit `9c2e1bd`: EditMode PASS, including the icon golden mirror and the first compile of the changed `TacticalUi`, `ProductSessionView` and `ProductShellHost` (`m0-foundation/9c2e1bd…/tests-editmode-20261119T083614512Z-eb4bb0e1`); PlayMode PASS (`tests-playmode-20261119T084022712Z-f9cb02a7`).
+
+**Pending / NotClaimed:** native weapon-package republish (`Compile-GameContent.ps1 -Native`), client build and installer; the owner's look at the 30 insignia and the Career page at 720p–1080p, and perk balance.
 
 ## Delivery 0.3.24
 
