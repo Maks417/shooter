@@ -2,6 +2,24 @@
 
 Evidence log for M11, newest first. Each delivery and change records identities, results and what stays Pending. Records before 2026-11-15 (deliveries up to 0.3.12, T062–T085) are in git history. Current status is in [next playable build](../../next-playable-build.md) and gates are in [acceptance](../../acceptance.md).
 
+## T195 phase 3 decoupling (part 1) — 2026-11-19
+
+Commits on `main`: `d806a9a` session ports, `0fdf375` actor view state, `3251e27` generated weapon tables, `aa45fed` tick phases, `a7980c2` lock policy (ADR-121), `7c0aa69` mode rules (ADR-122).
+
+- **Session port.** Presentation references `Shooter.Game.SessionPorts` instead of `Game.Session`, and `verify_asmdef_graph.py` enforces it.
+- **Generated weapon tables.** Kill-feed icon names, silhouettes and gallery, plus gun-report voices and derivations, are generated from `Content/Weapons`. Values are unchanged.
+- **Tick phases.** The tick runs as eight named phases. `TickPhaseOrderTests` pins them to `docs/simulation-protocol.md`.
+- **Feature lock (ADR-121).** It now hashes generator C# by code tokens. It was migrated only after verifying an exact match with the old raw lock. Every lock has `--refreeze ADR-NNN`.
+- **Mode rules (ADR-122).** `ModeRules` and team-indexed kills were added as a Game-v1 additive amendment, with `game-contract-lock.json` refrozen. Team Deathmatch limits and behaviour are unchanged.
+
+Checks after the last commit:
+- `Test-All`: 4/4 suites PASS, including the TDM, replay and determinism goldens.
+- Unity compile and EditMode: PASS.
+- `Test-SourceProvenance`: PASS.
+- New tests: `ModeRulesTests` (5), `TickPhaseOrderTests` (2), `GeneratedWeaponTablesTests` (3), the `ArmoryTests` actor-view case, 4 generator cases, `test_verify_feature_registry.py` (7), and the contract-lock refreeze case.
+
+**Not run:** PlayMode, a client build or delivery of this source, and a playtest. The refactors are behaviour-preserving by test, not by play.
+
 ## T195 phase 2 build-once lanes and Networking isolation — 2026-11-19
 
 Implemented [ADR-120](../../decisions.md#adr-120--accepted-parked-networking-behind-a-define-and-build-once-pure-lanes). Measured on the dev laptop:
