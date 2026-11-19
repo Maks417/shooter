@@ -32,6 +32,8 @@ Boundary rules:
 - Contracts never reference features.
 - Simulation never references renderers, animation, Editor APIs or transport.
 - Presentation cannot apply damage or mutate authority. It reaches the session only through `Shooter.Game.SessionPorts`, and `Tools/verify_asmdef_graph.py` fails if Presentation or Presentation.Model references Game.Session, Simulation or Networking.
+- The largest classes are split by concern into partial files (T195): `CombatAiDirector.{Perception,Decision,Navigation,Command}.cs`, `ProductSessionView.{Hud,Audio,CombatFeedback,Camera}.cs` and `ProductShellHost.{Menus,Armory,Settings,Results,Career}.cs`. New work goes into the file for its concern. `Tools/split_partial.py` moves whole members byte-for-byte when a file needs another split.
+- Client view modes (product shell, TDM benchmark, galleries, foundation view) are an ordered table in `FoundationClientComposition.Modes`. A new view is one entry, not another branch. The diagnostic views stay in the player, because `Smoke-Gallery.ps1` and `Measure-Rig.ps1` run them from the client build.
 - The compiler is Editor/tools-only and never referenced at runtime ([ADR-018](decisions.md#adr-018--accepted-initial-p02-compiler-format-and-byte-cache-boundary)).
 
 ```mermaid

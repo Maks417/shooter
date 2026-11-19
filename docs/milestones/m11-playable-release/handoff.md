@@ -2,6 +2,18 @@
 
 Evidence log for M11, newest first. Each delivery and change records identities, results and what stays Pending. Records before 2026-11-15 (deliveries up to 0.3.12, T062–T085) are in git history. Current status is in [next playable build](../../next-playable-build.md) and gates are in [acceptance](../../acceptance.md).
 
+## T195 phase 3 decoupling (part 2) — 2026-11-19
+
+- **Class splits.** `CombatAiDirector` (2,182 lines), `ProductSessionView` (1,970) and `ProductShellHost` (1,599) are split by concern into partial files with `Tools/split_partial.py`. Whole members were moved verbatim. A line-multiset check showed every original line accounted for; the only additions are file headers and the `partial` modifier.
+- **Client modes.** `FoundationClientComposition` chooses client modes from an ordered table with the former precedence. The content-recovery retry destroys its own host instead of calling `GameObject.Find`.
+
+Checks:
+- Unity compile: PASS.
+- `Test-All`: 4/4 suites PASS. Simulation is 645/645.
+- EditMode 94/94 and PlayMode 30/30: PASS.
+
+**Not run:** a client build, smoke, delivery or playtest of this source.
+
 ## T195 phase 3 decoupling (part 1) — 2026-11-19
 
 Commits on `main`: `d806a9a` session ports, `0fdf375` actor view state, `3251e27` generated weapon tables, `aa45fed` tick phases, `a7980c2` lock policy (ADR-121), `7c0aa69` mode rules (ADR-122).
