@@ -560,7 +560,7 @@ namespace Shooter.Presentation.Rig
 
         public void Sync(
             MatchViewSnapshot? snapshot,
-            IActorLifecycle? lifecycle,
+            IActorStateReader? lifecycle,
             Func<int, ActorLifecycleState>? tryCorpse,
             int corpseCount,
             EntityId humanEntity,

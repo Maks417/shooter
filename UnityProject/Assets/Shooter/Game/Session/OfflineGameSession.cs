@@ -18,7 +18,7 @@ namespace Shooter.Game.Session
     /// <summary>
     /// M8 product session composition root. Diagnostic floor/box path remains FoundationEntry (-shooterSmokeSeconds / -shooterDiagnostic).
     /// </summary>
-    public sealed class OfflineGameSession : IGameSession
+    public sealed class OfflineGameSession : IGameSession, IGameSessionControl
     {
         /// <summary>
         /// ADR-102: each life draws a seeded random primary and sidearm. Set false before loading to keep
@@ -136,6 +136,13 @@ namespace Shooter.Game.Session
         public uint CompletedTick => tick == 0 && phase != GameMatchPhase.Playing ? 0 : tick;
         public EntityId HumanEntityId => humanEntity;
         public IActorLifecycle? Lifecycle => lifecycle;
+        /// <summary>T195: the lifecycle's read-only query for <see cref="IGameSessionView"/> consumers.</summary>
+        public bool TryGetActorState(EntityId entity, out ActorLifecycleState state)
+        {
+            if (lifecycle != null) return lifecycle.TryGetActorState(entity, out state);
+            state = default;
+            return false;
+        }
         public IMapRuntime? MapRuntime => mapRuntime;
         public int CosmeticCorpseCount => lifecycle?.CosmeticCorpseCount ?? 0;
         /// <summary>Read-only measurement counters for product TDM capture (T063/T070). Mutated only by this session and host binding hooks.</summary>

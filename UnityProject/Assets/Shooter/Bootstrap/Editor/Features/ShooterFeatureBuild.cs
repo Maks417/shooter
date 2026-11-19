@@ -252,7 +252,7 @@ public static class ShooterFeatureBuild
     });
 
     // Editor-only data fixture: no authority/fake adapter can ship from this assembly.
-    private sealed class HandCaptureLifecycle : Shooter.Game.Contracts.IActorLifecycle
+    private sealed class HandCaptureLifecycle : Shooter.Game.Contracts.IActorLifecycle, Shooter.Game.Session.IActorStateReader
     {
         public Shooter.Game.Contracts.ActorLifecycleState State;
         public int ActiveActorCount=>1;

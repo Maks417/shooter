@@ -23,7 +23,7 @@ namespace Shooter.Presentation.Session
     /// <summary>M8/T056 product presentation: map surfaces, team actors, weapons, FPS camera/HUD. Authority remains OfflineGameSession.</summary>
     public sealed class ProductSessionView : MonoBehaviour
     {
-        private OfflineGameSession? session;
+        private IGameSessionView? session;
         private LocalPlayerInput input = new LocalPlayerInput();
         private System.Func<GameOperationResult>? pauseSession;
         private System.Func<EntityId, LocalMovementView?>? movementReader;
@@ -212,7 +212,7 @@ namespace Shooter.Presentation.Session
         /// <summary>Presentation-originated local cue (grenade pin, dry fire, weapon switch) while a match is attached.</summary>
         public bool PlayLocalCue(SynthVoiceKind kind, ulong seed) => audioAttached && EnsureAudio().audio.PlayLocal(kind, seed);
 
-        public static ProductSessionView Create(OfflineGameSession session, bool shellOwned = false)
+        public static ProductSessionView Create(IGameSessionControl session, bool shellOwned = false)
         {
             var root = new GameObject("Product session view").AddComponent<ProductSessionView>();
             root.Initialize(session, session.Pause, session.Resume, shellOwned);
@@ -220,7 +220,7 @@ namespace Shooter.Presentation.Session
         }
 
         private void Initialize(
-            OfflineGameSession session,
+            IGameSessionView session,
             System.Func<GameOperationResult> pauseSession,
             System.Func<GameOperationResult> resumeSession,
             bool shellOwned)
@@ -599,7 +599,7 @@ namespace Shooter.Presentation.Session
                 bool aimHeld = false;
                 Float3 listenerFeet = default;
                 bool hasListener = false;
-                if (session.Lifecycle != null && session.Lifecycle.TryGetActorState(session.HumanEntityId, out var human))
+                if (session.TryGetActorState(session.HumanEntityId, out var human))
                 {
                     if (!human.EntityId.Equals(inputLifeEntity))
                     {
@@ -700,7 +700,7 @@ namespace Shooter.Presentation.Session
                     actors.SetReviewContext(boundMapId, QualitySettings.names[QualitySettings.GetQualityLevel()], session.CompletedTick);
                     actors.Sync(
                         snap,
-                        session.Lifecycle,
+                        session,
                         i =>
                         {
                             session.TryGetCosmeticCorpse(i, out var corpse);
@@ -724,8 +724,8 @@ namespace Shooter.Presentation.Session
                         Time.unscaledTime);
                     visualReview?.SetContext(boundMapId, QualitySettings.names[QualitySettings.GetQualityLevel()], session.CompletedTick);
                     // Refresh FOV after Sync so this frame's optic raise matches the viewmodel blend.
-                    if (camera != null && session.Lifecycle != null
-                        && session.Lifecycle.TryGetActorState(session.HumanEntityId, out var fovHuman) && fovHuman.Alive)
+                    if (camera != null
+                        && session.TryGetActorState(session.HumanEntityId, out var fovHuman) && fovHuman.Alive)
                         ApplyPresentationFov(actors.LocalAdsPresentationBlend, actors.LocalVisibleWeaponSlot, actors.LocalVisibleWeaponId);
                 }
 
@@ -889,11 +889,11 @@ namespace Shooter.Presentation.Session
 
         private void ObserveMovementDust()
         {
-            if(session?.Lifecycle==null)return;var snapshot=session.TryAcquireSnapshot();if(snapshot==null)return;
+            if(session==null)return;var snapshot=session.TryAcquireSnapshot();if(snapshot==null)return;
             for(int i=0;i<snapshot.Participants.Count&&i<dustLife.Length;i++)
             {
                 var participant=snapshot.Participants[i];
-                if(!participant.Alive||!session.TryGetMovementView(participant.EntityId,out var movement)||!session.Lifecycle.TryGetActorState(participant.EntityId,out var state))continue;
+                if(!participant.Alive||!session.TryGetMovementView(participant.EntityId,out var movement)||!session.TryGetActorState(participant.EntityId,out var state))continue;
                 if(dustLife[i]!=participant.EntityId.Value){dustLife[i]=participant.EntityId.Value;dustDistance[i]=movement.LocomotionDistanceMeters;continue;}
                 float interval=movement.Sliding?.5f:1.4f;
                 if(movement.LocomotionDistanceMeters-dustDistance[i]<interval)continue;
@@ -943,17 +943,17 @@ namespace Shooter.Presentation.Session
         /// <summary>Attacker bearing relative to the local view (radians, positive = right); 0 if unknown.</summary>
         private float AttackerBearing(EntityId instigator)
         {
-            if (session?.Lifecycle == null || !instigator.IsValid) return 0f;
-            if (!session.Lifecycle.TryGetActorState(instigator, out var attacker)) return 0f;
-            if (!session.Lifecycle.TryGetActorState(session.HumanEntityId, out var self)) return 0f;
+            if (session == null || !instigator.IsValid) return 0f;
+            if (!session.TryGetActorState(instigator, out var attacker)) return 0f;
+            if (!session.TryGetActorState(session.HumanEntityId, out var self)) return 0f;
             if (instigator.Equals(self.EntityId)) return 0f; // own grenade: straight flinch
             return CombatHudVisual.DamageIndicatorAngle(self.AimYaw, self.Feet.X, self.Feet.Z, attacker.Feet.X, attacker.Feet.Z);
         }
 
         private void RecordDamageSource(EntityId instigator, float now)
         {
-            if (!instigator.IsValid || session?.Lifecycle == null) return;
-            if (!session.Lifecycle.TryGetActorState(instigator, out var attacker)) return;
+            if (!instigator.IsValid || session == null) return;
+            if (!session.TryGetActorState(instigator, out var attacker)) return;
             int slot = 0;
             for (int i = 0; i < damageSourceIds.Length; i++)
             {
@@ -975,11 +975,11 @@ namespace Shooter.Presentation.Session
             if (ev.Kind != CombatEventKind.ShotAccepted || ev.Payload is not ShotPayload shot) return;
             // Melee is not gunfire; keep the map reveal for firearms only.
             if (IsKnifeDefinition(shot.WeaponId)) return;
-            if (session == null || !session.HumanEntityId.IsValid || session.Lifecycle == null) return;
+            if (session == null || !session.HumanEntityId.IsValid) return;
             if (!ev.Instigator.IsValid) return;
             bool isLocal = ev.Instigator == session.HumanEntityId;
-            if (!session.Lifecycle.TryGetActorState(session.HumanEntityId, out var human)) return;
-            if (!session.Lifecycle.TryGetActorState(ev.Instigator, out var shooter)) return;
+            if (!session.TryGetActorState(session.HumanEntityId, out var human)) return;
+            if (!session.TryGetActorState(ev.Instigator, out var shooter)) return;
             bool enemy = shooter.Team != human.Team;
             if (!CombatHudVisual.ShouldRevealGunfire(true, isLocal, enemy)) return;
 
@@ -1053,7 +1053,7 @@ namespace Shooter.Presentation.Session
                 float dt = Time.unscaledDeltaTime;
                 router.TickDistantBattle(dt);
                 router.TickScheduled(dt, listenerFeet);
-                if (session.Lifecycle != null && session.Lifecycle.TryGetActorState(session.HumanEntityId, out var localHuman))
+                if (session.TryGetActorState(session.HumanEntityId, out var localHuman))
                 {
                     bool firePressed = cursorLocked && input.Bindings.WasPressedThisFrame("Fire");
                     int cues = localWeaponCues.Step(localHuman, firePressed, dt, localCueScratch);
@@ -1079,13 +1079,13 @@ namespace Shooter.Presentation.Session
 
             footstepScratch.Clear();
             var snap = session.TryAcquireSnapshot();
-            if (snap != null && session.Lifecycle != null)
+            if (snap != null)
             {
                 for (int i = 0; i < snap.Participants.Count; i++)
                 {
                     var p = snap.Participants[i];
                     if (!p.Alive || !p.EntityId.IsValid) continue;
-                    if (!session.Lifecycle.TryGetActorState(p.EntityId, out var state) || !state.Alive) continue;
+                    if (!session.TryGetActorState(p.EntityId, out var state) || !state.Alive) continue;
                     footstepScratch.Add(state);
                 }
             }
@@ -1205,7 +1205,7 @@ namespace Shooter.Presentation.Session
             if (snap != null)
                 line2 = "T1 " + snap.Team1Kills + "  T2 " + snap.Team2Kills + "  rem=" + snap.RemainingActiveTicks +
                         "  phase=" + snap.Phase;
-            if (session.Lifecycle != null && session.Lifecycle.TryGetActorState(session.HumanEntityId, out var human))
+            if (session.TryGetActorState(session.HumanEntityId, out var human))
             {
                 GUI.Label(new Rect(24, Screen.height - 72, 640, 24),
                     "HP " + human.Health + "  Ammo " + human.Magazine + "/" + human.Reserve + "  slot " + human.ActiveWeaponSlot,
@@ -1237,7 +1237,7 @@ namespace Shooter.Presentation.Session
             {
                 Rect a = combatUi.Safe;
                 var snap = session.TryAcquireSnapshot();
-                bool alive = session.Lifecycle != null && session.Lifecycle.TryGetActorState(session.HumanEntityId, out var state) && state.Alive;
+                bool alive = session.TryGetActorState(session.HumanEntityId, out var state) && state.Alive;
                 if (!alive)
                 {
                     lastSeenHealth = 100;
@@ -1272,7 +1272,7 @@ namespace Shooter.Presentation.Session
                     return;
                 }
                 // Read the current life again for definite assignment; never retain an authority-owned object.
-                if (!session.Lifecycle!.TryGetActorState(session.HumanEntityId, out var human)) return;
+                if (!session.TryGetActorState(session.HumanEntityId, out var human)) return;
                 if (human.Health < lastSeenHealth) damagePulseUntil = Time.unscaledTime + CombatHudVisual.DamagePulseSeconds;
                 lastSeenHealth = human.Health;
                 // ADR-103: damage-scaled edge flash on every hit, under the direction arcs and health vignette.
@@ -1382,7 +1382,7 @@ namespace Shooter.Presentation.Session
         private float HipReticleGap(DefinitionId weapon, float logicalHeight)
         {
             const float minimum = 3.5f;
-            float spread = session != null ? session.HumanHipSpreadRadians(weapon) : OfflineGameSession.HipSpreadRadians(weapon);
+            float spread = session != null ? session.HumanHipSpreadRadians(weapon) : 0f;
             if (spread <= 0f || camera == null) return minimum;
             float halfFov = camera.fieldOfView * .5f * Mathf.Deg2Rad;
             float gap = Mathf.Tan(spread) / Mathf.Tan(halfFov) * logicalHeight * .5f;
@@ -1562,12 +1562,12 @@ namespace Shooter.Presentation.Session
 
             // 3. Teammates (rim-clamped when out of range) and 4. temporary gunfire reveals.
             float rim = radius - CombatHudVisual.MinimapRimInset;
-            if (snapshot != null && session?.Lifecycle != null)
+            if (snapshot != null && session != null)
                 for (int i = 0; i < snapshot.Participants.Count; i++)
                 {
                     var participant = snapshot.Participants[i];
                     if (!participant.Alive || participant.Team != human.Team || participant.IsHuman) continue;
-                    if (!session.Lifecycle.TryGetActorState(participant.EntityId, out var ally)) continue;
+                    if (!session.TryGetActorState(participant.EntityId, out var ally)) continue;
                     CombatHudVisual.MinimapProject(yaw, human.Feet.X, human.Feet.Z, ally.Feet.X, ally.Feet.Z, pxPerMeter, out float rx, out float dy);
                     if (CombatHudVisual.MinimapClampToRim(ref rx, ref dy, rim))
                     {

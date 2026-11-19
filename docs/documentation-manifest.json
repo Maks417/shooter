@@ -3,7 +3,7 @@
   "designDate": "2026-11-11",
   "files": {
     "acceptance.md": "da34e7c10cdbc5fe1e71858b3834471a663453129ccf28ded2bf4b0b2f3567ee",
-    "architecture.md": "6b7c2a1707a49142c5edf65ae7fe90549279e8e8d3f14eef4c11074a778f15e4",
+    "architecture.md": "d1ea35beb313e04014e818361f6430d85d9b45cfecaebf48d1fa26c50c8948ae",
     "armory-fixtures/armory.invalid-sight.json": "a47d23b521f20ff0931ff0900cf63603533159447fb08c288df9d0eac52e6917",
     "armory-fixtures/armory.schema.json": "7c84bde1e9e59e532fa69c7077b36060de5e0d8a24c65da9bc4e451a10727cb6",
     "armory-fixtures/armory.valid.json": "72184824f9df49470f3058cbdbd38ad655cbf0c7358e8579242dd31223770441",

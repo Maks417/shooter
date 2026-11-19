@@ -10,6 +10,7 @@
     "Unity.RenderPipelines.Universal.Runtime",
     "Shooter.Game.Contracts",
     "Shooter.Game.Session",
+    "GUID:de29029bf2cd4b3e9f2662e7735be3ec",
     "Shooter.Presentation.Model"
   ],
   "includePlatforms": [

@@ -10,17 +10,18 @@ Read [contracts](contract-details.md), [Game-v1](game-session-contracts.md) and 
 |---|---|---|
 | Shooter.Contracts (C0, frozen) | IDs, immutable DTOs, schema constants, ports | BCL only |
 | Shooter.Game.Contracts (Game-v1, frozen ADR-034) | Map, session, participant, results and settings records and ports | C0, BCL |
-| Shooter.VectorMath (`Generation/Core/Math`) | Vector and quaternion math | BCL |
+| Shooter.VectorMath (`Generation/Core/Math`) | Vector and quaternion math | Contracts |
 | Shooter.Generation.Core | Deterministic primitives, recipes, validation | Contracts, VectorMath |
-| Shooter.AssetCompiler.Editor | Unity conversion, LOD/material/nav baking, manifests | Generation.Core, Contracts, Unity Editor |
+| Shooter.AssetCompiler.Editor | Content compilation and manifests (engine-free, `noEngineReferences`) | Generation.Core, Contracts, Content.Runtime |
 | Shooter.Content.Runtime | Verified cache loading, residency, async handles | Contracts, Generation.Core format helpers |
 | Shooter.Content.Maps | Map catalog, registry, packages, spawn data | Contracts, Game.Contracts, Generation.Core |
-| Shooter.Simulation | Tick orchestration, motor, weapons, damage, AI | Contracts, world-query interfaces |
-| Shooter.Game.Session / .Settings | Offline TDM session, workloads, user settings | Contracts, Game.Contracts (Session also: Simulation, Content.Maps, World.Runtime) |
+| Shooter.Simulation | Tick orchestration, motor, weapons, damage, AI | Contracts, Game.Contracts, VectorMath |
+| Shooter.Game.SessionPorts (`Game/SessionPorts`) | Read-only session view (`IGameSessionView`, `IActorStateReader`), shell control (`IGameSessionControl`), Armory catalog view, local command/view DTOs | Contracts, Game.Contracts |
+| Shooter.Game.Session / .Settings | Offline TDM session (`OfflineGameSession` implements the ports), workloads, user settings | Contracts, Game.Contracts (Session also: SessionPorts, Simulation, Content.Maps, World.Runtime) |
 | Shooter.World.Runtime | Pure nav compile, revisioned path adapter, streaming scheduler | Contracts, Game.Contracts |
-| Shooter.World.Unity (`World/Foundation`) | PhysX queries, NavMesh adapter, map runtime | World.Runtime, Generation.Core, Content.Maps, Unity |
+| Shooter.World.Unity (`World/`) | PhysX queries, NavMesh adapter, map runtime | World.Runtime, Generation.Core, Content.Maps, Unity |
 | Shooter.Presentation.Model | Unity-free view, HUD, menu, scoreboard, mixer and FX models | Contracts, Game.Contracts, VectorMath |
-| Shooter.Presentation | URP rendering, procedural rig, input, audio/FX adapters, session views | Presentation.Model, Contracts, Content.Runtime, Unity |
+| Shooter.Presentation | URP rendering, procedural rig, input, audio/FX adapters, session views | Presentation.Model, Contracts, Game.Contracts, Game.SessionPorts, Game.Settings, Content.Maps, Content.Runtime, Generation.Core, VectorMath, Unity |
 | Shooter.Networking (parked) | Codec, prediction history, authority adapter; dormant, referenced by no Unity assembly, compiled only under `SHOOTER_NETWORKING` (never defined, so not in players) and tested only by `Tools/Networking.Tests` ([ADR-120](decisions.md#adr-120--accepted-parked-networking-behind-a-define-and-build-once-pure-lanes)) | Contracts, Bootstrap.Core, Simulation |
 | Shooter.Bootstrap.Core / .Runtime / .Release / .Client | The only composition root, tick driver, release helpers | Runtime assemblies |
 | Shooter.Build.Editor / .FeatureBuild.Editor | `ShooterBuild.*` entry points, native content build, feature compilers | Bootstrap, AssetCompiler.Editor |
@@ -30,7 +31,7 @@ Every pure asmdef has a matching `Tools/<Assembly>/Shooter.<Assembly>.csproj`. `
 Boundary rules:
 - Contracts never reference features.
 - Simulation never references renderers, animation, Editor APIs or transport.
-- Presentation cannot apply damage or mutate authority.
+- Presentation cannot apply damage or mutate authority. It reaches the session only through `Shooter.Game.SessionPorts`, and `Tools/verify_asmdef_graph.py` fails if Presentation or Presentation.Model references Game.Session, Simulation or Networking.
 - The compiler is Editor/tools-only and never referenced at runtime ([ADR-018](decisions.md#adr-018--accepted-initial-p02-compiler-format-and-byte-cache-boundary)).
 
 ```mermaid

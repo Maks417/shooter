@@ -24,7 +24,7 @@ namespace Shooter.Presentation.Session
     public sealed partial class ProductShellHost : MonoBehaviour
     {
         private IProductShellBackend? backend;
-        private OfflineGameSession? session;
+        private IGameSessionControl? session;
         private IMapCatalog? catalog;
         private ProductSessionView? view;
         private SetupSelection? setup;
@@ -752,7 +752,7 @@ namespace Shooter.Presentation.Session
         {
             armoryStore = new FileArmoryStore(path);
             var result = armoryStore.Load(out var profile);
-            armory = new ArmorySelection(ArmoryCatalog.Primaries, ArmoryCatalog.Sidearms, profile.Primary, profile.Sidearm, profile.Sights,
+            armory = new ArmorySelection(backend!.Armory.Primaries, backend.Armory.Sidearms, profile.Primary, profile.Sidearm, profile.Sights,
                 CareerLockRule());
             armorySavedRevision = armory.Revision;
             armoryStatus = result.Succeeded ? "" : result.UserFacing;
@@ -898,7 +898,7 @@ namespace Shooter.Presentation.Session
             float tx = row.x + iconW + 28;
             float tw = row.xMax - tx - 12;
             ui.Label(new Rect(tx, row.y + 6, tw, 22), ArmorySelection.LabelFor(weapon), 17, equipped ? TacticalUi.Accent : TacticalUi.Text);
-            if (ArmoryCatalog.TryGetStats(weapon, out int damage, out int pellets, out int magazine, out int rpm, out string mode))
+            if (backend != null && backend.Armory.TryGetStats(weapon, out int damage, out int pellets, out int magazine, out int rpm, out string mode))
                 ui.Label(new Rect(tx, row.y + 28, tw, 18), mode + "  ·  " + (pellets > 1 ? pellets + " × " + damage : damage.ToString()) + " DMG  ·  "
                     + magazine + " RND  ·  " + rpm + " RPM", 12, TacticalUi.Muted);
             if (equipped)

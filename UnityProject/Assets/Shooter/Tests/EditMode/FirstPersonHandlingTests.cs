@@ -151,7 +151,7 @@ namespace Shooter.Tests
             Assert.That(FirstPersonHitFeedback.IsLocalShot(CombatEventKind.ShotAccepted, local, default), Is.False);
         }
 
-        private sealed class Lifecycle : IActorLifecycle
+        private sealed class Lifecycle : IActorLifecycle, Shooter.Game.Session.IActorStateReader
         {
             public ActorLifecycleState State;
             public int ActiveActorCount => 1;

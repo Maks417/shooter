@@ -1,0 +1,17 @@
+{
+  "name": "Shooter.Game.SessionPorts",
+  "rootNamespace": "Shooter.Game.Session",
+  "references": [
+    "GUID:866ac9eb8b8b4a898facdc4644ba5881",
+    "GUID:2f5e3b101d7540a7ba16be00b4ec5dbe"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": true
+}

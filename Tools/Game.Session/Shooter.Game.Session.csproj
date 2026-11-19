@@ -15,5 +15,6 @@
     <ProjectReference Include="../Simulation/Shooter.Simulation.csproj" />
     <ProjectReference Include="../Content.Maps/Shooter.Content.Maps.csproj" />
     <ProjectReference Include="../World.Runtime/Shooter.World.Runtime.csproj" />
+    <ProjectReference Include="../Game.SessionPorts/Shooter.Game.SessionPorts.csproj" />
   </ItemGroup>
 </Project>

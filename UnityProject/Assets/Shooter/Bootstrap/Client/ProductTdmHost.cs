@@ -17,6 +17,8 @@ namespace Shooter.Bootstrap
     public sealed class ProductTdmHost : MonoBehaviour
     {
         private IProductShellBackend? backend;
+        // Measurement hooks (ActiveTicks, NotifyMatchFinished) are concrete-session only; Bootstrap may hold the concrete type.
+        private OfflineGameSession? session;
         private ProductTdmWorkloads.Definition workload;
         private ProductSessionView? view;
         private CancellationTokenSource? loadCancel;
@@ -35,11 +37,13 @@ namespace Shooter.Bootstrap
         public ProductTdmCaptureCoordinator Coordinator => coordinator;
         public ProductTdmCaptureCoordinator.Phase CapturePhase => coordinator.Current;
 
-        public static ProductTdmHost Create(IProductShellBackend backend, ProductTdmWorkloads.Definition workload)
+        public static ProductTdmHost Create(IProductShellBackend backend, OfflineGameSession session, ProductTdmWorkloads.Definition workload)
         {
             if (backend == null) throw new ArgumentNullException(nameof(backend));
+            if (session == null) throw new ArgumentNullException(nameof(session));
             var host = new GameObject("Product TDM measurement host").AddComponent<ProductTdmHost>();
             host.backend = backend;
+            host.session = session;
             host.workload = workload;
             host.view = ProductSessionView.Create(backend.Session, shellOwned: true);
             host.view.SetGameplayFocus(true);
@@ -62,7 +66,6 @@ namespace Shooter.Bootstrap
                     return;
                 }
 
-                var session = backend.Session;
                 if (session == null) return;
 
                 if (coordinator.Current == ProductTdmCaptureCoordinator.Phase.Playing &&
@@ -104,7 +107,7 @@ namespace Shooter.Bootstrap
             transitionInFlight = true;
             try
             {
-                var session = backend!.Session ?? throw new InvalidOperationException("Product session missing.");
+                var session = this.session ?? throw new InvalidOperationException("Product session missing.");
                 var catalog = backend.Catalog ?? throw new InvalidOperationException("Product catalog missing.");
                 var request = new SessionRequest(workload.MapId, WellKnownModes.TeamDeathmatch, workload.TeamSize, workload.Seed);
 

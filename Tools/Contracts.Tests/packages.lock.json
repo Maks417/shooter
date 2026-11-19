@@ -116,8 +116,16 @@
           "Shooter.Content.Maps": "[1.0.0, )",
           "Shooter.Contracts": "[1.0.0, )",
           "Shooter.Game.Contracts": "[1.0.0, )",
+          "Shooter.Game.SessionPorts": "[1.0.0, )",
           "Shooter.Simulation": "[1.0.0, )",
           "Shooter.World.Runtime": "[1.0.0, )"
+        }
+      },
+      "shooter.game.sessionports": {
+        "type": "Project",
+        "dependencies": {
+          "Shooter.Contracts": "[1.0.0, )",
+          "Shooter.Game.Contracts": "[1.0.0, )"
         }
       },
       "shooter.game.settings": {
@@ -132,14 +140,6 @@
         "dependencies": {
           "Shooter.Contracts": "[1.0.0, )",
           "Shooter.VectorMath": "[1.0.0, )"
-        }
-      },
-      "shooter.networking": {
-        "type": "Project",
-        "dependencies": {
-          "Shooter.Bootstrap.Core": "[1.0.0, )",
-          "Shooter.Contracts": "[1.0.0, )",
-          "Shooter.Simulation": "[1.0.0, )"
         }
       },
       "shooter.simulation": {

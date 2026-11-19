@@ -47,7 +47,7 @@ namespace Shooter.Tests
             }
         }
 
-        private sealed class FakeLifecycle : IActorLifecycle
+        private sealed class FakeLifecycle : IActorLifecycle, Shooter.Game.Session.IActorStateReader
         {
             private readonly Dictionary<ulong, ActorLifecycleState> states = new Dictionary<ulong, ActorLifecycleState>();
             public int ActiveActorCount => states.Count;

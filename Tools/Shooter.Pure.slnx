@@ -10,6 +10,7 @@
   <Project Path="Game.Contracts.Tests/Game.Contracts.Tests.csproj" />
   <Project Path="Game.Contracts/Shooter.Game.Contracts.csproj" />
   <Project Path="Game.Session/Shooter.Game.Session.csproj" />
+  <Project Path="Game.SessionPorts/Shooter.Game.SessionPorts.csproj" />
   <Project Path="Game.Settings/Shooter.Game.Settings.csproj" />
   <Project Path="Generation.Tests/Generation.Tests.csproj" />
   <Project Path="Generation/Shooter.Generation.Core.csproj" />

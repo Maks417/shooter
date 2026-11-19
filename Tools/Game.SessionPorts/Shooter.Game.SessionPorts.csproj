@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Mirrors UnityProject/Assets/Shooter/Game/SessionPorts/*.asmdef (Shooter.Game.SessionPorts); verify_asmdef_graph.py keeps the references equal. -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AssemblyName>Shooter.Game.SessionPorts</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../UnityProject/Assets/Shooter/Game/SessionPorts/**/*.cs" />
+    <ProjectReference Include="../Contracts/Shooter.Contracts.csproj" />
+    <ProjectReference Include="../Game.Contracts/Shooter.Game.Contracts.csproj" />
+  </ItemGroup>
+</Project>

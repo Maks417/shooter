@@ -17,7 +17,9 @@ namespace Shooter.Presentation.Session
     /// <summary>Bootstrap-owned services the product shell needs without referencing FoundationEntry.</summary>
     public interface IProductShellBackend
     {
-        OfflineGameSession Session { get; }
+        /// <summary>T195: the match through its shell-facing port; Presentation never sees the concrete session.</summary>
+        IGameSessionControl Session { get; }
+        IArmoryCatalogView Armory { get; }
         IMapCatalog Catalog { get; }
         GameOperationResult Pause();
         GameOperationResult Resume();

@@ -14,7 +14,7 @@ namespace Shooter.Tests
     /// <summary>0.3.20 playtest regressions: pink weapons after a rebind and reload hidden behind the scope.</summary>
     public sealed class PlaytestRegressionTests
     {
-        private sealed class Lifecycle : IActorLifecycle
+        private sealed class Lifecycle : IActorLifecycle, Shooter.Game.Session.IActorStateReader
         {
             public ActorLifecycleState State;
             public int ActiveActorCount => 1;

@@ -15,6 +15,10 @@ ASSETS = ROOT / "UnityProject/Assets/Shooter"
 # Parked assemblies (ADR-076) compile only under their define, so players never build or ship them, and only their own
 # test project may reference them, so the default pure lanes never rebuild them.
 PARKED = {"Shooter.Networking": ("SHOOTER_NETWORKING", "Networking.Tests")}
+# Layering rules the compiler enforces through asmdef references (T195): Presentation reads the session only through
+# Shooter.Game.SessionPorts and never sees the authority assemblies.
+FORBIDDEN = {"Shooter.Presentation": {"Shooter.Game.Session", "Shooter.Simulation", "Shooter.Networking"},
+             "Shooter.Presentation.Model": {"Shooter.Game.Session", "Shooter.Simulation", "Shooter.Networking"}}
 
 
 def load_asmdefs(assets=ASSETS):
@@ -58,6 +62,9 @@ def verify_parked(root):
         for name, (_, owner) in PARKED.items():
             if name in refs and csproj.parent.name != owner:
                 errors.append(f"{csproj.relative_to(root).as_posix()}: references parked {name}; only {owner} may")
+    for folder, (name, refs) in load_asmdefs(root / "UnityProject/Assets/Shooter").items():
+        for banned in sorted(refs & FORBIDDEN.get(name, set())):
+            errors.append(f"{name}: must not reference {banned} (layering rule)")
     return errors
 
 

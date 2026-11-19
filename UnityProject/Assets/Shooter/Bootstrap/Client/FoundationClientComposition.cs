@@ -42,7 +42,7 @@ namespace Shooter.Bootstrap
                         if (authority.ContentRecoveryRequired)
                             throw new System.InvalidOperationException("Product TDM workload cannot start: " + authority.ContentRecoveryDetail);
                         var backend = new EntryShellBackend(authority);
-                        var host = ProductTdmHost.Create(backend, tdmWorkload);
+                        var host = ProductTdmHost.Create(backend, authority.ProductSession, tdmWorkload);
                         new GameObject("Product TDM benchmark recorder").AddComponent<ProductTdmBenchmark>()
                             .Initialize(authority, host, tdmWorkload);
                         return;
@@ -122,7 +122,8 @@ namespace Shooter.Bootstrap
 
             public EntryShellBackend(FoundationEntry entry) => this.entry = entry ?? throw new ArgumentNullException(nameof(entry));
 
-            public OfflineGameSession Session => entry.ProductSession;
+            public IGameSessionControl Session => entry.ProductSession;
+            public IArmoryCatalogView Armory => ArmoryCatalogView.Instance;
             public IMapCatalog Catalog => entry.ProductCatalog;
             public GameOperationResult Pause() => entry.PauseProduct();
             public GameOperationResult Resume() => entry.ResumeProduct();
