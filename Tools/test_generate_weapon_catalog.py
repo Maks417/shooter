@@ -58,7 +58,7 @@ class GeneratorTests(unittest.TestCase):
 
     def test_write_then_check_is_clean_and_deterministic(self):
         written = gen.run(self.repo.root, check=False)
-        self.assertEqual(10, len(written))  # five generated catalogs (ADR-107 adds the two sight files) and their .meta
+        self.assertEqual(14, len(written))  # seven generated files (T195 adds kill-feed glyphs and shot voices) and their .meta
         self.assertEqual([], gen.run(self.repo.root, check=True))
         first = (self.repo.root / gen.CATALOG_OUT).read_bytes()
         gen.run(self.repo.root, check=False)
@@ -217,6 +217,39 @@ class GeneratorTests(unittest.TestCase):
         meshes = (self.repo.root / gen.MESHES_OUT).read_text(encoding="utf-8")
         self.assertIn('WeaponMeshSource.Prop("knife")', meshes)
         self.assertIn('\\"silhouette\\":\\"carbine\\"', meshes)
+
+    def test_kill_feed_glyph_data_is_generated(self):
+        gen.run(self.repo.root, check=False)
+        glyphs = (self.repo.root / gen.GLYPHS_OUT).read_text(encoding="utf-8")
+        self.assertIn('KillFeedWeapon.M870 => "weapon.m870"', glyphs)
+        self.assertIn("KillFeedWeapon.M4a1 => KillFeedSilhouette.Carbine", glyphs)
+        self.assertIn("KillFeedWeapon.G17 => KillFeedSilhouette.Pistol", glyphs)
+        gallery = glyphs[glyphs.index("Gallery"):]
+        self.assertNotIn("KillFeedWeapon.Rifle", gallery)
+        self.assertLess(gallery.index("KillFeedWeapon.M870"), gallery.index("KillFeedWeapon.G17"))
+        self.assertLess(gallery.index("KillFeedWeapon.G17"), gallery.index("KillFeedWeapon.Knife"))
+
+    def test_silhouette_must_be_known_and_consistent_per_glyph(self):
+        self.repo.edit("ak47.weapon.json", lambda d: d["hud"].update(silhouette="Shotgun"))
+        self.rejects("hud.silhouette")
+        self.repo.edit("ak47.weapon.json", lambda d: d["hud"].update(silhouette="Rifle"))
+        self.repo.edit("rifle-carbine.weapon.json", lambda d: d["hud"].update(killFeedGlyph="Rifle"))
+        self.rejects("already uses silhouette")
+
+    def test_shot_voices_and_derivations_are_generated(self):
+        gen.run(self.repo.root, check=False)
+        voices = (self.repo.root / gen.SHOT_VOICES_OUT).read_text(encoding="utf-8")
+        self.assertIn("case SynthVoiceKind.M870Shot:", voices)
+        self.assertNotIn("case SynthVoiceKind.KnifeSwing:", voices)
+        self.assertIn("SynthVoiceKind.M870Shot => (SynthVoiceKind.RifleShot, 0.66f, 1.00f)", voices)
+        self.assertIn("SynthVoiceKind.EagleShot => (SynthVoiceKind.PistolShot, 0.74f, 1.00f)", voices)
+
+    def test_shot_derivation_is_validated(self):
+        self.repo.edit("knife.weapon.json", lambda d: d["audio"].update(derive={"from": "RifleShot", "pitch": 1, "gain": 1}))
+        self.rejects("only gun reports are derived")
+        self.repo.edit("knife.weapon.json", lambda d: d["audio"].pop("derive"))
+        self.repo.edit("m870.weapon.json", lambda d: d["audio"]["derive"].update({"from": "KnifeSwing"}))
+        self.rejects("audio.derive.from")
 
     def test_melee_cannot_have_optic(self):
         self.repo.edit("knife.weapon.json", lambda d: d["visual"].update(optic="Irons"))

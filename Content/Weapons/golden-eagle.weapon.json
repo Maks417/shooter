@@ -43,7 +43,12 @@
     "muzzleFlashScale": 1.1
   },
   "audio": {
-    "shot": "EagleShot"
+    "shot": "EagleShot",
+    "derive": {
+      "from": "PistolShot",
+      "pitch": 0.74,
+      "gain": 1.00
+    }
   },
   "hud": {
     "killFeedGlyph": "GoldenEagle"

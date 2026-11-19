@@ -496,9 +496,7 @@ namespace Shooter.Presentation.Audio
 
         /// <summary>Gun reports: the classic rifle/pistol voices and every ADR-102 named-gun voice.</summary>
         public static bool IsGunShotKind(SynthVoiceKind kind) =>
-            kind == SynthVoiceKind.Shot || kind == SynthVoiceKind.RifleShot || kind == SynthVoiceKind.PistolShot
-            || kind >= SynthVoiceKind.Ak47Shot && kind <= SynthVoiceKind.EagleShot
-            || kind >= SynthVoiceKind.M4a1Shot && kind <= SynthVoiceKind.M870Shot;
+            kind == SynthVoiceKind.Shot || WeaponShotVoices.IsWeaponShot(kind);
 
         /// <summary>Reload Foley voices (fitted to the authoritative reload window and cut on death or the next shot).</summary>
         public static bool IsReloadKind(SynthVoiceKind kind) =>

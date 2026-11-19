@@ -143,25 +143,7 @@ namespace Shooter.Presentation.Session
         private static void Part(Rect r, Color color, float radius) => Plate(r, UiSdf.Style.Solid(color, radius));
 
         /// <summary>ADR-085 atlas name of the mesh-traced silhouette for a kill-feed weapon.</summary>
-        public static string WeaponIconName(KillFeedWeapon weapon) => weapon switch
-        {
-            KillFeedWeapon.Carbine => "weapon.rifle-carbine",
-            KillFeedWeapon.Pistol => "weapon.pistol",
-            KillFeedWeapon.Knife => "weapon.knife",
-            KillFeedWeapon.Grenade => "weapon.grenade",
-            KillFeedWeapon.Ak47 => "weapon.ak47",
-            KillFeedWeapon.Ak102 => "weapon.ak102",
-            KillFeedWeapon.M16 => "weapon.m16",
-            KillFeedWeapon.Mk14 => "weapon.mk14",
-            KillFeedWeapon.Mtac338 => "weapon.mtac338",
-            KillFeedWeapon.G17 => "weapon.g17",
-            KillFeedWeapon.GoldenEagle => "weapon.golden-eagle",
-            KillFeedWeapon.M4a1 => "weapon.m4a1",
-            KillFeedWeapon.M24 => "weapon.m24",
-            KillFeedWeapon.Mk16 => "weapon.mk16",
-            KillFeedWeapon.M870 => "weapon.m870",
-            _ => "weapon.rifle"
-        };
+        public static string WeaponIconName(KillFeedWeapon weapon) => KillFeedGlyphs.IconName(weapon);
 
         /// <summary>ADR-085 atlas icon with the given ink; false when unavailable (callers keep text/shape fallbacks).</summary>
         public static bool Icon(Rect r, string name, Color color, bool shadow = false)
@@ -180,21 +162,14 @@ namespace Shooter.Presentation.Session
             if (UiSdf.Icon(r, WeaponIconName(weapon), UiSdf.Style.Solid(color))) return;
             float x = r.x, y = r.y, w = r.width, h = r.height;
             float k = Mathf.Max(0.6f, h * 0.06f);
-            switch (weapon)
+            // T195: the fallback shape class comes from the weapon definition (Content/Weapons hud.silhouette).
+            var silhouette = KillFeedGlyphs.Silhouette(weapon);
+            switch (silhouette)
             {
-                case KillFeedWeapon.Rifle:
-                case KillFeedWeapon.Carbine:
-                case KillFeedWeapon.Ak47:
-                case KillFeedWeapon.Ak102:
-                case KillFeedWeapon.M16:
-                case KillFeedWeapon.Mk14:
-                case KillFeedWeapon.Mtac338:
-                case KillFeedWeapon.M4a1:
-                case KillFeedWeapon.M24:
-                case KillFeedWeapon.Mk16:
-                case KillFeedWeapon.M870:
+                case KillFeedSilhouette.Rifle:
+                case KillFeedSilhouette.Carbine:
                 {
-                    bool carbine = weapon == KillFeedWeapon.Carbine || weapon == KillFeedWeapon.Ak102 || weapon == KillFeedWeapon.M4a1;
+                    bool carbine = silhouette == KillFeedSilhouette.Carbine;
                     float barrelEnd = carbine ? 0.88f : 0.98f;
                     // Stock (tapered by two parts), receiver, handguard, barrel, magazine, grip, optic.
                     Part(new Rect(x, y + h * 0.30f, w * 0.20f, h * 0.30f), color, k);
@@ -207,9 +182,7 @@ namespace Shooter.Presentation.Session
                     Part(new Rect(x + w * 0.26f, y + h * 0.14f, w * 0.18f, h * 0.12f), color, k);
                     break;
                 }
-                case KillFeedWeapon.Pistol:
-                case KillFeedWeapon.G17:
-                case KillFeedWeapon.GoldenEagle:
+                case KillFeedSilhouette.Pistol:
                 {
                     // Long thin slide, frame, angled grip, trigger guard.
                     Part(new Rect(x + w * 0.08f, y + h * 0.18f, w * 0.80f, h * 0.24f), color, k);
@@ -223,7 +196,7 @@ namespace Shooter.Presentation.Session
                     UiSdf.Rect(new Rect(x + w * 0.30f, y + h * 0.44f, w * 0.16f, h * 0.24f), guard);
                     break;
                 }
-                case KillFeedWeapon.Knife:
+                case KillFeedSilhouette.Knife:
                 {
                     // Ridged handle, tall guard, wide blade with a pointed tip.
                     Part(new Rect(x + w * 0.04f, y + h * 0.40f, w * 0.30f, h * 0.24f), color, h * 0.12f);
@@ -233,7 +206,7 @@ namespace Shooter.Presentation.Session
                         Fill(new Rect(x + w * 0.79f, y + h * 0.40f, w * 0.14f, h * 0.18f), color);
                     break;
                 }
-                case KillFeedWeapon.Grenade:
+                case KillFeedSilhouette.Grenade:
                 {
                     float d = Mathf.Min(w * 0.56f, h * 0.66f);
                     Rect body = new Rect(x + w * 0.5f - d * 0.5f, y + h * 0.28f, d, d);
@@ -1291,8 +1264,7 @@ namespace Shooter.Presentation.Session
             ScoreRibbon(new Rect(x0 + 600, y + 24, 260, 40), 1f, 10f, 4, ReducedMotion, ReducedFlash);
             y += 90;
             Label(new Rect(x0, y, 400, 16), "KILL FEED ICONS  (FEED SIZE / LARGE)", 12, Accent);
-            var weapons = new[] { KillFeedWeapon.Ak47, KillFeedWeapon.Ak102, KillFeedWeapon.M16, KillFeedWeapon.Mk14, KillFeedWeapon.Mtac338,
-                KillFeedWeapon.M4a1, KillFeedWeapon.M24, KillFeedWeapon.Mk16, KillFeedWeapon.M870, KillFeedWeapon.G17, KillFeedWeapon.GoldenEagle, KillFeedWeapon.Knife, KillFeedWeapon.Grenade };
+            var weapons = KillFeedGlyphs.Gallery;
             for (int i = 0; i < weapons.Length; i++)
             {
                 CombatPlate(new Rect(x0 + i * 110, y + 22, 100, 26), strong: true);

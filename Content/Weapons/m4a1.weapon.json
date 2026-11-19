@@ -51,9 +51,15 @@
     "muzzleFlashScale": 0.9
   },
   "audio": {
-    "shot": "M4a1Shot"
+    "shot": "M4a1Shot",
+    "derive": {
+      "from": "RifleShot",
+      "pitch": 1.16,
+      "gain": 0.90
+    }
   },
   "hud": {
-    "killFeedGlyph": "M4a1"
+    "killFeedGlyph": "M4a1",
+    "silhouette": "Carbine"
   }
 }

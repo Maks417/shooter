@@ -52,7 +52,12 @@
     "muzzleFlashSideJets": true
   },
   "audio": {
-    "shot": "Tac338Shot"
+    "shot": "Tac338Shot",
+    "derive": {
+      "from": "RifleShot",
+      "pitch": 0.70,
+      "gain": 1.00
+    }
   },
   "hud": {
     "killFeedGlyph": "Mtac338"

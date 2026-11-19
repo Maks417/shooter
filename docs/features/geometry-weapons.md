@@ -96,8 +96,8 @@ Each weapon is one file, `Content/Weapons/<name>.weapon.json`, which holds:
 - near-field handling;
 - `visual.sights` (a default plus the allowed list);
 - muzzle flash;
-- the shot voice;
-- the kill-feed glyph.
+- the shot voice, and for a named gun without its own recording `audio.derive` (`from` RifleShot/PistolShot, `pitch`, `gain`): the interim varispeed of the shipped take;
+- the kill-feed glyph, and `hud.silhouette` (Rifle, Carbine, Pistol, Knife or Grenade; defaults by family) for the analytic fallback shape.
 
 After editing:
 
@@ -108,11 +108,20 @@ python Tools/generate_weapon_catalog.py
 ./Tools/Compile-GameContent.ps1 -Native
 ```
 
-The generator rewrites four files. Never edit a `.g.cs` file by hand; CI runs `--check`.
+The generator rewrites seven files. Never edit a `.g.cs` file by hand; CI runs `--check`.
 - `WeaponCatalog.g.cs`
 - `WeaponVisualProfiles.g.cs`
 - `WeaponMeshCatalog.g.cs`
 - the sight catalogs
+- `KillFeedGlyphs.g.cs`: icon name, fallback silhouette and review gallery per glyph (T195)
+- `WeaponShotVoices.g.cs`: the gun-report voice set and named-report derivations used by the mixer and the bank baker (T195)
+
+**What is still a hand edit for a new gun:**
+- a new `KillFeedWeapon` member when it needs its own glyph;
+- a new `SynthVoiceKind` member and its `CombatAudioBank` file name, appended so earlier bank indexes stay put, plus the audio bank rebuild (a named provenance exception);
+- its feature recipe and career placement.
+
+Kill-feed drawing, mixer classification, baker fallbacks and AI range behaviour all follow from the definition.
 
 **Mesh keys.** `visual.meshKey` names the packaged mesh set. `visual.geometryRecipe` names its recipe. A key always maps to one recipe, but several guns may share a key.
 

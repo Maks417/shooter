@@ -43,7 +43,12 @@
     "muzzleFlashScale": 0.6
   },
   "audio": {
-    "shot": "G17Shot"
+    "shot": "G17Shot",
+    "derive": {
+      "from": "PistolShot",
+      "pitch": 1.06,
+      "gain": 0.95
+    }
   },
   "hud": {
     "killFeedGlyph": "G17"

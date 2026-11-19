@@ -51,9 +51,15 @@
     "muzzleFlashScale": 1.3
   },
   "audio": {
-    "shot": "Ak102Shot"
+    "shot": "Ak102Shot",
+    "derive": {
+      "from": "RifleShot",
+      "pitch": 1.07,
+      "gain": 0.95
+    }
   },
   "hud": {
-    "killFeedGlyph": "Ak102"
+    "killFeedGlyph": "Ak102",
+    "silhouette": "Carbine"
   }
 }

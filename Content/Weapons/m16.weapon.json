@@ -55,7 +55,12 @@
     "muzzleFlashScale": 0.85
   },
   "audio": {
-    "shot": "M16Shot"
+    "shot": "M16Shot",
+    "derive": {
+      "from": "RifleShot",
+      "pitch": 1.12,
+      "gain": 0.92
+    }
   },
   "hud": {
     "killFeedGlyph": "M16"

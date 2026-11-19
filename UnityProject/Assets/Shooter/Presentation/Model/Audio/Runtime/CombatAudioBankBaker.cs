@@ -108,7 +108,11 @@ namespace Shooter.Presentation.Audio
             return new CombatAudioBank(sampleRate, clips, hash, loadedFromFoundSamples: true);
         }
 
-        private static Func<int, int, float[]> FallbackBaker(int kindIndex) => CombatAudioBank.KindAt(kindIndex) switch
+        private static Func<int, int, float[]> FallbackBaker(int kindIndex) => FallbackBaker(CombatAudioBank.KindAt(kindIndex));
+
+        private static Func<int, int, float[]> FallbackBaker(SynthVoiceKind kind) =>
+            // T195: a named gun report falls back to the recipe of the class it is derived from (Content/Weapons audio.derive).
+            WeaponShotVoices.TryGetDerivation(kind, out var source, out _, out _) ? FallbackBaker(source) : kind switch
         {
             SynthVoiceKind.RifleShot => BakeRifleShot,
             SynthVoiceKind.PistolShot => BakePistolShot,
@@ -141,20 +145,9 @@ namespace Shooter.Presentation.Audio
             SynthVoiceKind.UiClick => BakeUi,
             SynthVoiceKind.UiBack => BakeUi,
             // ADR-102 v6 emergency fallbacks (the found-sample path derives shots from real takes instead).
-            SynthVoiceKind.Ak47Shot => BakeRifleShot,
-            SynthVoiceKind.Ak102Shot => BakeRifleShot,
-            SynthVoiceKind.M16Shot => BakeRifleShot,
-            SynthVoiceKind.Mk14Shot => BakeRifleShot,
-            SynthVoiceKind.Tac338Shot => BakeRifleShot,
-            SynthVoiceKind.G17Shot => BakePistolShot,
-            SynthVoiceKind.EagleShot => BakePistolShot,
             SynthVoiceKind.BoltCycle => BakeReloadComplete,
             SynthVoiceKind.ReloadAk => BakeReloadStart,
             SynthVoiceKind.ReloadBolt => BakeReloadStart,
-            SynthVoiceKind.M4a1Shot => BakeRifleShot,
-            SynthVoiceKind.M24Shot => BakeRifleShot,
-            SynthVoiceKind.Mk16Shot => BakeRifleShot,
-            SynthVoiceKind.M870Shot => BakeRifleShot,
             SynthVoiceKind.PumpCycle => BakeReloadComplete,
             SynthVoiceKind.ReloadShell => BakeReloadComplete,
             _ => BakeImpact
@@ -164,22 +157,15 @@ namespace Shooter.Presentation.Audio
         /// Interim character for a named gun without its own recording: the shipped real take of the nearest
         /// class, slowed (deeper, longer tail) or sped up. Source 0 = not derived.
         /// </summary>
-        public static (SynthVoiceKind source, float pitch, float gain) DerivedFrom(SynthVoiceKind kind) => kind switch
+        public static (SynthVoiceKind source, float pitch, float gain) DerivedFrom(SynthVoiceKind kind) =>
+            // T195: named gun reports come from Content/Weapons (audio.derive); the Foley derivations stay here.
+            WeaponShotVoices.TryGetDerivation(kind, out var gunSource, out float gunPitch, out float gunGain)
+                ? (gunSource, gunPitch, gunGain)
+                : kind switch
         {
-            SynthVoiceKind.Ak47Shot => (SynthVoiceKind.RifleShot, 0.90f, 1.00f),
-            SynthVoiceKind.Ak102Shot => (SynthVoiceKind.RifleShot, 1.07f, 0.95f),
-            SynthVoiceKind.M16Shot => (SynthVoiceKind.RifleShot, 1.12f, 0.92f),
-            SynthVoiceKind.Mk14Shot => (SynthVoiceKind.RifleShot, 0.84f, 1.00f),
-            SynthVoiceKind.Tac338Shot => (SynthVoiceKind.RifleShot, 0.70f, 1.00f),
-            SynthVoiceKind.G17Shot => (SynthVoiceKind.PistolShot, 1.06f, 0.95f),
-            SynthVoiceKind.EagleShot => (SynthVoiceKind.PistolShot, 0.74f, 1.00f),
             SynthVoiceKind.ReloadAk => (SynthVoiceKind.ReloadStart, 0.94f, 1.00f),
             SynthVoiceKind.ReloadBolt => (SynthVoiceKind.ReloadStart, 0.88f, 1.00f),
             SynthVoiceKind.BoltCycle => (SynthVoiceKind.ReloadComplete, 0.85f, 1.00f),
-            SynthVoiceKind.M4a1Shot => (SynthVoiceKind.RifleShot, 1.16f, 0.90f),
-            SynthVoiceKind.M24Shot => (SynthVoiceKind.RifleShot, 0.76f, 1.00f),
-            SynthVoiceKind.Mk16Shot => (SynthVoiceKind.RifleShot, 1.02f, 0.95f),
-            SynthVoiceKind.M870Shot => (SynthVoiceKind.RifleShot, 0.66f, 1.00f),
             SynthVoiceKind.PumpCycle => (SynthVoiceKind.ReloadComplete, 0.80f, 1.00f),
             SynthVoiceKind.ReloadShell => (SynthVoiceKind.ReloadComplete, 1.10f, 0.90f),
             _ => (default, 1f, 1f)

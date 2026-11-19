@@ -52,7 +52,12 @@
     "muzzleFlashScale": 1.1
   },
   "audio": {
-    "shot": "M24Shot"
+    "shot": "M24Shot",
+    "derive": {
+      "from": "RifleShot",
+      "pitch": 0.76,
+      "gain": 1.00
+    }
   },
   "hud": {
     "killFeedGlyph": "M24"

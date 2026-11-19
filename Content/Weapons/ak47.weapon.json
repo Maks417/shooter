@@ -52,7 +52,12 @@
     "muzzleFlashScale": 1.15
   },
   "audio": {
-    "shot": "Ak47Shot"
+    "shot": "Ak47Shot",
+    "derive": {
+      "from": "RifleShot",
+      "pitch": 0.90,
+      "gain": 1.00
+    }
   },
   "hud": {
     "killFeedGlyph": "Ak47"

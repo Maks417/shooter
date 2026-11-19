@@ -1,7 +1,7 @@
 """Generate the frozen in-process weapon catalogs from Content/Weapons/*.weapon.json (ADR-077).
 
 One definition file per weapon holds its combat stats, visual/handling profile, audio voice and kill-feed glyph.
-This script validates every file and writes five C# partial classes:
+This script validates every file and writes seven C# files:
 
   UnityProject/Assets/Shooter/Simulation/Combat/WeaponCatalog.g.cs              (combat rows, Simulation)
   UnityProject/Assets/Shooter/Simulation/Combat/SightCatalog.g.cs               (ADR-107 sight options, Simulation)
@@ -9,6 +9,10 @@ This script validates every file and writes five C# partial classes:
   UnityProject/Assets/Shooter/Presentation/Model/View/WeaponSightChoices.g.cs   (ADR-107 sight options, presentation)
   UnityProject/Assets/Shooter/Generation/Core/Environment/WeaponMeshCatalog.g.cs (meshes for the weapon package, ADR-078;
                                                                                   ADR-107 rail-mounted sight meshes)
+  UnityProject/Assets/Shooter/Presentation/Model/Hud/KillFeedGlyphs.g.cs        (T195 kill-feed icon names, fallback
+                                                                                  silhouettes and the review gallery)
+  UnityProject/Assets/Shooter/Presentation/Model/Audio/Runtime/WeaponShotVoices.g.cs (T195 gun-report voices and the
+                                                                                  interim derivation of named reports)
 
 The catalogs stay compiled C# (ADR-072 forbids runtime JSON combat tables). Numbers are emitted with the exact
 literal text from the JSON file, so the generated expressions are bit-identical to hand-written ones.
@@ -31,6 +35,14 @@ PROFILES_OUT = ASSETS / "Presentation/Model/View/WeaponVisualProfiles.g.cs"
 MESHES_OUT = ASSETS / "Generation/Core/Environment/WeaponMeshCatalog.g.cs"
 SIGHTS_OUT = ASSETS / "Simulation/Combat/SightCatalog.g.cs"
 SIGHT_CHOICES_OUT = ASSETS / "Presentation/Model/View/WeaponSightChoices.g.cs"
+GLYPHS_OUT = ASSETS / "Presentation/Model/Hud/KillFeedGlyphs.g.cs"
+SHOT_VOICES_OUT = ASSETS / "Presentation/Model/Audio/Runtime/WeaponShotVoices.g.cs"
+# T195: fallback kill-feed silhouette when the mesh-traced icon is unavailable; defaults by family.
+SILHOUETTES = ["Rifle", "Carbine", "Pistol", "Knife", "Grenade"]
+DEFAULT_SILHOUETTE = {"PrimaryGun": "Rifle", "Sidearm": "Pistol", "Melee": "Knife", "Throwable": "Grenade"}
+GUN_FAMILIES = {"PrimaryGun", "Sidearm"}
+# Shipped recorded reports a named gun's interim voice may be derived from (CombatAudioBankBaker.DerivedFrom).
+DERIVE_SOURCES = {"RifleShot", "PistolShot"}
 FEATURE_RECIPES = ASSETS / "Generation/FeatureRecipes"
 SCHEMA_ID = "shooter.weapon.v1"
 # Mesh keys built by LoadoutPropGeometry instead of a geometry.weapon recipe (no magazine or cycle part).
@@ -324,10 +336,20 @@ def validate(root: Path, path: Path, doc, enums) -> dict:
         raise DefinitionError(v + "sights: required for a geometry.weapon 1.4.0/1.5.0 rail recipe")
 
     audio = doc["audio"]
-    keys(audio, where + ".audio", ["shot"])
+    keys(audio, where + ".audio", ["shot"], ["derive"])
+    derive = None
+    if "derive" in audio:
+        d = audio["derive"]
+        keys(d, where + ".audio.derive", ["from", "pitch", "gain"])
+        if family not in GUN_FAMILIES:
+            raise DefinitionError(where + ".audio.derive: only gun reports are derived")
+        derive = {"from": choice(d["from"], where + ".audio.derive.from", DERIVE_SOURCES),
+                  "pitch": number(d["pitch"], where + ".audio.derive.pitch", minimum=0.25, maximum=4),
+                  "gain": number(d["gain"], where + ".audio.derive.gain", minimum=0.1, maximum=2)}
     hud = doc["hud"]
-    keys(hud, where + ".hud", ["killFeedGlyph"])
+    keys(hud, where + ".hud", ["killFeedGlyph"], ["silhouette"])
     glyph = choice(hud["killFeedGlyph"], where + ".hud.killFeedGlyph", enums["KillFeedWeapon"] - {"None"})
+    silhouette = choice(hud.get("silhouette", DEFAULT_SILHOUETTE[family]), where + ".hud.silhouette", set(SILHOUETTES))
 
     return {
         "source": where, "id": weapon_id, "order": order, "label": label, "family": family, "combat": fields,
@@ -345,7 +367,9 @@ def validate(root: Path, path: Path, doc, enums) -> dict:
         if "muzzleFlashScale" not in visual else number(visual["muzzleFlashScale"], v + "muzzleFlashScale", minimum=0, maximum=2.5),
         "muzzleFlashSideJets": boolean(visual.get("muzzleFlashSideJets", False), v + "muzzleFlashSideJets"),
         "shotVoice": choice(audio["shot"], where + ".audio.shot", enums["SynthVoiceKind"]),
+        "shotDerive": derive,
         "glyph": glyph,
+        "silhouette": silhouette,
         "recipeSource": recipe_source,
         "sights": sights,
     }
@@ -532,6 +556,74 @@ def render_meshes(weapons) -> str:
             + ",\n".join(rows) + "\n        };\n    }\n}\n")
 
 
+FAMILY_RANK = {"PrimaryGun": 0, "Sidearm": 1, "Melee": 2, "Throwable": 3}
+# Generic glyphs shared by the legacy test guns; the review gallery shows the named guns, knife and grenade.
+GENERIC_GLYPHS = {"Rifle", "Carbine", "Pistol"}
+
+
+def glyph_rows(weapons) -> list:
+    """One row per kill-feed glyph: the first weapon (by order) that uses it names the icon and silhouette."""
+    rows, seen = [], {}
+    for w in weapons:
+        g = w["glyph"]
+        if g in seen:
+            first = seen[g]
+            if first["silhouette"] != w["silhouette"]:
+                raise DefinitionError(w["source"] + ": glyph " + g + " already uses silhouette " + first["silhouette"])
+            continue
+        seen[g] = w
+        rows.append(w)
+    return rows
+
+
+def render_glyphs(weapons) -> str:
+    rows = glyph_rows(weapons)
+    icons = "".join("            KillFeedWeapon." + w["glyph"] + " => \"weapon." + w["meshKey"] + "\",\n" for w in rows)
+    shapes = "".join("            KillFeedWeapon." + w["glyph"] + " => KillFeedSilhouette." + w["silhouette"] + ",\n" for w in rows)
+    gallery = [w for w in sorted(rows, key=lambda w: (FAMILY_RANK[w["family"]], w["order"])) if w["glyph"] not in GENERIC_GLYPHS]
+    return (HEADER + "#nullable enable\n\nnamespace Shooter.Presentation.Hud\n{\n"
+            "    /// <summary>Analytic fallback shape class for a kill-feed glyph when its mesh-traced icon is unavailable.</summary>\n"
+            "    public enum KillFeedSilhouette : byte\n    {\n"
+            + ",\n".join("        " + name for name in SILHOUETTES) + "\n    }\n\n"
+            "    /// <summary>Per-glyph kill-feed data generated from Content/Weapons (T195): no per-gun switch edits.</summary>\n"
+            "    public static class KillFeedGlyphs\n    {\n"
+            "        /// <summary>ADR-085 atlas name of the mesh-traced silhouette.</summary>\n"
+            "        public static string IconName(KillFeedWeapon weapon) => weapon switch\n        {\n"
+            + icons + "            _ => \"weapon.rifle\"\n        };\n\n"
+            "        public static KillFeedSilhouette Silhouette(KillFeedWeapon weapon) => weapon switch\n        {\n"
+            + shapes + "            _ => KillFeedSilhouette.Rifle\n        };\n\n"
+            "        /// <summary>Named guns, then knife and grenade, for the HUD review gallery.</summary>\n"
+            "        public static readonly KillFeedWeapon[] Gallery =\n        {\n"
+            + ",\n".join("            KillFeedWeapon." + w["glyph"] for w in gallery) + "\n        };\n    }\n}\n")
+
+
+def render_shot_voices(weapons) -> str:
+    voices, derived, seen = [], [], set()
+    for w in weapons:
+        if w["family"] not in GUN_FAMILIES or w["shotVoice"] in seen:
+            continue
+        seen.add(w["shotVoice"])
+        voices.append(w)
+        if w["shotDerive"] is not None:
+            derived.append(w)
+    cases = "".join("                case SynthVoiceKind." + w["shotVoice"] + ":\n" for w in voices)
+    derive_rows = "".join(
+        "                SynthVoiceKind." + w["shotVoice"] + " => (SynthVoiceKind." + w["shotDerive"]["from"] + ", "
+        + f(w["shotDerive"]["pitch"]) + ", " + f(w["shotDerive"]["gain"]) + "),\n" for w in derived)
+    return (HEADER + "#nullable enable\n\nnamespace Shooter.Presentation.Audio\n{\n"
+            "    /// <summary>Gun-report voices generated from Content/Weapons (T195): no per-gun mixer or baker edits.</summary>\n"
+            "    public static class WeaponShotVoices\n    {\n"
+            "        /// <summary>Every primary/sidearm report voice named by a weapon definition.</summary>\n"
+            "        public static bool IsWeaponShot(SynthVoiceKind kind)\n        {\n"
+            "            switch (kind)\n            {\n" + cases
+            + "                    return true;\n                default:\n                    return false;\n            }\n        }\n\n"
+            "        /// <summary>Interim derivation of a named report (audio.derive): source take, varispeed and gain.</summary>\n"
+            "        public static bool TryGetDerivation(SynthVoiceKind kind, out SynthVoiceKind source, out float pitch, out float gain)\n"
+            "        {\n            (source, pitch, gain) = kind switch\n            {\n" + derive_rows
+            + "                _ => (default(SynthVoiceKind), 1f, 1f)\n            };\n"
+            "            return source != default(SynthVoiceKind);\n        }\n    }\n}\n")
+
+
 def meta_for(relative: Path) -> str:
     guid = hashlib.md5(("shooter.weapon-catalog:" + relative.as_posix()).encode("ascii")).hexdigest()
     return META_TEMPLATE.format(guid=guid)
@@ -542,7 +634,8 @@ def outputs(root: Path) -> dict:
     result = {}
     for relative, text in ((CATALOG_OUT, render_catalog(weapons)), (PROFILES_OUT, render_profiles(weapons)),
                            (MESHES_OUT, render_meshes(weapons)), (SIGHTS_OUT, render_sights(weapons)),
-                           (SIGHT_CHOICES_OUT, render_sight_choices(weapons))):
+                           (SIGHT_CHOICES_OUT, render_sight_choices(weapons)), (GLYPHS_OUT, render_glyphs(weapons)),
+                           (SHOT_VOICES_OUT, render_shot_voices(weapons))):
         result[relative] = text
         result[Path(str(relative) + ".meta")] = meta_for(relative)
     return result

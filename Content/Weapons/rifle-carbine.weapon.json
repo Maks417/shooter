@@ -41,6 +41,7 @@
     "shot": "RifleShot"
   },
   "hud": {
-    "killFeedGlyph": "Carbine"
+    "killFeedGlyph": "Carbine",
+    "silhouette": "Carbine"
   }
 }

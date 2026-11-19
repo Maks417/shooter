@@ -55,7 +55,12 @@
     "muzzleFlashSideJets": true
   },
   "audio": {
-    "shot": "Mk14Shot"
+    "shot": "Mk14Shot",
+    "derive": {
+      "from": "RifleShot",
+      "pitch": 0.84,
+      "gain": 1.00
+    }
   },
   "hud": {
     "killFeedGlyph": "Mk14"

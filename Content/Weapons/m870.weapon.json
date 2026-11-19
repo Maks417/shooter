@@ -55,7 +55,12 @@
     "muzzleFlashScale": 1.5
   },
   "audio": {
-    "shot": "M870Shot"
+    "shot": "M870Shot",
+    "derive": {
+      "from": "RifleShot",
+      "pitch": 0.66,
+      "gain": 1.00
+    }
   },
   "hud": {
     "killFeedGlyph": "M870"
