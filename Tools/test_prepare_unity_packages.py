@@ -144,6 +144,19 @@ class PreparationPreflightTests(unittest.TestCase):
         self.invoke()
         self.assertEqual(self.snapshot(), before)
 
+    def test_unchanged_inputs_skip_rehash_and_any_change_forces_full_check(self):
+        self.invoke()
+        self.assertTrue((self.root / ".local/unity-curation.stamp").exists())
+        with patch.object(preparation, "immutable_archive", side_effect=AssertionError("rehashed despite stamp")):
+            self.invoke()
+        self.archive.write_bytes(b"tampered archive bytes")
+        with self.assertRaises(ValueError):
+            self.invoke()
+        self.archive.write_bytes(self.archive_bytes)
+        (self.source / "Runtime/Numbers.cs").write_bytes(b"// edited source\n")
+        with self.assertRaises(ValueError):
+            self.invoke()
+
     def test_approved_initial_lock_and_migration_keep_same_archive_format(self):
         old_proof = {key: value for key, value in self.proof.items()
                      if key not in ("archiveFormat", "archivePath", "archiveSha256")}

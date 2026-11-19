@@ -10,7 +10,7 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 $sourceCommit = (& git -C $repoRoot rev-parse HEAD).Trim()
 if ($LASTEXITCODE -ne 0) { throw 'Cannot determine source commit.' }
 $runId = [DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ') + '-' + [Guid]::NewGuid().ToString('N').Substring(0, 8)
-$reportDirectory = Join-Path $repoRoot "Artifacts/m1-procedural-feasibility/$sourceCommit/$runId"
+$reportDirectory = Join-Path $repoRoot "Artifacts/m1-procedural-feasibility/$sourceCommit/test-generation-$runId"
 $null = New-Item -ItemType Directory -Path $reportDirectory
 $dotnet = (Get-Command dotnet -ErrorAction Stop).Source
 $projectPath = Join-Path $repoRoot 'Tools/Generation.Tests/Generation.Tests.csproj'
@@ -117,4 +117,5 @@ finally {
     $report | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $reportDirectory 'run.json') -Encoding utf8NoBOM
 }
 if ($report.result -ne 'PASS') { exit 1 }
+Complete-ShooterReportRun $reportDirectory 'test-generation'
 Write-Host "PASS: $($report.testCount) pure generation tests. Evidence: $reportDirectory"

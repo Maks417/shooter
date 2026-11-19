@@ -119,6 +119,19 @@ function Remove-ShooterStaleRuns([string]$AreaPath, [string]$Prefix, [string]$Ke
     }
 }
 
+# Deletes the player's never-shipped IL2CPP backup and Burst debug folders and returns { name, bytes } per removed folder.
+function Remove-ShooterPlayerDebugFolders([string]$PlayerDirectory) {
+    if (!(Test-Path -LiteralPath $PlayerDirectory -PathType Container)) { return }
+    foreach ($folder in @(Get-ChildItem -LiteralPath $PlayerDirectory -Directory | Where-Object {
+            $_.Name -cmatch '_BackUpThisFolder_ButDontShipItWithYourGame$|_BurstDebugInformation_DoNotShip$' })) {
+        $bytes = [long](Get-ChildItem -LiteralPath $folder.FullName -Recurse -Force -File | Measure-Object Length -Sum).Sum
+        # \\?\ prefix: il2cppOutput nests deeper than MAX_PATH.
+        [IO.Directory]::Delete('\\?\' + $folder.FullName, $true)
+        Write-Host "Removed unshipped debug folder: $($folder.Name) ($([math]::Round($bytes / 1MB)) MB)"
+        [ordered]@{ name = $folder.Name; bytes = $bytes }
+    }
+}
+
 function New-ShooterRun([string]$Action, $Unity) {
     $root = Get-ShooterRoot
     Assert-ShooterFreeSpace $root

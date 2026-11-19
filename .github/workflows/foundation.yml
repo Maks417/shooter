@@ -19,10 +19,14 @@ jobs:
       - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
         with:
           global-json-file: global.json
+          cache: true
+          cache-dependency-path: Tools/**/packages.lock.json
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.12'
           architecture: x64
+          cache: pip
+          cache-dependency-path: Tools/requirements-fixtures.lock
       - name: Verify source, fixtures and pure foundation
         shell: pwsh
         run: |
@@ -86,7 +90,14 @@ jobs:
     runs-on: [self-hosted, Windows, X64, unity-6000.3.28f1]
     timeout-minutes: 60
     steps:
+      # Keep ignored UnityProject/Library, .local and Artifacts between runs on the self-hosted runner: the default
+      # clean checkout deletes Library and forces a cold asset import plus a cold IL2CPP build every run.
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          clean: false
+      - name: Remove untracked (non-ignored) source files
+        shell: pwsh
+        run: git clean -ffd
       - name: Configure and verify exact installed editor
         shell: pwsh
         run: ./Tools/Configure-Unity.ps1 -EditorPath $env:SHOOTER_UNITY_EDITOR
@@ -117,5 +128,6 @@ jobs:
         if: always()
         with:
           name: unity-foundation-results
-          path: Artifacts
+          # Only this commit's runs: Artifacts persists between runs on the self-hosted runner.
+          path: Artifacts/*/${{ github.sha }}
           retention-days: 14

@@ -5,6 +5,8 @@ param(
     [string]$PreviousPackageDirectory = '',
     # T067/C01: refuse software-grid navigation; require the nav-provenance sidecar from Compile-GameContent -Native.
     [switch]$RequireNativeNav,
+    # The ZIP is an internal artifact (AGENTS.md); the installer consumes the staged folder. Opt in to also write it.
+    [switch]$Zip,
     [ValidateRange(30, 3600)][int]$TimeoutSeconds = 180
 )
 $ErrorActionPreference = 'Stop'
@@ -54,6 +56,33 @@ function Test-ExcludedRelativePath([string]$Relative, $Policy) {
     return $false
 }
 
+# Stages a file as an NTFS hard link to the build/content output (no extra bytes on disk), falling back to a copy
+# across volumes or when linking fails. Every staged file is re-hashed into inventory.json, and Build-Installer
+# re-checks that inventory, so a source later rewritten in place cannot ship silently.
+$script:StagedLinks = 0
+$script:StagedCopies = 0
+function Copy-ReleaseFile([string]$Source, [string]$Destination) {
+    $null = New-Item -ItemType Directory -Path (Split-Path -Parent $Destination) -Force
+    if (Test-Path -LiteralPath $Destination) { Remove-Item -LiteralPath $Destination -Force }
+    try {
+        $null = New-Item -ItemType HardLink -Path $Destination -Value $Source -ErrorAction Stop
+        $script:StagedLinks++
+    }
+    catch {
+        Copy-Item -LiteralPath $Source -Destination $Destination -Force
+        $script:StagedCopies++
+    }
+}
+
+function Copy-ReleaseDirectoryFiles([string]$SourceDir, [string]$DestDir) {
+    $count = 0
+    Get-ChildItem -LiteralPath $SourceDir -Force -File | ForEach-Object {
+        Copy-ReleaseFile $_.FullName (Join-Path $DestDir $_.Name)
+        $count++
+    }
+    $count
+}
+
 function Copy-ReleaseTree([string]$SourceRoot, [string]$DestRoot, $Policy) {
     $copied = [Collections.Generic.List[string]]::new()
     $excluded = [Collections.Generic.List[string]]::new()
@@ -65,8 +94,7 @@ function Copy-ReleaseTree([string]$SourceRoot, [string]$DestRoot, $Policy) {
             return
         }
         $dest = Join-Path $DestRoot ($relative.Replace('/', [IO.Path]::DirectorySeparatorChar))
-        $null = New-Item -ItemType Directory -Path (Split-Path -Parent $dest) -Force
-        Copy-Item -LiteralPath $_.FullName -Destination $dest -Force
+        Copy-ReleaseFile $_.FullName $dest
         $copied.Add($relative) | Out-Null
     }
     [pscustomobject]@{ Copied = $copied; Excluded = $excluded }
@@ -300,12 +328,7 @@ try {
         $srcDir = Join-Path $MapCacheRoot $relPackage
         $dstDir = Join-Path $contentDest $relPackage
         if (!(Test-Path -LiteralPath $srcDir -PathType Container)) { throw "Missing source package directory: $srcDir" }
-        $null = New-Item -ItemType Directory -Path $dstDir -Force
-        $fileCount = 0
-        Get-ChildItem -LiteralPath $srcDir -Force -File | ForEach-Object {
-            Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $dstDir $_.Name) -Force
-            $fileCount++
-        }
+        $fileCount = Copy-ReleaseDirectoryFiles $srcDir $dstDir
         if ($fileCount -lt 1) { throw "Package directory had no files to ship: $srcDir" }
         $shippedRoot = Join-Path $dstDir 'package.json'
         if ((Get-Sha256File $shippedRoot) -cne $pkg.packageRootSha256) { throw "Shipped package root hash mismatch for $($pkg.mapId)/$($pkg.visualProfile)" }
@@ -315,10 +338,7 @@ try {
     $relWeapon = Join-Path $content.WeaponPackageRoot.Substring(0, 2) $content.WeaponPackageRoot
     $weaponSrcDir = Join-Path $MapCacheRoot $relWeapon
     $weaponDstDir = Join-Path $contentDest $relWeapon
-    $null = New-Item -ItemType Directory -Path $weaponDstDir -Force
-    Get-ChildItem -LiteralPath $weaponSrcDir -Force -File | ForEach-Object {
-        Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $weaponDstDir $_.Name) -Force
-    }
+    $null = Copy-ReleaseDirectoryFiles $weaponSrcDir $weaponDstDir
     if ((Get-Sha256File (Join-Path $weaponDstDir 'package.json')) -cne $content.WeaponPackageRoot) { throw 'Shipped weapon package root hash mismatch' }
     Copy-Item -LiteralPath $lockPath -Destination (Join-Path $stage 'toolchain-lock.json') -Force
     if ($report.buildLockHash) { Copy-Item -LiteralPath (Join-Path $repoRoot 'build-lock.json') -Destination (Join-Path $stage 'build-lock.json') -Force }
@@ -333,20 +353,14 @@ try {
     $audioSrc = Join-Path $repoRoot 'Content/Audio/combat'
     if (!(Test-Path -LiteralPath $audioSrc -PathType Container)) { throw "Missing combat audio bank to ship: $audioSrc" }
     if (!(Test-Path -LiteralPath (Join-Path $audioSrc 'manifest.json') -PathType Leaf)) { throw "Missing combat audio manifest: $audioSrc/manifest.json" }
-    $audioDest = Join-Path $stage 'Content/Audio/combat'
-    $null = New-Item -ItemType Directory -Path $audioDest -Force
-    Get-ChildItem -LiteralPath $audioSrc -Force -File | ForEach-Object {
-        Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $audioDest $_.Name) -Force
-    }
+    # The client build already places this bank beside the player; re-linking from source keeps the shipped bank
+    # pinned to the repository copy without a second full copy.
+    $null = Copy-ReleaseDirectoryFiles $audioSrc (Join-Path $stage 'Content/Audio/combat')
 
     # ADR-096 music bank (menu theme, match beds, stingers). Optional: a build without it plays no music.
     $musicSrc = Join-Path $repoRoot 'Content/Audio/music'
     if (Test-Path -LiteralPath (Join-Path $musicSrc 'manifest.json') -PathType Leaf) {
-        $musicDest = Join-Path $stage 'Content/Audio/music'
-        $null = New-Item -ItemType Directory -Path $musicDest -Force
-        Get-ChildItem -LiteralPath $musicSrc -Force -File | ForEach-Object {
-            Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $musicDest $_.Name) -Force
-        }
+        $null = Copy-ReleaseDirectoryFiles $musicSrc (Join-Path $stage 'Content/Audio/music')
     }
     else { Write-Warning "No music bank at $musicSrc; the package will have no music (ADR-096)." }
 
@@ -474,37 +488,49 @@ REM Independent offline launch: relative content + toolchain lock only.
     ($hashes | ConvertTo-Json -Depth 4) | Set-Content -LiteralPath $inventoryPath -Encoding utf8
     $report.inventoryPath = $inventoryPath
 
-    $archiveDir = Join-Path $outDir 'archive'
-    $null = New-Item -ItemType Directory -Path $archiveDir -Force
-    $archivePath = Join-Path $archiveDir 'Shooter-Offline.zip'
-    if (Test-Path -LiteralPath $archivePath) { Remove-Item -LiteralPath $archivePath -Force }
-    Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $archivePath -CompressionLevel Optimal
-    $archiveSha = Get-Sha256File $archivePath
-    [IO.File]::WriteAllText((Join-Path $archiveDir 'Shooter-Offline.zip.sha256'), "$archiveSha  Shooter-Offline.zip`n")
-    $report.archivePath = $archivePath
-    $report.archiveSha256 = $archiveSha
+    $report['stagedHardLinks'] = $script:StagedLinks
+    $report['stagedCopies'] = $script:StagedCopies
 
-    # Clean extraction rehearsal (no Unity editor / no network dependency for the extract itself).
-    $extractRoot = Join-Path $outDir 'extract-rehearsal'
-    if (Test-Path -LiteralPath $extractRoot) { Remove-Item -LiteralPath $extractRoot -Recurse -Force }
-    $null = New-Item -ItemType Directory -Path $extractRoot -Force
-    Expand-Archive -LiteralPath $archivePath -DestinationPath $extractRoot -Force
-    $extractExe = Join-Path $extractRoot 'Shooter.exe'
-    $extractContent = Join-Path $extractRoot 'Content/map-packages/index.json'
-    $extractCatalog = Join-Path $extractRoot 'Content/map-packages/catalog.json'
-    $extractLock = Join-Path $extractRoot 'toolchain-lock.json'
-    if (!(Test-Path -LiteralPath $extractExe -PathType Leaf)) { throw 'Extract rehearsal missing Shooter.exe' }
-    if (!(Test-Path -LiteralPath $extractContent -PathType Leaf)) { throw 'Extract rehearsal missing content index' }
-    if (!(Test-Path -LiteralPath $extractCatalog -PathType Leaf)) { throw 'Extract rehearsal missing release catalog' }
-    if (!(Test-Path -LiteralPath (Join-Path $extractRoot 'Content/map-packages/weapons.json') -PathType Leaf)) { throw 'Extract rehearsal missing weapon package index' }
-    if (!(Test-Path -LiteralPath $extractLock -PathType Leaf)) { throw 'Extract rehearsal missing toolchain-lock.json' }
-    if ((Get-Sha256File $extractLock) -cne $toolchainHash) { throw 'Extracted toolchain-lock hash mismatch' }
-    $extractLeak = Get-ChildItem -LiteralPath $extractRoot -Recurse -Force -File | Where-Object {
-        $rel = $_.FullName.Substring($extractRoot.Length).TrimStart('\', '/').Replace('\', '/')
-        Test-ExcludedRelativePath $rel $policy
+    # Self-containment rehearsal on the staged tree (what the installer packs): required files, lock identity, no leaks.
+    foreach ($required in @('Shooter.exe', 'Content/map-packages/index.json', 'Content/map-packages/catalog.json', 'Content/map-packages/weapons.json', 'toolchain-lock.json')) {
+        if (!(Test-Path -LiteralPath (Join-Path $stage $required) -PathType Leaf)) { throw "Stage rehearsal missing $required" }
     }
-    if ($extractLeak) { throw "Extract rehearsal contains excluded files: $($extractLeak.FullName -join ', ')" }
+    if ((Get-Sha256File (Join-Path $stage 'toolchain-lock.json')) -cne $toolchainHash) { throw 'Staged toolchain-lock hash mismatch' }
     $report.extractRehearsal = 'PASS'
+
+    if ($Zip) {
+        $archiveDir = Join-Path $outDir 'archive'
+        $null = New-Item -ItemType Directory -Path $archiveDir -Force
+        $archivePath = Join-Path $archiveDir 'Shooter-Offline.zip'
+        if (Test-Path -LiteralPath $archivePath) { Remove-Item -LiteralPath $archivePath -Force }
+        Add-Type -AssemblyName System.IO.Compression.FileSystem
+        [IO.Compression.ZipFile]::CreateFromDirectory($stage, $archivePath, [IO.Compression.CompressionLevel]::Optimal, $false)
+        # Streamed archive check against the inventory instead of a full extract to disk.
+        $expected = @{}
+        foreach ($entry in $hashes) { $expected[[string]$entry.path] = [string]$entry.sha256 }
+        $zipRead = [IO.Compression.ZipFile]::OpenRead($archivePath)
+        $sha = [Security.Cryptography.SHA256]::Create()
+        try {
+            $seen = 0
+            foreach ($entry in $zipRead.Entries) {
+                if ($entry.FullName.EndsWith('/')) { continue }
+                $name = $entry.FullName.Replace([char]92, [char]47)
+                if (Test-ExcludedRelativePath $name $policy) { throw "Archive contains excluded file: $name" }
+                if (-not $expected.ContainsKey($name)) { throw "Archive entry absent from inventory: $name" }
+                $stream = $entry.Open()
+                try { $actual = ([BitConverter]::ToString($sha.ComputeHash($stream))).Replace('-', '').ToLowerInvariant() }
+                finally { $stream.Dispose() }
+                if ($actual -cne $expected[$name]) { throw "Archive entry hash mismatch: $name" }
+                $seen++
+            }
+            if ($seen -ne $expected.Count) { throw "Archive has $seen files; inventory lists $($expected.Count)." }
+        }
+        finally { $sha.Dispose(); $zipRead.Dispose() }
+        $archiveSha = Get-Sha256File $archivePath
+        [IO.File]::WriteAllText((Join-Path $archiveDir 'Shooter-Offline.zip.sha256'), "$archiveSha  Shooter-Offline.zip`n")
+        $report.archivePath = $archivePath
+        $report.archiveSha256 = $archiveSha
+    }
     $report.playerLaunchEvidence = 'Pending'
 
     # Corrupt content recovery rehearsal (software): tamper a copied package root and require recovery messaging.

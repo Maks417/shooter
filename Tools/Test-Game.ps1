@@ -10,7 +10,7 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 $sourceCommit = (& git -C $repoRoot rev-parse HEAD).Trim()
 if ($LASTEXITCODE -ne 0) { throw 'Cannot determine source commit.' }
 $runId = [DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ') + '-' + [Guid]::NewGuid().ToString('N').Substring(0, 8)
-$reportDirectory = Join-Path $repoRoot "Artifacts/m8-runtime-composition/$sourceCommit/$runId"
+$reportDirectory = Join-Path $repoRoot "Artifacts/m8-runtime-composition/$sourceCommit/test-game-$runId"
 $null = New-Item -ItemType Directory -Path $reportDirectory -Force
 $dotnet = (Get-Command dotnet -ErrorAction Stop).Source
 $projectPath = Join-Path $repoRoot 'Tools/Game.Contracts.Tests/Game.Contracts.Tests.csproj'
@@ -64,3 +64,4 @@ finally {
 }
 Write-Host ($report | ConvertTo-Json -Depth 6)
 if ($report.result -ne 'PASS') { exit 1 }
+Complete-ShooterReportRun $reportDirectory 'test-game'

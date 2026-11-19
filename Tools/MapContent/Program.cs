@@ -84,9 +84,13 @@ internal static class Program
                 sidecarValidated = true;
             }
 
+            // The native republication (navStage set) runs in the same Compile-GameContent call right after the pure stage,
+            // which already produced the reproduction, cancel and corrupt proofs for this commit; regenerating every map
+            // again here only repeats them. The wrapper's non-navigation byte-identity guard covers the native output.
+            bool selfProofs = navStage == null;
             // Cold/warm/forced reproduction proof for the selected gameplay packages.
             var reproduction = new List<object>();
-            foreach (string mapId in mapIds)
+            foreach (string mapId in selfProofs ? mapIds : new List<string>())
             {
                 var first = MapPackageBuilder.Build(mapId, "gameplay", toolchain);
                 var second = MapPackageBuilder.Build(mapId, "gameplay", toolchain);
@@ -113,33 +117,41 @@ internal static class Program
 
             // Cancel recovery: cancelled publish must not create a new package directory.
             string cancelProbe = Path.Combine(cache, "cancel-probe");
-            Directory.CreateDirectory(cancelProbe);
-            using (var cts = new CancellationTokenSource())
+            string corruptDiagnostic = "covered by the pure publication stage";
+            if (selfProofs)
             {
-                cts.Cancel();
-                var cancelled = MapPackagePublisher.Publish(cancelProbe, toolchain, new[] { mapIds[0] }, new[] { "gameplay" }, false, cts.Token);
-                if (cancelled.Error != ErrorCode.Cancelled)
-                    throw new InvalidOperationException("Expected cancelled publish, got " + cancelled.Error);
-            }
-            // The probe only proves that cancellation publishes nothing; do not leave its scratch folder behind.
-            if (Directory.Exists(cancelProbe))
-            {
-                if (Directory.GetFiles(cancelProbe, "*", SearchOption.AllDirectories).Length != 0)
-                    throw new InvalidOperationException("Cancelled publish left files in " + cancelProbe);
-                Directory.Delete(cancelProbe, true);
-            }
+                Directory.CreateDirectory(cancelProbe);
+                using (var cts = new CancellationTokenSource())
+                {
+                    cts.Cancel();
+                    var cancelled = MapPackagePublisher.Publish(cancelProbe, toolchain, new[] { mapIds[0] }, new[] { "gameplay" }, false, cts.Token);
+                    if (cancelled.Error != ErrorCode.Cancelled)
+                        throw new InvalidOperationException("Expected cancelled publish, got " + cancelled.Error);
+                }
+                // The probe only proves that cancellation publishes nothing; do not leave its scratch folder behind.
+                if (Directory.Exists(cancelProbe))
+                {
+                    if (Directory.GetFiles(cancelProbe, "*", SearchOption.AllDirectories).Length != 0)
+                        throw new InvalidOperationException("Cancelled publish left files in " + cancelProbe);
+                    Directory.Delete(cancelProbe, true);
+                }
 
-            // Corrupt recovery: retain corrupt bytes, do not silent-substitute.
-            var sample = MapPackageBuilder.Build(mapIds[0], "gameplay", toolchain);
-            string sampleDir = MapPackagePublisher.PackageDirectory(cache, sample.PackageRootHash);
-            string collisionPath = Path.Combine(sampleDir, "collision-gameplay.bin");
-            byte[] originalCollision = File.ReadAllBytes(collisionPath);
-            File.WriteAllBytes(collisionPath, new byte[] { 1, 2, 3, 4 });
-            bool corruptOpen = MapPackagePublisher.TryOpenPublished(sampleDir, sample.PackageRootHash, out _, out string corruptDiagnostic);
-            if (corruptOpen) throw new InvalidOperationException("Corrupt package must not open.");
-            if (!File.ReadAllBytes(collisionPath).SequenceEqual(new byte[] { 1, 2, 3, 4 }))
-                throw new InvalidOperationException("Corrupt bytes must be retained for repair.");
-            File.WriteAllBytes(collisionPath, originalCollision);
+                // Corrupt recovery: retain corrupt bytes, do not silent-substitute.
+                var sample = MapPackageBuilder.Build(mapIds[0], "gameplay", toolchain);
+                string sampleDir = MapPackagePublisher.PackageDirectory(cache, sample.PackageRootHash);
+                string collisionPath = Path.Combine(sampleDir, "collision-gameplay.bin");
+                byte[] originalCollision = File.ReadAllBytes(collisionPath);
+                // Delete before every write: published files may be hard links shared with the native cache or a release
+                // stage, and an in-place write would corrupt those peers too.
+                File.Delete(collisionPath);
+                File.WriteAllBytes(collisionPath, new byte[] { 1, 2, 3, 4 });
+                bool corruptOpen = MapPackagePublisher.TryOpenPublished(sampleDir, sample.PackageRootHash, out _, out corruptDiagnostic);
+                if (corruptOpen) throw new InvalidOperationException("Corrupt package must not open.");
+                if (!File.ReadAllBytes(collisionPath).SequenceEqual(new byte[] { 1, 2, 3, 4 }))
+                    throw new InvalidOperationException("Corrupt bytes must be retained for repair.");
+                File.Delete(collisionPath);
+                File.WriteAllBytes(collisionPath, originalCollision);
+            }
 
             var serverOnly = published.Packages.Where(p => p.VisualProfile == "gameplay").Select(p => new
             {
@@ -188,8 +200,9 @@ internal static class Program
                 weaponPackage = WeaponPackage.TryLoad(cache, toolchain, out var weapons, out string weaponDiagnostic)
                     ? new { packageRootSha256 = weapons.PackageRootHash.ToString(), verified = true, diagnostic = "ok" }
                     : new { packageRootSha256 = "", verified = false, diagnostic = weaponDiagnostic },
-                corruptRecovery = new { retained = true, diagnostic = corruptDiagnostic },
-                cancelRecovery = new { published = false },
+                selfProofs,
+                corruptRecovery = new { retained = selfProofs, diagnostic = corruptDiagnostic },
+                cancelRecovery = new { published = false, probed = selfProofs },
                 serverGameplayOnly = serverOnly,
                 nativeUnityNavBake = navStage != null ? "PASS" : "Pending",
                 releasePlayerLoad = "Pending"

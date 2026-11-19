@@ -64,4 +64,5 @@ catch {
 }
 $report | ConvertTo-Json -Depth 6 | Set-Content (Join-Path $reportDirectory 'validation.json') -Encoding UTF8
 Write-Host ($report | ConvertTo-Json -Depth 6)
+Complete-ShooterReportRun $reportDirectory 'test-maps'
 exit 0

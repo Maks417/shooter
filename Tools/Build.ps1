@@ -13,6 +13,9 @@ try {
     if ($manifest.result -cne 'Succeeded' -or $manifest.toolchainHash -cne $unity.LockHash -or $manifest.target -cne $Target) { throw 'Build manifest result/target/toolchain mismatch.' }
     Assert-ShooterPackedProvenance $manifest
     if (!(Test-Path -LiteralPath (Join-Path $buildDirectory 'Shooter.exe') -PathType Leaf)) { throw 'Build did not produce Shooter.exe.' }
+    # IL2CPP/Burst debug trees are never shipped (release-package-policy.json) and are ~90% of a run's bytes;
+    # Library/Bee keeps the incremental IL2CPP cache, so nothing is lost for the next build.
+    $run.Report.removedDebugFolders = @(Remove-ShooterPlayerDebugFolders $buildDirectory)
     $run.Report.result = 'PASS'
 }
 catch { $run.Report.error = $_.Exception.Message; Write-Warning $run.Report.error }

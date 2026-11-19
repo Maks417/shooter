@@ -59,9 +59,12 @@ try {
     $unity = $null
     $toolProject = Join-Path $PSScriptRoot 'MapContent/MapContent.csproj'
     $forceArg = ([bool]$Force).ToString().ToLowerInvariant()
+    $script:MapContentBuilt = $false
     function Invoke-MapContentPublish([string]$cache, [string]$proof, [string]$logFile, [string]$navStage) {
+        # The second -Native publish reuses the binary the first call built.
+        $buildArgs = if ($script:MapContentBuilt) { @('--no-build') } else { @() }
         $dotnetArgs = @(
-            'run', '--project', $toolProject, '--configuration', 'Release', '--',
+            'run', '--project', $toolProject, '--configuration', 'Release') + $buildArgs + @('--',
             $repoRoot, $cache, $proof, $sourceCommit, $Map, $forceArg, $Profile
         )
         if ($navStage) { $dotnetArgs += $navStage }
@@ -76,6 +79,18 @@ try {
         }
         [IO.File]::WriteAllText($logFile, $output)
         if ($code -ne 0) { throw "MapContent publish tool failed; see $logFile." }
+        $script:MapContentBuilt = $true
+    }
+    # Replaces $Target with a hard link to the byte-identical $Source (same volume), so the pure and native caches share
+    # their non-navigation payloads on disk. Package files are only ever replaced through atomic staging, never rewritten
+    # in place, so sharing an inode is safe. Returns the bytes saved (0 when linking is unavailable).
+    function Merge-IdenticalFile([string]$Source, [string]$Target) {
+        $length = (Get-Item -LiteralPath $Target).Length
+        $temp = $Target + '.' + [Guid]::NewGuid().ToString('N') + '.link'
+        try { $null = New-Item -ItemType HardLink -Path $temp -Value $Source -ErrorAction Stop }
+        catch { return 0 }
+        Move-Item -LiteralPath $temp -Destination $Target -Force
+        return $length
     }
     $purePackageCache = $null
     $pureProof = $null
@@ -169,6 +184,7 @@ try {
         $pureByKey = @{}
         foreach ($pp in $pureProof.packages) { $pureByKey["$($pp.mapId)/$($pp.visualProfile)"] = $pp }
         $guardRows = @()
+        $dedupe = @()
         foreach ($pkg in $proof.packages) {
             $key = "$($pkg.mapId)/$($pkg.visualProfile)"
             $pure = $pureByKey[$key]
@@ -184,6 +200,7 @@ try {
                 $nh = (Get-FileHash -LiteralPath (Join-Path $nativeDir $name) -Algorithm SHA256).Hash
                 $ph = (Get-FileHash -LiteralPath (Join-Path $pureDir $name) -Algorithm SHA256).Hash
                 if ($nh -cne $ph) { throw "Non-nav guard FAIL ${key}: $name differs between native ($nh) and pure .NET ($ph)." }
+                $dedupe += @{ Source = (Join-Path $nativeDir $name); Target = (Join-Path $pureDir $name) }
                 $compared++
             }
             if (-not (Test-Path -LiteralPath (Join-Path $nativeDir 'collision-gameplay.bin'))) { throw "Non-nav guard FAIL ${key}: native package lacks collision-gameplay.bin." }
@@ -215,11 +232,17 @@ try {
                 $nh = (Get-FileHash -LiteralPath (Join-Path $nativeWeaponDir $name) -Algorithm SHA256).Hash
                 $ph = (Get-FileHash -LiteralPath (Join-Path $pureWeaponDir $name) -Algorithm SHA256).Hash
                 if ($nh -cne $ph) { throw "Non-nav guard FAIL weapons: $name differs between native and pure caches." }
+                if ($nativeWeaponDir -ine $pureWeaponDir) { $dedupe += @{ Source = (Join-Path $nativeWeaponDir $name); Target = (Join-Path $pureWeaponDir $name) } }
             }
             $weaponGuard = [ordered]@{ packageRootSha256 = [string]$nw.packageRootSha256; filesCompared = $weaponFiles.Count }
         }
         $report.nonNavByteIdentityGuard = [ordered]@{ result = 'PASS'; purePackageCache = $purePackageCache; packages = $guardRows; weaponPackage = $weaponGuard }
         Write-Host "Non-navigation byte-identity guard PASS for $($guardRows.Count) native packages against $purePackageCache"
+        # The guard just proved these files byte-identical: share them instead of keeping two ~250 MB copies.
+        $saved = 0L
+        foreach ($pair in $dedupe) { $saved += Merge-IdenticalFile $pair.Source $pair.Target }
+        $report.nonNavByteIdentityGuard['sharedBytes'] = $saved
+        Write-Host "Shared $([math]::Round($saved / 1MB)) MB of identical pure/native payloads through hard links."
     }
     # Generation tests covering compound/depot package builders (not a substitute for publication).
     $generationProject = Join-Path $repoRoot 'Tools/Generation.Tests/Generation.Tests.csproj'
@@ -242,4 +265,6 @@ catch {
 }
 $report | ConvertTo-Json -Depth 8 | Set-Content (Join-Path $reportDirectory 'validation.json') -Encoding UTF8
 Write-Host ($report | ConvertTo-Json -Depth 8)
+. (Join-Path $PSScriptRoot 'TestResults.ps1')
+Complete-ShooterReportRun $reportDirectory 'compile-gamecontent'
 exit 0

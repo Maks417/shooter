@@ -97,3 +97,10 @@ function Get-ShooterRestoreArguments([string]$ProjectPath, [bool]$Offline) {
     }
     $arguments + @('-p:NuGetAudit=true', '-p:NuGetAuditMode=all')
 }
+
+# Disk policy (ADR-076): after a PASS, delete older <Prefix>-<run id> folders of the same wrapper (their small JSON reports
+# move to Artifacts/reports/<Prefix>/). Only folders carrying this exact prefix are touched; SHOOTER_KEEP_RUNS raises the count.
+function Complete-ShooterReportRun([string]$ReportDirectory, [string]$Prefix) {
+    if (-not (Get-Command Remove-ShooterStaleRuns -ErrorAction SilentlyContinue)) { . (Join-Path $PSScriptRoot 'Unity.Common.ps1') }
+    Remove-ShooterStaleRuns (Split-Path -Parent (Split-Path -Parent $ReportDirectory)) $Prefix $ReportDirectory
+}

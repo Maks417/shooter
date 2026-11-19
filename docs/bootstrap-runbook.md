@@ -66,6 +66,8 @@ Install exactly the editor and modules in `toolchain-lock.json`. Every build mac
 - It imports through `ShooterBuild.VerifyToolchain`.
 - It writes the machine-local editor path to the ignored `.local/unity.json`.
 
+Every Unity wrapper re-runs the curation check. After one full hash verification, `prepare_unity_packages.py` writes `.local/unity-curation.stamp`: a key over the pinned curation, the installed source tree's file sizes and modification times, and the archive's size and modification time. While that key matches, later checks skip re-hashing (about 0.6 s instead of 11 s). Any change to those inputs forces the full verification again.
+
 **Unity tests** select StandaloneWindows64. Zero discovered tests counts as a failure.
 
 **Settings provenance.** `ShooterBuild.InitializeFoundation` regenerates the numeric presets, material/lookup assets and the code-owned scene. It is a deliberate generator step, never a way to accept changed output. Settings provenance is recorded in `Assets/Shooter/Settings/provenance.json`.
@@ -81,13 +83,17 @@ Install exactly the editor and modules in `toolchain-lock.json`. Every build mac
 ```
 
 **Content (`-Native`).** Pure .NET content is published first. Then `ShooterBuild.CompileNativeGameContent` bakes navigation from that collision, and .NET republishes with the native bakes ([ADR-043](decisions.md#adr-043--accepted-two-stage-native-navigation-publication)). The step writes `nav-provenance.json` and reports `nativeUnityNavBake=PASS` only after re-verifying every package. Without `-Native`, the bake is the labelled `software-walkable-grid` diagnostic. `-RequireNativeNav` refuses software navigation.
+- The pure stage produces the reproduction, cancel and corrupt-recovery proofs. The native republication skips them (`selfProofs=false` in its proof) because the non-navigation byte-identity guard covers its output.
+- After the guard passes, identical non-navigation files in `Artifacts/map-packages` become NTFS hard links to their `map-packages-native` twins (`nonNavByteIdentityGuard.sharedBytes`). Package files are only ever replaced through atomic staging, never rewritten in place, so sharing is safe.
 
-**Build.** A build prints a run directory containing `player/Shooter.exe`, `build-manifest.json` and logs. The Client is IL2CPP/D3D11. Packed-source audits reject imported art, and splash and logo are off.
+**Build.** A build prints a run directory containing `player/Shooter.exe`, `build-manifest.json` and logs. The Client is IL2CPP/D3D11. Packed-source audits reject imported art, and splash and logo are off. After a successful build, `Build.ps1` deletes the never-shipped `*_BackUpThisFolder_ButDontShipItWithYourGame` and `*_BurstDebugInformation_DoNotShip` folders, about 1.15 GB per run, and records them in `run.json` as `removedDebugFolders`. The incremental IL2CPP cache stays in `UnityProject/Library`.
 
 **Smoke.** Smoke needs the ready marker, at least 60 ticks and a clean exit. It is a diagnostic only.
 
 **Package and installer.**
-- `Package-Release` rejects dirty or mismatched builds. It emits the archive, SHA-256 inventory, controls, licenses, known issues, and `validation.json` with `releaseAcceptance=NotClaimed`.
+- `Package-Release` rejects dirty or mismatched builds. It emits the staged `Shooter-Offline` folder, SHA-256 inventory, controls, licenses, known issues, and `validation.json` with `releaseAcceptance=NotClaimed`.
+- Staging hard-links player, content and audio files instead of copying them (`stagedHardLinks` / `stagedCopies` in `validation.json`). It falls back to copying across volumes. The inventory hashes every staged file, and `Build-Installer` re-checks it, so a source rewritten in place cannot ship unnoticed.
+- The ZIP is an internal artifact and is opt-in (`-Zip`). It is written with `System.IO.Compression.ZipFile` and verified by hashing every entry stream against the inventory, without extracting it.
 - The installer is described in [installer](features/windows-installer.md) ([ADR-041](decisions.md#adr-041--accepted-inno-setup-per-user-installer-and-in-place-upgrade-t073)).
 - `-Target Server` builds only on request and is parked (ADR-076).
 
@@ -140,7 +146,7 @@ Workloads and the capture protocol are in [performance](performance.md).
 
 ## Disk policy
 
-Each wrapper keeps only its newest output (ADR-076). Small `*.json` reports move to `Artifacts/reports/<action>/<commit>/<run>/`.
+Each wrapper keeps only its newest output (ADR-076). Small `*.json` reports move to `Artifacts/reports/<action>/<commit>/<run>/`. The pure test wrappers, `Test-Maps` and `Compile-GameContent` write prefixed run folders (`test-contracts-`, `test-generation-`, `test-simulation-`, `test-game-`, `test-maps-`, `compile-gamecontent-`) and prune their own older runs after a PASS. Older unprefixed runs are left to `Clean-Artifacts`.
 - `SHOOTER_KEEP_RUNS=<n>` keeps more runs.
 - Heavy wrappers refuse to start below `SHOOTER_MIN_FREE_GB` of free space (default 5).
 

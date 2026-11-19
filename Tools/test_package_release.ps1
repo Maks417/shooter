@@ -105,7 +105,7 @@ function New-Build([string]$CaseRoot, [string]$ToolchainHash, [hashtable]$Manife
     return $buildDir
 }
 
-function Invoke-PackageCase([string]$Name, [scriptblock]$Setup, [string]$ExpectedError = '', [switch]$ExpectPass) {
+function Invoke-PackageCase([string]$Name, [scriptblock]$Setup, [string]$ExpectedError = '', [switch]$ExpectPass, [switch]$Zip) {
     $created = New-CaseRoot $Name
     $caseRoot = $created.Root
     $buildDir = New-Build $caseRoot $created.ToolchainHash @{}
@@ -113,6 +113,7 @@ function Invoke-PackageCase([string]$Name, [scriptblock]$Setup, [string]$Expecte
     & $Setup $caseRoot $buildDir $created.ToolchainHash ([ref]$previous)
     $args = @('-NoProfile', '-File', (Join-Path $caseRoot 'Tools/Package-Release.ps1'), '-ClientBuildRunDirectory', $buildDir)
     if ($previous) { $args += @('-PreviousPackageDirectory', $previous) }
+    if ($Zip) { $args += '-Zip' }
     $logPath = Join-Path $caseRoot 'wrapper.log'
     & (Join-Path $PSHOME 'pwsh.exe') @args *> $logPath
     $code = $LASTEXITCODE
@@ -134,8 +135,13 @@ function Invoke-PackageCase([string]$Name, [scriptblock]$Setup, [string]$Expecte
         foreach ($banned in @('Shooter_BackUpThisFolder_ButDontShipItWithYourGame/il2cppOutput/x.c', 'Shooter_BurstDebugInformation_DoNotShip/debug.txt', 'Shooter_Data/leak.pdb', 'Player.log', 'user-settings.json')) {
             if ($paths -contains $banned) { throw "$Name failed to exclude $banned" }
         }
-        if (!(Test-Path -LiteralPath $report.archivePath -PathType Leaf)) { throw "$Name missing archive" }
-        if ([string]::IsNullOrWhiteSpace([string]$report.archiveSha256)) { throw "$Name missing archive sha" }
+        if ($report.extractRehearsal -cne 'PASS') { throw "$Name stage rehearsal did not pass" }
+        if ([int]$report.stagedHardLinks -lt 1) { throw "$Name staged no hard links (expected same-volume linking)" }
+        if ($Zip) {
+            if (!(Test-Path -LiteralPath $report.archivePath -PathType Leaf)) { throw "$Name missing archive" }
+            if ([string]::IsNullOrWhiteSpace([string]$report.archiveSha256)) { throw "$Name missing archive sha" }
+        }
+        elseif ($null -ne $report.archivePath) { throw "$Name wrote an archive without -Zip" }
     }
     else {
         if ($code -eq 0 -or $report.result -cne 'FAIL') { throw "$Name expected FAIL; exit=$code result=$($report.result); see $logPath" }
@@ -150,6 +156,10 @@ try {
     Invoke-PackageCase 'clean-pass' -ExpectPass {
         param($caseRoot, $buildDir, $toolchainHash, [ref]$previous)
         # default clean fixture
+    }
+
+    Invoke-PackageCase 'zip-pass' -ExpectPass -Zip {
+        param($caseRoot, $buildDir, $toolchainHash, [ref]$previous)
     }
 
     Invoke-PackageCase 'dirty-build-rejected' -ExpectedError 'Dirty build candidate rejected' {

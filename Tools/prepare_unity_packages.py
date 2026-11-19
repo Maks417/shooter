@@ -14,12 +14,38 @@ REMOVED = ["Runtime/Debugging/Prefabs/Resources/" + name + suffix
 
 
 def inventory(path, excluded=()):
-    rows = []
+    return inventories(path, excluded)[1]
+
+
+def inventories(path, excluded):
+    """(full, curated) inventory hashes from one read of every file."""
+    full, curated = [], []
     for file in sorted(p for p in path.rglob("*") if p.is_file()):
         relative = file.relative_to(path).as_posix()
+        row = relative + ":" + hashlib.sha256(file.read_bytes()).hexdigest()
+        full.append(row)
         if relative not in excluded:
-            rows.append(relative + ":" + hashlib.sha256(file.read_bytes()).hexdigest())
-    return hashlib.sha256("\n".join(rows).encode()).hexdigest()
+            curated.append(row)
+    return tuple(hashlib.sha256("\n".join(rows).encode()).hexdigest() for rows in (full, curated))
+
+
+def stamp_path():
+    return ROOT / ".local/unity-curation.stamp"
+
+
+def stamp_key(source, destination, expected_patch):
+    """Cheap identity of every verification input: the pinned curation, the installed source tree's file metadata and
+    the materialized archive's metadata. Any change, or a missing archive, forces the full hash verification."""
+    if not destination.exists():
+        return None
+    digest = hashlib.sha256(json.dumps(expected_patch, sort_keys=True).encode())
+    digest.update(str(source).encode())
+    for file in sorted(p for p in source.rglob("*") if p.is_file()):
+        stat = file.stat()
+        digest.update(f"{file.relative_to(source).as_posix()}:{stat.st_size}:{stat.st_mtime_ns}\n".encode())
+    stat = destination.stat()
+    digest.update(f"archive:{stat.st_size}:{stat.st_mtime_ns}".encode())
+    return digest.hexdigest()
 
 
 def immutable_archive(source):
@@ -65,13 +91,17 @@ def main():
     lock = json.loads(lock_path.read_text(encoding="utf-8-sig"))
     if package["version"] != lock["urpVersion"]:
         raise ValueError("Installed Core RP version does not match the editor/URP lock")
-    original_hash = inventory(source)
+    verify_only = not (args.record_initial_lock or args.migrate_immutable_archive)
     archive_relative = ".local/engine-packages/com.unity.render-pipelines.core-" + package["version"] + "-shooter.tgz"
     destination = ROOT / archive_relative
     expected_patch = lock.get("corePackageCuration")
+    key = stamp_key(source, destination, expected_patch) if verify_only and expected_patch else None
+    if key and stamp_path().exists() and stamp_path().read_text(encoding="utf-8").strip() == key:
+        print("Verified pinned Core RP source curation (unchanged since the last full check)" if args.quiet else json.dumps(expected_patch, indent=2))
+        return
+    original_hash, curated_hash = inventories(source, REMOVED)
     if expected_patch and (original_hash != expected_patch["upstreamInventorySha256"] or expected_patch["removedPaths"] != REMOVED):
         raise ValueError("Installed Core RP source differs from pinned curation inputs")
-    curated_hash = inventory(source, REMOVED)
     data = immutable_archive(source)
     archive_hash = hashlib.sha256(data).hexdigest()
     if destination.exists() and hashlib.sha256(destination.read_bytes()).hexdigest() != archive_hash:
@@ -105,6 +135,11 @@ def main():
     output = ROOT / "Artifacts/unity-setup/core-package-curation.json"
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_bytes((json.dumps(proof, indent=2) + "\n").encode())
+    if verify_only:
+        key = stamp_key(source, destination, expected_patch)
+        if key:
+            stamp_path().parent.mkdir(parents=True, exist_ok=True)
+            stamp_path().write_text(key + "\n", encoding="utf-8")
     print("Verified pinned Core RP source curation" if args.quiet else json.dumps(proof, indent=2))
 
 

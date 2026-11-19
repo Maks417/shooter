@@ -23,6 +23,11 @@ How the Unity lane runs:
 
 The editor Library cache key includes the editor revision, OS, package lock and import settings. The content cache restores only hash-verified outputs. Caches speed builds up, but nothing requires them.
 
+**Caches in `.github/workflows/foundation.yml`:**
+- The self-hosted Unity job checks out with `clean: false` and then runs `git clean -ffd`. This removes untracked source but keeps the ignored `UnityProject/Library`, `.local` and `Artifacts`, so imports and IL2CPP builds stay incremental between runs.
+- It uploads only the current commit's runs (`Artifacts/*/<sha>`).
+- The hosted fast job caches NuGet packages (keyed by `Tools/**/packages.lock.json`) and pip downloads (keyed by `Tools/requirements-fixtures.lock`).
+
 Every executable records:
 - the source commit and dirty flag;
 - the toolchain hash;
