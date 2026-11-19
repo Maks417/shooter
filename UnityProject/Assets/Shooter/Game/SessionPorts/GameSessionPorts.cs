@@ -38,15 +38,60 @@ namespace Shooter.Game.Session
         void DrainLocalScoreAwards(List<LocalScoreAward> destination);
         int DisplayRankOf(ParticipantId participant, bool isHuman);
 
-        bool TryGetMovementView(EntityId entity, out LocalMovementView view);
-        bool TryGetPrimarySight(EntityId entity, out DefinitionId sight);
-        bool TryGetArmor(EntityId entity, out ushort armor);
+        /// <summary>
+        /// T195: all engine-side per-actor view data in one copy (outside the frozen C0/Game-v1 snapshots). A new per-actor
+        /// field is one <see cref="ActorViewState"/> field plus one line where the session composes it.
+        /// </summary>
+        bool TryGetActorView(EntityId entity, out ActorViewState view);
         float HumanHipSpreadRadians(DefinitionId weapon);
         bool TryGetHumanPickupPrompt(out DroppedWeaponView view, out bool ammoTopUp);
         int DroppedWeaponCount { get; }
         bool TryGetDroppedWeapon(int index, out DroppedWeaponView view);
         int CosmeticCorpseCount { get; }
         bool TryGetCosmeticCorpse(int index, out ActorLifecycleState state);
+    }
+
+    /// <summary>T195: copied per-actor view data that is not part of the frozen snapshots.</summary>
+    public readonly struct ActorViewState
+    {
+        /// <summary>Authority movement view (stance, eye height, slide, gait and velocity).</summary>
+        public LocalMovementView Movement { get; }
+        /// <summary>ADR-107: sight on the actor's primary (invalid when that gun takes none).</summary>
+        public DefinitionId PrimarySight { get; }
+        /// <summary>ADR-110: remaining body armor.</summary>
+        public ushort Armor { get; }
+
+        public ActorViewState(LocalMovementView movement, DefinitionId primarySight, ushort armor)
+        {
+            Movement = movement;
+            PrimarySight = primarySight;
+            Armor = armor;
+        }
+    }
+
+    /// <summary>Single-field reads over <see cref="IGameSessionView.TryGetActorView"/>.</summary>
+    public static class ActorViewReads
+    {
+        public static bool TryGetMovementView(this IGameSessionView session, EntityId entity, out LocalMovementView view)
+        {
+            bool found = session.TryGetActorView(entity, out var actor);
+            view = actor.Movement;
+            return found;
+        }
+
+        public static bool TryGetPrimarySight(this IGameSessionView session, EntityId entity, out DefinitionId sight)
+        {
+            bool found = session.TryGetActorView(entity, out var actor);
+            sight = actor.PrimarySight;
+            return found;
+        }
+
+        public static bool TryGetArmor(this IGameSessionView session, EntityId entity, out ushort armor)
+        {
+            bool found = session.TryGetActorView(entity, out var actor);
+            armor = actor.Armor;
+            return found;
+        }
     }
 
     /// <summary>T195: the shell's match lifecycle and pre-match setup calls (the product shell owns load/start/stop).</summary>

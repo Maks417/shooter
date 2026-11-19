@@ -153,6 +153,38 @@ namespace Shooter.Game.Contracts.Tests
             Assert.Equal(SightCatalog.Collimator, sightAgain);
         }
 
+        [Fact]
+        public async Task Actor_view_carries_the_same_movement_sight_and_armor_as_the_single_reads()
+        {
+            var catalog = StaticMapCatalog.CreateReleaseSeed();
+            using var session = new OfflineGameSession(catalog,
+                (_, __) => new FakeMapRuntime(new PreMatchCountdownTests.FloorWorld(), new PreMatchCountdownTests.NoNav()),
+                allowFakeMapRuntime: true);
+            session.UseArmoryLoadout(new DefinitionId("weapons/ak47"), SightCatalog.Collimator, new DefinitionId("weapons/golden-eagle"));
+            var request = new SessionRequest(WellKnownMaps.TrainingCompound, WellKnownModes.TeamDeathmatch, 5, 460072030UL);
+            Assert.True((await session.BeginLoadAsync(request, CancellationToken.None)).Succeeded);
+            Assert.True(session.Start().Succeeded);
+            IGameSessionView view = session;
+            Assert.False(view.TryGetActorView(new EntityId(uint.MaxValue), out _));
+            var snap = session.TryAcquireSnapshot()!;
+            for (int i = 0; i < snap.Participants.Count; i++)
+            {
+                var entity = snap.Participants[i].EntityId;
+                Assert.True(view.TryGetActorView(entity, out var actor));
+                Assert.True(session.TryGetMovementView(entity, out var movement));
+                Assert.True(session.TryGetPrimarySight(entity, out var sight));
+                Assert.True(session.TryGetArmor(entity, out var armor));
+                Assert.Equal(movement.EyeHeight, actor.Movement.EyeHeight);
+                Assert.Equal(movement.Stance, actor.Movement.Stance);
+                Assert.Equal(movement.HorizontalSpeedMetersPerSecond, actor.Movement.HorizontalSpeedMetersPerSecond);
+                Assert.Equal(sight, actor.PrimarySight);
+                Assert.Equal(armor, actor.Armor);
+                // The port's single-field reads resolve through the same copy.
+                Assert.True(ActorViewReads.TryGetArmor(view, entity, out var viaPort));
+                Assert.Equal(armor, viaPort);
+            }
+        }
+
         private static void AssertHuman(OfflineGameSession session, HarnessActorLifecycle lifecycle)
         {
             Assert.True(lifecycle.Simulation.TryGetWeapon(session.HumanEntityId, 0, out var primary));

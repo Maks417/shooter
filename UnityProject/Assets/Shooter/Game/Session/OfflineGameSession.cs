@@ -180,6 +180,17 @@ namespace Shooter.Game.Session
             return true;
         }
 
+        /// <summary>T195: movement, primary sight and armor of a live actor in one copy (see <see cref="ActorViewState"/>).</summary>
+        public bool TryGetActorView(EntityId entity, out ActorViewState view)
+        {
+            view = default;
+            if (harness == null || !TryGetMovementView(entity, out var movement)) return false;
+            harness.TryGetPrimarySight(entity, out var sight);
+            harness.TryGetArmor(entity, out var armor);
+            view = new ActorViewState(movement, sight, armor);
+            return true;
+        }
+
         /// <summary>ADR-107: the sight mounted on a live actor's primary (invalid when that gun takes no mounted sight).</summary>
         public bool TryGetPrimarySight(EntityId entity, out DefinitionId sight)
         {
