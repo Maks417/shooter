@@ -42,7 +42,7 @@ SRC = ROOT / ".local" / "audio-src"
 COMBAT_OUT = ROOT / "Content" / "Audio" / "combat"
 MUSIC_OUT = ROOT / "Content" / "Audio" / "music"
 REVIEW_OUT = ROOT / "Artifacts" / "audio-review"
-BANK_ID = "combat-audio-bank-v8-stereo"
+BANK_ID = "combat-audio-bank-v9-stereo"
 MUSIC_BANK_ID = "music-bank-v1"
 RATE = 48000
 
@@ -59,6 +59,8 @@ PEAK_DB = {
     # ADR-102 bank v6 named-gun reports and handling Foley.
     "ak47_shot": -1.5, "ak102_shot": -3.0, "m16_shot": -1.5, "mk14_shot": -1.5, "tac338_shot": -2.0,
     "g17_shot": -1.5, "eagle_shot": -3.0, "bolt_cycle": -5.0, "reload_ak": -6.0, "reload_bolt": -5.0,
+    # ADR-118 bank v9: four more named guns, the pump stroke and one shell into the tube.
+    "m4a1_shot": -1.5, "m24_shot": -2.0, "mk16_shot": -1.5, "m870_shot": -1.0, "pump_cycle": -5.0, "reload_shell": -6.0,
 }
 MUSIC_LUFS = -16.0
 CUES = ["menu_theme", "match_calm", "match_tension", "victory_stinger", "defeat_stinger", "draw_stinger", "results_loop"]

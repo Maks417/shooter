@@ -33,12 +33,16 @@ public sealed class WeaponPackageTests : IDisposable
                 Assert.True(GeometryCodec.DecodeMesh(ArtifactCodec.Decode(bytes[path], ContentKind.Mesh, source.Fingerprint, toolchain)).Positions.Count > 0, path);
             Assert.Equal(source.HasMagazineCycle, WeaponMeshCatalog.MagazinePath(source.MeshKey) != null);
         }
-        Assert.Equal(new[] { "rifle", "rifle-carbine", "pistol", "knife", "grenade", "ak47", "ak102", "m16", "mk14", "mtac338", "g17", "golden-eagle" },
+        Assert.Equal(new[] { "rifle", "rifle-carbine", "pistol", "knife", "grenade", "ak47", "ak102", "m16", "mk14", "mtac338", "g17", "golden-eagle",
+                "m4a1", "m24", "mk16", "m870" },
             WeaponMeshCatalog.All.Where(s => !s.IsSight).Select(s => s.MeshKey));
         // ADR-107: rail-mounted sights follow the guns, one mesh set per (sight, archetype) any gun allows.
         Assert.Equal(new[] { "sight-collimator-ak", "sight-scope2-ak", "sight-irons-ar", "sight-collimator-ar", "sight-scope2-ar",
                 "sight-irons-dmr", "sight-collimator-dmr", "sight-scope2-dmr", "sight-scope4-dmr",
-                "sight-irons-bolt", "sight-collimator-bolt", "sight-scope2-bolt", "sight-scope8-bolt" },
+                "sight-irons-bolt", "sight-collimator-bolt", "sight-scope2-bolt", "sight-scope8-bolt",
+                // ADR-118: the M24 adds the 4x on the bolt rail; the Mk 16 and M870 bring their own rails.
+                "sight-scope4-bolt", "sight-irons-scar", "sight-collimator-scar", "sight-scope2-scar",
+                "sight-irons-pump", "sight-collimator-pump" },
             WeaponMeshCatalog.All.Where(s => s.IsSight).Select(s => s.MeshKey));
         Assert.Equal("mesh-rifle-carbine-lod2.bin", WeaponMeshCatalog.LodPath("rifle-carbine", 2));
     }

@@ -122,3 +122,20 @@ Steps:
 ## Bank v8: true-peak levels (ADR-111 addendum)
 
 The builder now normalises every kind on the true float peak instead of `volumedetect`, which saturated at 0 dBFS and let over-full-scale mixes ship up to 5.4 dB above their `PEAK_DB` target. 66 older clips are re-levelled (no content change, gain only); the bank is `combat-audio-bank-v8-stereo`. No clip reaches full scale. Owner listening review is Pending.
+
+## Bank v9 — M4A1, M24, Mk 16, M870, pump and shell (ADR-118)
+
+[ADR-118](../decisions.md#adr-118--accepted-m4a1-mk-16-m24-sws-and-m870-pellets-shell-reloads-and-geometryweapon-150) appends six kinds to the combat bank (`combat-audio-bank-v9-stereo`); every v8 clip is byte-identical:
+
+| Kind | Source |
+|---|---|
+| `m4a1_shot` | AR-15 takes, pitched up |
+| `mk16_shot` | SKS takes |
+| `m24_shot` | Savage 10 and Springfield 1917 bolt rifles |
+| `m870_shot` | Mossberg and Benelli Nova pump shotguns |
+| `pump_cycle` | the airsoft shotgun cock, slowed |
+| `reload_shell` | Kenney metal clicks and latches |
+
+All sources are the local CC0 libraries already listed in `Tools/audio-sources.json`.
+
+The router plays the pump stroke inside the fire interval, as it does for the bolt, and uses `reload_shell` for the pump handling style. It also plays impact, hit and hit-marker cues once per shooter, target and tick, so a shotgun blast does not stack eight copies.

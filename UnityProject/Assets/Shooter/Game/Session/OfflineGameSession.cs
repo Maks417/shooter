@@ -45,7 +45,15 @@ namespace Shooter.Game.Session
             HumanLoadout = ArmoryCatalog.Resolve(primary, primarySight, sidearm)
                 .WithModifiers(new WeaponModifiers(recoilPerMille, reloadPerMille, adsSpreadPerMille, equipPerMille, extraMagazines));
 
-        /// <summary>ADR-108 career rank (1..20) of the local player; bots show seeded ranks around it. Cosmetic only.</summary>
+        /// <summary>ADR-119: as above with the hip-spread, pellet-spread, manual-cycle and move-speed career scales.</summary>
+        public void UseArmoryLoadout(DefinitionId primary, DefinitionId primarySight, DefinitionId sidearm,
+            ushort recoilPerMille, ushort reloadPerMille, ushort adsSpreadPerMille, ushort equipPerMille, byte extraMagazines,
+            ushort hipSpreadPerMille, ushort pelletSpreadPerMille, ushort manualCyclePerMille, ushort moveSpeedPerMille) =>
+            HumanLoadout = ArmoryCatalog.Resolve(primary, primarySight, sidearm)
+                .WithModifiers(new WeaponModifiers(recoilPerMille, reloadPerMille, adsSpreadPerMille, equipPerMille, extraMagazines,
+                    hipSpreadPerMille, pelletSpreadPerMille, manualCyclePerMille, moveSpeedPerMille));
+
+        /// <summary>ADR-108 career rank (1..30 since ADR-119) of the local player; bots show seeded ranks around it. Cosmetic only.</summary>
         public int CareerRank { get; set; } = 1;
 
         /// <summary>
@@ -198,11 +206,19 @@ namespace Shooter.Game.Session
         /// ADR-112: hip-fire cone half-angle of a weapon (radians) so the presentation reticle can show the real spread.
         /// Zero for weapons without a hitscan cone (knife, grenade) or unknown ids.
         /// </summary>
-        public static float HipSpreadRadians(DefinitionId weapon)
+        public static float HipSpreadRadians(DefinitionId weapon) => HipSpreadRadians(weapon, WeaponModifiers.Identity);
+
+        /// <summary>ADR-119: the human's hip cone with their career buffs (Hip Shooter, Choke) applied.</summary>
+        public float HumanHipSpreadRadians(DefinitionId weapon) =>
+            HipSpreadRadians(weapon, HumanLoadout?.Modifiers ?? WeaponModifiers.Identity);
+
+        private static float HipSpreadRadians(DefinitionId weapon, WeaponModifiers modifiers)
         {
             if (!weapon.IsValid || !WeaponCatalog.TryGet(weapon, out var entry)) return 0f;
-            var definition = entry.Definition;
-            return definition.FireMode == FireMode.Melee || definition.FireMode == FireMode.Throwable ? 0f : definition.HipSpreadRadians;
+            var definition = modifiers.Apply(entry.Definition);
+            // ADR-118: pellets scatter around the sampled aim, so a shotgun's reticle gap covers both cones.
+            return definition.FireMode == FireMode.Melee || definition.FireMode == FireMode.Throwable ? 0f
+                : definition.HipSpreadRadians + (definition.PelletCount > 1 ? definition.PelletSpreadRadians : 0f);
         }
 
         /// <summary>ADR-105: what pressing the pickup key would do for the living human right now (presentation prompt).</summary>

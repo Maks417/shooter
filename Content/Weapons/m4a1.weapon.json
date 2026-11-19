@@ -1,0 +1,59 @@
+{
+  "schemaId": "shooter.weapon.v1",
+  "id": "weapons/m4a1",
+  "order": 12,
+  "displayLabel": "M4A1",
+  "family": "PrimaryGun",
+  "combat": {
+    "fireMode": "Automatic",
+    "fireIntervalTicks": 5,
+    "reloadTicks": 138,
+    "equipTicks": 22,
+    "magazineSize": 30,
+    "reserveCapacity": 90,
+    "baseDamage": 29,
+    "hipSpreadDegrees": 1.05,
+    "adsSpreadDegrees": 0.16,
+    "recoilPitchDegrees": 0.36,
+    "recoilYawHalfDegrees": 0.12,
+    "falloffStartMeters": 20,
+    "falloffEndMeters": 55,
+    "falloffMinScale": 0.75,
+    "spawnWeight": 3
+  },
+  "visual": {
+    "meshKey": "m4a1",
+    "geometryRecipe": "m4a1",
+    "magazineCycle": true,
+    "nearFieldScale": 1.12,
+    "nearFieldHipBias": [
+      0.08,
+      -0.01,
+      -0.1
+    ],
+    "hipRotationDegrees": [
+      0,
+      -12,
+      -5
+    ],
+    "sights": {
+      "default": "irons",
+      "allowed": [
+        "irons",
+        "collimator",
+        "scope2"
+      ]
+    },
+    "optic": "Irons",
+    "cycleTravelMeters": 0.07,
+    "adsSeconds": 0.17,
+    "handlingStyle": "Rifle",
+    "muzzleFlashScale": 0.9
+  },
+  "audio": {
+    "shot": "M4a1Shot"
+  },
+  "hud": {
+    "killFeedGlyph": "M4a1"
+  }
+}

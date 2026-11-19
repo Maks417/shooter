@@ -61,7 +61,8 @@ namespace Shooter.Simulation.Tests.Combat
         [Fact]
         public void Random_loadouts_only_issue_named_guns()
         {
-            var named = new HashSet<string> { "weapons/ak47", "weapons/ak102", "weapons/m16", "weapons/mk14", "weapons/mtac338" };
+            var named = new HashSet<string> { "weapons/ak47", "weapons/ak102", "weapons/m16", "weapons/mk14", "weapons/mtac338",
+                "weapons/m4a1", "weapons/m24", "weapons/mk16", "weapons/m870" };
             var sidearms = new HashSet<string> { "weapons/g17", "weapons/golden-eagle" };
             for (uint tick = 0; tick < 3000; tick += 11)
             {

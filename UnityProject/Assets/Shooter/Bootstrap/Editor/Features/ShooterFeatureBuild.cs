@@ -137,7 +137,7 @@ public static class ShooterFeatureBuild
             key.transform.rotation = Quaternion.Euler(35, -35, 0);
             RenderSettings.ambientMode = AmbientMode.Flat; RenderSettings.ambientLight = new Color(.32f, .36f, .42f);
             var paths = new List<string>();
-            string[] arsenal = { "ak47", "ak102", "m16", "mk14", "mtac338", "g17", "golden-eagle" };
+            string[] arsenal = { "ak47", "ak102", "m16", "mk14", "mtac338", "g17", "golden-eagle", "m4a1", "m24", "mk16", "m870" };
             foreach (string kind in new[] { "rifle", "pistol", "knife", "grenade" }.Concat(arsenal))
             {
                 var root = new GameObject(kind); owned.Add(root);

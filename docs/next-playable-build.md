@@ -4,6 +4,8 @@ This page is the single source of truth for the current build, the product defin
 
 ## Current build
 
+**Since 0.3.24 (2026-11-19, committed, no installer yet):** [ADR-117](decisions.md#adr-117--accepted-single-point-collimator-dot-and-12x-collimator-zoom) single-dot 1.2x collimator, [ADR-118](decisions.md#adr-118--accepted-m4a1-mk-16-m24-sws-and-m870-pellets-shell-reloads-and-geometryweapon-150) M4A1, Mk 16, M24 SWS and M870 shotgun, [ADR-119](decisions.md#adr-119--accepted-30-rank-career-ladder-and-four-new-perks) 30-rank career with four new perks. Pure lanes PASS; Unity lanes, content republish, build and playtest Pending ([handoff](milestones/m11-playable-release/handoff.md#adr-119-30-rank-career--2026-11-19)).
+
 **Latest installer — 0.3.24 (2026-11-18):** `Artifacts/deliveries/Shooter-Setup-0.3.24.exe`, clean binary/content source `53cce26`. Adds to 0.3.23 [ADR-115](decisions.md#adr-115--accepted-open-reflex-collimator-with-a-clear-glass-pane) (open reflex collimator with clear glass) and [ADR-116](decisions.md#adr-116--accepted-realistic-map-colour-texture-and-shadows-materialnoise-120) (realistic map colour, texture and shadows; soft Low shadows). Native packages, clean IL2CPP Client, smoke, package and installer builders PASS; pure lanes and Unity EditMode/PlayMode PASS on the same content just before the commit. Actual install/upgrade, a playtest of this build, the Low benchmark with the new shadows and all acceptance remain Pending. [Delivery evidence](milestones/m11-playable-release/handoff.md#delivery-0324).
 
 The [visual roadmap](visual-roadmap.md) tranche (ADR-087–095) has been in installers since 0.3.18. ADR-096 retains its three provisional audio cues pending the assigned follow-up and owner listening review.

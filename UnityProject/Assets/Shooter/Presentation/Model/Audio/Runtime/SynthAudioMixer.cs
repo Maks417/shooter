@@ -46,7 +46,14 @@ namespace Shooter.Presentation.Audio
         EagleShot = 37,
         BoltCycle = 38,
         ReloadAk = 39,
-        ReloadBolt = 40
+        ReloadBolt = 40,
+        // ADR-118 bank v9: four more named guns, the pump stroke and one shell into the tube.
+        M4a1Shot = 41,
+        M24Shot = 42,
+        Mk16Shot = 43,
+        M870Shot = 44,
+        PumpCycle = 45,
+        ReloadShell = 46
     }
 
     public sealed class SynthVoice
@@ -490,12 +497,13 @@ namespace Shooter.Presentation.Audio
         /// <summary>Gun reports: the classic rifle/pistol voices and every ADR-102 named-gun voice.</summary>
         public static bool IsGunShotKind(SynthVoiceKind kind) =>
             kind == SynthVoiceKind.Shot || kind == SynthVoiceKind.RifleShot || kind == SynthVoiceKind.PistolShot
-            || kind >= SynthVoiceKind.Ak47Shot && kind <= SynthVoiceKind.EagleShot;
+            || kind >= SynthVoiceKind.Ak47Shot && kind <= SynthVoiceKind.EagleShot
+            || kind >= SynthVoiceKind.M4a1Shot && kind <= SynthVoiceKind.M870Shot;
 
         /// <summary>Reload Foley voices (fitted to the authoritative reload window and cut on death or the next shot).</summary>
         public static bool IsReloadKind(SynthVoiceKind kind) =>
             kind == SynthVoiceKind.ReloadStart || kind == SynthVoiceKind.ReloadPistol
-            || kind == SynthVoiceKind.ReloadAk || kind == SynthVoiceKind.ReloadBolt;
+            || kind == SynthVoiceKind.ReloadAk || kind == SynthVoiceKind.ReloadBolt || kind == SynthVoiceKind.ReloadShell;
 
         public static bool IsUiKind(SynthVoiceKind kind) =>
             kind == SynthVoiceKind.Ui || kind == SynthVoiceKind.UiHover || kind == SynthVoiceKind.UiClick || kind == SynthVoiceKind.UiBack;

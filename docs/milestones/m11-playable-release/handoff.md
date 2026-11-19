@@ -844,6 +844,34 @@ Checks so far: Simulation 652/652 PASS (`m2-combat-harness/2925ad3…/20261119T0
 
 **Pending / NotClaimed:** weapon package republish, Unity EditMode/PlayMode, client build and installer; the owner's in-game review of the four guns (look in first and third person, pump and shell-insert choreography, sounds) and of shotgun balance.
 
+## ADR-119 30-rank career — 2026-11-19
+
+Owner request: extend the progress bar with new ranks, the new weapons and new perks. The owner accepted a progress reset/re-lock with no migration. Implemented [ADR-119](../../decisions.md#adr-119--accepted-30-rank-career-ladder-and-four-new-perks):
+- 30 US Army grades (Private to General of the Armies) on the same CP scale.
+- The four ADR-118 guns placed on the ladder.
+- New perks: Hip Shooter I/II, Choke, Slick Action I/II and Light Load.
+- Procedural insignia for every grade, plus perk glyphs; the icon-library golden is updated.
+- One rank-count source of truth, pinned by a cross-assembly test.
+
+Combined ADR-118/119 checks on the working tree over `4ab7ab4`, all PASS:
+- Contracts 79/79 (`m0-foundation/4ab7ab4…/20261119T082529352Z-a947fbe6`).
+- Generation 650/650 (`m1-procedural-feasibility/4ab7ab4…/20261119T082546502Z-b774e409`), including the new icon-library golden.
+- Simulation 663/663 (`m2-combat-harness/4ab7ab4…/20261119T082817474Z-c86eb323`).
+- Game (`m8-runtime-composition/4ab7ab4…/20261119T083158263Z-e0301bf3`).
+- Maps (`test-maps-20261119T083257123Z-4d701bc5`).
+- Source provenance (549 GUIDs, no errors).
+- Feature registry, feature schemas, contract lock, asmdef graph, docs fixtures.
+- Weapon catalog `--check` and its 24 generator tests.
+- Audio bank `check`; bank v9 builds with every v8 clip byte-identical.
+
+New tests:
+- An M870 blast in the harness is one `ShotAccepted` with an impact and damage event per pellet.
+- Shell-by-shell reload takes 3 × 28 ticks for 3 shells, and a trigger press interrupts it.
+- The new perks scale only their fields and respect the caps; identity modifiers leave every gun bit-identical.
+- Every rank-count mirror agrees.
+
+**Pending / NotClaimed:** Unity EditMode (icon golden mirror) and PlayMode, client build and installer; the owner's look at the 30 insignia and the Career page at 720p–1080p, and perk balance.
+
 ## Delivery 0.3.24
 
 Owner requested a release and installer after the map realism change (2026-11-18). Clean binary/content source **`53cce2682e3b5f0b3bf1bbfea11b0c95a14cc116`** adds to 0.3.23 [ADR-115](../../decisions.md#adr-115--accepted-open-reflex-collimator-with-a-clear-glass-pane) (open reflex collimator with a clear glass pane) and [ADR-116](../../decisions.md#adr-116--accepted-realistic-map-colour-texture-and-shadows-materialnoise-120) (realistic map colour, texture and shadows: material.noise 1.2.0, corrected accent paint, warmer light, later fog, +10 saturation, soft Low shadows).

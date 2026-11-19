@@ -1,0 +1,60 @@
+{
+  "schemaId": "shooter.weapon.v1",
+  "id": "weapons/mk16",
+  "order": 14,
+  "displayLabel": "Mk 16",
+  "family": "PrimaryGun",
+  "combat": {
+    "fireMode": "Automatic",
+    "fireIntervalTicks": 6,
+    "reloadTicks": 150,
+    "equipTicks": 24,
+    "magazineSize": 30,
+    "reserveCapacity": 90,
+    "baseDamage": 31,
+    "hipSpreadDegrees": 1.1,
+    "adsSpreadDegrees": 0.15,
+    "recoilPitchDegrees": 0.4,
+    "recoilYawHalfDegrees": 0.13,
+    "falloffStartMeters": 30,
+    "falloffEndMeters": 70,
+    "falloffMinScale": 0.8,
+    "moveSpeedScale": 0.97,
+    "spawnWeight": 2
+  },
+  "visual": {
+    "meshKey": "mk16",
+    "geometryRecipe": "mk16",
+    "magazineCycle": true,
+    "nearFieldScale": 1.12,
+    "nearFieldHipBias": [
+      0.08,
+      -0.01,
+      -0.1
+    ],
+    "hipRotationDegrees": [
+      0,
+      -12,
+      -5
+    ],
+    "sights": {
+      "default": "irons",
+      "allowed": [
+        "irons",
+        "collimator",
+        "scope2"
+      ]
+    },
+    "optic": "Irons",
+    "cycleTravelMeters": 0.06,
+    "adsSeconds": 0.19,
+    "handlingStyle": "Rifle",
+    "muzzleFlashScale": 0.95
+  },
+  "audio": {
+    "shot": "Mk16Shot"
+  },
+  "hud": {
+    "killFeedGlyph": "Mk16"
+  }
+}

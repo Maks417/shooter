@@ -10,7 +10,7 @@ namespace Shooter.Game.Session
     public static class BotRanks
     {
         public const int MinRank = 1;
-        public const int MaxRank = 20;
+        public const int MaxRank = 30;
         public const int Spread = 3;
         private const ulong StreamSalt = 0xC0A7_5EED_0108_0001UL;
 

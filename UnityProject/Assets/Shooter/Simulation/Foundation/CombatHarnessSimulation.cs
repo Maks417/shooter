@@ -436,7 +436,8 @@ namespace Shooter.Simulation
                 for (int g = 0; g < acceptedGrenades.Count; g++)
                     ResolveGrenadeAction(actor, acceptedGrenades[g], requestedTick, ref nextEvent);
 
-                float moveScale = WeaponDefinition.FromId(actor.Weapons[actor.ActiveSlot].DefinitionId).MoveSpeedScale;
+                // ADR-119 Light Load scales the gun's move speed; identity modifiers (bots) read the catalog value unchanged.
+                float moveScale = actor.Modifiers.Apply(WeaponDefinition.FromId(actor.Weapons[actor.ActiveSlot].DefinitionId)).MoveSpeedScale;
                 actor.Motor = motor.Step(actor.Motor, cmd, requestedTick, world, freshCommand && SlideRequested(actor.Id, localSlideActor, slideActors), moveScale);
                 AuthoritativeRecoil.Decay(ref actor.RecoilYaw, ref actor.RecoilPitch);
             }

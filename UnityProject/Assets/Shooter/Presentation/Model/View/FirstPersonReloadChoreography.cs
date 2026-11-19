@@ -94,6 +94,9 @@ namespace Shooter.Presentation.View
         private static readonly Track AkTactical = Ak(empty: false);
         private static readonly Track AkEmpty = Ak(empty: true);
         private static readonly Track BoltReload = Bolt();
+        // ADR-118 M870: loading port under the receiver relative to the support hand on the pump forend.
+        private static readonly Float3 ShellPort = new Float3(0.018f, -0.010f, -0.220f);
+        private static readonly Track ShellInsert = Shell();
         private static readonly Track RifleTactical = Rifle(empty: false);
         private static readonly Track RifleEmpty = Rifle(empty: true);
         private static readonly Track PistolTactical = Pistol(empty: false);
@@ -221,6 +224,27 @@ namespace Shooter.Presentation.View
             return track;
         }
 
+        /// <summary>
+        /// ADR-118 pump shotgun, one window per shell: roll the gun to show the loading port, take a shell from the
+        /// belt, push it up into the port and return to the forend. The shell already in the receiver never moves; the
+        /// fresh one rides in the hand until it seats there.
+        /// </summary>
+        private static Track Shell()
+        {
+            Float3 w = ShellPort;
+            var track = new Track { Well = w, Grip = 0.70f, Release = 0.70f, FreshFrom = 0.20f, Seat = 0.68f };
+            track.Position = new MotionCurve(K(0f, 0, 0, 0), K(.12f, -.012f, -.025f, -.01f), K(.50f, -.016f, -.035f, -.012f),
+                K(.70f, -.014f, -.030f, -.012f), K(.90f, -.004f, -.010f, -.004f), K(1f, 0, 0, 0));
+            track.Rotation = new MotionCurve(K(0f, 0, 0, 0), K(.12f, 4, 4, -20), K(.50f, 5, 5, -24), K(.70f, 4, 4, -22),
+                K(.90f, 1, 1, -6), K(1f, 0, 0, 0));
+            track.Hand = new MotionCurve(K(0f, 0, 0, 0), W(.10f, w, -.04f, -.14f, .03f), W(.20f, w, -.06f, -.26f, .05f),
+                W(.30f, w, -.06f, -.26f, .05f), W(.48f, w, 0, -.06f, .01f), W(.60f, w, 0, -.012f, 0), W(.68f, w, 0, 0, 0),
+                W(.74f, w, 0, -.03f, .02f), K(.92f, 0, 0, 0), K(1f, 0, 0, 0));
+            track.Open = new MotionCurve(O(0f, 0), O(.10f, .6f), O(.18f, .8f), O(.24f, 0), O(.66f, 0), O(.70f, .8f),
+                O(.85f, .4f), O(1f, 0));
+            return track;
+        }
+
         private static Track Pistol(bool empty)
         {
             Float3 w = PistolWell;
@@ -343,6 +367,7 @@ namespace Shooter.Presentation.View
             WeaponHandlingStyle.Rifle => magazineEmpty ? RifleEmpty : RifleTactical,
             WeaponHandlingStyle.Ak => magazineEmpty ? AkEmpty : AkTactical,
             WeaponHandlingStyle.Bolt => BoltReload,
+            WeaponHandlingStyle.Pump => ShellInsert,
             WeaponHandlingStyle.Pistol => magazineEmpty ? PistolEmpty : PistolTactical,
             _ => null
         };

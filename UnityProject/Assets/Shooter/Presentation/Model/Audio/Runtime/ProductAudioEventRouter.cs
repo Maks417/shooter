@@ -45,9 +45,15 @@ namespace Shooter.Presentation.Audio
         private readonly List<(ulong owner, float due, Float3 position, ulong seed)> pendingBounces =
             new List<(ulong owner, float due, Float3 position, ulong seed)>();
         public const int MaxPendingBounces = 16;
-        /// <summary>ADR-102: bolt-action rounds are followed by the bolt being worked inside the fire interval.</summary>
-        private readonly List<(ulong owner, float due, Float3 position, ulong seed, bool local)> pendingCycles =
-            new List<(ulong owner, float due, Float3 position, ulong seed, bool local)>();
+        /// <summary>ADR-102: bolt-action rounds are followed by the bolt being worked inside the fire interval (ADR-118: or the pump).</summary>
+        private readonly List<(ulong owner, float due, Float3 position, ulong seed, bool local, SynthVoiceKind voice)> pendingCycles =
+            new List<(ulong owner, float due, Float3 position, ulong seed, bool local, SynthVoiceKind voice)>();
+        /// <summary>
+        /// ADR-118: a shotgun blast lands up to 8 pellets on one tick. Impact, hit and hit-marker cues play once per
+        /// (shooter, tick, target) so one blast does not stack eight copies.
+        /// </summary>
+        private readonly HashSet<(ulong instigator, uint tick, CombatEventKind kind, ulong target)> pelletCues =
+            new HashSet<(ulong instigator, uint tick, CombatEventKind kind, ulong target)>();
         /// <summary>Last primary and sidearm each shooter fired: reload Foley follows the gun, not the slot.</summary>
         private readonly Dictionary<ulong, (DefinitionId primary, DefinitionId sidearm)> lastGuns =
             new Dictionary<ulong, (DefinitionId primary, DefinitionId sidearm)>();
@@ -97,6 +103,7 @@ namespace Shooter.Presentation.Audio
             lastKnifeTick.Clear();
             pendingBounces.Clear();
             pendingCycles.Clear();
+            pelletCues.Clear();
             lastGuns.Clear();
             uiOrdinal = 0;
             localOrdinal = 0;
@@ -125,6 +132,7 @@ namespace Shooter.Presentation.Audio
                     lastKnifeTick[ev.Instigator.Value] = ev.Id.Tick;
 
                 RememberGun(ev);
+                if (IsRepeatedPelletCue(ev)) continue;
                 if (TryMapCombat(ev, knifeHit, out var voice))
                 {
                     if (ev.Kind == CombatEventKind.ReloadStarted) voice = ReloadVoiceFor(ev);
@@ -169,6 +177,15 @@ namespace Shooter.Presentation.Audio
             return mixer.TryPlay(kind, 0f, 0f, Seed(ev) ^ 0x417u, true, 0f, 0f) ? 1 : 0;
         }
 
+        /// <summary>True for the second and later Impact/DamageApplied of one shooter on one target in the same tick.</summary>
+        private bool IsRepeatedPelletCue(CombatEvent ev)
+        {
+            if (ev.Kind != CombatEventKind.Impact && ev.Kind != CombatEventKind.DamageApplied) return false;
+            if (!ev.Instigator.IsValid || IsGrenadeBlast(ev)) return false;
+            if (pelletCues.Count > 512) pelletCues.Clear();
+            return !pelletCues.Add((ev.Instigator.Value, ev.Id.Tick, ev.Kind, ev.Target.IsValid ? ev.Target.Value : 0UL));
+        }
+
         /// <summary>A reload that ends without completing (death) or is interrupted by firing cuts its Foley.</summary>
         private void ObserveCancellation(CombatEvent ev)
         {
@@ -179,6 +196,7 @@ namespace Shooter.Presentation.Audio
             mixer.StopOwner(id, SynthVoiceKind.ReloadPistol);
             mixer.StopOwner(id, SynthVoiceKind.ReloadAk);
             mixer.StopOwner(id, SynthVoiceKind.ReloadBolt);
+            mixer.StopOwner(id, SynthVoiceKind.ReloadShell);
             if (ev.Kind == CombatEventKind.Death) pendingCycles.RemoveAll(c => c.owner == id);
         }
 
@@ -232,8 +250,8 @@ namespace Shooter.Presentation.Audio
                 c.due -= dtSeconds;
                 if (c.due > 0f) { pendingCycles[i] = c; continue; }
                 pendingCycles.RemoveAt(i);
-                if (c.local ? mixer.TryPlay(SynthVoiceKind.BoltCycle, 0f, 0f, c.seed, true, 0f, 0f)
-                    : PlayWorld(SynthVoiceKind.BoltCycle, c.position, listenerFeet, c.seed)) played++;
+                if (c.local ? mixer.TryPlay(c.voice, 0f, 0f, c.seed, true, 0f, 0f)
+                    : PlayWorld(c.voice, c.position, listenerFeet, c.seed)) played++;
             }
             for (int i = pendingBounces.Count - 1; i >= 0; i--)
             {
@@ -278,18 +296,23 @@ namespace Shooter.Presentation.Audio
             WeaponHandlingStyle.Pistol => SynthVoiceKind.ReloadPistol,
             WeaponHandlingStyle.Ak => SynthVoiceKind.ReloadAk,
             WeaponHandlingStyle.Bolt => SynthVoiceKind.ReloadBolt,
+            WeaponHandlingStyle.Pump => SynthVoiceKind.ReloadShell,
             _ => SynthVoiceKind.ReloadStart
         };
 
         private void ScheduleBoltCycle(CombatEvent ev, Float3 position, bool local)
         {
             if (ev.Kind != CombatEventKind.ShotAccepted || ev.Payload is not ShotPayload shot) return;
-            if (!WeaponVisualProfiles.TryGet(shot.WeaponId, out var profile) || profile.HandlingStyle != WeaponHandlingStyle.Bolt) return;
+            if (!WeaponVisualProfiles.TryGet(shot.WeaponId, out var profile)) return;
+            bool bolt = profile.HandlingStyle == WeaponHandlingStyle.Bolt, pump = profile.HandlingStyle == WeaponHandlingStyle.Pump;
+            if (!bolt && !pump) return;
             float interval = profile.FireIntervalSeconds;
             if (interval <= 0f) return;
             if (pendingCycles.Count >= MaxPendingBounces) pendingCycles.RemoveAt(0);
-            // Matches the first-person bolt pull (ProceduralViewModel: open from 34 % of 85 % of the interval).
-            pendingCycles.Add((ev.Instigator.Value, interval * 0.85f * 0.34f, position, Seed(ev) ^ 0xB017UL, local));
+            // Matches the first-person bolt pull (ProceduralViewModel: open from 34 % of 85 % of the interval); the
+            // ADR-118 pump sound starts as the forend begins to move back (18 % of its share of the interval).
+            float due = bolt ? interval * 0.85f * 0.34f : interval * ProceduralViewModel.PumpCycleShare * 0.18f;
+            pendingCycles.Add((ev.Instigator.Value, due, position, Seed(ev) ^ 0xB017UL, local, bolt ? SynthVoiceKind.BoltCycle : SynthVoiceKind.PumpCycle));
         }
 
         private bool IsKnifeFollowUp(CombatEvent ev)

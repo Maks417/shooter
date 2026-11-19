@@ -34,6 +34,9 @@ namespace Shooter.Presentation.View
             if (t <= 0f || !profile.HasMagazineCycle || profile.CycleTravelMeters <= 0f) return default;
             float amp = reducedMotion ? 0.45f : 1f;
             float travel = profile.CycleTravelMeters;
+            // ADR-118: the pump forend slides straight back along the magazine tube.
+            if (profile.HandlingStyle == WeaponHandlingStyle.Pump)
+                return new Float3(0f, 0f, -travel * t * amp);
             if (profile.Family == WeaponVisualFamily.PrimaryGun)
                 return new Float3(0.006f * t * amp, 0f, -travel * t * amp);
             if (profile.Family == WeaponVisualFamily.Sidearm)

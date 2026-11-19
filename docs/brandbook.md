@@ -22,7 +22,7 @@ The original direction combines military restraint, large clear headings, tactil
 
 The milestone plan covers art direction/feasibility, soldiers, hands/weapons, procedural motion, both environments, lighting/materials/effects, final UI, measured scalability and comparative installer acceptance. Its per-stage deliverables and exits live once in [design-milestones.md](design-milestones.md). The working [VD0 art brief](visual-art-brief.md) holds the comparison register, gap inventory and presentation ownership; it stays draft until the owner approves exact Bodycam/Warface frames. Earlier T074 software and retained captures remain valid evidence of implementation; P05 and final visual/device review remain open.
 
-No store, matchmaking or online lobby is introduced; the only progression is the local career ladder ([ADR-108](decisions.md#adr-108--accepted-career-ranks-unlocks-buffs-and-local-service-record)), with military rank insignia drawn from the procedural icon atlas. The lobby is local match setup with one human plus bots. The full visual overhaul is not complete when stage 1 ships.
+No store, matchmaking or online lobby is introduced; the only progression is the local career ladder ([ADR-108](decisions.md#adr-108--accepted-career-ranks-unlocks-buffs-and-local-service-record)), with military rank insignia drawn from the procedural icon atlas (30 US Army grades since [ADR-119](decisions.md#adr-119--accepted-30-rank-career-ladder-and-four-new-perks)). The lobby is local match setup with one human plus bots. The full visual overhaul is not complete when stage 1 ships.
 
 ## Implemented shell and HUD
 

@@ -19,7 +19,12 @@ namespace Shooter.Presentation.Hud
         Mk14 = 9,
         Mtac338 = 10,
         G17 = 11,
-        GoldenEagle = 12
+        GoldenEagle = 12,
+        // ADR-118 additions.
+        M4a1 = 13,
+        M24 = 14,
+        Mk16 = 15,
+        M870 = 16
     }
 
     /// <summary>One expiring kill-feed row: names plus correlated weapon/headshot cues.</summary>

@@ -151,6 +151,12 @@ namespace Shooter.Presentation.Audio
             SynthVoiceKind.BoltCycle => BakeReloadComplete,
             SynthVoiceKind.ReloadAk => BakeReloadStart,
             SynthVoiceKind.ReloadBolt => BakeReloadStart,
+            SynthVoiceKind.M4a1Shot => BakeRifleShot,
+            SynthVoiceKind.M24Shot => BakeRifleShot,
+            SynthVoiceKind.Mk16Shot => BakeRifleShot,
+            SynthVoiceKind.M870Shot => BakeRifleShot,
+            SynthVoiceKind.PumpCycle => BakeReloadComplete,
+            SynthVoiceKind.ReloadShell => BakeReloadComplete,
             _ => BakeImpact
         };
 
@@ -170,6 +176,12 @@ namespace Shooter.Presentation.Audio
             SynthVoiceKind.ReloadAk => (SynthVoiceKind.ReloadStart, 0.94f, 1.00f),
             SynthVoiceKind.ReloadBolt => (SynthVoiceKind.ReloadStart, 0.88f, 1.00f),
             SynthVoiceKind.BoltCycle => (SynthVoiceKind.ReloadComplete, 0.85f, 1.00f),
+            SynthVoiceKind.M4a1Shot => (SynthVoiceKind.RifleShot, 1.16f, 0.90f),
+            SynthVoiceKind.M24Shot => (SynthVoiceKind.RifleShot, 0.76f, 1.00f),
+            SynthVoiceKind.Mk16Shot => (SynthVoiceKind.RifleShot, 1.02f, 0.95f),
+            SynthVoiceKind.M870Shot => (SynthVoiceKind.RifleShot, 0.66f, 1.00f),
+            SynthVoiceKind.PumpCycle => (SynthVoiceKind.ReloadComplete, 0.80f, 1.00f),
+            SynthVoiceKind.ReloadShell => (SynthVoiceKind.ReloadComplete, 1.10f, 0.90f),
             _ => (default, 1f, 1f)
         };
 

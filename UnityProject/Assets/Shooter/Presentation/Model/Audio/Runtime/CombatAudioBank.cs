@@ -8,7 +8,7 @@ namespace Shooter.Presentation.Audio
     /// </summary>
     public sealed class CombatAudioBank
     {
-        public const string RecipeId = "combat-audio-bank-v8-stereo";
+        public const string RecipeId = "combat-audio-bank-v9-stereo";
         public const int BankVersion = 8;
         public const int DefaultSampleRate = 48000;
         public const int Channels = 2;
@@ -60,6 +60,13 @@ namespace Shooter.Presentation.Audio
             (SynthVoiceKind.BoltCycle, "bolt_cycle"),
             (SynthVoiceKind.ReloadAk, "reload_ak"),
             (SynthVoiceKind.ReloadBolt, "reload_bolt"),
+            // ADR-118 v9: appended so every v8 index is unchanged.
+            (SynthVoiceKind.M4a1Shot, "m4a1_shot"),
+            (SynthVoiceKind.M24Shot, "m24_shot"),
+            (SynthVoiceKind.Mk16Shot, "mk16_shot"),
+            (SynthVoiceKind.M870Shot, "m870_shot"),
+            (SynthVoiceKind.PumpCycle, "pump_cycle"),
+            (SynthVoiceKind.ReloadShell, "reload_shell"),
         };
 
         public const int AmbientIndex = 9;

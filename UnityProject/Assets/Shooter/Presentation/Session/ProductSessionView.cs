@@ -1382,7 +1382,7 @@ namespace Shooter.Presentation.Session
         private float HipReticleGap(DefinitionId weapon, float logicalHeight)
         {
             const float minimum = 3.5f;
-            float spread = OfflineGameSession.HipSpreadRadians(weapon);
+            float spread = session != null ? session.HumanHipSpreadRadians(weapon) : OfflineGameSession.HipSpreadRadians(weapon);
             if (spread <= 0f || camera == null) return minimum;
             float halfFov = camera.fieldOfView * .5f * Mathf.Deg2Rad;
             float gap = Mathf.Tan(spread) / Mathf.Tan(halfFov) * logicalHeight * .5f;

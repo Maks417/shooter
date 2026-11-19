@@ -114,3 +114,7 @@ When rifle then pistol magazines and reserves are empty, bots switch to knife (s
 ## Acceptance
 
 Seeded scripted scenarios: occluded enemy never acquired via vision; hearing triggers investigation at last-known position; target loss decays confidence; bots reload safely without infinite loop; two bots do not permanently reserve same cover; unreachable destination exits bounded retry. Eight bots run 30-minute B03 soak with no unbounded path queue, query cap breaches or orphan reservations. Accuracy/reaction distribution matches configuration, not constant instant headshots. Same command/collision recording across profiles produces equivalent AI decisions within documented adapter nondeterminism. AI counters expose sense age, path latency, state changes, shot rate and CPU budget.
+
+## Shotguns (ADR-118, 2026-11-19)
+
+Bots that draw the M870 treat it as a close-range gun (`PelletCount > 1`). They do not fire past the gun's falloff end (30 m), and they never hold still or crouch at long range with it; they keep their engage movement instead. The M24 counts as a precision gun like the M-TAC 338 (ADS spread under 0.1°). The four ADR-118 guns join the weighted random primary draw (M4A1 3, Mk 16 2, M24 1, M870 2). That changes every seeded bot loadout, so earlier TDM benchmark runs are not comparable.

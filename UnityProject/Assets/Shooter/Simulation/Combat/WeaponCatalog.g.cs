@@ -166,7 +166,60 @@ namespace Shooter.Simulation.Combat
                     blastRadiusMeters: 0f, consumesAmmo: true, allowsSprintFire: false,
                     burstCount: 0, burstIntervalTicks: 0, falloffStartMeters: 15f, falloffEndMeters: 40f,
                     falloffMinScale: 0.7f, moveSpeedScale: 1f, spawnWeight: 2),
-                WeaponFamily.Sidearm, "weapons/golden-eagle")
+                WeaponFamily.Sidearm, "weapons/golden-eagle"),
+            // Content/Weapons/m4a1.weapon.json
+            new WeaponCatalogEntry(
+                new WeaponDefinition(
+                    new DefinitionId("weapons/m4a1"), FireMode.Automatic,
+                    fireIntervalTicks: 5, reloadTicks: 138, equipTicks: 22,
+                    magazineSize: 30, reserveCapacity: 90, baseDamage: 29,
+                    hipSpreadRadians: Deg(1.05f), adsSpreadRadians: Deg(0.16f),
+                    recoilPitchRadians: Deg(0.36f), recoilYawHalfRadians: Deg(0.12f),
+                    maxRangeMeters: 300f, fuseTicks: 0, throwSpeedMetersPerSecond: 0f,
+                    blastRadiusMeters: 0f, consumesAmmo: true, allowsSprintFire: false,
+                    burstCount: 0, burstIntervalTicks: 0, falloffStartMeters: 20f, falloffEndMeters: 55f,
+                    falloffMinScale: 0.75f, moveSpeedScale: 1f, spawnWeight: 3),
+                WeaponFamily.PrimaryGun, "weapons/m4a1"),
+            // Content/Weapons/m24.weapon.json
+            new WeaponCatalogEntry(
+                new WeaponDefinition(
+                    new DefinitionId("weapons/m24"), FireMode.SemiAutomatic,
+                    fireIntervalTicks: 60, reloadTicks: 190, equipTicks: 32,
+                    magazineSize: 5, reserveCapacity: 30, baseDamage: 100,
+                    hipSpreadRadians: Deg(3.6f), adsSpreadRadians: Deg(0.03f),
+                    recoilPitchRadians: Deg(2.1f), recoilYawHalfRadians: Deg(0.35f),
+                    maxRangeMeters: 300f, fuseTicks: 0, throwSpeedMetersPerSecond: 0f,
+                    blastRadiusMeters: 0f, consumesAmmo: true, allowsSprintFire: false,
+                    burstCount: 0, burstIntervalTicks: 0, falloffStartMeters: 0f, falloffEndMeters: 0f,
+                    falloffMinScale: 1f, moveSpeedScale: 0.88f, spawnWeight: 1),
+                WeaponFamily.PrimaryGun, "weapons/m24"),
+            // Content/Weapons/mk16.weapon.json
+            new WeaponCatalogEntry(
+                new WeaponDefinition(
+                    new DefinitionId("weapons/mk16"), FireMode.Automatic,
+                    fireIntervalTicks: 6, reloadTicks: 150, equipTicks: 24,
+                    magazineSize: 30, reserveCapacity: 90, baseDamage: 31,
+                    hipSpreadRadians: Deg(1.1f), adsSpreadRadians: Deg(0.15f),
+                    recoilPitchRadians: Deg(0.4f), recoilYawHalfRadians: Deg(0.13f),
+                    maxRangeMeters: 300f, fuseTicks: 0, throwSpeedMetersPerSecond: 0f,
+                    blastRadiusMeters: 0f, consumesAmmo: true, allowsSprintFire: false,
+                    burstCount: 0, burstIntervalTicks: 0, falloffStartMeters: 30f, falloffEndMeters: 70f,
+                    falloffMinScale: 0.8f, moveSpeedScale: 0.97f, spawnWeight: 2),
+                WeaponFamily.PrimaryGun, "weapons/mk16"),
+            // Content/Weapons/m870.weapon.json
+            new WeaponCatalogEntry(
+                new WeaponDefinition(
+                    new DefinitionId("weapons/m870"), FireMode.SemiAutomatic,
+                    fireIntervalTicks: 36, reloadTicks: 28, equipTicks: 26,
+                    magazineSize: 7, reserveCapacity: 28, baseDamage: 25,
+                    hipSpreadRadians: Deg(1.2f), adsSpreadRadians: Deg(0.5f),
+                    recoilPitchRadians: Deg(2.4f), recoilYawHalfRadians: Deg(0.5f),
+                    maxRangeMeters: 60f, fuseTicks: 0, throwSpeedMetersPerSecond: 0f,
+                    blastRadiusMeters: 0f, consumesAmmo: true, allowsSprintFire: false,
+                    burstCount: 0, burstIntervalTicks: 0, falloffStartMeters: 8f, falloffEndMeters: 30f,
+                    falloffMinScale: 0.3f, moveSpeedScale: 0.95f, spawnWeight: 2,
+                    pelletCount: 8, pelletSpreadRadians: Deg(2.6f), reloadPerRound: true),
+                WeaponFamily.PrimaryGun, "weapons/m870")
         };
     }
 }

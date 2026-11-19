@@ -120,7 +120,43 @@ namespace Shooter.Presentation.View
                 hipRotationDegrees: new Float3(0f, -3f, -2f), cycleTravelMeters: 0.045f, displayLabel: "Golden Eagle .50", muzzleFx: "pistol",
                 recoilPitchDegrees: 1.6f, recoilYawHalfDegrees: 0.35f,
                 equipTicks: 22, fireIntervalTicks: 22, reloadTicks: 120, fuseTicks: 0, adsSeconds: 0.17f,
-                handlingStyle: WeaponHandlingStyle.Pistol, adsFovDegrees: 0f, muzzleFlashScale: 1.1f, muzzleFlashSideJets: false)
+                handlingStyle: WeaponHandlingStyle.Pistol, adsFovDegrees: 0f, muzzleFlashScale: 1.1f, muzzleFlashSideJets: false),
+            // Content/Weapons/m4a1.weapon.json
+            new WeaponVisualProfile(
+                new DefinitionId("weapons/m4a1"), WeaponVisualFamily.PrimaryGun, "m4a1",
+                WeaponOpticMode.Irons, hasMagazineCycle: true, shotVoice: SynthVoiceKind.M4a1Shot, killFeedGlyph: KillFeedWeapon.M4a1,
+                nearFieldScale: 1.12f, nearFieldHipBias: new Float3(0.08f, -0.01f, -0.1f),
+                hipRotationDegrees: new Float3(0f, -12f, -5f), cycleTravelMeters: 0.07f, displayLabel: "M4A1", muzzleFx: "rifle",
+                recoilPitchDegrees: 0.36f, recoilYawHalfDegrees: 0.12f,
+                equipTicks: 22, fireIntervalTicks: 5, reloadTicks: 138, fuseTicks: 0, adsSeconds: 0.17f,
+                handlingStyle: WeaponHandlingStyle.Rifle, adsFovDegrees: 0f, muzzleFlashScale: 0.9f, muzzleFlashSideJets: false),
+            // Content/Weapons/m24.weapon.json
+            new WeaponVisualProfile(
+                new DefinitionId("weapons/m24"), WeaponVisualFamily.PrimaryGun, "m24",
+                WeaponOpticMode.ScopedPip, hasMagazineCycle: true, shotVoice: SynthVoiceKind.M24Shot, killFeedGlyph: KillFeedWeapon.M24,
+                nearFieldScale: 1.12f, nearFieldHipBias: new Float3(0.08f, -0.01f, -0.1f),
+                hipRotationDegrees: new Float3(0f, -12f, -5f), cycleTravelMeters: 0.09f, displayLabel: "M24 SWS", muzzleFx: "rifle",
+                recoilPitchDegrees: 2.1f, recoilYawHalfDegrees: 0.35f,
+                equipTicks: 32, fireIntervalTicks: 60, reloadTicks: 190, fuseTicks: 0, adsSeconds: 0.32f,
+                handlingStyle: WeaponHandlingStyle.Bolt, adsFovDegrees: 10f, muzzleFlashScale: 1.1f, muzzleFlashSideJets: false),
+            // Content/Weapons/mk16.weapon.json
+            new WeaponVisualProfile(
+                new DefinitionId("weapons/mk16"), WeaponVisualFamily.PrimaryGun, "mk16",
+                WeaponOpticMode.Irons, hasMagazineCycle: true, shotVoice: SynthVoiceKind.Mk16Shot, killFeedGlyph: KillFeedWeapon.Mk16,
+                nearFieldScale: 1.12f, nearFieldHipBias: new Float3(0.08f, -0.01f, -0.1f),
+                hipRotationDegrees: new Float3(0f, -12f, -5f), cycleTravelMeters: 0.06f, displayLabel: "Mk 16", muzzleFx: "rifle",
+                recoilPitchDegrees: 0.4f, recoilYawHalfDegrees: 0.13f,
+                equipTicks: 24, fireIntervalTicks: 6, reloadTicks: 150, fuseTicks: 0, adsSeconds: 0.19f,
+                handlingStyle: WeaponHandlingStyle.Rifle, adsFovDegrees: 0f, muzzleFlashScale: 0.95f, muzzleFlashSideJets: false),
+            // Content/Weapons/m870.weapon.json
+            new WeaponVisualProfile(
+                new DefinitionId("weapons/m870"), WeaponVisualFamily.PrimaryGun, "m870",
+                WeaponOpticMode.Irons, hasMagazineCycle: true, shotVoice: SynthVoiceKind.M870Shot, killFeedGlyph: KillFeedWeapon.M870,
+                nearFieldScale: 1.12f, nearFieldHipBias: new Float3(0.08f, -0.01f, -0.1f),
+                hipRotationDegrees: new Float3(0f, -12f, -5f), cycleTravelMeters: 0.06f, displayLabel: "M870", muzzleFx: "rifle",
+                recoilPitchDegrees: 2.4f, recoilYawHalfDegrees: 0.5f,
+                equipTicks: 26, fireIntervalTicks: 36, reloadTicks: 28, fuseTicks: 0, adsSeconds: 0.2f,
+                handlingStyle: WeaponHandlingStyle.Pump, adsFovDegrees: 0f, muzzleFlashScale: 1.5f, muzzleFlashSideJets: false)
         };
     }
 }

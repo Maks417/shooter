@@ -767,8 +767,10 @@ namespace Shooter.Presentation.Session
             var buffs = CareerLadder.BuffsFor(CareerRank);
             session.CareerRank = CareerRank;
             session.UseArmoryLoadout(armory.Primary, armory.PrimarySight, armory.Sidearm,
-                buffs.RecoilPerMille, buffs.ReloadPerMille, buffs.AdsSpreadPerMille, buffs.EquipPerMille, buffs.ExtraMagazines);
-            if (view != null) view.LocalHandling = new WeaponHandlingScale(buffs.RecoilPerMille, buffs.ReloadPerMille, buffs.EquipPerMille);
+                buffs.RecoilPerMille, buffs.ReloadPerMille, buffs.AdsSpreadPerMille, buffs.EquipPerMille, buffs.ExtraMagazines,
+                buffs.HipSpreadPerMille, buffs.PelletSpreadPerMille, buffs.ManualCyclePerMille, buffs.MoveSpeedPerMille);
+            if (view != null)
+                view.LocalHandling = new WeaponHandlingScale(buffs.RecoilPerMille, buffs.ReloadPerMille, buffs.EquipPerMille, buffs.ManualCyclePerMille);
         }
 
         private void OpenArmory()
@@ -896,8 +898,9 @@ namespace Shooter.Presentation.Session
             float tx = row.x + iconW + 28;
             float tw = row.xMax - tx - 12;
             ui.Label(new Rect(tx, row.y + 6, tw, 22), ArmorySelection.LabelFor(weapon), 17, equipped ? TacticalUi.Accent : TacticalUi.Text);
-            if (ArmoryCatalog.TryGetStats(weapon, out int damage, out int magazine, out int rpm, out string mode))
-                ui.Label(new Rect(tx, row.y + 28, tw, 18), mode + "  ·  " + damage + " DMG  ·  " + magazine + " RND  ·  " + rpm + " RPM", 12, TacticalUi.Muted);
+            if (ArmoryCatalog.TryGetStats(weapon, out int damage, out int pellets, out int magazine, out int rpm, out string mode))
+                ui.Label(new Rect(tx, row.y + 28, tw, 18), mode + "  ·  " + (pellets > 1 ? pellets + " × " + damage : damage.ToString()) + " DMG  ·  "
+                    + magazine + " RND  ·  " + rpm + " RPM", 12, TacticalUi.Muted);
             if (equipped)
                 ui.Label(new Rect(row.xMax - 110, row.y + 6, 98, 16), ShellUiCopy.ArmoryEquipped, 11, TacticalUi.Accent, TextAnchor.UpperRight);
             if (armory != null && WeaponSightChoices.TryGet(weapon, out _))

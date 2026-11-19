@@ -1740,10 +1740,12 @@ namespace Shooter.Simulation.AI
             int ledgeFlipsBefore = counters.StrafeLedgeFlips;
             if (engaging && board.TargetDistance < AiTuning.AdvanceRange)
             {
-                holdStill = range == EngageRange.Long ||
-                    (range == EngageRange.Mid && crouchShooter && FireDiscipline.InBurst(board, tick));
+                // ADR-118: a shotgun never camps at range; it keeps moving instead of settling into a crouch.
+                bool closeGun = IsCloseRangeGun(board);
+                holdStill = !closeGun && (range == EngageRange.Long ||
+                    (range == EngageRange.Mid && crouchShooter && FireDiscipline.InBurst(board, tick)));
                 if (!holdStill) EngageMove(board, out wx, out wz);
-                crouch = range == EngageRange.Long || (range == EngageRange.Mid && crouchShooter && FireDiscipline.InBurst(board, tick));
+                crouch = !closeGun && (range == EngageRange.Long || (range == EngageRange.Mid && crouchShooter && FireDiscipline.InBurst(board, tick)));
             }
             else if (movementTarget.HasValue)
             {
@@ -1839,7 +1841,7 @@ namespace Shooter.Simulation.AI
                 }
                 else FireDiscipline.Cease(board, tick);
             }
-            else if (canFire && board.MagAmmo > 0)
+            else if (canFire && board.MagAmmo > 0 && !OutOfShotgunRange(board))
             {
                 float tol = AimController.FireTolerance(board.TargetDistance);
                 uint interval = ActiveGunFireInterval(board);
@@ -1932,6 +1934,18 @@ namespace Shooter.Simulation.AI
                 ? gun.BurstIntervalTicks * (uint)Math.Max(0, gun.BurstCount - 1) + gun.FireIntervalTicks
                 : gun.FireIntervalTicks;
             return interval == 0 ? 1u : interval;
+        }
+
+        /// <summary>ADR-118 multi-pellet primary (the M870): only worth firing inside its falloff range.</summary>
+        private static bool IsCloseRangeGun(AiBlackboard board) => board.DesiredSlot == 0 && ActiveGun(board).PelletCount > 1;
+
+        /// <summary>True when a shotgun-armed bot's target is past the end of the pellet falloff (no point firing).</summary>
+        private static bool OutOfShotgunRange(AiBlackboard board)
+        {
+            if (!IsCloseRangeGun(board)) return false;
+            var gun = ActiveGun(board);
+            float reach = gun.FalloffEndMeters > 0f ? gun.FalloffEndMeters : gun.MaxRangeMeters;
+            return board.TargetDistance > reach;
         }
 
         /// <summary>Marksman and sniper guns: bots aim down sights from medium range and wait for settled aim.</summary>

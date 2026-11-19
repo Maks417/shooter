@@ -104,13 +104,14 @@ class GeneratorTests(unittest.TestCase):
     def test_pellets_and_shell_reload(self):
         # ADR-118: pellets need a cone and semi-automatic fire; defaults leave existing rows byte-identical.
         gen.run(self.repo.root, check=False)
-        self.assertNotIn("pelletCount", (self.repo.root / gen.CATALOG_OUT).read_text(encoding="utf-8"))
+        # Only the shipped M870 row carries the ADR-118 fields.
+        self.assertEqual(1, (self.repo.root / gen.CATALOG_OUT).read_text(encoding="utf-8").count("pelletCount"))
         self.repo.edit("pistol.weapon.json", lambda d: d["combat"].update(pelletCount=8))
         self.rejects("pelletCount > 1 needs pelletSpreadDegrees")
         self.repo.edit("pistol.weapon.json", lambda d: d["combat"].update(pelletSpreadDegrees=2.6, reloadPerRound=True))
         gen.run(self.repo.root, check=False)
         catalog = (self.repo.root / gen.CATALOG_OUT).read_text(encoding="utf-8")
-        self.assertIn("pelletCount: 8, pelletSpreadRadians: Deg(2.6f), reloadPerRound: true", catalog)
+        self.assertEqual(2, catalog.count("pelletCount: 8, pelletSpreadRadians: Deg(2.6f), reloadPerRound: true"))
         self.repo.edit("rifle.weapon.json", lambda d: d["combat"].update(pelletCount=4, pelletSpreadDegrees=2))
         self.rejects("fireMode SemiAutomatic")
         self.repo.edit("rifle.weapon.json", lambda d: d["combat"].update(pelletCount=1, pelletSpreadDegrees=2))

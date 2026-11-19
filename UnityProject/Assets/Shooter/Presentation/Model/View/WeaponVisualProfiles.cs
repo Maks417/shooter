@@ -26,7 +26,9 @@ namespace Shooter.Presentation.View
         Rifle = 1,
         Ak = 2,
         Bolt = 3,
-        Pistol = 4
+        Pistol = 4,
+        /// <summary>ADR-118 pump-action: forend cycle after each shot, shell-by-shell reload.</summary>
+        Pump = 5
     }
 
     public enum WeaponVisualFamily : byte
@@ -158,7 +160,10 @@ namespace Shooter.Presentation.View
             return new WeaponVisualProfile(DefinitionId, Family, MeshAssetKey, OpticMode, HasMagazineCycle, ShotVoice, KillFeedGlyph,
                 NearFieldScale, NearFieldHipBias, HipRotationDegrees, CycleTravelMeters, DisplayLabel, MuzzleFx,
                 RecoilPitchDegrees * handling.RecoilPerMille / 1000f, RecoilYawHalfDegrees * handling.RecoilPerMille / 1000f,
-                WeaponHandlingScale.ScaleTicks(EquipTicks, handling.EquipPerMille), FireIntervalTicks,
+                WeaponHandlingScale.ScaleTicks(EquipTicks, handling.EquipPerMille),
+                (HandlingStyle == WeaponHandlingStyle.Bolt || HandlingStyle == WeaponHandlingStyle.Pump)
+                    && FireIntervalTicks >= WeaponHandlingScale.ManualActionMinIntervalTicks
+                    ? WeaponHandlingScale.ScaleTicks(FireIntervalTicks, handling.ManualCyclePerMille) : FireIntervalTicks,
                 WeaponHandlingScale.ScaleTicks(ReloadTicks, handling.ReloadPerMille), FuseTicks, AdsSeconds,
                 HandlingStyle, AdsFovDegrees, MuzzleFlashScale, MuzzleFlashSideJets);
         }

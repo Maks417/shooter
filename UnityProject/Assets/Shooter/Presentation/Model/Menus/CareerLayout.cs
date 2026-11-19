@@ -111,9 +111,17 @@ namespace Shooter.Presentation.Menus
         public HudRect PerkChip(int index, int count)
         {
             if (count <= 0 || index < 0 || index >= count) throw new ArgumentOutOfRangeException(nameof(index));
-            float w = Math.Min(280f, (Perks.Width - (count - 1) * TileGap) / count);
-            return new HudRect(Perks.X + index * (w + TileGap), Perks.Y, w, Perks.Height);
+            // ADR-119: up to nine perk families; more than five wrap onto a second row of the same band.
+            int rows = count > MaxPerkChipsPerRow ? 2 : 1;
+            int perRow = (count + rows - 1) / rows;
+            int row = index / perRow, column = index % perRow;
+            float h = rows == 1 ? Perks.Height : (Perks.Height - TileGap) / 2f;
+            float w = Math.Min(280f, (Perks.Width - (perRow - 1) * TileGap) / perRow);
+            return new HudRect(Perks.X + column * (w + TileGap), Perks.Y + row * (h + TileGap), w, h);
         }
+
+        /// <summary>Perk chips that fit on one row before the band wraps.</summary>
+        public const int MaxPerkChipsPerRow = 5;
 
         internal static float Clamp(float v, float lo, float hi) => v < lo ? lo : v > hi ? hi : v;
     }

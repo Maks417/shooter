@@ -17,7 +17,7 @@ namespace Shooter.Presentation.Scoreboard
         public uint Deaths { get; }
         public bool IsLocal { get; }
         public bool Alive { get; }
-        /// <summary>ADR-108 career rank shown beside the name (1..20); 0 when the row has none.</summary>
+        /// <summary>ADR-108 career rank shown beside the name (1..30 since ADR-119); 0 when the row has none.</summary>
         public int RankIndex { get; }
 
         public ScoreboardRow(
@@ -41,10 +41,13 @@ namespace Shooter.Presentation.Scoreboard
             Deaths = deaths;
             IsLocal = isLocal;
             Alive = alive;
-            RankIndex = rankIndex < 0 ? 0 : rankIndex > 20 ? 20 : rankIndex;
+            RankIndex = rankIndex < 0 ? 0 : rankIndex > MaxRankIndex ? MaxRankIndex : rankIndex;
         }
 
         public string RoleLabel => IsHuman ? "Human" : "Bot";
+
+        /// <summary>Top career rank (mirror of <c>CareerLadder.RankCount</c>, pinned by CareerRankCountAgreementTests).</summary>
+        public const int MaxRankIndex = 30;
     }
 
     public sealed class ScoreboardTable

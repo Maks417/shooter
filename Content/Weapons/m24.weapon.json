@@ -1,0 +1,60 @@
+{
+  "schemaId": "shooter.weapon.v1",
+  "id": "weapons/m24",
+  "order": 13,
+  "displayLabel": "M24 SWS",
+  "family": "PrimaryGun",
+  "combat": {
+    "fireMode": "SemiAutomatic",
+    "fireIntervalTicks": 60,
+    "reloadTicks": 190,
+    "equipTicks": 32,
+    "magazineSize": 5,
+    "reserveCapacity": 30,
+    "baseDamage": 100,
+    "hipSpreadDegrees": 3.6,
+    "adsSpreadDegrees": 0.03,
+    "recoilPitchDegrees": 2.1,
+    "recoilYawHalfDegrees": 0.35,
+    "moveSpeedScale": 0.88,
+    "spawnWeight": 1
+  },
+  "visual": {
+    "meshKey": "m24",
+    "geometryRecipe": "m24",
+    "magazineCycle": true,
+    "nearFieldScale": 1.12,
+    "nearFieldHipBias": [
+      0.08,
+      -0.01,
+      -0.1
+    ],
+    "hipRotationDegrees": [
+      0,
+      -12,
+      -5
+    ],
+    "sights": {
+      "default": "scope8",
+      "allowed": [
+        "irons",
+        "collimator",
+        "scope2",
+        "scope4",
+        "scope8"
+      ]
+    },
+    "optic": "ScopedPip",
+    "adsFovDegrees": 10,
+    "cycleTravelMeters": 0.09,
+    "adsSeconds": 0.32,
+    "handlingStyle": "Bolt",
+    "muzzleFlashScale": 1.1
+  },
+  "audio": {
+    "shot": "M24Shot"
+  },
+  "hud": {
+    "killFeedGlyph": "M24"
+  }
+}

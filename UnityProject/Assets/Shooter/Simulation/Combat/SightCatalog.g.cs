@@ -25,7 +25,19 @@ namespace Shooter.Simulation.Combat
                 new[] { new DefinitionId("sights/irons"), new DefinitionId("sights/collimator"), new DefinitionId("sights/scope2"), new DefinitionId("sights/scope4") }),
             // Content/Weapons/mtac338.weapon.json
             new WeaponSightOptions(new DefinitionId("weapons/mtac338"), "bolt", new DefinitionId("sights/scope8"),
-                new[] { new DefinitionId("sights/irons"), new DefinitionId("sights/collimator"), new DefinitionId("sights/scope2"), new DefinitionId("sights/scope8") })
+                new[] { new DefinitionId("sights/irons"), new DefinitionId("sights/collimator"), new DefinitionId("sights/scope2"), new DefinitionId("sights/scope8") }),
+            // Content/Weapons/m4a1.weapon.json
+            new WeaponSightOptions(new DefinitionId("weapons/m4a1"), "ar", new DefinitionId("sights/irons"),
+                new[] { new DefinitionId("sights/irons"), new DefinitionId("sights/collimator"), new DefinitionId("sights/scope2") }),
+            // Content/Weapons/m24.weapon.json
+            new WeaponSightOptions(new DefinitionId("weapons/m24"), "bolt", new DefinitionId("sights/scope8"),
+                new[] { new DefinitionId("sights/irons"), new DefinitionId("sights/collimator"), new DefinitionId("sights/scope2"), new DefinitionId("sights/scope4"), new DefinitionId("sights/scope8") }),
+            // Content/Weapons/mk16.weapon.json
+            new WeaponSightOptions(new DefinitionId("weapons/mk16"), "scar", new DefinitionId("sights/irons"),
+                new[] { new DefinitionId("sights/irons"), new DefinitionId("sights/collimator"), new DefinitionId("sights/scope2") }),
+            // Content/Weapons/m870.weapon.json
+            new WeaponSightOptions(new DefinitionId("weapons/m870"), "pump", new DefinitionId("sights/irons"),
+                new[] { new DefinitionId("sights/irons"), new DefinitionId("sights/collimator") })
         };
     }
 }

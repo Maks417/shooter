@@ -103,8 +103,8 @@ namespace Shooter.Presentation.Audio
         private static SynthVoiceKind Normalize(SynthVoiceKind kind) => kind switch
         {
             SynthVoiceKind.Shot => SynthVoiceKind.RifleShot,
-            SynthVoiceKind.ReloadAk or SynthVoiceKind.ReloadBolt => SynthVoiceKind.ReloadStart,
-            SynthVoiceKind.BoltCycle => SynthVoiceKind.ReloadComplete,
+            SynthVoiceKind.ReloadAk or SynthVoiceKind.ReloadBolt or SynthVoiceKind.ReloadShell => SynthVoiceKind.ReloadStart,
+            SynthVoiceKind.BoltCycle or SynthVoiceKind.PumpCycle => SynthVoiceKind.ReloadComplete,
             _ => kind
         };
     }

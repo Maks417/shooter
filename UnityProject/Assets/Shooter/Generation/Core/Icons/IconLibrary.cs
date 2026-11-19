@@ -25,9 +25,9 @@ namespace Shooter.Generation.Icons
         public const string RankCorporal = "rank-2";
         public const string RankSergeant = "rank-3";
         public const string RankStar = "rank-star";
-        /// <summary>ADR-108 career insignia prefix: <c>rank-01</c> (Private) … <c>rank-20</c> (General).</summary>
+        /// <summary>ADR-108 career insignia prefix: <c>rank-01</c> (Private) … <c>rank-30</c> (General of the Armies, ADR-119).</summary>
         public const string CareerRankPrefix = "rank-";
-        public const int CareerRankCount = 20;
+        public const int CareerRankCount = 30;
         public const string EmblemAlly = "emblem-ally";
         public const string EmblemEnemy = "emblem-enemy";
         public const string MedalStar = "medal-star";
@@ -52,6 +52,11 @@ namespace Shooter.Generation.Icons
         public const string RewardExtraMag = "reward-buff-extra-mag";
         public const string RewardRecoil = "reward-buff-recoil";
         public const string RewardQuickDraw = "reward-buff-quick-draw";
+        // ADR-119 perks.
+        public const string RewardHipShooter = "reward-buff-hip-shooter";
+        public const string RewardChoke = "reward-buff-choke";
+        public const string RewardSlickAction = "reward-buff-slick-action";
+        public const string RewardLightLoad = "reward-buff-light-load";
         public const string RewardStarter = "reward-starter";
         public const string RewardFinal = "reward-final";
         public const string UiLock = "ui-lock";
@@ -97,13 +102,16 @@ namespace Shooter.Generation.Icons
             150, 420, 70, 330, 130, 290, 90, 170, 230, 190, 350, 300, 450, 320, 430, 230
         };
 
-        /// <summary>ADR-108: insignia name for career rank <paramref name="rank"/> (1..20).</summary>
+        /// <summary>ADR-108: insignia name for career rank <paramref name="rank"/> (1..<see cref="CareerRankCount"/>).</summary>
         public static string CareerRank(int rank) =>
             CareerRankPrefix + Math.Max(1, Math.Min(CareerRankCount, rank)).ToString("00", System.Globalization.CultureInfo.InvariantCulture);
 
         /// <summary>
-        /// ADR-108 career insignia, one unique silhouette per rank: enlisted chevrons and rockers (01–11), a segmented
-        /// warrant bar (12), lieutenant and captain bars (13–15), field-grade leaves and the eagle (16–18), general stars (19–20).
+        /// ADR-108 career insignia, one unique silhouette per rank, re-indexed by ADR-119 to the 30 US Army grades:
+        /// enlisted chevrons and rockers (01–11), the command sergeant major's wreathed star and the sergeant major of the
+        /// Army's two stars (12–13), warrant bars with one to four squares and the CW5 stripe (14–18), lieutenant and
+        /// captain bars (19–21), field-grade leaves and the eagle (22–24), and one to four general stars, five stars in a
+        /// ring and the arc of four for General of the Armies (25–30).
         /// </summary>
         private static IEnumerable<IconRecipe> CareerRanks()
         {
@@ -131,23 +139,54 @@ namespace Shooter.Generation.Icons
                 .Add(Chevron(120, 90)).Add(Chevron(250, 90)).Add(Chevron(380, 90))
                 .Add(SmallStar(500, 610, 1, 4))
                 .Add(Rocker(720, 85)).Add(Rocker(845, 85));
+            // Command sergeant major: the star inside a wreath ring.
             yield return new IconRecipe(CareerRank(12))
-                .Add(IconShape.Box(170, 390, 660, 220, 40))
-                .Cut(IconShape.Box(345, 390, 60, 220)).Cut(IconShape.Box(595, 390, 60, 220));
-            yield return new IconRecipe(CareerRank(13)).Add(IconShape.Box(400, 130, 200, 740, 40));
+                .Add(Chevron(120, 90)).Add(Chevron(250, 90)).Add(Chevron(380, 90))
+                .Add(IconShape.Ring(500, 615, 92, 26)).Add(SmallStar(500, 615, 1, 6))
+                .Add(Rocker(735, 80)).Add(Rocker(855, 80));
+            // Sergeant major of the Army: two stars between chevrons and rockers.
+            yield return new IconRecipe(CareerRank(13))
+                .Add(Chevron(120, 90)).Add(Chevron(250, 90)).Add(Chevron(380, 90))
+                .Add(SmallStar(405, 610, 1, 5)).Add(SmallStar(595, 610, 1, 5))
+                .Add(Rocker(735, 80)).Add(Rocker(855, 80));
+            // Warrant officers: a bar with one to four squares; CW5 has a lengthwise stripe.
             yield return new IconRecipe(CareerRank(14))
-                .Add(IconShape.Box(380, 130, 240, 740, 40)).Cut(IconShape.Box(470, 210, 60, 580, 20));
+                .Add(IconShape.Box(170, 390, 660, 220, 40)).Cut(IconShape.Box(445, 445, 110, 110));
             yield return new IconRecipe(CareerRank(15))
-                .Add(IconShape.Box(250, 130, 180, 740, 40)).Add(IconShape.Box(570, 130, 180, 740, 40));
-            yield return new IconRecipe(CareerRank(16)).Add(IconShape.Polygon(Leaf));
+                .Add(IconShape.Box(170, 390, 660, 220, 40)).Cut(IconShape.Box(325, 445, 110, 110)).Cut(IconShape.Box(565, 445, 110, 110));
+            yield return new IconRecipe(CareerRank(16))
+                .Add(IconShape.Box(170, 390, 660, 220, 40))
+                .Cut(IconShape.Box(255, 450, 100, 100)).Cut(IconShape.Box(450, 450, 100, 100)).Cut(IconShape.Box(645, 450, 100, 100));
             yield return new IconRecipe(CareerRank(17))
+                .Add(IconShape.Box(170, 390, 660, 220, 40))
+                .Cut(IconShape.Box(225, 455, 90, 90)).Cut(IconShape.Box(370, 455, 90, 90))
+                .Cut(IconShape.Box(540, 455, 90, 90)).Cut(IconShape.Box(685, 455, 90, 90));
+            yield return new IconRecipe(CareerRank(18))
+                .Add(IconShape.Box(170, 390, 660, 220, 40)).Cut(IconShape.Box(230, 478, 540, 44, 20));
+            yield return new IconRecipe(CareerRank(19)).Add(IconShape.Box(400, 130, 200, 740, 40));
+            yield return new IconRecipe(CareerRank(20))
+                .Add(IconShape.Box(380, 130, 240, 740, 40)).Cut(IconShape.Box(470, 210, 60, 580, 20));
+            yield return new IconRecipe(CareerRank(21))
+                .Add(IconShape.Box(250, 130, 180, 740, 40)).Add(IconShape.Box(570, 130, 180, 740, 40));
+            yield return new IconRecipe(CareerRank(22)).Add(IconShape.Polygon(Leaf));
+            yield return new IconRecipe(CareerRank(23))
                 .Add(IconShape.Polygon(Leaf))
                 .Cut(IconShape.Capsule(500, 230, 500, 760, 50))
                 .Cut(IconShape.Capsule(500, 420, 330, 330, 40)).Cut(IconShape.Capsule(500, 420, 670, 330, 40))
                 .Cut(IconShape.Capsule(500, 580, 320, 520, 40)).Cut(IconShape.Capsule(500, 580, 680, 520, 40));
-            yield return new IconRecipe(CareerRank(18)).Add(IconShape.Polygon(Eagle));
-            yield return new IconRecipe(CareerRank(19)).Add(IconShape.Polygon(Star));
-            yield return new IconRecipe(CareerRank(20))
+            yield return new IconRecipe(CareerRank(24)).Add(IconShape.Polygon(Eagle));
+            yield return new IconRecipe(CareerRank(25)).Add(IconShape.Polygon(Star));
+            yield return new IconRecipe(CareerRank(26)).Add(SmallStar(280, 500, 9, 20)).Add(SmallStar(720, 500, 9, 20));
+            yield return new IconRecipe(CareerRank(27))
+                .Add(SmallStar(185, 500, 3, 10)).Add(SmallStar(500, 500, 3, 10)).Add(SmallStar(815, 500, 3, 10));
+            yield return new IconRecipe(CareerRank(28))
+                .Add(SmallStar(140, 500, 1, 4)).Add(SmallStar(380, 500, 1, 4)).Add(SmallStar(620, 500, 1, 4)).Add(SmallStar(860, 500, 1, 4));
+            // General of the Army: five stars set in a ring.
+            yield return new IconRecipe(CareerRank(29))
+                .Add(SmallStar(500, 240, 3, 10)).Add(SmallStar(766, 433, 3, 10)).Add(SmallStar(665, 747, 3, 10))
+                .Add(SmallStar(335, 747, 3, 10)).Add(SmallStar(234, 433, 3, 10));
+            // General of the Armies: four gold stars under a laurel arc.
+            yield return new IconRecipe(CareerRank(30))
                 .Add(IconShape.Ring(500, 430, 430, 75)).Cut(IconShape.Box(0, 0, 1000, 560))
                 .Add(SmallStar(155, 400, 3, 10)).Add(SmallStar(385, 400, 3, 10))
                 .Add(SmallStar(615, 400, 3, 10)).Add(SmallStar(845, 400, 3, 10));
@@ -260,6 +299,22 @@ namespace Shooter.Generation.Icons
                 .Add(IconShape.Polygon(500, 900, 820, 570, 620, 570, 620, 250, 380, 250, 380, 570, 180, 570));
             yield return new IconRecipe(RewardQuickDraw)
                 .Add(IconShape.Polygon(580, 80, 240, 560, 470, 560, 390, 920, 780, 390, 550, 390, 680, 80));
+            // ADR-119: Hip Shooter (open crosshair arcs), Choke (shot cone narrowing at the muzzle), Slick Action
+            // (bolt handle with a return arrow) and Light Load (double forward chevron).
+            yield return new IconRecipe(RewardHipShooter)
+                .Add(IconShape.Ring(500, 500, 320, 80))
+                .Cut(IconShape.Box(450, 0, 100, 1000)).Cut(IconShape.Box(0, 450, 1000, 100))
+                .Add(IconShape.Circle(500, 500, 70));
+            yield return new IconRecipe(RewardChoke)
+                .Add(IconShape.Capsule(110, 500, 470, 500, 190))
+                .Add(IconShape.Stroke(60, 560, 260, 900, 450)).Add(IconShape.Stroke(60, 560, 500, 900, 500))
+                .Add(IconShape.Stroke(60, 560, 740, 900, 550));
+            yield return new IconRecipe(RewardSlickAction)
+                .Add(IconShape.Capsule(160, 560, 600, 560, 150))
+                .Add(IconShape.Capsule(600, 560, 760, 760, 70)).Add(IconShape.Circle(790, 800, 95))
+                .Add(IconShape.Stroke(60, 760, 300, 400, 300)).Add(IconShape.Polygon(400, 200, 230, 300, 400, 400));
+            yield return new IconRecipe(RewardLightLoad)
+                .Add(IconShape.Stroke(120, 170, 200, 460, 500, 170, 800)).Add(IconShape.Stroke(120, 520, 200, 810, 500, 520, 800));
 
             // Starter kit: two dog tags on a chain.
             yield return new IconRecipe(RewardStarter)

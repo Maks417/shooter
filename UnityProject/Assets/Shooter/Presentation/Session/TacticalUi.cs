@@ -156,6 +156,10 @@ namespace Shooter.Presentation.Session
             KillFeedWeapon.Mtac338 => "weapon.mtac338",
             KillFeedWeapon.G17 => "weapon.g17",
             KillFeedWeapon.GoldenEagle => "weapon.golden-eagle",
+            KillFeedWeapon.M4a1 => "weapon.m4a1",
+            KillFeedWeapon.M24 => "weapon.m24",
+            KillFeedWeapon.Mk16 => "weapon.mk16",
+            KillFeedWeapon.M870 => "weapon.m870",
             _ => "weapon.rifle"
         };
 
@@ -185,8 +189,12 @@ namespace Shooter.Presentation.Session
                 case KillFeedWeapon.M16:
                 case KillFeedWeapon.Mk14:
                 case KillFeedWeapon.Mtac338:
+                case KillFeedWeapon.M4a1:
+                case KillFeedWeapon.M24:
+                case KillFeedWeapon.Mk16:
+                case KillFeedWeapon.M870:
                 {
-                    bool carbine = weapon == KillFeedWeapon.Carbine || weapon == KillFeedWeapon.Ak102;
+                    bool carbine = weapon == KillFeedWeapon.Carbine || weapon == KillFeedWeapon.Ak102 || weapon == KillFeedWeapon.M4a1;
                     float barrelEnd = carbine ? 0.88f : 0.98f;
                     // Stock (tapered by two parts), receiver, handguard, barrel, magazine, grip, optic.
                     Part(new Rect(x, y + h * 0.30f, w * 0.20f, h * 0.30f), color, k);
@@ -1284,7 +1292,7 @@ namespace Shooter.Presentation.Session
             y += 90;
             Label(new Rect(x0, y, 400, 16), "KILL FEED ICONS  (FEED SIZE / LARGE)", 12, Accent);
             var weapons = new[] { KillFeedWeapon.Ak47, KillFeedWeapon.Ak102, KillFeedWeapon.M16, KillFeedWeapon.Mk14, KillFeedWeapon.Mtac338,
-                KillFeedWeapon.G17, KillFeedWeapon.GoldenEagle, KillFeedWeapon.Knife, KillFeedWeapon.Grenade };
+                KillFeedWeapon.M4a1, KillFeedWeapon.M24, KillFeedWeapon.Mk16, KillFeedWeapon.M870, KillFeedWeapon.G17, KillFeedWeapon.GoldenEagle, KillFeedWeapon.Knife, KillFeedWeapon.Grenade };
             for (int i = 0; i < weapons.Length; i++)
             {
                 CombatPlate(new Rect(x0 + i * 110, y + 22, 100, 26), strong: true);

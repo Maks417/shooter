@@ -18,13 +18,19 @@ namespace Shooter.Game.Session
         public static IReadOnlyList<DefinitionId> Sidearms => SidearmIds;
 
         /// <summary>Combat numbers the Armory shows for a gun (damage, magazine, rounds per minute, fire mode).</summary>
-        public static bool TryGetStats(DefinitionId weapon, out int damage, out int magazine, out int roundsPerMinute, out string fireMode)
+        public static bool TryGetStats(DefinitionId weapon, out int damage, out int magazine, out int roundsPerMinute, out string fireMode) =>
+            TryGetStats(weapon, out damage, out _, out magazine, out roundsPerMinute, out fireMode);
+
+        /// <summary>As above with the pellets per shot (ADR-118; 1 for single-projectile guns, damage is per pellet).</summary>
+        public static bool TryGetStats(DefinitionId weapon, out int damage, out int pellets, out int magazine, out int roundsPerMinute, out string fireMode)
         {
             damage = magazine = roundsPerMinute = 0;
+            pellets = 1;
             fireMode = "";
             if (!WeaponCatalog.TryGet(weapon, out var entry)) return false;
             var d = entry.Definition;
             damage = d.BaseDamage;
+            pellets = d.PelletCount;
             magazine = d.MagazineSize;
             roundsPerMinute = d.FireMode == FireMode.Burst && d.BurstIntervalTicks > 0
                 ? (int)(3600u / d.BurstIntervalTicks)
@@ -32,6 +38,8 @@ namespace Shooter.Game.Session
             fireMode = d.FireMode switch
             {
                 FireMode.Automatic => "AUTO",
+                // ADR-118: a tube-fed multi-pellet gun is the pump-action shotgun.
+                FireMode.SemiAutomatic when d.PelletCount > 1 && d.ReloadPerRound => "PUMP",
                 FireMode.SemiAutomatic => "SEMI",
                 FireMode.Burst => d.BurstCount + "-ROUND BURST",
                 _ => d.FireMode.ToString().ToUpperInvariant()

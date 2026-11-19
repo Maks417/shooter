@@ -1,0 +1,63 @@
+{
+  "schemaId": "shooter.weapon.v1",
+  "id": "weapons/m870",
+  "order": 15,
+  "displayLabel": "M870",
+  "family": "PrimaryGun",
+  "combat": {
+    "fireMode": "SemiAutomatic",
+    "fireIntervalTicks": 36,
+    "reloadTicks": 28,
+    "equipTicks": 26,
+    "magazineSize": 7,
+    "reserveCapacity": 28,
+    "baseDamage": 25,
+    "hipSpreadDegrees": 1.2,
+    "adsSpreadDegrees": 0.5,
+    "recoilPitchDegrees": 2.4,
+    "recoilYawHalfDegrees": 0.5,
+    "maxRangeMeters": 60,
+    "falloffStartMeters": 8,
+    "falloffEndMeters": 30,
+    "falloffMinScale": 0.3,
+    "moveSpeedScale": 0.95,
+    "spawnWeight": 2,
+    "pelletCount": 8,
+    "pelletSpreadDegrees": 2.6,
+    "reloadPerRound": true
+  },
+  "visual": {
+    "meshKey": "m870",
+    "geometryRecipe": "m870",
+    "magazineCycle": true,
+    "nearFieldScale": 1.12,
+    "nearFieldHipBias": [
+      0.08,
+      -0.01,
+      -0.1
+    ],
+    "hipRotationDegrees": [
+      0,
+      -12,
+      -5
+    ],
+    "sights": {
+      "default": "irons",
+      "allowed": [
+        "irons",
+        "collimator"
+      ]
+    },
+    "optic": "Irons",
+    "cycleTravelMeters": 0.06,
+    "adsSeconds": 0.2,
+    "handlingStyle": "Pump",
+    "muzzleFlashScale": 1.5
+  },
+  "audio": {
+    "shot": "M870Shot"
+  },
+  "hud": {
+    "killFeedGlyph": "M870"
+  }
+}

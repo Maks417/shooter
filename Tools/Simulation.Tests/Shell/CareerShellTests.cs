@@ -113,10 +113,10 @@ namespace Shooter.Simulation.Tests.Shell
             var table = new ScoreboardTable();
             table.BindLive(snap, new EntityId(1));
             Assert.All(table.Rows, r => Assert.Equal(0, r.RankIndex));
-            table.RankOf = (p, human) => human ? 7 : 30;
+            table.RankOf = (p, human) => human ? 7 : 40;
             table.BindLive(snap, new EntityId(1));
             Assert.Equal(7, table.Rows[0].RankIndex);
-            Assert.Equal(20, table.Rows[1].RankIndex); // clamped to the ladder
+            Assert.Equal(30, table.Rows[1].RankIndex); // clamped to the ladder
         }
 
         [Fact]

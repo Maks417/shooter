@@ -29,9 +29,10 @@ namespace Shooter.Game.Contracts.Tests
         // ------------------------------------------------------------ ladder
 
         [Fact]
-        public void Ladder_has_twenty_ranks_on_the_quadratic_scale()
+        public void Ladder_has_thirty_ranks_on_the_quadratic_scale()
         {
-            Assert.Equal(20, CareerLadder.Ranks.Count);
+            // ADR-119: the full US Army ladder, Private to General of the Armies.
+            Assert.Equal(30, CareerLadder.Ranks.Count);
             for (int i = 0; i < CareerLadder.Ranks.Count; i++)
             {
                 var rank = CareerLadder.Ranks[i];
@@ -43,6 +44,11 @@ namespace Shooter.Game.Contracts.Tests
             Assert.Equal(0, CareerLadder.Get(1).Threshold);
             Assert.Equal(3000, CareerLadder.Get(2).Threshold);
             Assert.Equal(399000, CareerLadder.Get(20).Threshold);
+            Assert.Equal(899000, CareerLadder.Get(30).Threshold);
+            Assert.Equal("General of the Armies", CareerLadder.Get(30).Name);
+            Assert.Equal("Command Sergeant Major", CareerLadder.Get(12).Name);
+            Assert.Equal("Warrant Officer 1", CareerLadder.Get(14).Name);
+            Assert.Equal(CareerRewardKind.Final, CareerLadder.Get(30).RewardKind);
         }
 
         [Fact]
@@ -91,7 +97,9 @@ namespace Shooter.Game.Contracts.Tests
         [InlineData(35000, 6)]
         [InlineData(398999, 19)]
         [InlineData(399000, 20)]
-        [InlineData(5000000, 20)]
+        [InlineData(898999, 29)]
+        [InlineData(899000, 30)]
+        [InlineData(5000000, 30)]
         public void Rank_follows_career_points(long cp, int rank) => Assert.Equal(rank, CareerLadder.RankFor(cp));
 
         [Fact]
@@ -99,8 +107,9 @@ namespace Shooter.Game.Contracts.Tests
         {
             Assert.Equal(0f, CareerLadder.Progress01(3000));
             Assert.Equal(.5f, CareerLadder.Progress01(5500), 3);
-            Assert.Equal(1f, CareerLadder.Progress01(399000));
-            Assert.Null(CareerLadder.Next(20));
+            Assert.Equal(1f, CareerLadder.Progress01(899000));
+            Assert.Equal(21, CareerLadder.Next(20)!.Index);
+            Assert.Null(CareerLadder.Next(30));
             Assert.Equal(2, CareerLadder.Next(1)!.Index);
         }
 
@@ -125,11 +134,16 @@ namespace Shooter.Game.Contracts.Tests
             Assert.Equal(1, CareerLadder.UnlockRankFor(CareerLadder.StarterPrimary));
             Assert.Equal(1, CareerLadder.UnlockRankFor(CareerLadder.StarterSidearm));
             Assert.Equal(1, CareerLadder.UnlockRankFor(CareerLadder.StarterSight));
-            Assert.Equal(15, CareerLadder.UnlockRankFor("weapons/mtac338"));
-            Assert.Equal(14, CareerLadder.UnlockRankFor("sights/scope8"));
+            Assert.Equal(23, CareerLadder.UnlockRankFor("weapons/mtac338"));
+            Assert.Equal(19, CareerLadder.UnlockRankFor("sights/scope8"));
+            // ADR-119: the four ADR-118 guns.
+            Assert.Equal(4, CareerLadder.UnlockRankFor("weapons/m4a1"));
+            Assert.Equal(10, CareerLadder.UnlockRankFor("weapons/m870"));
+            Assert.Equal(14, CareerLadder.UnlockRankFor("weapons/mk16"));
+            Assert.Equal(20, CareerLadder.UnlockRankFor("weapons/m24"));
             Assert.True(CareerLadder.IsUnlocked("weapons/m16", 1));
-            Assert.False(CareerLadder.IsUnlocked("weapons/ak47", 7));
-            Assert.True(CareerLadder.IsUnlocked("weapons/ak47", 8));
+            Assert.False(CareerLadder.IsUnlocked("weapons/ak47", 10));
+            Assert.True(CareerLadder.IsUnlocked("weapons/ak47", 11));
         }
 
         [Fact]
@@ -150,11 +164,15 @@ namespace Shooter.Game.Contracts.Tests
             Assert.True(CareerLadder.BuffsFor(2).IsNone);
             Assert.Equal(920, CareerLadder.BuffsFor(3).ReloadPerMille);
             var mid = CareerLadder.BuffsFor(12);
-            Assert.Equal(new CareerBuffs(920, 920, 920, 1000, 1), mid);
-            var top = CareerLadder.BuffsFor(20);
-            Assert.Equal(new CareerBuffs(850, 850, 850, 800, 2), top);
-            Assert.Equal(top, CareerLadder.BuffsFor(19));
-            for (int r = 1; r <= 20; r++)
+            Assert.Equal(new CareerBuffs(1000, 920, 920, 1000, 1, hipSpread: 920), mid);
+            var top = CareerLadder.BuffsFor(30);
+            Assert.Equal(new CareerBuffs(850, 850, 850, 800, 2, hipSpread: 850, pelletSpread: 850, manualCycle: 850, moveSpeed: 1030), top);
+            Assert.Equal(top, CareerLadder.BuffsFor(29));
+            Assert.Equal(850, CareerLadder.BuffsFor(15).PelletSpreadPerMille);
+            Assert.Equal(920, CareerLadder.BuffsFor(21).ManualCyclePerMille);
+            Assert.Equal(1000, CareerLadder.BuffsFor(24).MoveSpeedPerMille);
+            Assert.Equal(1030, CareerLadder.BuffsFor(25).MoveSpeedPerMille);
+            for (int r = 1; r <= CareerLadder.RankCount; r++)
             {
                 var b = CareerLadder.BuffsFor(r);
                 Assert.InRange(b.RecoilPerMille, WeaponModifiers.MinScale, 1000);
@@ -162,6 +180,10 @@ namespace Shooter.Game.Contracts.Tests
                 Assert.InRange(b.AdsSpreadPerMille, WeaponModifiers.MinScale, 1000);
                 Assert.InRange(b.EquipPerMille, WeaponModifiers.MinEquipScale, 1000);
                 Assert.InRange(b.ExtraMagazines, 0, WeaponModifiers.MaxExtraMagazines);
+                Assert.InRange(b.HipSpreadPerMille, WeaponModifiers.MinScale, 1000);
+                Assert.InRange(b.PelletSpreadPerMille, WeaponModifiers.MinScale, 1000);
+                Assert.InRange(b.ManualCyclePerMille, WeaponModifiers.MinScale, 1000);
+                Assert.InRange(b.MoveSpeedPerMille, 1000, WeaponModifiers.MaxMoveScale);
             }
         }
 
@@ -322,12 +344,12 @@ namespace Shooter.Game.Contracts.Tests
         [Fact]
         public void Bot_ranks_are_seeded_stable_and_near_the_player()
         {
-            for (int player = 1; player <= 20; player++)
+            for (int player = 1; player <= CareerLadder.RankCount; player++)
                 for (uint bot = 2; bot <= 30; bot++)
                 {
                     int rank = BotRanks.Resolve(bot, 460072030UL, player);
                     Assert.Equal(rank, BotRanks.Resolve(bot, 460072030UL, player));
-                    Assert.InRange(rank, Math.Max(1, player - BotRanks.Spread), Math.Min(20, player + BotRanks.Spread));
+                    Assert.InRange(rank, Math.Max(1, player - BotRanks.Spread), Math.Min(CareerLadder.RankCount, player + BotRanks.Spread));
                 }
             var seen = new HashSet<int>();
             for (uint bot = 2; bot <= 30; bot++) seen.Add(BotRanks.Resolve(bot, 7UL, 10));
@@ -367,7 +389,7 @@ namespace Shooter.Game.Contracts.Tests
                 }
                 Assert.True(lifecycle.Simulation.TryGetWeapon(p.EntityId, 0, out var botGun));
                 Assert.Equal(WeaponCatalog.RequireDefinition(botGun.DefinitionId).ReserveCapacity, botGun.Reserve);
-                Assert.InRange(session.DisplayRankOf(p.ParticipantId, false), 15, 20);
+                Assert.InRange(session.DisplayRankOf(p.ParticipantId, false), 15, 21);
             }
             Assert.Equal(new LocalMatchTally(0, 0, 0).Assists, session.LocalTally.Assists);
         }

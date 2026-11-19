@@ -65,10 +65,24 @@ namespace Shooter.Presentation.View
         /// 0 = bolt/slide closed, 1 = fully open after a shot impulse. Eased so the part lingers at the rear and
         /// slams home (ADR-099).
         /// </summary>
-        public float CycleOpen01 => boltPhase > 0f ? BoltOpen(boltPhase) : 1f - (1f - cycleOpen) * (1f - cycleOpen);
+        public float CycleOpen01 => boltPhase > 0f ? (pumpAction ? PumpOpen(boltPhase) : BoltOpen(boltPhase))
+            : 1f - (1f - cycleOpen) * (1f - cycleOpen);
 
-        /// <summary>True while the bolt is being worked after a bolt-action shot.</summary>
+        /// <summary>True while the bolt (or, ADR-118, the pump) is being worked after a manual-action shot.</summary>
         public bool BoltCycling => boltPhase > 0f;
+
+        /// <summary>True while the ADR-118 pump stroke runs (the bolt-phase clock drives it).</summary>
+        public bool PumpCycling => boltPhase > 0f && pumpAction;
+
+        private bool pumpAction;
+        private float pumpTravel;
+
+        /// <summary>ADR-118 pump stroke over its share of the fire interval: back fast after the recoil, then home.</summary>
+        public static float PumpOpen(float phase) =>
+            MotionCurve.Ramp(phase, .18f, .46f) * (1f - MotionCurve.Ramp(phase, .54f, .86f));
+
+        /// <summary>Share of the fire interval the pump stroke takes (the audio router schedules its sound to match).</summary>
+        public const float PumpCycleShare = 0.70f;
 
         // Bolt knob relative to the support hand on the forend (geometry.weapon 1.2.0 bolt archetype).
         private static readonly Float3 BoltKnobReach = new Float3(0.052f, 0.082f, -0.410f);
@@ -230,6 +244,16 @@ namespace Shooter.Presentation.View
                             // Work the bolt inside the authoritative fire interval, after the recoil settles.
                             boltSeconds = Math.Max(0.4f, interval * 0.85f);
                             boltPhase = 0.01f;
+                            pumpAction = false;
+                            cycleOpen = 0f;
+                        }
+                        else if (profile.HandlingStyle == WeaponHandlingStyle.Pump && interval > 0f)
+                        {
+                            // ADR-118: rack the pump inside the fire interval; the support hand rides the forend.
+                            boltSeconds = Math.Max(0.25f, interval * PumpCycleShare);
+                            boltPhase = 0.01f;
+                            pumpAction = true;
+                            pumpTravel = profile.CycleTravelMeters;
                             cycleOpen = 0f;
                         }
                     }
@@ -306,6 +330,12 @@ namespace Shooter.Presentation.View
                 return FirstPersonSpecialActions.MeleeRotationDegrees(meleePhase, meleeStab, MeleeDirection, reducedMotion);
             if (ProductAuthorityActionView.IsGrenadeSlot(activeSlot) && cooking)
                 return FirstPersonSpecialActions.GrenadeCookRotation(cookSeconds, fuseSeconds, reducedMotion);
+            if (boltPhase > 0f && pumpAction)
+            {
+                // A short dip and back as the pump is racked.
+                float pump = PumpOpen(boltPhase);
+                return new Float3((reducedMotion ? 1f : 2f) * pump, 0f, -(reducedMotion ? 1f : 2f) * pump);
+            }
             if (boltPhase > 0f)
             {
                 float roll = MotionCurve.Ramp(boltPhase, .06f, .26f) * (1f - MotionCurve.Ramp(boltPhase, .80f, .98f));
@@ -318,13 +348,13 @@ namespace Shooter.Presentation.View
         public Float3 SpecialSupportWrist =>
             cooking && ProductAuthorityActionView.IsGrenadeSlot(activeSlot)
                 ? FirstPersonSpecialActions.PinPullWrist(cookSeconds)
-                : boltPhase > 0f ? BoltHandReach(boltPhase) : default;
+                : boltPhase > 0f ? (pumpAction ? new Float3(0f, 0f, -pumpTravel * PumpOpen(boltPhase)) : BoltHandReach(boltPhase)) : default;
 
         /// <summary>Support-hand finger openness for special actions.</summary>
         public float SpecialSupportOpen =>
             cooking && ProductAuthorityActionView.IsGrenadeSlot(activeSlot)
                 ? FirstPersonSpecialActions.PinPullOpen(cookSeconds)
-                : boltPhase > 0f ? .7f * MotionCurve.Ramp(boltPhase, .04f, .16f) * (1f - MotionCurve.Ramp(boltPhase, .22f, .30f))
+                : boltPhase > 0f && !pumpAction ? .7f * MotionCurve.Ramp(boltPhase, .04f, .16f) * (1f - MotionCurve.Ramp(boltPhase, .22f, .30f))
                     + .7f * MotionCurve.Ramp(boltPhase, .78f, .86f) * (1f - MotionCurve.Ramp(boltPhase, .92f, 1f)) : 0f;
 
         /// <summary>

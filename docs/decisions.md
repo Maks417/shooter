@@ -2053,3 +2053,73 @@ Consequences:
 Rollback: revert the ADR-118 commits, refreeze the feature registry and republish content.
 
 Evidence: [M11 handoff](milestones/m11-playable-release/handoff.md#adr-118-new-weapons--2026-11-19).
+
+## ADR-119 — Accepted: 30-rank career ladder and four new perks
+
+Date 2026-11-19. Context: the owner asked to extend the progress bar with new military ranks, the ADR-118 weapons and new perks if needed. The ADR-108 ladder ended at General after 20 ranks and had no place for the four new guns. The owner chose the full US Army ladder and accepted that existing progress is re-read or reset; no migration.
+
+Decision:
+- **30 ranks, same CP scale** (`1000·(n²−1)`, so rank 30 is 899,000 CP):
+  - Enlisted: PVT, PV2, PFC, SPC, CPL, SGT, SSG, SFC, MSG, 1SG, SGM, **CSM**, **SMA** (1–13).
+  - Warrant: **WO1, CW2, CW3, CW4, CW5** (14–18).
+  - Officer: 2LT, 1LT, CPT, MAJ, LTC, COL (19–24).
+  - General: BG, **MG**, **LTG**, GEN, **General of the Army**, **General of the Armies** (25–30).
+- **Rewards:**
+
+  | Rank | Reward |
+  |---|---|
+  | 1 | starter kit |
+  | 2 | collimator |
+  | 3 | Fast Hands I |
+  | 4 | M4A1 |
+  | 5 | AK-102 |
+  | 6 | 2x prism |
+  | 7 | Hip Shooter I |
+  | 8 | Golden Eagle |
+  | 9 | Steady Aim I |
+  | 10 | M870 |
+  | 11 | AK-47 |
+  | 12 | Extra Mag I |
+  | 13 | 4x |
+  | 14 | Mk 16 |
+  | 15 | Choke |
+  | 16 | Recoil Control I |
+  | 17 | Mk 14 |
+  | 18 | Quick Draw |
+  | 19 | 8x |
+  | 20 | M24 SWS |
+  | 21 | Slick Action I |
+  | 22 | Fast Hands II |
+  | 23 | M-TAC 338 |
+  | 24 | Recoil Control II |
+  | 25 | Light Load |
+  | 26 | Extra Mag II |
+  | 27 | Hip Shooter II |
+  | 28 | Steady Aim II |
+  | 29 | Slick Action II |
+  | 30 | gold insignia |
+
+  Every factory optic still precedes its gun.
+- **New perks (amends ADR-108 "fire rate and movement are never modified"):**
+  - Hip Shooter I/II: hip spread −8%/−15%.
+  - Choke: shotgun pellet cone −15%.
+  - Slick Action I/II: the fire interval of manual-action guns (semi-automatic with at least 30 ticks between shots: the bolt rifles and the M870) −8%/−15%, rounded to whole ticks.
+  - Light Load: move speed +3% with a gun out, capped at +5%.
+  - All are per-mille fields of `WeaponModifiers`/`CareerBuffs`; identity leaves every definition bit-identical, so bots and replays are unchanged.
+  - The motor now reads move speed through the buffed definition.
+  - The presentation mirrors the cycle for bolt and pump timing and the hip/pellet cone for the reticle gap.
+- **One source of truth for the length:** `CareerLadder.RankCount`. Mirrors that cannot reference Game.Settings are pinned to it by `CareerRankCountAgreementTests`:
+  - `IconLibrary.CareerRankCount`
+  - `BotRanks.MaxRank`
+  - `ScoreboardRow.MaxRankIndex`, which replaces a literal 20
+  - the reward-art table
+- **Insignia:** procedural insignia for every grade (the CSM wreathed star, the SMA's two stars, warrant bars with one to four squares and the CW5 stripe, two to four general stars and five stars in a ring), plus four perk glyphs. The icon-library golden changes to `b5f08aab…`.
+- **Career page:** active perk chips wrap onto two rows past five.
+
+Consequences:
+- Saves keep CP only, so an existing career is re-read on the new ladder and some unlocks re-lock (owner-accepted; the Armory falls back per field).
+- No contract, content-format, feature or game lock changes; `docs/career-fixtures` is unchanged.
+
+Rollback: revert the commit.
+
+Evidence: [M11 handoff](milestones/m11-playable-release/handoff.md#adr-119-30-rank-career--2026-11-19). The in-game look of the insignia and the balance of the perks are Pending owner playtest.

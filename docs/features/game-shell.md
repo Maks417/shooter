@@ -73,3 +73,9 @@ Additive optional `Pickup` (default Key.G, settings label “Pick up weapon”) 
 ## Armory (ADR-107)
 
 The Armory page (`ShellScreen.Armory`, from Main or from Setup's loadout button; Escape/Back returns there) chooses what the player takes into every match. Left: slot tabs for Primary and Sidearm, with Knife and Grenade shown as standard issue. Middle: the guns that also spawn for bots (`ArmoryCatalog`), each with its mesh-traced icon, fire mode, damage, magazine and rate of fire. Right: the sights the equipped primary can mount (iron sights, collimator, 2x prism, and the 4x/8x scope on the Mk 14/M-TAC 338), each with a one-line effect; sidearms keep their own irons. Each gun remembers its own sight. Every change saves at once to `shooter-armory.json` beside the settings (`shooter.armory.v1`, same atomic/last-good/quarantine/newer-schema rules as settings; schema and fixtures in `docs/armory-fixtures/`). Unknown or stale ids fall back per field (M16 with the 2x prism, G17). Start Match passes the loadout to `OfflineGameSession.UseArmoryLoadout`; the human spawns and respawns with it, while bots keep random guns and random sights. A save failure keeps the picks for the session and shows a footer message. Since [ADR-108](../decisions.md#adr-108--accepted-career-ranks-unlocks-buffs-and-local-service-record) guns and sights above the player's career rank are listed as locked ("Unlocks at …"), the header shows the rank insignia, name and CP bar, and a new [Career page](career.md) holds the ladder and service record.
+
+## Armory and career additions (ADR-117 to ADR-119, 2026-11-19)
+
+- **Collimator (ADR-117):** the collimator dot is one small red point, and the sight zooms 1.2x.
+- **New guns (ADR-118):** the Armory lists the M4A1, Mk 16, M24 SWS and M870. The M870 row reads "PUMP · 8 × 25 DMG".
+- **Career (ADR-119):** the Career page covers 30 ranks. The active perk chips wrap onto a second row once there are more than five. See [career](career.md).

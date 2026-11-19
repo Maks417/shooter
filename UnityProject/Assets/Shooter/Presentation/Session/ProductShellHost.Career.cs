@@ -355,12 +355,17 @@ namespace Shooter.Presentation.Session
 
         private void DrawActiveBuffs(CareerLayout layout, CareerBuffs b)
         {
-            var chips = new System.Collections.Generic.List<(string Icon, string Name, string Value)>(5);
+            var chips = new System.Collections.Generic.List<(string Icon, string Name, string Value)>(9);
             if (b.ReloadPerMille < 1000) chips.Add((IconLibrary.RewardFastHands, "Reload", "-" + Percent(b.ReloadPerMille)));
             if (b.AdsSpreadPerMille < 1000) chips.Add((IconLibrary.RewardSteadyAim, "ADS spread", "-" + Percent(b.AdsSpreadPerMille)));
             if (b.RecoilPerMille < 1000) chips.Add((IconLibrary.RewardRecoil, "Recoil", "-" + Percent(b.RecoilPerMille)));
             if (b.EquipPerMille < 1000) chips.Add((IconLibrary.RewardQuickDraw, "Equip", "-" + Percent(b.EquipPerMille)));
             if (b.ExtraMagazines > 0) chips.Add((IconLibrary.RewardExtraMag, "Spare mags", "+" + b.ExtraMagazines));
+            // ADR-119 perks.
+            if (b.HipSpreadPerMille < 1000) chips.Add((IconLibrary.RewardHipShooter, "Hip spread", "-" + Percent(b.HipSpreadPerMille)));
+            if (b.PelletSpreadPerMille < 1000) chips.Add((IconLibrary.RewardChoke, "Pellet spread", "-" + Percent(b.PelletSpreadPerMille)));
+            if (b.ManualCyclePerMille < 1000) chips.Add((IconLibrary.RewardSlickAction, "Bolt/pump", "-" + Percent(b.ManualCyclePerMille)));
+            if (b.MoveSpeedPerMille > 1000) chips.Add((IconLibrary.RewardLightLoad, "Move speed", "+" + ((b.MoveSpeedPerMille - 1000 + 5) / 10) + "%"));
             if (chips.Count == 0)
             {
                 Rect empty = R(layout.Perks);
