@@ -99,7 +99,9 @@ COMBAT_OPTIONAL = {"maxRangeMeters": Literal("300"), "fuseTicks": Literal("0"),
                    # ADR-102 handling: burst cadence, range falloff, move speed and random-loadout weight.
                    "burstCount": Literal("0"), "burstIntervalTicks": Literal("0"),
                    "falloffStartMeters": Literal("0"), "falloffEndMeters": Literal("0"), "falloffMinScale": Literal("1"),
-                   "moveSpeedScale": Literal("1"), "spawnWeight": Literal("1")}
+                   "moveSpeedScale": Literal("1"), "spawnWeight": Literal("1"),
+                   # ADR-118: shotgun pellets per shot, their cone, and shell-by-shell reloading.
+                   "pelletCount": Literal("1"), "pelletSpreadDegrees": Literal("0"), "reloadPerRound": False}
 
 
 def enum_members(root: Path, name: str) -> set:
@@ -218,6 +220,17 @@ def validate(root: Path, path: Path, doc, enums) -> dict:
                                       minimum=0.5, maximum=1.2)
     fields["spawnWeight"] = number(combat.get("spawnWeight", COMBAT_OPTIONAL["spawnWeight"]), c + "spawnWeight",
                                    maximum=1000, integer=True)
+    fields["pelletCount"] = number(combat.get("pelletCount", COMBAT_OPTIONAL["pelletCount"]), c + "pelletCount",
+                                   minimum=1, maximum=16, integer=True)
+    fields["pelletSpreadDegrees"] = number(combat.get("pelletSpreadDegrees", COMBAT_OPTIONAL["pelletSpreadDegrees"]),
+                                           c + "pelletSpreadDegrees", maximum=15)
+    fields["reloadPerRound"] = boolean(combat.get("reloadPerRound", COMBAT_OPTIONAL["reloadPerRound"]), c + "reloadPerRound")
+    if int(fields["pelletCount"]) > 1 and (float(fields["pelletSpreadDegrees"]) <= 0 or fire_mode != "SemiAutomatic"):
+        raise DefinitionError(c + "pelletCount > 1 needs pelletSpreadDegrees > 0 and fireMode SemiAutomatic")
+    if int(fields["pelletCount"]) == 1 and float(fields["pelletSpreadDegrees"]) != 0:
+        raise DefinitionError(c + "pelletSpreadDegrees is only valid with pelletCount > 1")
+    if fields["reloadPerRound"] and family not in ("PrimaryGun", "Sidearm"):
+        raise DefinitionError(c + "reloadPerRound is only valid for guns")
     if fire_mode == "Burst" and (int(fields["burstCount"]) < 2 or int(fields["burstIntervalTicks"]) < 1):
         raise DefinitionError(c + "Burst needs burstCount >= 2 and burstIntervalTicks >= 1")
     if fire_mode != "Burst" and int(fields["burstCount"]) != 0:
@@ -384,6 +397,14 @@ def float3(values) -> str:
     return "new Float3(" + ", ".join(f(x) for x in values) + ")"
 
 
+def pellet_args(c) -> str:
+    """ADR-118 fields, emitted only when they differ from the constructor defaults (older rows stay byte-identical)."""
+    if c["pelletCount"] == "1" and not c["reloadPerRound"]:
+        return ""
+    return (",\n                    pelletCount: " + c["pelletCount"] + ", pelletSpreadRadians: " + deg(c["pelletSpreadDegrees"])
+            + ", reloadPerRound: " + b(c["reloadPerRound"]))
+
+
 def render_catalog(weapons) -> str:
     rows = []
     for w in weapons:
@@ -409,7 +430,7 @@ def render_catalog(weapons) -> str:
             + ", falloffStartMeters: " + f(c["falloffStartMeters"]) + ", falloffEndMeters: " + f(c["falloffEndMeters"])
             + ",\n"
             "                    falloffMinScale: " + f(c["falloffMinScale"]) + ", moveSpeedScale: " + f(c["moveSpeedScale"])
-            + ", spawnWeight: " + c["spawnWeight"] + "),\n"
+            + ", spawnWeight: " + c["spawnWeight"] + pellet_args(c) + "),\n"
             "                WeaponFamily." + w["family"] + ", \"" + w["id"] + "\")")
     return (HEADER + "#nullable enable\nusing Shooter.Contracts;\n\nnamespace Shooter.Simulation.Combat\n{\n"
             "    public static partial class WeaponCatalog\n    {\n"

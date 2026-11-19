@@ -64,7 +64,8 @@ namespace Shooter.Simulation.Combat
                 def.RecoilYawHalfRadians * RecoilPerMille / One,
                 def.MaxRangeMeters, def.FuseTicks, def.ThrowSpeedMetersPerSecond, def.BlastRadiusMeters,
                 def.ConsumesAmmo, def.AllowsSprintFire, def.BurstCount, def.BurstIntervalTicks,
-                def.FalloffStartMeters, def.FalloffEndMeters, def.FalloffMinScale, def.MoveSpeedScale, def.SpawnWeight);
+                def.FalloffStartMeters, def.FalloffEndMeters, def.FalloffMinScale, def.MoveSpeedScale, def.SpawnWeight,
+                def.PelletCount, def.PelletSpreadRadians, def.ReloadPerRound);
         }
 
         /// <summary>Starting reserve: the catalog reserve plus <see cref="ExtraMagazines"/> full magazines for firearms.</summary>

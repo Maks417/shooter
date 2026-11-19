@@ -477,17 +477,16 @@ namespace Shooter.Simulation
                 shots++;
                 if (shot.Definition.FireMode != FireMode.Melee)
                     AuthoritativeRecoil.ApplyImpulse(shot.Definition, shot.ShotIndex, shotSeed, ref shooter.RecoilYaw, ref shooter.RecoilPitch);
-                if (!result.Impacted) continue;
-                ushort region = result.Impact.EntityId.IsValid ? result.Impact.SurfaceTag : (ushort)0;
-                tickEvents.Add(new CombatEvent(nextEvent, CombatEventKind.Impact, shooter.Id, result.Impact.EntityId,
-                    new ImpactPayload(result.Impact.Point, result.Impact.Normal, result.Impact.SurfaceTag, region)));
-                nextEvent = nextEvent.NextOrdinal();
-                if (!result.Impact.EntityId.IsValid) continue;
-                // ADR-102 range falloff from the shot origin to the hit.
-                float dx = result.Impact.Point.X - result.Origin.X, dy = result.Impact.Point.Y - result.Origin.Y, dz = result.Impact.Point.Z - result.Origin.Z;
-                float meters = (float)Math.Sqrt(dx * dx + dy * dy + dz * dz);
-                ushort baseDamage = DamageMath.FalloffDamage(shot.Definition.BaseDamage, shot.Definition.FalloffScale(meters));
-                ApplyDirectDamage(shooter, result.Impact.EntityId, region, baseDamage, ref nextEvent, ref damageEvents);
+                ResolveShotImpact(shooter, shot.Definition, result, ref nextEvent, ref damageEvents);
+                // ADR-118: the other pellets of a multi-pellet shot (one ShotAccepted and one recoil impulse per shot;
+                // an impact and damage per pellet). Pellet 0 decided whether the gun was pushed into a wall.
+                for (byte p = 1; p < shot.Definition.PelletCount; p++)
+                {
+                    var pellet = hitscan.Resolve(new HitscanRequest(shooter.Id, eye, muzzleForProbe, aim, shot.Definition, shot.ShotIndex, shot.Ads, shotSeed, 1, p),
+                        world, volumeSnapshot, friendlyIgnore);
+                    if (pellet.BlockedAtMuzzle) continue;
+                    ResolveShotImpact(shooter, shot.Definition, pellet, ref nextEvent, ref damageEvents);
+                }
             }
 
             // Preserve any same-tick in-hand detonations queued during weapon step, then append flight fuse expiry.
@@ -627,6 +626,21 @@ namespace Shooter.Simulation
             ushort health = DamageMath.SplitArmor(amount, victim.Armor, out ushort armorTaken);
             victim.Armor = (ushort)(victim.Armor - armorTaken);
             return health;
+        }
+
+        private void ResolveShotImpact(Actor shooter, in WeaponDefinition definition, in HitscanResult result, ref EventId nextEvent, ref int damageEvents)
+        {
+            if (!result.Impacted) return;
+            ushort region = result.Impact.EntityId.IsValid ? result.Impact.SurfaceTag : (ushort)0;
+            tickEvents.Add(new CombatEvent(nextEvent, CombatEventKind.Impact, shooter.Id, result.Impact.EntityId,
+                new ImpactPayload(result.Impact.Point, result.Impact.Normal, result.Impact.SurfaceTag, region)));
+            nextEvent = nextEvent.NextOrdinal();
+            if (!result.Impact.EntityId.IsValid) return;
+            // ADR-102 range falloff from the shot origin to the hit.
+            float dx = result.Impact.Point.X - result.Origin.X, dy = result.Impact.Point.Y - result.Origin.Y, dz = result.Impact.Point.Z - result.Origin.Z;
+            float meters = (float)Math.Sqrt(dx * dx + dy * dy + dz * dz);
+            ushort baseDamage = DamageMath.FalloffDamage(definition.BaseDamage, definition.FalloffScale(meters));
+            ApplyDirectDamage(shooter, result.Impact.EntityId, region, baseDamage, ref nextEvent, ref damageEvents);
         }
 
         private void ApplyDirectDamage(Actor shooter, EntityId targetId, ushort region, ushort baseDamage, ref EventId nextEvent, ref int damageEvents)

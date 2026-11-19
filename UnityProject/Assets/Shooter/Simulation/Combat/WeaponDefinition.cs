@@ -39,6 +39,12 @@ namespace Shooter.Simulation.Combat
         public float MoveSpeedScale { get; }
         /// <summary>Relative chance of being drawn into a random spawn loadout; 0 never.</summary>
         public ushort SpawnWeight { get; }
+        /// <summary>ADR-118: hitscan rays per shot (a shotgun's pellets); 1 for every single-projectile gun.</summary>
+        public byte PelletCount { get; }
+        /// <summary>ADR-118: half-angle cone the pellets scatter in around the shot's aimed direction.</summary>
+        public float PelletSpreadRadians { get; }
+        /// <summary>ADR-118: reload one round per <see cref="ReloadTicks"/> phase (tube-fed shotgun) instead of a full magazine.</summary>
+        public bool ReloadPerRound { get; }
 
         public WeaponDefinition(
             DefinitionId id, FireMode fireMode, uint fireIntervalTicks, uint reloadTicks, uint equipTicks,
@@ -47,7 +53,8 @@ namespace Shooter.Simulation.Combat
             float maxRangeMeters = 300f, uint fuseTicks = 0, float throwSpeedMetersPerSecond = 0f,
             float blastRadiusMeters = 0f, bool consumesAmmo = true, bool allowsSprintFire = false,
             byte burstCount = 0, uint burstIntervalTicks = 0, float falloffStartMeters = 0f, float falloffEndMeters = 0f,
-            float falloffMinScale = 1f, float moveSpeedScale = 1f, ushort spawnWeight = 1)
+            float falloffMinScale = 1f, float moveSpeedScale = 1f, ushort spawnWeight = 1,
+            byte pelletCount = 1, float pelletSpreadRadians = 0f, bool reloadPerRound = false)
         {
             Id = id; FireMode = fireMode; FireIntervalTicks = fireIntervalTicks; ReloadTicks = reloadTicks; EquipTicks = equipTicks;
             MagazineSize = magazineSize; ReserveCapacity = reserveCapacity; BaseDamage = baseDamage;
@@ -59,6 +66,7 @@ namespace Shooter.Simulation.Combat
             BurstCount = burstCount; BurstIntervalTicks = burstIntervalTicks;
             FalloffStartMeters = falloffStartMeters; FalloffEndMeters = falloffEndMeters; FalloffMinScale = falloffMinScale;
             MoveSpeedScale = moveSpeedScale; SpawnWeight = spawnWeight;
+            PelletCount = pelletCount == 0 ? (byte)1 : pelletCount; PelletSpreadRadians = pelletSpreadRadians; ReloadPerRound = reloadPerRound;
         }
 
         /// <summary>Damage multiplier at <paramref name="meters"/>: 1 before the falloff start, linear down to the minimum at its end.</summary>

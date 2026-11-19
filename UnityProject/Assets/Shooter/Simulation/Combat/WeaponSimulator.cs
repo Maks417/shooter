@@ -114,6 +114,8 @@ namespace Shooter.Simulation.Combat
                 {
                     var def = modifiers.Apply(WeaponDefinition.FromId(w.DefinitionId));
                     ushort need = (ushort)(def.MagazineSize - w.AmmoInMagazine);
+                    // ADR-118: a tube-fed gun loads one round per reload phase.
+                    if (def.ReloadPerRound && need > 1) need = 1;
                     ushort take = w.Reserve < need ? w.Reserve : need;
                     uint start = w.PhaseStartTick;
                     w = new WeaponState(w.DefinitionId, WeaponAction.Ready, (ushort)(w.AmmoInMagazine + take), (ushort)(w.Reserve - take),
@@ -121,6 +123,18 @@ namespace Shooter.Simulation.Combat
                     events.Add(new CombatEvent(nextEventId, CombatEventKind.ReloadCompleted, actorId, default,
                         new ActionPayload((byte)i, start, tick)));
                     nextEventId = nextEventId.NextOrdinal();
+                    // ADR-118: keep loading shells on the active gun until it is full, the reserve is empty or the
+                    // trigger is pressed. Each shell is its own Reloading phase, so the frozen C0 WeaponState is unchanged.
+                    bool firePressedNow = (buttons & InputButtons.FirePressed) != 0;
+                    if (def.ReloadPerRound && i == activeSlot && !firePressedNow
+                        && w.AmmoInMagazine < def.MagazineSize && w.Reserve > 0)
+                    {
+                        w = new WeaponState(w.DefinitionId, WeaponAction.Reloading, w.AmmoInMagazine, w.Reserve,
+                            w.NextAllowedFireTick, tick, unchecked(tick + def.ReloadTicks), w.ShotIndex, w.PreviousFireHeld);
+                        events.Add(new CombatEvent(nextEventId, CombatEventKind.ReloadStarted, actorId, default,
+                            new ActionPayload((byte)i, tick, w.PhaseEndTick)));
+                        nextEventId = nextEventId.NextOrdinal();
+                    }
                 }
                 else
                 {
@@ -156,6 +170,10 @@ namespace Shooter.Simulation.Combat
                 }
                 return;
             }
+
+            // ADR-118: a trigger press interrupts a shell-by-shell reload once at least one round is loaded.
+            if (active.Action == WeaponAction.Reloading && activeDef.ReloadPerRound && firePressed && active.AmmoInMagazine > 0)
+                active = Ready(active, tick);
 
             bool rising = fireHeld && !active.PreviousFireHeld;
             // ADR-102 burst: a press starts a burst and the remaining rounds follow on their own cadence.

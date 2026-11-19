@@ -16,9 +16,12 @@ namespace Shooter.Simulation.Combat
         public bool Ads { get; }
         public ulong Seed { get; }
         public uint CollisionRevision { get; }
-        public HitscanRequest(EntityId shooter, Float3 eye, Float3 muzzle, Float3 unitAim, WeaponDefinition definition, uint shotIndex, bool ads, ulong seed, uint collisionRevision)
+        /// <summary>ADR-118: which pellet of a multi-pellet shot this ray is (0 for single-projectile guns).</summary>
+        public byte PelletIndex { get; }
+        public HitscanRequest(EntityId shooter, Float3 eye, Float3 muzzle, Float3 unitAim, WeaponDefinition definition, uint shotIndex, bool ads, ulong seed, uint collisionRevision, byte pelletIndex = 0)
         {
             Shooter = shooter; Eye = eye; Muzzle = muzzle; UnitAim = unitAim; Definition = definition; ShotIndex = shotIndex; Ads = ads; Seed = seed; CollisionRevision = collisionRevision;
+            PelletIndex = pelletIndex;
         }
     }
 
@@ -56,6 +59,10 @@ namespace Shooter.Simulation.Combat
             ulong u = SpreadSampling.MixShot(request.Seed, request.ShotIndex, 1);
             ulong v = SpreadSampling.MixShot(request.Seed, request.ShotIndex, 2);
             Float3 dir = SpreadSampling.SampleDirection(request.UnitAim, spread, u, v);
+            // ADR-118: a multi-pellet shot scatters each pellet inside the pellet cone around the aimed direction, from
+            // its own channels (16 + 2p, 17 + 2p). Single-projectile guns never take this path, so they stay bit-identical.
+            if (request.Definition.PelletCount > 1)
+                dir = PelletDirection(dir, request.Definition.PelletSpreadRadians, request.Seed, request.ShotIndex, request.PelletIndex);
 
             // Eye→muzzle segment through static cover => block. The gameplay muzzle can sit inside or behind
             // a wall when the player is pressed against it; a ray that starts inside a collider is not reported
@@ -128,6 +135,15 @@ namespace Shooter.Simulation.Combat
                 tracerDir = new Float3(toTarget.X / len, toTarget.Y / len, toTarget.Z / len);
             }
             return new HitscanResult(false, true, request.Muzzle, tracerDir, impacted, impact);
+        }
+
+        /// <summary>ADR-118 pellet direction inside a cone of <paramref name="pelletSpreadRadians"/> around <paramref name="centre"/>.</summary>
+        public static Float3 PelletDirection(Float3 centre, float pelletSpreadRadians, ulong seed, uint shotIndex, byte pelletIndex)
+        {
+            byte channel = (byte)(16 + 2 * pelletIndex);
+            ulong pu = SpreadSampling.MixShot(seed, shotIndex, channel);
+            ulong pv = SpreadSampling.MixShot(seed, shotIndex, (byte)(channel + 1));
+            return SpreadSampling.SampleDirection(centre, pelletSpreadRadians, pu, pv);
         }
 
         private static bool IsIgnored(IReadOnlyList<EntityId>? ignore, EntityId id)
