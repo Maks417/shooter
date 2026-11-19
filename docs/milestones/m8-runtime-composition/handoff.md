@@ -1,13 +1,13 @@
 # M8 — Runtime composition and Game-v1 foundation — handoff and gate record
 
-T074 delivery adds read-only menu visual-byte access and cosmetic presentation, without changing C0/Game-v1/content schemas. Reproduced loading-to-play overload was repaired by rebasing the first active clock sample (`e3851f1`): foundation regression 73/73 preserves genuine active overload and fractional debt. The independent bot fix remains intact; its client measurement assembly dependency was repaired. [M11 visual-preview evidence](../m11-playable-release/handoff-archive.md#t074--scene-led-menu-and-tactical-hud-preview) identifies clean b531da9 builds, menu startup and the owner-stopped interactive review. RUN/player, reference and P05 acceptance are not closed.
+T074 delivery adds read-only menu visual-byte access and cosmetic presentation, without changing C0/Game-v1/content schemas. Reproduced loading-to-play overload was repaired by rebasing the first active clock sample (`e3851f1`): foundation regression 73/73 preserves genuine active overload and fractional debt. The independent bot fix remains intact; its client measurement assembly dependency was repaired. M11 visual-preview evidence identifies clean b531da9 builds, menu startup and the owner-stopped interactive review. RUN/player, reference and P05 acceptance are not closed.
 
 **Current disposition — 2026-11-14 review from 84befb9 / a54ed83:** M8 integration validation remains open. T066 provenance/cancellation and T067 packaged catalog/visual loading are repaired; T068 authority-driven weapon/action views are landed in the retained `7cd7e81` candidate. Native-navigation publication/query semantics and actual RUN/player/repeated-life evidence remain open. See the [audit](../../product-state-audit.md), [remaining queue](../../next-playable-build.md), [playtest guide](../../playtest-guide.md) and [FIX acceptance](../../release-remediation-validation.md). Original requirements and historical evidence remain; this review creates no coding lease or waiver.
 
 
 ## T072 — Final slide validation
 
-Source 5eaced5 has clean Game 56/56, EditMode 26/26, PlayMode 13/13, Client/Server and package passes; the independent extracted executable reaches Main. The [M11 delivery record](../m11-playable-release/handoff-archive.md#t072--slide-enabled-playtest-delivery) records actual paths/hash, prior failing/dirty attempts and cleanup. Final native tests cover real slide collision/low-ceiling recovery across quality tiers; named both-map gameplay/visual/device/performance reviews remain Pending. The current [guide](../../playtest-guide.md) points to the slide-enabled preview; final installer/upgrade delivery is planned T073.
+Source 5eaced5 has clean Game 56/56, EditMode 26/26, PlayMode 13/13, Client/Server and package passes; the independent extracted executable reaches Main. The M11 delivery record records actual paths/hash, prior failing/dirty attempts and cleanup. Final native tests cover real slide collision/low-ceiling recovery across quality tiers; named both-map gameplay/visual/device/performance reviews remain Pending. The current [guide](../../playtest-guide.md) points to the slide-enabled preview; final installer/upgrade delivery is planned T073.
 
 ## T072 — Owner-requested local sprint slide — implementation record
 
@@ -169,8 +169,8 @@ Historical 2026-11-13 software closeout (retained; superseded for current produc
 - Smoke Server PASS: `.../smoke-server-20261113T230356298Z-a8fb5fb8`
 - Product READY: `Artifacts/m8-runtime-composition/product-ready-final.log` (`SHOOTER_COMPOSITION mode=product`, `SHOOTER_READY_CLIENT`)
 
-[Release roadmap](../../next-playable-build.md) · [Shared documentation](../../index.md) · [Previous pack](../m7-hardening-stretch/index.md) · [Next pack](../m9-team-deathmatch/index.md).
+[Release roadmap](../../next-playable-build.md) · [Shared documentation](../../index.md) · Previous pack · [Next pack](../m9-team-deathmatch/index.md).
 
 ## T075 presentation follow-up — 2026-11-15
 
-Three owner-authorized agents are integrated and temporary worktrees removed. Source `7407bc4` adds procedural map surface publication/binding, menu/card rendering and analytic near-field equipment handling. [Canonical delivery, verification, migration and Pending evidence](../m11-playable-release/handoff-archive.md#t075--procedural-presentation-preview-034). No milestone or P05 acceptance is changed.
+Three owner-authorized agents are integrated and temporary worktrees removed. Source `7407bc4` adds procedural map surface publication/binding, menu/card rendering and analytic near-field equipment handling. Canonical delivery, verification, migration and Pending evidence. No milestone or P05 acceptance is changed.

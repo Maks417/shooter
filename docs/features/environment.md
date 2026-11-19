@@ -24,7 +24,7 @@ Prefetch 3×3 visual chunks around player plus movement look-ahead within a ≤2
 
 ## Implementation (M3)
 
-Pure planner/connectivity live in `UnityProject/Assets/Shooter/Generation/Core/Environment` (`CompoundPlanner` 1.0.0). Runtime streaming scheduler: `World/Runtime/Streaming/VisualStreamingScheduler`. Nav settings/compile/revisioned adapter: `World/Runtime/Navigation`. B02/B03 freeze: `Benchmarks/b02-b03-m3-freeze.json`. Milestone status: [M3 handoff](../milestones/m3-generated-compound/handoff.md).
+Pure planner/connectivity live in `UnityProject/Assets/Shooter/Generation/Core/Environment` (`CompoundPlanner` 1.0.0). Runtime streaming scheduler: `World/Runtime/Streaming/VisualStreamingScheduler`. Nav settings/compile/revisioned adapter: `World/Runtime/Navigation`. B02/B03 freeze: `Benchmarks/b02-b03-m3-freeze.json`. Milestone status: M3 handoff.
 
 ## Acceptance
 

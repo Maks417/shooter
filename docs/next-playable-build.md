@@ -1,6 +1,6 @@
 # Next playable build — current state and remaining work
 
-This page is the single source of truth for the current build, the product definition, task disposition and the order of remaining work. Other pages link here instead of repeating release banners. Exact identities, hashes and evidence live in the [M11 handoff](milestones/m11-playable-release/handoff.md); older deliveries (up to 0.3.12) are in the [M11 handoff archive](milestones/m11-playable-release/handoff-archive.md).
+This page is the single source of truth for the current build, the product definition, task disposition and the order of remaining work. Other pages link here instead of repeating release banners. Exact identities, hashes and evidence live in the [M11 handoff](milestones/m11-playable-release/handoff.md); older deliveries (up to 0.3.12) are in the M11 handoff archive.
 
 ## Current build
 
@@ -8,9 +8,9 @@ This page is the single source of truth for the current build, the product defin
 
 **Latest installer — 0.3.24 (2026-11-18):** `Artifacts/deliveries/Shooter-Setup-0.3.24.exe`, clean binary/content source `53cce26`. Adds to 0.3.23 [ADR-115](decisions.md#adr-115--accepted-open-reflex-collimator-with-a-clear-glass-pane) (open reflex collimator with clear glass) and [ADR-116](decisions.md#adr-116--accepted-realistic-map-colour-texture-and-shadows-materialnoise-120) (realistic map colour, texture and shadows; soft Low shadows). Native packages, clean IL2CPP Client, smoke, package and installer builders PASS; pure lanes and Unity EditMode/PlayMode PASS on the same content just before the commit. Actual install/upgrade, a playtest of this build, the Low benchmark with the new shadows and all acceptance remain Pending. [Delivery evidence](milestones/m11-playable-release/handoff.md#delivery-0324).
 
-The [visual roadmap](visual-roadmap.md) tranche (ADR-087–095) has been in installers since 0.3.18. ADR-096 retains its three provisional audio cues pending the assigned follow-up and owner listening review.
+The visual roadmap tranche (ADR-087–095) has been in installers since 0.3.18. ADR-096 retains its three provisional audio cues pending the assigned follow-up and owner listening review.
 
-[Launch and playtest guide](playtest-guide.md) · [product state audit](product-state-audit.md) · [visual roadmap](visual-roadmap.md).
+[Launch and playtest guide](playtest-guide.md) · [product state audit](product-state-audit.md) · visual roadmap.
 
 ## Scope: local play with bots
 
@@ -68,7 +68,7 @@ One integrator owns Bootstrap, Contracts, settings, locks, workloads and `coordi
 
 A delivered installer is a **test candidate**, not proof that T071 passed. A usable owner handoff needs all required interactions exercised and at least one complete normal match per map. Disclose P05 status and unmeasured reference performance. Any observed functional blocker prevents calling a build proven playable.
 
-T065 executes [REL01–REL06](milestones/m11-playable-release/validation-acceptance.md) and [FIX01–FIX14](release-remediation-validation.md): eight score/timeout full matches (both sizes per map), draw fixture, named reviews, 20 shell cycles, real display/audio/control behaviour, twelve reference Low captures and two ≥30-minute normal-AI soaks, provenance/regressions and independent installer install/update/repair/uninstall/rollback. Use the [M11 operator runbook](milestones/m11-playable-release/handoff-archive.md#t065-operator-runbook-do-not-stamp-pass); its server-isolation step is Parked under ADR-076. Documentation hashes and Smoke/READY do not prove gameplay.
+T065 executes [REL01–REL06](milestones/m11-playable-release/validation-acceptance.md) and [FIX01–FIX14](release-remediation-validation.md): eight score/timeout full matches (both sizes per map), draw fixture, named reviews, 20 shell cycles, real display/audio/control behaviour, twelve reference Low captures and two ≥30-minute normal-AI soaks, provenance/regressions and independent installer install/update/repair/uninstall/rollback. Use the M11 operator runbook; its server-isolation step is Parked under ADR-076. Documentation hashes and Smoke/READY do not prove gameplay.
 
 ## Source changes delivered since 0.3.12
 

@@ -20,7 +20,7 @@ Test through public ports with small deterministic fixtures; add integration/har
 | V08 AI | Occlusion/hearing/reload/stuck/cover scenarios and bounded queues | No privileged unseen knowledge, per-tick query caps, 30-min soak; AI |
 | V09 Cross-profile fairness | Same gameplay hashes/commands across all quality/rig update rates | Collision/nav/hit profile/weapon IDs equal; no cover/vision changes; integrator |
 | V10 Runtime performance | B01/B02/B03, product TDM workloads and 30-min soaks (B04 parked) | [Exact performance protocol](performance.md); perf owner |
-| V11 Networking (parked, ADR-076) | Seeded delay/loss/reorder/duplicate/outage, late join and malicious codec corpus | [N3 acceptance](features/networking.md); network |
+| V11 Networking (parked, ADR-076) | Seeded delay/loss/reorder/duplicate/outage, late join and malicious codec corpus | [N3 acceptance](decisions.md#adr-076--accepted-offline-only-scope-and-bounded-local-evidence); network |
 | V12 Provenance/release | Source allowlist, manifest chain, clean regeneration and clean build | No prohibited assets, full cache trace, correct server stripping; integrator |
 | V13 UI/visual | 720p max-scale settings, reduced motion, baseline image review | No clipping; readable/contrast; visual plausibility signed review; presentation |
 | V14 Docs/contracts sync | Relative file+anchor checks, index coverage, contract/schema registry | Zero broken references; version changes documented; integrator |

@@ -2,11 +2,11 @@
 
 Unity 6 URP / C# / HLSL design for a realistic modern-world shooter generated from code and numeric recipes. No imported/manual meshes, painted textures, sprites or authored animation. First version: one human plus local bots, offline Team Deathmatch on three maps, delivered as a Windows installer with in-place upgrades. Networking and the dedicated server are parked under [ADR-076](decisions.md#adr-076--accepted-offline-only-scope-and-bounded-local-evidence). Reference hardware: Ryzen 5 4600H integrated Radeon, 16 GB DDR4-3200, NVMe; native 720p Low at 30 FPS, 60 FPS stretch.
 
-**Current state, build and next work:** [next playable build](next-playable-build.md). It is the only page that tracks the current installer; other pages link to it instead of repeating release banners. Visual work follows the [visual roadmap](visual-roadmap.md) toward the Battlefield V / Bodycam / Warface quality target in the [design milestones](design-milestones.md).
+**Current state, build and next work:** [next playable build](next-playable-build.md). It is the only page that tracks the current installer; other pages link to it instead of repeating release banners. Visual work follows the visual roadmap toward the Battlefield V / Bodycam / Warface quality target in the [design milestones](design-milestones.md).
 
 ## Reading order
 
-1. [Implementation start](implementation-start.md), then [vision and requirements](vision.md)
+1. Implementation start, then [vision and requirements](vision.md)
 2. [Next playable build](next-playable-build.md) and [product state audit](product-state-audit.md)
 3. [Architecture](architecture.md), [domain model](domain-model.md), [contracts](contract-details.md)
 4. [Generation/compiler](generation.md) and [performance](performance.md)
@@ -19,7 +19,7 @@ Unity 6 URP / C# / HLSL design for a realistic modern-world shooter generated fr
 | [Next playable build](next-playable-build.md) | Current installer, product definition, task disposition and order of remaining work |
 | [Launch and playtest guide](playtest-guide.md) | Install/launch steps, controls, known limits and manual test record |
 | [Product state audit](product-state-audit.md) | Findings, evidence and milestone disposition |
-| [Visual roadmap](visual-roadmap.md) | Current visual execution plan and ledger (ADR-084–095) |
+| Visual roadmap | Current visual execution plan and ledger (ADR-084–095) |
 | [Visual design milestones](design-milestones.md) | VD0–VD9 quality track, review rubric and evidence |
 | [VD0 visual art brief](visual-art-brief.md) | Art direction and comparison register |
 | [Product visual defect inventory](visual-defect-inventory.md) | P05 soldier defects and ADR-095 outcome |
@@ -64,7 +64,7 @@ Unity 6 URP / C# / HLSL design for a realistic modern-world shooter generated fr
 | [Career ranks and service record](features/career.md) | Military ranks, unlocks, buffs and local statistics |
 | [Combat audio](features/audio.md) | Stereo sample bank and distance model |
 | [Windows installer and upgrades](features/windows-installer.md) | Installer, in-place updates and INS01–INS06 |
-| [Staged authoritative networking](features/networking.md) | Parked under ADR-076 |
+| [Staged authoritative networking](decisions.md#adr-076--accepted-offline-only-scope-and-bounded-local-evidence) | Parked under ADR-076 |
 
 ## Process and records
 
@@ -76,12 +76,12 @@ Unity 6 URP / C# / HLSL design for a realistic modern-world shooter generated fr
 | [Validation strategy](validation.md) | Tests, evidence and requirement traceability |
 | [Milestones and release gates](milestones.md) | M0–M11 gate definitions |
 | [Milestone packs](milestones/index.md) | Per-milestone handoffs and acceptance records |
-| [Work packages and backlog](backlog.md) | Work packages and ordered tasks T001+ |
-| [Task cards](task-supplement.md) | Task cards T026 onward |
-| [Parallel implementation and agent rules](agent-coordination.md) | Ownership, branches and handoffs |
+| Work packages and backlog | Work packages and ordered tasks T001+ |
+| Task cards | Task cards T026 onward |
+| Parallel implementation and agent rules | Ownership, branches and handoffs |
 | [Risk register](risks.md) | Risks, triggers and mitigation |
 | [Sources and version-sensitive guidance](references.md) | External references |
-| [Documentation archive](archive/index.md) | Superseded plans and closed-milestone planning packs |
+| Documentation archive | Superseded plans and closed-milestone planning packs |
 
 ## Operating rule
 

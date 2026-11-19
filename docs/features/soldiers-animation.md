@@ -41,7 +41,7 @@ If spike fails after bounded two implementation iterations, keep generator const
 
 ## Concrete starting recipe and ownership
 
-Use [soldier baseline](../soldier-baseline.md) for fixed anatomy, joint IDs/bind transforms, frame/limit rules, loft counts, gait and reload task trajectories. M1 drives phases with test fixtures, independent of M2 weapon mechanics. [T028/T032](../task-supplement.md) own hit-overlay validation and collapse/ragdoll behavior; no unassigned full physics feature is implied.
+Use [soldier baseline](../soldier-baseline.md) for fixed anatomy, joint IDs/bind transforms, frame/limit rules, loft counts, gait and reload task trajectories. M1 drives phases with test fixtures, independent of M2 weapon mechanics. T028/T032 own hit-overlay validation and collapse/ragdoll behavior; no unassigned full physics feature is implied.
 
 
 ## ADR-094 visual roadmap implementation — 2026-11-17

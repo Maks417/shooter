@@ -21,4 +21,4 @@ On a fresh Unity checkout run ./Tools/Configure-Unity.ps1 with the locked instal
 
 Retain raw XML/TRX/logs, versioned fixture/manifest/provenance reports, real player captures and machine/counter/thermal evidence where required. Use PASS only for measured checks, FAIL for actual failures, Pending/PendingHardware for unavailable execution, and NotRun for work not attempted. Screenshots/pure loops/docs hashes cannot replace actual Unity/player/performance or named human review. Detailed historical gates remain in their original handoffs.
 
-[Release roadmap](../../next-playable-build.md) · [Shared documentation](../../index.md) · [Previous pack](../m7-hardening-stretch/index.md) · [Next pack](../m9-team-deathmatch/index.md).
+[Release roadmap](../../next-playable-build.md) · [Shared documentation](../../index.md) · Previous pack · [Next pack](../m9-team-deathmatch/index.md).

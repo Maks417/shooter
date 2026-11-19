@@ -1,6 +1,6 @@
 # M11 — Playable build and acceptance — handoff and gate record
 
-Records from 2026-11-15 onward. Older entries — T062–T085, deliveries up to 0.3.12, historical candidates and the T065 operator runbook — are in the [handoff archive](handoff-archive.md).
+Records from 2026-11-15 onward. Older entries — T062–T085, deliveries up to 0.3.12, historical candidates and the T065 operator runbook — are in the handoff archive.
 
 ## ADR-114 — Corner bobbing, bot walls on the new maps, Career tabs — 2026-11-18
 
@@ -235,7 +235,7 @@ Rollback: revert the bounded T089 follow-up source/docs together; the bank/manif
 
 ## T090 — Bot tactics (cover peek, wall hearing, ledge strafe, route spread) — 2026-11-15
 
-Owner: approved Phase 1 bot-AI improvement plan. [ADR-070](../../decisions.md#adr-070--accepted-bot-tactics-tranche-cover-peek-wall-hearing-ledge-strafe-route-spread-t090); [task](../../task-supplement.md#t090--bot-tactics-cover-peek-wall-hearing-ledge-strafe-route-spread-2026-11-15); [ai.md](../../features/ai.md#bot-tactics-cover-peek-wall-hearing-ledge-strafe-route-spread-t090-2026-11-15).
+Owner: approved Phase 1 bot-AI improvement plan. [ADR-070](../../decisions.md#adr-070--accepted-bot-tactics-tranche-cover-peek-wall-hearing-ledge-strafe-route-spread-t090); task; [ai.md](../../features/ai.md#bot-tactics-cover-peek-wall-hearing-ledge-strafe-route-spread-t090-2026-11-15).
 
 **Implemented (software):**
 - `CoverFinder`: prefer peekable cover (side peek ray) over first-hidden; blind fallback when candidates exhaust.
@@ -399,7 +399,7 @@ Rifle ADS now raises a procedural circular scope mask (soft housing + mil-dot re
 
 2026-11-15. Owner: weapon sound still bad; bot footsteps audible across the map. Software path:
 
-- [ADR-062](../../decisions.md#adr-062--accepted-stereo-foundauthored-combat-wav-bank-and-per-kind-distance-t089), [features/audio.md](../../features/audio.md), [task card](../../task-supplement.md#t089--stereo-combat-wav-bank-and-footstep-distance-adr-062-2026-11-15).
+- [ADR-062](../../decisions.md#adr-062--accepted-stereo-foundauthored-combat-wav-bank-and-per-kind-distance-t089), [features/audio.md](../../features/audio.md), task card.
 - `Content/Audio/combat/` stereo 48 kHz WAVs + `manifest.json` (sha256/source/license); bank id `combat-audio-bank-v3-stereo`.
 - Mixer plays interleaved L/R with mild azimuth balance; per-kind distance (footsteps 18 m steep, soft cues 35 m, gunfire 80 m).
 - Client build and `Package-Release` copy the bank beside the player; generated stereo Foley is fallback only.
@@ -555,7 +555,7 @@ Owner report: Oil Depot looked the same as the existing maps. Cause: it reused d
 
 ## ADR-087 — Combat HUD craft, first tranche — 2026-11-16
 
-Owner requested continuation from the visual-roadmap commit `1676ff8`; work continues over the owner's focus and delivery commits `edbefa7` / `f3a6946`. Sole integrator changed only the HUD model, ProductSessionView, TacticalUi, relevant pure tests and shared docs. Damage arcs, vignette pulse, ammo/reload indicators, shaped minimap markers, team-plated kill-feed motion and gold headshot pop are implemented with existing numeric recipes and authority observations. No gameplay, sensing, content, settings or contract identities change. See [ADR-087](../../decisions.md#adr-087--accepted-tactical-hud-craft-first-tranche) and the [remaining roadmap](../../visual-roadmap.md).
+Owner requested continuation from the visual-roadmap commit `1676ff8`; work continues over the owner's focus and delivery commits `edbefa7` / `f3a6946`. Sole integrator changed only the HUD model, ProductSessionView, TacticalUi, relevant pure tests and shared docs. Damage arcs, vignette pulse, ammo/reload indicators, shaped minimap markers, team-plated kill-feed motion and gold headshot pop are implemented with existing numeric recipes and authority observations. No gameplay, sensing, content, settings or contract identities change. See [ADR-087](../../decisions.md#adr-087--accepted-tactical-hud-craft-first-tranche) and the remaining roadmap.
 
 Simulation 356 / Generation 508 / Game 99 / Contracts 79 / EditMode 82, source provenance (932 entries / 466 GUIDs), fixtures/docs, IL2CPP Client build and smoke PASS. Short Low TDM diagnostic: p95 5.1296 ms, 1,532 frames / 300 ticks; PendingHardware remains. Exact paths, source hash, retained initial restore/editor/build failures and dirty-source limitations are recorded once in [ADR-087](../../decisions.md#adr-087--accepted-tactical-hud-craft-first-tranche). The player reached readiness, but computer-use approval timed out before screenshot inspection; no appearance review is claimed.
 
@@ -564,7 +564,7 @@ This is a partial Wave 1b source delivery, not a clean installer candidate. Comp
 
 ## Full visual roadmap integration — ADR-087 through ADR-094 — 2026-11-17
 
-Owner assigned all remaining work in [visual-roadmap](../../visual-roadmap.md). Sole integrator extended the HUD/insertion/keycaps, added `material.noise` 1.0.0, architectural weathering, visual-only layout decals, numeric map sky/LUTs, actor AO/contact shadows, `fx.flipbook` 1.0.0 and bounded particle combat presentation, plus `soldier.loft` 1.0.3 kit/camo/insignia and collision-backed cosmetic ground / weapon grip inputs. See the roadmap implementation ledger and ADR-088–094. Verified visual binding now yields between individual upload phases with cancellation/epoch checks; individual >33 ms uploads are diagnosed. Gameplay collision, navigation, spawns, weapon mechanics and C0/Game-v1 identities are preserved. Built-in ParticleSystem 1.0.0 is enabled at the existing pinned editor; no external art or new package/toolchain version.
+Owner assigned all remaining work in visual-roadmap. Sole integrator extended the HUD/insertion/keycaps, added `material.noise` 1.0.0, architectural weathering, visual-only layout decals, numeric map sky/LUTs, actor AO/contact shadows, `fx.flipbook` 1.0.0 and bounded particle combat presentation, plus `soldier.loft` 1.0.3 kit/camo/insignia and collision-backed cosmetic ground / weapon grip inputs. See the roadmap implementation ledger and ADR-088–094. Verified visual binding now yields between individual upload phases with cancellation/epoch checks; individual >33 ms uploads are diagnosed. Gameplay collision, navigation, spawns, weapon mechanics and C0/Game-v1 identities are preserved. Built-in ParticleSystem 1.0.0 is enabled at the existing pinned editor; no external art or new package/toolchain version.
 
 P05 is **FAIL**. ADR-094 bounded the reopened search to three candidates / 90 minutes. Baseline clearance -0.001944 m; candidates 1/2/3 -0.055602 / -0.057712 / -0.011462 m. Eye residual falls below 0.000001 m, but D01/D03 penetration remains. The product retains the baseline pose solver; failed correction is opt-in diagnostics only with `-shooterP05Candidate`. All candidate source snapshots/residuals remain in `Artifacts/visual-design/adr-094/`; no fourth correction search or waiver is authorized.
 

@@ -1,6 +1,6 @@
 # Visual direction and UI design system
 
-This page is the visual direction and UI design system. Dated art-direction passes (T080–T084) are recorded in the [VD0 visual art brief](visual-art-brief.md); the current visual execution plan is the [visual roadmap](visual-roadmap.md).
+This page is the visual direction and UI design system. Dated art-direction passes (T080–T084) are recorded in the [VD0 visual art brief](visual-art-brief.md); the current visual execution plan is the visual roadmap.
 
 ## Presentation notes
 

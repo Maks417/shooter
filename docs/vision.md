@@ -4,7 +4,7 @@ This page holds scope and requirements. Current build state and remaining work a
 
 ## Product
 
-Owner quality goal, 2026-11-14: **the finished visual design should be as good as Battlefield V, Bodycam and Warface**. [VD0–VD9](design-milestones.md) turn this into art-direction, representative-slice, component and final comparative review gates. No installer so far demonstrates this quality; the [visual roadmap](visual-roadmap.md) is the current execution plan. The procedural-art boundary, fixed gameplay/quality separation, reference Low30 budget and existing open acceptance remain binding. A demonstrated conflict requires an explicit owner decision instead of an automatic quality or performance reduction.
+Owner quality goal, 2026-11-14: **the finished visual design should be as good as Battlefield V, Bodycam and Warface**. [VD0–VD9](design-milestones.md) turn this into art-direction, representative-slice, component and final comparative review gates. No installer so far demonstrates this quality; the visual roadmap is the current execution plan. The procedural-art boundary, fixed gameplay/quality separation, reference Low30 budget and existing open acceptance remain binding. A demonstrated conflict requires an explicit owner decision instead of an automatic quality or performance reduction.
 
 A grounded, modern-world military FPS whose geometry, surface detail and motion come from algorithms and numeric definitions. Build a small, convincing combined indoor/outdoor combat space before expanding content. Realism means believable scale, silhouettes, material response, motion, lighting and feedback; visual parity with commercial AAA shooters is an aspiration, not an acceptance claim.
 
@@ -32,7 +32,7 @@ Owner clarification, 2026-11-14: final delivery is a **Windows installer**, and 
 | R06 | Quality profiles and repeatable performance tests begin in foundation milestone | Profiles and benchmark artifacts exist at M0 |
 | R07 | Collision, cover, hit volumes, AI visibility and weapon rules do not change with graphics profile | Cross-profile simulation tests |
 | R08 | Asset generation is reproducible and versioned; expensive generation moves out of gameplay | [Generation contract](generation.md) and cache tests |
-| R09 | Independent agents implement bounded modules against frozen shared contracts | [Coordination rules](agent-coordination.md) |
+| R09 | Independent agents implement bounded modules against frozen shared contracts | Coordination rules |
 | R10 | Modern weapons, procedural soldiers, environments, AI, FPS combat; staged networking parked (ADR-076) | Feature acceptance tests and [milestone gates](milestones.md) |
 | R11 | Offline 5v5/6v6 with one human, allied/enemy bots, 150 kills / 15 minutes, safe respawn and immutable results | M9 TDM01–TDM08 and M11 REL02 |
 | R12 | Distinct packaged procedural maps (three since ADR-071), each supporting the team mode and sizes | M10 MAP01–MAP03; clean release REL01 |

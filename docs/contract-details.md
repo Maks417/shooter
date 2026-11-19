@@ -2,7 +2,7 @@
 
 C0-v1 is frozen under `UnityProject/Assets/Shooter/Contracts`, compiled independently through `Tools/Contracts/Shooter.Contracts.csproj` and inside the Unity client. Root `contract-lock.json` pins source, metadata, specification-v1.1 fixture bytes and toolchain; `Tools/verify_contract_lock.py` and the test wrappers reject unreviewed drift. Breaking changes need an [ADR](decisions.md) plus fixture migration ([ADR-014](decisions.md#adr-014--accepted-initial-c0-source-freeze-and-failure-capture-lifecycle)). Names and fields below are normative; allocation/layout optimizations may not change semantics. All DTO fields are public read-only to consumers; serializers use explicit construction; no reflection-based arbitrary type deserialization.
 
-This page merges the former contracts overview (ports and envelopes) with the exact C0 freeze details. Product session records (Game-v1 and ADR-036/037/038 extensions) are separate in [session contracts](game-session-contracts.md). Production compiler formats are frozen separately under `Generation/Core` and `content-format-lock.json`. Original M0/M1 results and waivers remain in the [M0 handoff](milestones/m0-foundation/handoff.md) and [M1 handoff](milestones/m1-procedural-feasibility/handoff.md).
+This page merges the former contracts overview (ports and envelopes) with the exact C0 freeze details. Product session records (Game-v1 and ADR-036/037/038 extensions) are separate in [session contracts](game-session-contracts.md). Production compiler formats are frozen separately under `Generation/Core` and `content-format-lock.json`. Original M0/M1 results and waivers remain in the M0 handoff and M1 handoff.
 
 ## Common rules
 

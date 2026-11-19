@@ -2,7 +2,7 @@
 
 Product extension: [Team Deathmatch](team-deathmatch.md) adds team score/time/respawn/results around the existing combat rules, through the planned [session/lifecycle seam](../game-session-contracts.md). It preserves same-tick trades, zero friendly damage (bullets pass through teammates since ADR-112), canonical hit volumes and quality independence. A fresh respawn restores baseline ammo/health under a new life/EntityId; the historical Compound Clear no-refill rule stays confined to that mode. Gameplay authority remains independent of UI and presentation.
 
-Owner WP-05, paths `Simulation/Motor`, `Simulation/Combat`, with presentation adapters owned separately. Consumes [contracts](../contract-details.md); the [networking](networking.md) authority extension is parked under [ADR-076](../decisions.md#adr-076--accepted-offline-only-scope-and-bounded-local-evidence).
+Owner WP-05, paths `Simulation/Motor`, `Simulation/Combat`, with presentation adapters owned separately. Consumes [contracts](../contract-details.md); the [networking](../decisions.md#adr-076--accepted-offline-only-scope-and-bounded-local-evidence) authority extension is parked under [ADR-076](../decisions.md#adr-076--accepted-offline-only-scope-and-bounded-local-evidence).
 
 ## Player flow and fixed-tick rules
 
@@ -37,7 +37,7 @@ Movement tests cover 30/60/144 display FPS with the same 60 Hz command script, s
 
 ## M2 implementation references
 
-Pure-source adapters (C0-v1 unchanged): `Simulation/Motor` (kinematic capsule + `InputEdgeBuffer`), `Simulation/Combat` (weapon/damage/hitscan/recoil), `Simulation/Pose/GameplayPoseEvaluator` (hit capsules + canonical muzzle), `Presentation/Model/View/ProceduralViewModel` (event-deduped cosmetic springs). Shipping composition uses `Simulation/Foundation/CombatHarnessSimulation` from `Bootstrap/Runtime/FoundationEntry` with `CompositionPolicy.RequireReal`. Pure evidence via `Tools/Test-Simulation.ps1`; milestone status in [M2 handoff](../milestones/m2-combat-harness/handoff.md).
+Pure-source adapters (C0-v1 unchanged): `Simulation/Motor` (kinematic capsule + `InputEdgeBuffer`), `Simulation/Combat` (weapon/damage/hitscan/recoil), `Simulation/Pose/GameplayPoseEvaluator` (hit capsules + canonical muzzle), `Presentation/Model/View/ProceduralViewModel` (event-deduped cosmetic springs). Shipping composition uses `Simulation/Foundation/CombatHarnessSimulation` from `Bootstrap/Runtime/FoundationEntry` with `CompositionPolicy.RequireReal`. Pure evidence via `Tools/Test-Simulation.ps1`; milestone status in M2 handoff.
 
 ## Local sprint slide — T072 / ADR-039
 

@@ -20,13 +20,13 @@ Milestone disposition: M0–M7 are closed under owner waivers (ADR-017, ADR-025�
 
 ## Record 2026-11-14: T072 slide preview (historical)
 
-The owner-authorized slide is built into clean-source `5eaced5`: Client/Server, verified eight-package content and ZIP PASS; standalone extracted executable reaches Main. Final Game 56, EditMode 26 and PlayMode 13 pass, with actual flags/paths in [M11 delivery](milestones/m11-playable-release/handoff-archive.md#t072--slide-enabled-playtest-delivery). [Playtest guide](playtest-guide.md) now points to that 40,668,944-byte ZIP (SHA256 8240e298…b34580f), including Sprint + F. Old 7cd7e81 has no slide and is retained as a prior pair. Manual gameplay/device/reference acceptance remains Pending, P05 FAIL remains and REL gates remain NotClaimed.
+The owner-authorized slide is built into clean-source `5eaced5`: Client/Server, verified eight-package content and ZIP PASS; standalone extracted executable reaches Main. Final Game 56, EditMode 26 and PlayMode 13 pass, with actual flags/paths in M11 delivery. [Playtest guide](playtest-guide.md) now points to that 40,668,944-byte ZIP (SHA256 8240e298…b34580f), including Sprint + F. Old 7cd7e81 has no slide and is retained as a prior pair. Manual gameplay/device/reference acceptance remains Pending, P05 FAIL remains and REL gates remain NotClaimed.
 
 The owner additionally requires a final [Windows installer with in-place upgrades](features/windows-installer.md), preserving controls/settings and stable installation identity. T073 is planned documentation scope, not an implemented installer. ZIP previews do not close that final delivery gate. Requested cleanup removed 24.64 GiB of old generated debug backups; current-build debug/temporary repair files were also cleaned after proof was retained, preserving runtime archives and required evidence.
 
 ## Record 2026-11-14: local sprint slide (historical)
 
-The owner subsequently requested and authorized implementation of Left Shift + F slide. ADR-039/T072 extend local authority/input/settings and copied camera/rig movement views; existing C0/N1/content formats remain intact. The original review below is historical to that feature addition: 7cd7e81 has no slide. Follow [M8/M11 handoff evidence](milestones/m11-playable-release/handoff-archive.md#t072--owner-requested-local-sprint-slide--implementation-record) and [playtest guide](playtest-guide.md) for actual new-build availability, test results and retained limitations. No acceptance gates are closed by adding this feature.
+The owner subsequently requested and authorized implementation of Left Shift + F slide. ADR-039/T072 extend local authority/input/settings and copied camera/rig movement views; existing C0/N1/content formats remain intact. The original review below is historical to that feature addition: 7cd7e81 has no slide. Follow M8/M11 handoff evidence and [playtest guide](playtest-guide.md) for actual new-build availability, test results and retained limitations. No acceptance gates are closed by adding this feature.
 
 ## Review 2026-11-14 at 84befb9 (historical)
 
@@ -86,7 +86,7 @@ M0–M7 remain historically owner-waived; M8–M10 integration validation and M1
 
 ## Historical review at 59316d3 (superseded)
 
-Reviewed 2026-11-14 at clean `main`, `59316d387e5345716392e332ca225a581a671c33` (184 files changed; T052–T064 remediation committed). The prior audit at f3d9954 is retained below as history. This review inspects current source and reruns pure checks; it performs no fresh Unity build, interactive player/device review or reference-hardware capture. The [next playable-build queue](next-playable-build.md) assigns the remaining work within M8–M11; [original repair cards](archive/release-remediation-plan.md) and [FIX acceptance](release-remediation-validation.md) remain applicable.
+Reviewed 2026-11-14 at clean `main`, `59316d387e5345716392e332ca225a581a671c33` (184 files changed; T052–T064 remediation committed). The prior audit at f3d9954 is retained below as history. This review inspects current source and reruns pure checks; it performs no fresh Unity build, interactive player/device review or reference-hardware capture. The [next playable-build queue](next-playable-build.md) assigns the remaining work within M8–M11; original repair cards and [FIX acceptance](release-remediation-validation.md) remain applicable.
 
 ## Historical disposition at 59316d3
 
@@ -185,7 +185,7 @@ The Game-v1 session integration test advances only 30 ticks with FakeMapRuntime.
 
 ### Historical interpretation and maintenance
 
-The [2026-11-13 planning validation](archive/planning-validation.md) remains historical evidence. Current next work is [T052–T065](archive/release-remediation-plan.md), replacing instructions to restart T035 or merely collect missing reviews. Preserve T035–T051 requirement IDs and RUN/TDM/MAP/UI/SET/REL acceptance IDs. Future implementation updates this audit's dispositions with source-matched evidence rather than deleting failures. The docs-only follow-up changes no contracts, package versions, generated content, goldens, benchmark fixtures or coordination leases.
+The 2026-11-13 planning validation remains historical evidence. Current next work is T052–T065, replacing instructions to restart T035 or merely collect missing reviews. Preserve T035–T051 requirement IDs and RUN/TDM/MAP/UI/SET/REL acceptance IDs. Future implementation updates this audit's dispositions with source-matched evidence rather than deleting failures. The docs-only follow-up changes no contracts, package versions, generated content, goldens, benchmark fixtures or coordination leases.
 
 ### Historical documentation follow-up verification — 2026-11-14
 

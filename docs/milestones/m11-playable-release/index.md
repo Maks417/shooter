@@ -16,9 +16,9 @@ M10 integrated two-map game is on main; exact content/contract/workload versions
 
 | Document | Purpose |
 |---|---|
-| [Implementation](implementation.md) | Dependency order and concrete task outputs |
-| [Contracts and integration](contracts-integration.md) | Frozen interfaces, failure boundaries and merge gate |
-| [Agent assignments](agent-assignments.md) | Exclusive paths, shared ownership and dispatch prerequisites |
+| Implementation | Dependency order and concrete task outputs |
+| Contracts and integration | Frozen interfaces, failure boundaries and merge gate |
+| Agent assignments | Exclusive paths, shared ownership and dispatch prerequisites |
 | [Validation](validation-acceptance.md) | Scenario IDs, commands and required evidence |
 | [Handoff](handoff.md) | Pending gate record and downstream artifacts |
 

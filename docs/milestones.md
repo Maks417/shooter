@@ -1,10 +1,10 @@
 # Milestones and release gates
 
-Milestones are dependency gates, not calendar promises. [Backlog](backlog.md) gives ordered tasks. No milestone is complete until implementation exists and attached evidence passes [validation](validation.md).
+Milestones are dependency gates, not calendar promises. Backlog gives ordered tasks. No milestone is complete until implementation exists and attached evidence passes [validation](validation.md).
 
 ## Visual quality track — VD0–VD9
 
-The owner sets Battlefield V / Bodycam / Warface-level design as the goal. [The visual milestone plan](design-milestones.md) defines art direction, a representative art slice, soldiers, hands/weapons, procedural motion, the map environments, light/materials/effects, final menus/HUD, scalability and comparative delivery. These gates extend visual acceptance inside M8–M11; they do not renumber historical milestones or waive P05/REL. All visual exits are Pending; current execution follows the [visual roadmap](visual-roadmap.md). Performance checks continue throughout production.
+The owner sets Battlefield V / Bodycam / Warface-level design as the goal. [The visual milestone plan](design-milestones.md) defines art direction, a representative art slice, soldiers, hands/weapons, procedural motion, the map environments, light/materials/effects, final menus/HUD, scalability and comparative delivery. These gates extend visual acceptance inside M8–M11; they do not renumber historical milestones or waive P05/REL. All visual exits are Pending; current execution follows the visual roadmap. Performance checks continue throughout production.
 
 ## Product milestone gates
 

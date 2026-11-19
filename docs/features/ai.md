@@ -18,13 +18,13 @@ Queue path requests with priority, max two new path solves/tick initially; poll 
 
 ## Implementation (M3)
 
-`UnityProject/Assets/Shooter/Simulation/AI` — `CombatAiDirector`, `PerceptionSystem`, `CoverReservationBoard`. Emits normal `InputCommand` values; shipping `CompositionPolicy.RequireReal` rejects test fakes. Milestone status: [M3 handoff](../milestones/m3-generated-compound/handoff.md).
+`UnityProject/Assets/Shooter/Simulation/AI` — `CombatAiDirector`, `PerceptionSystem`, `CoverReservationBoard`. Emits normal `InputCommand` values; shipping `CompositionPolicy.RequireReal` rejects test fakes. Milestone status: M3 handoff.
 
 **Navigation note (2026-11-15):** the Unity NavMesh installer winds triangles face-up, and the product client falls back to the packaged nav graph on sample misses or native path failures. Details, counters and tests are in [Team Deathmatch bot navigation](team-deathmatch.md#team-bot-behavior-and-capacity). Real-player bot movement is Pending.
 
 ## Combat behaviour (T082, 2026-11-15)
 
-[T082](../task-supplement.md#t082--solid-fps-bot-combat-behaviour-2026-11-15) implements the aim, hearing and cover parts of the model above inside the unchanged budgets: 16 AI rays and 2 new paths per tick globally, the Game-v1 `ITeamBotPlanner` seam and plain C0 `InputCommand`s. All tuning is data in `Simulation/AI/AiTuning.cs`. Per-bot variation comes from the `AiNoise.cs` SplitMix hash of entity id, tick bucket and salt. No RNG is used, so identical recordings give identical commands.
+T082 implements the aim, hearing and cover parts of the model above inside the unchanged budgets: 16 AI rays and 2 new paths per tick globally, the Game-v1 `ITeamBotPlanner` seam and plain C0 `InputCommand`s. All tuning is data in `Simulation/AI/AiTuning.cs`. Per-bot variation comes from the `AiNoise.cs` SplitMix hash of entity id, tick bucket and salt. No RNG is used, so identical recordings give identical commands.
 
 - **Aim** (`AimController.cs`). Turning has a bounded rate and acceleration: about 420°/s in combat, with a time-optimal stop.
   - Bots aim at a seeded error point. The miss distance starts at about 1.1 m when a target is acquired and recovers over about 0.7 s, scaled by a per-bot skill factor between 0.8 and 1.25.
@@ -59,11 +59,11 @@ Queue path requests with priority, max two new path solves/tick initially; poll 
 
 New counters on `AiCounters`: `CoverProbeRays`, `CoverProbesFailed`, `BurstsStarted`, `StimuliHeard`, `DamageReactions`, `Callouts`, `Retreats`, `TacticalReloads`, `TargetSwitches`. `VisionRaysThisTick` includes cover-probe rays.
 
-Known limits (narrowed by [T090](#bot-tactics-cover-peek-wall-hearing-ledge-strafe-route-spread-t090-2026-11-15)): probe reachability is still only via the normal path request. Real-player feel is Pending; see the [M11 handoff](../milestones/m11-playable-release/handoff-archive.md#t082--solid-fps-bot-combat-behaviour).
+Known limits (narrowed by [T090](#bot-tactics-cover-peek-wall-hearing-ledge-strafe-route-spread-t090-2026-11-15)): probe reachability is still only via the normal path request. Real-player feel is Pending; see the M11 handoff.
 
 ## Awareness, team spread and lethality (T085, 2026-11-15)
 
-[T085](../task-supplement.md#t085--bot-rear-awareness-team-spread-and-readable-time-to-kill-2026-11-15) answers an owner playtest of T082: bots ran after each other, did not notice enemies behind them, and killed too fast to read. Budgets, contracts and the planner seam are unchanged ([ADR-054](../decisions.md#adr-054--accepted-bot-footstep-hearing-wider-vision-and-a-readable-lethality-envelope-t085)).
+T085 answers an owner playtest of T082: bots ran after each other, did not notice enemies behind them, and killed too fast to read. Budgets, contracts and the planner seam are unchanged ([ADR-054](../decisions.md#adr-054--accepted-bot-footstep-hearing-wider-vision-and-a-readable-lethality-envelope-t085)).
 
 - **Following each other (root cause).** Product patrol destinations are the map's ordered route corners. Each bot took `destinations[(id + cursor) % n]`, so teammates with consecutive ids walked the same route one corner apart, in a line. `ChooseSpreadDestination` now scores every destination: about 35 m legs preferred, −2 for each ally already heading within 12 m of it, −0.5 for each ally standing near it, a seeded per-bot preference, and never the last two picks. The goal is chosen once per arrival, not every tick. Combat destinations use the same scorer.
 - **Ally noise.** Teammate gunfire used to send listeners to the teammate's own position. It now points at that teammate's last-seen enemy, or is ignored when it has none (a human teammate's shots are ignored). Gunfire, callouts and footsteps send at most 2 allies to one noise (within 10 m); the rest keep their route and face it.
@@ -84,7 +84,7 @@ Known limits (narrowed by T090): footstep speed still comes from planner positio
 
 ## Bot tactics: cover peek, wall hearing, ledge strafe, route spread (T090, 2026-11-15)
 
-[T090](../task-supplement.md#t090--bot-tactics-cover-peek-wall-hearing-ledge-strafe-route-spread-2026-11-15) closes the documented T082/T085 tactics gaps inside unchanged budgets ([ADR-070](../decisions.md#adr-070--accepted-bot-tactics-tranche-cover-peek-wall-hearing-ledge-strafe-route-spread-t090)).
+T090 closes the documented T082/T085 tactics gaps inside unchanged budgets ([ADR-070](../decisions.md#adr-070--accepted-bot-tactics-tranche-cover-peek-wall-hearing-ledge-strafe-route-spread-t090)).
 
 - **Cover peek.** After a candidate hides a crouched chest from the threat, a leftover probe ray samples a left/right peek eye toward the threat. Peekable sites are claimed immediately; the first blind-but-hidden candidate is kept as fallback when the list ends. Peek rays share the ≤4/tick probe cap and the global 16-ray budget.
 - **Wall-aware hearing.** Gunfire occlusion is a direct ear→source collision ray (not charged to the 16 AI rays) so stimulus handling stays synchronous. Footsteps beyond 2.5 m use leftover budgeted AI rays at most once per bot every 12 ticks (fail-open when deferred; last clear/blocked result reused while rate-limited). Presence always passes.

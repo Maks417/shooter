@@ -1,6 +1,6 @@
 # Risk register and mitigation gates
 
-Likelihood/impact H/M/L are planning judgments, not statistical forecasts. Owner roles map to [work packages](backlog.md). Escalate when trigger occurs; record evidence and new ADR rather than silently relaxing requirements.
+Likelihood/impact H/M/L are planning judgments, not statistical forecasts. Owner roles map to work packages. Escalate when trigger occurs; record evidence and new ADR rather than silently relaxing requirements.
 
 | Risk | L/I | Trigger / early test | Mitigation and fallback | Owner / gate |
 |---|---|---|---|---|

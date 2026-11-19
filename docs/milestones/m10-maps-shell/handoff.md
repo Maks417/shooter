@@ -2,7 +2,7 @@
 
 ## T074 — tactical shell and HUD, stage 1
 
-The owner's screenshot clarification supersedes the flat Main with a live procedural menu scene and actual map cards, plus a compact compass/minimap/squad/ammo/elimination HUD. The clean 0.3.1 installer uses source b531da9; EditMode 29 / PlayMode 16 and Client/Server builds pass. [Exact identities and limits](../m11-playable-release/handoff-archive.md#t074--scene-led-menu-and-tactical-hud-preview) record the interrupted final Computer Use review. Named visual/device/full-game acceptance remains Pending. Existing soldier/environment fidelity is not accepted by this interface pass.
+The owner's screenshot clarification supersedes the flat Main with a live procedural menu scene and actual map cards, plus a compact compass/minimap/squad/ammo/elimination HUD. The clean 0.3.1 installer uses source b531da9; EditMode 29 / PlayMode 16 and Client/Server builds pass. Exact identities and limits record the interrupted final Computer Use review. Named visual/device/full-game acceptance remains Pending. Existing soldier/environment fidelity is not accepted by this interface pass.
 
 Owner assigned implementation on 2026-11-14, beginning with menus/HUD and using Battlefield/Call of Duty/Warface/Bodycam as references. [Brandbook](../../brandbook.md) records the original procedural direction and later visual stages. This stage changes only the client presentation and related docs: `Presentation/Session/TacticalUi.cs`, `Presentation/Session/ProductShellHost.cs` and `ProductSessionView.cs`. No gameplay, map bytes, generator identities, settings schema, contract lock, toolchain or installer identity changes.
 
@@ -15,7 +15,7 @@ Initial dirty-workspace verification at base `9f2219f`: EditMode **28/28 PASS** 
 
 ## T072 slide delivery
 
-Source 5eaced5 is built and packaged; clean Game 56, Unity EditMode 26 and PlayMode 13 pass. The [M11 delivery record](../m11-playable-release/handoff-archive.md#t072--slide-enabled-playtest-delivery) and [guide](../../playtest-guide.md) identify the current slide preview. Actual named UI/device and full gameplay review remain Pending; final Windows installer/upgrades are planned T073.
+Source 5eaced5 is built and packaged; clean Game 56, Unity EditMode 26 and PlayMode 13 pass. The M11 delivery record and [guide](../../playtest-guide.md) identify the current slide preview. Actual named UI/device and full gameplay review remain Pending; final Windows installer/upgrades are planned T073.
 
 ## T072 slide input/settings extension
 
@@ -68,4 +68,4 @@ Historical 2026-11-13 software closeout (retained; superseded for current produc
 
 ## T075 presentation follow-up — 2026-11-15
 
-Three owner-authorized agents are integrated and temporary worktrees removed. Source `7407bc4` adds procedural map surface publication/binding, menu/card rendering and analytic near-field equipment handling. [Canonical delivery, verification, migration and Pending evidence](../m11-playable-release/handoff-archive.md#t075--procedural-presentation-preview-034). No milestone or P05 acceptance is changed.
+Three owner-authorized agents are integrated and temporary worktrees removed. Source `7407bc4` adds procedural map surface publication/binding, menu/card rendering and analytic near-field equipment handling. Canonical delivery, verification, migration and Pending evidence. No milestone or P05 acceptance is changed.

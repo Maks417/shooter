@@ -1,6 +1,6 @@
 # VD0 visual art brief — Battlefield V / Bodycam / Warface
 
-Direction sections T080–T084 below are newest first; the original VD0 brief starts at the **Status** paragraph. Later direction (ADR-084–095) is recorded in the [visual roadmap](visual-roadmap.md), not here.
+Direction sections T080–T084 below are newest first; the original VD0 brief starts at the **Status** paragraph. Later direction (ADR-084–095) is recorded in the visual roadmap, not here.
 
 ## T084 — Near-field finish and composition
 
@@ -18,7 +18,7 @@ New geometry is baked into the verified map mesh; six shared material roles reus
 
 ## T080 review — quality priorities (2026-11-15)
 
-The source baseline is T079 / installer 0.3.8 at `07c5db7`; older top-level delivery notes below are historical. This review found four concrete source defects: inconsistent physical material scale on scaled boxes; cover textures eight times denser than architectural solids; overview cameras still sized for old 256 m maps; and card renderers losing metal/trim submesh materials. T080 corrects those presentation paths; [delivery and verification](milestones/m11-playable-release/handoff-archive.md#t080--visual-review-and-material-scale-correction) records actual results.
+The source baseline is T079 / installer 0.3.8 at `07c5db7`; older top-level delivery notes below are historical. This review found four concrete source defects: inconsistent physical material scale on scaled boxes; cover textures eight times denser than architectural solids; overview cameras still sized for old 256 m maps; and card renderers losing metal/trim submesh materials. T080 corrects those presentation paths; delivery and verification records actual results.
 
 Design direction: make Compound read as pale weathered plaster/concrete with dark structural metal and earth; make Depot read as steel logistics architecture on asphalt. Hold surface texture scale at one repeat per two metres in the world and menu. Operation cards must fill their frame with the actual arena and retain material separation; ornamental plates must remain subordinate. Keep architectural mass and combat silhouettes readable before adding surface noise or more props.
 
@@ -26,7 +26,7 @@ The largest remaining visual deficits are soldier anatomy/uniform construction, 
 
 Status: **draft brief for owner approval**, 2026-11-14. Companion to [design milestones](design-milestones.md). This page records the working art direction, comparison register, current-build gaps and component ownership for parallel presentation work. It does **not** close VD0 (owner still selects exact Bodycam/Warface frames and approves the brief), does **not** accept any VD1–VD9 exit, and does **not** authorize a P05 clearance search (ADR-024).
 
-Baseline software: the latest installer in [next playable build](next-playable-build.md); the [visual roadmap](visual-roadmap.md) (ADR-084–095) is the current execution plan built on this brief. No build claims reference parity.
+Baseline software: the latest installer in [next playable build](next-playable-build.md); the visual roadmap (ADR-084–095) is the current execution plan built on this brief. No build claims reference parity.
 
 ## Quality emphases (project choices)
 

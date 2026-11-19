@@ -1,6 +1,6 @@
 # Visual design milestones — Battlefield V / Bodycam / Warface quality goal
 
-**Status 2026-11-17:** the [visual roadmap](visual-roadmap.md) is the current execution plan (ADR-084–095: SDF UI, HUD craft, noise materials, weathering, decals, sky/grade, combat FX, soldier kit and the ADR-095 shooting posture). Its delivery in a new installer is pending; the latest installer is tracked in [next playable build](next-playable-build.md). All VD exits below remain Pending.
+**Status 2026-11-17:** the visual roadmap is the current execution plan (ADR-084–095: SDF UI, HUD craft, noise materials, weathering, decals, sky/grade, combat FX, soldier kit and the ADR-095 shooting posture). Its delivery in a new installer is pending; the latest installer is tracked in [next playable build](next-playable-build.md). All VD exits below remain Pending.
 
 Owner direction, 2026-11-14: **the finished visual design should be as good as Battlefield V, Bodycam and Warface**. This is the target for perceived quality, coherence, physical credibility and presentation. Current parity is **unproven**; no installer so far closes these milestones.
 
@@ -60,7 +60,7 @@ flowchart LR
   VD8 --> VD9[VD9 Comparative acceptance and installer]
 ```
 
-Dependencies describe integration order. Any future parallel work needs explicit dispatch, bounded paths and separate worktrees/editor copies under [coordination rules](agent-coordination.md). Performance measurement begins at VD1 and continues at every stage; VD8 is the final consolidation, not the first optimization pass. There are no calendar or percentage-complete promises.
+Dependencies describe integration order. Any future parallel work needs explicit dispatch, bounded paths and separate worktrees/editor copies under coordination rules. Performance measurement begins at VD1 and continues at every stage; VD8 is the final consolidation, not the first optimization pass. There are no calendar or percentage-complete promises.
 
 ## VD0 — art direction and reference contract
 
@@ -68,7 +68,7 @@ Dependencies describe integration order. Any future parallel work needs explicit
 
 Capture the current source-matched menu, HUD, every catalog map, one soldier, each weapon and an action sequence. Record concrete gaps in [visual defects](visual-defect-inventory.md), including existing P05 defects. Define component owners, permitted paths, versions, comparison views and evidence locations. Identify any required new schema/socket/hit-pose change before dependent work. Establish the explicit scope needed for P05 work without changing its historical disposition.
 
-**Exit:** owner approves one coherent visual brief and the comparison set; a technical reviewer records constraints/budgets and the gap inventory. Exact reference frames, art approval and new coding assignments remain Pending until supplied/reviewed. Current source is b531da9 / 0.3.1, with details in the [M11 handoff](milestones/m11-playable-release/handoff-archive.md#t074--scene-led-menu-and-tactical-hud-preview).
+**Exit:** owner approves one coherent visual brief and the comparison set; a technical reviewer records constraints/budgets and the gap inventory. Exact reference frames, art approval and new coding assignments remain Pending until supplied/reviewed. Current source is b531da9 / 0.3.1, with details in the M11 handoff.
 
 ## VD1 — representative art slice and feasibility
 
@@ -159,4 +159,4 @@ For every milestone attach: base/implementation commit, approved owner/paths, re
 
 ## Next assignment
 
-Follow the [visual roadmap](visual-roadmap.md): deliver its tranche in an installer, then run the named reviews it lists. VD0 still needs owner approval of the [working brief](visual-art-brief.md) and exact Bodycam/Warface comparison frames. All VD exits remain Pending until their actual evidence and owner decisions exist.
+Follow the visual roadmap: deliver its tranche in an installer, then run the named reviews it lists. VD0 still needs owner approval of the [working brief](visual-art-brief.md) and exact Bodycam/Warface comparison frames. All VD exits remain Pending until their actual evidence and owner decisions exist.
