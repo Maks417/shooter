@@ -2,6 +2,22 @@
 
 Evidence log for M11, newest first. Each delivery and change records identities, results and what stays Pending. Records before 2026-11-15 (deliveries up to 0.3.12, T062–T085) are in git history. Current status is in [next playable build](../../next-playable-build.md) and gates are in [acceptance](../../acceptance.md).
 
+## T195 phase 2 build-once lanes and Networking isolation — 2026-11-19
+
+Implemented [ADR-120](../../decisions.md#adr-120--accepted-parked-networking-behind-a-define-and-build-once-pure-lanes). Measured on the dev laptop:
+
+- **`Test-All.ps1`** (source `f1e9da1` + phase 2 working tree): PASS in 168.7 s, all four suites in parallel after one restore and build. Counts: Contracts 79, Generation 650, Simulation 642, Game 160.
+- **`Test-Networking.ps1`**: 21/21. Simulation 642 plus Networking 21 equals the earlier Simulation total of 663, so no test was lost.
+- **`Deliver.ps1 -ForceContent`** on clean `5458edd`: PASS.
+  - Content plus client build in one editor session: 356 s. Phase 1 ran them as separate launches, 200 s + 221 s = 421 s.
+  - Smoke: 9 s.
+  - Package: 7 s, with 1,400 files hard-linked and 0 copied.
+  - The IL2CPP backup (1,149 MB) was removed after the build.
+- **Networking out of the player:** the player's `global-metadata.dat` no longer contains `Shooter.Networking`, and `Library/ScriptAssemblies` has no Networking DLL.
+- **Settings provenance:** regenerated through `ShooterBuild.WriteSettingsProvenance` (only the `ShooterBuild.cs` source hash changed). `Test-SourceProvenance` PASS.
+
+**Not run:** Unity EditMode/PlayMode, `Build-Installer`, the CI workflow.
+
 ## T195 phase 1 pipeline and disk — 2026-11-19
 
 Owner request: faster builds and release creation with less disk use. Phase 1 changes only tooling: no frozen surfaces, no game code. See the [runbook](../../bootstrap-runbook.md#content-build-package-and-installer).
