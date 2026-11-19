@@ -67,6 +67,8 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           python Tools/test_contract_lock.py
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          python Tools/test_verify_feature_registry.py
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
           ./Tools/test_smoke.ps1
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           ./Tools/test_build_lock.ps1

@@ -37,5 +37,34 @@ def verify(root=ROOT):
             "scope": "P02 format/source registry identity only; not cache, content, build or hardware acceptance"}
 
 
+def _cli(root, refreeze_fn, verify_fn):
+    import argparse
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--refreeze", metavar="ADR", help="record a reviewed change approved by this ADR (T195)")
+    args = parser.parse_args()
+    print(json.dumps(refreeze_fn(root, args.refreeze) if args.refreeze else verify_fn(root), indent=2))
+
+
+def _record(lock, decision):
+    if not decision or not decision.startswith("ADR-"):
+        raise ValueError("A refreeze names the ADR that approved it")
+    decisions = lock.setdefault("refreezeDecisions", [])
+    if decision not in decisions:
+        decisions.append(decision)
+    import datetime
+    lock["reviewDate"] = datetime.date.today().isoformat()
+
+
+def refreeze(root, decision):
+    """Reviewed refreeze: the format sources/schemas/toolchain as they are now, under the approving ADR."""
+    path = root / "content-format-lock.json"
+    lock = json.loads(path.read_text(encoding="utf-8"))
+    _record(lock, decision)
+    lock["sources"] = inventory(root)
+    lock["toolchainHash"] = sha(root / "toolchain-lock.json")
+    path.write_text(json.dumps(lock, indent=2) + "\n", encoding="utf-8", newline="\n")
+    return verify(root)
+
+
 if __name__ == "__main__":
-    print(json.dumps(verify(), indent=2))
+    _cli(ROOT, refreeze, verify)

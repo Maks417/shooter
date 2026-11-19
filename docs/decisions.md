@@ -133,6 +133,7 @@ Accepting a decision never certifies a runtime or hardware gate. The headings be
 | [ADR-118](#adr-118--accepted-m4a1-mk-16-m24-sws-and-m870-pellets-shell-reloads-and-geometryweapon-150) | Accepted | M4A1, Mk 16, M24 SWS and M870: pellets, shell reloads and geometry.weapon 1.5.0 |  |
 | [ADR-119](#adr-119--accepted-30-rank-career-ladder-and-four-new-perks) | Accepted | 30-rank career ladder and four new perks |  |
 | [ADR-120](#adr-120--accepted-parked-networking-behind-a-define-and-build-once-pure-lanes) | Accepted | parked networking behind a define and build-once pure lanes | amends ADR-076 |
+| [ADR-121](#adr-121--accepted-feature-lock-hashes-c-code-tokens-and-every-lock-has-a-refreeze-command) | Accepted | feature lock hashes C# code tokens; every lock has a refreeze command |  |
 
 ## ADR-001 — Accepted: Unity 6 URP rasterization
 
@@ -1807,3 +1808,14 @@ Date 2026-11-19 (T195 phase 2). **Context.** Parked Networking (ADR-076) was sti
 - `ShooterBuild.CompileNativeGameContentAndBuildClient` bakes native navigation and builds the client in one editor session (`Compile-GameContent -Native -AndBuildClient`); `Tools/Deliver.ps1` chains content, build, smoke, package and the optional installer.
 
 **Consequences.** ADR-076's "no new Networking code" still holds: the code is unchanged and only moved out of the default lanes. A change that breaks Networking now fails only `Test-Networking.ps1`, which remains the owner's call to run while networking is parked.
+
+## ADR-121 — Accepted: feature lock hashes C# code tokens and every lock has a refreeze command
+
+Date 2026-11-19 (T195 phase 3). **Context.** `feature-content-lock.json` hashed the raw bytes of every generator source, so a comment or formatting edit in weapon, soldier, motion or material code needed an ADR and a refreeze. Three of the four locks had no refreeze command, so they were edited by hand. Fingerprinting generated outputs instead was considered and rejected: soldier motion and several material and geometry paths run in the player, not in packages, so an output fingerprint would silently stop protecting them.
+
+**Decision.**
+- The feature lock records `sourceHashPolicy: cs-tokens-v1`. C# generator sources are hashed by code tokens: comments dropped, whitespace runs collapsed, spaces next to `( ) { } [ ] , ;` removed, string/char literals byte-exact. Recipes, schemas, fixtures and baseline docs stay raw-byte hashed.
+- The switch was made with `verify_feature_registry.py --migrate-policy ADR-121`, which refuses unless the tree still matched the raw-byte lock exactly.
+- `verify_contract_lock.py`, `verify_game_contract_lock.py` and `verify_content_format.py` gain `--refreeze ADR-NNN`. It records the ADR in `refreezeDecisions`, updates `reviewDate`, and rewrites the source, fixture and toolchain hashes from the tree.
+
+**Consequences.** Any change to generator code, numbers or strings still fails until a reviewed refreeze names its ADR. Comment and layout edits no longer need one. No lock is edited by hand any more.

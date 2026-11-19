@@ -104,7 +104,9 @@ Decorative open surfaces must be tagged.
 | Lock | What it pins | Checked by |
 |---|---|---|
 | `content-format-lock.json` | Content format v1, [content schemas](content-schemas/manifest.schema.json) and the map-package boundary ([ADR-035](decisions.md#adr-035--accepted-verified-release-map-packages-t055-boundary)) | `Tools/verify_content_format.py` |
-| `feature-content-lock.json` | Every feature generator version (weapon, material, noise, flipbook, soldier, motion), its sources, its [feature schemas](feature-schemas/weapon.schema.json) and the [weapon](weapon-recipe-baseline.md) and [soldier](soldier-baseline.md) baselines. The lock file is authoritative for versions and counts. | `Tools/verify_feature_registry.py` |
+| `feature-content-lock.json` | Every feature generator version (weapon, material, noise, flipbook, soldier, motion), its sources, its [feature schemas](feature-schemas/weapon.schema.json) and the [weapon](weapon-recipe-baseline.md) and [soldier](soldier-baseline.md) baselines. The lock file is authoritative for versions and counts. C# sources are hashed by code tokens, so comment and layout edits need no refreeze ([ADR-121](decisions.md#adr-121--accepted-feature-lock-hashes-c-code-tokens-and-every-lock-has-a-refreeze-command)). | `Tools/verify_feature_registry.py` |
+
+Every lock verifier takes `--refreeze ADR-NNN` for a reviewed change (`contract-lock.json` and `game-contract-lock.json` too); locks are never edited by hand.
 
 `ValidatedRecipe` checks schema validity and exact source/document agreement before the compiler accepts a feature recipe ([ADR-019](decisions.md#adr-019--accepted-additive-m1-feature-recipes-and-reproducible-source-byte-lock)).
 

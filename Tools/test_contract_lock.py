@@ -4,7 +4,7 @@ from pathlib import Path
 import shutil
 import tempfile
 import unittest
-from verify_contract_lock import verify
+from verify_contract_lock import refreeze, verify
 
 
 class ContractLockTests(unittest.TestCase):
@@ -31,6 +31,15 @@ class ContractLockTests(unittest.TestCase):
         (self.root / "UnityProject/Assets/Shooter/Contracts/Unreviewed.cs").write_text("// test-only")
         with self.assertRaisesRegex(ValueError, "sources differ"):
             verify(self.root)
+
+    def test_refreeze_needs_an_adr_and_records_it(self):
+        path = self.root / "UnityProject/Assets/Shooter/Contracts/Values.cs"
+        path.write_bytes(path.read_bytes() + b"// reviewed change\n")
+        with self.assertRaisesRegex(ValueError, "names the ADR"):
+            refreeze(self.root, "no-adr")
+        self.assertEqual(refreeze(self.root, "ADR-999")["result"], "PASS")
+        lock = json.loads((self.root / "contract-lock.json").read_text(encoding="utf-8"))
+        self.assertIn("ADR-999", lock["refreezeDecisions"])
 
     def test_fixture_drift(self):
         path = next((self.root / "docs/fixtures").glob("*.json"))
