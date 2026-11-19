@@ -1,4 +1,6 @@
-# M10 — Two maps, menus and settings — handoff and gate record
+# M10 — Two maps, menus and settings — handoff
+
+Evidence log for this milestone. Current status is in [next playable build](../../next-playable-build.md); gates are in [acceptance](../../acceptance.md). Superseded review records are in git history.
 
 ## T074 — tactical shell and HUD, stage 1
 
@@ -50,21 +52,6 @@ ADR-039 adds a rebindable Slide action (F + applied Sprint, default Left Shift +
 - Store path: `Application.persistentDataPath/shooter-user-settings.json` via `FileUserSettingsStore` (schema-1 migrates; newer schema never overwritten).
 - Audio: `ProductClientSettingsApplier` / `UserSettingsAudioBinding` → `SynthAudioMixer.SetChannelGains`; `ClearPresentation` / leave / abort detaches and stops voices.
 - **Integrator:** Do not treat pure shell PASS as UI01–UI02 player acceptance. Alternate-load soak and 720p scale review still required for FIX08 closeout.
-
-## Historical closeout record — 2026-11-13
-
-Historical 2026-11-13 software closeout (retained; superseded for current product acceptance): **CLOSED (software)**, 2026-11-13. Two packaged maps (training-compound via CompoundPlanner; depot-yard via distinct DepotPlanner grammar), GameShellMenu, and FileUserSettingsStore landed. Full interactive polish / named UI review remain Pending.
-
-| Field | Historical recorded disposition |
-|---|---|
-| Tasks | T044–T047 |
-| Catalog | StaticMapCatalog release seed with planner-aligned spawns |
-| Depot | `DepotPlanner` linear bay/dock grammar (seed 460072031) |
-| Shell | `GameShellMenu` map/size selection + PlayerPrefs relaunch |
-| Settings | `FileUserSettingsStore` atomic schema=1 file store |
-| UI01–UI02 / SET02 device | Partial / Pending named device review |
-
-[Release roadmap](../../next-playable-build.md) · [Previous](../../acceptance.md#m9--team-deathmatch) · [Next](../../acceptance.md#m11--release).
 
 ## T075 presentation follow-up — 2026-11-15
 

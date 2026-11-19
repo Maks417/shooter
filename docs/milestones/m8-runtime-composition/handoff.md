@@ -1,9 +1,8 @@
-# M8 — Runtime composition and Game-v1 foundation — handoff and gate record
+# M8 — Runtime composition and Game-v1 foundation — handoff
+
+Evidence log for this milestone. Current status is in [next playable build](../../next-playable-build.md); gates are in [acceptance](../../acceptance.md). Superseded review records are in git history.
 
 T074 delivery adds read-only menu visual-byte access and cosmetic presentation, without changing C0/Game-v1/content schemas. Reproduced loading-to-play overload was repaired by rebasing the first active clock sample (`e3851f1`): foundation regression 73/73 preserves genuine active overload and fractional debt. The independent bot fix remains intact; its client measurement assembly dependency was repaired. M11 visual-preview evidence identifies clean b531da9 builds, menu startup and the owner-stopped interactive review. RUN/player, reference and P05 acceptance are not closed.
-
-**Current disposition — 2026-11-14 review from 84befb9 / a54ed83:** M8 integration validation remains open. T066 provenance/cancellation and T067 packaged catalog/visual loading are repaired; T068 authority-driven weapon/action views are landed in the retained `7cd7e81` candidate. Native-navigation publication/query semantics and actual RUN/player/repeated-life evidence remain open. See the [audit](../../next-playable-build.md), [remaining queue](../../next-playable-build.md), [playtest guide](../../playtest-guide.md) and [FIX acceptance](../../acceptance.md). Original requirements and historical evidence remain; this review creates no coding lease or waiver.
-
 
 ## T072 — Final slide validation
 
@@ -19,14 +18,6 @@ Implementation-time evidence at `77bfa93` + working changes (sourceDirty=true): 
 
 Unity EditMode initially failed **before project compilation**: editor Unity.dll could not load; dependency inspection found missing compress_bc7e.dll. Failure retained at `Artifacts/m0-foundation/77bfa93de99ef98fc5232f73e9946b4628fad752/tests-editmode-20261114T161720443Z-808d8f64/`. Exact 6000.3.28f1 installer redownload verified against original MD5 aa4e924970ec074fe7da2cb711b3fd49 and valid Unity Technologies signature; the missing factory runtime/SDK files were restored from the authenticated isolated installation (10,017 files / 2.15 GiB; existing files and PackageManager trees untouched), without upgrading editor/packages. Configure-Unity PASS at `configure-unity-20261114T165406204Z-09c7e415`; repaired-editor EditMode PASS at `tests-editmode-20261114T165547008Z-c207f4a6` (856d628 + bounded-binding migration fix, sourceDirty=true). Restore hashes/proof remain in `Artifacts/unity-setup/t072-editor-runtime-restoration.json`. Final Game migration rerun PASS 56/56 (`20261114T165540759Z-89d58830`), including full-table preservation and preallocation count bounds. Final source-matched checks/build/package are recorded in the M11 T072 delivery record when complete. Interactive both-map slide/UI/audio/performance review remains Pending; all existing release gates/P05 FAIL remain unchanged.
 
-
-## Current source/evidence handoff
-
-T066 baseline is repaired: fresh Contracts 72, Generation 319, Simulation 110 and Game 51 pass; provenance passes (660 entries / 330 GUIDs). Retained clean `7cd7e81` EditMode 24/24, PlayMode 12/12, Client/Server and ZIP reports were inspected, not rerun here. ADR-038 catalog, actual packaged visual payloads, executable-relative defaults/recovery and T068 slot/action views exist. T067 remains partial: normal publisher still produces software-grid NVB1; native bridge publication and partial/fallback semantics/load/clearance need completion. Native installer/open-quad tests do not establish real two-map routes or repeated-life player acceptance. See [audit C01–C05](../../next-playable-build.md); old failures below stay historical.
-
-## Historical review — 59316d3 (superseded)
-
-T052–T056/T061 software is committed in 59316d3. Fresh baseline: Contracts 72 PASS, Generation 310/311 FAIL (cancellation/lock), Simulation 101 PASS, Game 38 PASS; provenance FAIL on 19 missing metadata entries. No fresh Unity/player run. T066 repairs baseline; T067 finishes actual packaged visual/native nav delivery and T068 weapon/action views. Historical software runs below retain their original sourceDirty flags.
 
 ## T052 / FIX01 regression repair — 2026-11-14
 
@@ -113,33 +104,6 @@ Local input now captures keyboard/mouse state once per render frame and consumes
 The first Unity attempt failed compilation on an ambiguous `EntityId`; the next two ran the new tests and exposed boundary-value test failures. All failed evidence is retained beside the final run. `Tools/Test-Game.ps1 -Offline` could not access its sandbox-local NuGet cache and recorded zero tests at `Artifacts/m8-runtime-composition/6329262446428f92617600d8526b13f9c90a358a/20261114T100920509Z-0fd06237/`; the direct no-restore run above is reported separately rather than relabeling that wrapper failure.
 
 FIX03 software behavior is implemented and the automated timing/input cases pass. Full FIX03 remains **Pending**: no source-matched product-player run held pause and OS focus loss for ten real seconds, and no physical keyboard/mouse UI-click review was performed. T053 owns authority retirement/respawn internals; T054 only prevents their advancement while Bootstrap is suspended and does not claim T053 lifecycle acceptance.
-
-## Historical closeout record — 2026-11-13
-
-Historical 2026-11-13 software closeout (retained; superseded for current product acceptance): **CLOSED (software)**, 2026-11-13. Product OfflineGameSession is the default Bootstrap composition. Diagnostic floor/box retained for `-shooterSmokeSeconds` / gallery / benchmark. Historical M0–M7 waivers and P05 FAIL (ADR-024) unchanged. No inherited hardware waiver; named visual/P05 acceptance remains open until T049.
-
-| Field | Historical recorded disposition |
-|---|---|
-| Owner / reviewer / base / final main commit | Cursor M8–M11 integrator (bc-c6e6a4b4); base `5fb3e30`; see coordination `m8Close` |
-| Tasks | T035–T039 |
-| Game-v1 / C0 / content / toolchain / workload identities | **Game-v1 frozen** (ADR-034); C0-v1 unchanged; TDM workloads defined |
-| Build / packaged content / executable paths and SHA256 | IL2CPP client + server Build/Smoke PASS; product composition READY evidenced |
-| Pure / Unity / player / visual checks | RUN00–RUN01 PASS; RUN02 software PASS (CompoundMapRuntime); RUN03 product READY PASS / named human review Pending; RUN04 diagnostic Smoke PASS + product pause API; RUN05 captures Pending / P05 retained |
-| Reference hardware / counters / thermal review | PendingHardware / NotRun |
-| Scope limitations / rollback pair | P05 FAIL retained (ADR-024); named human vertical review not claimed PASS |
-| Known entry blocker | Cleared |
-
-## Deliver before downstream assignment
-
-| Artifact | Status |
-|---|---|
-| Game-v1 source/fixture/lock | Done |
-| Authority lifecycle adapter | Done |
-| Team deathmatch pure reducer | Done |
-| Packaged compound + real collision/nav | Done (`CompoundMapRuntime` + planner catalog spawns) |
-| Client input/camera/HUD/audio product path | Done (`LocalPlayerInput`, `ProductSessionView`, synth mixer) |
-| Vertical product player review | Product READY evidenced; named human review Pending |
-| Frozen workloads | Done |
 
 ## Task and acceptance ledger
 
