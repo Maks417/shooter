@@ -119,6 +119,19 @@ function Remove-ShooterStaleRuns([string]$AreaPath, [string]$Prefix, [string]$Ke
     }
 }
 
+# Creates $Path as an NTFS hard link to the existing file $Target. Uses CreateHardLinkW with \\?\ paths because packaged
+# map content nests beyond MAX_PATH, where New-Item -ItemType HardLink fails. Returns $false when linking is impossible
+# (different volume, non-NTFS); callers fall back to copying.
+function New-ShooterHardLink([string]$Path, [string]$Target) {
+    if (-not ('Shooter.NativeLink' -as [type])) {
+        Add-Type -Namespace Shooter -Name NativeLink -MemberDefinition @'
+[System.Runtime.InteropServices.DllImport("kernel32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode, SetLastError = true)]
+public static extern bool CreateHardLinkW(string lpFileName, string lpExistingFileName, System.IntPtr lpSecurityAttributes);
+'@
+    }
+    [Shooter.NativeLink]::CreateHardLinkW('\\?\' + [IO.Path]::GetFullPath($Path), '\\?\' + [IO.Path]::GetFullPath($Target), [IntPtr]::Zero)
+}
+
 # Deletes the player's never-shipped IL2CPP backup and Burst debug folders and returns { name, bytes } per removed folder.
 function Remove-ShooterPlayerDebugFolders([string]$PlayerDirectory) {
     if (!(Test-Path -LiteralPath $PlayerDirectory -PathType Container)) { return }

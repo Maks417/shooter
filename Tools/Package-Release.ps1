@@ -64,11 +64,8 @@ $script:StagedCopies = 0
 function Copy-ReleaseFile([string]$Source, [string]$Destination) {
     $null = New-Item -ItemType Directory -Path (Split-Path -Parent $Destination) -Force
     if (Test-Path -LiteralPath $Destination) { Remove-Item -LiteralPath $Destination -Force }
-    try {
-        $null = New-Item -ItemType HardLink -Path $Destination -Value $Source -ErrorAction Stop
-        $script:StagedLinks++
-    }
-    catch {
+    if (New-ShooterHardLink $Destination $Source) { $script:StagedLinks++ }
+    else {
         Copy-Item -LiteralPath $Source -Destination $Destination -Force
         $script:StagedCopies++
     }

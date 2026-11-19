@@ -2,6 +2,27 @@
 
 Evidence log for M11, newest first. Each delivery and change records identities, results and what stays Pending. Records before 2026-11-15 (deliveries up to 0.3.12, T062–T085) are in git history. Current status is in [next playable build](../../next-playable-build.md) and gates are in [acceptance](../../acceptance.md).
 
+## T195 phase 1 pipeline and disk — 2026-11-19
+
+Owner request: faster builds and release creation with less disk use. Phase 1 changes only tooling: no frozen surfaces, no game code. See the [runbook](../../bootstrap-runbook.md#content-build-package-and-installer).
+
+Measured on the dev laptop, source `fa9b24f` (clean):
+
+| Step | Before | After |
+|---|---|---|
+| Client build run folder | 1.28 GB (1.15 GB IL2CPP backup) | 133 MB; the backup (1,154 MB) is deleted after the build |
+| `Package-Release` | stage copy, ZIP and full extract rehearsal; about 0.5 GB on disk | 8.8 s, 1,400/1,400 files hard-linked, 0 copied; ZIP only with `-Zip` |
+| Pure and native map caches | 2 × 250 MB | 257 MB of identical payloads shared through hard links |
+| Core RP curation check per Unity wrapper | 11.2 s | 0.6 s when unchanged (stamp) |
+
+Run results:
+- `Compile-GameContent -Native -Force`: PASS in 200 s. The non-navigation guard passed for 12 packages, and the trailing map-test subset (35/35) took 86 s of that.
+- Client build: PASS in 221 s.
+- `Package-Release -RequireNativeNav`: PASS.
+- `test_package_release.ps1`: 8/8. `test_prepare_unity_packages.py`: 11/11. `Test-Contracts`: 79/79.
+
+**Not run:** `Build-Installer`, because it would prune the 0.3.24 installer run. Smoke, Unity EditMode/PlayMode, and the CI workflow changes are unverified until the next manual Unity run.
+
 ## ADR-117 collimator dot and zoom — 2026-11-19
 
 Owner request: the collimator should show only one small red point (no red area around it) and should magnify 1.2x, not 1x. Implemented [ADR-117](../../decisions.md#adr-117--accepted-single-point-collimator-dot-and-12x-collimator-zoom): `TacticalUi.CollimatorDot` draws a single solid red circle of about 3 px at 1080p (the bloom disc and pale centre are gone), and the collimator ADS field of view is 80/1.2 ≈ 66.7° (was 56°, about 1.43x).

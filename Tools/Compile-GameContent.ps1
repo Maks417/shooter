@@ -87,9 +87,8 @@ try {
     function Merge-IdenticalFile([string]$Source, [string]$Target) {
         $length = (Get-Item -LiteralPath $Target).Length
         $temp = $Target + '.' + [Guid]::NewGuid().ToString('N') + '.link'
-        try { $null = New-Item -ItemType HardLink -Path $temp -Value $Source -ErrorAction Stop }
-        catch { return 0 }
-        Move-Item -LiteralPath $temp -Destination $Target -Force
+        if (-not (New-ShooterHardLink $temp $Source)) { return 0 }
+        [IO.File]::Move($temp, $Target, $true)
         return $length
     }
     $purePackageCache = $null
