@@ -84,7 +84,7 @@ DEFECTS = [
 DEFAULT_POINTERS = [
     "docs/soldier-baseline.md#third-bounded-clearance-candidate",
     "docs/decisions.md#adr-024--accepted-p05-soldier-visual-scope-stop-after-exhausted-clearance-iterations",
-    "docs/milestones/m1-procedural-feasibility/handoff.md",
+    "docs/visual-defect-inventory.md",
     "Artifacts/m1-procedural-feasibility/ (immutable failed P05 captures/caches — do not delete or relabel)",
 ]
 

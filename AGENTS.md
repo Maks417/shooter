@@ -1,31 +1,74 @@
 # Shooter implementation rules
 
-Repository: C:\Job\shooter. Implement a Unity 6 URP procedural military FPS under UnityProject. M0–M7 retain historical owner-waived closures (ADR-017, ADR-025–028, ADR-030–032); historical pending evidence remains. M8–M10 integration validation and M11 acceptance remain open. Current build, task disposition and the order of remaining work are in docs/next-playable-build.md (the only page that tracks the current installer); finding status is in docs/product-state-audit.md and visual work follows docs/visual-roadmap.md. Read those and docs/playtest-guide.md, then docs/implementation-start.md, docs/vision.md, docs/architecture.md, docs/contract-details.md and the assigned milestone index before edits. New feature workers also read docs/game-session-contracts.md (Game-v1, ADR-034/036/037). Continue only the assigned task; parallel agents only when the owner explicitly requests them. No new acceptance waiver is authorized. Superseded plans live in docs/archive/ and are not instructions.
+Repository: C:\Job\shooter. This is a Unity 6 URP procedural military FPS under UnityProject.
 
-Owner clarification 2026-11-14: first version is one human with local allied/enemy bots, running offline in one client process. No online/LAN multiplayer, external server process, server rental/hosting purchase or online service is required; online delivery is deferred. Preserve existing server-compatible architecture and regression/isolation checks without making online deployment a playable-release prerequisite. Owner decision 2026-11-16 (ADR-076): networking is parked — no new Networking code, no Dedicated Server build in CI or the release flow, no new `UNITY_SERVER` guards or transport hooks; server gates read as Parked, not Pending. Simulation stays the single authority and Presentation read-only.
+**Read before editing:**
+1. docs/next-playable-build.md, the only page that tracks current status, open tasks and the order of remaining work.
+2. docs/vision.md and docs/architecture.md.
+3. docs/acceptance.md, for gates and scenario IDs.
+4. The feature page for your task.
 
-Final-delivery owner requirement 2026-11-14: ship a Windows installer; running a newer installer must update the existing installed game while preserving settings/controls and stable installation identity. Implemented as T073 (ADR-041) and shipped since 0.3.1; see docs/features/windows-installer.md for INS01–INS06 status. ZIPs are internal artifacts.
+New feature workers also read docs/game-session-contracts.md (Game-v1). Continue only the assigned task. No new acceptance waiver is authorized. History lives in git, not in the docs tree.
+
+**Scope:** offline Team Deathmatch, with one human and local allied and enemy bots in one client process. It ships as a Windows installer that upgrades an existing install in place and keeps settings and controls (ADR-041); ZIPs are internal artifacts. Under ADR-076, networking is parked:
+- no new Networking code;
+- no Dedicated Server build in CI or the release flow;
+- no new `UNITY_SERVER` guards or transport hooks;
+- server gates read Parked.
+
+Simulation stays the single authority and Presentation stays read-only.
 
 ## Scope and ownership
 
-- One integrator owns Contracts, Bootstrap, project/package settings, schemas, benchmark definitions and coordination.json. No parallel workers edit these without explicit assignment. Use worktrees and one Unity editor/project copy per worker.
-- Implement only the assigned milestone/task and permitted folders from docs/backlog.md and docs/task-supplement.md. Use fakes in tests to unblock independent work; shipping composition must reject required fake adapters.
-- Freeze compiling C0 contracts/fixtures before parallel feature integration. Changes to units, seeds, hit poses, packet layout or schemas need ADR plus migration/fixtures before dependent merges.
-- No automatic delegation is required by this file. If the user requests parallel agents, assign bounded tasks after readiness gate; avoid shared-file races.
-- Commit all completed task changes into `main` before finishing. Integrate every task branch/worktree into `main`, resolve conflicts and run the required checks, then remove temporary worktrees and their branches after verifying that all changes are preserved in `main`. Do not leave completed work only in a workspace, on a task branch or uncommitted. Keep ignored build/cache/evidence files ignored and preserve required evidence before workspace removal.
-- Use Tools/Configure-Unity.ps1 with the locked editor before opening a fresh checkout. It prepares the hash-pinned Core RP source curation described in ADR-013. Never edit installed packages, Library payloads or the ignored curated package to bypass provenance checks. The M0 scaffold owner also owns Bootstrap/Core, Simulation/Foundation, World/Foundation and Presentation/Rendering/FoundationView.cs until feature owners are assigned.
+**Integrator-owned.** One integrator owns Contracts, Bootstrap, project and package settings, schemas, locks, benchmark definitions and coordination.json. Nobody else edits these without an explicit assignment.
+
+**Parallel work.** Parallel agents run only when the owner explicitly requests them. Each gets bounded paths, a worktree and its own Unity project copy. Avoid shared-file races. Use fakes in tests to unblock independent work; shipping composition must reject required fake adapters.
+
+**Frozen contracts.** C0 and Game-v1 are frozen. Changes to units, seeds, hit poses, schemas or contract layout need an ADR plus migrated fixtures before any consumer depends on them.
+
+**Commit hygiene.**
+- Commit all completed work into `main` before finishing.
+- Integrate every task branch and worktree, resolve conflicts and run the required checks.
+- Remove temporary worktrees and branches only after verifying that `main` holds all their changes.
+- Keep ignored build, cache and evidence files ignored, and preserve required evidence.
+
+**Fresh checkout.** Use Tools/Configure-Unity.ps1 with the locked editor first. It prepares the hash-pinned Core RP curation (ADR-013). Never edit installed packages, Library payloads or the curated package to bypass provenance checks.
 
 ## Hard requirements
 
-No imported/manually modeled meshes, painted/photo/AI image textures, sprites, authored skeletal clips or mocap. Geometry, materials, rigs and motion come from code/numeric recipes. Generated caches require provenance; engine font is named allowlist exception. No silent external art fallback. Unity URP/C#/HLSL, native720p Low30FPS reference gate; 60FPS stretch separate. Ryzen4600H integrated Radeon,16GB DDR4-3200,NVMe; temporary historical memory utilization is not a requirement.
+**Art:**
+- No imported or manually modeled meshes.
+- No painted, photo or AI image textures.
+- No sprites, authored skeletal clips or mocap.
+- Geometry, materials, rigs and motion come from code or numeric recipes.
+- Generated caches require provenance.
+- Fonts and the audio bank are named, provenance-recorded exceptions (ADR-066, ADR-062/096).
+- No silent external art fallback.
 
-Gameplay collision/nav/hit volumes/weapon behavior identical across quality tiers. Fixed60Hz simulation, presentation read-only, authoritative dedicated-server-compatible design. No AAA performance/realism claim without actual evidence. Choose exact editor/packages from verified installation and pin them; do not invent versions or upgrade toolchain during feature work.
+**Performance:** Unity URP, C# and HLSL. Native 720p Low at 30 FPS on the reference machine is the gate, and 60 FPS is a separate stretch. The reference machine is a Ryzen 5 4600H with integrated Radeon, 16 GB DDR4-3200 and NVMe.
+
+**Gameplay:** collision, navigation, hit volumes and weapon behavior are identical across quality tiers, on a fixed 60 Hz simulation. Make no AAA performance or realism claim without actual evidence. Use the exact editor and packages pinned in toolchain-lock.json and build-lock.json, and never upgrade the toolchain during feature work.
 
 ## Verification and completion
 
-Run docs/fixtures/verify_fixtures.py and docs/verify_docs.py for specification changes. Run Tools/Test-Contracts.ps1, Tools/Test-Generation.ps1 and the relevant Unity/build/benchmark wrappers described in docs/bootstrap-runbook.md; each covers only its documented scope. Compile-GameContent -Native publishes the verified native-navigation map packages; Package-Release -RequireNativeNav and Build-Installer produce the delivery. Builder, smoke and package PASS are not gameplay evidence; manual gameplay, device, reference-hardware and P05 visual review stay Pending until recorded. Do not restart landed work or relabel retained binaries as later source. Missing tools/hardware/counters => pending, never PASS.
+**Checks:**
+- **Docs:** run `python docs/fixtures/verify_fixtures.py` and `python docs/verify_docs.py` for specification changes. Refresh the docs manifest only for intentional edits.
+- **Pure lanes:** run Tools/Test-Contracts.ps1, Test-Generation.ps1, Test-Simulation.ps1 and Test-Game.ps1.
+- **Unity, build and benchmark:** run the relevant wrappers described in docs/bootstrap-runbook.md. Each covers only its documented scope.
+- **Delivery:** `Compile-GameContent -Native`, then `Package-Release -RequireNativeNav`, then `Build-Installer`.
 
-Never edit generated payloads/goldens just to pass tests. Record source/toolchain/content/seed/workload with results; reference-machine performance measured in release player, not editor. Update affected shared docs with real code paths and milestone handoff with evidence/limitations. Keep shared docs once at docs root; milestone folders link them. Do not recreate duplicated reference folders.
+**Evidence:**
+- Builder, smoke and package PASS are not gameplay evidence.
+- Manual gameplay, device, reference-hardware and P05 visual review stay Pending until recorded.
+- Missing tools, hardware or counters mean Pending, never PASS.
+- Do not restart landed work or relabel retained binaries as later source.
+- Never edit generated payloads or goldens just to pass tests.
+- Record source, toolchain, content, seed and workload with results. Measure reference-machine performance in the release player, not the editor.
 
-Before finishing: required checks pass, no out-of-scope files changed, provenance valid, correct contract versions, handoff updated and actual failures/pending checks stated. Documentation hashes are not game test results. Do not relax requirements to close milestone.
+**Before finishing:**
+- required checks pass;
+- no out-of-scope files changed;
+- provenance is valid;
+- contract versions are correct.
 
+Update the affected docs with real code paths. Record evidence in the milestone handoff, and status only in docs/next-playable-build.md. State actual failures and pending checks. Documentation hashes are not game test results. Do not relax requirements to close a milestone.

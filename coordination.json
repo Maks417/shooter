@@ -627,7 +627,6 @@
         "Tools/Foundation",
         "Tools/Simulation.Tests",
         "Tools/Test-Contracts.ps1",
-        "docs/milestones/m2-combat-harness",
         "coordination.json"
       ],
       "dependencies": [
@@ -657,7 +656,7 @@
         "C0-v1",
         "M1 geometry",
         "M2 capsule rules",
-        "docs/features/environment.md",
+        "docs/features/tdm-map-layouts.md",
         "docs/gameplay-baseline.md"
       ],
       "contractVersion": "C0-v1",
@@ -717,7 +716,7 @@
       "dependencies": [
         "C0-v1",
         "W01 plan fixtures (fakes OK until merge)",
-        "docs/features/environment.md"
+        "docs/features/tdm-map-layouts.md"
       ],
       "contractVersion": "C0-v1",
       "status": "Integrated into main; CLOSED_WITH_USER_WAIVER under ADR-027",
@@ -781,7 +780,6 @@
         "Tools/Foundation",
         "Tools/Simulation.Tests",
         "Tools/Test-Simulation.ps1",
-        "docs/milestones/m3-generated-compound",
         "coordination.json",
         "AGENTS.md"
       ],
