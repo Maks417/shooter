@@ -2,7 +2,7 @@
 
 Status 2026-11-17: [ADR-095](decisions.md#adr-095--accepted-structural-weapon-from-eye-shooting-posture-p05-reopening) resolves the **numeric** P05 gate (D01–D03) with the structural shooting posture, now the product default; **visual acceptance stays FAIL until a named visual review** (see [ADR-095 section](#adr-095-structural-shooting-posture)). This page records the product visual defect inventory against the client presentation path; it does not accept P05.
 
-Authoritative stop: [ADR-024](decisions.md#adr-024--accepted-p05-soldier-visual-scope-stop-after-exhausted-clearance-iterations). Historical residuals: [soldier baseline](soldier-baseline.md#third-bounded-clearance-candidate). Repair task: T062. Exit gate: [FIX11](release-remediation-validation.md).
+Authoritative stop: [ADR-024](decisions.md#adr-024--accepted-p05-soldier-visual-scope-stop-after-exhausted-clearance-iterations). Historical residuals: [soldier baseline](soldier-baseline.md#third-bounded-clearance-candidate). Repair task: T062. Exit gate: [FIX11](acceptance.md).
 
 ## Immutable gate
 
@@ -49,7 +49,7 @@ Do not delete failed M1 artifacts, do not relabel FAIL as PASS, and do not inher
 | VD-D20 | flicker / scope / damage | SoftFixedPendingReview | ADR-103 coplanar trim and cover fixes, optical lens camera, tier AA/shadow/fog uplift, damage flinch + low-health grade + heartbeat; 1080p High scoped and low-health review Pending |
 | VD-D06 | reference | PendingOwner | Exact Bodycam/Warface comparison frames/timecodes not yet selected (BFV chat screenshots establish direction only) |
 
-VD gaps are tracked for the [VD0–VD9](design-milestones.md) track and the [art brief](visual-art-brief.md). Closing a VD-D* row requires evidence and owner/technical review; software merges alone do not mark them resolved.
+VD gaps are tracked for the [VD0–VD9](visual-direction.md) track and the [art brief](visual-direction.md). Closing a VD-D* row requires evidence and owner/technical review; software merges alone do not mark them resolved.
 
 ## Capture / overlay tooling
 
@@ -86,7 +86,7 @@ Packages land under ignored `Artifacts/m8-runtime-composition/<commit>/visual-de
 - No Benchmark* or Package-Release* ownership changes
 - No REL03 / RUN05 PASS claim; unresolved required defects keep release visual acceptance open
 
-Release remediation plan · [Validation matrix](release-remediation-validation.md) · [M8 handoff](milestones/m8-runtime-composition/handoff.md) · [M11 handoff](milestones/m11-playable-release/handoff.md).
+Release remediation plan · [Validation matrix](acceptance.md) · [M8 handoff](milestones/m8-runtime-composition/handoff.md) · [M11 handoff](milestones/m11-playable-release/handoff.md).
 
 
 ## ADR-094 bounded correction disposition

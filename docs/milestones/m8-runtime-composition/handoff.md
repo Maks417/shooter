@@ -2,7 +2,7 @@
 
 T074 delivery adds read-only menu visual-byte access and cosmetic presentation, without changing C0/Game-v1/content schemas. Reproduced loading-to-play overload was repaired by rebasing the first active clock sample (`e3851f1`): foundation regression 73/73 preserves genuine active overload and fractional debt. The independent bot fix remains intact; its client measurement assembly dependency was repaired. M11 visual-preview evidence identifies clean b531da9 builds, menu startup and the owner-stopped interactive review. RUN/player, reference and P05 acceptance are not closed.
 
-**Current disposition — 2026-11-14 review from 84befb9 / a54ed83:** M8 integration validation remains open. T066 provenance/cancellation and T067 packaged catalog/visual loading are repaired; T068 authority-driven weapon/action views are landed in the retained `7cd7e81` candidate. Native-navigation publication/query semantics and actual RUN/player/repeated-life evidence remain open. See the [audit](../../product-state-audit.md), [remaining queue](../../next-playable-build.md), [playtest guide](../../playtest-guide.md) and [FIX acceptance](../../release-remediation-validation.md). Original requirements and historical evidence remain; this review creates no coding lease or waiver.
+**Current disposition — 2026-11-14 review from 84befb9 / a54ed83:** M8 integration validation remains open. T066 provenance/cancellation and T067 packaged catalog/visual loading are repaired; T068 authority-driven weapon/action views are landed in the retained `7cd7e81` candidate. Native-navigation publication/query semantics and actual RUN/player/repeated-life evidence remain open. See the [audit](../../next-playable-build.md), [remaining queue](../../next-playable-build.md), [playtest guide](../../playtest-guide.md) and [FIX acceptance](../../acceptance.md). Original requirements and historical evidence remain; this review creates no coding lease or waiver.
 
 
 ## T072 — Final slide validation
@@ -22,7 +22,7 @@ Unity EditMode initially failed **before project compilation**: editor Unity.dll
 
 ## Current source/evidence handoff
 
-T066 baseline is repaired: fresh Contracts 72, Generation 319, Simulation 110 and Game 51 pass; provenance passes (660 entries / 330 GUIDs). Retained clean `7cd7e81` EditMode 24/24, PlayMode 12/12, Client/Server and ZIP reports were inspected, not rerun here. ADR-038 catalog, actual packaged visual payloads, executable-relative defaults/recovery and T068 slot/action views exist. T067 remains partial: normal publisher still produces software-grid NVB1; native bridge publication and partial/fallback semantics/load/clearance need completion. Native installer/open-quad tests do not establish real two-map routes or repeated-life player acceptance. See [audit C01–C05](../../product-state-audit.md); old failures below stay historical.
+T066 baseline is repaired: fresh Contracts 72, Generation 319, Simulation 110 and Game 51 pass; provenance passes (660 entries / 330 GUIDs). Retained clean `7cd7e81` EditMode 24/24, PlayMode 12/12, Client/Server and ZIP reports were inspected, not rerun here. ADR-038 catalog, actual packaged visual payloads, executable-relative defaults/recovery and T068 slot/action views exist. T067 remains partial: normal publisher still produces software-grid NVB1; native bridge publication and partial/fallback semantics/load/clearance need completion. Native installer/open-quad tests do not establish real two-map routes or repeated-life player acceptance. See [audit C01–C05](../../next-playable-build.md); old failures below stay historical.
 
 ## Historical review — 59316d3 (superseded)
 
@@ -169,7 +169,7 @@ Historical 2026-11-13 software closeout (retained; superseded for current produc
 - Smoke Server PASS: `.../smoke-server-20261113T230356298Z-a8fb5fb8`
 - Product READY: `Artifacts/m8-runtime-composition/product-ready-final.log` (`SHOOTER_COMPOSITION mode=product`, `SHOOTER_READY_CLIENT`)
 
-[Release roadmap](../../next-playable-build.md) · [Shared documentation](../../index.md) · Previous pack · [Next pack](../m9-team-deathmatch/index.md).
+[Release roadmap](../../next-playable-build.md) · [Shared documentation](../../index.md) · Previous pack · [Next pack](../../acceptance.md#m9--team-deathmatch).
 
 ## T075 presentation follow-up — 2026-11-15
 

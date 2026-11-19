@@ -1,70 +1,109 @@
 # Quality profiles, budgets and measurement
 
-All numbers below are engineering allocations and release gates to validate, not measured results or FPS guarantees. Reference is Ryzen 5 4600H Radeon iGPU, 16 GB DDR4-3200, two slots used, NVMe. Log channel mode rather than assuming it. Windows x64, D3D11, AC power, documented power plan, driver, thermal state and resolution must accompany results. Unity Editor numbers are diagnostic only.
+The numbers on this page are engineering allocations and release gates. They are not measured results or FPS guarantees.
 
-## Profile table
+The reference machine is a Ryzen 5 4600H with integrated Radeon, 16 GB DDR4-3200 in two slots, and NVMe, running Windows x64 on D3D11 and AC power. Every result records the power plan, driver, thermal state and resolution. Editor numbers are diagnostic only.
 
-| Control | Low reference | Balanced probe | High probe |
+## Profiles
+
+| Control | Low (reference) | Balanced | High |
 |---|---|---|---|
-| Internal render | 1280×720; scale 1.0 for acceptance | 1600×900 | 1920×1080 |
-| URP path | Forward | Forward initially | Forward initially; compare Forward+ in spike |
-| Light/shadow | 1 directional soft shadow, 2 cascades, 50 m, 2048 atlas (ADR-116; was 40 m, 1024, hard) | 60 m, 2048 | 100 m, 2048 |
-| Additional lights | ≤2 per object, no shadows | ≤4, no shadows | ≤4; local shadow requires budget proof |
-| MSAA / post | off, simple color grade; FXAA optional measured variant | 2× MSAA if proven | 2×; advanced post opt-in |
-| AO / SSR / volumetrics | off / off / off | cheap AO only after gate | experimental; separately budgeted |
-| Texture layer resolution | 256 typical, 512 hero cap | 512 typical | 1024 hero cap |
-| Anisotropy / normal detail | 2× / near only | 4× | 8× |
-| Geometry / rig | aggressive LOD, ≤4 weights/vertex | more near detail | more near detail |
-| Cosmetic distance | 80 m; core silhouettes to 200 m | 120 m | 200 m |
+| Internal render | 1280×720, scale 1.0 for acceptance | 1600×900 | 1920×1080 |
+| Directional shadow | Soft, 2 cascades, 50 m, 2048 atlas ([ADR-116](decisions.md#adr-116--accepted-realistic-map-colour-texture-and-shadows-materialnoise-120)) | 60 m, 2048 | 100 m, 2048 |
+| Additional lights | ≤2 per object, no shadows | ≤4, no shadows | ≤4; a local shadow needs budget proof |
+| MSAA / post | Off; simple grade | 2× if proven | 2×; advanced post opt-in |
+| AO / SSR / volumetrics | Off | Cheap AO only after gate | Experimental, separately budgeted |
+| Texture layers | 256 typical, 512 hero | 512 | 1024 hero |
+| Anisotropy | 2× | 4× | 8× |
+| Geometry / rig | Aggressive LOD, ≤4 weights/vertex | More near detail | More near detail |
+| Cosmetic distance | 80 m (silhouettes to 200 m) | 120 m | 200 m |
 
-These settings are source-defined profiles, not reliance on current Unity defaults. Implement renderer version checks. SRP Batcher and conventional instancing are initial candidates; GPU Resident Drawer is not baseline because compatibility and actual benefit depend on pinned URP/render path. See [references](references.md). No automatic high preset based only on device name. Defaults Low; user chooses higher and can run benchmark. Changing quality never regenerates gameplay content.
+How profiles behave:
+- **Defined in source.** Profiles do not rely on Unity defaults.
+- **Low is the default.** The user can pick a higher tier, and nothing is chosen automatically from the device name.
+- **Visuals only.** Changing quality never regenerates or changes gameplay content.
+- **No masking a native-720p failure.** Dynamic resolution or upscaling may come later as a recovery feature, but never to hide a failed native-720p gate. UI always renders at output resolution.
 
-Dynamic resolution/upscaling can be a recovery feature after fixed-resolution gate; it cannot mask a failed native-720p acceptance test. UI stays at output resolution. Switch profiles via preloaded verified variants; shader/texture loading is asynchronous and profile change may show a loading notice outside active combat.
+## Low runtime envelope
 
-## Runtime envelope at Low
+| Resource | Ceiling |
+|---|---|
+| Frame time | p95 ≤33.33 ms, p99 ≤50 ms |
+| GPU / main thread / render thread | p95 ≤27 / ≤12 / ≤8 ms |
+| Simulation | mean ≤4 ms/tick, p95 ≤6 ms at 60 Hz |
+| AI within simulation | mean ≤1.5 ms, p95 ≤2 ms/tick |
+| Visible triangles / live characters | ≤600k / ≤160k |
+| Draw calls / SetPass (diagnostic) | ≤300 / ≤80 |
+| Generated texture residency | ≤192 MiB |
+| Mesh and rig buffers / render targets | ≤128 MiB / ≤96 MiB |
+| Gameplay + nav + collision | ≤256 MiB CPU |
+| Private committed bytes | ≤3 GiB steady, ≤4 GiB loading peak |
+| Graphics allocations | ≤512 MiB (shared RAM, not double-counted) |
+| Steady managed allocation | 0 B/tick and 0 B/frame after warmup |
+| Streaming upload on the main thread | p95 ≤1 ms/frame, hard cap 2 ms |
+| Cold / warm first playable load | ≤30 s / ≤10 s |
 
-| Resource | Initial allocation / ceiling | Notes |
-|---|---|---|
-| Frame time | p95 ≤33.33 ms, p99 ≤50 ms | Sustained replay; separate hitch rule below |
-| GPU | p95 ≤27 ms | Headroom for display/driver variance |
-| Main thread | p95 ≤12 ms | Not added to GPU; overlap is expected |
-| Render thread | p95 ≤8 ms | Measure batching wins |
-| Simulation | mean ≤4 ms/tick, p95 ≤6 ms | 60 Hz even with 30 Hz display |
-| AI within simulation | mean ≤1.5 ms, p95 ≤2 ms/tick | Eight bots; planning staggered |
-| Visual triangles | ≤600k visible including characters | Shadow pass cost tracked separately |
-| Draw calls / SetPass | ≤300 / ≤80 | Diagnostic ceilings, not substitute for timings |
-| Total live character triangles | ≤160k | Player arms plus eight mixed-LOD enemies |
-| Generated texture residency | ≤192 MiB | Includes mip chains/arrays; format report |
-| Mesh+rig CPU and GPU buffers | ≤128 MiB | Count duplicate readable copies |
-| Render targets | ≤96 MiB | Capture actual formats/MSAA |
-| Gameplay+nav+collision | ≤256 MiB CPU | Chunk residency bounded |
-| Client private committed bytes | ≤3 GiB steady, ≤4 GiB loading peak | Measure OS counter; RSS also reported |
-| Graphics allocations | ≤512 MiB target | Shared RAM: not added twice to process accounting |
-| Steady gameplay managed allocation | 0 B/tick and 0 B/frame after warmup | Loading/UI changes measured separately |
-| Main-thread streaming upload | ≤1 ms/frame p95 | Hard scheduling cap 2 ms, split payloads |
-| Cold / warm first-playable load | ≤30 s / ≤10 s | Exclude first-ever shader build; test shipping cache |
+Rules for the envelope:
+- Pools have explicit caps and overflow counters.
+- Mesh CPU copies are discarded after upload unless tooling or collision needs them.
+- No texture is baked per frame.
+- Integrated-GPU memory is never described as dedicated VRAM.
 
-Memory sub-budgets are allocations within total ceilings, not a proof they sum to OS usage. Measure shared graphics allocations and CPU copies; do not describe iGPU memory as separate dedicated VRAM. Discard Mesh CPU copies after upload unless required by tooling/collision; collision data has its own representation. Pools have explicit caps and overflow counters. No per-frame texture noise baking or large temporary RenderTextures.
+The 60 FPS stretch uses the same 720p workload with p95 ≤16.67 ms, p99 ≤25 ms, GPU p95 ≤14 ms and main thread p95 ≤8 ms. It may not be reached by cutting bots or cover.
 
-60 FPS stretch means same 720p workload, p95 ≤16.67 ms, p99 ≤25 ms, GPU p95 ≤14 ms and main thread p95 ≤8 ms. Do not halve AI count or omit cover to claim it. Balanced/High have no reference-machine frame guarantee until measured on named hardware.
+## Workloads
 
-## Benchmark protocol from M0
+**Product TDM workloads** ([ADR-037](decisions.md#adr-037--accepted-product-tdm-measurement-workloads-t063--fix12), with sizes from [ADR-101](decisions.md#adr-101--accepted-selectable-team-sizes-5--8--10--15)):
+- `TDM-<size>-v1` for Old Town, `-depot-v1` for Harbour and `-oil-v1` for Oil Depot, each at 5v5, 8v8, 10v10 and 15v15.
+- One `TDM-soak-15v15-<map>-v1` soak per map.
 
-Version three deterministic workloads: B01 empty renderer/material sweep; B02 256 m compound traversal with eight animated bot stand-ins, 12 building shells, 120 repeated props, one shadow sun, a rifle and pistol; B03 same environment with eight active bots, scripted shots at 10/s aggregate, 20 live capped impacts, smoke proxy and chunk transitions. Counts describe generated workload, not every object necessarily visible. B04 would repeat a four-player+eight-bot network scenario with an independent headless server; it is parked with networking under ADR-076. Each stores seed, build/content hashes, camera/input path, profile and expected counters. Fixed seed `460072030` is an initial decimal uint64 seed; additional seeds 1, 42 and 18446744073709551615 exercise boundaries.
+They are defined in `Game/Session/ProductTdmWorkloads.cs` and [`game-fixtures/tdm-workloads.json`](game-fixtures/tdm-workloads.json). The map IDs `training-compound` and `depot-yard` are kept for identity stability.
 
-Run release IL2CPP player on actual reference machine, verify selected GPU adapter, native 720p internal size, VSync off and uncapped for measurement, no deep profiler. Warm 60 s then capture 180 s; repeat three times after thermal stabilization. Log frame distributions, main/render/GPU timings, CPU/GPU utilization, clock/temperature where available, allocations, process memory, resident content, draw/triangle counts and gameplay workload counters. Present worst run and medians, not mean FPS alone. Time each frame with a monotonic clock; GPU timing availability is explicit. Missing GPU timing requires external supported capture, not invented values.
+**Diagnostic workloads B01–B03.** Their routes, placements and counters are in [`fixtures/benchmark-workloads.json`](fixtures/benchmark-workloads.json):
+- B01 is a renderer/material sweep.
+- B02 is a historical compound traversal.
+- B03 is a controlled combat load with suppressed bot fire.
 
-Gates: all three runs meet p95/p99 budgets, no frame >100 ms during warmed stable traversal, no more than one 50–100 ms hitch/minute, no steadily increasing memory over a 30-minute soak. Load/quality-switch hitches are separately measured and cannot be hidden in warmup if they occur during traversal. Run with ordinary documented background environment; temporary historical memory usage is irrelevant. Capture still images for visual regressions with a tolerance mask, not pixel-identical driver assumptions.
+They are never presented as product measurements. B04 (network) is parked under ADR-076.
 
-## Over-budget response order
+A changed workload gets a new version ID. Workloads are never silently substituted.
 
-Measure pass/thread first; then reduce shader samples/overdraw, shadows, visible density and render LOD. Batch compatible materials and share geometry. Move work to compiler, spread AI planning, limit upload bursts. Preserve collision/visibility volumes and bot thinking rules; any gameplay-load reduction changes benchmark version. If native 720p remains infeasible, record failed gate and revise visual scope with an ADR rather than declaring target achieved by upscaling.
+## Protocol
 
+**Setup.** Use the release IL2CPP player on the reference machine. Confirm the selected GPU adapter and the native 720p internal size. Turn VSync off, run uncapped, and do not attach a deep profiler.
 
-## Exact workload definitions
+**Capture.** Warm up for 60 s, then capture 180 s, three times after thermal stabilization. An optional recorded preconditioning phase may come before the warmup.
 
-Product TDM measurement workloads are reviewed under [ADR-037](decisions.md#adr-037--accepted-product-tdm-measurement-workloads-t063--fix12): compound `TDM-5v5-v1` / `TDM-6v6-v1` (seed `460072030`) depot `TDM-5v5-depot-v1` / `TDM-6v6-depot-v1` (seed `460072031`) and, since [ADR-071](decisions.md#adr-071--accepted-oil-depot-third-map-and-limited-elevated-routes), oil `TDM-5v5-oil-v1` / `TDM-6v6-oil-v1` (seed `460072032`), with one 6v6 soak per map (`TDM-soak-6v6-*-v1`). Definitions are in `Game/Session/ProductTdmWorkloads.cs` and `game-fixtures/tdm-workloads.json`. Rosters remain one human + 9/11 bots. Do not replace historical B01–B04 or silently substitute depot onto compound IDs. [M11 REL04](milestones/m11-playable-release/validation-acceptance.md) applies original native720p Low30 budgets to each map/size without multiplying CPU budget for more bots.
+**Record:**
+- frame distribution;
+- main, render and GPU timings;
+- utilization, clocks and temperatures where available;
+- allocations, process memory and resident content;
+- draw and triangle counts;
+- workload counters.
 
-Three-run repeatable captures and normal-AI soak are separate. Commands: `Tools/Benchmark.ps1 -Workload <TDM-…>` (requires a matching build and Compile-GameContent cache), `Tools/Benchmark-Series.ps1`, `Tools/Benchmark-Product-Matrix.ps1` (four workloads × three runs), `Tools/Benchmark-Soak.ps1` (invoke separately for each map). The matrix requires BuildRunDirectory and a live SensorLog; soak requires BuildRunDirectory and its explicit Workload. See [operator parameters](milestones/m11-playable-release/handoff.md). Collector negatives live in `Tools/test_tdm_benchmark_analysis.py`. At 59316d3 the one-shot host lacks multi-match replay and several counters need corrected semantics: [T070](next-playable-build.md) precedes final measurement. Twelve captures and ≥30-minute soaks remain **PendingHardware** until actual reference execution; tooling PASS is not REL04.
+**Statistics.** Percentiles are nearest-rank. A metric that is unavailable is `null` with a reason, never 0. Report the worst run and the medians, not mean FPS. The collector (v3 and later) reports render time with the conservative [ADR-016](decisions.md#adr-016--accepted-conservative-render-budget-proof-and-continuous-thermal-conditioning) method.
 
-[Benchmark fixtures](benchmark-fixtures.md) and its JSON define B01-minimal-v1 at M0, B01-materials-v1 at M1 and B02/B03 placement/routes/counters. B03 fixed-shot performance mode explicitly suppresses bot firing and keeps actor health; normal-AI soak separately validates playable combat. Never present these different scenarios as identical. Benchmark results use nearest-rank percentiles, null unavailable metrics and explicit workload version.
+**Pass gates:**
+- all three runs meet p95 and p99;
+- no frame over 100 ms in warmed traversal;
+- at most one 50–100 ms hitch per minute;
+- no steady memory growth over a 30-minute soak.
+
+**Commands:**
+- `Tools/Benchmark.ps1 -Workload <id>` and `Tools/Benchmark-Series.ps1` for single workloads and series.
+- `Tools/Benchmark-Product-Matrix.ps1` runs 5v5 and 15v15 per map, three runs each. It needs the build run and a live sensor log.
+- `Tools/Benchmark-Soak.ps1 -Workload <soak-id>` runs one soak per map.
+- `python Tools/test_tdm_benchmark_analysis.py` covers the collector negatives.
+
+Without reference-machine proof, every result is PendingHardware.
+
+## When over budget
+
+1. Measure the pass or thread first.
+2. Reduce shader samples and overdraw.
+3. Reduce shadows, visible density and render LOD.
+4. Batch compatible materials and share geometry.
+5. Move work into the compiler, spread AI planning and limit upload bursts.
+
+Collision and visibility volumes and bot rules stay intact. Any gameplay-load change bumps the workload version. If native 720p stays infeasible, record the failed gate and revise visual scope with an ADR.

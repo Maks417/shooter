@@ -202,7 +202,7 @@ Owner playtest fixes (no C0 / Game-v1 wire freeze).
 
 ## ADR-071 — Oil Depot third map + elevated routes — 2026-11-15
 
-Owner: Warface Oil Depot–inspired third catalog map with walkable stairs/catwalk. [ADR-071](../../decisions.md#adr-071--accepted-oil-depot-third-map-and-limited-elevated-routes); layouts in [tdm-map-layouts.md](../../features/tdm-map-layouts.md); catalog in [playable-maps.md](../../features/playable-maps.md).
+Owner: Warface Oil Depot–inspired third catalog map with walkable stairs/catwalk. [ADR-071](../../decisions.md#adr-071--accepted-oil-depot-third-map-and-limited-elevated-routes); layouts in [tdm-map-layouts.md](../../features/tdm-map-layouts.md); catalog in [playable-maps.md](../../features/tdm-map-layouts.md).
 
 **Implemented (software):**
 - Y-aware `CompoundConnectivity` (pass-under thin decks; layered climb ≤0.25 m steps); `ArenaGeometry` stair/ramp/catwalk helpers; software/native nav bake walkable slabs.

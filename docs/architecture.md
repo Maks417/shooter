@@ -1,88 +1,140 @@
-# Architecture
+# Architecture and domain model
 
-## Current runtime versus intended architecture
+The product is a single offline client process: one human plus local bots. Networking is parked under [ADR-076](decisions.md#adr-076--accepted-offline-only-scope-and-bounded-local-evidence). Simulation is the single authority and Presentation is a read-only consumer.
 
-The component/flow/lifecycle rules below are the release architecture. Bootstrap loads the persisted ADR-038 catalog and map registry (ADR-083) through `StaticMapCatalog.TryLoadPublished`; `ProductMapView` and `Presentation/Rig/ProductActorPresentation` consume verified visual payloads. Map packages carry native Unity NavMesh data published by `Compile-GameContent.ps1 -Native` (`Bootstrap/Editor/ShooterNativeContentBuild.cs`); `UnityNavMeshBakeInstaller` installs it at load and `RevisionedPathAdapter` reports truthful Complete/Partial/Failed outcomes, with packaged-graph fallback diagnostics-only. Load cost and clearance on all three maps still need measurement ([audit](product-state-audit.md)). Copied Game-v1 snapshots remain distinct from C0 leased publication. Networking is parked under [ADR-076](decisions.md#adr-076--accepted-offline-only-scope-and-bounded-local-evidence): the product is a single offline client process.
+Read [contracts](contract-details.md), [Game-v1](game-session-contracts.md) and [repo layout](repo-layout.md) before you change a boundary.
 
-Read [vision](vision.md), [contracts](contract-details.md) and [repo layout](repo-layout.md) before changing boundaries.
+## Assemblies and dependency rules
 
-Default Bootstrap prepares `OfflineGameSession` and map services without auto-starting a match; `ProductShellHost` owns menu → load → play → pause → results and binds `UserSettingsEditor` / `ProductClientSettingsApplier` to `shooter-user-settings.json`. Floor/box remains an explicit smoke/gallery/benchmark diagnostic. Client composition binds packaged map, soldier and weapon views driven by the active slot and combat action events; combat, footstep and UI events reach the Unity audio output with schema-2 gains. `CombatHarnessSimulation.RetireActor` and monotonic IDs let `HarnessActorLifecycle` retire authoritative lives while `OfflineGameSession` rebinds human/bots. Player, device and hardware evidence remain pending per [next playable build](next-playable-build.md); preserve one damage authority and read-only presentation.
-
-## Components and dependency rules
-
-| Layer / assembly or intended boundary | Owns | May depend on |
+| Assembly | Owns | May depend on |
 |---|---|---|
-| Shooter.Contracts | IDs, immutable DTOs, schema constants, ports | BCL only; no UnityEngine |
-| Shooter.Game.Contracts (frozen ADR-034) | Map/session/participant/results/settings records and ports; separate Game-v1 freeze | C0 + BCL only; no Unity or remote wire requirement |
-| Shooter.VectorMath | BCL-only vector/quaternion math shared by generation, simulation and presentation models (`Generation/Core/Math`) | BCL only |
-| Shooter.Generation.Core | deterministic primitives, recipes, validation | Contracts, VectorMath |
+| Shooter.Contracts (C0, frozen) | IDs, immutable DTOs, schema constants, ports | BCL only |
+| Shooter.Game.Contracts (Game-v1, frozen ADR-034) | Map, session, participant, results and settings records and ports | C0, BCL |
+| Shooter.VectorMath (`Generation/Core/Math`) | Vector and quaternion math | BCL |
+| Shooter.Generation.Core | Deterministic primitives, recipes, validation | Contracts, VectorMath |
 | Shooter.AssetCompiler.Editor | Unity conversion, LOD/material/nav baking, manifests | Generation.Core, Contracts, Unity Editor |
-| Shooter.Content.Runtime | verified cache loading, residency, async handles | Contracts, BCL-only Generation.Core format helpers; future Unity runtime adapter |
-| Shooter.Content.Maps | map catalog, registry, packages and spawn data (`Content/Maps`) | Contracts, Game.Contracts, Generation.Core |
-| Shooter.Simulation | tick orchestration, motor rules, weapons, damage, AI decisions | Contracts; world-query interfaces |
-| Shooter.Game.Session / Shooter.Game.Settings | offline TDM session, workloads, user settings model and persistence (`Game/Session`, `Game/Settings`) | Settings: Contracts, Game.Contracts. Session also: Simulation, Content.Maps, World.Runtime |
-| Shooter.World.Runtime | pure navigation compile/settings, revisioned path adapter, visual streaming scheduler, fake map runtime (`World/Runtime/**`) | Contracts, Game.Contracts |
-| Shooter.World.Unity | PhysX collision queries, NavMesh adapter, compound map runtime (`World/Foundation`) | World.Runtime, Generation.Core, Content.Maps, Unity |
-| Shooter.Presentation.Model | Unity-free view, HUD, menus, scoreboard, audio mixer and FX pool models (`Presentation/Model/**`); client-only by policy | Contracts, Game.Contracts, VectorMath |
-| Shooter.Presentation | URP rendering, procedural rig, input, Unity audio/FX adapters, product session views | Presentation.Model, Contracts, Content.Runtime, Unity; reads simulation snapshots |
-| Shooter.Networking (parked, ADR-076) | command/snapshot codec, prediction history, authority adapter; no Unity assembly references it while the product is offline-only | Contracts, Bootstrap.Core, Simulation |
-| Shooter.Bootstrap.Core / .Runtime / .Release / .Client | composition root, mode selection, tick driver, release packaging helpers and client composition | Runtime assemblies per layer |
-| Shooter.Build.Editor / Shooter.FeatureBuild.Editor | `ShooterBuild.*` editor entry points, native content build, feature compilers | Bootstrap, AssetCompiler.Editor, Unity Editor |
-| Shooter.Tools / Tests | benchmarks, provenance and verification | Respective public APIs |
+| Shooter.Content.Runtime | Verified cache loading, residency, async handles | Contracts, Generation.Core format helpers |
+| Shooter.Content.Maps | Map catalog, registry, packages, spawn data | Contracts, Game.Contracts, Generation.Core |
+| Shooter.Simulation | Tick orchestration, motor, weapons, damage, AI | Contracts, world-query interfaces |
+| Shooter.Game.Session / .Settings | Offline TDM session, workloads, user settings | Contracts, Game.Contracts (Session also: Simulation, Content.Maps, World.Runtime) |
+| Shooter.World.Runtime | Pure nav compile, revisioned path adapter, streaming scheduler | Contracts, Game.Contracts |
+| Shooter.World.Unity (`World/Foundation`) | PhysX queries, NavMesh adapter, map runtime | World.Runtime, Generation.Core, Content.Maps, Unity |
+| Shooter.Presentation.Model | Unity-free view, HUD, menu, scoreboard, mixer and FX models | Contracts, Game.Contracts, VectorMath |
+| Shooter.Presentation | URP rendering, procedural rig, input, audio/FX adapters, session views | Presentation.Model, Contracts, Content.Runtime, Unity |
+| Shooter.Networking (parked) | Codec, prediction history, authority adapter; dormant, referenced by no Unity assembly | Contracts, Bootstrap.Core, Simulation |
+| Shooter.Bootstrap.Core / .Runtime / .Release / .Client | The only composition root, tick driver, release helpers | Runtime assemblies |
+| Shooter.Build.Editor / .FeatureBuild.Editor | `ShooterBuild.*` entry points, native content build, feature compilers | Bootstrap, AssetCompiler.Editor |
 
-Every pure asmdef has a matching `Tools/<Assembly>/Shooter.<Assembly>.csproj` with the same name and references, and `Tools/verify_asmdef_graph.py` (fast CI lane) fails when the two graphs drift. The .NET lane therefore rejects a boundary violation that only Unity used to catch. Test projects reference these projects instead of linking source folders (ADR-076).
+Every pure asmdef has a matching `Tools/<Assembly>/Shooter.<Assembly>.csproj`. `Tools/verify_asmdef_graph.py` fails when the two graphs drift.
 
-Contracts never reference features. Simulation does not reference renderers, animation, Editor APIs or transport packages. Presentation cannot apply damage or mutate authoritative state. Content compiler does not depend on simulation implementation. A server build (parked) excludes the presentation assembly and all graphics cache payloads. Jobs/Burst are optional optimizations after profiling, not a requirement to convert the entire game to ECS.
+Boundary rules:
+- Contracts never reference features.
+- Simulation never references renderers, animation, Editor APIs or transport.
+- Presentation cannot apply damage or mutate authority.
+- The compiler is Editor/tools-only and never referenced at runtime ([ADR-018](decisions.md#adr-018--accepted-initial-p02-compiler-format-and-byte-cache-boundary)).
 
 ```mermaid
 flowchart TD
   Definitions[Versioned numeric definitions] --> Core[Pure generators]
   Core --> Compiler[Editor asset compiler]
-  Compiler --> Cache[Manifest and generated cache]
+  Compiler --> Cache[Map packages and generated cache]
   Cache --> Loader[Runtime content loader]
   Loader --> World[Collision and navigation adapter]
-  World --> Sim[Fixed tick simulation]
-  Commands[Input or network commands] --> Sim
+  World --> Sim[Fixed 60 Hz simulation]
+  Commands[Human and bot commands] --> Sim
   Sim --> Snapshots[Read-only snapshots and events]
   Snapshots --> View[Render rig HUD and audio]
   Loader --> View
-  Sim --> Network[Authority and snapshot transport]
 ```
 
-## Offline frame and simulation loop
+## Runtime composition
 
-Input samples each display frame and accumulates button edges into commands for a 60 Hz fixed simulation clock. Each tick follows [simulation protocol](simulation-protocol.md): validate commands; process action/stance boundaries; move all actors; refresh gameplay hit poses; collect and resolve shots against one immutable pose set; apply queued damage; evaluate match; plan AI commands for next tick; publish leased snapshots/events. Same-tick shots may trade; dead-in-prior-tick shooters cannot fire. Physics queries are serviced by the world adapter on the main thread. Dynamic rigid bodies initially remain cosmetic or server-only; do not let asynchronous physics callbacks establish hit ordering.
+**Startup.** Bootstrap loads the persisted catalog and map registry through `StaticMapCatalog.TryLoadPublished` ([ADR-038](decisions.md#adr-038--accepted-persisted-release-catalog-t067--b03), ADR-083). It prepares `OfflineGameSession` without starting a match.
 
-Use a kinematic capsule sweep motor with explicit gravity, slopes, steps and overlap recovery. Fixed tick order is stable by entity ID. Dynamic interactions use world-query results from that tick. Rendering interpolates between completed snapshots; the local camera may add visual look and recoil without changing authoritative aim. AI plans produce commands through the same rules as players.
+**Shell.** `ProductShellHost` owns the flow menu → load → play → pause → results. It binds `UserSettingsEditor` and `ProductClientSettingsApplier` to `shooter-user-settings.json`.
 
-Tick catch-up is capped at four ticks per display frame. Offline pauses and exposes overload telemetry instead of silently dropping combat ticks; network server uses a separate monotonic service loop, logs overload, skips noncritical AI planning and terminates an invalid test session after sustained one-second debt. Network timestamps always refer to simulation ticks, never render frame numbers.
+**Loading a map.**
+- Map packages carry native NavMesh data published by `Compile-GameContent.ps1 -Native`, through `Bootstrap/Editor/ShooterNativeContentBuild.cs`. The package boundary is [ADR-035](decisions.md#adr-035--accepted-verified-release-map-packages-t055-boundary).
+- `UnityNavMeshBakeInstaller` installs the NavMesh at load.
+- `RevisionedPathAdapter` reports Complete, Partial or Failed. The packaged-graph fallback is diagnostics-only.
 
-## Loading path
+**Views.** `ProductMapView` and `ProductActorPresentation` consume verified visual payloads. Weapon views follow the active slot and combat action events. Combat, footstep and UI events reach the audio mixer.
 
-Bootstrap validates build manifest, settings and quality selection. Loader reads collision/navigation plus nearest visual chunk before spawning. Background threads perform bounded file read/decompression/pure generation; Unity object creation and GPU upload run on main thread under an upload budget. A chunk becomes playable only after collision and navigation are installed atomically. Display a loading boundary until then; never expose an empty collision region. Prefetch ahead of player movement and retain adjacent chunks.
+**Lifecycle.** `CombatHarnessSimulation.RetireActor` and monotonic IDs let `HarnessActorLifecycle` retire lives while `OfflineGameSession` rebinds the human and bots.
 
-## Boundaries and failure modes
+**Diagnostics.** The floor/box scene exists only for smoke, gallery and benchmark diagnostics.
 
-- Missing critical collision/weapon/skeleton content: fail session load with diagnostic IDs. No random regeneration in a live match.
-- Missing cosmetic LOD: use verified lower-detail cache; missing all visual variants uses a generated diagnostic shape only in developer builds.
-- Corrupt cache: reject before deserialization, quarantine and rebuild in editor/tools; shipping clients offer repair/re-download, not arbitrary compilation.
-- Generation and GPU work have cancellation, size limits and timeout telemetry. Results enter runtime only through validated manifests.
-- Saves/replays record schema, build, generator versions, seed, inputs and relevant authority state. They are diagnostics, not cross-version deterministic gameplay promises.
+## Simulation loop
 
-## Ownership and lifecycle
+Input is sampled every display frame. Button edges accumulate into commands for the 60 Hz fixed clock. The tick order is in [simulation protocol](simulation-protocol.md):
+1. validate commands;
+2. action and stance boundaries;
+3. move;
+4. refresh hit poses;
+5. resolve shots against one immutable pose set;
+6. apply damage;
+7. evaluate the match;
+8. plan AI;
+9. publish.
 
-Only Bootstrap creates services. Constructor injection or explicit factory parameters replace global mutable singletons. Content handles are reference-counted leases; dispose on chunk unload, scene change and cancellation. Simulation owns entity lifetime and emits despawn before views release resources. Unity objects are destroyed on main thread. Pool high-frequency combat events/FX and reuse snapshot buffers after consumer completion. See [contract lifetime rules](contract-details.md).
+Combat rules within a tick:
+- Same-tick shots may trade.
+- A shooter who died in an earlier tick cannot fire.
+- Physics queries run on the main thread through the world adapter, never from asynchronous callbacks.
 
-For the new game, the client shell requests validated sessions from Bootstrap; the session loads catalog/content through real map adapters, installs collision/nav before Ready, then feeds local/bot commands into shared authority. Match state and actor snapshots publish coherently at the completed tick. Views read them; settings affect only presentation/input devices. Team match owns scoring, active-time and respawn policy through the actor lifecycle seam, never by mutating HUD data. Final results are an immutable bounded copy that survives map unload. Pause stops offline authority and active-time; stale asynchronous load completions carry an epoch and cannot enter a later session. Details and failure cases live once in [Game-v1](game-session-contracts.md).
+The motor is a kinematic capsule sweep with explicit gravity, slopes, steps and overlap recovery, processed in stable entity-ID order. Rendering interpolates between completed snapshots. The camera may add visual look and recoil without changing authoritative aim. Bots produce commands through the same rules as the human. Catch-up is capped at four ticks per frame; overload pauses and is reported, never silently dropped.
 
-## Integration seams
+The local slide ability ([ADR-039](decisions.md#adr-039--accepted-local-authoritative-sprint-slide-t072)) works like this:
+- It travels in a `LocalPlayerCommand` envelope around the frozen C0 `InputCommand`.
+- `KinematicMotor` owns its duration, momentum and cooldown.
+- Presentation reads `LocalMovementView` only.
 
-The first vertical harness runs a generated box compound, motor and rifle through fake ports before real art. Every external service (transport, clock, storage, physics, navigation) has an adapter and in-memory test double. A host runs authority and view as separate consumers; avoid code paths that only work when server and local player share objects.
+## Loading and failure
 
-The P02 runtime format-helper dependency and initial codec freeze are recorded in [ADR-018](decisions.md#adr-018--accepted-initial-p02-compiler-format-and-byte-cache-boundary). Runtime never references `Shooter.AssetCompiler.Editor`; the compiler remains Editor/tools-only. [ADR-035](decisions.md#adr-035--accepted-verified-release-map-packages-t055-boundary) accepts the verified release map-package root/metadata/nav-adapter boundary for T055; software publication exists; data-only catalog/visual loading and native bake/install remain T067 / FIX04 work.
+**Loading.** Collision and navigation install atomically before Ready. Background threads read, decompress and generate within bounds. Unity object creation and GPU upload run on the main thread under an upload budget. Stale async completions carry an epoch and cannot enter a later session.
 
-## Local slide intent and read-only movement view (ADR-039)
+**Failure handling:**
+- **Missing critical collision, weapon or skeleton content:** the load fails with diagnostic IDs. Content is never regenerated in a live match.
+- **Corrupt cache:** rejected before deserialization. Shipping clients offer repair; they never compile content.
+- **Long-running work:** generation and GPU work have cancellation, size limits and timeout telemetry.
 
-T072 adds a local `LocalPlayerCommand` envelope at the human sampler, retaining the frozen C0 InputCommand inside it and a separately buffered SlidePressed edge. OfflineGameSession validates the current human entity and sends the slide actor only with its normal command batch. CombatHarnessSimulation accepts the ability only when that actor has a fresh accepted command; KinematicMotor owns slide duration/momentum/cooldown and normal collision. N1 wire/prediction cannot originate this local-only ability.
+**Ownership.**
+- Only Bootstrap creates services, and there are no global mutable singletons.
+- Content handles are reference-counted leases.
+- Simulation emits a despawn before views release resources.
+- Final results are an immutable bounded copy that survives map unload.
+- Pause stops authority and active time.
 
-The session's copied `LocalMovementView` reads authority stance/eye/slide state for ProductSessionView camera height and ProductActorPresentation procedural crouch/held-gait pose. Presentation never sets stance, translates the capsule or applies a speed boost. Existing C0 snapshot/hit poses remain authoritative and quality-independent; no new contract bytes or content format is introduced. Numeric rules and migration are in [combat](features/combat.md#local-sprint-slide--t072--adr-039) and [ADR-039](decisions.md#adr-039--accepted-local-authoritative-sprint-slide-t072).
+## Domain model
+
+**Game-v1 entities** (details in [Game-v1](game-session-contracts.md)):
+
+| Entity | Responsibility and invariant |
+|---|---|
+| MapCatalogEntry | Stable MapId → approved recipe, gameplay and visual identities, plus supported sizes |
+| SessionRequest | A validated map, mode, team size, seed and rule version; it can never inject recipes or paths |
+| Participant | One human or bot on a fixed team; stable name and stats across lives |
+| ParticipantLife | Fresh health, ammo and EntityId; death is idempotent; respawn after 180 active ticks |
+| TeamMatch | Two scores, active ticks and the 150-kill / 54000-tick limits |
+| MatchResults | Immutable final stats, outcome, reason and identities |
+| UserSettings | Versioned local sound, video, control and accessibility values; can never change gameplay |
+
+**Core entities** (field shapes in [contracts](contract-details.md), identity in [deterministic format](deterministic-format.md)):
+
+| Entity | Owner and invariant |
+|---|---|
+| Recipe / GenerationRequest / AssetManifest | Compiler; validated immutable sources and an atomic manifest commit |
+| WorldDefinition / Chunk | World; a chunk is playable only once collision and nav are installed |
+| MaterialDefinition | Presentation; no combat semantics |
+| SkeletonDefinition / SoldierDefinition | Rig joint IDs stable across LODs; Simulation selects the hit profile |
+| WeaponDefinition / WeaponState | Simulation; frozen during a match; ammo never negative |
+| EntityState / InputCommand / CombatEvent | Authority; finite values, validated commands, deduplicated events |
+
+**Invariants:**
+- One authoritative record per nonzero ID, never reused within a match.
+- Health stays within 0..max.
+- Team filtering runs before damage.
+- Render LODs may drop detail but never authoritative hit capsules.
+- Units are meters, seconds or ticks, radians internally and m/s.
+- Axes are +Y up, +Z forward, +X right.
+- Chunk state runs Absent → Requested → Reading → Validating → Installing → Ready → Retiring → Absent, and Faulted is terminal for that request.

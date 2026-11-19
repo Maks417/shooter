@@ -1,6 +1,6 @@
 # M9 — Team Deathmatch and bot teams — handoff and gate record
 
-**Current disposition — 2026-11-14 review from 84befb9 / a54ed83:** M9 integration validation remains open. Lifecycle, mixed-team AI/spawn policy and T070 finish/results/replay/counter software are in the retained `7cd7e81` candidate. Real-map combat/respawn/full-match evidence and reference captures/soaks remain Pending/PendingHardware; no online server is needed for this local-bot release. See the [audit](../../product-state-audit.md), [remaining queue](../../next-playable-build.md), [playtest guide](../../playtest-guide.md) and [FIX acceptance](../../release-remediation-validation.md). Original requirements and historical evidence remain; this review creates no coding lease or waiver.
+**Current disposition — 2026-11-14 review from 84befb9 / a54ed83:** M9 integration validation remains open. Lifecycle, mixed-team AI/spawn policy and T070 finish/results/replay/counter software are in the retained `7cd7e81` candidate. Real-map combat/respawn/full-match evidence and reference captures/soaks remain Pending/PendingHardware; no online server is needed for this local-bot release. See the [audit](../../next-playable-build.md), [remaining queue](../../next-playable-build.md), [playtest guide](../../playtest-guide.md) and [FIX acceptance](../../acceptance.md). Original requirements and historical evidence remain; this review creates no coding lease or waiver.
 
 ## Current source/evidence handoff
 
@@ -45,4 +45,4 @@ Historical 2026-11-13 software closeout (retained; superseded for current produc
 | T042 Team AI | **PASS** (software; 9/11 capacity) |
 | T043 Prove whole match | Partial — software binding PASS; full player matrix Pending |
 
-[Release roadmap](../../next-playable-build.md) · [Previous](../m8-runtime-composition/index.md) · [Next](../m10-maps-shell/index.md).
+[Release roadmap](../../next-playable-build.md) · [Previous](../../acceptance.md#m8--runtime-composition) · [Next](../../acceptance.md#m10--maps-shell-and-settings).

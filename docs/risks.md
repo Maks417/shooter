@@ -35,4 +35,4 @@ Editor/URP versions are already locked, not an unresolved T001 choice. M5 select
 
 ## Observed product defects
 
-The [product state audit](product-state-audit.md) records findings and their status (native navigation C01/C03 resolved; gameplay handoff and visual/device/performance acceptance open). [Next playable build](next-playable-build.md) assigns remaining scope; [FIX01–FIX14](release-remediation-validation.md) retain evidence gates. Historical A01–A13 and B01–B10 and their fixes remain recorded. M8–M10 integration/M11 acceptance are open.
+The [product state audit](next-playable-build.md) records findings and their status (native navigation C01/C03 resolved; gameplay handoff and visual/device/performance acceptance open). [Next playable build](next-playable-build.md) assigns remaining scope; [FIX01–FIX14](acceptance.md) retain evidence gates. Historical A01–A13 and B01–B10 and their fixes remain recorded. M8–M10 integration/M11 acceptance are open.

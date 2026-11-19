@@ -10,7 +10,7 @@ This page is the single source of truth for the current build, the product defin
 
 The visual roadmap tranche (ADR-087–095) has been in installers since 0.3.18. ADR-096 retains its three provisional audio cues pending the assigned follow-up and owner listening review.
 
-[Launch and playtest guide](playtest-guide.md) · [product state audit](product-state-audit.md) · visual roadmap.
+[Launch and playtest guide](playtest-guide.md) · [product state audit](next-playable-build.md) · visual roadmap.
 
 ## Scope: local play with bots
 
@@ -20,7 +20,7 @@ The first version is a single offline process with one human and local allied/en
 
 The deliverable is a source-matched Windows x64 installer with [in-place upgrades](features/windows-installer.md); the installed game launches offline into the Main menu. ZIPs are internal artifacts. The player selects Old Town, Harbour or Oil Depot ([ADR-109](decisions.md#adr-109--accepted-site-planned-maps-old-town-harbour-rebuilt-oil-depot)), Team Deathmatch, and 5v5 / 8v8 / 10v10 / 15v15 (ADR-101). One human joins Team 1 with nine to twenty-nine total bots. Teams race to 150 enemy kills or 15 active minutes; equal scores draw. Movement, sprint/slide, rifle/pistol/knife/grenade, aim/fire/reload, death/respawn, pause, live/final tables, replay and return to menu must work. Audio/video/control/accessibility settings persist and affect actual devices.
 
-[Team rules](features/team-deathmatch.md), [maps](features/playable-maps.md), [map layouts](features/tdm-map-layouts.md) and [shell](features/game-shell.md) retain exact requirements. Native 1280×720 Low 30 FPS on the reference machine remains an acceptance gate; 60 FPS is a separate stretch. No external art or online scope is added.
+[Team rules](features/team-deathmatch.md), [maps](features/tdm-map-layouts.md), [map layouts](features/tdm-map-layouts.md) and [shell](features/game-shell.md) retain exact requirements. Native 1280×720 Low 30 FPS on the reference machine remains an acceptance gate; 60 FPS is a separate stretch. No external art or online scope is added.
 
 ## Task disposition
 
@@ -68,7 +68,7 @@ One integrator owns Bootstrap, Contracts, settings, locks, workloads and `coordi
 
 A delivered installer is a **test candidate**, not proof that T071 passed. A usable owner handoff needs all required interactions exercised and at least one complete normal match per map. Disclose P05 status and unmeasured reference performance. Any observed functional blocker prevents calling a build proven playable.
 
-T065 executes [REL01–REL06](milestones/m11-playable-release/validation-acceptance.md) and [FIX01–FIX14](release-remediation-validation.md): eight score/timeout full matches (both sizes per map), draw fixture, named reviews, 20 shell cycles, real display/audio/control behaviour, twelve reference Low captures and two ≥30-minute normal-AI soaks, provenance/regressions and independent installer install/update/repair/uninstall/rollback. Use the M11 operator runbook; its server-isolation step is Parked under ADR-076. Documentation hashes and Smoke/READY do not prove gameplay.
+T065 executes [REL01–REL06](acceptance.md#m11--release) and [FIX01–FIX14](acceptance.md): eight score/timeout full matches (both sizes per map), draw fixture, named reviews, 20 shell cycles, real display/audio/control behaviour, twelve reference Low captures and two ≥30-minute normal-AI soaks, provenance/regressions and independent installer install/update/repair/uninstall/rollback. Use the M11 operator runbook; its server-isolation step is Parked under ADR-076. Documentation hashes and Smoke/READY do not prove gameplay.
 
 ## Source changes delivered since 0.3.12
 

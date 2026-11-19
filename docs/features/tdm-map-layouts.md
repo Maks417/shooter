@@ -1,10 +1,16 @@
-# Feature: TDM map layouts — site-planned places (ADR-109)
+# Feature: maps
 
-Owner request 2026-11-18: Oil Depot was "more or less good" but not good enough as map design; Training Compound and Depot Yard were rejected (too many random objects, enemies visible right after leaving the respawn, a long empty space). Re-think map generation so every map is unique and meaningful and imitates a real place with no random pillars or walls in the middle of nothing. [ADR-109](../decisions.md#adr-109--accepted-site-planned-maps-old-town-harbour-rebuilt-oil-depot) replaces the [ADR-074](../decisions.md#adr-074--accepted-compact-64--80-m-arenas-with-distinct-per-map-layouts) arena planners with **site plans**: `training-compound` becomes **Old Town**, `depot-yard` becomes **Harbour**, and **Oil Depot** is rebuilt. Map ids, seeds, recipes, the 64 × 80 m frame, the package format, SGAF Collision v1, nav settings and the 256 m world/32 m chunk frame are unchanged; gameplay topology and therefore package identities change.
+Every catalog map is a site plan of a real place on a compact 64 × 80 m frame ([ADR-109](../decisions.md#adr-109--accepted-site-planned-maps-old-town-harbour-rebuilt-oil-depot), which replaces the box-scatter arenas of [ADR-074](../decisions.md#adr-074--accepted-compact-64--80-m-arenas-with-distinct-per-map-layouts)). Map ids and seeds predate the renames and stay stable for identity. Content-format details live in [content format](../content-format.md); the release boundary is [ADR-035](../decisions.md#adr-035--accepted-verified-release-map-packages-t055-boundary) and [ADR-038](../decisions.md#adr-038--accepted-persisted-release-catalog-t067--b03).
 
-## Why the old maps failed
+## Catalog
 
-The ADR-074 planners dropped hand-placed boxes into an empty walled rectangle and mirrored them. The rules only measured numbers (cover within 8 m, sightline ≤ 48 m, no spawn-slot-to-spawn-slot line), so the cheapest way to pass was to scatter more boxes. Spawn safety was checked from the slots but never from the exits, so a player stepping out could look straight down a lane into the enemy half.
+| MapId / display name | Seed | Symmetry | Modes and sizes |
+|---|---|---|---|
+| `training-compound` / Old Town | `460072030` | Rotate180 | TDM 5v5 / 8v8 / 10v10 / 15v15 |
+| `depot-yard` / Harbour | `460072031` | MirrorZ | TDM 5v5 / 8v8 / 10v10 / 15v15 |
+| `oil-depot` / Oil Depot | `460072032` | MirrorZ | TDM 5v5 / 8v8 / 10v10 / 15v15 |
+
+Seeds or lighting variants of one topology are not distinct maps. Boundary seeds (1, 42, uint64 max) are generator robustness tests only. Release requires every registered map ([ADR-083](../decisions.md#adr-083--accepted-map-registry-arena-layout-documents-and-the-generic-maparena-recipe) registry, `Content/Maps/<id>.map.json`).
 
 ## Design principles
 
@@ -101,6 +107,25 @@ For site maps the plan's route corners form a patrol circuit, anchor → lane �
   - All are C# 9 / .NET Standard 2.1 and Unity-free, compiled by `Tools/Generation`. Each file has a committed `.meta`.
 - `CompoundPlan.Site` carries the `SiteLayout`; the registry (`Content/Maps/*.map.json`) names the planners `code:town-site`, `code:harbour-site` and `code:oil-site`.
 - `ArenaLayoutDocument` and `ArenaVisualDetail` stay for data-driven `map.arena` maps.
+
+## Collision, navigation and packages
+
+- Collision is primitive/convex static proxies (SGAF Collision v1); navigation is baked from the same gameplay geometry with locked agent radius/height/step/slope. Off-mesh links exist only for explicitly generated traversals.
+- Cover metadata separates hard cover, concealment and permeable surfaces. Cosmetic seeds, dressing and quality tiers never alter collision, nav, visibility or hit rules; visual detail can never become an invisible aim blocker.
+- `Tools/Compile-GameContent.ps1 -Native` publishes `shooter.map-package.v1` sets (3 maps × 4 profiles) with stable ids in `shooter.map-metadata.v1` and native `unity.navmesh.bake.v1` data. The release catalog references only verified package roots.
+- Loading preflights hashes and versions and installs collision and nav before any actor spawns; cancelled or partial installs release all handles. Full-map collision and nav load at once; visuals stream by chunk under the residency budget. A missing or corrupt map returns to the menu with a repair message, never silently loads another map or the diagnostic floor. The release player never compiles content or uses developer paths.
+
+## Adding a map (ADR-083)
+
+Each map is one file, `Content/Maps/<id>.map.json`: identity (`id`, `order`, `displayName`, `description`, an unused `seed`), `recipe` (`map.arena` for new maps; `map.compound`/`map.depot`/`map.oil` are frozen to the three originals), `planner` (`layout` with an inline layout document, or `code:<name>` registered in `MapRegistry.CodePlanners`) and `presentation` (`sky`, `groundSurface`). A layout document gives the planner identity, the arena frame (`halfExtentX/Z`, `staging`, `team1Anchor`, `team1Exits`, `lanePoints`, `symmetry`) and ordered kit operations (`perimeter`, `shell`, `cover`, `vehicle`, `feature`, `sandbags`, `fence`, `grounded`, `box`, `wallX`, `wallZ`, `visualDetail`), all in integer millimetres; team 2 follows from the symmetry.
+
+```powershell
+python Tools/generate_map_registry.py
+./Tools/Test-Generation.ps1
+./Tools/Compile-GameContent.ps1 -Map <id>
+```
+
+`Tools/release-package-policy.json` and `ReleasePackagePolicy.RequiredMaps` list shipped maps on purpose; a test fails until they match the registry. A new map must pass `ArenaRules`, `SiteRules` and `MapTopologyValidation`, and needs native nav and a playtest before release.
 
 ## Validation and evidence
 

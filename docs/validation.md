@@ -2,7 +2,7 @@
 
 ## Current product regression status
 
-Pure-lane results are recorded per delivery in the [M11 handoff](milestones/m11-playable-release/handoff.md); the latest delivery (0.3.17) recorded Game 99, Maps 72, Generation 508 and source provenance PASS, with the earlier 59316d3 failures repaired. Wrapper reports are the source of truth for counts; this page does not track them. Use [next playable build](next-playable-build.md) and [FIX01–FIX14](release-remediation-validation.md) with original milestone gates. No Unity/player/device/hardware acceptance is inferred from pure lanes; M8–M10 integration and M11 acceptance remain open.
+Pure-lane results are recorded per delivery in the [M11 handoff](milestones/m11-playable-release/handoff.md); the latest delivery (0.3.17) recorded Game 99, Maps 72, Generation 508 and source provenance PASS, with the earlier 59316d3 failures repaired. Wrapper reports are the source of truth for counts; this page does not track them. Use [next playable build](next-playable-build.md) and [FIX01–FIX14](acceptance.md) with original milestone gates. No Unity/player/device/hardware acceptance is inferred from pure lanes; M8–M10 integration and M11 acceptance remain open.
 
 Test through public ports with small deterministic fixtures; add integration/hardware checks where unit tests cannot establish correctness. Numerical tolerances live in fixture schemas. Avoid tests that merely duplicate implementation formulas. All tests report build, toolchain, seed, content hash and profile.
 
@@ -55,9 +55,9 @@ Gameplay random property tests preserve ammo ≥0, health monotonic under damage
 
 Game-code test results live in wrapper reports and milestone handoffs, not on this page. Documentation delivery verification is separate: local file existence, relative links/anchors, index coverage and integrity manifest. This cannot substitute for future Unity/runtime testing.
 
-That statement describes the original documentation creation. Historical M0–M7 handoffs now record actual pure and selected Unity foundation checks, with later player/hardware/visual gaps retained. New M8–M11 scenario IDs are defined in their [validation packs](milestones/index.md); they are **NotRun** until implemented/executed. Game-v1 fixture/schema validators must be added through T035, with independent C# reproduction and explicit test discovery counts. Refreshing documentation hashes does not generate any of that evidence.
+That statement describes the original documentation creation. Historical M0–M7 handoffs now record actual pure and selected Unity foundation checks, with later player/hardware/visual gaps retained. New M8–M11 scenario IDs are defined in their [validation packs](acceptance.md); they are **NotRun** until implemented/executed. Game-v1 fixture/schema validators must be added through T035, with independent C# reproduction and explicit test discovery counts. Refreshing documentation hashes does not generate any of that evidence.
 
 
 ## Specification fixture validation
 
-Run [fixture verifier](fixtures/verify_fixtures.py) and standards-compliant schemas against catalog valid/invalid cases. C# tests independently reproduce PRNG/canonical hashes, malformed query/lease scenarios and full restore/replay fields. Verify objective120tick boundaries, shot/death trade, reload+switch precedence, actor nonblocking layers and deterministic GUID independent of payload. [Benchmark fixture](benchmark-fixtures.md) shot counts and route validity are preconditions to frame-time acceptance, not optional metrics.
+Run [fixture verifier](fixtures/verify_fixtures.py) and standards-compliant schemas against catalog valid/invalid cases. C# tests independently reproduce PRNG/canonical hashes, malformed query/lease scenarios and full restore/replay fields. Verify objective120tick boundaries, shot/death trade, reload+switch precedence, actor nonblocking layers and deterministic GUID independent of payload. [Benchmark fixture](performance.md) shot counts and route validity are preconditions to frame-time acceptance, not optional metrics.

@@ -10,7 +10,7 @@ Main/local setup/loading/pause/confirms/settings/live and final team tables use 
 
 Initial dirty-workspace verification at base `9f2219f`: EditMode **28/28 PASS** (`Artifacts/m0-foundation/9f2219f9d67a91c5103decdf5ea6bd0958eb0573/tests-editmode-20261114T210613272Z-7f73f778/`); provenance **676 entries / 338 GUIDs PASS**; fixtures **35 assertions / 17 JSON files PASS**; documentation verification PASS. The sandboxed editor first crashed in Mono's internal socket initialization (`tests-editmode-20261114T210422584Z-e2a35f08/`); retained rerun used the locked editor outside that sandbox. These are software checks, not named visual/device acceptance. Clean-build/player evidence follows in the [M11 handoff](../m11-playable-release/handoff.md). P05 FAIL, manual full-match/reference/soak and formal M10/M11 acceptance remain open.
 
-**Current disposition — 2026-11-14 review from 84befb9 / a54ed83:** M10 integration validation remains open. Persisted catalog/visual packages, shell/schema-2/settings/audio and T069 editable applied bindings/accessibility are built into `7cd7e81`. Native-navigation publication and named map/UI/control/display/audio/20-cycle player review remain open. See the [audit](../../product-state-audit.md), [remaining queue](../../next-playable-build.md), [playtest guide](../../playtest-guide.md) and [FIX acceptance](../../release-remediation-validation.md). Original requirements and historical evidence remain; this review creates no coding lease or waiver.
+**Current disposition — 2026-11-14 review from 84befb9 / a54ed83:** M10 integration validation remains open. Persisted catalog/visual packages, shell/schema-2/settings/audio and T069 editable applied bindings/accessibility are built into `7cd7e81`. Native-navigation publication and named map/UI/control/display/audio/20-cycle player review remain open. See the [audit](../../next-playable-build.md), [remaining queue](../../next-playable-build.md), [playtest guide](../../playtest-guide.md) and [FIX acceptance](../../acceptance.md). Original requirements and historical evidence remain; this review creates no coding lease or waiver.
 
 
 ## T072 slide delivery
@@ -64,7 +64,7 @@ Historical 2026-11-13 software closeout (retained; superseded for current produc
 | Settings | `FileUserSettingsStore` atomic schema=1 file store |
 | UI01–UI02 / SET02 device | Partial / Pending named device review |
 
-[Release roadmap](../../next-playable-build.md) · [Previous](../m9-team-deathmatch/index.md) · [Next](../m11-playable-release/index.md).
+[Release roadmap](../../next-playable-build.md) · [Previous](../../acceptance.md#m9--team-deathmatch) · [Next](../../acceptance.md#m11--release).
 
 ## T075 presentation follow-up — 2026-11-15
 

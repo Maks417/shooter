@@ -1,6 +1,6 @@
 # Visual direction and UI design system
 
-This page is the visual direction and UI design system. Dated art-direction passes (T080–T084) are recorded in the [VD0 visual art brief](visual-art-brief.md); the current visual execution plan is the visual roadmap.
+This page is the visual direction and UI design system. Dated art-direction passes (T080–T084) are recorded in the [VD0 visual art brief](visual-direction.md); the current visual execution plan is the visual roadmap.
 
 ## Presentation notes
 
@@ -12,7 +12,7 @@ T074 stage 1 implements the shell/HUD direction below in `Presentation/Session/T
 
 ## Owner direction — 2026-11-14
 
-**Latest quality goal:** the finished design should be **as good as Battlefield V, Bodycam and Warface**. [Visual milestones VD0–VD9](design-milestones.md) are the canonical execution and review plan, superseding the earlier five-stage grouping. The current UI/staging implementation is a partial VD7 foundation; no reference-quality milestone is accepted. VD1 must prove a representative art slice within the existing procedural and reference-performance constraints before broad production.
+**Latest quality goal:** the finished design should be **as good as Battlefield V, Bodycam and Warface**. [Visual milestones VD0–VD9](visual-direction.md) are the canonical execution and review plan, superseding the earlier five-stage grouping. The current UI/staging implementation is a partial VD7 foundation; no reference-quality milestone is accepted. VD1 must prove a representative art slice within the existing procedural and reference-performance constraints before broad production.
 
 The owner subsequently supplied six Battlefield screenshots and clarified that the menu and combat interface must feel like a finished military FPS. The flat contour-only menu is superseded by a scene-led layout: a large original procedural staging scene, compact left navigation and two rendered operation cards. Combat uses a compact score strip, a circular heading-up friendly map ringed by a rotating compass ([ADR-104](decisions.md#adr-104--accepted-circular-heading-up-minimap-with-ring-compass)) with temporary enemy gunfire reveal, squad status, small ammo/reload readouts and a bounded elimination feed. The supplied screenshots are composition references, not imported backgrounds or shipping art.
 
@@ -20,7 +20,7 @@ The owner requested the complete visual design and selected implementation in Un
 
 The original direction combines military restraint, large clear headings, tactile equipment and natural light. Use charcoal/graphite surfaces, ivory text, sand amber selection and labeled cyan/coral team identity. Bodycam is a reference for grounded light and physical presence; aggressive distortion, obligatory shake and unreadable darkness are not requirements. Keep accessibility preferences and the 720p Low target.
 
-The milestone plan covers art direction/feasibility, soldiers, hands/weapons, procedural motion, both environments, lighting/materials/effects, final UI, measured scalability and comparative installer acceptance. Its per-stage deliverables and exits live once in [design-milestones.md](design-milestones.md). The working [VD0 art brief](visual-art-brief.md) holds the comparison register, gap inventory and presentation ownership; it stays draft until the owner approves exact Bodycam/Warface frames. Earlier T074 software and retained captures remain valid evidence of implementation; P05 and final visual/device review remain open.
+The milestone plan covers art direction/feasibility, soldiers, hands/weapons, procedural motion, both environments, lighting/materials/effects, final UI, measured scalability and comparative installer acceptance. Its per-stage deliverables and exits live once in [design-milestones.md](visual-direction.md). The working [VD0 art brief](visual-direction.md) holds the comparison register, gap inventory and presentation ownership; it stays draft until the owner approves exact Bodycam/Warface frames. Earlier T074 software and retained captures remain valid evidence of implementation; P05 and final visual/device review remain open.
 
 No store, matchmaking or online lobby is introduced; the only progression is the local career ladder ([ADR-108](decisions.md#adr-108--accepted-career-ranks-unlocks-buffs-and-local-service-record)), with military rank insignia drawn from the procedural icon atlas (30 US Army grades since [ADR-119](decisions.md#adr-119--accepted-30-rank-career-ladder-and-four-new-perks)). The lobby is local match setup with one human plus bots. The full visual overhaul is not complete when stage 1 ships.
 
