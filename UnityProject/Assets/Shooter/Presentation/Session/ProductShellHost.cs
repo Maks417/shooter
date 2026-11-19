@@ -25,6 +25,9 @@ namespace Shooter.Presentation.Session
     {
         private IProductShellBackend? backend;
         private IGameSessionControl? session;
+        // ADR-122: rules of the mode being played (limits and labels in the HUD and results).
+        private ModeRules activeMode = ModeRules.All[0];
+        private ModeRules ActiveMode => activeMode;
         private IMapCatalog? catalog;
         private ProductSessionView? view;
         private SetupSelection? setup;
@@ -201,7 +204,7 @@ namespace Shooter.Presentation.Session
             {
                 var snap = session.TryAcquireSnapshot();
                 if (snap != null)
-                    tension = MusicDirector.IsTense(snap.Team1Kills, snap.Team2Kills, GameContractVersion.ScoreLimit, snap.RemainingActiveTicks);
+                    tension = MusicDirector.IsTense(snap.Team1Kills, snap.Team2Kills, ActiveMode.ScoreLimit, snap.RemainingActiveTicks);
             }
             else if (context == MusicContext.Finished && coordinator.RetainedResults != null)
             {
@@ -303,6 +306,7 @@ namespace Shooter.Presentation.Session
         {
             if (session == null || catalog == null || setup == null || view == null || backend == null) return;
             var request = setup.TryBuildRequest(out string error);
+            if (request != null) activeMode = request.Rules;
             if (request == null)
             {
                 navigation.FailLoad(error);
@@ -1196,8 +1200,8 @@ namespace Shooter.Presentation.Session
             ui.Label(new Rect(x + 64, y + 1, w - 128, 24), TacticalUi.Clock(snap.RemainingActiveTicks), 16, TacticalUi.Text, TextAnchor.MiddleCenter);
             ui.Label(new Rect(x + w - 64, y + 1, 54, 24), snap.Team2Kills.ToString("000"), 20, TacticalUi.Enemy, TextAnchor.MiddleRight);
             float mid = x + w * .5f;
-            float allyBar = (w * .5f - 6) * Mathf.Clamp01(snap.Team1Kills / 150f);
-            float enemyBar = (w * .5f - 6) * Mathf.Clamp01(snap.Team2Kills / 150f);
+            float allyBar = (w * .5f - 6) * Mathf.Clamp01(snap.Team1Kills / (float)ActiveMode.ScoreLimit);
+            float enemyBar = (w * .5f - 6) * Mathf.Clamp01(snap.Team2Kills / (float)ActiveMode.ScoreLimit);
             TacticalUi.Fill(new Rect(mid - allyBar, y + h - 2, allyBar, 1), TacticalUi.Ally);
             TacticalUi.Fill(new Rect(mid, y + h - 2, enemyBar, 1), TacticalUi.Enemy);
 
@@ -1251,7 +1255,7 @@ namespace Shooter.Presentation.Session
         {
             bool reduced = ui.ReducedMotion;
             Rect a = ui.Safe;
-            ui.Header(ShellUiCopy.EyebrowDebrief, "Match debrief", ShellUiCopy.TeamDeathmatch);
+            ui.Header(ShellUiCopy.EyebrowDebrief, "Match debrief", ActiveMode.DisplayName.ToUpperInvariant());
 
             // Outcome banner: sweeps in from the left, team emblems flank counting scores.
             string outcome = scoreboard.LocalOutcomeLabel(1).ToUpperInvariant();
@@ -1367,7 +1371,7 @@ namespace Shooter.Presentation.Session
             float cx = a.x + a.width * .5f;
             string clock = snap != null ? TacticalUi.Clock(snap.RemainingActiveTicks) : "--:--";
             ui.Label(new Rect(cx - 90, y0, 180, 30), clock, 26, TacticalUi.Text, TextAnchor.MiddleCenter);
-            ui.Label(new Rect(cx - 140, y0 + 30, 280, 14), "TEAM DEATHMATCH  ·  FIRST TO " + GameContractVersion.ScoreLimit, 11, TacticalUi.Muted, TextAnchor.MiddleCenter);
+            ui.Label(new Rect(cx - 140, y0 + 30, 280, 14), ActiveMode.DisplayName.ToUpperInvariant() + "  ·  FIRST TO " + ActiveMode.ScoreLimit, 11, TacticalUi.Muted, TextAnchor.MiddleCenter);
             float halfBar = a.width * .5f - 120;
             for (byte team = 1; team <= 2; team++)
             {
@@ -1383,7 +1387,7 @@ namespace Shooter.Presentation.Session
                 ui.Label(info, left ? "TEAM 1 / ALLIES" : "TEAM 2 / ENEMIES", 12, color, left ? TextAnchor.MiddleLeft : TextAnchor.MiddleRight);
                 Rect aliveRect = left ? new Rect(a.x + 118, y0 + 20, 160, 14) : new Rect(a.xMax - 278, y0 + 20, 160, 14);
                 ui.Label(aliveRect, alive + " / " + size + " ALIVE", 11, TacticalUi.Muted, left ? TextAnchor.MiddleLeft : TextAnchor.MiddleRight);
-                float fill = halfBar * Mathf.Clamp01(kills / (float)GameContractVersion.ScoreLimit);
+                float fill = halfBar * Mathf.Clamp01(kills / (float)ActiveMode.ScoreLimit);
                 Rect track = left ? new Rect(a.x, y0 + 44, halfBar, 3) : new Rect(a.xMax - halfBar, y0 + 44, halfBar, 3);
                 TacticalUi.Fill(track, new Color(1f, 1f, 1f, .08f));
                 TacticalUi.Fill(left ? new Rect(track.x, track.y, fill, 3) : new Rect(track.xMax - fill, track.y, fill, 3), color);

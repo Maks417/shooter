@@ -15,6 +15,8 @@ namespace Shooter.Game.Contracts
         /// <summary>Personal scoreboard points awarded to a valid enemy killer (ADR-059). Does not change team kill totals.</summary>
         public const int PersonalKillPoints = 100;
         public const int TimeLimitActiveTicks = 54000;
+        /// <summary>ADR-122: most teams a mode may declare. Participant/spawn team ids and MatchOutcome still encode two teams; raising this needs that migration first.</summary>
+        public const int MaxTeams = 2;
         public const int MaxParticipants = 30;
         public const int MaxMaps = 16;
         public const int MaxModesPerMap = 8;

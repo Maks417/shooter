@@ -60,6 +60,14 @@ Use the C0 simulation order. At the start of a playing tick install due safe spa
 
 On pause do not step authority, advance active time, age AI or consume buffered fire edges. Resume resets wall-clock baseline and input edges without losing authoritative tick order. Loading and results never advance match time. Full stop cancels async load/nav, drains or invalidates leased data safely, detaches audio/input/views and disposes services once. Requests/completions carry session epoch; stale completion from map A cannot install after map B starts.
 
+## ADR-122 — mode rules as data and team-indexed kills
+
+Additive amendment; the `Game-v1` identity string is unchanged, so persisted settings and installs stay compatible.
+- `ModeRules` (`Game/Contracts/GameModes.cs`) holds a mode's id, display name, team count, score limit and time limit. `ModeRules.All` is the registry (Team Deathmatch only). `SessionRequest.ScoreLimit`, `TimeLimitActiveTicks` and `ParticipantCount` read the request's mode rules instead of fixed constants; Team Deathmatch keeps 150 kills, 54000 active ticks and two teams.
+- `MatchViewSnapshot` and `MatchResults` carry `TeamKills` (index 0 = Team 1). `Team1Kills` and `Team2Kills` are views of it, and the two-team constructors remain.
+- `GameContractVersion.MaxTeams` is 2. Participant and spawn team ids (1/2) and `MatchOutcome` (Draw = 3) still encode two teams, so a third team needs that migration before `MaxTeams` rises.
+- `OfflineGameSession` builds its match from the request's mode through `Func<ModeRules, IMatchRules?>` (default: Team Deathmatch). A registered mode without match rules loads as `unsupported-mode`.
+
 ## Compatibility and fixture checklist
 
 Fixtures cover valid rosters at every allowed size; invalid sizes/IDs/counts/NaN; score-limit trade; 53999/54000 deadline; zero-kill draw; duplicate death; participant life/EntityId mapping; safe-spawn deferral; stale-load completion; pause/resume clock; results retained after unload; settings corruption/newer version/display revert. Game-v1 carries no remote wire compatibility promise.

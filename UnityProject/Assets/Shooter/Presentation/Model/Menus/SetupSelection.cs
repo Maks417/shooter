@@ -42,6 +42,8 @@ namespace Shooter.Presentation.Menus
         public int MapCount => maps.Length;
         public MapId SelectedMapId => maps[mapIndex];
         public byte SelectedTeamSize => TeamSizes[teamSizeIndex];
+        /// <summary>ADR-122: the mode the next request uses (the first registered mode until a mode picker exists).</summary>
+        public ModeRules SelectedMode { get; set; } = ModeRules.All[0];
         public bool HasContent => maps.Length > 0;
 
         public string SelectedDisplayName
@@ -95,7 +97,7 @@ namespace Shooter.Presentation.Menus
                 return null;
             }
 
-            var request = new SessionRequest(SelectedMapId, WellKnownModes.TeamDeathmatch, SelectedTeamSize, entry.RecipeSeed);
+            var request = new SessionRequest(SelectedMapId, SelectedMode.Id, SelectedTeamSize, entry.RecipeSeed);
             var reject = catalog.RejectUnknown(request.MapId, request.ModeId, request.TeamSize);
             if (!reject.Succeeded)
             {

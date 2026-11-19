@@ -134,6 +134,7 @@ Accepting a decision never certifies a runtime or hardware gate. The headings be
 | [ADR-119](#adr-119--accepted-30-rank-career-ladder-and-four-new-perks) | Accepted | 30-rank career ladder and four new perks |  |
 | [ADR-120](#adr-120--accepted-parked-networking-behind-a-define-and-build-once-pure-lanes) | Accepted | parked networking behind a define and build-once pure lanes | amends ADR-076 |
 | [ADR-121](#adr-121--accepted-feature-lock-hashes-c-code-tokens-and-every-lock-has-a-refreeze-command) | Accepted | feature lock hashes C# code tokens; every lock has a refreeze command |  |
+| [ADR-122](#adr-122--accepted-mode-rules-as-data-and-team-indexed-kills-game-v1-additive) | Accepted | mode rules as data and team-indexed kills (Game-v1 additive) | amends ADR-034 |
 
 ## ADR-001 — Accepted: Unity 6 URP rasterization
 
@@ -1819,3 +1820,21 @@ Date 2026-11-19 (T195 phase 3). **Context.** `feature-content-lock.json` hashed 
 - `verify_contract_lock.py`, `verify_game_contract_lock.py` and `verify_content_format.py` gain `--refreeze ADR-NNN`. It records the ADR in `refreezeDecisions`, updates `reviewDate`, and rewrites the source, fixture and toolchain hashes from the tree.
 
 **Consequences.** Any change to generator code, numbers or strings still fails until a reviewed refreeze names its ADR. Comment and layout edits no longer need one. No lock is edited by hand any more.
+
+## ADR-122 — Accepted: mode rules as data and team-indexed kills (Game-v1 additive)
+
+Date 2026-11-19 (T195 phase 3). **Context.** Game-v1 baked Team Deathmatch into the contract: limits were constants, snapshots and results had exactly `Team1Kills`/`Team2Kills`, and the session hardwired `TeamDeathmatchMatch` even though the `ITeamMatch` port existed. A second mode would have touched the contract, the session and four Presentation sites.
+
+**Decision.** An additive amendment, with details in [game session contracts](game-session-contracts.md#adr-122--mode-rules-as-data-and-team-indexed-kills):
+- `ModeRules` registry. Requests read limits and team count from their mode.
+- `TeamKills` on snapshots and results; the two-team members become views.
+- `GameContractVersion.MaxTeams = 2`.
+- `Simulation.Match.IMatchRules` (the `ITeamMatch` port plus identity, start and abort). The session builds the match from the request's mode through a factory.
+- Presentation reads the active mode's limits and name instead of `150`, `GameContractVersion.ScoreLimit` and the `team-deathmatch` literal.
+
+A full version bump to `Game-v2` was rejected. Every change is additive, and the identity string is persisted in settings and installs (ADR-041 in-place upgrades).
+
+**Consequences.**
+- `game-contract-lock.json` was refrozen with `verify_game_contract_lock.py --refreeze ADR-122`. Game fixtures are unchanged, since none carries a snapshot or results.
+- Team Deathmatch behaviour and limits are identical.
+- More than two teams still needs participant/spawn team ids and a team-indexed outcome before `MaxTeams` rises.

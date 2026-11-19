@@ -10,7 +10,7 @@ namespace Shooter.Simulation.TeamDeathmatch
     /// Pure M9 team-deathmatch score/deadline/respawn reducer. No Unity or file I/O.
     /// T058: occupancy/LOS/pressure spawn ranking with independent first-failure deadline.
     /// </summary>
-    public sealed class TeamDeathmatchMatch : ITeamMatch
+    public sealed class TeamDeathmatchMatch : Shooter.Simulation.Match.IMatchRules
     {
         private sealed class Row
         {

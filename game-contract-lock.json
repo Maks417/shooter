@@ -3,7 +3,7 @@
   "contractVersion": "Game-v1",
   "status": "FrozenByIntegrator",
   "reviewer": "Claude sole integrator, ADR-105 Pickup binding",
-  "reviewDate": "2026-11-18",
+  "reviewDate": "2026-11-19",
   "scope": "Game-v1 with ADR-036 schema 2, ADR-037/ADR-101 workloads (5/8/10/15), ADR-039 Slide, ADR-056 LastWeapon, ADR-057 Slot3/Slot4, ADR-105 Pickup, ADR-059 personal Score, ActorLifecycleState.WeaponAction. Caps MaxParticipants/MaxActiveActors=30. C0-v1/content-v1/N1-v1 separately locked. Runtime/player/hardware acceptance is separate.",
   "ruleVersion": 1,
   "settingsSchema": 2,
@@ -11,13 +11,15 @@
   "dependsOnContract": "C0-v1",
   "toolchainHash": "a8331fe2bc5b4293773762d829dc293c8aa5185024bd1a771543ac4eda840500",
   "sources": {
-    "UnityProject/Assets/Shooter/Game/Contracts/GameData.cs": "0ef0340aaa1806a457cb5f2957e2e2ad9a8e4c15bd6f4c9edc319eeb2b8e54bc",
+    "UnityProject/Assets/Shooter/Game/Contracts/GameData.cs": "37791947be33a41046812ff01875ce041cd612fda6d6b83b012eb1dc0932c511",
     "UnityProject/Assets/Shooter/Game/Contracts/GameData.cs.meta": "da2d99bee98c3ea0a1088ded28a27e5b7e7a7da3e5df1edff7afd0239ae0d61b",
     "UnityProject/Assets/Shooter/Game/Contracts/GameIds.cs": "de861bb538da5d52da4f1136dcc64991503238ce32dce51ea1cddf300c05ba03",
     "UnityProject/Assets/Shooter/Game/Contracts/GameIds.cs.meta": "c2c91bdde4ddf87b4f89e13fdf43a704bab107522a63128711ae6d8c09dee498",
+    "UnityProject/Assets/Shooter/Game/Contracts/GameModes.cs": "8167b801c3c4f08a841bc495c4e63d5b2b9e3d21de81d8de68951bd23aecf949",
+    "UnityProject/Assets/Shooter/Game/Contracts/GameModes.cs.meta": "cc4aa821a448f8b734167a73923690a889f852ec406d8fd3032e3242c7e28988",
     "UnityProject/Assets/Shooter/Game/Contracts/GamePorts.cs": "e47f88357cfbe49d44594e29060ed11d868655b3aa6f6ea9c71008d670601b4d",
     "UnityProject/Assets/Shooter/Game/Contracts/GamePorts.cs.meta": "ae392a4c3e1eefdb2079e82679c2d4cd7218bc703e4e5a526c83db7b07308273",
-    "UnityProject/Assets/Shooter/Game/Contracts/GameValidation.cs": "ad49449c59aed30de7ce93a807da972fe3318c1264e44b51c04b8381ec16379a",
+    "UnityProject/Assets/Shooter/Game/Contracts/GameValidation.cs": "98df84a31756af0f0bc2dbb29818ec2484c469f447b210de58dc8e278e2f70fd",
     "UnityProject/Assets/Shooter/Game/Contracts/GameValidation.cs.meta": "1361e7b3feaad1ea4f8057b9933d42d9fe3de9f3ce6d923ae963be6d43e1cb13",
     "UnityProject/Assets/Shooter/Game/Contracts/GameValues.cs": "cc8fe98d479fbf7558eec1938b52e5535d41abf643ad7b85403f43908fd76f94",
     "UnityProject/Assets/Shooter/Game/Contracts/GameValues.cs.meta": "4cc0dfdfd431d25d45bdfb2e78950221a3fd3c5dd5959568d6515b6640139f26",
@@ -32,5 +34,8 @@
     "docs/game-fixtures/user-settings-slide.valid.json": "4a3d69069a7c212e9679d0b194c13cd6a560c6c32772753479a07bc104611f6a",
     "docs/game-fixtures/user-settings.schema.json": "d6dca67eaf9f5b3ad2c1c05f71e33334a1084d8573accd71e4193a98751108fb",
     "docs/game-fixtures/user-settings.valid.json": "5fce4b51e5cf79f2f97b10f963dd625c6f6973a8a154c2d4f67b4cbb2ae2ae01"
-  }
+  },
+  "refreezeDecisions": [
+    "ADR-122"
+  ]
 }

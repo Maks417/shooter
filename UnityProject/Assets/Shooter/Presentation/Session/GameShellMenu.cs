@@ -20,7 +20,7 @@ namespace Shooter.Presentation.Session
             if (size < 0 || size > 255 || !GameContractVersion.IsAllowedTeamSize((byte)size)) size = 5;
             var mapId = new MapId(map);
             if (!catalog.TryGet(mapId, out var entry)) return null;
-            return new SessionRequest(mapId, WellKnownModes.TeamDeathmatch, (byte)size, entry.RecipeSeed);
+            return new SessionRequest(mapId, ModeRules.All[0].Id, (byte)size, entry.RecipeSeed);
         }
     }
 }

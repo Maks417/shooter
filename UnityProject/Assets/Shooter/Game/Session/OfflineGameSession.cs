@@ -10,6 +10,7 @@ using Shooter.Simulation;
 using Shooter.Simulation.AI;
 using Shooter.Simulation.Combat;
 using Shooter.Simulation.Session;
+using Shooter.Simulation.Match;
 using Shooter.Simulation.TeamDeathmatch;
 using Shooter.World.Runtime;
 
@@ -70,7 +71,13 @@ namespace Shooter.Game.Session
         private CombatHarnessSimulation? harness;
         private HarnessActorLifecycle? lifecycle;
         private TeamBotPlanner? bots;
-        private readonly TeamDeathmatchMatch match = new TeamDeathmatchMatch();
+        // ADR-122: the match rules of the loaded request's mode (Team Deathmatch until the first load).
+        private IMatchRules match = new TeamDeathmatchMatch();
+        private readonly Func<ModeRules, IMatchRules?> matchRulesFactory;
+
+        /// <summary>ADR-122 default mode wiring: Team Deathmatch only. Returns null for a mode without match rules.</summary>
+        public static IMatchRules? DefaultMatchRules(ModeRules mode) =>
+            mode.Id == WellKnownModes.TeamDeathmatch ? new TeamDeathmatchMatch() : null;
         private MapGameplayDefinition? gameplayDefinition;
         private SessionRequest? request;
         private GameMatchPhase phase = GameMatchPhase.Stopped;
@@ -107,8 +114,10 @@ namespace Shooter.Game.Session
         /// <summary>ADR-108 human-only match counts for the career record (the frozen results rows lack them).</summary>
         private uint localAssists, localHeadshots, localBestStreak;
 
-        public OfflineGameSession(IMapCatalog catalog, Func<IWorldQueries, INavigation, IMapRuntime> mapFactory, bool allowFakeMapRuntime = false)
+        public OfflineGameSession(IMapCatalog catalog, Func<IWorldQueries, INavigation, IMapRuntime> mapFactory, bool allowFakeMapRuntime = false,
+            Func<ModeRules, IMatchRules?>? matchRules = null)
         {
+            matchRulesFactory = matchRules ?? DefaultMatchRules;
             this.catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
             this.mapFactory = mapFactory ?? throw new ArgumentNullException(nameof(mapFactory));
             this.allowFakeMapRuntime = allowFakeMapRuntime;
@@ -300,6 +309,11 @@ namespace Shooter.Game.Session
                 return new GameOperationResult(GameErrorCode.MissingContent, "missing-catalog", "Map catalog missing.");
             if (entry.RecipeSeed != request.Seed)
                 return new GameOperationResult(GameErrorCode.InvalidRequest, "seed-mismatch", "Seed does not match packaged map.");
+            if (!ModeRules.TryGet(request.ModeId, out var modeRules))
+                return new GameOperationResult(GameErrorCode.InvalidRequest, "unsupported-mode", "Mode is not registered.");
+            var nextMatch = matchRulesFactory(modeRules);
+            if (nextMatch == null)
+                return new GameOperationResult(GameErrorCode.InvalidRequest, "unsupported-mode", "Mode has no match rules.");
 
             ReleaseRuntime();
             terminalFault = null;
@@ -347,6 +361,7 @@ namespace Shooter.Game.Session
             ApplyMapCover(bots, mapRuntime);
 
             var roster = BuildRoster(request, gameplay, lifecycle, bots);
+            match = nextMatch;
             match.ConfigureIdentities("catalog.v1", gameplay.MapId.Value + ".gameplay", "local-dev");
             match.Begin(request, roster, gameplay);
             // Preserve WorkloadId / cumulatives across replay loads; host re-applies WorkloadId after this returns.

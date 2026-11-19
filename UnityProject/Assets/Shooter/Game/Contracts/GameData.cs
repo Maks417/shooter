@@ -24,9 +24,11 @@ namespace Shooter.Game.Contracts
             RuleVersion = ruleVersion;
         }
 
-        public int ScoreLimit => GameContractVersion.ScoreLimit;
-        public int TimeLimitActiveTicks => GameContractVersion.TimeLimitActiveTicks;
-        public int ParticipantCount => TeamSize * 2;
+        /// <summary>ADR-122: the request's mode rules (Team Deathmatch for an unregistered id, which catalog validation rejects).</summary>
+        public ModeRules Rules => ModeRules.ForOrDefault(ModeId);
+        public int ScoreLimit => Rules.ScoreLimit;
+        public int TimeLimitActiveTicks => Rules.TimeLimitActiveTicks;
+        public int ParticipantCount => TeamSize * Rules.TeamCount;
     }
 
     public sealed class MapCatalogEntry
@@ -191,8 +193,10 @@ namespace Shooter.Game.Contracts
         public GameMatchPhase Phase { get; }
         public MatchOutcome Outcome { get; }
         public FinishReason Reason { get; }
-        public uint Team1Kills { get; }
-        public uint Team2Kills { get; }
+        /// <summary>ADR-122: kills per team, index 0 = team 1. Team1Kills/Team2Kills are views of it.</summary>
+        public FrozenList<uint> TeamKills { get; }
+        public uint Team1Kills => TeamKills[0];
+        public uint Team2Kills => TeamKills.Count > 1 ? TeamKills[1] : 0u;
         public FrozenList<ParticipantState> Participants { get; }
         public uint PendingRespawns { get; }
 
@@ -208,7 +212,25 @@ namespace Shooter.Game.Contracts
             uint team2Kills,
             IReadOnlyList<ParticipantState> participants,
             uint pendingRespawns)
+            : this(authoritySessionId, completedSimulationTick, activeTicksElapsed, remainingActiveTicks, phase, outcome, reason,
+                new[] { team1Kills, team2Kills }, participants, pendingRespawns)
         {
+        }
+
+        /// <summary>ADR-122: team-indexed kills (2..<see cref="GameContractVersion.MaxTeams"/> entries).</summary>
+        public MatchViewSnapshot(
+            ulong authoritySessionId,
+            uint completedSimulationTick,
+            uint activeTicksElapsed,
+            uint remainingActiveTicks,
+            GameMatchPhase phase,
+            MatchOutcome outcome,
+            FinishReason reason,
+            IReadOnlyList<uint> teamKills,
+            IReadOnlyList<ParticipantState> participants,
+            uint pendingRespawns)
+        {
+            GameRequire.That(teamKills != null && teamKills.Count >= 2, nameof(teamKills));
             GameRequire.That(authoritySessionId != 0, nameof(authoritySessionId));
             GameRequire.EnumDefined(phase, nameof(phase));
             GameRequire.EnumDefined(outcome, nameof(outcome));
@@ -220,8 +242,7 @@ namespace Shooter.Game.Contracts
             Phase = phase;
             Outcome = outcome;
             Reason = reason;
-            Team1Kills = team1Kills;
-            Team2Kills = team2Kills;
+            TeamKills = new FrozenList<uint>(teamKills!, GameContractVersion.MaxTeams);
             Participants = new FrozenList<ParticipantState>(participants, GameContractVersion.MaxParticipants);
             PendingRespawns = pendingRespawns;
         }
@@ -265,8 +286,10 @@ namespace Shooter.Game.Contracts
         public uint StartTick { get; }
         public uint EndTick { get; }
         public uint ActiveDurationTicks { get; }
-        public uint Team1Kills { get; }
-        public uint Team2Kills { get; }
+        /// <summary>ADR-122: final kills per team, index 0 = team 1. Team1Kills/Team2Kills are views of it.</summary>
+        public FrozenList<uint> TeamKills { get; }
+        public uint Team1Kills => TeamKills[0];
+        public uint Team2Kills => TeamKills.Count > 1 ? TeamKills[1] : 0u;
         public MatchOutcome Outcome { get; }
         public FinishReason Reason { get; }
         public FrozenList<ParticipantState> FinalRows { get; }
@@ -286,7 +309,28 @@ namespace Shooter.Game.Contracts
             MatchOutcome outcome,
             FinishReason reason,
             IReadOnlyList<ParticipantState> finalRows)
+            : this(request, mapId, catalogIdentity, gameplayIdentity, buildIdentity, authoritySessionId, startTick, endTick,
+                activeDurationTicks, new[] { team1Kills, team2Kills }, outcome, reason, finalRows)
         {
+        }
+
+        /// <summary>ADR-122: team-indexed final kills (2..<see cref="GameContractVersion.MaxTeams"/> entries).</summary>
+        public MatchResults(
+            SessionRequest request,
+            MapId mapId,
+            string catalogIdentity,
+            string gameplayIdentity,
+            string buildIdentity,
+            ulong authoritySessionId,
+            uint startTick,
+            uint endTick,
+            uint activeDurationTicks,
+            IReadOnlyList<uint> teamKills,
+            MatchOutcome outcome,
+            FinishReason reason,
+            IReadOnlyList<ParticipantState> finalRows)
+        {
+            GameRequire.That(teamKills != null && teamKills.Count >= 2, nameof(teamKills));
             GameRequire.That(outcome != MatchOutcome.None, nameof(outcome));
             GameRequire.That(reason != FinishReason.None, nameof(reason));
             GameRequire.That(authoritySessionId != 0, nameof(authoritySessionId));
@@ -299,8 +343,7 @@ namespace Shooter.Game.Contracts
             StartTick = startTick;
             EndTick = endTick;
             ActiveDurationTicks = activeDurationTicks;
-            Team1Kills = team1Kills;
-            Team2Kills = team2Kills;
+            TeamKills = new FrozenList<uint>(teamKills!, GameContractVersion.MaxTeams);
             Outcome = outcome;
             Reason = reason;
             FinalRows = new FrozenList<ParticipantState>(finalRows, GameContractVersion.MaxParticipants);
