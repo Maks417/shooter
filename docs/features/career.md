@@ -33,4 +33,4 @@ Saves store CP only, so an existing career is re-read on the 30-rank ladder; rew
 
 ## Status
 
-Pure lanes and Unity EditMode PASS in source after 0.3.21; the ADR-113 redesign is in source after that. ADR-114 splits the page into tabs on a pure layout tested for overlap at 720p–1080p and 100–150% UI scale. Unity PlayMode, client build, installer and the owner's in-game and visual review are Pending; see the [M11 handoff](../milestones/m11-playable-release/handoff.md).
+The career has shipped in installers since 0.3.22. The 30-rank ladder (ADR-119) is committed but not yet in an installer. The owner's in-game review is Pending ([next playable build](../next-playable-build.md)).

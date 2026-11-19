@@ -1,59 +1,97 @@
 # Feature: generated soldiers, rigging and motion
 
-Largest visual/engineering risk. Owner WP-04 with a dedicated early spike at M1; [risk register](../risks.md) and [performance](../performance.md) govern fallback. Paths `Generation/Core/Soldiers`, `Presentation/Rig`. Gameplay pose/hit profiles live under Simulation with WP-05 ownership.
+Soldiers are the largest visual and engineering risk. The code lives in:
+- `Generation/Core/Soldiers` (geometry);
+- `Presentation/Rig` (motion and presentation);
+- `Simulation/Pose` (gameplay hit poses).
 
-## Model and bind pipeline
+The fixed anatomy, joint IDs, bind transforms, loft counts and the iteration history are in the hash-locked [soldier baseline](../soldier-baseline.md). P05 status is in the [defect inventory](../visual-defect-inventory.md). Animation never drives character movement; the capsule simulation owns root translation.
 
-Use a constrained anatomical parameter model: height, shoulder/hip width, torso lengths, segment radii and limb lengths within validated adult ranges. Build torso/limbs from lofted cross-sections joined at designed ring topology; use analytic joint patches with shared vertex rings. Hands begin as palm and grouped finger forms, head as parametric cranium/jaw/nose approximation. Helmets, goggles, gloves and uniforms reduce exposed facial/detail demands while remaining plausible military equipment. A helmeted soldier with simple face is an accepted first slice; convincing cinematic faces are excluded.
+## Body, kit and skeleton
 
-Clothing is a layered offset shell with construction seams, analytic folds around joints and controlled directional wrinkle fields. Equipment is generated hard-surface packs, armor plates and straps with conservative clearances. No runtime full cloth required; bounded spring accessories may appear on higher tiers. No scanned body or hidden imported rig.
+**Geometry.** Product soldiers use `soldier.loft` 1.1.0 (`SoldierGeometry.BuildProfile`, [ADR-106](../decisions.md#adr-106--accepted-kernel-built-weapons-gloves-soldiers-and-structured-map-surfaces)). The body is a constrained anatomical parameter model with lofted cross-sections joined at designed rings.
 
-Skeleton hierarchy semantic IDs: root → pelvis → spine0 → spine1 → chest → neck → head; chest → left/right clavicle → upperArm → forearm → hand; pelvis → left/right thigh → calf → foot → toe. Optional fingers are visual-only children. Bind pose is procedurally generated from anatomy. Joint local frames and rotation limits are documented in output manifest; quaternion normalization and parent acyclicity validated. Same semantic gameplay joint set across anatomy variants and visual LODs.
+The kit:
+- a balaclava head (no skin slot);
+- a turned helmet with rails and an NVG mount;
+- goggles;
+- gloves;
+- shaped boots;
+- a plate carrier with webbing, pouches and straps;
+- a backpack and a belt;
+- cargo pockets and knee pads;
+- a team armband and a numeric emblem patch (1.0.3, [ADR-094](../decisions.md#adr-094--accepted-bounded-soldier-presentation-revision-and-p05-reopening)).
 
-Generate skin weights from segment-distance fields and geodesic/ring constraints, max four normalized influences/vertex. Explicit elbow/knee falloff and twist distribution avoid collapsing joints. Bind matrices generated from hierarchy, not copied from engine examples. Validate sum weights within 1e-4, no negative weight, all indices valid, posed bounds conservative. Use engine skinning initially; no custom GPU skinning until measured need.
+No scanned body, imported rig or runtime cloth is used.
 
-## Procedural motion graph
+**LODs.** LOD0 is about 14.7k triangles. `ProductActorPresentation.SelectBodyLod` switches each avatar's packaged LOD at 15 m and 40 m with 1.5 m hysteresis. It never goes finer than the quality tier's own LOD.
 
-Simulation locomotion state + speed + stance + grounded + aim + weapon phase → desired root motion/foot targets → gait oscillator → planted-foot constraints → pelvis compensation → two-bone leg/arm IK → joint limits → additive bounded springs → final visual pose. Capsule simulation owns root translation; animation never drives character movement. Render gait interpolates but does not choose hit capsule position.
+**Skeleton:**
+- root → pelvis → spine0 → spine1 → chest → neck → head;
+- chest → clavicle → upperArm → forearm → hand (both sides);
+- pelvis → thigh → calf → foot → toe (both sides).
 
-Walk/run gait uses distance traveled, not frame-dependent accumulated phase. Foot contact phases define planted intervals; raycast ground under planned contacts under bounded query budget. Keep planted foot in world space until lift; unreachable targets clamp stride and pelvis adjustment. Two-bone IK uses explicit pole direction, law-of-cosines clamping, joint limits and fallback for degenerate/collinear targets. Legs adapt to slopes/stairs. Strides follow the travel heading under the aimed torso, and airborne actors use a sample-free tuck pose ([ADR-100](../decisions.md#adr-100--accepted-third-person-directional-gait-airborne-pose-and-bot-hopsslides)). Arms use hand sockets, ADS alignment and aim cone; residual torso twist distributes across spine. Reload is a mechanical state-driven hand trajectory generated from grip/magazine waypoints and analytic curves, not hand-keyed joint tracks. Waypoints describe equipment-relative tasks; no authored bone pose list. First-person reload, draw, knife, grenade and movement layers follow the same rule: numeric equipment-relative key tables timed to authoritative ticks ([ADR-099](../decisions.md#adr-099--accepted-per-weapon-first-person-hand-and-weapon-choreography)).
+Fingers are visual-only children. The bind pose is generated from the anatomy. Every anatomy variant and LOD uses the same gameplay joint set.
 
-Procedural recoil is a seeded, damped spring response and shares shot indices with view events; visual spring does not change authoritative recoil twice. Breathing/sway are bounded and accessibility-scaled. Weapon collision compresses viewmodel toward shoulder without moving authoritative muzzle through walls. Near/far rig update rates may be 60/30/15 Hz visually, with interpolation; simulation hit volumes stay at 60 Hz independent of quality.
+**Skin weights.** Weights come from segment-distance fields: at most four normalized influences per vertex, with explicit elbow and knee falloff and twist distribution. Validation checks:
+- weights sum to 1 within 1e-4;
+- no negative weights;
+- every index is valid;
+- posed bounds are conservative.
 
-## Authoritative body and death
+## Procedural motion
 
-Shared gameplay pose evaluator maps stance, velocity, aim and action phase to a fixed set of head/torso/upper-limb/lower-limb capsules. It is a cheaper deterministic mathematical approximation, not a readback of skinned vertices. Record evaluator version in match hash. Test visible-body-to-hit-volume tolerance at defined sample poses: torso/head centers ≤5 cm, limb centers ≤10 cm for first slice. If violated, adjust animation or gameplay evaluator together through contract review; never change hit volumes per visual profile. ADR-112 (evaluator v2) measures the head, pelvis and chest of the product shooting posture for still, moving and crouched bodies; `HitVolumeRigAlignmentTests` holds them within 5 cm.
+Each frame runs this pipeline:
+1. Simulation state (speed, stance, grounded, aim, weapon phase) sets root motion and foot targets.
+2. A gait oscillator runs on distance travelled.
+3. Planted feet are constrained.
+4. The pelvis compensates.
+5. Two-bone leg and arm IK is solved, with an explicit pole, law-of-cosines clamping and a degenerate fallback.
+6. Joint limits are applied.
+7. Bounded additive springs are added.
 
-Death first disables input/damage once and uses analytic joint-constrained collapse; optional bounded procedural ragdoll is a separate measured T032 spike, not mandatory for M4; server corpse collision uses fixed policy (nonblocking after death for slice). Cosmetic ragdolls cap at four active near corpses, then freeze simplified pose. No ragdoll bones replicate. Low can use the same algorithm with fewer render updates, not a different living hit profile.
+**Locomotion** (`soldier.motion.v7.locomotion`, [ADR-100](../decisions.md#adr-100--accepted-third-person-directional-gait-airborne-pose-and-bot-hopsslides)):
+- **Gait direction.** Strides follow the travel heading under the aimed torso. Strafe and backpedal use shorter cycles, and a reversal mirrors the gait phase.
+- **Airborne.** Actors tuck their legs while rising and reach down while falling, with no ground samples. Landing dips the pelvis by up to 7 cm.
+- **Slide.** The slide dive faces its direction of travel.
+- **Death.** Death is an analytic collapse over 0.75 s, then a held side-lying pose until the four-corpse / five-second limit ends it.
+- **Source data.** Presentation derives all of this from the copied motor view (`ThirdPersonLocomotionBlend`). Physics ragdoll is not implemented.
 
-**Implemented (cosmetic):** `soldier.motion.spike.v5` keeps `SoldierMotionInput.DeathPhase` (`-1` living, `0..1` collapse) and adds `Slide` (`0..1` dive pose while the motor owns root translation). Presentation drives death phase over `DeathCollapseDurationSeconds` (0.75 s) when an avatar becomes a corpse or `!Alive`, then holds the side-lying pose until the existing four-corpse / five-second TTL. Slide uses a pitched low pelvis with lead/trail feet tracking the moving root (not crouch-idle plants). Gait speed/distance prefer authoritative `LocalMovementView` with walk/run hysteresis; displayed feet may blend cosmetically between ticks. Root stays at authoritative feet for hit volumes; weapons stay hidden on corpses. Physics ragdoll remains optional and unimplemented.
+**Shooting posture** (`ShootingPosture`, [ADR-095](../decisions.md#adr-095--accepted-structural-weapon-from-eye-shooting-posture-p05-reopening)), the product default:
+- The right clavicle sets the stock socket and drops during the reload cant.
+- The neck is solved so that the right eye lies on the sight line (`WeaponSights.EyeFor`).
+- Clearance-aware elbows are solved after the head.
+- The support hand bows outward during the reload.
 
-**Implemented (ADR-100, `soldier.motion.v7.locomotion`):** `SoldierMotionInput` adds `MoveHeadingRadians`, `Airborne`, `VerticalSpeedMetersPerSecond` and `Land`. Feet stride along the travel heading while the torso and weapon keep the aim, so strafes and backpedals step sideways and backward; side-step/backpedal uses a shorter 1.0/1.6 m cycle, and a reversal mirrors the gait phase so planted feet lead the new direction without a reset. Airborne actors tuck their legs while rising and reach down while falling, with no ground samples; landing dips the pelvis up to 7 cm. The slide dive faces its travel and the spine twists back to the aim. Presentation derives these from the copied motor view in `ThirdPersonLocomotionBlend` (heading hold, airborne hysteresis, landing timer, slide easing). Bots hop low obstacles, sometimes hop on strafe reversals and slide more often. Visual acceptance is Pending.
+**Reload and handling** are equipment-relative analytic trajectories timed to authority ticks, never hand-keyed joint tracks. First-person layers are described in [weapons](geometry-weapons.md#first-person-handling).
 
-## M1 spike and acceptance
+**Recoil** is a seeded damped spring that shares shot indices with the view. It never applies authoritative recoil a second time.
 
-Generate one helmeted soldier and one weapon, implement bind pose, walk/run, crouch, aim and reload with hard-surface equipment. Capture front/side/three-quarter and motion on level, 15-degree slope, 0.2 m steps and turn-in-place. Near body LOD target ≤24k triangles / ≤40 active bones, middle ≤10k, far ≤3k / ≤20 bones. View arms ≤12k. Counts adapt to performance evidence.
+**Visual update rates** may be 60, 30 or 15 Hz. Hit volumes stay at 60 Hz.
 
-Pass: no invalid topology/weights, gross joint inversion or persistent self-intersection in approved test set; stance transitions preserve root and capsule; planted-foot slide ≤5 cm over a contact interval at supported speeds; hand/grip separation ≤2 cm for held weapon except intentional reload release; 1000 fixed-seed pose samples finite; eight-soldier animation CPU p95 ≤2 ms/frame at Low on reference machine. Record subjective silhouette/motion review with images; thresholds alone do not prove realism.
+**Grounding.** `CollisionSoldierGround` gives cosmetic foot support from the verified gameplay boxes. `WeaponVisualProfiles` provides per-profile support sockets.
 
-If spike fails after bounded two implementation iterations, keep generator constraint and reduce exposed anatomy, clothing complexity, weapon-hand interactions and visible soldier count only through a revised workload/scope ADR. Do not import a character or promise AAA results. Freeze the skeleton contract before parallel equipment/motion work proceeds.
+## Authoritative body
 
+The gameplay pose evaluator (v2, [ADR-112](../decisions.md#adr-112--accepted-crosshair-true-hits-rig-aligned-hit-volumes-and-bots-that-use-map-cover-flank-and-move-smoothly)) maps stance, velocity, aim and action phase to fixed head, torso and limb capsules.
+- **A mathematical approximation.** It is not a readback of skinned vertices. Its version is recorded in the match hash.
+- **Alignment.** `HitVolumeRigAlignmentTests` keep the head, pelvis and chest within 5 cm of the shooting posture when still, moving or crouched.
+- **Mismatches.** When visual and gameplay disagree, they are fixed together through contract review. Hit volumes never vary by visual profile.
+- **Death.** Death disables input and damage once. A corpse does not block, and corpses never replicate bones.
 
-## Concrete starting recipe and ownership
+## Acceptance
 
-Use [soldier baseline](../soldier-baseline.md) for fixed anatomy, joint IDs/bind transforms, frame/limit rules, loft counts, gait and reload task trajectories. M1 drives phases with test fixtures, independent of M2 weapon mechanics. T028/T032 own hit-overlay validation and collapse/ragdoll behavior; no unassigned full physics feature is implied.
+**Tests:**
+- no invalid topology or weights;
+- no gross joint inversion;
+- stance transitions preserve the root and capsule;
+- planted-foot slide ≤5 cm;
+- hand-to-grip separation ≤2 cm, except during an intentional release;
+- 1000 seeded poses are all finite;
+- the P05 clearance and eye-line gate (passing numerically since ADR-095).
 
+**Performance.** Animation CPU for the full roster stays within budget at Low on the reference machine.
 
-## ADR-094 visual roadmap implementation — 2026-11-17
+**Visual review.** Silhouette and motion need a named review with images (VD2/VD4, [visual direction](../visual-direction.md)). That review is Pending, and thresholds alone never prove realism.
 
-`soldier.loft` 1.0.3 adds contoured carrier/pouch lofts, sleeve folds, numeric finger forms, camo/fabric normal-mask materials and a team armband plus rasterised numeric emblem patch. Skeleton, gameplay hit volumes and the explicit 1.0.2 recipe remain unchanged. The new mesh version canonicalises numeric samples and publishes a 10-micrometre lattice; legacy recipe output keeps its original arithmetic. `CollisionSoldierGround` reads verified gameplay boxes and the foundation plane for cosmetic foot support. `WeaponVisualProfiles` supplies per-profile support sockets. Actor-root AO is read-only lighting.
-
-**Superseded by ADR-095 (next section):** the structural shooting posture is now the product default and resolves the numeric P05 gate. Historical ADR-094 record follows. The bounded P05 search stopped after three measured candidates. Minimum clearance remained negative (-0.055602 / -0.057712 / -0.011462 m). The numerical eye line closes but arm penetration does not. Product presentation retains the baseline solver; failed bounded head/arm correction is opt-in via `-shooterP05Candidate`. Artifacts remain under `Artifacts/visual-design/adr-094/`. P05 is FAIL, including D01/D03; no named visual review or reference eight-soldier CPU pass is inferred. Further correction search needs a new owner decision under ADR-094.
-
-## ADR-095 structural shooting posture — 2026-11-17
-
-`ShootingPosture` (`soldier.motion.v6.shooting`) is the product presentation posture: the right clavicle sets the stock socket (31.6 degrees elevation, dropping 27.5 degrees and protracting 50 degrees at full reload cant), the head is posed relative to the aim line (pitch 7.6, yaw 18, roll 4.6 degrees; roll follows 0.28 of the reload cant) and the neck chain is solved so the right eye lies on the sight line, sliding eye relief along the axis only when neck reach requires it. Arms use the existing clearance-aware elbow solve after the head is final, and the support hand bows up to 7 cm outward between reload phases 0.25 and 0.95. The unchanged gate passes with minimum arm clearance +3.0 mm and eye/sight 0 mm. The v5 baseline (`new SoldierMotion(rifle)`) stays reproducible and still fails, as historical evidence. Skeleton, hit volumes and authority are unchanged. Visual acceptance is Pending a named review.
-
-## Kernel-built soldier kit — ADR-106 (soldier.loft 1.1.0)
-
-Product soldiers use soldier.loft 1.1.0 (`SoldierGeometry.BuildProfile`): the 1.0.3 loft anatomy at higher resolution with a balaclava head and nose, a turned helmet with rails and an NVG mount, goggles on a strap, gloved hands, shaped boots with soles, a plate carrier with webbing, pouches and straps, a backpack, a belt with buckle, cargo pockets and knee pads (faces covered; no skin slot). LOD0 is about 14.7k triangles. `ProductActorPresentation.SelectBodyLod` swaps each avatar between the packaged LODs at 15 m and 40 m with 1.5 m hysteresis, never finer than the tier's own LOD. Skeleton, hit poses and motion are unchanged. Offline render: `ShooterFeatureBuild.CaptureSoldierKit`. In-game review Pending.
+**Fallbacks.** If the soldiers fail review, reduce exposed anatomy or kit complexity through an ADR. Never import a character.

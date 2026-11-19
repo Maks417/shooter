@@ -1,58 +1,158 @@
 # Feature: FPS movement and combat
 
-Product extension: [Team Deathmatch](team-deathmatch.md) adds team score/time/respawn/results around the existing combat rules, through the planned [session/lifecycle seam](../game-session-contracts.md). It preserves same-tick trades, zero friendly damage (bullets pass through teammates since ADR-112), canonical hit volumes and quality independence. A fresh respawn restores baseline ammo/health under a new life/EntityId; the historical Compound Clear no-refill rule stays confined to that mode. Gameplay authority remains independent of UI and presentation.
+Movement and combat live in:
+- `Simulation/Motor` (`KinematicMotor`, `InputEdgeBuffer`);
+- `Simulation/Combat` (weapons, damage, hitscan, recoil, dropped weapons);
+- `Simulation/Pose/GameplayPoseEvaluator` (hit capsules, canonical muzzle).
 
-Owner WP-05, paths `Simulation/Motor`, `Simulation/Combat`, with presentation adapters owned separately. Consumes [contracts](../contract-details.md); the [networking](../decisions.md#adr-076--accepted-offline-only-scope-and-bounded-local-evidence) authority extension is parked under [ADR-076](../decisions.md#adr-076--accepted-offline-only-scope-and-bounded-local-evidence).
+Shipping composition runs `CombatHarnessSimulation` under `CompositionPolicy.RequireReal`.
 
-## Player flow and fixed-tick rules
+The frozen default numbers are in the [gameplay baseline](../gameplay-baseline.md). The tick order is in the [simulation protocol](../simulation-protocol.md). Team score, respawn and results are in [Team Deathmatch](team-deathmatch.md). Gameplay never depends on UI, presentation or quality tier.
 
-Spawn only after world/collision ready → look/move/stance → equip rifle, pistol, knife or grenade → aim/fire/reload (or cook/throw) → impacts/damage/death → objective complete or restart. Mouse look samples frame input, commands carry aim at tick. Raw mouse delta, sensitivity, invert Y, rebindable controls and pause are baseline. Prevent double button edges when multiple simulation ticks consume one display sample.
+## Movement
 
-Kinematic capsule sweeps resolve horizontal movement then gravity/grounding with bounded iterative sliding (max four iterations), slope limit 45 degrees, step 0.25 m initial tuning. Check ceiling before uncrouching; crouch preserves feet. Jump only on grounded accepted edge. Authoritative tightness (stamina, ADR-060) gates sprint, jump and slide; prone remains deferred. Do not use visual head bob as physical eye height. Capsule resize checks overlaps. Ground platform support is limited to static world in slice.
+**Input.** Mouse look is sampled every frame, and commands carry aim at the tick. Button edges are consumed once, even when several ticks share one display sample. Raw delta, sensitivity, invert Y, rebinding and pause are all supported.
 
-Default tuning is data, not real weapon ballistics: rifle 600 rounds/min, 30-round magazine, 90 reserve, 2.4 s reload; pistol 360 rounds/min semi-auto, 15-round magazine, 45 reserve, 1.8 s reload; knife melee 1.8 m / 55 damage / 24-tick interval (no ammo); one grenade per life with 120-tick fuse cook/throw and 5 m blast falloff (ADR-057). 60 Hz tick maps rifle interval to 6 ticks, pistol to 10. Durations round up to ticks. Empty magazine with reserve auto-starts reload (manual reload still fills partial magazines). Reload transfers ammunition at completion; switching/canceling before completion transfers none (cook cancel restores the unthrown grenade). Empty grenade cannot be selected; after the throw/cook boom the authority equips the rifle so the player is not empty-handed. No fire while reloading/equipping/dead. Trigger held repeats only for automatic mode; semi-auto and knife require distinct press edges; grenade cooks while held and throws on release.
+**Motor.** The motor is a kinematic capsule sweep: up to four slide iterations, 45° slope limit, 0.25 m step. It checks the ceiling before uncrouching, and crouch keeps the feet in place. Jump fires only on a grounded edge. Visual head bob never changes eye height.
 
-Baseline uses authoritative hitscan to 300 m. Seeded spread samples a specified disk/cone distribution using shot-index stream, bounded recoil updates authoritative aim offset, while view kick is separate. The eye (crosshair) ray resolves the hit against static cover and hostile hit capsules, nearest first; same-team capsules are skipped ([ADR-112](../decisions.md#adr-112--accepted-crosshair-true-hits-rig-aligned-hit-volumes-and-bots-that-use-map-cover-flank-and-move-smoothly)). If the eye→muzzle segment crosses a wall or the muzzle starts inside geometry, reject/block rather than firing through a wall; otherwise the muzzle is only the tracer origin. Third-person weapon sockets are visual; canonical muzzle is computed from gameplay pose and weapon dimensions. No client-supplied impact location accepted as truth.
+**Tightness** (stamina, [ADR-060](../decisions.md#adr-060--accepted-local-authoritative-tightness-stamina)) is a 0..1 pool, full on spawn.
 
-Surface ray hits stop at nearest valid collider; hit-region capsule query checks entity volumes and occluders consistently. Damage defaults rifle 30, pistol 25, head multiplier 4, torso 1, limb .5, health 100 (ADR-063: rifle head one-shot, torso ~4 shots, limbs ~7). Body armor (ADR-110): 100 points on spawn/respawn covering torso and limbs (not the head); armor takes floor(d/2) of each covered hit and grenade blast, health the rest, so torso ~6 rifle shots and limbs ~10. Penetration/ricochet are postponed. Round using explicit integer rule and emit exactly one DamageApplied event per accepted hit. Friendly fire disabled initially; layer/filter logic still includes friendly bodies as shot blockers if configuration says so. Damage queries never target decorative render mesh.
+| Event | Effect |
+|---|---|
+| Continuous sprint | Empties the pool in 8 s |
+| Jump | Costs 0.25 |
+| Slide entry | Costs 0.40 |
+| Empty pool | Forces walk speed and refuses jump and slide |
+| Walking with Sprint released | Refills the pool in 5 s |
 
-## Ballistics later phase
+`LocalMovementView.Tightness01` drives the STA bar.
 
-Projectile interface supports origin, velocity, gravity, drag ID, spawn tick and seed. After hitscan gate, add swept-segment projectiles with bounded substeps and lifetime; no tunneling via transform movement. Server resolves final hits. Penetration needs canonical thickness/material data and energy loss tests; do not approximate from texture roughness. One cook/throw frag grenade per life is authoritative (ProjectileSpawned + fuse blast, friendly damage still zero). Extra throwable types, penetration and suppression remain later features.
+**Slide** ([ADR-039](../decisions.md#adr-039--accepted-local-authoritative-sprint-slide-t072)). While sprinting forward, hold Sprint (Left Shift) and press Slide (F, rebindable).
+
+These cannot start a slide:
+- F on its own;
+- being airborne;
+- aiming, crouching, firing or reloading;
+- too little sprint momentum.
+
+Slide numbers:
+- lasts up to 45 ticks;
+- 6.5 m/s entry, slowing at 4 m/s²;
+- entry direction is locked;
+- uses the 1.2 m crouch capsule and 1.05 m eye height;
+- 60-tick cooldown;
+- holding F never chains slides.
+
+How a slide ends:
+- Jump cancels it.
+- Leaving the ground or a wall ends it.
+- It returns to standing only with headroom.
+- Death or a new life clears it.
+
+Input path:
+1. `LocalPlayerInput`
+2. `LocalPlayerCommand` (a local envelope; C0 bytes stay frozen)
+3. `OfflineGameSession`
+4. `KinematicMotor`
+
+Prone is deferred.
+
+## Weapons
+
+The four slots, with Q toggling to the last weapon:
+
+| Key | Slot |
+|---|---|
+| 1 | Primary |
+| 2 | Sidearm |
+| 3 | Knife |
+| 4 | One grenade per life |
+
+**Named guns.** Every named gun is a data file with its own fire mode, cadence, magazine, reserve, damage, falloff and spread ([weapons](geometry-weapons.md#adding-or-tuning-a-weapon-adr-077), [ADR-102](../decisions.md#adr-102--accepted-named-real-world-arsenal-random-spawn-loadouts-and-muzzle-flash-fix)). Bots draw a random weighted primary and sidearm each life. The human spawns with the [Armory](game-shell.md) loadout.
+
+**Firing rules:**
+- Durations round up to ticks.
+- Automatic fire repeats while held. Semi-auto and knife need a fresh press.
+- Burst guns fire `burstCount` rounds.
+- There is no fire while reloading, equipping or dead.
+
+**Reloads.**
+- An empty magazine with reserve ammo starts a reload automatically.
+- Ammo transfers when the reload completes. Switching away first transfers nothing.
+- `reloadPerRound` guns (the M870) load one shell per phase, and a trigger press with a shell loaded fires at once.
+
+**Knife.** 1.8 m range, 55 damage, a 24-tick interval, no ammo.
+
+**Grenade** ([ADR-057](../decisions.md#adr-057--accepted-knife-and-grenade-loadout-slots-t087), [ADR-111](../decisions.md#adr-111--accepted-knife-and-grenade-overhaul-one-handed-hold-cut-and-throw-half-map-grenade-range-sound-explosion-models)):
+1. Holding fire cooks it on a 120-tick fuse.
+2. Releasing throws it (28 m/s with an 8° loft, about 34 m).
+3. The blast reaches 5 m. Self damage is on, friendly damage is zero.
+4. After the throw, authority equips the primary.
+
+**Shots** ([ADR-112](../decisions.md#adr-112--accepted-crosshair-true-hits-rig-aligned-hit-volumes-and-bots-that-use-map-cover-flank-and-move-smoothly)) are authoritative hitscan to 300 m.
+
+How a shot resolves:
+- The eye (crosshair) ray resolves the hit, nearest first, against static cover and hostile hit capsules.
+- Teammates are skipped and friendly damage is zero.
+- If the eye→muzzle segment crosses a wall, the shot is blocked.
+- Otherwise the muzzle is only the tracer origin.
+
+Other shot rules:
+- Spread is sampled from named per-shot seeded streams.
+- Authoritative recoil offsets aim; view kick is separate.
+- No client-supplied impact is trusted.
+
+**Pellets** ([ADR-118](../decisions.md#adr-118--accepted-m4a1-mk-16-m24-sws-and-m870-pellets-shell-reloads-and-geometryweapon-150)). A `pelletCount > 1` shot is one `ShotAccepted` and one recoil impulse. Each pellet gets its own eye ray, seeded channels (16 + 2p, 17 + 2p), impact and falloff damage. For the M870 that is 8 × 25 in a 2.6° cone, with falloff from 8 to 30 m.
+
+**Damage** ([ADR-063](../decisions.md#adr-063--accepted-hit-region-damage-coefficients-one-shot-head)):
+- health is 100;
+- hit-region multipliers are head ×4, torso ×1, limbs ×0.5;
+- rounding is `floor(base×mult+0.5)`;
+- there is exactly one `DamageApplied` per accepted hit.
+
+[Body armor](../decisions.md#adr-110--accepted-body-armor-100-points-torso-and-limbs) gives 100 points on every spawn, covering the torso and limbs. Armor takes `floor(d/2)` of each covered hit and blast; health takes the rest.
+
+Penetration and ricochet are deferred. Damage never targets render meshes.
+
+**Career perks** ([ADR-119](../decisions.md#adr-119--accepted-30-rank-career-ladder-and-four-new-perks)) can narrow hip and pellet cones and shorten bolt and pump cycles, for the human only.
+
+**Dropped weapons** ([ADR-105](../decisions.md#adr-105--accepted-dropped-primary-weapons-and-g-pickup), `DroppedWeaponField`).
+- **When a gun drops.** A dying soldier drops their primary, with its magazine, reserve and mounted sight. Out-of-world deaths drop nothing.
+- **How long it lasts.** It stays for 15 s of active time and blinks for the last 3 s.
+- **Picking up.** Within 1.75 m the human presses G:
+  - A different gun swaps in, and the old one drops.
+  - The same gun tops up reserve, up to capacity.
+- Bots never pick up guns.
+- Respawn issues the life loadout again.
 
 ## Feedback
 
-ShotAccepted event drives a weapon-specific sample-bank report (rifle/pistol under ADR-055), mesh muzzle flash/analytic glow, casing proxy and recoil. Knife ShotAccepted plays the knife swing (a same-tick hit adds a flesh or hard-surface knife hit, ADR-096) with a first-person slash (or forward stab when the same tick has a body Impact/DamageApplied) — no muzzle flash, casing, tracer or full-screen gunshot overlay. Grenade cook raises from authority `WeaponAction.Cooking`; release emits `ProjectileSpawned` with a throw arc, hides the held prop, and drives a cosmetic flying grenade until nearby Impact/lifetime. The first-person full-screen muzzle overlay and “Shot” subtitle are local-instigator firearms only (ADR-056); remote bot shots must not flash the whole screen. Impact creates bounded generated geometry/analytic decal or surface patch with pooled lifetime; no image sprite. Reload (weapon-family Foley fitted to the reload window), damage-taken and death also emit presentation audio from the same bank (ADR-096 adds grenade pin/bounce/far blast, flybys, hit and kill confirmation). Audio occlusion takes world queries under a budget (distance attenuation and HF rolloff ship first). Hit confirmation follows server result; local predicted shots are provisional. First-person arms, weapon camera FOV and depth handling cannot reveal enemies through walls. Accessibility allows reducing camera shake, sway, flash and blur without changing authoritative spread. Rifle/pistol select remains 1/2; knife Digit3 / grenade Digit4; Q toggles the last used weapon slot (ADR-056/057).
+Feedback is presentation only, driven by authority events:
 
-**Dropped weapons (ADR-105).** A soldier who dies (bot or human, except out-of-world kill-volume deaths) drops their primary at their feet with its magazine and reserve. It stays for 15 s of active match time and blinks for its last 3 s. Within 1.75 m the human sees a prompt and presses G (`Pickup`): a different gun replaces the primary and the old primary drops in its place with a fresh 15 s; the same gun adds its magazine + reserve to the human's reserve, capped at the gun's reserve capacity, and disappears. Bots do not pick up. A dropped gun keeps its mounted sight and a swap takes it with the gun; a same-gun ammo top-up keeps the holder's sight (ADR-107). A picked-up gun lasts until death; respawn issues the life loadout again (the Armory loadout for the human). Authority: `Simulation/Combat/DroppedWeaponField.cs`, `OfflineGameSession.Step`.
+| Event | Feedback |
+|---|---|
+| Firearm `ShotAccepted` | A report from the [audio](audio.md) bank, a mesh muzzle flash, casing, tracer and view kick |
+| Knife `ShotAccepted` | A slash, or a stab when the same tick hits |
+| Grenade | A cook raise from `WeaponAction.Cooking`, then a cosmetic flying grenade after `ProjectileSpawned` |
+| Impacts | Bounded generated geometry or decals, never sprites |
+
+**Local-only effects.** The full-screen muzzle overlay is for the local shooter only ([ADR-056](../decisions.md#adr-056--accepted-last-weapon-quick-switch-q-and-local-only-muzzle-overlay)).
+
+**Safety and accessibility.** First-person rendering can never reveal enemies through walls. Accessibility can reduce shake, sway, flash and blur without changing authoritative spread.
 
 ## Acceptance
 
-Movement tests cover 30/60/144 display FPS with the same 60 Hz command script, slope boundary, steps, corners, crouch ceiling, spawn overlaps and pause. Over 60 s, auto rifle has exactly the tick-specified shot count and no duplicate damage; semi-auto ignores held-only repeats. Ammo conserved through reload/switch/death edge sequences. Cover blocks eye/muzzle scenarios, including close wall and corner peeking. Hit profile tests pass across render profiles, LODs and rig update rates. All damage and kill events are idempotent under replay. B03 proves zero steady managed allocations and simulation budget at eight bots.
+**Movement:**
+- the same command script at 30, 60 and 144 FPS;
+- slope, step, corner, crouch-ceiling, spawn-overlap and pause cases;
+- every slide eligibility, collision and cooldown case.
 
+**Weapons:**
+- an exact shot count over 60 s for automatic fire;
+- semi-auto ignores held repeats;
+- ammo is conserved through reload, switch and death edges;
+- close-wall and corner-peek blocking;
+- hit profiles are equal across profiles, LODs and rig rates;
+- idempotent damage and death under replay.
 
-## Complete baseline and match rules
-
-[Gameplay baseline](../gameplay-baseline.md) supplies motor/ADS/spread/recoil/damage defaults, canonical muzzle, collision matrix and Compound Clear objective. [Simulation protocol](../simulation-protocol.md) fixes boundary ordering, actor nonblocking policy, same-tick trades and complete restoration state. These replace unspecified rounding and filter choices in this overview.
-
-## M2 implementation references
-
-Pure-source adapters (C0-v1 unchanged): `Simulation/Motor` (kinematic capsule + `InputEdgeBuffer`), `Simulation/Combat` (weapon/damage/hitscan/recoil), `Simulation/Pose/GameplayPoseEvaluator` (hit capsules + canonical muzzle), `Presentation/Model/View/ProceduralViewModel` (event-deduped cosmetic springs). Shipping composition uses `Simulation/Foundation/CombatHarnessSimulation` from `Bootstrap/Runtime/FoundationEntry` with `CompositionPolicy.RequireReal`. Pure evidence via `Tools/Test-Simulation.ps1`; milestone status in M2 handoff.
-
-## Local sprint slide — T072 / ADR-039
-
-The owner requested a local slide (подкат) on 2026-11-14. Default: while moving forward at sprint speed, hold **Left Shift** and press **F**. The applied Sprint binding is the modifier and Slide is a separately rebindable action (default Key.F). F alone, an airborne actor, aiming/crouching/firing/reloading on entry, or insufficient sprint momentum cannot start it.
-
-Authority runs a maximum 45-tick (0.75 s) slide at 60 Hz: 6.5 m/s entry, 4 m/s² deceleration, locked entry momentum direction, existing 1.2 m crouch capsule/hit pose and 1.05 m eye height. Normal swept collision remains active. Jump cancels; leaving ground or blocking horizontal motion ends it. It returns to standing only with headroom; otherwise crouch remains. A 60-tick cooldown starts on entry. Holding F does not retrigger; pause/focus clears pending input and death/reset/new life clears motion state. Camera and procedural rig read copied authority movement; no camera shake/roll or authored animation is added.
-
-Paths: `Presentation/Input/LocalPlayerInput.cs` → `Game/Session/LocalPlayerCommand.cs` → Bootstrap local sampler → `OfflineGameSession.Step` → `CombatHarnessSimulation.Step` → `Simulation/Motor/KinematicMotor.cs`. The local envelope keeps C0/N1 command bytes frozen and can trigger only for a fresh accepted command for the current human life. Historical online prediction/transport cannot initiate slide; online feature/protocol expansion is deferred. `LocalMovementView` carries copied stance/eye/slide/tightness state to `ProductSessionView` and `ProductActorPresentation`.
-
-Legacy schema-2 settings gain Slide=Key.F when free. If F is already customized, Slide=Unbound preserves that control; choose a key in Settings. New defaults/rebinding/persistence are covered alongside motor eligibility, momentum/duration/cooldown, collision/ceiling/jump, life reset, real InputSystem and PhysX/quality checks. See [ADR-039](../decisions.md#adr-039--accepted-local-authoritative-sprint-slide-t072), [M8 handoff](../milestones/m8-runtime-composition/handoff.md) and [playtest guide](../playtest-guide.md) for actual build/test disposition. The historical 7cd7e81 archive has no slide.
-
-## Local tightness — ADR-060
-
-Owner request 2026-11-15: held Sprint must not run forever. Authority keeps a 0..1 `MotorBodyState.Tightness` pool (full on spawn/respawn). Continuous sprint empties in 8 s; an accepted jump costs 0.25; slide entry costs 0.40 (ADR-039 cooldown unchanged). Empty pool forces walk speed and refuses jump/slide. Walking regen (grounded, not sliding, Sprint not held) fills the bar in 5 s; exhausted Shift stays empty until release. Mid-air and active slide do not regen. `LocalMovementView.Tightness01` drives a compact STA bar above HP; C0 snapshots stay frozen. See [ADR-060](../decisions.md#adr-060--accepted-local-authoritative-tightness-stamina).
-
-## Shotgun pellets and shell reloads (ADR-118, 2026-11-19)
-
-[ADR-118](../decisions.md#adr-118--accepted-m4a1-mk-16-m24-sws-and-m870-pellets-shell-reloads-and-geometryweapon-150) adds a multi-pellet shot. A definition with `pelletCount` above 1 is resolved as one `ShotAccepted` with one recoil impulse, followed by an eye ray per pellet. Each pellet is sampled inside `pelletSpreadDegrees` around the shot's aimed direction from its own seeded channels (16 + 2p, 17 + 2p) and produces its own impact and falloff damage. Single-projectile guns are bit-identical to before. A `reloadPerRound` gun (the M870: 8 × 25 damage in a 2.6° cone, falloff 8–30 m to 0.30, 7 + 28 shells) loads one shell per 28-tick reload phase until full; a trigger press with a shell loaded interrupts the reload and fires on the same tick. The frozen C0 `WeaponState` is unchanged. ADR-119 career perks can narrow the hip and pellet cones and shorten bolt/pump cycles; identity modifiers leave bots unchanged.
+**Performance.** Full-roster runs show zero steady managed allocation within the simulation budget ([performance](../performance.md)).

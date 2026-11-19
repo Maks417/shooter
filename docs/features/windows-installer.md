@@ -1,6 +1,8 @@
 # Feature: Windows installation and upgrades
 
-Owner requirement, 2026-11-14: **the final game must be delivered as a Windows installer. Running an installer for a newer game version must update the game already installed on that PC.** This is a first-release delivery requirement, within M11. Current ZIP files are playtest/internal validation artifacts; they do not complete this requirement. T073 implemented it on 2026-11-14 with Inno Setup 6.7.3 ([ADR-041](../decisions.md#adr-041--accepted-inno-setup-per-user-installer-and-in-place-upgrade-t073)); see [Implementation status](#implementation-status) for what is proven.
+The game ships as a Windows installer. Running an installer for a newer version updates the existing installation in place and keeps settings and controls. ZIP files are internal artifacts only.
+
+This is implemented with Inno Setup 6.7.3 ([ADR-041](../decisions.md#adr-041--accepted-inno-setup-per-user-installer-and-in-place-upgrade-t073), T073), and installers have shipped since 0.3.1.
 
 ## Implementation status
 

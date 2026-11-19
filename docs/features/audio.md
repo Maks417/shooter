@@ -1,141 +1,147 @@
 # Feature: combat audio and music
 
-Status: T089 / [ADR-062](../decisions.md#adr-062--accepted-stereo-foundauthored-combat-wav-bank-and-per-kind-distance-t089) (extends T086 / [ADR-055](../decisions.md#adr-055--accepted-generated-pcm-combat-sample-banks-t086)); bank v5 and music per [ADR-096](../decisions.md#adr-096--accepted-music-channel-combat-sample-bank-v5-and-owner-audio-source-relaxation). Named device hearing (FIX10 / SET02) remains Pending.
+Audio is presentation only. Authority combat events, the local lifecycle snapshot and stride footsteps drive the cues. Audio never mutates the simulation.
 
-## Policy
+The decisions behind it:
+- [ADR-055](../decisions.md#adr-055--accepted-generated-pcm-combat-sample-banks-t086) and [ADR-062](../decisions.md#adr-062--accepted-stereo-foundauthored-combat-wav-bank-and-per-kind-distance-t089): the sample bank and per-kind distances.
+- [ADR-096](../decisions.md#adr-096--accepted-music-channel-combat-sample-bank-v5-and-owner-audio-source-relaxation): music and the source policy.
+- [ADR-102](../decisions.md#adr-102--accepted-named-real-world-arsenal-random-spawn-loadouts-and-muzzle-flash-fix), [ADR-111](../decisions.md#adr-111--accepted-knife-and-grenade-overhaul-one-handed-hold-cut-and-throw-half-map-grenade-range-sound-explosion-models) and [ADR-118](../decisions.md#adr-118--accepted-m4a1-mk-16-m24-sws-and-m870-pellets-shell-reloads-and-geometryweapon-150): named-gun, knife/grenade and new-weapon cues.
 
-- Product combat feedback loads **stereo 48 kHz WAV** clips from `Content/Audio/combat/` via `manifest.json` (`combat-audio-bank-v5-stereo`, source note + license + SHA-256 per file, 1–8 variations per cue). Not live MIDI/sine beeps.
-- **Rifle vs pistol shots** are distinct CC0 outdoor recordings (OpenGameArt Tabasco/kurt packs), sliced to one-shots and retained byte-for-byte in v5.
-- ADR-096 owner decision: non-commercial build, so a source's license does not gate selection; it is still recorded. Extracting audio from commercial games is forbidden.
-- `Tools/build_audio_bank.py` renders the bank and the music bank from `Tools/audio-sources.json` (downloads under ignored `.local/audio-src`): `fetch`, `analyze`, `build`, `review`, `check`.
-- Generated stereo Foley (`CombatAudioBankBaker.BakeGenerated`) is **emergency fallback** only when the bank is missing, a hash fails, or a cue is absent from the manifest (per cue).
-- Presentation-only: authority combat events, the local lifecycle snapshot and stride footsteps drive cues; audio never mutates simulation.
-- ≤24 voices, linked stereo limiter with 0.89 peak headroom and 80 ms release, master/effects/UI gains (volume 0 = mute). Soft mix CPU target 0.5 ms/frame remains unmeasured on reference hardware.
+## Banks and sources
 
-## Distance
+**Combat bank.** The bank is `Content/Audio/combat/manifest.json` (`combat-audio-bank-v9-stereo`). It holds stereo 48 kHz WAV clips with 1–8 variations per cue. Each clip records its source, license and SHA-256.
 
-| Cue | Max audible | Notes |
+**Building it.** `Tools/build_audio_bank.py` renders both the combat and music banks from `Tools/audio-sources.json`. Downloads go under the ignored `.local/audio-src`. The commands are:
+- `fetch`
+- `analyze`
+- `build`
+- `review`
+- `check`
+
+Levels are normalized on the true float peak, and no clip reaches full scale.
+
+**Sources** are CC0 libraries:
+- OpenGameArt;
+- Kenney Impact/Interface/RPG Audio;
+- The Free Firearm Sound Library.
+
+Every gun's voice is its definition's `audio.shot`, cut from a real firearm take (for example AK-47, AR-15, SKS, Mosin, Mossberg). Reload Foley follows the handling style of the gun that last fired from that slot. Bolt and pump actions schedule `bolt_cycle` / `pump_cycle` inside the fire interval.
+
+**Source policy.** This is a non-commercial build, so a source's license does not gate selection, but it is always recorded. Audio extracted from commercial games is forbidden.
+
+**Fallback.** Generated stereo Foley (`CombatAudioBankBaker.BakeGenerated`) is an emergency fallback, per cue. It is used only when the bank is missing, a hash fails or a cue is absent. A missing named-gun shot is derived by varispeed from the real rifle or pistol takes.
+
+## Cues and distance
+
+| Cue | Trigger | Audible to |
 |---|---|---|
-| Footstep, dry fire, weapon switch, grenade pin | 18 m | Steep attenuation |
-| Reload (rifle/pistol) / death / impact / damage / knife / grenade throw and bounce | 35 m | Mid-range soft cues |
-| Rifle / pistol / headshot / near grenade blast | 80 m | Gunfire ceiling |
-| Distant grenade layer | 160 m | Quiet up close, dominant past ~30 m |
-| Bullet flyby | 3 m | Miss distance from the listener's head |
-| UI, hit marker, kill confirm, distant battle, ambient | 0 (local) | Authored stereo as-is |
+| Gun shots (per weapon) | `ShotAccepted` + definition id | 80 m |
+| Knife swing / hit flesh / hit hard | Knife `ShotAccepted`, then `DamageApplied` or a target-less `Impact` on that tick | 35 m |
+| Grenade pin / throw / bounce | `Cooking` starts / `ProjectileSpawned` / scheduled where the arc meets foot height | 18 / 35 / 35 m |
+| Grenade explode + far layer | Grenade blast `Impact` | 80 m / 160 m |
+| Impact, damage taken, death | `Impact`, `DamageApplied`, `Death` | 35 m |
+| Headshot | Head region (1) | 80 m |
+| Hit marker / kill confirm | Local instigator's damage or death | Local |
+| Bullet flyby | Enemy shot ray within 2.5 m of the listener's head, >4 m from the muzzle | 3 m |
+| Reload start / shell / complete | `ReloadStarted` (time-fitted ±12% to the window, faded on death or a shot) / per shell / `ReloadCompleted` | 35 m |
+| Dry fire, weapon switch, footstep | Empty-gun press, slot change, horizontal stride ≥0.75 m | 18 m |
+| UI hover/click/back, pause | `TacticalUi` and shell (own mixer) | Local |
+| Ambient, distant battle | Session loop; far gunfire every 6–20 s | Local |
 
-## Cue map
+Impact, hit and hit-marker cues play once per shooter, target and tick, so a shotgun blast does not stack them.
 
-| Cue | Trigger |
-|---|---|
-| RifleShot / PistolShot | `ShotAccepted` + weapon definition id |
-| KnifeSwing | `ShotAccepted` with `weapons/knife` |
-| KnifeHitFlesh / KnifeHitHard | knife instigator's `DamageApplied` / target-less `Impact` on the swing's tick |
-| GrenadePin | local `WeaponAction` enters `Cooking` |
-| GrenadeThrow | `ProjectileSpawned` (grenade leave-hand) |
-| GrenadeBounce | two clinks scheduled where the throw arc meets the thrower's feet height; cancelled by the blast |
-| GrenadeExplode + GrenadeExplodeFar | grenade blast `Impact` (invalid target, upward normal, surfaceTag 1) |
-| Impact | `Impact` (non-head, non-blast regions) |
-| DamageTaken | `DamageApplied` on body/limbs |
-| Headshot | `Impact` / `DamageApplied` with region 1 (head) |
-| HitMarker / KillConfirm | local instigator's `DamageApplied` / `Death` (local only) |
-| BulletFlyby | enemy rifle/pistol `ShotAccepted` whose ray passes within 2.5 m of the listener's head, >4 m from the muzzle |
-| ReloadStart (rifle) / ReloadPistol | `ReloadStarted` by slot family; time-fitted ±12 % to the reload window; faded on the owner's death or next shot |
-| ReloadComplete | `ReloadCompleted` |
-| DryFire / WeaponSwitch | local fire press with an empty gun / active slot change |
-| Death | `Death` |
-| Footstep | horizontal stride ≥ 0.75 m |
-| Ui / UiHover / UiClick / UiBack | shell pause/resume; `TacticalUi` hover, click and back controls (menu included, own mixer) |
-| Ambient | quiet loop while an audio session is attached |
-| DistantBattle | far-off gunfire/explosion every 6–20 s while playing (session-seeded) |
+## Mixer and spatialization
 
-## Shipped sources (bank v5 / music v1)
+The runtime path:
+1. `Content/Audio/combat` is the bank (repo root in the editor, beside the exe when packaged).
+2. `CombatAudioBankBaker.Bake` loads it.
+3. `OfflineGameSession` hands out the tick's event lease.
+4. `ProductSessionView.PumpProductAudio` reads the events.
+5. `ProductAudioEventRouter` (with `LocalWeaponCueTracker`) picks the cues.
+6. `SynthAudioMixer` mixes them.
+7. `UnitySynthAudioOutput.OnAudioFilterRead` sends them to the device.
 
-- Reloads: OpenGameArt CC0 handgun and airsoft reload recordings, stitched (mag out → pouch → mag in) to span the reload window. Bolt/slide release is `reload_complete`.
-- Knife, grenade handling, bounces, impacts, hits, deaths, footsteps, UI: Kenney Impact/Interface/RPG Audio (CC0).
-- Distant battle, far blast layer, flyby transients: The Free Firearm Sound Library mid/near-distance recordings (CC0).
-- Kept from v4: rifle/pistol shots, near grenade blast, ambience, two knife swings.
-- Provisional: flyby (no real whiz recording), defeat stinger, ambience.
-- The exact slices live in `Tools/audio-sources.json`.
+The callback calls no Unity API.
+
+**Voices and limiting:**
+- At most 24 voices.
+- When saturated, voices are replaced by priority: local/UI first, then gunfire and explosions, then Foley, then ambience.
+- A linked stereo limiter: 0.89 peak, immediate attack, 80 ms release.
+- Master, effects and UI gains; volume 0 mutes.
+
+**Panning.** World emitters use camera-relative equal-power panning that tracks camera turns. World stereo narrows with distance, and the final quarter of each radius fades to zero. Local cues stay centred.
+
+**Playback.** Fractional interpolated PCM keeps pitch at 44.1, 48 and 96 kHz.
+
+**Obstruction and reflections.** Obstruction uses static map collision (layer 8), with at most 8 rays per update, cached for 0.15 s. Obstructed cues lose gain and high frequencies. Nearby roof and walls add quiet early gunfire reflections at 61, 73 and 137 ms. This is a local approximation, not room reverb.
+
+**Footsteps.** A snapshot jump of more than 3 m resets the stride instead of playing a burst.
+
+A missing audio device logs a recoverable warning, and play continues.
 
 ## Music
 
-`Content/Audio/music/manifest.json` (`music-bank-v1`) lists OGG tracks for `menu_theme`, `match_calm`, `match_tension`, `victory_stinger`, `defeat_stinger`, `draw_stinger` and `results_loop` with SHA-256 and optional loop region. `MusicDirector` (pure) maps shell screens:
+`Content/Audio/music/manifest.json` (`music-bank-v1`) lists the OGG tracks:
+- menu theme;
+- calm and tension beds;
+- victory, defeat and draw stingers;
+- results loop.
 
-- Main/Setup/Settings from menu → menu theme.
-- Loading → silence.
-- Playing/Paused/confirmations → calm bed, latched to tension when the leading team is within 15 kills of the limit or 60 s remain. Paused → 60 %. Ducked up to −6 dB under local fire or a blast within 15 m.
-- Results → outcome stinger from the local team (victory/defeat/draw), then the results loop.
+`MusicDirector` (pure) maps shell screens to tracks:
 
-`UnityMusicOutput` crossfades two 2D `AudioSource`s and keeps clips Vorbis-compressed in memory (the loader turns streaming off before requesting compression, keeps each load request alive for its clip's lifetime and starts a cue only once its audio data is loaded, logging `SHOOTER_MUSIC_PLAY`). The code-built scene has no camera listener, so it adds the single `AudioListener` when none exists. Music level = master × music (`UserSettings.musicVolume`, default 0.6, Audio tab slider). A missing or invalid track is silent with one warning.
+| Screen | Music |
+|---|---|
+| Menu screens | Menu theme |
+| Loading | Silence |
+| Play | Calm bed, switching to tension near the score or time limit |
+| Paused | 60% volume |
+| Results | Outcome stinger, then the results loop |
 
-## Runtime path
+During play the music ducks by up to −6 dB under local fire or a blast within 15 m.
 
-`Content/Audio/combat` (editor repo root / packaged beside exe) → `CombatAudioBankBaker.Bake` → `OfflineGameSession` combat event lease (every tick's events since the previous frame's lease) → `ProductSessionView.PumpProductAudio` → `ProductAudioEventRouter` (+ `LocalWeaponCueTracker`, scheduled bounces, distant battle) → `SynthAudioMixer.TryPlay` (stereo sample + per-kind distance + mild azimuth) → `UnitySynthAudioOutput.OnAudioFilterRead` → device. Shell UI cues use a second mixer on the same bank; music is `ProductShellHost.UpdateMusic` → `MusicDirector` → `UnityMusicOutput`.
-
-Missing/unavailable audio device: recoverable warning; play continues without claiming FIX10 PASS.
-
-## Owner-requested spatial and mix refinement — 2026-11-15
-
-Follow-up to T089 / ADR-062, authorized by the owner after the source review. Bounded presentation/audio/session work; no authority, weapon rules, C0/Game-v1, settings schema, toolchain or sample-bank identities change. No third-party assets are added.
-
-- World emitters use camera-relative equal-power panning. Active voices update their direction as the camera turns or the listener moves; local weapon/handling/damage and own footsteps stay centered. World stereo narrows with distance; local and ambient clips retain authored width. Attenuation and obstruction are sampled when a cue starts, not continuously recomputed during its tail.
-- Fractional interpolated PCM playback preserves duration/pitch at 44.1, 48 and 96 kHz. Filter coefficients follow the device rate; the Unity callback uses a cached configuration and calls no Unity API. Configuration changes refresh that cache; re-enabling output rearms playback.
-- Near gunfire has a restrained 180 Hz body layer derived from its existing recording. Distance attenuation/HF rolloff and narrowing separate nearby/distant reports; the final quarter of each audible radius fades to zero instead of abruptly cutting off. These are processed versions of the existing samples, not separately recorded near/far banks.
-- Main-thread acoustic queries use authoritative static map collision, layer 8, ignoring triggers/actors/cosmetic geometry. Eight rays maximum per presentation update, including three roof/side probes every 0.2 s, independent of quality. Obstruction queries cache for 0.15 s in a bounded 128-entry cache, invalidated after >1 m listener movement or session detach. When the budget is exhausted an uncached cue uses clear propagation; it is not deferred to the audio thread.
-- Obstructed world cues lose gain and high frequencies. Nearby roof/walls control quiet cross-fed early gunfire reflections (61/73/137 ms), contained within the original voice budget. This is a simple local-enclosure approximation, not full room/portal reverb or exact source-to-wall reflection geometry.
-- At saturation, a higher-priority cue can replace a lower-priority voice: local/UI, then gunfire/explosions, then ordinary Foley, then ambience; audibility breaks ties. Equal/lower priority is rejected. Ambience retries on the presentation thread and returns once a slot becomes available. The linked stereo limiter preserves channel balance with immediate attack and 80 ms release. Stop/detach clears voices, reflections and limiter history.
-- Footstep stride uses horizontal movement; a >3 m snapshot discontinuity resets the stride rather than emitting a teleport burst. Surface-specific recorded Foley, separately recorded distance banks, bullet flybys and binaural/HRTF rendering remain future work.
-
-Validation: pure tests cover rates/pitch, direction changes during a voice, priority/cap, obstruction energy, reflection tail/stop and cull fade; a Unity integration test checks actual map-wall occlusion, cosmetic exclusion and the query budget. Exact results and build/device limits are recorded in the [M11 handoff](../milestones/m11-playable-release/handoff.md#audio-spatial-and-mix-refinement--2026-11-15). Named headset/speaker review, output-device switching and 6v6 reference CPU/quality acceptance remain Pending. No Battlefield V parity claim follows from automated tests.
-
-## Bank v6 — named-gun reports (ADR-102)
-
-`combat-audio-bank-v6-stereo` appends ten cues after the v5 slots: `ak47_shot`, `ak102_shot`, `m16_shot`, `mk14_shot`, `tac338_shot`, `g17_shot`, `eagle_shot`, `bolt_cycle`, `reload_ak` and `reload_bolt`. All are cut by `Tools/build_audio_bank.py` from sources already in `Tools/audio-sources.json`: the CC0 Free Firearm Sound Library takes for AK-47 (AK-102 high-passed), AR-15 (M16), Tikka (.308, Mk 14), Mosin Nagant and Arisaka (M-TAC 338), Walther PPQ (G17) and 1911 with a low rifle layer (Golden Eagle), plus the existing reload and cocking Foley. A gun's voice is its definition's `audio.shot`. Reload Foley follows the handling style of the gun that last fired from the reloading slot, and bolt-action shots schedule `bolt_cycle` inside the fire interval. If a cue is missing from the manifest, named-gun shots are derived by varispeed from the shipped real rifle/pistol takes. Owner listening review is Pending.
+`UnityMusicOutput` crossfades two 2D sources and keeps clips Vorbis-compressed in memory. It adds the single `AudioListener` when none exists. Music level is master × `musicVolume` (default 0.6). A missing track is silent, with one warning.
 
 ## Follow-up: placeholders
 
-Open T095 work, deferred by the owner on 2026-11-17. Each item needs one more small download batch: list the files with source and size, and get the owner's approval before fetching.
+This is open T095 work. Each item needs one small download batch. List the files with source and size, and get the owner's approval before fetching.
 
 | Slot | Current placeholder | Wanted |
 |---|---|---|
-| `bullet_flyby` (4 variations) | Near-gunshot transient (90 ms, high-passed) plus a knife whoosh | Real supersonic crack / whiz-by recordings (search freesound/OpenGameArt for "bullet whiz", "flyby", "supersonic crack") |
-| `defeat_stinger` (music) | Last 13 s of War Theme, low-passed to 2.5 kHz | A short (5–12 s) somber orchestral defeat or "mission failed" sting |
-| `ambient` (1–2 loops) | v4 project-rendered wind/hiss/hum loop | Real outdoor battlefield or quiet-town ambience loop, 30–90 s, seamless or crossfade-trimmed |
+| `bullet_flyby` (4 variations) | Gunshot transient plus a knife whoosh | Real supersonic crack or whiz-by recordings |
+| `defeat_stinger` (music) | Last 13 s of War Theme, low-passed | A 5–12 s somber orchestral defeat sting |
+| `ambient` | Project-rendered wind/hiss loop | A 30–90 s real outdoor battlefield or quiet-town loop |
 
 Steps:
-1. Add each source to `sources[]` in `Tools/audio-sources.json` and run `python Tools/build_audio_bank.py fetch`. Use `"manual": true` for sites that need a browser download.
-2. Find slice points with `python Tools/build_audio_bank.py analyze <path>`.
-3. Point the matching `clips[]`/`music[]` entries at the new source; drop `"keep": true` for `ambient`. The bank allows up to 8 variations per cue.
-4. Run `python Tools/build_audio_bank.py build`, `check` and `review`, then `./Tools/Test-Simulation.ps1`. The `Shipped_repo_banks…` test proves the loaders accept the banks.
-5. Update this section, the M11 handoff and the T095 row in [next-playable-build](../next-playable-build.md), and refresh the docs manifest.
+1. Add each source to `Tools/audio-sources.json` (`"manual": true` for browser downloads), then run `fetch`.
+2. Run `analyze <path>` to find the slice points.
+3. Point the matching `clips[]` / `music[]` entries at the new source. Drop `"keep": true` for `ambient`.
+4. Run `build`, `check` and `review`, then `./Tools/Test-Simulation.ps1`. The `Shipped_repo_banks…` test proves the loaders accept the banks.
+5. Update this section and [next playable build](../next-playable-build.md).
 
 ## Acceptance
 
-- Pure: voice cap, peak limit, gains/mute, per-kind distance cull, event-id dedupe, stereo bank load, manifest hash mismatch fallback.
-- Pure (ADR-096): every v5 slot resolves, variation compaction, reload time-fit and cancel, knife hit pairing, flyby geometry, bounce scheduling, duck level, music director transitions/outcome/tension, music manifest hash check, local weapon cues, settings `musicVolume`.
-- Device: named reviewer hears distinct rifle vs pistol, impact, nearby footsteps (not map-wide), rifle vs pistol reload, knife hit, grenade pin/bounce/near and far blast, menu music and UI clicks, outcome stinger, music slider and channel mute (FIX10 / SET02). Waveforms alone are not PASS.
+**Pure tests:**
+- voice cap and limiter;
+- gains and mute;
+- distance cull;
+- event dedupe;
+- every bank slot resolves;
+- hash-mismatch fallback;
+- reload time-fit;
+- flyby geometry;
+- bounce scheduling;
+- ducking;
+- music director transitions;
+- the obstruction budget (a Unity test also covers real map walls).
 
-## Bank v7: knife and grenade re-mix (ADR-111)
+**Device review (FIX10 / SET02).** A named listener checks:
+- distinct guns;
+- impacts;
+- nearby, not map-wide, footsteps;
+- reloads;
+- knife and grenade;
+- music;
+- UI;
+- sliders and mute.
 
-[ADR-111](../decisions.md#adr-111--accepted-knife-and-grenade-overhaul-one-handed-hold-cut-and-throw-half-map-grenade-range-sound-explosion-models) moves the bank to `combat-audio-bank-v7-stereo`. Only knife and grenade clips change: the swing layers a whoosh with a blade draw "shing"; flesh hits layer a heavy thud with a wet chop; hard hits layer metal impacts with a blade scrape; the 2.2–2.8 s explosion layers the v6 take with a generated sub-bass drop, a crack transient, scattered debris and a tail; the far explosion has a longer roll. Everything comes from sources already in `.local/audio-src`; the v6 explosion takes are inputs under `.local/audio-src/kept/` (restore them from git history before a rebuild). An A/B listening page is written to `.local/knife-grenade-ab.html`. Owner listening review is Pending.
-
-## Bank v8: true-peak levels (ADR-111 addendum)
-
-The builder now normalises every kind on the true float peak instead of `volumedetect`, which saturated at 0 dBFS and let over-full-scale mixes ship up to 5.4 dB above their `PEAK_DB` target. 66 older clips are re-levelled (no content change, gain only); the bank is `combat-audio-bank-v8-stereo`. No clip reaches full scale. Owner listening review is Pending.
-
-## Bank v9 — M4A1, M24, Mk 16, M870, pump and shell (ADR-118)
-
-[ADR-118](../decisions.md#adr-118--accepted-m4a1-mk-16-m24-sws-and-m870-pellets-shell-reloads-and-geometryweapon-150) appends six kinds to the combat bank (`combat-audio-bank-v9-stereo`); every v8 clip is byte-identical:
-
-| Kind | Source |
-|---|---|
-| `m4a1_shot` | AR-15 takes, pitched up |
-| `mk16_shot` | SKS takes |
-| `m24_shot` | Savage 10 and Springfield 1917 bolt rifles |
-| `m870_shot` | Mossberg and Benelli Nova pump shotguns |
-| `pump_cycle` | the airsoft shotgun cock, slowed |
-| `reload_shell` | Kenney metal clicks and latches |
-
-All sources are the local CC0 libraries already listed in `Tools/audio-sources.json`.
-
-The router plays the pump stroke inside the fire interval, as it does for the bolt, and uses `reload_shell` for the pump handling style. It also plays impact, hit and hit-marker cues once per shooter, target and tick, so a shotgun blast does not stack eight copies.
+Waveform tests alone never pass this review. The 0.5 ms/frame mix CPU target has not been measured on the reference machine.
