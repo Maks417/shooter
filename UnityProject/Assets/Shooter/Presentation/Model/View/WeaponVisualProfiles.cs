@@ -12,7 +12,7 @@ namespace Shooter.Presentation.View
         None = 0,
         ScopedPip = 1,
         Irons = 2,
-        /// <summary>ADR-107 1x red-dot collimator: the gun stays in view and a lit dot marks the aim point.</summary>
+        /// <summary>ADR-107 red-dot collimator (1.2x since ADR-117): the gun stays in view and a lit dot marks the aim point.</summary>
         Collimator = 3
     }
 

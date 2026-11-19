@@ -1298,7 +1298,7 @@ namespace Shooter.Presentation.Session
                     TacticalUi.AdsIronVignette(combatUi.Width, combatUi.Height, AdsOpticVisual.IronVignetteOpacity(adsPresent));
                 else if (AdsOpticVisual.UsesCollimatorOptic(opticProfile))
                     TacticalUi.CollimatorDot(cx, cy, AdsOpticVisual.CollimatorDotRadiusPixels(combatUi.Height),
-                        AdsOpticVisual.CollimatorDotOpacity(opticProfile, adsPresent), reducedFlash);
+                        AdsOpticVisual.CollimatorDotOpacity(opticProfile, adsPresent));
                 // Hip reticle yields once the optic/irons take the aim picture.
                 if (!AdsOpticVisual.HideHipReticle(adsPresent))
                 {

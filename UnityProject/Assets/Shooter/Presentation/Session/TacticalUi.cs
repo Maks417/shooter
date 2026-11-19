@@ -597,23 +597,17 @@ namespace Shooter.Presentation.Session
         }
 
         /// <summary>
-        /// ADR-107 collimator: a lit red dot with a soft bloom at the aim point. The housing itself is the real sight mesh
-        /// in view, so nothing else is drawn; ADR-115 puts the dot in the middle of the sight's clear glass pane.
+        /// ADR-107 collimator: one small lit red dot at the aim point. The housing itself is the real sight mesh in view,
+        /// so nothing else is drawn; ADR-115 puts the dot in the middle of the sight's clear glass pane, and ADR-117
+        /// removed the bloom disc and pale centre so only the single red point remains.
         /// </summary>
-        public static void CollimatorDot(float cx, float cy, float radius, float opacity, bool reducedFlash)
+        public static void CollimatorDot(float cx, float cy, float radius, float opacity)
         {
             if (opacity <= 0.01f) return;
-            Color core = new Color(1f, .16f, .10f, opacity);
-            float bloom = radius * (reducedFlash ? 2.2f : 3.4f);
-            Color halo = new Color(1f, .10f, .06f, opacity * (reducedFlash ? .14f : .22f));
-            if (UiSdf.Circle(new Rect(cx - bloom, cy - bloom, bloom * 2f, bloom * 2f), UiSdf.Style.Solid(halo)))
-            {
-                UiSdf.Circle(new Rect(cx - radius, cy - radius, radius * 2f, radius * 2f), UiSdf.Style.Solid(core));
-                float hot = radius * .45f;
-                UiSdf.Circle(new Rect(cx - hot, cy - hot, hot * 2f, hot * 2f), UiSdf.Style.Solid(new Color(1f, .78f, .70f, opacity * .9f)));
-                return;
-            }
-            Fill(new Rect(cx - radius, cy - radius, radius * 2f, radius * 2f), core);
+            Color core = new Color(1f, .12f, .08f, opacity);
+            var rect = new Rect(cx - radius, cy - radius, radius * 2f, radius * 2f);
+            if (UiSdf.Circle(rect, UiSdf.Style.Solid(core))) return;
+            Fill(rect, core);
         }
 
         /// <summary>Pistol ADS: soft edge vignette only so iron sights stay readable.</summary>

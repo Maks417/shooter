@@ -1990,3 +1990,19 @@ Consequences: map visual packages republish under the material.noise 1.2.0 finge
 Rollback: revert the commit, regenerate the settings and republish content.
 
 Evidence: [M11 handoff](milestones/m11-playable-release/handoff.md#adr-116-map-realism--2026-11-18).
+
+## ADR-117 — Accepted: single-point collimator dot and 1.2x collimator zoom
+
+Date 2026-11-19. Context: owner report. The collimator should show one small red point in the middle without the red area around it, and should magnify 1.2x rather than 1x. The ADR-107 dot was three HUD circles: a 3.4× radius bloom disc at 22% alpha (the red area), the core dot and a pale centre. The ADR-107 field of view was 56/80 of the hip FOV, which is about 1.43x, while the Armory text said "1x".
+
+Decision:
+- `TacticalUi.CollimatorDot` draws one solid red circle. The bloom disc, the pale centre and the reduced-flash variant are removed. The square fallback stays for when the SDF shader is unavailable.
+- `AdsOpticVisual.CollimatorDotRadiusPixels` = max(1.5, 0.0030 × screen height), about 3 px at 1080p (was 0.0042, about 4.5 px).
+- The collimator magnifies 1.2x: its ADS field of view is 80/1.2 ≈ 66.7° at the 80° reference, scaled with the hip FOV as before (`AdsOpticVisual.CollimatorAdsFovDegrees`). The sight row's magnification is 1.2 and its text reads "Red dot, 1.2x".
+- This supersedes ADR-107's "56/80" and ADR-115's "dot unchanged". Irons, the prism and the scopes are unchanged.
+
+Consequences: Presentation only. No lock, contract, fixture or content change. `ArmorySelectionTests` pins the 1.2x field of view and the dot size.
+
+Rollback: revert the commit.
+
+Evidence: [M11 handoff](milestones/m11-playable-release/handoff.md#adr-117-collimator-dot-and-zoom--2026-11-19). The in-game look is Pending owner playtest.

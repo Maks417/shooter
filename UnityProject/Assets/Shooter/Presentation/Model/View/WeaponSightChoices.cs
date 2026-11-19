@@ -77,7 +77,7 @@ namespace Shooter.Presentation.View
         private static readonly SightVisualProfile[] Sights =
         {
             new SightVisualProfile(IronsId, "irons", "IRON SIGHTS", "No zoom. Fast and uncluttered.", WeaponOpticMode.Irons, 52f, 1f),
-            new SightVisualProfile(CollimatorId, "collimator", "COLLIMATOR", "Red dot, 1x. The gun stays in view.", WeaponOpticMode.Collimator, 56f, 1f),
+            new SightVisualProfile(CollimatorId, "collimator", "COLLIMATOR", "Red dot, 1.2x. The gun stays in view.", WeaponOpticMode.Collimator, AdsOpticVisual.CollimatorAdsFovDegrees, AdsOpticVisual.CollimatorMagnification),
             new SightVisualProfile(new DefinitionId("sights/scope2"), "scope2", "2X PRISM", "M16 prism scope. 2x zoom, mil-dot lens.", WeaponOpticMode.ScopedPip, 40f, 2f),
             new SightVisualProfile(new DefinitionId("sights/scope4"), "scope4", "4X SCOPE", "Marksman scope. 4x zoom, mil-dot lens.", WeaponOpticMode.ScopedPip, 20f, 4f),
             new SightVisualProfile(new DefinitionId("sights/scope8"), "scope8", "8X SCOPE", "Sniper scope. 8x zoom, mil-dot lens.", WeaponOpticMode.ScopedPip, 10f, 8f),

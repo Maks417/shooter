@@ -44,8 +44,12 @@ namespace Shooter.Presentation.View
             return Math.Min(1f, (s - CollimatorDotBlend) / (1f - CollimatorDotBlend) * 1.6f);
         }
 
-        /// <summary>Collimator dot radius in pixels: a small fixed angular size (about 2 MOA scaled to the view).</summary>
-        public static float CollimatorDotRadiusPixels(float height) => Math.Max(2f, height * 0.0042f);
+        /// <summary>Collimator dot radius in pixels: one small point of fixed angular size (ADR-117: about 3 px at 1080p).</summary>
+        public static float CollimatorDotRadiusPixels(float height) => Math.Max(1.5f, height * 0.0030f);
+
+        /// <summary>ADR-117: the collimator magnifies 1.2x, so its ADS field of view is the 80° reference divided by 1.2.</summary>
+        public const float CollimatorMagnification = 1.2f;
+        public const float CollimatorAdsFovDegrees = 80f / CollimatorMagnification;
 
         public static bool UsesScopedOptic(DefinitionId weaponId, byte weaponSlot) =>
             UsesScopedOptic(WeaponVisualProfiles.Resolve(weaponId, weaponSlot));
@@ -102,7 +106,7 @@ namespace Shooter.Presentation.View
             if (profile.AdsFovDegrees > 0f) return hipFovDegrees * (profile.AdsFovDegrees / 80f);
             float ratio = UsesScopedOptic(profile) ? (42f / 80f)
                 : UsesIronSightOptic(profile) ? (52f / 80f)
-                : UsesCollimatorOptic(profile) ? (56f / 80f)
+                : UsesCollimatorOptic(profile) ? (1f / CollimatorMagnification)
                 : (58f / 80f);
             return hipFovDegrees * ratio;
         }

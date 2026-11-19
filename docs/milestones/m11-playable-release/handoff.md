@@ -828,6 +828,14 @@ Checks on the working tree over `6787ff1`: Generation 618/618 PASS (`m1-procedur
 
 **Pending / NotClaimed:** client build and installer, the owner's in-game review on all three maps at Low and High, and the Low benchmark on the 4600H (GPU p95 ≤ 27 ms with the new Low shadows).
 
+## ADR-117 collimator dot and zoom — 2026-11-19
+
+Owner request: the collimator should show only one small red point (no red area around it) and should magnify 1.2x, not 1x. Implemented [ADR-117](../../decisions.md#adr-117--accepted-single-point-collimator-dot-and-12x-collimator-zoom): `TacticalUi.CollimatorDot` draws a single solid red circle of about 3 px at 1080p (the bloom disc and pale centre are gone), and the collimator ADS field of view is 80/1.2 ≈ 66.7° (was 56°, about 1.43x).
+
+Checks on the working tree over `e5d976b`: Simulation 648/648 PASS (`m2-combat-harness/e5d976b…/20261119T073153702Z-7eb37c23`), including the updated `ArmorySelectionTests` field-of-view and dot-size assertions.
+
+**Pending / NotClaimed:** Unity compile of the changed `TacticalUi`/`ProductSessionView` (folded into the next Unity lane run), client build and installer, and the owner's in-game look at the dot and the 1.2x zoom.
+
 ## Delivery 0.3.24
 
 Owner requested a release and installer after the map realism change (2026-11-18). Clean binary/content source **`53cce2682e3b5f0b3bf1bbfea11b0c95a14cc116`** adds to 0.3.23 [ADR-115](../../decisions.md#adr-115--accepted-open-reflex-collimator-with-a-clear-glass-pane) (open reflex collimator with a clear glass pane) and [ADR-116](../../decisions.md#adr-116--accepted-realistic-map-colour-texture-and-shadows-materialnoise-120) (realistic map colour, texture and shadows: material.noise 1.2.0, corrected accent paint, warmer light, later fog, +10 saturation, soft Low shadows).

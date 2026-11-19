@@ -127,7 +127,7 @@ The first-person gloves (`FirstPersonHandGeometry.Build`, rig `fp.hand.v2`) are 
 | Sight | Look | ADS |
 |---|---|---|
 | `irons` | AR rear block; flip-up rear aperture and front post on the DMR and bolt rails; part of the AK body | Irons, 52/80 hip FOV, soft vignette |
-| `collimator` | Open reflex sight (ADR-115): low box base, rounded-rectangle frame leaning back 8°, one clear glass pane (material slot 11); dot 32 mm above the rail | Collimator, 56/80, gun stays in view, lit red dot in the clear pane |
+| `collimator` | Open reflex sight (ADR-115): low box base, rounded-rectangle frame leaning back 8°, one clear glass pane (material slot 11); dot 32 mm above the rail | Collimator, 1.2x (ADR-117: 80/1.2 ≈ 66.7°), gun stays in view, one small red dot in the clear pane |
 | `scope2` | The M16 prism scope (unchanged 1.3.0 construction), now reusable | Scoped PiP, 40/80 (2x) |
 | `scope4` | Mk 14 scope with turrets and rings | Scoped PiP, 20/80 (4x) |
 | `scope8` | M-TAC 338 long scope | Scoped PiP, 10/80 (8x) |

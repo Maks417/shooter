@@ -109,7 +109,11 @@ namespace Shooter.Simulation.Tests.Shell
             Assert.False(AdsOpticVisual.UsesLensCamera(dot, 1f, false));
             Assert.Equal(0f, AdsOpticVisual.CollimatorDotOpacity(dot, 0.3f));
             Assert.True(AdsOpticVisual.CollimatorDotOpacity(dot, 1f) > 0.99f);
-            Assert.Equal(56f, AdsOpticVisual.AdsFieldOfViewDegrees(80f, dot), 3);
+            Assert.Equal(80f / 1.2f, AdsOpticVisual.AdsFieldOfViewDegrees(80f, dot), 3);
+            Assert.True(WeaponSightChoices.TryGetSight(Collimator, out var collimatorSight));
+            Assert.Equal(1.2f, collimatorSight.Magnification, 3);
+            // ADR-117: one small dot, no bloom - about 3 px at 1080p.
+            Assert.InRange(AdsOpticVisual.CollimatorDotRadiusPixels(1080f), 1.5f, 3.5f);
             var ak = WeaponSightChoices.Apply(WeaponVisualProfiles.Require(Ak47), Prism);
             Assert.Equal(WeaponOpticMode.ScopedPip, ak.OpticMode);
             Assert.Equal(40f, AdsOpticVisual.AdsFieldOfViewDegrees(80f, ak), 3);
