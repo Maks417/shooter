@@ -1,6 +1,137 @@
 # Architecture decision records
 
-Statuses: Accepted = architectural requirement for implementation; Provisional = build as specified until evidence gate resolves; Deferred = excluded pending separate approval/design. Changes append a dated superseding record, preserving prior rationale. Decisions date from 2026-11-11 unless a record states otherwise; acceptance of a decision does not certify runtime or hardware gates.
+**Statuses:**
+- **Accepted:** an architectural requirement.
+- **Provisional:** build as specified until its evidence gate resolves.
+- **Parked:** kept in git without new work.
+
+Changes append a dated superseding record, and old rationale stays in its record. Records are kept short: Context, Decision, Consequences. Implementation evidence lives in the milestone handoffs, and the full original text of every record is in git history.
+
+Accepting a decision never certifies a runtime or hardware gate. The headings below are stable link anchors, because schemas, locks and generator output cite some of them, so never rename them.
+
+## Index
+
+| ADR | Status | Title | Superseded or amended |
+|---|---|---|---|
+| [ADR-001](#adr-001--accepted-unity-6-urp-rasterization) | Accepted | Unity 6 URP rasterization |  |
+| [ADR-002](#adr-002--accepted-zero-authored-visual-source-assets) | Accepted | zero authored visual source assets |  |
+| [ADR-003](#adr-003--accepted-compilerruntime-separation) | Accepted | compiler/runtime separation |  |
+| [ADR-004](#adr-004--accepted-gameplay-independent-of-visual-quality) | Accepted | gameplay independent of visual quality |  |
+| [ADR-005](#adr-005--accepted-60-hz-authoritative-simulation) | Accepted | 60 Hz authoritative simulation |  |
+| [ADR-006](#adr-006--provisional-gameobjects-and-kinematic-motor) | Provisional | GameObjects and kinematic motor |  |
+| [ADR-007](#adr-007--provisional-generated-humanoid-plus-analytical-ik) | Provisional | generated humanoid plus analytical IK |  |
+| [ADR-008](#adr-008--provisional-transport-behind-pure-codec-port) | Provisional | transport behind pure codec port | parked by ADR-076 |
+| [ADR-009](#adr-009--accepted-reproducible-source-not-universal-deterministic-physics) | Accepted | reproducible source, not universal deterministic physics |  |
+| [ADR-010](#adr-010--provisional-bounded-compound-and-offline-first-scope) | Provisional | bounded compound and offline-first scope | scope replaced by ADR-033, ADR-076 |
+| [ADR-011](#adr-011--provisional-exact-toolchain-resolved-at-m0) | Provisional | exact toolchain resolved at M0 | resolved by ADR-013 |
+| [ADR-012](#adr-012--accepted-review-closure-defaults-revision-11) | Accepted | review closure defaults (revision 1.1) |  |
+| [ADR-013](#adr-013--accepted-initial-m0-toolchain-and-explicit-engine-resource-curation) | Accepted | initial M0 toolchain and explicit engine resource curation |  |
+| [ADR-014](#adr-014--accepted-initial-c0-source-freeze-and-failure-capture-lifecycle) | Accepted | initial C0 source freeze and failure capture lifecycle |  |
+| [ADR-015](#adr-015--accepted-calibrated-release-measurement-and-immutable-evidence-review) | Accepted | calibrated release measurement and immutable evidence review | allocation hook replaced by ADR-042 |
+| [ADR-016](#adr-016--accepted-conservative-render-budget-proof-and-continuous-thermal-conditioning) | Accepted | conservative render-budget proof and continuous thermal conditioning |  |
+| [ADR-017](#adr-017--accepted-m0-owner-waiver-of-remaining-hardware-validation) | Accepted | M0 owner waiver of remaining hardware validation |  |
+| [ADR-018](#adr-018--accepted-initial-p02-compiler-format-and-byte-cache-boundary) | Accepted | initial P02 compiler format and byte-cache boundary |  |
+| [ADR-019](#adr-019--accepted-additive-m1-feature-recipes-and-reproducible-source-byte-lock) | Accepted | additive M1 feature recipes and reproducible source-byte lock |  |
+| [ADR-020](#adr-020--accepted-versioned-first-visual-corrections-for-weapon-and-metal-generators) | Accepted | versioned first visual corrections for weapon and metal generators |  |
+| [ADR-021](#adr-021--accepted-initial-material-benchmark-camera-and-central-cube-clarification) | Accepted | initial material benchmark camera and central-cube clarification |  |
+| [ADR-022](#adr-022--accepted-versioned-soldier-spike-and-second-numeric-motion-baseline) | Accepted | versioned soldier spike and second numeric motion baseline |  |
+| [ADR-023](#adr-023--accepted-owner-authorized-third-bounded-body-clearance-iteration) | Accepted | owner-authorized third bounded body-clearance iteration |  |
+| [ADR-024](#adr-024--accepted-p05-soldier-visual-scope-stop-after-exhausted-clearance-iterations) | Accepted | P05 soldier visual scope stop after exhausted clearance iterations | search reopened by ADR-094/095 |
+| [ADR-025](#adr-025--accepted-m1-owner-waiver-of-remaining-hardwareresource-validation-and-milestone-close) | Accepted | M1 owner waiver of remaining hardware/resource validation and milestone close |  |
+| [ADR-026](#adr-026--accepted-m2-owner-waiver-of-remaining-hardwarereference-validation-and-milestone-close) | Accepted | M2 owner waiver of remaining hardware/reference validation and milestone close |  |
+| [ADR-027](#adr-027--accepted-m3-owner-waiver-of-remaining-unity-tooling-and-hardwarereference-validation-and-milestone-close) | Accepted | M3 owner waiver of remaining Unity-tooling and hardwarereference validation and milestone close |  |
+| [ADR-028](#adr-028--accepted-m4-owner-waiver-of-remaining-unity-tooling-and-hardwarereference-validation-and-milestone-close) | Accepted | M4 owner waiver of remaining Unity-tooling and hardwarereference validation and milestone close |  |
+| [ADR-029](#adr-029--accepted-m5-unity-transport-behind-inetworkchannel-custom-prediction-retained) | Accepted | M5 Unity Transport behind INetworkChannel; custom prediction retained | parked by ADR-076 |
+| [ADR-030](#adr-030--accepted-m5-owner-waiver-of-remaining-unity-tooling-and-hardwarereference-validation-and-milestone-close) | Accepted | M5 owner waiver of remaining Unity-tooling and hardwarereference validation and milestone close |  |
+| [ADR-031](#adr-031--accepted-m6-owner-waiver-of-remaining-unity-tooling-and-hardwarereference-validation-and-milestone-close) | Accepted | M6 owner waiver of remaining Unity-tooling and hardwarereference validation and milestone close | parked by ADR-076 |
+| [ADR-032](#adr-032--accepted-m7-owner-waiver-of-remaining-unity-tooling-and-hardwarereference-validation-and-milestone-close) | Accepted | M7 owner waiver of remaining Unity-tooling and hardwarereference validation and milestone close |  |
+| [ADR-033](#adr-033--accepted-next-offline-playable-product-scope-and-staged-delivery) | Accepted | next offline playable product scope and staged delivery |  |
+| [ADR-034](#adr-034--accepted-initial-game-v1-freeze-t035) | Accepted | initial Game-v1 freeze (T035) |  |
+| [ADR-035](#adr-035--accepted-verified-release-map-packages-t055-boundary) | Accepted | verified release map packages (T055 boundary) |  |
+| [ADR-036](#adr-036--accepted-usersettings-schema-2-shell-coverage-t060--fix09) | Accepted | UserSettings schema 2 shell coverage (T060 / FIX09) |  |
+| [ADR-037](#adr-037--accepted-product-tdm-measurement-workloads-t063--fix12) | Accepted | product TDM measurement workloads (T063 / FIX12) |  |
+| [ADR-038](#adr-038--accepted-persisted-release-catalog-t067--b03) | Accepted | persisted release catalog (T067 / B03) |  |
+| [ADR-039](#adr-039--accepted-local-authoritative-sprint-slide-t072) | Accepted | local authoritative sprint slide (T072) |  |
+| [ADR-040](#adr-040--accepted-lf-line-ending-identity-for-frozen-locks) | Accepted | LF line-ending identity for frozen locks |  |
+| [ADR-041](#adr-041--accepted-inno-setup-per-user-installer-and-in-place-upgrade-t073) | Accepted | Inno Setup per-user installer and in-place upgrade (T073) |  |
+| [ADR-042](#adr-042--accepted-native-c-allocation-counter-for-benchmark-runs) | Accepted | native C++ allocation counter for benchmark runs |  |
+| [ADR-043](#adr-043--accepted-two-stage-native-navigation-publication) | Accepted | two-stage native navigation publication |  |
+| [ADR-044](#adr-044--accepted-versioned-procedural-map-surface-publication) | Accepted | versioned procedural map surface publication | surfaces replaced by ADR-088/106/116 |
+| [ADR-045](#adr-045--accepted-compact-tdm-arena-layouts-for-catalog-maps-t076) | Accepted | compact TDM arena layouts for catalog maps (T076) |  |
+| [ADR-046](#adr-046--accepted-offline-product-client-recovers-from-frame-hitches) | Accepted | offline product client recovers from frame hitches |  |
+| [ADR-047](#adr-047--accepted-relaxed-spawn-fallback-and-recoverable-spawn-failure) | Accepted | relaxed spawn fallback and recoverable spawn failure |  |
+| [ADR-048](#adr-048--accepted-session-internal-pre-match-countdown) | Accepted | session-internal pre-match countdown |  |
+| [ADR-049](#adr-049--accepted-non-gameplay-visual-architecture-boxes-for-map-solids-t078) | Accepted | non-gameplay visual architecture boxes for map solids (T078) |  |
+| [ADR-050](#adr-050--accepted-packaged-architectural-surface-construction-t081) | Accepted | packaged architectural surface construction (T081) |  |
+| [ADR-051](#adr-051--accepted-runtime-cover-probes-share-the-ai-ray-budget-t082) | Accepted | runtime cover probes share the AI ray budget (T082) |  |
+| [ADR-052](#adr-052--accepted-packaged-first-person-glove-and-sleeve-props-t083) | Accepted | packaged first-person glove and sleeve props (T083) | geometry replaced by ADR-069/106 |
+| [ADR-053](#adr-053--accepted-procedural-near-field-finish-triplets-and-hip-composition-t084) | Accepted | procedural near-field finish triplets and hip composition (T084) |  |
+| [ADR-054](#adr-054--accepted-bot-footstep-hearing-wider-vision-and-a-readable-lethality-envelope-t085) | Accepted | bot footstep hearing, wider vision and a readable lethality envelope (T085) |  |
+| [ADR-055](#adr-055--accepted-generated-pcm-combat-sample-banks-t086) | Accepted | generated PCM combat sample banks (T086) | source policy amended by ADR-096 |
+| [ADR-056](#adr-056--accepted-last-weapon-quick-switch-q-and-local-only-muzzle-overlay) | Accepted | last-weapon quick switch (Q) and local-only muzzle overlay |  |
+| [ADR-057](#adr-057--accepted-knife-and-grenade-loadout-slots-t087) | Accepted | knife and grenade loadout slots (T087) |  |
+| [ADR-058](#adr-058--accepted-minimap-self-marker-and-temporary-gunfire-reveal) | Accepted | minimap self marker and temporary gunfire reveal | north-up map replaced by ADR-104 |
+| [ADR-059](#adr-059--accepted-personal-scoreboard-score-and-combat-score-badges) | Accepted | personal scoreboard Score and combat score badges |  |
+| [ADR-060](#adr-060--accepted-local-authoritative-tightness-stamina) | Accepted | local authoritative tightness (stamina) |  |
+| [ADR-061](#adr-061--accepted-geometryweapon-102-mechanical-parts-and-denser-fire-fx-t088) | Accepted | geometry.weapon 1.0.2 mechanical parts and denser fire FX (T088) |  |
+| [ADR-062](#adr-062--accepted-stereo-foundauthored-combat-wav-bank-and-per-kind-distance-t089) | Accepted | stereo found/authored combat WAV bank and per-kind distance (T089) | source policy amended by ADR-096 |
+| [ADR-063](#adr-063--accepted-hit-region-damage-coefficients-one-shot-head) | Accepted | hit-region damage coefficients (one-shot head) |  |
+| [ADR-064](#adr-064--accepted-knifegrenade-fp-special-actions-and-throw-presentation-t087-follow-up) | Accepted | knife/grenade FP special actions and throw presentation (T087 follow-up) |  |
+| [ADR-065](#adr-065--accepted-screen-space-pip-rifle-scope-blurred-periphery) | Accepted | screen-space PiP rifle scope (blurred periphery) | replaced by ADR-103 |
+| [ADR-066](#adr-066--accepted-non-commercial-ui-typeface-bank-barlow-condensed) | Accepted | non-commercial UI typeface bank (Barlow Condensed) |  |
+| [ADR-067](#adr-067--accepted-soldier-motionv5-slide-pose-gait-stability-and-motor-corner-anti-launch) | Accepted | soldier motion.v5 slide pose, gait stability and motor corner anti-launch |  |
+| [ADR-068](#adr-068--accepted-procedural-arsenal-visual-profiles-and-finishes) | Accepted | procedural arsenal visual profiles and finishes |  |
+| [ADR-069](#adr-069--accepted-articulated-near-field-hands-and-global-analytic-reflections) | Accepted | articulated near-field hands and global analytic reflections |  |
+| [ADR-070](#adr-070--accepted-bot-tactics-tranche-cover-peek-wall-hearing-ledge-strafe-route-spread-t090) | Accepted | bot tactics tranche (cover peek, wall hearing, ledge strafe, route spread) (T090) |  |
+| [ADR-071](#adr-071--accepted-oil-depot-third-map-and-limited-elevated-routes) | Accepted | Oil Depot third map and limited elevated routes |  |
+| [ADR-072](#adr-072--accepted-definitionid-weapon-profiles-catalog--visual-bind) | Accepted | DefinitionId weapon profiles (catalog + visual bind) | data form in ADR-077, ADR-102 |
+| [ADR-073](#adr-073--accepted-life-scoped-multi-kill-and-headshot-hud-badges) | Accepted | life-scoped multi-kill and headshot HUD badges |  |
+| [ADR-074](#adr-074--accepted-compact-64--80-m-arenas-with-distinct-per-map-layouts) | Accepted | compact 64 × 80 m arenas with distinct per-map layouts | layouts replaced by ADR-109 |
+| [ADR-075](#adr-075--provisional-third-party-code-libraries-for-noise-runtime-rigging-and-spatial-audio) | Provisional | third-party code libraries for noise, runtime rigging and spatial audio |  |
+| [ADR-076](#adr-076--accepted-offline-only-scope-and-bounded-local-evidence) | Accepted | offline-only scope and bounded local evidence |  |
+| [ADR-077](#adr-077--accepted-weapon-definition-files-generate-both-weapon-catalogs) | Accepted | weapon definition files generate both weapon catalogs |  |
+| [ADR-078](#adr-078--accepted-shared-weapon-package-separate-from-map-packages) | Accepted | shared weapon package separate from map packages |  |
+| [ADR-079](#adr-079--accepted-engine-toolchain-lock-separate-from-the-build-lock) | Accepted | engine toolchain lock separate from the build lock |  |
+| [ADR-080](#adr-080--accepted-code-built-post-processing-hdr-and-ssao-per-quality-tier) | Accepted | code-built post-processing, HDR and SSAO per quality tier |  |
+| [ADR-081](#adr-081--accepted-baked-ambient-occlusion-volume-per-map) | Accepted | baked ambient-occlusion volume per map |  |
+| [ADR-082](#adr-082--accepted-geometryweapon-110-parametric-rifle-parts) | Accepted | geometry.weapon 1.1.0 parametric rifle parts |  |
+| [ADR-083](#adr-083--accepted-map-registry-arena-layout-documents-and-the-generic-maparena-recipe) | Accepted | map registry, arena layout documents and the generic map.arena recipe |  |
+| [ADR-084](#adr-084--accepted-analytic-sdf-ui-primitives-and-ui-motion-model) | Accepted | analytic SDF UI primitives and UI motion model |  |
+| [ADR-085](#adr-085--accepted-generated-sdf-icon-atlas-with-mesh-traced-weapon-silhouettes) | Accepted | generated SDF icon atlas with mesh-traced weapon silhouettes |  |
+| [ADR-086](#adr-086--accepted-animated-debrief-and-front-end-motion) | Accepted | animated debrief and front-end motion |  |
+| [ADR-087](#adr-087--accepted-tactical-hud-craft-first-tranche) | Accepted | tactical HUD craft, first tranche |  |
+| [ADR-088](#adr-088--accepted-seeded-noise-material-family) | Accepted | seeded noise material family |  |
+| [ADR-089](#adr-089--accepted-weathered-map-surface-shading) | Accepted | weathered map surface shading |  |
+| [ADR-090](#adr-090--accepted-packaged-procedural-decals-and-versioned-visual-layout-operations) | Accepted | packaged procedural decals and versioned visual layout operations |  |
+| [ADR-091](#adr-091--accepted-numeric-sky-atmospheres-map-grades-and-actor-grounding-light) | Accepted | numeric sky atmospheres, map grades and actor grounding light |  |
+| [ADR-092](#adr-092--accepted-numeric-volume-noise-combat-flipbooks) | Accepted | numeric volume-noise combat flipbooks |  |
+| [ADR-093](#adr-093--accepted-bounded-particle-combat-presentation) | Accepted | bounded particle combat presentation |  |
+| [ADR-094](#adr-094--accepted-bounded-soldier-presentation-revision-and-p05-reopening) | Accepted | bounded soldier presentation revision and P05 reopening | replaced by ADR-095 |
+| [ADR-095](#adr-095--accepted-structural-weapon-from-eye-shooting-posture-p05-reopening) | Accepted | structural weapon-from-eye shooting posture (P05 reopening) |  |
+| [ADR-096](#adr-096--accepted-music-channel-combat-sample-bank-v5-and-owner-audio-source-relaxation) | Accepted | music channel, combat sample bank v5 and owner audio-source relaxation |  |
+| [ADR-097](#adr-097--accepted-headshot-kill-score-bonus) | Accepted | headshot kill Score bonus |  |
+| [ADR-098](#adr-098--accepted-per-weapon-first-person-recoil-presentation-camera-climb--per-shot-kick) | Accepted | per-weapon first-person recoil presentation (camera climb + per-shot kick) |  |
+| [ADR-099](#adr-099--accepted-per-weapon-first-person-hand-and-weapon-choreography) | Accepted | per-weapon first-person hand and weapon choreography |  |
+| [ADR-100](#adr-100--accepted-third-person-directional-gait-airborne-pose-and-bot-hopsslides) | Accepted | third-person directional gait, airborne pose and bot hops/slides |  |
+| [ADR-101](#adr-101--accepted-selectable-team-sizes-5--8--10--15) | Accepted | selectable team sizes 5 / 8 / 10 / 15 |  |
+| [ADR-102](#adr-102--accepted-named-real-world-arsenal-random-spawn-loadouts-and-muzzle-flash-fix) | Accepted | named real-world arsenal, random spawn loadouts and muzzle flash fix | human loadout replaced by ADR-107 |
+| [ADR-103](#adr-103--accepted-optical-scope-lens-camera-balancedhigh-quality-uplift-flicker-geometry-fixes-and-damage-feedback-v2) | Accepted | optical scope lens camera, Balanced/High quality uplift, flicker geometry fixes and damage feedback v2 |  |
+| [ADR-104](#adr-104--accepted-circular-heading-up-minimap-with-ring-compass) | Accepted | circular heading-up minimap with ring compass |  |
+| [ADR-105](#adr-105--accepted-dropped-primary-weapons-and-g-pickup) | Accepted | dropped primary weapons and G pickup |  |
+| [ADR-106](#adr-106--accepted-kernel-built-weapons-gloves-soldiers-and-structured-map-surfaces) | Accepted | kernel-built weapons, gloves, soldiers and structured map surfaces |  |
+| [ADR-107](#adr-107--accepted-armory-loadouts-and-reusable-rail-mounted-sights) | Accepted | Armory loadouts and reusable rail-mounted sights |  |
+| [ADR-108](#adr-108--accepted-career-ranks-unlocks-buffs-and-local-service-record) | Accepted | career ranks, unlocks, buffs and local service record | ladder extended by ADR-119 |
+| [ADR-109](#adr-109--accepted-site-planned-maps-old-town-harbour-rebuilt-oil-depot) | Accepted | site-planned maps (Old Town, Harbour, rebuilt Oil Depot) |  |
+| [ADR-110](#adr-110--accepted-body-armor-100-points-torso-and-limbs) | Accepted | body armor (100 points, torso and limbs) |  |
+| [ADR-111](#adr-111--accepted-knife-and-grenade-overhaul-one-handed-hold-cut-and-throw-half-map-grenade-range-sound-explosion-models) | Accepted | knife and grenade overhaul (one-handed hold, cut and throw, half-map grenade range, sound, explosion, models) |  |
+| [ADR-112](#adr-112--accepted-crosshair-true-hits-rig-aligned-hit-volumes-and-bots-that-use-map-cover-flank-and-move-smoothly) | Accepted | crosshair-true hits, rig-aligned hit volumes, and bots that use map cover, flank and move smoothly |  |
+| [ADR-113](#adr-113--accepted-career-progress-line-layered-rank-emblems-and-reward-art) | Accepted | career progress line, layered rank emblems and reward art |  |
+| [ADR-114](#adr-114--accepted-corner-bob-motor-fix-nav-bake-that-respects-walls-and-a-tabbed-career-page) | Accepted | corner-bob motor fix, nav bake that respects walls, and a tabbed Career page |  |
+| [ADR-115](#adr-115--accepted-open-reflex-collimator-with-a-clear-glass-pane) | Accepted | open reflex collimator with a clear glass pane |  |
+| [ADR-116](#adr-116--accepted-realistic-map-colour-texture-and-shadows-materialnoise-120) | Accepted | realistic map colour, texture and shadows (material.noise 1.2.0) |  |
+| [ADR-117](#adr-117--accepted-single-point-collimator-dot-and-12x-collimator-zoom) | Accepted | single-point collimator dot and 1.2x collimator zoom |  |
+| [ADR-118](#adr-118--accepted-m4a1-mk-16-m24-sws-and-m870-pellets-shell-reloads-and-geometryweapon-150) | Accepted | M4A1, Mk 16, M24 SWS and M870: pellets, shell reloads and geometry.weapon 1.5.0 |  |
+| [ADR-119](#adr-119--accepted-30-rank-career-ladder-and-four-new-perks) | Accepted | 30-rank career ladder and four new perks |  |
 
 ## ADR-001 — Accepted: Unity 6 URP rasterization
 
@@ -46,100 +177,126 @@ PCG32 named streams, canonical encoding, semantic versions, content addressing. 
 
 Use available supported Unity 6 LTS patch with compatible URP, pin all packages before implementation contracts freeze. No invented patch/version. M0 owner records lock and proves client/headless builds; [references](references.md) are guidance to check against that lock, not package compatibility guarantees.
 
-## Decision change template
-
-ID/title; date; owner; status; requirement affected; measured problem; alternatives; chosen behavior; contract/schema impact; migration; affected work packages; validation and rollback; supersedes ID. Integrator approves compatibility changes; an agent cannot relax art or performance requirements by silently updating a baseline.
-
-
 ## ADR-012 — Accepted: review closure defaults (revision 1.1)
 
 Separate LogicalAssetId/Unity GUID from versioned request ContentId/payload hashes; exclude build telemetry from deterministic manifests. Explicit result/lease types replace ambiguous integer query returns and direct snapshot reads. Post-movement hit poses, batched same-tick shot intents and delayed AI commands define tick order. Compound Clear/no-respawn cooperative slice and collision matrix are fixed in [gameplay baseline](gameplay-baseline.md). Analytic death collapse is required; physics ragdoll optional. Implementation start links exact specifications and fixtures. These close ambiguity without claiming implementation or empirical feasibility.
 
 ## ADR-013 — Accepted: initial M0 toolchain and explicit engine resource curation
 
-Date 2026-11-11; owner single integrator/WP-00. Installed and verified editor 6000.3.28f1, revision 8f082d2fe476; URP/Core RP 17.3.0; Input System 1.20.1; Test Framework 1.6.0; AI Navigation 2.0.0. Exact portable values and dependency graph live in root `toolchain-lock.json` and `UnityProject/Packages`. This resolves ADR-011's selection; actual build/hardware gates remain separately recorded. The bundled URP template's Input System 1.12.0 failed on removed `BuildTarget.ReservedCFE`; the documented 6000.3 release package 1.20.1 compiled. This was initial dependency resolution before freeze, not an upgrade during gameplay work.
+Date 2026-11-11. **Context:** M0 had to pin an installed, supported toolchain, and Core RP shipped authored debug UI sprites.
 
-A first release build demonstrated that Core RP's `Resources/DebugUICanvas.prefab` and `DebugUIPersistentCanvas.prefab` pull authored debug UI sprites into players. This conflicts with the art policy and server payload boundary; [Unity's issue record](https://issuetracker.unity.com/issues/2697) describes the same inclusion. `Tools/prepare_unity_packages.py` packages the exact installed Core RP source into ignored `.local/engine-packages/com.unity.render-pipelines.core-17.3.0-shooter.tgz`, omitting those two prefabs and their metadata. It verifies upstream/curated file inventories and archive SHA256 against the lock. It never edits installed packages or the Library cache. The UPM manifest references this reproducible local tarball, retaining version 17.3.0; no source API or shader is modified. Runtime debugging UI is explicitly disabled. Fresh setup must prepare this source before package resolution; an unexpected existing archive fails rather than being overwritten.
+**Decision.** The toolchain is editor 6000.3.28f1 (8f082d2fe476), URP/Core RP 17.3.0, Input System 1.20.1, Test Framework 1.6.0 and AI Navigation 2.0.0, recorded in `toolchain-lock.json`. Input System 1.20.1 replaces the template's 1.12.0, which failed to compile; that was initial resolution, not a later upgrade. This resolves ADR-011.
 
-Clean-checkout import of commit `e94ca64` proved that the original folder dependency was mutable: Unity upgraded texture importer metadata and the next strict inventory check correctly failed. Curation schema 2 therefore uses an immutable [local UPM tarball](https://docs.unity.com/en-us/engine/6000.3/manual/packages-list/dependencies-lp/upm-localpath), with canonical tar ordering/ownership/modes/timestamps and Gzip stored DEFLATE blocks independent of compressor versions. Upstream inventory `6dfa8cac7cd5145c23024aba1377cb17c2029edbb397bdc4d28cdc29c21daaa5` and curated inventory `78b5c9080d73ed97ee71e2dfa4d0bc2ee847834074a5aca31e18b57c3c926de2` are unchanged. Archive SHA256 is `ac919cdfbb561e93be0fc4b0a3c65ee998fd382d9933d1046785dba70ae74c8e`. The explicit `--migrate-immutable-archive` operation requires exact schema-1 input equality; ordinary verification never blesses mutated files. Independent gzip/tar decoding and host-path/timestamp invariance tests cover the archive format. The editor rejects mutable/stock Core sources; cached UPM extraction is engine-owned and is not hand-edited.
+`Tools/prepare_unity_packages.py` packs the installed Core RP source into an immutable local UPM tarball (`.local/engine-packages/com.unity.render-pipelines.core-17.3.0-shooter.tgz`). The tarball omits `DebugUICanvas.prefab` and `DebugUIPersistentCanvas.prefab`. It has canonical tar ordering and gzip, and it is verified against the pinned upstream and curated inventories and the archive SHA-256 (curation schema 2; a mutable folder dependency was rejected because Unity rewrote importer metadata).
 
-URP's image-backed dithering slots are assigned code-generated recursive Bayer textures (8 and 64 pixels) through its public Editor resource API. The unused debug-font slot receives a persistent one-pixel zero-data asset generated by code: the engine's transient black texture serialized as null and was reloaded as the stock atlas, so it was insufficient. The 64-pixel ordered lookup is explicitly not a blue-noise-quality claim; M0 uses no LOD crossfade or post effects. Both splash and Unity-logo flags are disabled: disabling splash alone left a built-in logo texture/sprite in packed reports. Tools wrappers reject these extensionless built-in entries; final packed-source inspection confirms their removal. No painted/photo/AI texture or sprite exception is introduced. Settings/scene/material/lookup outputs have source/toolchain hashes in `Assets/Shooter/Settings/provenance.json`; native URP shader-prefilter cache fields generated during a real build are recorded after that stage. Native Unity YAML trailing spaces on empty scalars are retained through Git whitespace attributes, not removed from generated payloads. No golden payload is edited to match an old hash.
+URP dithering slots get code-generated Bayer textures, and the debug-font slot gets a generated one-pixel asset. Splash and Unity-logo are both disabled. Settings, scene, material and lookup outputs are hash-recorded in `Assets/Shooter/Settings/provenance.json`.
 
-Migration: no C0 DTO, unit, seed stream, gameplay pose or wire schema changes; no accepted shipping content exists. Recreate only the ignored local curation from its pinned inputs, resolve packages, regenerate numeric settings, then rerun pure/Unity tests, player art/dependency audits and client/server smoke. Rollback is the preceding source/lock pair; do not retain a player whose package/manifest differs. Future curation changes require a new inventory and decision review. [Runbook](bootstrap-runbook.md) and M0 evidence contain commands and acceptance status.
+**Consequences.** A fresh setup runs `Configure-Unity.ps1` before package resolution. Installed packages and the Library cache are never edited. Any curation change needs a new inventory and a review.
 
 ## ADR-014 — Accepted: initial C0 source freeze and failure capture lifecycle
 
-Date 2026-11-12; owner/reviewer Codex as single M0 integrator. Review covered the primitive/enum registry, immutable DTOs, input/prediction/event boundaries, typed geometry data, bounded buffers, leases, explicit errors and main-thread ports against [contract details](contract-details.md). Pure fixture/conformance tests and actual Unity adapters provide the evidence linked in the handoff. No independent reviewer or hardware sign-off is implied.
+Date 2026-11-12. **Decision.** The reviewed contract candidate is frozen as C0-v1 (`ContractVersion.Current="C0-v1"`). `contract-lock.json` pins:
+- the contract sources and metadata;
+- the JSON and binary specification fixtures;
+- the toolchain.
 
-Freeze the existing candidate as C0-v1. Root `contract-lock.json` pins 24 contract source/assembly/metadata files, 18 JSON/binary fixture files and the unchanged toolchain. `Tools/verify_contract_lock.py` verifies the exact inventory before the pure and Unity wrappers; CI also tests rejected source/fixture drift. Test-only recipe-validator and generator doubles complete port coverage without implementing the M1 compiler. Future updates require an intentional integrator review, ADR/migration where semantics change, regenerated identities and affected tests; the verifier has no automatic refresh command.
+`Tools/verify_contract_lock.py` runs before the pure and Unity wrappers, and CI tests rejected drift. There is no automatic refresh. Future changes need integrator review, plus an ADR and migration where semantics change.
 
-Migration: the unused candidate-label constant becomes `ContractVersion.Current="C0-v1"`; there are no dependent feature consumers to migrate. DTO fields, units, seeds, enum values, prediction schema 1 and specification-v1.1 payloads are unchanged. Production geometry codecs, content compilation and the network wire schema remain their original milestone assignments. The contract freeze does not authorize M1 or set `readyForParallelIntegration=true` while M0 acceptance is pending.
+**Failure capture.** A retained player stalled during native shutdown after a correctly detected offline overload. Now:
+- `FoundationEntry.Fail` notifies cleanup observers once.
+- `FoundationBenchmark` disposes recorders before shutdown and writes `failure.json`.
+- A partial capture never becomes success.
+- `Test-FailureShutdown.ps1` injects a diagnostic 200 ms stall and requires exit code 1 within 30 s.
 
-A retained player failure showed that offline overload was correctly detected but native shutdown then stalled. The four-tick cap and debt-retaining offline pause remain unchanged. `FoundationEntry.Fail` now notifies cleanup observers once before requesting failure exit. `FoundationBenchmark` stops sampling, disposes its native recorders before native shutdown and writes a separate `failure.json` with elapsed/debt/tick telemetry. It never turns a partial capture into successful benchmark evidence. `Tools/Test-FailureShutdown.ps1` injects a 200 ms stall only in an explicitly diagnostic capture and requires actual exit code 1 within 30 seconds, retained debt after four ticks and no successful capture files. Passing this diagnostic does not prove the historical hitch/driver cause. Rollback uses the prior source/build pair and retains the failed attempt.
+The four-tick cap and debt retention are unchanged.
 
 ## ADR-015 — Accepted: calibrated release measurement and immutable evidence review
 
-Date 2026-11-12; owner/reviewer Codex, single M0 integrator. The installed, locked IL2CPP source implements `GetAllocatedBytesForCurrentThread` as an unsupported zero-returning stub (`icalls/mscorlib/System/GC.cpp`). Historical IL2CPP zero-byte tick observations therefore cannot establish zero allocation. Preserve their raw reports, supersede that interpretation and require positive controls. Pure .NET allocation tests remain valid on their tested runtime. Heap-size differences and unavailable release profiler recorders were rejected as allocation substitutes.
+Date 2026-11-12. **Context.** The locked IL2CPP `GetAllocatedBytesForCurrentThread` is a stub that returns zero. Historical zero-allocation readings therefore prove nothing, and their interpretation is superseded. Native GPU timings are sometimes missing on the reference driver.
 
-`Bootstrap/Runtime/AllocationMeter.cs` registers one process-lifetime allocation callback through the pinned GameAssembly IL2CPP profiler exports, without changing engine/package files or enabling a development/deep-profile player. The callback sums reported object sizes on all allocating threads and separately in thread-local tick counters. Rooted object/string/array controls on main and worker threads establish operation before warmup; a fresh byte-array control after sampling checks continued operation. Failure yields unavailable counters, never calibrated zeros. The process-lifetime native registration has no uninstall API; a static rooted callback and one-time initialization bound its lifetime. This engine-specific adapter requires revalidation with any future editor migration. `Tools/Test-Measurement.ps1` also injects known per-frame allocation in a separate release diagnostic and requires detection.
+**Allocations.** `Bootstrap/Runtime/AllocationMeter.cs` registers one IL2CPP profiler allocation callback, without editing the engine and without a development player. Object, string and array controls on the main and worker threads must be detected before warmup and after sampling. If they are not, the counters are unavailable, never zero. `Test-Measurement.ps1` also requires known injected allocations to be detected.
 
-`Bootstrap/Core/FrameTimingLedger.cs` joins delayed native timings by their QPC frame-start timestamp to bounded, monotonic Update brackets. Native/Stopwatch clock frequencies and epoch range must agree; ambiguous, zero and missing native durations remain unavailable. The client polls 32 timing-history records and drains 64 frames outside the measured interval. No timing from a different frame fills a gap. Tests exercise delayed/out-of-order observations, ambiguity and bounds. The exact supported recorder names are CPU Main Thread Frame Time and CPU Render Thread Frame Time. Raw direct recorder values/counts are retained for audit; their documented four-frame delay is checked against native timing values. They do not replace unavailable ledger samples.
+**Frame timing.** `Bootstrap/Core/FrameTimingLedger.cs` joins delayed native timings to frame brackets by exact QPC timestamp. Ambiguous or missing values stay unavailable and are never filled in.
 
-The reference driver still omits some native GPU durations. The supported external alternative is standalone [Intel PresentMon](https://github.com/GameTechDev/PresentMon), pinned at 2.6.0 by executable and MIT-license hashes in `Tools/presentmon-lock.json`. It is an ignored measurement tool, not game content, an installed service or a Unity toolchain change. `Benchmark.ps1 -PresentMon` records its own uniquely named ETW session, exact Shooter PID/executable hash, tool identity, logs and raw CSV. `Tools/external_gpu.py` verifies all source hashes and QPC identity, restricts presents to the measured interval, requires the exact measured frame count, one DXGI swapchain and finite GPU duration for every present. The player validates application VSync off and uncapped presentation before the workload and at every measured frame boundary, recording the checked-frame count. Lost events, wrong processes or invalid identities fail validation; missing durations/counts remain pending. MsGPUTime is an independent per-present GPU-duration series, not row-wise imputation into missing native timings. Asynchronous render pacing can place zero or two presents in individual CPU intervals; no false one-to-one alignment is asserted. PresentMon's documented driver/HAGS accuracy limitations apply; system settings are not silently changed. PresentMon 2.6.0 [source](https://github.com/GameTechDev/PresentMon/blob/v2.6.0/PresentData/PresentMonTraceConsumer.cpp) overwrites its CSV SyncInterval with kernel flip intervals. Analysis preserves that histogram; nonzero driver intervals require independent per-frame application configuration proof. They are not treated as evidence that application VSync was enabled. All affected frames remain in the measured distributions. A rejected earlier capture lacking that independent proof remains retained.
+**External GPU timing.** PresentMon 2.6.0 is pinned by hash in `Tools/presentmon-lock.json` and is an ignored measurement tool. `Benchmark.ps1 -PresentMon` records its own ETW session for the exact Shooter PID. `Tools/external_gpu.py` requires:
+- the exact measured frame count;
+- one swapchain;
+- a finite GPU duration for every present;
+- the player's own proof that VSync is off.
 
-`Tools/hardware_evidence.py` validates explicit dated reviewer rationale, exact machine subject and hash-proven evidence under ignored Artifacts. RAM review uses the preserved CPU-Z screenshot; thermal acceptance binds a sensor CSV and timezone to the exact capture hash. Sensor bracketing and no sampled thermal flags are necessary validation, not an automatic stabilization threshold. Raw hardware/capture/result files stay immutable. `Review-Benchmark.ps1` writes a fresh derived result and application proofs. Known budget failures outrank missing conditions.
+PresentMon's SyncInterval column is not treated as application VSync.
 
-Migration: collector metadata version 2 adds calibration and clock evidence; the benchmark result schema, B01 workload, C0-v1 contracts, seeds, gameplay behavior and toolchain lock are unchanged. Legacy native allocation counters are now treated as unavailable by analysis. Rebuild both players, run pure/Unity suites, smoke, allocation/failure diagnostics and the full three-run release protocol; record actual results in the handoff. Rollback requires the preceding source/build pair and restores pending measurement status, never the unsupported zero-byte claim.
+**Hardware review.** `Tools/hardware_evidence.py` validates dated reviewer rationale and hash-proven RAM and thermal evidence. `Review-Benchmark.ps1` writes fresh derived results, and raw files stay immutable.
+
+**Migration.** Collector metadata moves to v2. The result schema, workloads, C0 and the toolchain are unchanged.
 
 ## ADR-016 — Accepted: conservative render-budget proof and continuous thermal conditioning
 
-Date 2026-11-12; owner/reviewer single M0 integrator, Codex. The native active-render counter occasionally reports zero even with a counted recorder sample. Its validity remains unresolved. Replacing those values with zeros, adjacent frames or percentiles from incomplete samples is rejected. Engine/package edits, toolchain upgrades and relaxed budgets are also rejected.
+Date 2026-11-12. **Context.** The native active-render counter sometimes reports zero. Filling, zeroing or relaxing the budget were all rejected.
 
-Unity documents [FrameTiming timestamps](https://docs.unity.com/en-us/engine/6000.3/script-reference/unityengine/frametiming): frameStartTimestamp begins the CPU frame; cpuTimePresentCalled ends submission for that same frame. Render work for that frame occurs inside this enclosing interval. Therefore, by containment, renderWork(i) ≤ enclosingInterval(i) for each frame; nearest-rank p95 obeys the same inequality. This is an inference from the documented lifecycle, not an assertion that the interval equals active render work. The interval additionally includes main-thread work and queue waits, so it can reject a workload whose exact active-render cost would pass.
+**Decision.** Collector v3 keeps both native FrameTiming endpoints: CPU frame start and Present called. Render work for a frame lies inside that interval, so the interval's p95 is a conservative upper bound on render p95. The ≤8 ms limit is unchanged and is applied to that larger value.
 
-Collector version 3 preserves both native endpoints from the exact timestamp-keyed FrameTiming record. `Tools/render_budget.py` requires verified native/QPC clock identity, complete positive endpoints, monotonic unique frames/presents, valid bracket/submit ordering and positive native work controls. Every available positive native render duration must fit the proposed interval; a violation rejects the proof. Two clock ticks conservatively cover endpoint quantization. Missing/ambiguous endpoints remain pending. No missing active-work sample is filled. `render-budget-proof.json` records method, hashes, containment controls and unresolved native-work counts.
+`Tools/render_budget.py` requires all of the following:
+- clock identity;
+- complete monotonic endpoints;
+- every positive native render duration contained in its interval.
 
-For version 3 captures, result metrics.renderMs reports p95 of the complete measured enclosing intervals as an explicitly conservative upper bound. Its existing ≤8 ms limit is unchanged: a larger enclosing interval must itself pass, giving a stronger budget proof rather than accepting an unavailable active-work counter. Raw frames.csv renderMs still contains the original native values/unavailability. Version 2 and historical reports retain their original interpretation and pending status. The result JSON shape/version, workload ID, seed, geometry, gameplay and C0-v1 are unchanged. Exact-work and enclosing-interval values must not be compared as identical measurements; method/source proofs accompany results.
+It writes `render-budget-proof.json`. Raw `frames.csv` keeps the native values. Older collector reports keep their original meaning.
 
-Earlier manual launch/review gaps allowed cooling between runs, followed by renewed warming during capture. `Benchmark-Series.ps1` runs three prescribed attempts automatically without retries or manual gaps. A bounded same-player preconditioning phase precedes the first prescribed 60-second warmup; every capture still measures 180 seconds and 10800 consecutive ticks. Collector metadata records preconditioning and the actual capture-start tick. Extra conditioning is outside the measured window, without changing resolution, quality, actor load, simulation or the uncapped setting. Thermal acceptance remains a dated review of the actual precondition/capture curves and flags; elapsed time alone never passes it.
-
-Validation: pure endpoint identity/corruption and Python containment/rejection tests; actual release diagnostic followed by attempted reference collection with concurrent sensor logging; native allocation controls, Unity suites, both builds and smoke. The diagnostic verifies 4160 enclosing intervals against 4160 positive native render durations. The full three-run proofs and thermal review did not complete; ADR-017 records the owner's M0 closure waiver without declaring those checks passed. Rollback restores collector version 2 and its explicit pending gates; historical failures remain preserved.
+**Thermal.** `Benchmark-Series.ps1` runs the three prescribed captures back to back after a bounded same-player preconditioning phase, recorded in metadata. Each capture still measures 180 s / 10800 ticks. Thermal acceptance stays a dated review of the actual curves, never elapsed time alone.
 
 ## ADR-017 — Accepted: M0 owner waiver of remaining hardware validation
 
-Date 2026-11-12; accepted by Max as project owner, recorded by Codex as sole M0 integrator. After repeated pre-measurement native overload failures, Max instructed: “skip this, consider everything is correct because I did not have any perf glitches during my ongoing work on this PC”. This latest instruction explicitly supersedes waiting for further monitored hardware validation before closing M0. The owner's desktop experience is acceptance rationale, not measured evidence.
+Date 2026-11-12. **Decision.** The owner (Max) closed M0 as **CLOSED WITH USER WAIVER**, on the strength of no perf glitches during daily use on the reference PC.
 
-Close M0 administratively as **CLOSED WITH USER WAIVER**. One of eight milestones is closed. The exception covers the outstanding full render-budget/thermal stabilization acceptance and further monitored reruns. Native render-zero validity, thermal stabilization and the causes of 93.0863/104.0256 ms preconditioning pauses remain unresolved. Historical failed/pending results and raw data are immutable; no missing value is replaced, no automatic gate returns PASS because of this waiver, and no performance threshold changes. Hosted CI remains separately deferred by the earlier user instruction.
+The waiver covers the outstanding render-budget and thermal-stabilization acceptance and further monitored reruns. It is acceptance rationale, not measured evidence. Native render-zero validity, thermal stability and two 93/104 ms preconditioning pauses remain unresolved.
 
-Clean-entry client/server builds, smoke, frozen C0-v1, 62 pure tests, 11 Unity tests, calibrated release allocation controls and bounded failure shutdown supply actual foundation evidence. The contract/build readiness checkpoint is enabled. Future milestone work still needs an explicit assignment; no M1, combat, thermal stability, 30-minute soak or fully verified reference-performance claim follows. Future performance gates retain their requirements. The handoff identifies exact source/artifacts, failures and owner disposition. A local `m0-foundation-owner-accepted` marker identifies this qualified closure; it is not a passing benchmark tag. Resuming technical acceptance requires actual supported full captures and thermal review, preserving these prior reports.
+**Consequences.**
+- Historical results stay immutable.
+- No automatic gate returns PASS because of this waiver.
+- No threshold changes.
+- Future performance gates keep their full requirements.
 
 ## ADR-018 — Accepted: initial P02 compiler format and byte-cache boundary
 
-Date: 2026-11-12. Owner/reviewer: Codex integrator, within the owner's assigned M1 scope. This accepts initial compiler formats and library seams, not M1 completion or reference-machine performance. Frozen C0-v1/specification-v1.1 bytes and toolchain remain unchanged.
+Date 2026-11-12. **Decision.** P02 introduces:
+- SGAF v1 envelopes;
+- five bounded field-by-field typed bodies;
+- `shooter.content.manifest.v1`;
+- `shooter.recipe.box-collision.v1`.
 
-P01 had no shipping disk geometry or cache schema. P02 introduces SGAF v1 envelopes, five bounded field-by-field typed bodies, shooter.content.manifest.v1 and shooter.recipe.box-collision.v1. The normative [format](content-format.md), separate [manifest schema](content-schemas/manifest.schema.json) and [recipe schema](content-schemas/box-collision.schema.json) have independent numeric diagnostic golden vectors and negative checks. Root `content-format-lock.json` pins the initial sources/schemas/test-vector generator and toolchain; `Tools/verify_content_format.py` rejects unreviewed drift before generation tests or content compilation. No pre-existing production cache is migrated; C0's nonshipping three-byte fixture is never treated as SGAF. Future incompatible changes require version/migration/fixtures before dependent integration.
+They are specified in [content format](content-format.md) with a [manifest schema](content-schemas/manifest.schema.json), a [recipe schema](content-schemas/box-collision.schema.json) and golden vectors. `content-format-lock.json` pins them, and `Tools/verify_content_format.py` rejects drift.
 
-`Shooter.Content.Runtime` has an explicit additive dependency on the BCL-only `Shooter.Generation.Core` formatting/identity helpers. This avoids maintaining a second manifest/codec implementation. Runtime does not reference the Editor compiler assembly, invoke generators or construct Unity resources. The Editor-only `Shooter.AssetCompiler.Editor` owns orchestration/publication and depends on the verified runtime reader. This refines the original architecture table's narrower runtime dependency allowance without changing simulation/presentation authority or Contracts.
+`Shooter.Content.Runtime` depends on the BCL-only `Shooter.Generation.Core` format and identity helpers, so there is no second codec. Runtime never references the Editor compiler.
 
-Publication uses per-key OS-exclusive file handles, durable staging files, bounded rechecks and same-volume atomic rename; the successful set index switches atomically afterward. Persistent lock files are not process ownership and require no unsafe stale-file deletion. Existing corrupt/same-key different-byte caches fail and remain preserved. Cooperative local reparse/path checks do not promise adversarial race-proof filesystem isolation. Runtime leases contain complete verified SGAF files, bounded/coalesced byte residency and independent consumer cancellation; kind-only ambiguity returns InvalidInput, with an additive concrete variant API. No C0 port signature changes.
+**Publication.**
+- A per-key OS-exclusive lock.
+- Durable staging.
+- An atomic same-volume rename, followed by an atomic index switch.
+- Corrupt or conflicting caches fail and are preserved.
 
-Only the real CPU collision-box diagnostic is composed by the new Editor entry. Geometry/material/rig generators and gameplay content installation remain future work. Cache eviction/crash-orphan staging reclamation, transient peak-memory/reference timing and full-slice compile budgets remain explicit later gates. No automatic art fallback, package upgrade, shader/settings policy change or M0 waiver extension is introduced.
+**Runtime leases** hold complete verified SGAF files with bounded, coalesced residency.
+
+**Consequences.** Incompatible format changes need a version bump, migration and fixtures first.
 
 ## ADR-019 — Accepted: additive M1 feature recipes and reproducible source-byte lock
 
-Date: 2026-11-12. Integrator ownership continues under the owner's P03/P04 assignment. C0-v1, SGAF v1, canonical units, root seeds and existing fixture payloads remain unchanged. New feature code lives outside the frozen P02 codec/recipe implementation folders. `ValidatedRecipe` validates through an explicitly composed schema validator and checks the whole canonical source against its document fields/parameters before hashing. The compiler's existing box constructor remains compatible; an additive validated-source overload permits registered weapon/material generators and explicit material layer IDs. Shipping/editor composition names real adapters directly; arbitrary runtime types or test defaults are not introduced.
+Date 2026-11-12. **Decision.** Feature generators (weapon, material) live outside the frozen P02 folders. `ValidatedRecipe` validates against an explicitly composed schema and checks that the canonical source matches its document before hashing. An additive compiler overload accepts validated feature recipes, and the box constructor is unchanged. Weapon and material schemas and generator versions are registered independently of the disk format ([weapon baseline](weapon-recipe-baseline.md)). The P04 mask A channel stays 255.
 
-The [weapon baseline](weapon-recipe-baseline.md) assigns initial numeric proportions and semantic sockets outside C0; four render LODs cannot alter collision or sockets. Weapon and material source schemas/generator versions are registered independently of the P02 disk format. The P04 frozen mask A channel remains255; the earlier feature aspiration for optional height does not reinterpret that byte. This wave implements a separate M1-content-gallery-v1 diagnostic; it cannot be substituted for B01-materials-v1 acceptance. Full workload/thermal/native-720p evidence remains a separate gate.
-
-A clean worker checkout exposed eight initial P02 lock hashes calculated from CRLF working files before Git normalized them to repository LF. The affected entries were text metadata, two schemas, the format document, ArtifactBounds.cs and box-collision.json. The integrator verified each LF-normalized file byte-for-byte against HEAD blobs, normalized the main working copies and corrected only those source-lock hashes to committed LF bytes. No executable token, codec field, source parameter, canonical recipe, golden payload or generated artifact changed. `content-format-lock.json` records this source-byte policy. This is an initial provenance correction, not an artifact migration or silent golden acceptance. Fresh worker verification must pass before feature integration continues.
+**LF lock correction.** Eight P02 lock hashes had been computed from CRLF working files. They were corrected to the committed LF bytes after a byte-for-byte check, and no content changed. Locks hash LF repository bytes.
 
 ## ADR-020 — Accepted: versioned first visual corrections for weapon and metal generators
 
-Date: 2026-11-12. The first actual P03/P04 gallery renders exposed a disconnected rifle magazine and excessive broad high-contrast painted-metal wear. The initial numeric/codec tests had passed, so those tests alone did not establish visual acceptance. Retain version1.0.0 caches, source commits and images under the first gallery run. This is a source correction within M1, not permission to hand-edit a mesh, image or cache.
+Date 2026-11-12. **Context.** The first gallery renders showed a disconnected rifle magazine and heavy painted-metal wear, although the numeric tests had passed.
 
-Bump geometry.weapon and material.surface to1.0.1 before publishing corrected output. The rifle magazine/trigger components must connect through numerical construction; independent gameplay collision proxies follow the changed magazine dimensions for every profile. Socket transforms, units, seeds and all C0/SGAF schemas stay unchanged. Metal wear becomes sparse restrained fine scuffs, with periodic numeric fields and correct PBR channel semantics preserved. Unchanged families also receive the explicit new generator version because the implementation registry is versioned as a whole.
+**Decision.** `geometry.weapon` and `material.surface` move to 1.0.1:
+- the magazine and trigger connect numerically;
+- collision proxies follow the magazine;
+- metal wear becomes sparse fine scuffs.
 
-The [rifle before](feature-fixtures/rifle-1.0.0.json), [rifle after](feature-fixtures/rifle-1.0.1.json), [metal before](feature-fixtures/metal-1.0.0.json) and [metal after](feature-fixtures/metal-1.0.1.json) input fixtures record migration solely of generatorVersion. The new validators explicitly reject1.0.0 instead of reinterpreting it. Migrate registered source files by changing generatorVersion, then regenerate under new content IDs; old cache directories remain immutable. No shipping world or gameplay replay depends on these diagnostic versions. Re-run topology/socket/collision/profile, material-field/mip and capture checks before dependent integration. Record visual/performance gates still pending rather than infer a full gate from these fixes.
+Sockets, units, seeds and schemas are unchanged.
+
+**Migration.** Fixtures record only the generator-version change ([rifle 1.0.0](feature-fixtures/rifle-1.0.0.json) → [1.0.1](feature-fixtures/rifle-1.0.1.json), [metal 1.0.0](feature-fixtures/metal-1.0.0.json) → [1.0.1](feature-fixtures/metal-1.0.1.json)). Validators reject 1.0.0. Old caches stay immutable.
 
 ## ADR-021 — Accepted: initial material benchmark camera and central-cube clarification
 
@@ -149,112 +306,96 @@ Each view holds for360 fixed60Hz ticks at camera (familyX,1.65,−6)m, yaw0/pitc
 
 ## ADR-022 — Accepted: versioned soldier spike and second numeric motion baseline
 
-Date: 2026-11-13. Owner: M1 integrator. The renewed assignment explicitly includes the P05 soldier spike. Freeze the generation-local23 semantic joints as soldier.semantic23.v1 before dependent motion work. C0-v1 and SGAF v1 remain unchanged. SGAF skeletons are visual artifacts: the real compiler rejects a gameplay-profile skeleton, and the soldier generator now rejects that composition. A gameplay hit evaluator is still M2 work. Joint frames are derived from the documented child directions and reported separately, since the frozen skeleton body has no frame fields. No binary format extension or graphics-dependent gameplay pose is introduced.
+Date 2026-11-13. **Decision.** The 23 generation-local semantic joints are frozen as `soldier.semantic23.v1` before any dependent motion work. SGAF skeletons are visual artifacts only: the compiler and the soldier generator both reject a gameplay-profile skeleton. C0 and SGAF v1 are unchanged.
 
-Iteration1 uses the original soldier.loft1.0.0 fixed recipe and soldier.motion.spike.v1. Real pose sweeps expose foot reach/slide and aimed-reload failures despite finite transforms and held-grip success. Preserve the original source, raw tests, candidate measurements and cache/captures. EditMode render requests initially retained bind geometry; corrected image capture explicitly calls the engine's BakeMesh on real generated weights/bindposes/current bones. This capture correction does not change a generated mesh or substitute for release skinning verification.
+**Iteration 1** (`soldier.loft` 1.0.0 / `motion.spike.v1`) failed on foot reach/slide and aimed reload, even though the transforms were finite. Image capture was corrected to bake the real skinned mesh.
 
-The second bounded numeric iteration retains full ±45°yaw/±25°pitch,3.5/5.5m/s speeds, original1.4/2.2m distance cycles,98% reach, anatomical limits and±0.08m dynamic pelvis correction. Use walk/run duty0.50/0.35 and nominal moving pelvis height0.78/0.76m interpolated to the existing0.66m full-crouch height; idle standing remains0.96m. The tactical locomotion posture must be visually reviewed. Raise the pelvis-relative reload belt target Y from−0.05 to+0.075m, preserving X−0.15/Z0.1 and the mechanical trajectory phases. These are versioned procedural parameters, not authored joint keyframes or weakened thresholds.
+**Iteration 2** (`soldier.loft` 1.0.1 / `motion.spike.v2`) changed only versioned procedural parameters:
+- walk/run duty 0.50/0.35;
+- moving pelvis 0.78/0.76 m;
+- reload belt target Y +0.075 m;
+- a neutral-down shoulder task frame;
+- fuller body transitions.
 
-Iteration2 also uses a neutral-down shoulder task cone axis and elbow pole (local−Y), keeping the90°cone angle and knee+Z pole. The original T-bind segment reference bases/pole defaults remain immutable; task-space overrides belong to motion.v2 and are reported explicitly. Actual skinning review found elbows raised near the head with the original T-bind-centered task cone. The corrected task frame is measured against the same held/reload grip limits. Geometry adds code-derived pelvis coverage, chest/shoulder and pelvis/thigh skin transitions, fuller uniform profiles, rounded boot/cuff forms and covered head; no authored surface data is introduced.
+It was not a weakened threshold. Version 1.0.0 is rejected, and its caches stay immutable.
 
-Publish production soldier.loft1.0.1 inputs with revised duty parameters, explicitly reject1.0.0, and record before/after migration fixtures outside frozen C0 fixtures. Motion becomes soldier.motion.spike.v2; semantic skeleton/units/seed remain unchanged. Existing1.0.0 cache directories remain immutable. Re-run expanded slopes/steps/contact phases, full aim/reload combinations, generation/profile checks and actual skinned captures before acceptance. Two failed implementation iterations require a scope review rather than unlimited expansion; no reduced scope or realism/performance pass is accepted by this ADR.
+**Consequences.** Two failed iterations require a scope review ([soldier baseline](soldier-baseline.md)).
 
 ## ADR-023 — Accepted: owner-authorized third bounded body-clearance iteration
 
-Date: 2026-11-13. After the second actual skinned review failed, the integrator stopped soldier expansion and presented the required scope decision. Max explicitly answered: “Authorize one more bounded body-clearance iteration”. This extends the original two-iteration bound by exactly one focused iteration; it does not accept the failed prototype, relax tolerances or authorize unlimited soldier expansion.
+Date 2026-11-13. **Context.** Iteration 2 failed on persistent trigger-arm/torso penetration, even though the grip target was met exactly.
 
-The retained iteration2 defect is persistent trigger-arm penetration. Neutral right shoulder/elbow/hand positions are approximately(0.210,1.43346,0),(−0.00213,1.26347,0.10101),(0,1.52346,0.10000)m. Interior forearm samples lie inside the actual loft ellipse, and the sleeve also intersects the chest plate. The exact hand target is reached, demonstrating why grip error alone cannot establish visual validity. Read-only geometry/pose evidence and actual images are retained in the M1 continuation artifacts.
+**Decision.** The owner authorized exactly **one** more focused iteration. It covers:
+- weapon placement;
+- stock and shoulder;
+- eye/sight alignment;
+- arm/body clearance.
 
-The one additional iteration addresses coupled weapon rigid placement, stock/shoulder and eye/sight alignment, and upper/forearm body clearance. Preserve semantic joints, local weapon sockets, full supported aim/stance ranges, bone lengths/limits, gameplay independence, gait/contact tolerances and no-art restrictions. Use independent clearance checks and actual skinned captures, not masked or removed limbs. Any new production source/motion identity must be versioned with migration inputs before publication; existing1.0.0/1.0.1 outputs and failures remain immutable. The third iteration must be reviewed before further soldier work; no reduced workload or milestone closure is approved here.
+Joints, sockets, ranges, limits and the art rules stay unchanged. This is not acceptance and not unlimited expansion.
 
-The submitted candidate is soldier.loft1.0.2/motion.spike.v3, with a generated exterior chest pouch,35°cosmetic body blade, bounded clavicle/elbow task constraints and analytic reload arcs/cant. Input root and local weapon sockets remain unchanged. The [versioned baseline](soldier-baseline.md#third-bounded-clearance-candidate) records exact parameters and residuals. The conservative acceptance test remains enabled and FAILS for possible forearm/strap contact; eye/sight alignment is unresolved. Submission does not establish a pass or authorize further parameter search.
+**Outcome.** The candidate (`soldier.loft` 1.0.2 / `motion.spike.v3`) still **FAILED**: about 2.18 mm forearm/strap contact, and eye alignment unresolved. Its parameters and residuals are in the [soldier baseline](soldier-baseline.md#third-bounded-clearance-candidate).
 
 ## ADR-024 — Accepted: P05 soldier visual scope stop after exhausted clearance iterations
 
-Date: 2026-11-13. Status: Accepted (scope decision). After iteration2 FAIL and the owner-authorized third candidate FAIL under ADR-023, Max directed remaining M1 work to proceed without a fourth clearance iteration (“do all”). That continues other M1 packages only; it does not accept the failed soldier as visual PASS and does not authorize further clearance/parameter search.
+Date 2026-11-13. Scope decision.
 
-Facts retained for this stop: iteration2 FAIL for arm/torso penetration despite passing numeric grip/contact checks; ADR-023 authorized exactly one third candidate, soldier.loft1.0.2/motion.spike.v3, which also FAIL (~2.18mm dense possible left forearm/strap overlap near down-aim reload phase0.45; eye/sight alignment unresolved). No fourth iteration is authorized.
+**Decision.** After iteration 2 and the authorized third candidate both failed, the owner directed the remaining M1 work to proceed without a fourth iteration. **P05 soldier clearance/parameter search stops.**
+- All `soldier.loft` 1.0.0–1.0.2 and `motion.spike.v1`–v3 outputs stay as non-accepted diagnostic evidence.
+- P05 visual/clearance acceptance stays **FAIL**. The numeric pose, grip and harness passes do not override it.
+- No tolerance is relaxed.
 
-Decision: stop further P05 soldier clearance/parameter search. Retain loft1.0.0/1.0.1/1.0.2 and motion.spike.v1/v2/v3, including loft1.0.2/motion.spike.v3, as non-accepted diagnostic evidence. Numeric pose/grip/contact and the eight-rig harness remain available as spike evidence only and do not override the failed visual gate. M1 soldier visual/clearance acceptance stays FAIL / not accepted. No realism claim and no tolerance relaxation are authorized. M2 combat still must not depend on accepting this skin.
+Unlimited iteration, treating numeric passes as visual PASS, and deleting evidence were all rejected.
 
-Alternatives rejected: unlimited further clearance iteration; silently treating numeric or harness passes as visual PASS; deleting spike sources, caches or failure evidence.
-
-This ADR does not close M1, does not waive hardware gates, and does not authorize imported art. It allows parallel remaining M1 polish (T031, LOD evidence, B01 three-run and related open gates) without pretending soldier PASS. Future soldier visual work requires new explicit owner authorization and a new versioned candidate. [Soldier baseline](soldier-baseline.md#scope-stop), handoff.
+**Consequences.** Future soldier work needs a new explicit owner authorization and a new versioned candidate ([soldier baseline](soldier-baseline.md#scope-stop)). ADR-094 later reopened the search; it failed. ADR-095 then resolved the numeric gate, and visual review is still Pending.
 
 ## ADR-025 — Accepted: M1 owner waiver of remaining hardware/resource validation and milestone close
 
-Date 2026-11-13; accepted by Max as project owner, recorded by Codex as M1 integrator. After ADR-024 stopped further P05 clearance search, Max instructed: “do everything left to close M1; imitate human review (he will not review manually); no further confirmations; goal is M1 closed and everything should just work.” That instruction authorizes administrative M1 closure and formal integrator imitation of the outstanding human visual/transition reviews. It does **not** authorize inventing PASS evidence, editing goldens/caches, upgrading Unity/packages, starting M2 combat, reopening P05 clearance search, or flipping the soldier visual FAIL under ADR-024 to PASS.
+Date 2026-11-13. **Decision.** The owner closed M1 as **CLOSED WITH USER WAIVER** and asked the integrator to stand in for the outstanding human review.
 
-Close M1 administratively as **CLOSED WITH USER WAIVER**. Two of eight milestones are closed. Actual dispositions retained:
+Dispositions:
+- **P01/P02:** PASS.
+- **P03 silhouette/ADS:** PASS-with-limits. A greybox prototype, with no realism claim.
+- **P03 LOD transition:** PASS on the numeric hysteresis harness.
+- **P04 material series:** counters and thermal review were PendingHardware, waived for closure only.
+- **P05:** stays FAIL (ADR-024).
 
-- P01/P02 foundations and diagnostic compiler/cache evidence remain PASS as previously recorded.
-- P03 formal silhouette/ADS acceptance is **PASS-with-limits** after integrator inspection of retained 1.0.1 gallery/silhouette PNGs (`Artifacts/m1-procedural-feasibility/owner-closure-20261113/p03-visual-review.json`). Limits: prototype greybox only; weak front orthographics; missing non-side lower-LOD capture angles; Low shadow aliasing; no realism claim.
-- P03 LOD transition formal acceptance is **PASS** on the numeric 10% hysteresis harness (9/9 tests, zero policy violations/flicker; `.../lod-transition-acceptance.json`). Unity transition-frame captures remain Pending/unavailable and are not fabricated.
-- P04 material generation/gallery/compression diagnostic work remains implemented; B01-materials three-run PresentMon series and related counters stay **PendingHardware** in their immutable reports (`Artifacts/m1-continuation/b01-materials-series-summary.json`). Missing live HWiNFO/thermal review, `channelMode`, draw/triangle/GPU-memory/variant counters and the failed 1200s precondition are **Unverified / waived for M1 closure only**.
-- P05 soldier visual/clearance remains **FAIL / not accepted** under ADR-024; loft1.0.2/motion.spike.v3 is non-accepted diagnostic evidence only.
+`feature-content-lock.json` was corrected only for the committed LF bytes of `soldier-baseline.md`.
 
-Historical failed/pending automated results and raw data are immutable; no missing value is replaced, no automatic hardware gate returns PASS because of this waiver, and no performance threshold changes. Root `feature-content-lock.json` is corrected only for the already-committed ADR-024 `docs/soldier-baseline.md` LF bytes so the registry matches HEAD; no generator source, schema, recipe or golden payload changed. ADR-017’s M0 waiver is unchanged and still does not supply M1 hardware PASS. Future milestone work still needs an explicit assignment; no M2 combat, thermal stability, 30-minute soak, full-map compile budget or fully verified reference-performance claim follows. The handoff identifies exact source/artifacts, the formal review records and owner disposition. A local `m1-procedural-feasibility-owner-accepted` marker identifies this qualified closure; it is not a passing benchmark tag. Resuming technical hardware acceptance requires actual supported full captures, counters and thermal review, preserving these prior reports.
+**Consequences.** No hardware gate returns PASS because of this waiver, and no threshold changes.
+
 ## ADR-026 — Accepted: M2 owner waiver of remaining hardware/reference validation and milestone close
 
-Date 2026-11-13; accepted by Max as project owner, recorded by the Cursor M2 integrator. After software gates for C01–C04, Unity V05/V06/V09 scenarios, EditMode/PlayMode and client/server smoke all PASS, Max’s standing direction for this chat (“no confirmations”; “everything should just work”; implement everything for M2 with multiple agents; same pattern as ADR-025) authorizes administrative M2 closure without waiting for interactive sign-off. It does **not** authorize inventing PASS evidence, editing goldens/caches, upgrading Unity/packages, starting M3 world/AI, flipping prior M0/M1 PendingHardware reports to PASS, or claiming eight-bot B03 / reference-performance acceptance.
+Date 2026-11-13. **Decision.** The owner closed M2 as **CLOSED WITH USER WAIVER**.
 
-Hardware attempt retained (not acceptance):
+What passed:
+- the C01–C04 motor/weapon/pose/view adapters;
+- the pure and Unity V05/V06/V09 scenarios;
+- client/server builds and smoke.
 
-- Pinned PresentMon 2.6.0 was configured and hash-verified via `Tools/Configure-PresentMon.ps1`.
-- A short release-player diagnostic with PresentMon ran against the retained IL2CPP client build (`59bd8c6` player; evidence under HEAD `97f10ef`): `gateStatus` **PendingHardware**; diagnostic scope only (`Artifacts/m0-foundation/97f10ef88e17d25df62b8ddbb07f4ec18b8c59f8/benchmark-diagnostic-20261113T185709203Z-c04346e8/`). No counters were invented.
-- No live HWiNFO/sensor log was available, so `Benchmark-Series.ps1` (mandatory `-SensorLog`) could not run. Full three-run reference capture + thermal review therefore remain incomplete.
-- Full eight-bot B03 performance remains an M3/M4 gate by milestone design; M2 has no separate combat B0x workload that could substitute for that gate.
+A PresentMon diagnostic stayed PendingHardware. The full three-run capture could not run because no live sensor log was available. Reference measurement is waived for closure only.
 
-Close M2 administratively as **CLOSED WITH USER WAIVER**. Three of eight milestones are closed. Actual dispositions retained:
-
-- C01–C04 motor/weapon/pose/view adapters and T027 defaults remain PASS as previously recorded (pure simulation 23/23; contracts 71/71).
-- Unity EditMode 13/13 and PlayMode 11/11 with dedicated V05/V06/V09 scenario harnesses remain PASS (`Artifacts/m2-combat-harness/474427d77b6678ee651dfb344c5b0a26539a9b00/v05-v09-scenarios-20261113T185222419Z/`).
-- Client/server release builds and empty-actor `CombatHarnessSimulation` smoke remain PASS on `59bd8c6`.
-- Reference-player / resource-budget measurement stays **PendingHardware** in its automated diagnostic report and is **Unverified / waived for M2 closure only**.
-- Upstream ADR-017/024/025 dispositions are unchanged; P05 soldier visual remains FAIL / not accepted.
-
-Historical failed/pending automated results and raw data are immutable; no missing value is replaced, no automatic hardware gate returns PASS because of this waiver, and no performance threshold changes. ADR-017/025 waivers still do not supply M2 hardware PASS. Future milestone work still needs an explicit assignment; no M3 compound/AI, thermal stability, 30-minute soak, full-map compile budget, B03 eight-bot acceptance or fully verified reference-performance claim follows. The handoff identifies exact source/timestamps, the formal review records and owner disposition. A local `m2-combat-harness-owner-accepted` marker identifies this qualified closure; it is not a passing benchmark tag. Resuming technical hardware acceptance requires actual supported full captures with live sensors, counters and thermal review, preserving these prior reports.
+**Consequences.** No eight-bot B03, thermal or performance claim follows. P05 stays FAIL.
 
 ## ADR-027 — Accepted: M3 owner waiver of remaining Unity-tooling and hardwarereference validation and milestone close
 
-Date 2026-11-13; accepted by Max as project owner, recorded by the Cursor M3 integrator (bc-08a335af). After pure software gates for W01–W05 / T014–T016 and T033 B02/B03 freeze PASS, Max’s standing direction for this assignment (“start M3; once done start M4”; “no confirmations”; “just work”; hardware PendingHardware may be waived with an explicit ADR like ADR-017/025/026) authorizes administrative M3 closure without waiting for interactive sign-off. It does **not** authorize inventing PASS evidence, editing goldens/caches, upgrading Unity/packages, starting M5 networking, reopening P05 soldier clearance, or flipping prior PendingHardware reports to PASS.
+Date 2026-11-13. **Decision.** The owner closed M3 as **CLOSED WITH USER WAIVER**. The pure gates passed:
+- W01 planner connectivity, borders, spawn LOS and routes;
+- W02 nav/revisioned adapter and profile independence;
+- W03 streaming;
+- W04 eight-bot AI within the 16-ray / 2-path budget;
+- W05 30-minute pure soak;
+- the B02/B03 freeze (`Benchmarks/b02-b03-m3-freeze.json`).
 
-Tooling/hardware attempt retained (not acceptance):
-
-- Locked Unity `6000.3.28f1` / revision `8f082d2fe476` was sought under `C:\Program Files\Unity\Hub\Editor` and PATH; editor binary was **not present** on this worker, so EditMode/PlayMode, client/server release builds and smoke could not run. Status **Pending** (missing tool), not PASS.
-- Reference-player B02/B03 PresentMon series and live sensor logs were not started without a release player. Status **PendingHardware**. Evidence: `Artifacts/m3-generated-compound/owner-closure-20261113/hardware-attempt.json`.
-- No counters were invented; no golden/cache edits.
-
-Close M3 administratively as **CLOSED WITH USER WAIVER**. Four of eight milestones are closed. Actual dispositions retained:
-
-- W01 compound planner four-seed connectivity / border / spawn-LOS / route checks PASS (pure).
-- W02 nav settings/clearance/revisioned adapter and gameplay-hash profile independence PASS (pure).
-- W03 streaming 3×3 prefetch, ≤2 ms upload split, cancellation, teleport fence, 100-traversal residency PASS (pure).
-- W04 eight-bot AI ≤16 vision rays / ≤2 paths per tick, cover release, occluded non-acquire PASS (pure).
-- W05 108000-tick (30-minute @ 60 Hz) soak without unbounded queues/orphan covers PASS (pure); B02/B03 freeze at `Benchmarks/b02-b03-m3-freeze.json`.
-- Contracts 71/71; simulation 31/31; M3 generation slice 16/16; full generation wrapper 298/298.
-- Unity EditMode/PlayMode/smoke and reference B02/B03 hardware remain **Pending / PendingHardware** and are **Unverified / waived for M3 closure only**. Native-720p timing acceptance remains an M4 gate.
-
-Historical failed/pending automated results are immutable. ADR-017/024/025/026 dispositions are unchanged; P05 soldier visual remains FAIL / not accepted. The handoff identifies exact source/timestamps and owner disposition. A local `m3-generated-compound-owner-accepted` marker identifies this qualified closure; it is not a passing benchmark tag. M4 may proceed under the same owner assignment.
+The locked editor was missing on that worker. Unity tests and builds stayed Pending, and reference B02/B03 stayed PendingHardware. Both are waived for closure only.
 
 ## ADR-028 — Accepted: M4 owner waiver of remaining Unity-tooling and hardwarereference validation and milestone close
 
-Date 2026-11-13; accepted by Max as project owner, recorded by the Cursor M4 integrator (bc-08a335af). After pure software gates for O01–O03 (Compound Clear restart, HUD/accessibility layout, analytic FX/synth audio) PASS, Max’s standing direction (“start M3; once done start M4”; no confirmations; hardware PendingHardware may be waived with an explicit ADR like ADR-017/025/026/027) authorizes administrative M4 closure without waiting for interactive sign-off. It does **not** authorize inventing PASS evidence, editing goldens/caches, upgrading Unity/packages, starting M5 networking, or flipping prior PendingHardware reports to PASS.
+Date 2026-11-13. **Decision.** The owner closed M4 as **CLOSED WITH USER WAIVER**. These passed (pure):
+- O01: Compound Clear objective and restart.
+- O02: HUD 720p at 150%, focus, rebind, contrast and reduced motion.
+- O03: analytic FX pool and ≤24-voice synth with limiter.
 
-Tooling/hardware attempt retained (not acceptance):
-
-- Locked Unity `6000.3.28f1` editor binary remained absent on this worker; EditMode/PlayMode, IL2CPP release builds, smoke and PresentMon B02/B03 series could not run. Status **Pending / PendingHardware**. Evidence: `Artifacts/m4-offline-slice/owner-closure-20261113/hardware-attempt.json`.
-- No counters were invented; no golden/cache edits; B02/B03 freeze from M3 remains unchanged.
-
-Close M4 administratively as **CLOSED WITH USER WAIVER**. Five of eight milestones are closed. Actual dispositions retained:
-
-- O01 Compound Clear objective/restart/idempotent win-loss PASS (pure).
-- O02 HUD 720p layout at 150% scale, focus/rebind/contrast/reduced-motion PASS (pure).
-- O03 analytic FX pool and ≤24-voice synth audio with peak limiter PASS (pure); no sprites/recorded samples.
-- O04/O05 native-720p three-run / 30-minute release soak and signed offline R01–R09 player evidence remain **PendingHardware** and are **Unverified / waived for M4 closure only**.
-- Simulation suite 39/39 on close HEAD including prior M2/M3 pure tests.
-
-Historical failed/pending results are immutable. ADR-017/024/025/026/027 unchanged; P05 soldier visual remains FAIL. The handoff records evidence. A local `m4-offline-slice-owner-accepted` marker identifies this qualified closure; it is not a passing benchmark tag. M5 networking remains unassigned until explicit owner assignment.
+O04/O05, the native-720p three-run captures, the 30-minute release soak and signed player evidence, stayed PendingHardware. They are waived for closure only, because the locked editor was missing on that worker.
 
 ## ADR-029 — Accepted: M5 Unity Transport behind INetworkChannel; custom prediction retained
 
@@ -268,23 +409,14 @@ Exact UTP package version remains **null** in 	oolchain-lock.json until the lock
 
 ## ADR-030 — Accepted: M5 owner waiver of remaining Unity-tooling and hardwarereference validation and milestone close
 
-Date 2026-11-13; accepted by Max as project owner, recorded by the Cursor M5-M7 integrator (bc-05dea339). After pure software gates for N01–N05 / T019–T020 PASS, Max’s standing direction (“do all next milestones”; “no confirmations”; hardware PendingHardware may be waived with an explicit ADR like ADR-017/025–028) authorizes administrative M5 closure without waiting for interactive sign-off. It does **not** authorize inventing PASS evidence, editing goldens/caches, upgrading Unity/packages, starting M6 before this close is recorded, reopening P05 soldier clearance, or flipping prior PendingHardware reports to PASS.
+Date 2026-11-13. **Decision.** The owner closed M5 (network foundation) as **CLOSED WITH USER WAIVER**. These passed (pure):
+- N01: transport selection (ADR-029); the UTP version was not verified.
+- N02: session, commands and codec fuzz.
+- N03: prediction and reconciliation.
+- N04: snapshots and interpolation.
+- N05: two-peer impairment.
 
-Tooling/hardware attempt retained (not acceptance):
-
-- Locked Unity 6000.3.28f1 editor binary remained absent on this worker; EditMode/PlayMode, IL2CPP client/dedicated-server builds, smoke and PresentMon captures could not run. Status **Pending / PendingHardware**. Evidence: Artifacts/m5-network-foundation/owner-closure-20261113/hardware-attempt.json.
-- UTP package pin remains null pending editor verification (ADR-029). No counters invented.
-
-Close M5 administratively as **CLOSED WITH USER WAIVER**. Six of eight milestones are closed. Actual dispositions retained:
-
-- N01 transport spike ADR-029 PASS (software selection; UTP version Pending).
-- N02 session/commands/codec fuzz PASS (pure).
-- N03 local prediction/reconciliation PASS (pure; static-map correction p95 gate).
-- N04 remote snapshots/interpolation/resync bounds PASS (pure).
-- N05 two-peer impairment matrix PASS (pure); headless channel has no presentation dependency.
-- Unity/process two-peer player evidence and reference hardware remain **PendingHardware** and are **Unverified / waived for M5 closure only**.
-
-Historical failed/pending results are immutable. ADR-017/024/025/026/027/028 unchanged; P05 soldier visual remains FAIL. The handoff records evidence. A local m5-network-foundation-owner-accepted marker identifies this qualified closure; it is not a passing benchmark tag. M6 may start after this close.
+Unity process-level and hardware evidence was waived for closure only. Networking was later parked by ADR-076.
 
 ## ADR-031 — Accepted: M6 owner waiver of remaining Unity-tooling and hardwarereference validation and milestone close
 
@@ -308,32 +440,40 @@ Historical failed/pending results immutable. ADR-017/024–030 unchanged; P05 FA
 
 ## ADR-032 — Accepted: M7 owner waiver of remaining Unity-tooling and hardwarereference validation and milestone close
 
-Date 2026-11-13; accepted by Max as project owner, recorded by the Cursor M5-M7 integrator (bc-05dea339). After pure software gates for H01–H05 / T023–T024 PASS_WITH_PENDING (mandatory tools green; Unity/player/60 FPS captures PendingHardware), Max’s standing direction (“do all next milestones”; no confirmations; hardware PendingHardware may be waived with an explicit ADR) authorizes administrative M7 closure without waiting for interactive sign-off. It does **not** authorize inventing PASS evidence, editing goldens/caches, upgrading Unity/packages, claiming unmeasured 60 FPS acceptance, expanding T025 into mandatory release scope, reopening P05, or flipping prior PendingHardware reports to PASS.
+Date 2026-11-13. **Decision.** The owner closed M7 as **CLOSED WITH USER WAIVER**, the last of the original eight milestones. Dispositions:
+- **H01** reproducibility locks/provenance: PASS.
+- **H02** regression matrix: PASS_WITH_PENDING.
+- **H03** rollback ledger: PASS.
+- **H04** 60 FPS stretch: PendingHardware, with baselines not relaxed.
+- **H05** deferred-scope ledger: recorded.
 
-Tooling/hardware attempt retained (not acceptance):
-
-- Locked Unity editor absent; clean IL2CPP client/server builds, outside-editor release rehearsal and PresentMon 60 FPS stretch captures could not run. Status **Pending / PendingHardware**. Evidence: Artifacts/m7-hardening-stretch/owner-closure-20261113/hardware-attempt.json.
-- Stretch report explicitly records **PendingHardware** with aselinesRelaxed=false; mandatory 30 FPS baselines unchanged.
-
-Close M7 administratively as **CLOSED WITH USER WAIVER**. Eight of eight milestones are closed under owner tooling/hardware waivers where applicable. Actual dispositions retained:
-
-- H01 clean reproducibility locks/provenance inventory PASS; Unity clean build Pending.
-- H02 regression matrix pure docs/fixtures/contracts/simulation/generation PASS_WITH_PENDING.
-- H03 release rollback pair type + ledger PASS; player rehearsal Pending.
-- H04 60 FPS stretch report **PendingHardware** (does not block mandatory 30 FPS).
-- H05 deferred scope ledger records T025/eight-player/public networking as deferred; forbids unmeasured claims.
-
-Historical failed/pending results immutable. ADR-017/024–031 unchanged; P05 FAIL retained. Optional T025 remains out of scope.
+The clean Unity build and player rehearsal stayed Pending (no editor on that worker). T025 stays out of scope, and P05 stays FAIL.
 
 ## ADR-033 — Accepted: next offline playable product scope and staged delivery
 
-Date 2026-11-13. Context: the owner requests development documentation and next-step order for an actual playable build, after the eight original milestones were closed with explicit waivers. Reviewing current Bootstrap and handoffs reveals pure feature foundations without the requested integrated team-match player. Administrative historical closure is preserved; it is not release acceptance.
+Date 2026-11-13. **Context.** The original milestones closed under waivers without an integrated team-match player.
 
-Decision: plan M8 runtime composition → M9 Team Deathmatch → M10 two maps and shell/settings → M11 playable release acceptance. Product is one local human plus bots on both teams, 5v5 default with 6v6 selectable, two distinct generated maps, 150 enemy kills or 15 minutes elapsed, immutable final result tables, map/mode selection and persistent applied sound/video/control/accessibility settings. Exact chosen defaults, including full-tick score evaluation, timeout draws and respawn policy, live in [team-match rules](features/team-deathmatch.md), [maps](features/tdm-map-layouts.md) and [shell](features/game-shell.md). They are explicit design choices for the requested scope, not measured gameplay quality claims.
+**Decision.** Plan the following:
 
-Introduce a separate proposed pure Game-v1 boundary for product/session/participant/results/settings semantics; keep frozen C0-v1/content-v1/N1-v1 intact. Actual Game-v1 method signatures, source/schema locks and executable fixtures must be implemented/frozen by T035 under the sole integrator, with a follow-up implementation ADR for any encoding/compatibility decisions. Workers may not invent interfaces or patch shared authority/Bootstrap concurrently. This planning ADR does not itself freeze unimplemented C# or a binary format.
+| Milestone | Delivers |
+|---|---|
+| M8 | Runtime composition |
+| M9 | Team Deathmatch |
+| M10 | Maps and shell/settings |
+| M11 | Playable release acceptance |
 
-Offline play needs no remote transport, LAN/public UI, extra human-player capacity, T025 weapons/penetration, package upgrade, new asset source or imported art. It retains authoritative 60Hz simulation, presentation-only quality options, procedural provenance and native720p Low30 reference requirements. Old waivers and the P05 FAIL stay intact; new milestone exits require actual player/visual/hardware evidence where specified and cannot automatically inherit waivers. This task prepares docs only; M8–M11 remain unassigned until future implementation assignment. See [ordered review](next-playable-build.md) and [packs](acceptance.md).
+The product:
+- one local human plus bots on both teams;
+- two generated maps (later three, ADR-071);
+- 150 enemy kills or 15 minutes;
+- immutable results;
+- persistent applied settings.
+
+Team sizes were 5v5/6v6, later 5–15 (ADR-101). The rules are in [Team Deathmatch](features/team-deathmatch.md), [maps](features/tdm-map-layouts.md) and the [shell](features/game-shell.md).
+
+A separate pure Game-v1 boundary holds product, session, results and settings semantics. It was frozen by T035 (ADR-034). C0, content v1 and N1 stay intact.
+
+**Consequences.** Offline play needs no transport, imported art or package upgrade. Old waivers and the P05 FAIL stay. New exits need real player, visual and hardware evidence ([acceptance](acceptance.md)).
 
 ## ADR-034 — Accepted: initial Game-v1 freeze (T035)
 
@@ -343,146 +483,139 @@ Also records RUN00 repair: missing Unity `.meta` for M3–M7 sources generated w
 
 ## ADR-035 — Accepted: verified release map packages (T055 boundary)
 
-Date 2026-11-14; owner sole Contracts/content-format integrator under owner Max direction to unblock T055. This accepts the encoding and publication boundary for verified release map packages. It does **not** implement Compile-GameContent publication, close FIX04, accept player/hardware gates, change C0 DTO bytes, bump SGAF envelope version, upgrade packages/editor, or authorize runtime regeneration as a shipping path.
+Date 2026-11-14. **Context:** release players regenerated maps from seeds, SGAF Collision v1 carried no stable collider IDs, navigation had no shipping format, and catalog visual hashes hashed labels.
 
-Context: T055 is blocked because `content-format-lock.json` authorizes only the one-box collision diagnostic; SGAF Collision v1 bodies carry geometry and `surfaceTag` but not `colliderStableId`/`SurfaceId`; Navigation v1 remains an opaque adapter blob without an approved shipping format; no package-root schema exists; and `CompoundMapRuntime` regenerates plans from seeds in the release player. Catalog visual hashes are currently hashes of labels, not packaged bytes.
+**Decision.**
+- **Stable IDs.** SGAF Collision v1 and C0 stay frozen. Collider and surface identity is carried in canonical JSON `shooter.map-metadata.v1`, which binds every decoded primitive (in body order) to a nonzero `colliderStableId`, a `surfaceId` and a matching `surfaceTag`. Mismatched or duplicate metadata rejects the package.
+- **Package root.** `shooter.map-package.v1` is the catalog root. Catalog gameplay and visual roots are SHA-256 of the canonical root JSON, which enumerates exact dependency hashes. Unknown, incomplete or toolchain-mismatched packages are rejected.
+- **Navigation.** Shipping nav is adapter format `unity.navmesh.bake.v1`: an explicit little-endian triangulation blob with provenance ([content format](content-format.md)), baked against installed authoritative collision. Release players load it and never re-bake.
+- **Recipes.** `map.compound`, `map.depot` and `map.package` are registered in `content-format-lock.json`, with schemas in `docs/content-schemas/`.
+- **Depot seed.** The catalog seed is `460072031`. The seed `42` is robustness corpus only.
+- **Publication.** ADR-018 atomic rules apply, and cold, warm and forced builds reproduce identical bytes. Corruption never substitutes another map. Collision, nav and metadata are installed before any actor spawns.
 
-Decision — stable IDs: keep frozen SGAF Collision v1 and C0 `CollisionData` unchanged. Reject a Collision v2 body change for this repair wave. Carry ordered collider/surface identity in versioned canonical JSON `shooter.map-metadata.v1`, which binds each decoded Collision primitive (capsules, then boxes, then height-grids, in SGAF body order) to nonzero `colliderStableId`, `surfaceId` and matching `surfaceTag`. Query hits continue to use C0 `QueryHit` fields populated from that metadata at install time. Metadata that disagrees with Collision counts/tags, duplicates stable IDs or omits required spawns/covers rejects the package.
-
-Decision — package root: introduce `shooter.map-package.v1` as the catalog root document. `MapCatalogEntry` gameplay/visual root hashes must become SHA256 of the canonical package-root JSON bytes (and profile-partition roots), never label strings. The package enumerates exact dependency content identities by SHA256 of complete SGAF files and of the canonical metadata document. Unknown `mapId`, incomplete dependencies or mismatched toolchain reject. Server packages include gameplay collision/nav/metadata only; client packages add the selected visual profile closure (meshes/materials/skeletons/shaders/font exception).
-
-Decision — navigation: shipping Navigation SGAF uses adapter format `unity.navmesh.bake.v1`, adapter version 1, `settingsHash` = `NavSettings` hash (`shooter.nav-settings.v1`), and an explicit little-endian triangulation blob defined in [content-format](content-format.md) (vertices, polygons, areas, bounds). No arbitrary Unity asset/object deserialization and no opaque engine dump. The editor/compiler bakes with the pinned AI Navigation 2.0.0 package against installed authoritative collision, then encodes that bake into the blob with provenance (collision artifact hash, settings hash, toolchain hash, generator fingerprint). Pure `NavCompiler` / path-delegate checks remain compile-time reachability diagnostics and pure-test helpers; they are not a waiver of Unity-native load/query evidence required by FIX04. Release players load the packaged blob; they do not re-bake or regenerate nav from seeds.
-
-Decision — recipes and lock migration: register `map.compound` 1.0.0 / `shooter.recipe.map-compound.v1`, `map.depot` 1.0.0 / `shooter.recipe.map-depot.v1` and publisher scope `map.package` 1.0.0 / `shooter.map-package.v1` in root `content-format-lock.json` alongside the existing diagnostic `collision.box`. Schemas and scaffolding fixtures live under `docs/content-schemas/`. No pre-existing shipping map package is migrated; unsupported package/metadata/nav-adapter versions fail closed. The one-box diagnostic remains restricted to its named set. Generator algorithm or seed-identity changes require a new generator version, new package roots and reviewed fixtures before consumers rebase.
-
-Decision — depot seed: approved catalog seed for `depot-yard` is **460072031**, matching current `DepotPlanner` / `StaticMapCatalog` source. Historical proposed seed `42` stays only in the robustness corpus (`1`, `42`, `460072030`, `uint64` max) and must not become the catalog identity. T058 accepts spawn/route safety against the approved seed; it does not silently rewrite it to 42.
-
-Decision — publication, reproduction and recovery: apply ADR-018 atomic staging/recheck/rename/index-switch rules to map package sets. Cold, warm and forced reproduction must recreate identical package-root and dependency bytes. Cancellation or corruption releases partial installs, retains corrupt bytes for repair, never silently substitutes another map or the floor/box diagnostic, and returns a stable repair message to the shell. Release composition validates package roots before Ready and installs collision/nav/metadata before actor spawn; developer absolute paths, on-device recipe compilation and random regeneration are forbidden on the shipping path.
-
-Validation and rollback: structural schemas/examples and lock inventory must pass `Tools/verify_content_format.py` and documentation/fixture verifiers after this boundary lands. T055 then implements enumeration, publication and runtime load against this ADR. Rollback is the prior content-format lock/source pair; do not retain players whose catalog roots still hash labels or regenerate maps from seeds. [Playable maps](features/tdm-map-layouts.md), [content-format](content-format.md), FIX04 and T055 remain the acceptance authorities for measured publication evidence.
+**Consequences.** Generator or seed changes need a new version, new roots and reviewed fixtures ([maps](features/tdm-map-layouts.md)).
 
 ## ADR-036 — Accepted: UserSettings schema 2 shell coverage (T060 / FIX09)
 
-Date 2026-11-14; owner sole Contracts/settings integrator under owner Max direction for T060 preparation. Extends the frozen Game-v1 `UserSettings` DTO and file schema so every normative [shell](features/game-shell.md) preference is versioned, migratable and fixture-locked. This does **not** close FIX09 device acceptance, named audible review, package upgrades, C0/SGAF/N1 changes, or authorize silent golden edits.
+Date 2026-11-14. **Decision.** `GameContractVersion.SettingsSchema` moves to 2 (`shooter.user-settings.v2`, bounded UTF-8 JSON ≤64 KiB). It covers every [shell](features/game-shell.md) preference:
+- **audio:** master, effects and UI;
+- **video:** quality, resolution ≥1280×720, display mode, VSync, FPS cap, hip FOV 70–100°;
+- **controls:** sensitivity 0.01–1.00, invert Y, and a complete binding map with Escape reserved and duplicates rejected;
+- **accessibility:** UI scale 1.0–1.5, reduced motion and flash, contrast 0.8–1.5, subtitles.
 
-Context: ADR-034 froze settings schema=1 with master/SFX/music, quality, mouse, invert Y, subtitles and UI scale only. Required display mode/resolution/VSync/FPS cap, hip FOV, effects/UI channel naming, accessibility motion/flash/contrast and rebindable controls were absent. `IClientSettingsApplier` staged a quality byte alone. The M10 `FileUserSettingsStore` used an unbounded semicolon text, deleted-before-move replace, and lacked last-good/quarantine/newer-file preservation.
+Schema-1 files migrate once.
 
-Decision — schema identity: bump `GameContractVersion.SettingsSchema` to **2**. File documents use schema id `shooter.user-settings.v2` under `docs/game-fixtures/`. Schema 1 semicolon files remain readable once; writers emit bounded UTF-8 JSON (≤64 KiB) only. C0-v1 and Game-v1 ruleVersion stay 1; settings file version is independent of `HudSettings` diagnostic serialization.
+**Storage:**
+- missing file: defaults;
+- corrupt file: quarantine plus defaults;
+- newer schema: in-memory defaults, never overwriting the file;
+- writes are atomic with `.last-good`;
+- read-only storage: works in memory with a "could not save" message.
 
-Decision — field inventory (defaults match shell):
-- Audio: `masterVolume` 1.0, `effectsVolume` 1.0 (migrated from schema-1 `sfx`), `uiVolume` 0.7 (migrated from schema-1 `music` with clamp); each finite in [0,1]; 0 mutes the channel.
-- Video: `qualityTier` 0=Low/1=Balanced/2=High; `resolutionWidth`/`resolutionHeight` default 1280×720 and ≥1280×720; `displayMode` Windowed=0/Borderless=1/Fullscreen=2; `vSync` false; `fpsCap` 60 with allowed {0=uncapped,30,60,120}; `hipFovDegrees` 80 in [70,100].
-- Controls: `mouseSensitivity` 0.10 in [0.01,1.00] (schema-1 values clamped into range); `invertY` false; complete ASCII action→control binding map including move/look/aim/fire/reload/sprint/crouch/jump/slots/scoreboard/pause; Escape reserved for menu restore; duplicate controls reject.
-- Accessibility: `uiScale` 1.0 in [1.0,1.5]; `reducedCameraMotion`/`reducedFlash` false; `contrast` 1.0 in [0.8,1.5]; `subtitles` retained from schema 1 (default false).
-
-Decision — migration and storage safety: missing file → defaults; corrupt → quarantine sidecar + defaults + nonblocking diagnostic; schema newer than 2 → safe in-memory defaults **without overwriting** the newer file; schema 1 → migrate into schema 2 then persist only on explicit Apply/Save; interrupted atomic replace preserves `.last-good`; read-only IO leaves usable memory settings and “could not save”; gameplay/content hashes are never written into the settings document.
-
-Decision — application seam: `IClientSettingsApplier` applies the full DTO (audio/display/quality/FOV/input/accessibility), stages display changes with Keep/Revert, and exposes pending-display state for a 15-second real-time confirmation including focus-loss/restart rollback. Pure `UserSettingsEditor` owns Apply/Cancel/defaults staging so T059 menus and T061 audio can bind without inventing a parallel settings contract. Device/player evidence remains FIX09/SET02 Pending until named review.
-
-Validation: `docs/game-fixtures` + `game-contract-lock.json` refreeze for Contracts sources; `Tools/Test-Game.ps1 -Offline` settings cases; `docs/verify_docs.py --refresh-manifest` after doc edits. Rollback restores schema-1 DTO/store/lock pair; do not ship players that silently drop shell fields or overwrite newer settings files.
+`IClientSettingsApplier` applies the full DTO and stages display changes with a 15-second Keep/Revert. `UserSettingsEditor` owns Apply, Cancel and defaults. Fixtures are refrozen in `game-contract-lock.json`.
 
 ## ADR-037 — Accepted: product TDM measurement workloads (T063 / FIX12)
 
-Date 2026-11-14; owner measurement integrator under owner Max direction for T063. Extends frozen Game-v1 `docs/game-fixtures/tdm-workloads.json` with reviewed depot measurement identities and product telemetry counters. Does **not** close REL04/TDM08 hardware acceptance, change B01–B04, alter map package format, or authorize silent fixture edits to force PASS.
+Date 2026-11-14. **Decision.** `game-fixtures/tdm-workloads.json` (schema 2) gets reviewed workload identities for every map. Depot is never an alias of the compound IDs. The original rows were `TDM-5v5-v1` / `TDM-6v6-v1` on `training-compound` (seed 460072030) and `-depot-v1` on `depot-yard` (460072031), plus 30-minute soak IDs. Sizes were later extended by ADR-101 and the oil map by ADR-071.
 
-Context: ADR-034 froze `TDM-5v5-v1` / `TDM-6v6-v1` against `training-compound` only. Audit A10 recorded that Benchmark.ps1 accepted B01 only and depot workload identity/route/counter coverage was not established by compound IDs. FIX12 requires both maps × both sizes with authority/AI/respawn/lease/query/content/render counters and negative collector rejection of wrong map/roster/profile/build/short windows.
+Measurement rows require these counters:
+- kills;
+- active ticks;
+- respawns;
+- AI rays;
+- path requests;
+- shots;
+- damage;
+- leases;
+- queries;
+- content bindings;
+- render frames.
 
-Decision — fixture migration (schemaVersion **2**, additive):
-- Preserve historical `TDM-5v5-v1` / `TDM-6v6-v1` as **training-compound** / seed **460072030** (explicit seed fields).
-- Add reviewed depot rows `TDM-5v5-depot-v1` / `TDM-6v6-depot-v1` for **depot-yard** / seed **460072031** (ADR-035). Depot is never implied by substituting mapId on compound IDs.
-- Add soak identities `TDM-soak-6v6-compound-v1` / `TDM-soak-6v6-depot-v1` (1800 s / 108000 ticks, no warmup) for ≥30-minute normal-AI evidence; remain PendingHardware until reference execution.
-- Expand required counters on measurement rows: team kills, activeTicks, respawns, aiRays, pathRequests, shots, damageEvents, leaseAcquires, querySamples, contentBindings, renderFrames. `RUN-compound-vertical-v1` stays a composition note, not a performance gate.
-- Runtime mirror: `ProductTdmWorkloads` in Game/Session; collector version **4** product path; analysis `Tools/analyze_tdm_benchmark.py`.
-
-Decision — capture path: product composition (not diagnostic floor/box) autostarts the reviewed SessionRequest, binds verified map presentation, and records frame/tick/counter telemetry without changing match rules to improve scores. B01 wrappers remain separate. Twelve final captures and soaks stay PendingHardware without reference-machine proof.
-
-Validation: refreeze `tdm-workloads.json` in `game-contract-lock.json`; `python Tools/test_tdm_benchmark_analysis.py`; `Tools/Test-Game.ps1 -Offline` product workload cases; `Tools/Benchmark.ps1` / `Benchmark-Series.ps1` / `Benchmark-Product-Matrix.ps1` / `Benchmark-Soak.ps1` documented commands. Rollback restores schema-1 compound-only fixture + B01-only wrappers; do not ship players that treat depot as a silent alias of compound workloads.
+`ProductTdmWorkloads` mirrors the fixture. Collector v4 captures the product composition, and `Tools/analyze_tdm_benchmark.py` analyses it. Match rules are never changed to improve scores. Reference captures stay PendingHardware without proof.
 
 ## ADR-038 — Accepted: persisted release catalog (T067 / B03)
 
-Date 2026-11-14; owner content/world integrator under owner Max direction for T067 gaps B03+B09 items 1 and 5. Extends ADR-035 publication with a data-only release catalog sidecar. Does **not** close FIX04 native bake/visual closure, authorize C0/Game-v1 DTO changes, or claim Unity player extract proof (T071).
+Date 2026-11-14. **Context.** Release startup still rebuilt gameplay through planners and `MapPackageBuilder`.
 
-Context: `StaticMapCatalog.CreateReleaseSeed` rebuilt gameplay via planners and eight `MapPackageBuilder.Build` calls at release startup. Package `index.json` listed package roots but omitted catalog display metadata and `MapGameplayDefinition` sidecars, so the shipping player still compiled. Bootstrap defaults also resolved repository paths two levels above `Application.dataPath`, and missing content hard-failed before shell.
+**Decision.**
+- `shooter.release-catalog.v1` is written atomically as `catalog.json` beside `index.json` at publish time. It holds:
+  - the toolchain hash;
+  - per-map display, mode, size and recipe identity;
+  - the package roots;
+  - the gameplay sidecar: collision/nav revisions and hashes, bounds, spawns and destinations.
 
-Decision — catalog document: introduce `shooter.release-catalog.v1` written atomically as `catalog.json` beside `index.json` under the map-package cache root at publish time. The document binds toolchain hash, per-map display/mode/size/recipe identity, gameplay/visual package-root SHA256 values, and the gameplay sidecar (collision/nav revisions+hashes, bounds, spawn slots, patrol/combat destinations). Schemas/fixtures live under `docs/content-schemas/release-catalog.*`. C0 and Game-v1 DTO bytes stay unchanged; this is an additive content-format sidecar.
-
-Decision — shipping load: release Bootstrap hashes the packaged toolchain lock, loads `catalog.json` via verified bytes only, and rejects schema/toolchain/map identity mismatch. Shipping composition must not call planners, `MapPackageBuilder`, or a placeholder toolchain fallback. Compile/test helpers may still build catalog bytes through the publisher path (`ReleaseCatalogDocument.BuildBytes` / `CompileSeed`).
-
-Decision — packaged discovery/recovery: player defaults resolve `Content/map-packages` and `toolchain-lock.json` relative to the executable install root (`Application.dataPath` parent). `launch-offline.cmd` keeps explicit `%~dp0` overrides. Editor may fall back to repository `Artifacts/map-packages` when the packaged folder is absent. Missing/corrupt content before shell enters a recovery screen using `ReleasePackagePolicy.CorruptContentRecoveryMessage` with Retry/Quit return paths; no silent map substitution.
-
-Validation: Generation pure tests publish+load catalog without planner on the load path; Package-Release asserts/ships `catalog.json`; path-default unit tests cover install-root layout. Unity player launch/extract evidence remains Pending under T071. Rollback restores the prior index-only cache + planner `CreateReleaseSeed` pair.
-
+  Schemas are in `docs/content-schemas/release-catalog.*`.
+- Release Bootstrap loads verified bytes only and rejects mismatches. It never calls planners.
+- Players resolve `Content/map-packages` and `toolchain-lock.json` relative to the install root. Missing or corrupt content enters a recovery screen with Retry and Quit, never a silent substitution.
 
 ## ADR-039 — Accepted: local authoritative sprint slide (T072)
 
-Date 2026-11-14; owner Max explicitly requested implementation of slide (подкат), default Left Shift + F. Sole integrator implements this bounded M8/M10 extension; the prior documentation-only assignment does not restrict this new user-authorized feature. No agents, online rollout, art import, package upgrade or acceptance waiver.
+Date 2026-11-14. **Decision.** Slide (подкат), on owner request, defaults to Left Shift + F. A local `LocalPlayerCommand` envelope (the C0 `InputCommand` plus SlidePressed) is consumed only alongside a fresh accepted command for the current human life. C0, N1, SGAF and the fixtures stay frozen. Presentation sends intent only.
 
-Decision: add a local `LocalPlayerCommand` envelope (C0 InputCommand plus SlidePressed) at the existing human sampler/session boundary. Slide is consumed only alongside an accepted fresh command for the current human life, at the authority's fixed 60 Hz tick. C0-v1 DTOs/buttons/snapshots, N1-v1 packets, SGAF and existing gameplay fixture bytes remain frozen. The N1 prediction/transport lane cannot initiate this offline-only ability; remote sliding needs a future explicit versioned protocol/prediction migration. Presentation sends intent and reads authoritative crouch/velocity; it never moves the actor.
+**Motor:**
+- **Entry conditions:** grounded, sprinting forward at ≥4.5 m/s, a fresh press with Sprint held, and no aim, crouch, fire, reload or jump conflict.
+- **Motion:** 6.5 m/s entry, 4 m/s² deceleration, at most 45 ticks, a 60-tick cooldown, and the entry direction locked.
+- **Shape:** the 1.2 m crouch capsule.
+- **Ending:** Jump cancels, and leaving the ground or a wall ends the slide. It stands up only with headroom. Holding F never retriggers. Death or reset clears it.
 
-Motor state stores remaining slide/cooldown ticks. Entry needs an alive grounded actor already sprinting forward at ≥4.5 m/s, fresh Slide press and Sprint held, no aim/crouch/fire/reload/jump conflict. Entry speed 6.5 m/s, deceleration 4 m/s², maximum duration 45 ticks (0.75 s), cooldown 60 ticks from entry. Direction follows entry horizontal momentum; turning aim/movement cannot steer or add speed during slide. Use existing 1.2 m crouch collision/hit pose/eye height, normal swept collisions and ground rules. Jump cancels; leaving ground or blocking horizontal movement ends slide; standing recovery retains crouch under a ceiling. Holding F cannot retrigger. Death/reset/new life clears slide state, and pause/focus loss clears pending input without advancing authority time. No camera roll/shake is introduced.
-
-Settings: additive optional `Slide` binding defaults to Key.F, combined with the applied Sprint binding (default Key.LeftShift). Game-v1/settings schema 2 layout is unchanged. Normalize legacy 14-action settings by adding Slide=Key.F when free, or Slide=Unbound when F was already customized; preserve existing actions and never steal a control. A legacy binding table already at the schema count limit is preserved without adding a row; Restore defaults makes Slide available in that exceptional case. Validate counts before allocating the normalization buffer. This keeps old schema-2 files valid; settings UI exposes Slide rebind/swap/defaults. Add migration tests and a new settings fixture before refreezing the Game-v1 source inventory. Older players should use their own retained binary/content/lock pair; no hash relabeling.
-
-Validation: motor eligibility/duration/deceleration/wall/ceiling/jump/cooldown/life tests, real harness command rejection/pose coverage, render-frame edge/focus/input-device tests, settings migration/conflict/persistence tests, locked pure suites, provenance, pinned Unity EditMode/PlayMode and matching clean Client/Server/package. Keep actual interactive two-map/quality/device/performance evidence Pending unless observed. Retain the old `7cd7e81` archive unchanged; it has no slide. Rollback uses that prior complete pair and its original controls/limitations. New build identity and controls must state slide support.
+**Settings:** an additive optional `Slide` binding (F). Legacy files gain it when F is free, and Unbound otherwise. The schema stays 2, and a new fixture is refrozen.
 
 ## ADR-040 — Accepted: LF line-ending identity for frozen locks
 
-Date 2026-11-14; owner approved explicitly in the session. `.gitattributes` stores text as LF, but the integrator's Windows working copy held 156 tracked files with CRLF bytes, and `content-format-lock.json` (11 `docs/content-schemas` entries) and `game-contract-lock.json` (2 fixture entries) were frozen from those CRLF bytes. Every fresh LF checkout, worktree and CI run therefore failed `Tools/verify_content_format.py` and `Tools/verify_game_contract_lock.py`, which in turn blocked `Test-Generation.ps1`, `Test-Game.ps1` and `Compile-GameContent.ps1`.
+Date 2026-11-14. **Context.** Thirteen lock entries in `content-format-lock.json` and `game-contract-lock.json` had been frozen from CRLF working copies, so every LF checkout failed.
 
-Decision: lock hashes are computed over the repository's canonical LF bytes. The integrator re-checked out the clean CRLF files as LF and replaced only those 13 values. A one-off script refused any entry whose previous hash was not exactly sha256 of the same file with LF→CRLF, so no content, format version, contract version, schema or fixture changed. C0 `contract-lock.json` and `feature-content-lock.json` already matched LF bytes and are unchanged. Retained historical binaries and evidence keep their original identities; no artifact is relabeled.
+**Decision.** Lock hashes are computed over canonical repository LF bytes. Only entries whose old hash equalled the SHA-256 of the LF→CRLF file were replaced; no content changed. Working copies must stay LF. A tool that writes CRLF must be fixed, not refrozen.
 
-Validation: both guards PASS on a fresh LF clone and on the normalized integrator checkout. Working copies must stay LF (`git ls-files --eol` shows no `w/crlf`); a tool that writes CRLF reintroduces drift and must be fixed rather than refrozen.
-
-Addendum 2026-11-15 (identity-only refreeze, owner-requested): commit `42ae931` (ADR-056/057 binding defaults) froze the new `docs/game-fixtures/user-settings-last-weapon.valid.json` entry in `game-contract-lock.json` from a CRLF working copy (`b8976f3f…8328`), so `Tools/verify_game_contract_lock.py` and `Test-Game.ps1` failed on every clean LF checkout from then on, including after ADR-072 (`334812b`). All 12 `sources` and 7 `fixtures` entries were re-checked against their committed LF blobs; only that one differed. It was replaced with the LF value `966b8455…4064` by the same guarded rule as above (the old hash had to equal sha256 of the committed blob with LF→CRLF, otherwise refuse). No fixture, source, schema, settings layout or contract version changed. Rollback restores the prior value, which fails on LF checkouts.
-
+**Addendum (2026-11-15).** `user-settings-last-weapon.valid.json` was refrozen to its LF hash under the same guarded rule.
 
 ## ADR-041 — Accepted: Inno Setup per-user installer and in-place upgrade (T073)
 
-Date 2026-11-14; owner chose Inno Setup and authorized T073 implementation and agent dispatch in the session. Implements the [installer contract](features/windows-installer.md).
+Date 2026-11-14. **Decision.** The installer ([contract](features/windows-installer.md)):
 
-Decision: Inno Setup 6.7.3, pinned by version and `ISCC.exe` SHA256 `0a8757031b33777e4c9cbffee40f11a5062b36d25cbe144c1db73b6102b80ad7` in `Tools/installer/installer-policy.json`; `Tools/Build-Installer.ps1` refuses any other compiler. Stable AppId `{B01E0F69-2123-4D91-AB59-88864A944E39}` is frozen forever (one `HKCU\…\Uninstall\{AppId}_is1` entry per user). Per-user, x64-only install (`PrivilegesRequired=lowest`, default `{localappdata}\Programs\Shooter`, `UsePreviousAppDir=yes`), Start Menu shortcut plus optional remembered desktop shortcut; shortcuts start in `{app}` and the executable resolves content beside itself. The integrator supplies a monotonic `n.n.n` `-ReleaseVersion`; immutable binary/source/toolchain/content/contract identities are installed as `{app}\installer-identity.json` with the package's `identities.json`, `rollback-pair.json` and `toolchain-lock.json`. The installer refuses to install over a newer `DisplayVersion` unless `/ALLOWDOWNGRADE=1`, which is reserved for the tested prior-release rollback installer.
+- **Toolchain.** Inno Setup 6.7.3, pinned by `ISCC.exe` SHA-256 in `Tools/installer/installer-policy.json`.
+- **Identity.** AppId `{B01E0F69-2123-4D91-AB59-88864A944E39}` is frozen forever.
+- **Scope.** Per-user, x64, `{localappdata}\Programs\Shooter`, with a Start Menu shortcut and an optional desktop shortcut.
+- **Versions.** The integrator supplies a monotonic `-ReleaseVersion`. Identities are installed as `installer-identity.json`. A downgrade is refused unless `/ALLOWDOWNGRADE=1`, which is reserved for rollback.
+- **Payload.** The wrapper consumes a validated Package-Release directory with every inventory hash, and never rebuilds the game. Repair means rerunning the same installer. Stale shipped files are removed.
+- **User data.** Settings in LocalLow are never touched.
+- **Running game.** Interactive runs use the Restart Manager prompt. A silent run exits 1 if the game is running and 7 on locked files, before changing anything.
 
-Payload: the wrapper consumes a validated Package-Release directory, never rebuilds the game, and requires a PASS clean-source `validation.json`, matching identities/toolchain/rollback pair, and every inventory hash with no extra file. Repair is rerunning the same installer (all payload files rewritten); after install, files under `Content`, `Shooter_Data` and `D3D12` that the release does not ship are removed.
-
-User data: settings stay at `%USERPROFILE%\AppData\LocalLow\Procedural Shooter\Shooter\shooter-user-settings.json`, outside `{app}`; upgrade, repair and uninstall never touch it. An explicit "remove my data" uninstall option is not implemented.
-
-Running game and interruption: the game has no named mutex, so there is no `AppMutex`. Interactive runs use Restart Manager `CloseApplications` (prompt, never silent kill); silent runs exit 1 if `Shooter.exe` is running and, before changing anything, probe every previous payload file for locks (exit 7). Inno does not stage and atomically swap a whole release: a crash or power loss mid-copy can leave a mixed pair that the game does not detect, and rerunning the installer is the recovery. An atomic side-by-side layout and a game mutex are deferred follow-ups. The installer is unsigned (SmartScreen warns).
-
-Validation: `Tools/test_build_installer.ps1` covers 11 synthetic accept/reject cases. Silent exercises on the owner's PC against real 5eaced5/7cd7e81 packages: INS02 upgrade, INS03 repair, INS05 uninstall and INS06 installed rollback PASS; INS04 Partial (locked/running abort verified, mid-copy crash not rehearsed); INS01 clean machine Pending. Interactive wizard UI is not exercised. Installer success does not close REL01/REL06 or FIX13/FIX14.
+**Limits.** There is no atomic side-by-side swap, so a mid-copy crash can leave a mixed pair; rerunning the installer recovers it. The installer is unsigned. Evidence is under INS01–INS06.
 
 ## ADR-042 — Accepted: native C++ allocation counter for benchmark runs
 
-Date 2026-11-14; owner chose this design in the session. Supersedes the `AllocationMeter` mechanism described under ADR-015; its positive-control rule is retained.
+Date 2026-11-14. Supersedes the ADR-015 managed allocation hook; its positive-control rule is kept.
 
-Context: the previous meter registered `il2cpp_profiler_install_allocation` with a managed reverse-P/Invoke callback and was installed in every session. When Unity first attaches a native thread to IL2CPP (the synthesized-audio thread at Main), `Thread::Attach` allocates a managed thread object; the profiler event re-entered the managed wrapper, which re-attached and allocated again. Crash-dump analysis (WinDbg, build symbols) showed 526 nested cycles overflowing the 1 MB stack: APPCRASH 0x80000001 about 4 s after start, present in the `5eaced5` playtest build and later. Verified alternatives fail in a release IL2CPP player: ProfilerRecorder "GC Allocated In Frame" is invalid (only heap-size gauges "GC Used/Reserved Memory" exist, rejected by ADR-015), and `GC.GetAllocatedBytesForCurrentThread` returns 0.
+**Context.** The managed IL2CPP allocation callback recursed when Unity attached the audio thread, which overflowed the stack (APPCRASH about 4 s after start).
 
-Decision: normal play never installs an allocation hook (`FoundationEntry` installs it only for `-shooterBenchmark` runs). Benchmarks use one C++ source plugin, `Assets/Plugins/x86_64/ShooterAllocationMeter.cpp`, compiled into GameAssembly for Standalone Win64 IL2CPP only (excluded from Editor and the Mono Dedicated Server). Its callback only adds the object size to a process-wide atomic and a thread-local counter; it makes no managed call, allocation or lock, so thread-attach allocations are counted and cannot recurse. C# reads `shooter_alloc_total_bytes`/`shooter_alloc_thread_bytes` via `[DllImport("__Internal")]`; synchronous benchmark semantics and main/worker/end positive controls are unchanged, and failure yields -1 with a diagnostic, never calibrated zeros. The plugin must live under root `Assets/Plugins/`: under `Assets/Shooter/…` Unity did not import it and linking failed.
+**Decision.**
+- Normal play installs no allocation hook. Only `-shooterBenchmark` runs do.
+- The C++ plugin `Assets/Plugins/x86_64/ShooterAllocationMeter.cpp` is compiled into GameAssembly for Win64 IL2CPP only. Its callback only adds to atomic and thread-local counters, so it cannot recurse.
+- C# reads it through `__Internal`. A failure gives -1, never zero.
+- It must stay under root `Assets/Plugins/`.
+- `Tools/provenance-allowlist.json` `namedNativeSources` pins its path and SHA-256.
 
-Provenance: `Tools/provenance-allowlist.json` `namedNativeSources` lists exactly this path and its SHA256; `Test-SourceProvenance.ps1` accepts only listed paths with matching hashes and no extension wildcard. Any edit needs a deliberate hash update. This is code, not art.
-
-Validation (worktree, b701468): Client/Server builds, smoke, EditMode/PlayMode, Test-Measurement (injected allocation detected) PASS; one full TDM-5v5-v1 Low run completed 128,165 frames / 10,800 ticks with allocation counters available (controls 4426/4426/4128) and no APPCRASH. One earlier identical run hit the 330 s wrapper timeout after VALIDATED without a capture and was not reproduced; watch for it in reference captures. Revalidate the `il2cpp_profiler_*` signatures and rerun the controls on any editor migration. Never restore the managed hook.
+**Consequences.** Any editor migration needs the signatures revalidated and the controls rerun. Never restore the managed hook.
 
 ## ADR-043 — Accepted: two-stage native navigation publication
 
-Date 2026-11-14. Amends the T067 C01 native publication path.
+Date 2026-11-14. **Context.** Publishing whole map packages from the Editor's Mono changed float rounding in `skeleton-soldier.bin`, so the IL2CPP player rejected every native package.
 
-Context: the first native path published whole map packages inside the Unity Editor. Mono's floating-point rounding differs from .NET/IL2CPP, so `skeleton-soldier.bin` differed in the lowest bit of 12 floats; the IL2CPP player's skeleton identity check rejected every native package and no match could start (all twelve reference captures and both soaks aborted on `075c548`).
+**Decision.** Mono never generates map content.
+1. `Compile-GameContent.ps1 -Native` publishes pure .NET content first.
+2. `ShooterBuild.CompileNativeGameContent` reads only the .NET `collision-gameplay.bin`. It bakes the native NavMesh twice and requires byte-identical results.
+3. It writes `<map>.nvb1` with a `nav-stage.json` descriptor.
+4. MapContent republishes with those bakes through `NavBakeStage`. `NavBakeStage.InputKey` binds each bake to the exact gameplay box bits and nav parameters, and any mismatch fails.
 
-Decision: Mono never generates map content. `Compile-GameContent.ps1 -Native` first runs the pure .NET MapContent publisher; `ShooterBuild.CompileNativeGameContent` then only reads the .NET-published `collision-gameplay.bin` per map, runs the pinned native NavMesh bake plus a byte-identical repeat bake, and writes `<map>.nvb1` with a `<map>.nav-stage.json` descriptor (provenance, tool identity, collision SHA, input key, bake SHA). MapContent republishes with those bakes injected through `NavBakeStage` into `Artifacts/map-packages-native`. `NavBakeStage.InputKey` binds each bake to the raw float bits of the gameplay boxes and nav parameters; any mismatched, malformed, non-native or unknown-map entry fails publication, never falling back to software.
-
-Guard: the wrapper requires each native package to equal its pure .NET counterpart byte-for-byte except `navigation-gameplay.bin` and the navigation hash/dependency entries in `package.json`, requires the native nav hash to differ from the software grid, and requires stage collision SHA and editor identity to match. Release checks start a real match on both maps against native content before packaging.
-
-Validation: all `skeleton-soldier.bin` copies identical to the pure cache; native nav hashes unchanged (compound `07560a8d…`, depot `802dcfbb…`); diagnostic 5v5 matches started on both maps from native content; Generation 329, Maps 29, EditMode/PlayMode and provenance PASS. No lock, schema or format version changed.
+**Guard.** Native packages must equal the pure ones byte-for-byte except for the navigation entries. Release checks start a real match on native content.
 
 ## ADR-044 — Accepted: versioned procedural map surface publication
 
-Date 2026-11-15, T075 owner-authorized design implementation. The presentation review found that map packages still published solid 1×1 albedos and the visual extractor filtered normal/mask companions. Reading only the first mask texel also discarded spatial response. The existing shader adapter could not by itself deliver detailed map surfaces.
+Date 2026-11-15. **Context.** Map packages published flat 1×1 albedos and dropped the normal and mask companions.
 
-Publish four fixed 128×128, two-metre-tile material sets through the existing `MaterialBaker`: concrete, metal cover, soil and asphalt, seed 460072030. Each includes sRGB albedo and linear XYZ-normal / metallic-occlusion-roughness planes with complete mips. Require all eight companion dependencies in visual packages and persisted extraction. Keep soldier/weapon generators and art unchanged. Bind URP Lit metallic from R, occlusion from G and smoothness from inverted B in A; opaque-alpha generated XYZ normals already match locked D3D11 normal decoding. Three code-created numeric materials retain the normal, mask and combined Lit variants in Client builds; Server never preloads them.
+**Decision.** Publish four 128 px, two-metre material sets (concrete, metal cover, soil, asphalt) through `MaterialBaker`, with full mips. All companion dependencies are required in visual packages. URP Lit takes metallic from R, occlusion from G and smoothness from 1−B.
 
-Version map.compound and map.depot from 1.0.0 to 1.0.1. Update strict recipe/package generator-version schemas, source examples, registry and catalog labels together. SGAF, package/catalog schema v1, material.surface 1.0.1, C0-v1 and Game-v1 remain unchanged. The map fingerprint changes, so collision/nav envelopes and catalog/package roots get new identities even though decoded collision, navigation inputs, seeds and gameplay rules are unchanged. Old 1.0.0 binaries/content remain a retained matching rollback pair; current strict readers reject old generator recipes and require rebuilt 1.0.1 packages. Do not relabel or overwrite historical archives. Native publication must rerun through ADR-043 and source-matched builds/packages must follow it.
-
-This is a publication/version migration with channel-conversion and deterministic extraction tests, not new visual acceptance or measured performance. No manual payload/golden edits, soldier clearance search, imported art, shader-source change or waiver is authorized. The M11 handoff records actual validation and remaining Pending evidence. Rollback requires reverting source/schema/registry together and restoring the previous complete executable/content pair.
+`map.compound` and `map.depot` move to 1.0.1, so package and catalog roots change while collision and nav stay the same. Strict readers reject 1.0.0. The old binary and content pair is kept as the rollback. Superseded for surfaces by `material.noise` (ADR-088, ADR-106, ADR-116).
 
 ## ADR-045 — Accepted: compact TDM arena layouts for catalog maps (T076)
 
@@ -504,13 +637,16 @@ Consequences: a long hitch costs simulated time (the game runs slower for that m
 
 ## ADR-047 — Accepted: relaxed spawn fallback and recoverable spawn failure
 
-Date 2026-11-15. Status: accepted for the offline product build; Unity EditMode/PlayMode and real-player confirmation are Pending.
+Date 2026-11-15. **Context.** Stationary bots could keep every spawn slot exposed. The player then sat on "Awaiting a safe spawn", and when the 600-tick deadline expired the match stopped silently while still Playing, which soft-locked the game.
 
-Context: [Team Deathmatch](features/team-deathmatch.md#death-and-respawn) requires a safe spawn that rejects enemy line of fire within 40 m. Stationary bots could keep every slot exposed, so a respawning player stayed on "Awaiting a safe spawn" indefinitely. When the 600-tick deadline expired, `OfflineGameSession` stopped the match silently while its phase remained Playing, which soft-locked the player.
+**Decision.** After `SpawnSafetyPolicy.SpawnRelaxAfterTicks` (120 active ticks) of failed safe search, the 40 m enemy line-of-fire rejection is dropped. The policy then picks a navigable, unoccupied slot with 2 m spacing, ranked by:
+1. farthest nearest enemy;
+2. least recently used;
+3. lowest slot ID.
 
-Decision: `SpawnSafetyPolicy.SpawnRelaxAfterTicks` = 120. After 120 active ticks of failed safe-spawn search, the 40 m enemy line-of-fire rejection is dropped. The policy then selects a navigable, unoccupied slot with 2 m spacing, ranked by farthest nearest enemy, then least-recently-used, then lowest slot ID. The 30-tick retry cadence and the 600-tick failure deadline are unchanged. The match aborts only when no navigable, unoccupied slot exists by the deadline. On abort, `OfflineGameSession` records `GameErrorCode.SpawnFailure` in a new non-frozen `TerminalFault` property, moves to Stopped, and `Step` returns Ok as a no-op. `ProductShellHost` returns to the main menu with "No safe spawn available. Returning to the menu." `IGameSession` and Game-v1 are unchanged.
+The 30-tick retry and the 600-tick deadline are unchanged. The match aborts only when no navigable, unoccupied slot exists. The abort records `GameErrorCode.SpawnFailure` in the non-frozen `TerminalFault`, and the shell returns to the menu with a message. Game-v1 is unchanged.
 
-Consequences: this deliberately deviates from the strict spawn-safety rule. A relaxed spawn may be in enemy line of fire, and the design accepts that in exchange for no soft-lock. Strict rejection still applies for the first 120 ticks. The failure path is now a recoverable menu return with a visible message rather than a silent stop. Tests: `SpawnRelaxedFallbackTests` (3). Rollback: restore the strict policy and the silent stop, which reintroduces the soft-lock. Real-map spawn-pressure review and player confirmation are Pending.
+**Consequences.** A relaxed spawn may be in enemy line of fire, accepted in exchange for no soft-lock ([Team Deathmatch](features/team-deathmatch.md#death-and-respawn)).
 
 ## ADR-048 — Accepted: session-internal pre-match countdown
 
@@ -534,114 +670,95 @@ Consequences: packaged map-solids mesh and package/catalog visual identities cha
 
 ## ADR-050 — Accepted: packaged architectural surface construction (T081)
 
-Date 2026-11-15. Owner requested continued visual review and implementation after `615b6a5`. Sole integrator; no agent dispatch or P05 clearance search.
+Date 2026-11-15. **Decision.** `MapSolidsMesh` adds offline packaged visual detail around the existing gameplay boxes:
+- 15 mm edge radii;
+- wall footing, coping, end strips and panel joints, at most 20 mm proud;
+- cargo corrugation, rails and door hardware, at most 51 mm proud.
 
-Context: ADR-049 includes visual boxes but the renderer still presents unbroken concrete slabs and unrecognisable concrete cargo. Adding more props did not correct the dominant shape/material language.
-
-Decision: `MapSolidsMesh` builds loading-time-independent, offline packaged visual detail around the existing boxes: 15 mm edge radii on substantial gameplay solids; wall footing/coping/end strips and narrow panel joints; cargo corrugation, perimeter rails and door locking hardware. Wall bands extend at most 20 mm beyond wall faces; cargo hardware at most 51 mm beyond container end faces. Openings are not bridged and no new standalone occluder is introduced. Render mesh budget is 180,000 vertices/map. These are visual meshes only: gameplay box order/IDs/size/tag, collision/nav inputs, seed, spawns, sensing and hit poses remain byte-identical.
-
-Extend the map-local visual material role enum with 3=DepotBlue, 4=OxidePaint, 5=Foundation; roles 0–2 retain their meaning. SGAF v1 already carries ushort material slots, so no format/schema/C0/Game-v1 change is required. Client and menu both bind the six-role palette; unknown or unbound roles fail closed. New materials use numeric tints of existing verified PBR planes, sharing texture uploads. Publication generates new visual hashes/catalog roots; existing native content may not be paired with a new claimed presentation review. Native republish and clean source-matched builds/package/installer are required. Soldier/weapon generator identities and all P05 defects remain frozen; weapon coating tint is a read-only presentation choice.
-
-Consequences: at most six map draw submeshes rather than three, plus more offline mesh geometry. Reference hardware cost remains Pending, not inferred from a vertex budget. Validate gameplay fingerprints, both material-role closures, vertex budget, native publication and player views. Preserve prior 0.3.9 binary/content for rollback; reverting this implementation requires republishing a matching visual package. No VD/REL acceptance is closed.
+Openings are never bridged. The budget is 180,000 vertices per map. Gameplay boxes, collision, nav, seeds, spawns and hit poses stay byte-identical. Map material roles 3–5 (DepotBlue, OxidePaint, Foundation) are added; SGAF already carries ushort slots. Unknown roles fail closed. Visual hashes change, so a native republish is required.
 
 ## ADR-051 — Accepted: runtime cover probes share the AI ray budget (T082)
 
-Date 2026-11-15. Status: accepted for the offline product build. Unity lanes and real-player confirmation are Pending.
+Date 2026-11-15. **Context.** Product map packages carried no cover data, so `SeekCover` never found any. Adding cover data would have changed Game-v1 and every content identity.
 
-Context: `ai.md` specifies cover candidates "from cover proxies/nav edges". The frozen product map packages (`MapGameplayDefinition`, Game-v1) carry only spawn slots and patrol/combat destinations. The only cover data, `NavCoverCandidate`, comes from the legacy Compound plan. As a result `SeekCover` never found cover in the product. Adding cover data to packages would change Game-v1 and every content identity.
+**Decision.** `Simulation/AI/CoverFinder.cs` generates cover at runtime:
+- **Sampling.** Up to 8 points 4–7 m away, within ±80° of the direction away from the threat.
+- **Qualifying.** The first point where a ray from the threat's eye to a crouched chest is blocked wins.
+- **Budget.** Probe rays use `PerceptionSystem.TryBudgetedRay`. They share the global 16-ray budget, run after vision, and are capped at 4 per tick.
+- **Reachability.** It comes from the normal path request.
+- **Claims.** Quantized ids in `CoverReservationBoard`, released on leaving, on path failure, on death and on cancel.
 
-Decision: `Simulation/AI/CoverFinder.cs` generates cover at runtime, relative to the threat.
-- A bot that wants cover samples up to 8 points 4–7 m away, within ±80° of the direction away from the threat, nearest first.
-- It keeps the first point where a ray from the threat's eye to a crouched chest (0.75 m) at that point is blocked.
-- Probe rays go through `PerceptionSystem.TryBudgetedRay`, so they count against the **same** global 16 rays per tick. They run only after every bot's vision pass and are capped at 4 per tick, so vision fairness (a sensing opportunity within 12 ticks) is unchanged.
-- Reachability is decided by the normal path request, within the 2 new paths per tick. A failed path releases the claim.
-- Claims use quantized position ids with the high bit set in the existing `CoverReservationBoard`. They are released on leaving cover, on path failure, on death, on life replacement and on cancel.
-- Explicit `CoverSite` lists still take precedence where provided.
-
-Consequences: no contract, fixture, budget or package change. `aiRays` now includes probe rays, which stay within the cap. Cover quality is limited to what a single occlusion ray shows. There is no exposure scoring beyond the occlusion test and no peek-point validation; repositioning is driven by the last-seen position. Rollback: remove the `CoverFinder` calls. `SeekCover` then falls back to Search as before.
+Explicit `CoverSite` lists still take precedence. Authored map cover later arrived with ADR-112.
 
 ## ADR-052 — Accepted: packaged first-person glove and sleeve props (T083)
 
-Date 2026-11-15. Owner requested continued visual implementation. Work starts after T082 merged main (`e2c26e9`, then docs-only `a9f228d`); no delegation.
+Date 2026-11-15. **Decision.** Each visual closure gets four required SGAF meshes: rifle/pistol × trigger/support glove and sleeve. They are built offline by `FirstPersonHandGeometry` from numeric palms, fingers and cuffs (≤6,000 vertices per hand), and they bind the existing weapon grips. Material slots: 0 sleeve, 1 glove, 2 trim. No soldier joint, hit pose or socket changes. Missing hand dependencies fail closed. Server profiles have no hand assets.
 
-Context: the camera shows a floating rifle/pistol without hands. Existing soldier/P05 anatomy and clearance search remain frozen under ADR-024. The equipment-relative reload arc also jumps about 10 cm at its 0.42 remove/insert boundary.
-
-Decision: add four required SGAF mesh dependencies to each non-gameplay visual closure: rifle/pistol × trigger/support glove plus forearm sleeve. `FirstPersonHandGeometry` constructs them offline from numeric beveled palms, segmented curved fingers, cuffs and tapered sleeves, capped at 6,000 vertices/hand. Mesh coordinates bind the existing right/left weapon grips; no new soldier joint, hit pose, weapon socket or authoritative input is introduced. Material slots 0=sleeve, 1=glove, 2=protective trim reuse verified uniform/polymer/gear materials. Existing SGAF/package/catalog v1 codecs already support mesh dependencies and ushort slots. Missing/corrupt hand dependencies fail closed and require repair; old binary/content pairs remain valid, but new binaries require the rebuilt closure. Server/gameplay profiles contain no hand assets.
-
-Presentation attaches the two active meshes to the existing camera-local weapon root, swaps them with rifle/pistol, disables their shadow casting, hides them with dead/session viewmodels and releases the camera-owned root with its owner. Support-hand reach is an analytic read-only reload-phase offset toward the existing magazine location, with reduced-motion scaling and exact rest endpoints. The remove/insert path now shares the same boundary value and settles smoothly to zero. No authority timing/ammo/reload rules change. This is rigid camera-prop pose animation, not a full articulated hand/finger rig or a complete magazine-replacement animation.
-
-Consequences: four additional required meshes per visual package and two active renderers / up to six material submesh draws near the camera; actual hardware cost remains Pending. Publish fresh native content, verify unchanged collision/nav/catalog identities, freeze clean Client/Server/package identities and build an upgrading installer. Validate mesh bounds/sight clearance, corruption rejection, motion continuity, slot/life/reset/pause/teardown and real-player rifle/pistol/ADS/reload appearance. P05 FAIL and all VD/REL exits remain open. Rollback the whole closure/presentation change and use a matching retained binary/content pair.
+Support-hand reach is an analytic offset that follows the reload phase, with continuous endpoints. Superseded for geometry by the articulated `fp.hand.v2` (ADR-069) and the kernel gloves (ADR-106).
 
 ## ADR-053 — Accepted: procedural near-field finish triplets and hip composition (T084)
 
-Date 2026-11-15. Owner requested further visual improvement after 0.3.11. Sole integrator, base `12ff5ac`; no agents or new soldier/P05 clearance iteration.
+Date 2026-11-15. **Decision.** `FirstPersonSurfaceBaker` builds four 128 px, 100 mm tiling PBR triplets: coated metal, stippled polymer, woven cloth and glove grain. They use `MaterialBaker.BuildPlane` mips, and `material.surface` is unchanged. They are required visual dependencies, bound through `ProductSurfaceMaterial` at 10 repeats per metre.
 
-Context: weapon, gloves and sleeves use flat color materials; a single conical sleeve and squared hip-held stock dominate the near field. Texture response must be visible in the actual player without importing art or altering weapon/soldier generators.
-
-Decision: `FirstPersonSurfaceBaker` numerically constructs four 128px, 100 mm tiling albedo/XYZ normal/metallic-occlusion-roughness triplets: coated metal, stippled polymer, woven cloth and glove grain. Complete mip chains use the existing verified `MaterialBaker.BuildPlane` filter; the frozen material.surface 1.0.1 generator is unchanged. Weapon material paths retain their names but become spatial triplets; two additional sleeve/glove material paths and all companions become required visual dependencies. Publisher validates dimensions, channels and mip closure. Existing SGAF/package/catalog v1 supports these material bytes; all new visual roots are republished and paired with a clean binary. New binaries reject old incomplete closures; no runtime bake/fallback is added.
-
-The product binds the verified PBR triplets through `ProductSurfaceMaterial`, with metric 10 repeats/metre and mask-driven smoothness/metallic. Body/gear soldier materials remain unchanged. Sleeve-only geometry uses one continuous ring loft with shallow folds, analytic normals and a bent taper, retaining all glove/finger/grip coordinates and the 6k vertex cap. Static hip composition uses bounded yaw/roll and fades exactly to identity at full ADS, preserving the verified sight ray and weapon dimensions. Reduced-motion keeps this resting composition while existing bob/recoil suppression remains.
-
-Consequences: about 1 MiB of raw complete 128px RGBA plane data per four-family set (mask and occlusion share uploads), plus small sleeve geometry growth; actual GPU residency, driver overhead and reference cost remain Pending. Gameplay/collision/nav/spawn identities, weapon meshes/sockets and soldier/P05 identities remain frozen. Run pure/Unity/provenance guards, native publication, clean builds/package/installer and player review. No visual/performance/REL gate closes from software checks. Rollback the required closure and consumers together, using the retained 0.3.11 binary/content pair.
+The sleeve becomes a continuous ring loft with folds. Hip composition gets a bounded yaw and roll that fades to exactly identity at full ADS, which keeps the sight ray. Gameplay, weapon and soldier identities are unchanged.
 
 ## ADR-054 — Accepted: bot footstep hearing, wider vision and a readable lethality envelope (T085)
 
-Date 2026-11-15. Status: accepted for the offline product build. Real-player confirmation is Pending.
+Date 2026-11-15. **Context.** A playtest found that bots trailed each other, missed enemies behind them and killed too fast to read. Weapon numbers are shared with the player, so lethality has to be tuned in bot aim.
 
-Context: an owner playtest of T082 found that bots trail each other along the route, miss enemies behind them, and kill too quickly to be understood. `ai.md` already requires hearing stimuli with source class, position and radius, and "not constant instant headshots"; it does not fix a vision cone or footstep radii. The rifle's damage and cadence are shared with the player and fixed by `combat.md`, so lethality has to be tuned in bot aim, not in weapons.
+**Decision.**
+- **Footstep hearing**, from planner-derived speed: 24 m sprinting, 13 m running, 5 m walking, and always within 2.5 m. It uses no rays.
+- **Vision cone:** 120°.
+- **Unseen attackers.** Two hits within 1.5 s from an enemy the bot is not fighting, or one hit below 50 health, turn the bot onto that attacker.
+- **Accuracy** recovery starts at the end of the reaction delay. A regression test pins the median time-to-kill on a still target: 1.25–2.3 s at 8 m, 1.8–4 s at 20 m, 2.7–7 s at 40 m, and no kill within 0.67 s of the first shot.
+- **Spread.** Destinations are chosen by a deterministic spread score. At most 2 allies respond to one noise.
 
-Decision:
-- **Footstep hearing.** The planner derives each listed enemy's horizontal speed from consecutive planner positions. Audible radius: 24 m when sprinting (≥5 m/s), 13 m when running (≥2.6 m/s), 5 m when walking, and 2.5 m always. This is distance-attenuated like gunfire, with no occlusion and no rays, so the 16-ray budget is untouched.
-- **Vision.** The vision cone is 120° (was 90°).
-- **Unseen attackers.** Two hits within 1.5 s from an enemy the bot is not fighting (or one hit below 50 health) turn the bot onto that attacker.
-- **Lethality envelope.** Accuracy recovery starts at the end of the reaction delay. Kept as a regression test on the real combat harness, against a still standing target (median from sighting): 1.25–2.3 s at 8 m, 1.8–4 s at 20 m, 2.7–7 s at 40 m, and no kill sooner than 0.67 s after the bot's first shot.
-- **Team spread.** Destinations are chosen by a deterministic spread score instead of an id-ordered walk of the route. At most 2 allies investigate one noise. Allied gunfire never points at the ally.
-
-Consequences: bots are slower to kill and harder to sneak up on at a run, but still blind to slow or crouched movement behind them beyond 5 m. Hearing through walls is possible, as it already was for gunfire. No contract, fixture, budget, content or weapon change. Rollback: revert T085. The previous constants are recorded in the M11 handoff.
+No contract, budget or weapon change ([combat AI](features/ai.md)).
 
 ## ADR-055 — Accepted: generated PCM combat sample banks (T086)
 
-Date 2026-11-15. Status: accepted for the offline non-commercial product build. Named device hearing (FIX10) remains Pending.
+Date 2026-11-15. **Context.** Shipping audio was a sine and noise synth that sounded like beeps.
 
-Context: owner quality direction for visuals already targets Battlefield V–class feedback. Shipping audio was a ≤24-voice sine+noise analytic synth (T030/T061) that reads as beeps, not weapon reports. `vision.md` baseline was synthesized sound with an explicit gate for recorded/external sound via provenance policy update. Owner authorized sample-bank combat audio for non-commercial use, with banks found or generated rather than purchased licensing workflow.
+**Decision.** Presentation may ship a deterministic PCM combat sample bank. Found PCM is allowed when the manifest records its source and hash. Commercial licensing is not required for this non-commercial build. Audio extracted from commercial games is forbidden.
 
-Decision:
-- **Provenance.** Presentation may ship a deterministic **generated PCM combat audio bank** (recipe-baked mono clips + SHA-256 content hash). Drop-in found PCM is allowed only when recorded in the bank manifest with source note and hash; commercial license purchase is not required for this non-commercial build. Extracting audio from third-party commercial games (including Battlefield V) is out of scope and not used.
-- **Mixer.** `SynthAudioMixer` plays bank samples (not live sine tones) with distance attenuation, stereo pan, distance high-frequency rolloff, peak limiter, and master/effects/UI gains. Voice pool remains ≤24; one authority cue maps to one voice (layers are pre-composited in the bank).
-- **Cues.** Rifle and pistol shots, impact, damage-taken, footstep, reload start/complete, death, UI, and a quiet looping ambient bed. Reload/death/damage map from existing `CombatEventKind` values; weapon id selects rifle vs pistol shot.
-- **Fallback.** If a bank fails to load, the mixer may synthesize a degraded analytic fallback so playability is preserved; FIX10 still requires named audible review of the sample path.
+`SynthAudioMixer` plays samples with:
+- distance attenuation;
+- pan;
+- HF rolloff;
+- a limiter;
+- master, effects and UI gains;
+- ≤24 voices.
 
-Consequences: audio CPU and memory grow with bank size; design still targets the 0.5 ms/frame mix budget as a soft host target. Docs (`vision`, `game-shell`, `combat`, [features/audio.md](features/audio.md)) and T061/FIX10 wording update to sample-bank policy. Rollback: revert T086 and restore the prior analytic-only mixer.
+A degraded analytic fallback keeps play going if the bank fails. Extended by ADR-062 and ADR-096 ([audio](features/audio.md)).
 
 ## ADR-056 — Accepted: last-weapon quick switch (Q) and local-only muzzle overlay
 
-Date 2026-11-15; owner playtest feedback requested FPS-style Q last-weapon toggle and reported full-screen flicks while bots fired nearby. Sole integrator owns the bounded input/settings/presentation fix; no agents, art import, package upgrade or acceptance waiver.
-
-Context: cosmetic `muzzleFlashRemaining` overlay and “Shot” subtitle fired on every `ShotAccepted`, including remote bots, painting a full-screen flash while the local player was idle. Weapon selection already used Slot1/Slot2 (1/2) with no previous-weapon action.
-
-Decision — local muzzle overlay: `FirstPersonHitFeedback.IsLocalShot` gates the IMGUI overlay and shot subtitle to the local human instigator. World analytic muzzle/impact/smoke proxies and shot audio continue for all `ShotAccepted` events. ReducedFlash still suppresses the local overlay and world muzzle meshes.
-
-Decision — LastWeapon binding: additive optional `LastWeapon` defaults to `Key.Q`. Game-v1/settings schema 2 layout is unchanged. Client-side `LocalPlayerInput` tracks the previous slot; a press edge swaps the selected slot with that previous slot and writes the result into the existing C0 `InputCommand.SelectedSlot`. Slot1/Slot2 still set an absolute slot and update the previous slot only when the active slot actually changes. On life reset, previous slot initializes to the opposite of the active spawn slot so the first Q is useful with two weapons. Holding Slot1/Slot2 takes precedence over LastWeapon in the same frame. Normalize legacy settings by adding `LastWeapon=Key.Q` when free, or `LastWeapon=Unbound` when Q was already customized; preserve existing actions and never steal a control. A legacy binding table already at the schema count limit is preserved without adding a row; Restore defaults makes LastWeapon available in that exceptional case. Settings UI exposes LastWeapon rebind/swap/defaults labeled “Last weapon”.
-
-Validation: pure settings migration/conflict/persistence tests, EditMode input last-weapon edge/life-reset tests, local-shot overlay unit test, locked pure suites and provenance. Interactive two-map device evidence remains Pending. Rollback restores the prior Game-v1 lock/fixture pair and presentation gate; older players keep their retained binary/content/controls.
+Date 2026-11-15. **Decision.**
+- **Muzzle overlay.** The full-screen muzzle overlay and the "Shot" subtitle apply only to the local human's `ShotAccepted` (`FirstPersonHitFeedback.IsLocalShot`). World muzzle proxies and audio still play for everyone.
+- **Last weapon.** An additive optional `LastWeapon` binding (Q) swaps to the previous slot through the existing C0 `SelectedSlot`. On life reset the previous slot starts as the opposite slot. A held absolute slot key wins in the same frame. Legacy settings gain Q when it is free, and Unbound otherwise. The schema stays 2.
 
 ## ADR-057 — Accepted: knife and grenade loadout slots (T087)
 
-Date 2026-11-15; owner-directed playable combat expansion so a player can still fight when rifle/pistol ammo is empty. Sole integrator owns the C0 prediction/slot migration, combat authority, settings bindings, AI, procedural visuals and verification. No acceptance waiver.
+Date 2026-11-15. **Decision.** C0 stays `C0-v1`, but `PredictionSchema` moves 1→2.
+- `Require.Slot` accepts 0..3: rifle, pistol, knife, grenade.
+- Prediction holds four `WeaponState` records.
+- `WeaponAction.Cooking` = 5 is added.
+- The fixtures (`prediction-state.json`, `gameplay-defaults.json`) and `contract-lock.json` are migrated.
 
-Context: C0-v1 froze `Require.Slot` to `0..1` and prediction schema 1 to exactly two `WeaponState` records. Melee and grenades were deferred. Offline TDM needs knife (Digit3) and one cook/throw grenade per life (Digit4) for humans and bots.
+**Knife:** 1.8 m hitscan, 55 damage, a 24-tick interval, no ammo, can fire while sprinting.
 
-Decision:
-- Keep `ContractVersion.Current = "C0-v1"`. Bump `PredictionSchema` **1 → 2**. `Require.Slot` accepts `0..3` (rifle/pistol/knife/grenade). Prediction `WeaponSlots` count is **4**. Add `WeaponAction.Cooking = 5` for grenade pin/cook. Migrate `docs/fixtures/prediction-state.json` and `gameplay-defaults.json`; refresh `contract-lock.json` after reviewed source/fixture identity change.
-- Knife: short-range authoritative hitscan (1.8 m), base damage 55, interval 24 ticks, equip 12, no ammo consume, may fire while sprinting.
-- Grenade: magazine 1 / reserve 0 per life; cook on FirePressed, throw on release, fuse 120 ticks from cook start; held cook that expires detonates at the thrower (self-damage yes, friendly damage still 0). Throw uses reserved `ProjectileSpawned`/`ProjectilePayload`, gravity arc, bounce damp, explode on fuse with 5 m linear falloff to max 100 damage. Respawn refills one grenade.
-- Game-v1 settings schema 2 unchanged; additive optional `Slot3=Key.Digit3` / `Slot4=Key.Digit4` with the same legacy normalize pattern as Slide/LastWeapon. LastWeapon previous-slot spans all four loadout slots.
-- Bots switch to knife when guns are dry at close range and may spend their single grenade once at medium visible range.
-- Procedural knife/grenade meshes publish through the existing map visual closure; package identities change and require native republish for player review.
+**Grenade:**
+- one per life;
+- cook on press, throw on release;
+- 120-tick fuse from the cook, and a held cook detonates at the thrower;
+- a gravity arc using `ProjectileSpawned`;
+- a 5 m falloff blast, up to 100 damage;
+- self damage on, friendly damage zero;
+- respawn refills it.
 
-Consequences: offline restoration/prediction fixtures and all two-slot weapon assumptions must migrate together. Historical N1 online prediction remains deferred and must not claim schema-2 wire compatibility without a later protocol ADR. Rollback restores the prior contract-lock/fixture/prediction-schema-1 pair and two-slot combat kit.
+**Bindings and bots.** Slot3 and Slot4 (3 and 4) are additive bindings. Bots use the knife when dry at close range and their grenade once at medium range.
 
-Validation: Contracts/Simulation/Game/Generation/Maps pure suites, Unity EditMode slot/input/visual cases, provenance, docs/fixtures/manifest, native content + Client/Server when packages change. Manual gameplay and device audio remain Pending.
+**Consequences.** The parked N1 wire format makes no claim of schema-2 compatibility.
 
 ## ADR-058 — Accepted: minimap self marker and temporary gunfire reveal
 
@@ -659,18 +776,15 @@ Validation: pure `CombatHudVisual` filter/TTL/ring tests, Simulation suite. Inte
 
 ## ADR-059 — Accepted: personal scoreboard Score and combat score badges
 
-Date 2026-11-15; owner-directed personal points for scoreboard/results and Battlefield-style combat HUD feedback. Sole integrator owns the bounded Game-v1 / session / presentation change. No win-condition change, art import or acceptance waiver.
+Date 2026-11-15. **Decision.** An additive `uint Score` is added to Game-v1 `ParticipantState`, for the scoreboard and results only. Team kills and win rules are unchanged.
 
-Context: Game-v1 `ParticipantState` carried only kills/deaths. Team win remains 150 enemy kills or 15:00. Owner wants personal Score (kill = 100; non-killer damage contribution = HP dealt that life) on Tab/results, plus procedural kill ribbon / center score feed / ammo +N badges. Assists were previously listed as out of scope for TDM progression; this ADR adds scoreboard Score only, not streaks or progression systems.
+| Situation | Score |
+|---|---|
+| Valid enemy killer | +100 (`PersonalKillPoints`), and no damage sum |
+| Other damagers of that life | Their accumulated HP |
+| Environmental death | Damagers get HP points only |
 
-Decision:
-- Add additive `uint Score` on frozen Game-v1 `ParticipantState` (constructor + snapshot/results rows). `Team1Kills` / `Team2Kills` / `ScoreLimit` / finish ordering unchanged.
-- Kill credit: valid enemy killer still gets `Kills++` and one team point; that killer also gets **exactly** `Score += 100` (`GameContractVersion.PersonalKillPoints`). Killer does not also receive their damage sum.
-- Assist: session accumulates `DamageApplied` amounts per victim life → attacker; on `Death`, every damager except the credited killer receives `Score +=` their accumulated HP. Environmental/no-killer deaths award damager HP points only (no 100). Friendly damage remains 0.
-- C0-v1 combat payloads unchanged. Presentation badges consume an internal session local-award ring (not a new Game-v1 DTO). Ribbon/feed are procedural IMGUI (no sprites).
-- Scoreboard/results sort: Score desc → Kills desc → Deaths asc → ParticipantId asc.
-
-Validation: `game-contract-lock.json` refreeze; `Tools/Test-Game.ps1`; Simulation HUD/scoreboard tests; docs/manifest. Interactive badge readability remains Pending. Rollback restores the prior Game-v1 lock/fixture pair and prior K/D-only UI.
+Sort order: Score, then kills, then deaths ascending, then ParticipantId. A session-local award ring drives the procedural kill ribbon, centre feed and ammo +N badges. C0 payloads are unchanged, and `game-contract-lock.json` is refrozen.
 
 ## ADR-060 — Accepted: local authoritative tightness (stamina)
 
@@ -689,17 +803,9 @@ Validation: pure motor drain/regen/cost/exhaust cases in `Tools/Test-Simulation.
 
 ## ADR-061 — Accepted: geometry.weapon 1.0.2 mechanical parts and denser fire FX (T088)
 
-Date 2026-11-15; owner-authorized VD3 weapon visual overhaul (silhouette + mechanicals + fire FX). Sole integrator owns weapon generator/recipes, map visual packaging, first-person/world presentation and analytic FX. No C0/Game-v1 combat change, no soldier/P05 work, no imported art or authored clips.
+Date 2026-11-15. **Decision.** `geometry.weapon` moves 1.0.1→1.0.2, and 1.0.0 and 1.0.1 are rejected. Body LODs gain silhouette detail. The **magazine** and **cycle** (bolt or slide) become separate packaged meshes (`mesh-*-magazine.bin`, `mesh-*-cycle.bin`). The magazine follows the reload phase, and the cycle opens on `ShotAccepted` and closes in about 90 ms. Sockets, collision dimensions and C0/SGAF are unchanged.
 
-Context: `geometry.weapon` 1.0.1 baked magazine and bolt/slide into the body LODs. Reload was whole-gun + support-hand offset; fire FX were thin analytic spheres. VD3 requires detachable magazines, fire-cycle parts and denser combat feedback while preserving sockets and collision proxies.
-
-Decision:
-- Bump `geometry.weapon` **1.0.1 → 1.0.2**. Reject 1.0.0 and 1.0.1. Migrate registered recipes and add `docs/feature-fixtures/rifle-1.0.2.json`. Socket transforms, units, seeds, collision mechanical dimensions and C0/SGAF stay unchanged within existing tolerances.
-- Body LODs gain richer silhouette detail; **magazine** and **cycle** (rifle bolt / pistol slide) emit as separate packaged meshes (`mesh-*-magazine.bin`, `mesh-*-cycle.bin`) and generator variants `magazine` / `cycle`.
-- Presentation binds body + mag + cycle for FP and world held weapons. Mag follows `FirstPersonMagazineTravel`; cycle opens on `ShotAccepted` and closes analytically (~90 ms). Reduced-motion scales cosmetic travel. Knife/grenade slots omit these parts.
-- Extend `AnalyticFxPool` with `ShellCasing` and `Tracer`. Densify muzzle (secondary flash lobe). `ReducedFlash` suppresses muzzle and tracer meshes plus the local overlay; casings/impact/smoke remain.
-
-Validation: Generation/Simulation/Maps pure suites, Unity EditMode/PlayMode where applicable, feature-content-lock refresh, native content republish, clean Client/Server/package/installer. Named visual acceptance and reference cost remain Pending. Rollback restores 1.0.1 recipes/lock pair and prior presentation/FX.
+`AnalyticFxPool` adds shell casings and tracers and a denser muzzle. Reduced flash suppresses the muzzle and the tracers.
 
 ## ADR-062 — Accepted: stereo found/authored combat WAV bank and per-kind distance (T089)
 
@@ -757,594 +863,345 @@ Validation: Simulation pure optic tests; provenance for new shader/presenter; do
 
 ## ADR-066 — Accepted: non-commercial UI typeface bank (Barlow Condensed)
 
-Date 2026-11-15; owner authorized custom UI fonts for this non-commercial build (“any fonts”) so shell/HUD copy can leave the default Unity IMGUI face. Sole integrator owns Presentation font loading/`TacticalUi`, provenance allowlist entries, map visual closure font token, Package-Release license prose and docs. No C0/Game-v1 freeze, no TextMeshPro, no EA/BFV typeface extraction, no acceptance waiver.
+Date 2026-11-15. **Context.** ADR-002 allowed only the engine IMGUI font.
 
-Context: ADR-002’s narrow `engine-allowlist-v1` exception covered only the engine IMGUI font. Player-facing menus still looked like default Arial while copy was partly technical. The combat audio bank (ADR-062) already shows how non-geometry media can ship with license + provenance outside the “imported art” ban.
+**Decision.** The non-commercial build ships Barlow Condensed (OFL) as Unity TrueType fonts in `Presentation/Fonts/Resources/`, loaded by `UiFonts`:
 
-Decision:
-- **Named OFL bank.** Ship Barlow Condensed Regular / SemiBold / Bold under `UnityProject/Assets/Shooter/Presentation/Fonts/Resources/` as Unity TrueType fonts, loaded by `UiFonts` via `Resources.Load`. Display (≥22 px) uses Bold; body uses Regular; buttons use SemiBold. Engine font remains the silent fallback if a face fails to load.
-- **Provenance.** `Tools/provenance-allowlist.json` gains hash-pinned `namedFontSources` (`.ttf` only under that Fonts path). `Test-SourceProvenance.ps1` validates those hashes the same way as ADR-042 native sources. OFL text lives at `Content/Fonts/OFL-BarlowCondensed.txt` (outside Assets) and is summarized in Package-Release `LICENSES.txt`.
-- **Closure token.** Map visual `font-exception.json` records `fontException: ui-typeface-bank-v1` (still retained by the player; policy remains procedural UI, not authored scene art).
-- **Copy.** Player-facing shell/HUD strings move toward short military FPS language via `InsertionScreenCopy` / `ShellUiCopy`; diagnostics stay out of chrome.
+| Use | Weight |
+|---|---|
+| Display (≥22 px) | Bold |
+| Body | Regular |
+| Buttons | SemiBold |
 
-Validation: provenance PASS with the three TTFs; Generation font-closure assertion; Simulation shell copy tests; docs/manifest. Named 720p readability review remains Pending. Rollback restores engine-only IMGUI font + `engine-allowlist-v1`.
+The engine font is the fallback. `Tools/provenance-allowlist.json` `namedFontSources` pins the TTF hashes. The OFL text lives at `Content/Fonts/OFL-BarlowCondensed.txt` and in the release `LICENSES.txt`. The map visual closure records `fontException: ui-typeface-bank-v1`. Player-facing copy uses short military FPS language (`ShellUiCopy`, `InsertionScreenCopy`).
 
 ## ADR-067 — Accepted: soldier motion.v5 slide pose, gait stability and motor corner anti-launch
 
-Date 2026-11-15; owner reported flicky player/bot models, bad sprint feet, missing slide animation, and sprinting near wall/floor “texture angles” launching the actor into the sky. Sole integrator owns `KinematicMotor`, `SoldierMotion`, `LocalMovementView` / presentation wiring, pure tests and docs. No C0/N1/Game-v1 wire freeze, no loft/P05 clearance search (ADR-024), no imported clips, no camera roll during slide.
+Date 2026-11-15. **Context.** Models flickered, sprint feet were bad, slide had no animation, and sprinting into wall/floor corners launched the actor upward.
 
-Context: ADR-039 slide is capsule/eye crouch only; presentation forced crouch-idle plants while the root slid. Gait speed came from `ΔFeet / unscaledDeltaTime`, which flipped walk↔run at 3.5 m/s and reset foot contacts. PhysX/box corner normals projected airborne sprint into +Y after momentary ground loss.
-
-Decision:
-- **Motor.** After `SlideMove`, clamp `velocity.Y ≤ 0` unless an active jump ascent owns the tick. Non-walkable contact projection must not increase upward velocity. `TryStep` requires a real rise (`> ε`) and rejects zero-rise false steps. InitialContact Skin lift (0.3.5) stays.
-- **Motion v5.** Bump identity to `soldier.motion.spike.v5`. Add `SoldierMotionInput.Slide` (0..1) with a cosmetic dive (low pelvis, pitched torso, lead/trail feet tracking the root). Walk/run hysteresis (`RunEnterSpeed` 3.8 / `RunLeaveSpeed` 3.2); slightly clearer run duty/clearance.
-- **Presentation.** `LocalMovementView` carries authoritative horizontal speed and locomotion distance. `ProductActorPresentation` drives gait from that readout, passes `Sliding` into motion, and lightly blends displayed feet toward authority feet (hit capsules remain tick-snapped). First-person camera stays ADR-039 (no slide roll).
-
-Validation: Simulation motor corner/step suites; Generation SoldierMotion slide/hysteresis cases; feature-content-lock `motionVersion` refresh; docs/manifest. Named player/bot pose review and installer remain Pending. Rollback restores motor clamps, motion.v4 and prior presentation gait path.
+**Decision.**
+- **Motor.** After `SlideMove`, vertical velocity is clamped to ≤0 unless a jump ascent owns the tick. Non-walkable contact never adds upward velocity. `TryStep` requires a real rise.
+- **Motion.** Motion moves to `soldier.motion.spike.v5`, which adds a cosmetic `Slide` dive pose and walk/run hysteresis (3.8 / 3.2 m/s).
+- **Presentation.** Gait is driven from the authoritative `LocalMovementView` speed and distance, and the displayed feet blend toward the authority feet. Hit capsules stay tick-snapped.
 
 ## ADR-068 — Accepted: procedural arsenal visual profiles and finishes
 
-Date 2026-11-15; owner assigned visual improvement of every weapon with Battlefield V as a quality reference. Sole integrator owns the bounded weapon geometry, presentation materials, packaging recipes, migration, tests and evidence. No imported meshes/textures, combat changes, soldier clearance search or acceptance waiver.
+Date 2026-11-15. **Decision.** `geometry.weapon` moves 1.0.2→1.0.3. Rifle and pistol use numeric section lofts, a slotted cage, fasteners, recesses, a muzzle collar and a faceted slide. The knife gets a ground blade, and the grenade an ovoid shell with spoon and ring.
 
-Decision: geometry.weapon advances 1.0.2 → 1.0.3. Retain old fixtures and reject old recipes rather than regenerate changed bytes under old identities. Rifle/pistol use closed numeric section lofts, a slotted rifle cage, separate fasteners/recesses, muzzle collar and a faceted pistol slide. Existing detachable magazine/cycle semantics remain. Knife gains a ground diamond blade and tapered tip; grenade gains an upright ovoid shell, bent spoon and closed pull ring. Map visual payloads remain content-hashed under the existing map package format; gameplay map roots are unaffected. Weapon material slots are 0 coated metal, 1 polymer, 2 machined steel, 3 dark recess/rubber, 4 olive enamel. Three additional 128² procedural albedo/normal/mask triplets supply machined steel, recess/rubber and enamel through the existing map visual closure, alongside coated metal and polymer. All product finishes retain spatial roughness/metallic masks; no runtime asset generation. All six body/magazine/cycle renderers consume the palette. Gallery rendering must also provide all five slots.
+Weapon material slots are:
 
-Sockets, collision dimensions, seeds, C0/Game-v1/SGAF and four LOD ceilings stay fixed. Validate topology, winding, tangent frames, deterministic bytes, migration, detached-part totals and package round trips. Named first-person/world visual review and reference performance remain Pending; this is an incremental procedural improvement, not a claim of Battlefield V equivalence. Rollback requires restoring 1.0.2 source/recipes, old palette and matching packages together.
+| Slot | Material |
+|---|---|
+| 0 | Coated metal |
+| 1 | Polymer |
+| 2 | Machined steel |
+| 3 | Recess/rubber |
+| 4 | Olive enamel |
 
+Three new 128² PBR triplets supply them through the visual closure. Sockets, collision, seeds and LOD ceilings are unchanged. Old recipes are rejected.
 
 ## ADR-069 — Accepted: articulated near-field hands and global analytic reflections
 
-Date 2026-11-15; owner authorized the next visual pass: hands/handling and lighting, then weapon shape refinement, and subsequently requested a combined next installer with the concurrent map/AI work. Sole integrator owns this bounded camera-hand/weapon/lighting slice. Soldier anatomy, P05 stop, hit shapes, authority, settings, editor/packages and acceptance remain unchanged.
-
-`fp.hand.v2` adds independent 17-joint camera-only glove/sleeve rigs for all four slots. Existing SGAF v1 skin/skeleton codecs carry eight hand meshes and eight skeletons in the verified map visual closure; old rigid packages fail required closure/skin validation. Fingers release/regrip through continuous reload windows and the trigger finger follows accepted-shot cycle. Wrist reach deforms the sleeve while its elbow remains anchored. Two skinned hand renderers replace two rigid ones. Magazine motion waits until the support hand reaches the well, seats before the fingers return, and no longer translates the entire weapon along the magazine path. Special slots have their own numeric grips. Slot/life reset restores bind transforms. No runtime mesh generation, imported clips, new soldier joints or gameplay hit data.
-
-`geometry.weapon` advances 1.0.3 → 1.0.4 for selective two-segment grip/frame/magazine bevels and a rounder near-field barrel. Preserve 1.0.3 fixture bytes and reject old recipes; sockets, collision dimensions and combat rules stay fixed.
-
-One generated 64² RGBAHalf cubemap with a full mip chain is the global reflection fallback. Analytic sky/ground and a bounded sun lobe cover positions outside the existing 48 m local probe, without per-frame capture or an additional light. This approximate mip-filtered environment is not a GGX prefilter, baked GI or screen-space reflection. Disposal restores the previous reflection owner/mode. Outdoor fill/key balance and bounded shadow bias improve material and ground-contact readability. Validate deterministic skin/package bytes, actual hand deformation and resource lifetime, reflection lifecycle, full Unity lanes and a clean combined installer. Reference performance, named visual review and all release/P05 acceptance remain Pending.
+Date 2026-11-15. **Decision.**
+- **Hands.** `fp.hand.v2` gives each of the four slots its own 17-joint, camera-only glove and sleeve rig. These are 8 skinned meshes plus skeletons in the visual closure, using the existing SGAF skin codecs. The fingers release and regrip through reloads, and the trigger finger follows the shot cycle. The magazine moves only after the support hand reaches it.
+- **Weapons.** `geometry.weapon` moves 1.0.3→1.0.4 for selective bevels and a rounder barrel.
+- **Reflections.** One generated 64² RGBAHalf mip-chained cubemap is the global reflection fallback outside the local probe. It is approximate, not a GGX prefilter.
 
 ## ADR-070 — Accepted: bot tactics tranche (cover peek, wall hearing, ledge strafe, route spread) (T090)
 
-Date 2026-11-15; owner approved the bot-AI improvement plan (Phase 1 tactics). Sole integrator owns `Simulation/AI/**`, pure AI tests and AI/docs handoff. No C0/Game-v1 freeze change, no ray/path budget raise, no difficulty selector, no weapon damage/rate change, no map cover-proxy bake (deferred).
+Date 2026-11-15. **Decision.** Tactics improve within the same budgets:
+- **Cover peek.** Probes prefer a hidden point with a clear left/right peek. A blind but hidden point is the fallback. They share the ≤4 probe / ≤16 total ray budget.
+- **Hearing through walls.** Gunfire uses a direct ear→source occlusion ray, outside the vision budget. Footsteps beyond 2.5 m use leftover budgeted rays at most once per bot every 12 ticks, failing open.
+- **Ledge strafe.** A downward probe at the look-ahead foot flips or cancels the strafe on a drop of more than about 0.55 m.
+- **Route spread.** Destinations within about 9 m of an ally's remaining path corners are penalized.
 
-Context: T082/T085 delivered readable aim, footsteps, spread and cover probes, but documented limits remained: cover was first-hidden without peek scoring; hearing ignored walls; strafe had no ledge sample; spread ignored ally path corridors. Owner feel review is still Pending.
-
-Decision:
-- **Cover (peek).** Runtime probes still share the ≤16 AI-ray budget (≤4 probe/peek rays per tick after vision). A candidate must hide a crouched chest. Prefer a left/right peek sample with clear LOS to the threat eye; keep the first blind-but-hidden point as fallback if no peekable site is found before candidates exhaust (`Simulation/AI/CoverFinder.cs`).
-- **Hearing (walls).** Gunfire uses a direct ear→source occlusion sample (not charged to the 16 vision rays) so `ObserveGunfire` stays synchronous. Footsteps beyond presence use leftover budgeted AI rays at most once per bot per 12 ticks (fail-open when deferred; last result reused while rate-limited). Presence (≤2.5 m) always passes.
-- **Strafe (ledge).** Before committing a strafe step, sample ground under the look-ahead foot with a downward collision ray (not the vision budget). Flip or cancel when the drop exceeds ~0.55 m or the probe has no footing while the bot's own feet still do. Open/diagnostic worlds with no ground fail-open.
-- **Spread (routes).** `ChooseSpreadDestination` also penalizes destinations within ~9 m of an ally's remaining path corners (blackboard corners only; no new path solves).
-- **Budgets / contracts.** Global ≤16 AI rays / ≤2 new paths per tick, `AiNoise` determinism, Game-v1 `ITeamBotPlanner`, and T085 lethality envelope stay unchanged.
-
-Validation: new `BotTacticsT090Tests` plus existing AI suites; `AiRaysUsedThisTick` ≤16. Named player feel, `SHOOTER_AI_SUMMARY` on product maps, AI CPU 1.5 ms and installer remain Pending. Rollback: revert T090; prior T082/T085 behaviour.
+Budgets, determinism and the planner seam are unchanged ([combat AI](features/ai.md)).
 
 ## ADR-071 — Accepted: Oil Depot third map and limited elevated routes
 
-Date 2026-11-15; owner requested a Warface Oil Depot–inspired third catalog map with walkable elevated routes. Sole integrator owns the bounded map recipe/planner, Y-aware connectivity/nav bake, catalog/UI/workload unlock, locks, tests and docs. No imported art; Compound and Depot Yard layouts stay unchanged.
+Date 2026-11-15. **Decision.** A third catalog map is added: `oil-depot` (Oil Depot), using generator `map.oil` / `shooter.recipe.map-oil.v1` with seed `460072032`. Game-v1 is unchanged (`MapId` is a string). `WellKnownMaps.OilDepot` and the oil workloads are registered.
 
-Decision: release catalog expands from two to three approved MapIds — keep `training-compound` / `depot-yard`, add `oil-depot` (display Oil Depot), generator `map.oil` / `shooter.recipe.map-oil.v1`, seed `460072032`, planner `environment.oil.arena` 1.0.0. Game-v1 DTO shape is unchanged (`MapId` remains a string); `WellKnownMaps.OilDepot` and oil TDM workload rows are registered. Product shell shows three map cards.
+**Limited verticality:**
+- Thin gameplay slabs (≤0.40 m) are walkable stairs and catwalks.
+- `CompoundConnectivity` occupancy is Y-aware, so decks do not seal underpasses.
+- Climbing uses layered pathfinding.
+- Native and software nav bakes emit those slabs.
+- The motor step and slope limits are unchanged.
 
-Limited verticality: thin gameplay slabs (≤0.40 m) are walkable stair/catwalk surfaces; `CompoundConnectivity` occupancy is Y-aware so decks do not seal underpasses; ground-to-ground paths stay XZ A*; climb uses layered pathfinding when an endpoint is elevated. Native/software nav bake emit walkable sources for those slabs. Roofs remain non-gameplay (ADR-049). Motor StepHeight 0.25 m / MaxSlope 45° unchanged. ArenaRules still apply; oil layout is an 84×108 m three-lane petroleum arena with a mirrored catwalk flank.
-
-Consequences: content-format and game-contract locks refresh; packages scale to three maps × four profiles; prior two-map installers remain valid rollback pairs. Named playtest, native publication of oil packages and reference soaks remain Pending. Rollback: revert ADR-071 merge and republish the two-map catalog.
-
-Addendum 2026-11-15 (B02 route refreeze): the canonical compound (seed `460072030`) carries six 0.30 m gameplay roof slabs at 6 m. Under Y-aware occupancy they now count as walkable surfaces whose underside clears agent height, so they no longer seal the building interiors from ground XZ A*. The B02/B03 compound route therefore changes; collision hash, nav hash, nav-settings hash, shell/prop/bot counts and `environment.compound` 1.0.0 are unchanged. Owner approved refreezing only `routeHash` in `Benchmarks/b02-b03-m3-freeze.json` from `eb135d38…ab6` to `2a378cb0…bf05` (value computed by `B02B03ManifestTests.HashRoute`). Compound packaged patrol routes derived from `RouteCorners` change with it and are republished in installer 0.3.15. Rollback restores the prior hash together with the ADR-071 revert.
+**Addendum.** Compound roof slabs became walkable under the Y-aware occupancy. Only the B02/B03 `routeHash` in `Benchmarks/b02-b03-m3-freeze.json` was refrozen, with owner approval. The layout was later rebuilt by ADR-109.
 
 ## ADR-072 — Accepted: DefinitionId weapon profiles (catalog + visual bind)
 
-Date 2026-11-15; owner requested architecture so a new rifle model is a catalog/recipe row instead of forking slot-0 switches across Simulation, Generation and Presentation.
+Date 2026-11-15. **Decision.** **The slot is not the identity.** Slots 0..3 stay primary, sidearm, melee and throwable. Behavior and look resolve from `DefinitionId`:
+- `WeaponCatalog` (Simulation) owns the combat definitions; `WeaponDefinition.FromId` delegates to it.
+- `WeaponVisualProfiles` (Presentation) binds meshes and optics.
+- `WeaponLoadoutPolicy` builds the four `WeaponState` records.
+- Game-v1 `ActorLifecycleState` gains an optional `ActiveWeaponDefinition`.
 
-Context: combat used a closed `WeaponDefinition.FromId` whitelist; presentation/optics/handling/audio treated loadout **slot** as weapon identity; `geometry.weapon` only knew `kind ∈ {rifle,pistol}`. Contracts already carry `WeaponState.DefinitionId` / `ShotPayload.WeaponId`. C0 `PredictionSchema` 2 and the four loadout slots stay frozen.
-
-Decision:
-- **Slot ≠ identity.** Slots 0..3 remain primary / sidearm / melee / throwable loadout indices. Behavior and look resolve from `DefinitionId` via a frozen in-process **WeaponCatalog** (Simulation) and parallel **WeaponVisualProfiles** (Presentation).
-- **Combat catalog.** `WeaponCatalog` owns combat defs + family + visual-profile key. `WeaponDefinition.FromId` delegates to the catalog. AI cadence/mag reads the equipped definition (no mirrored rifle constants). Geometry recipes still cannot override damage/ROF/mag.
-- **Loadout policy.** `WeaponLoadoutPolicy` builds the four `WeaponState` records; default primary remains `weapons/rifle`. Alternate primaries (proof: `weapons/rifle-carbine`) occupy slot 0 when selected — not a fifth slot.
-- **Game-v1 mirror.** `ActorLifecycleState` adds optional `ActiveWeaponDefinition` so presentation can bind meshes/optics without inferring from slot alone. PredictionSchema unchanged.
-- **geometry.weapon 1.0.5.** Recipes gain required `parameters.silhouette` (`standard` | `carbine`; carbine only with `kind=rifle`). Sockets and collision mechanical dimensions stay on the numeric baseline. Map visual closure publishes profile asset keys (including carbine LOD/mag/cycle) and presentation binds by profile, not `IsRifleSlot`.
-- **Non-goals (v1):** fifth slot, runtime JSON combat tables, world weapon pickups, per-gun simulator subclasses.
-
-Validation: pure Simulation catalog/loadout/AI tests; Generation recipe/silhouette + package path tests; Presentation profile/optic resolution tests; Game-v1 and feature-content locks refreshed. Named player/installer review Pending. Rollback: revert ADR-072 merge and republish prior generator version / packages.
+`geometry.weapon` 1.0.5 requires `parameters.silhouette` (`standard` | `carbine`). There is still no fifth slot. Superseded in data form by ADR-077 (definition files) and ADR-102 (named arsenal).
 
 ## ADR-073 — Accepted: life-scoped multi-kill and headshot HUD badges
 
-Date 2026-11-15; owner requested different combat score badges for 2 / 3 / 4+ kills in a row until the local player dies, plus an extra badge on headshots. Sole integrator owns the bounded session award ring / HUD labels / tests / docs. No Game-v1 Score math change, C0 DeathPayload change, art import or acceptance waiver.
+Date 2026-11-15. **Decision.** The session tracks a kill streak for the local human's current life. It resets on death and has no Score bonus. The internal `LocalScoreAward` ring carries the streak plus an optional `Headshot` award (0 points) when the fatal hit was to the head. The HUD shows:
+- `ENEMY KILLED`, `DOUBLE KILL`, `TRIPLE KILL` or `MULTI KILL` (4+);
+- an extra headshot feed row.
 
-Context: ADR-059 added personal Score (kill = 100; assist = HP) and binary `ENEMY KILLED` / `ASSIST` badges, and explicitly carved out streaks and progression. Kill-feed already correlates fatal head region via same-tick `DamageApplied` without changing DeathPayload. Owner wants Battlefield-style multi-kill / headshot **HUD feedback** only.
-
-Decision:
-- Keep Score math and team win unchanged (kill still exactly 100; assist still HP; no streak bonus points).
-- Session tracks a **local-human life kill streak**: increment on each credited enemy kill award; reset when the human dies or the match runtime is released.
-- Enrich the internal `LocalScoreAward` ring (still not a Game-v1 DTO): Kill carries `KillStreak`; optional sibling `Headshot` kind (0 points) when the fatal same-batch `DamageApplied.RegionId` is head.
-- Presentation maps Kill streak → `ENEMY KILLED` / `DOUBLE KILL` / `TRIPLE KILL` / `MULTI KILL` (4+); ribbon uses the streak kill label; Headshot is an extra mid-screen feed row only (no ribbon, no ammo +0). Assist unchanged.
-- Procedural Fill ribbon/feed only; no imported badge art; not a progression, pickup or unlock system.
-
-Validation: pure `ScoreBadgeVisual` / local award shaping tests; Game and Simulation wrappers as needed; docs/manifest. Named 720p badge readability remains Pending. Rollback removes streak/headshot award fields and restores binary Kill/Assist labels.
+Score math, team rules, Game-v1 and C0 are unchanged. A +20 headshot Score bonus came later in ADR-097.
 
 ## ADR-074 — Accepted: compact 64 × 80 m arenas with distinct per-map layouts
 
-Date 2026-11-15. The owner reported that all catalog maps were too big: every fight happened in the middle, and the spawn-side halves stayed empty. The owner also reported that the maps looked alike, always a box building in the middle with odd free-standing walls around it. The owner approved shrinking all three maps (Oil Depot keeping its most interesting parts) and giving Training Compound and Depot Yard new layouts. The sole integrator owns the bounded arena planners, rules, dressing, tests and docs.
+Date 2026-11-15. **Context.** The owner found the maps too big, with every fight in the middle, and too alike.
 
-Decision:
-- **Size.** Every arena is 64 × 80 m with anchors at z = ±34. `ArenaRules` thresholds change:
-  - playable X from 70–100 to 56–72 and Z from 90–120 to 72–88;
-  - anchor separation from 80–110 to 60–76;
-  - spawn → centre grid path from 38–55 to 26–44;
-  - spawn → enemy path from 85–140 to 60–100;
-  - longest sightline from 60 to 48 m.
-  - Cover, exits, routes, spawn LOS, ceilings and spawn-slot rules are unchanged.
-- **Symmetry.** `ArenaLayout` gains `ArenaSymmetry` (`MirrorZ` default, or `Rotate180`); `ArenaBoxBuilder`, the mirror-symmetry rule and team-2 anchors/exits use it. Training Compound becomes point-symmetric (a "garrison square" with an open parade square in the middle and a pinwheel of barracks, office, garage and truck street around it). Depot Yard becomes a "rail crossing" (a train across z = 0 with three crossings, stack yard, loading shed, no warehouse). Oil Depot keeps the tank farm, the pump house and the catwalk, now one deck spanning z = 0. Its container lane and separator walls are removed.
-- **No strange walls.** Blocking geometry must be readable objects. Free-standing thin separator walls, U-pockets and spawn baffle walls are retired. Spawns are protected by parked vehicles and buildings, with gate chutes and offset staging openings. `ArenaFeature` descriptors (vehicles, rolling stock, sandbags, fences, booths, flag, tanks, pipe racks) travel on `CompoundPlan.Features`, and `ArenaFeatureDressing` draws them mesh-only inside their collision envelopes. Petroleum accent roles stay oil-only.
-- Planner versions: `environment.compound.arena` 3.0.0, `environment.depot.arena` 3.0.0, `environment.oil.arena` 2.0.0. Map ids, display names, seeds, recipes, package/metadata schemas, SGAF Collision v1, nav settings and the 256 m / 32 m chunk frame are unchanged.
+**Decision.** Every arena is 64 × 80 m with anchors at z = ±34. `ArenaRules` thresholds shrink:
+- playable 56–72 × 72–88 m;
+- anchor separation 60–76 m;
+- spawn→centre path 26–44 m;
+- spawn→enemy path 60–100 m;
+- sightline ≤48 m.
 
-Consequences:
-- Gameplay collision, nav hashes, route corners, spawn slots and all three maps' package identities change. Software packages must be recompiled, and native nav republished with the locked editor.
-- The ArenaVisualDetail gameplay fingerprints are refrozen from the new planners.
-- The legacy W01 compound (B02/B03 freeze) is untouched.
-- Rule validation proves geometry only. Time to first contact, spawn pressure, bot routing on the new topologies and the named 5v5/6v6 playtest of all three maps remain Pending.
+`ArenaLayout` gains `ArenaSymmetry` (MirrorZ or Rotate180). Free-standing separator walls are retired. Blocking geometry must be readable objects (`ArenaFeature` with `ArenaFeatureDressing`). The planners move to `environment.*.arena` 3.0.0 (oil 2.0.0). Map ids, seeds, schemas, SGAF and nav settings are unchanged, but package identities change.
 
-Rollback: revert the ADR-074 merge and republish the ADR-071 packages.
+Superseded for layout by ADR-109 site plans, which keep the 64 × 80 m frame.
 
 ## ADR-075 — Provisional: third-party code libraries for noise, runtime rigging and spatial audio
 
-Date 2026-11-16. Draft for owner review. The owner asked which existing frameworks could cover textures, movement and sound without breaking the art policy. Status is Provisional in the ADR-008 sense: each library may be adopted only after its own pinned-version spike passes the gate below. Until then nothing is vendored, and `UnityProject/Packages/manifest.json` and `toolchain-lock.json` stay unchanged. The sole integrator owns package/settings changes (root `AGENTS.md`).
+Date 2026-11-16. **Context.** ADR-002 bans imported visual *content*, not third-party *code* that turns numeric recipes into output. Pure folders must stay C# 9 / .NET Standard 2.1 and Unity-free, which rules out .NET 6+ physics and MonoBehaviour character assets.
 
-Context:
-- ADR-002 bans imported visual *content* (meshes, photos, painted textures, rigs, mocap, hand-keyed clips). It does not ban third-party *code* that turns numeric recipes into output. ADR-062 and ADR-066 already ship licensed non-geometry media with license, hash and provenance records.
-- `MaterialBaker` uses a hand-rolled periodic value noise (`Noise`/`Cell`). That limits surface variety: there are no gradient, cellular, ridged or domain-warp bases for camo, rust, concrete, cracks or terrain blends.
-- Soldier motion bakes deterministic gait/IK in `Generation/Core/SoldierMotion` (`TwoBoneIk`, ADR-007). Presentation has no runtime correction for hands on weapons, foot contact on uneven or elevated ground (ADR-071 catwalks), or aim/look-at on remote actors.
-- Audio is one 2D `AudioSource` fed by `OnAudioFilterRead` (ADR-055/062): stereo pan, distance attenuation and high-frequency rolloff. There is no HRTF, occlusion or room reverb, so it is hard to place sounds above or below, behind cover, or indoors vs outdoors.
-- Constraints that rule out alternatives: `Simulation`, `Generation/Core` and `Contracts` must stay C# 9 / .NET Standard 2.1, Unity-free and linked by `Tools/*` projects. That excludes .NET 6+ physics (BepuPhysics v2, Jitter2) and MonoBehaviour movement assets (Kinematic Character Controller). Those stay reference reading only. The authoritative kinematic motor (ADR-006) and PhysX world collision are unchanged.
+**Decision.** Three libraries were considered. Each must pass its own pinned-version spike before it is adopted.
 
-Decision:
+| Library | Use | Outcome |
+|---|---|---|
+| **FastNoiseLite** (MIT) | Noise sampling primitive in `Generation/Core` | **Accepted** |
+| **Unity Animation Rigging** | Runtime IK correction | **Rejected** |
+| **Steam Audio** (Apache-2.0) | Presentation-only HRTF and occlusion | **Provisional** (T094) |
 
-1. **FastNoiseLite (C#, MIT) → `Generation/Core` noise source.**
-   - Vendor the single upstream C# file at an exact release tag under `Generation/Core/Noise/ThirdParty/`, unmodified except namespace wrapping. Keep its MIT header in the file and record its upstream URL, tag and SHA-256 in a new `namedThirdPartyCodeSources` list in `Tools/provenance-allowlist.json`. The file is linked by `Tools/Generation` like the rest of `Generation/Core`.
-   - It is only a sampling primitive. Seeds come from existing PCG32 named streams (ADR-009). Recipes still own every parameter, and no texture, image or preset ships with it.
-   - Tiling: FastNoiseLite has no built-in periodic mode. Tileable bakes must use an explicit wrap (for example torus mapping onto 3D, or seam cross-fade) implemented in our code and covered by seam tests.
-   - Existing material recipes and their content hashes are **not** migrated. Only new recipe versions may select FastNoiseLite bases, so current packages and `feature-content-lock.json` stay valid until a recipe deliberately bumps.
+**FastNoiseLite.** Accepted as a sampling primitive (T091/T092).
+- **Precision.** Upstream `float` math differed by about 1 ulp between Mono and .NET. The vendored `Generation/Core/Noise/ThirdParty/FastNoiseLite.cs` is therefore a mechanical double-precision port, generated from the pinned upstream bytes by `Tools/port_fastnoiselite_double.py`. `--check` re-derives it, and hand edits are not allowed.
+- **Usage.** Recipes use only `Generation/Core/Noise/NoiseField.cs`, with seeds from `NamedRandomStream` and every setting explicit. Tileable sampling blends lattice-shifted copies.
+- **Provenance.** `Tools/provenance-allowlist.json` gains `namedThirdPartyCodeSources` and `namedNativeBinaries`. Any unlisted `ThirdParty/` file fails.
+- **Evidence.** Golden values match bit-for-bit across lanes.
 
-2. **Unity Animation Rigging (`com.unity.animation.rigging`) → Presentation-only runtime correction.**
-   - Allowed constraints: two-bone IK (hands to weapon sockets, feet to ground probes), multi-aim (head/spine look-at) and multi-parent (weapon hand-off). Rigs and constraint targets are created from code on the generated skeleton. No authored rig prefabs, animation clips or package samples are used.
-   - The baked `SoldierMotion` pose stays the source. Rigging only applies bounded, weighted corrections after it, and is never read by Simulation, hit volumes or AI (ADR-004). Hit poses keep using the fixed gameplay pose evaluator.
-   - The package and every reference stay out of `UNITY_SERVER` and out of the pure test lane.
+**Animation Rigging.** Rejected (T093). The spike worked, but adoption would have refrozen the toolchain hash in every lock. Pose corrections stay in the pure `TwoBoneIk` inside `SoldierMotion`. The follow-up gaps are:
+- collision-backed `ISoldierGround` for remote soldiers;
+- per-profile support grips;
+- a bounded head look-at.
 
-3. **Steam Audio (Valve, Apache-2.0, Unity integration) → Presentation-only spatialization.**
-   - Scope: HRTF binaural rendering, distance and air absorption, and geometry occlusion/transmission against the **gameplay collision mesh** (not render meshes). This keeps results identical across quality tiers. Baked reverb or reflections are optional and come only after a CPU measurement.
-   - The current mixer must move from one mixed 2D source to per-voice spatialized sources (≤24 voices, ADR-055 limit unchanged), or feed Steam Audio's spatializer per voice. The sample bank, its manifest and its hashes are unchanged.
-   - Steam Audio ships prebuilt native binaries. They are a new provenance category: record each binary's path, SHA-256, upstream release and license under a new `namedNativeBinaries` allowlist entry, Win64 client only. The default HRTF dataset ships as data with its license recorded. No SOFA files from other sources.
-   - Excluded under `UNITY_SERVER`. The current stereo mixer stays as the runtime fallback when the plugin fails to load, and as a Low-profile option.
+Corrected poses never feed Simulation, hit volumes or AI.
 
-Spike gates (all required before a library moves to Accepted):
-- Exact version or tag resolved against the locked editor 6000.3.28f1 / URP 17.3.0 and recorded in `toolchain-lock.json` (packages) or the allowlist (vendored code and binaries). No version is chosen in this ADR.
-- `Test-SourceProvenance.ps1` PASS with the new allowlist categories, plus `.meta` completeness.
-- Pure suites (`Test-Generation`, `Test-Simulation`, `Test-Game`) PASS. For FastNoiseLite, add golden-value tests across the `Tools` .NET lane and the Unity editor, so float determinism matches between lanes.
-- Client IL2CPP and Server builds PASS. The Server build must not contain Animation Rigging or Steam Audio assemblies or binaries.
-- CPU cost measured on the reference laptop at TDM-5v5 Low/High against the 0.5 ms audio mix target and the existing presentation budget. A missing measurement is Pending, not PASS.
-- A named listen/visual review for the audio and rigging spikes, recorded in the milestone handoff.
+**Steam Audio.** Still Provisional (T094). It needs per-voice spatialization against gameplay collision, native binaries in the allowlist and the stereo mixer as fallback.
 
-Consequences: the allowlist schema grows (third-party code and native binaries). Client build size grows by the Steam Audio binaries. The audio mixer and remote-actor presentation take on new code paths with fallbacks. Gameplay authority, contracts, locks and current content identities are unaffected unless a later recipe bump opts in. Rejected: Substance Designer / Material Maker (GUI-authored graphs exported as bitmaps, unclear under ADR-002), FMOD/Wwise (heavier than needed; licensing outside the non-commercial scope), BepuPhysics/Jitter2 (target framework and determinism envelope). Rollback per library: remove the vendored file or package entry and its allowlist record. The prior noise, pose and stereo mixer paths remain in place throughout.
-
-Addendum 2026-11-16 (T091/T092, FastNoiseLite → Accepted as a sampling primitive):
-- **Allowlist (T091).** `Tools/provenance-allowlist.json` gains `namedThirdPartyCodeSources` (path, sha256, upstreamSha256, upstream URL, tag, license) and `namedNativeBinaries` (Win64 `.dll` under `Assets/Plugins` only). `Test-SourceProvenance.ps1` hash-checks both and flags any file under a `ThirdParty/` folder that is not listed. Eight new synthetic regression cases cover them.
-- **Cross-lane drift found.** Upstream FastNoiseLite v1.1.1 computes in `float`. The locked editor's Mono runtime and the .NET tools lane disagreed by about 1 ulp on the OpenSimplex2-based bases (cellular matched), which would break content-hash agreement between lanes. The owner chose a double-precision port over dropping the library.
-- **Decision.** The vendored file at `Generation/Core/Noise/ThirdParty/FastNoiseLite.cs` is generated from the pinned upstream bytes (SHA-256 `6050908…160e`) by `Tools/port_fastnoiselite_double.py`. The port is a mechanical `float` → `double` change (keywords, `f` literals become `d` literals, the `FNLfloat` alias), plus a note, `#nullable disable` and a namespace wrapper. `--check` re-derives and compares it. Hand edits are not allowed. Recipes use only `Generation/Core/Noise/NoiseField.cs`, which provides gradient, cellular, ridged FBm and domain-warped FBm bases seeded from `NamedRandomStream`, with every FastNoiseLite setting set explicitly. Tileable sampling blends four lattice-shifted copies with quintic weights and renormalizes by weight energy, after centring each basis.
-- **Evidence.** The golden values match bit-for-bit in both lanes. `Test-Generation` passed 458/458, including 21 noise tests covering goldens, stream independence, seam C0 to 1e-9, seam slope no rougher than the interior, contrast and argument checks. EditMode `NoiseFieldEditModeTests` passed 4/4. Provenance, `verify_feature_registry.py` and the C0/format locks all pass. `material.surface` 1.0.1 and all package identities are unchanged.
-- **Not yet done.** No material recipe uses `NoiseField` yet. The proof generator (planned as a separate `material.noise` id so `material.surface` 1.0.1 stays frozen) still needs owner sign-off and a reviewed `feature-content-lock.json` refreeze. Animation Rigging (T093) was later Rejected (see below). Steam Audio (T094) is still Provisional.
-
-Addendum 2026-11-16 (T093 spike: Animation Rigging mechanism passes; adoption still Provisional):
-- **Scope direction.** The owner said the game is local play only for now, and multiplayer and dedicated-server work is postponed. Server checks in this ADR (assembly exclusion, server build) are **deferred**, not failed. Existing `!UNITY_SERVER` constraints stay in place.
-- **Setup.** On branch `spike/t093-animation-rigging`, `com.unity.animation.rigging` 1.4.1 (the version the locked editor bundles) is added through `manifest.json` / `packages-lock.json` only. It adds the built-in `com.unity.modules.animation`. Burst and Mathematics were already present. The package has no `Resources/` folders, and its images exist only under `Documentation~`.
-  - The spike assembly `Shooter.Presentation.PoseCorrection` (`!UNITY_SERVER`) attaches a code-built `TwoBoneIKConstraint`: left arm to a support-grip target parented to the held weapon. The soldier has no AnimatorController or clips and is evaluated manually right after `ProductActorPresentation.Sync` writes the `SoldierMotion` pose.
-- **Finding.** The plain constraint solves from the live script pose. Over three frames, including a 1 m move and a turn, hand-to-target error was 0.00000 m, the shoulder moved 0 m and every unconstrained bone moved 0 m. The Animator writes only the three constrained bones.
-  - Marking bones with `RigTransform` breaks this: the solve reads stale stream values (0.716 m error). Production must not mark procedural bones, and `PoseCorrectionSpikeTests` guards this.
-  - Cost for 10 actors with manual `RigBuilder.Evaluate` is about 0.28–0.31 ms/frame in the editor. That's a diagnostic number only; the reference-laptop player measurement is Pending.
-- **Builds.** EditMode passes 67/67. The IL2CPP Client build passes with the rigging assembly compiled in.
-  - `ShooterBuildAssemblyFilter` (an `IFilterBuildAssemblies` in `Bootstrap/Editor`) keeps the package's `DocCodeExamples` assembly out of players. Its server-exclusion branch is unverified because the server build is deferred.
-  - The first spike server build did ship `Unity.Animation.Rigging.dll`.
-- **To adopt.** Pinning the package in `toolchain-lock.json` changes the toolchain hash frozen in `contract-lock.json`, `content-format-lock.json` and `game-contract-lock.json`, and every retained build identity. That refreeze is an owner decision. Until then the spike stays on its branch. Next would be production hand/foot/look-at correction for remote soldiers, the reference-laptop CPU measurement and a named visual review.
-
-Addendum 2026-11-16 (T093 decision: Animation Rigging → Rejected; corrections use the pure `TwoBoneIk`):
-- **Decision.** The owner chose not to refreeze the toolchain hash in the C0, format and Game-v1 locks. `com.unity.animation.rigging` is **Rejected** for this project. `manifest.json`, `packages-lock.json` and `toolchain-lock.json` are unchanged from `d8cbeb4`. The spike assembly `Shooter.Presentation.PoseCorrection`, `PoseCorrectionSpikeTests` and `ShooterBuildAssemblyFilter` were removed rather than merged. Their findings are kept in the addendum above.
-- **Why the fallback costs little.** `Generation/Core/SoldierMotion/SoldierMotion.cs` already solves both arms (`ClearArm`, with body-clearance pole search) and both legs (`Leg`) with the pure, deterministic `TwoBoneIk`. Foot planting already samples `ISoldierGround`. The package would only have duplicated these solves in a Unity-only layer.
-  - What remote soldiers actually lack is input quality. `ProductActorPresentation` passes a `FlatGround` at the authoritative feet height, so feet do not follow stairs, ramps or catwalk edges. The support grip comes from the rifle recipe's sockets for every held weapon, and there is no separate head look-at.
-- **Follow-up (T093 production correction).** Close these gaps inside `SoldierMotion` and its inputs, not with a post-pass:
-  - a cosmetic `ISoldierGround` backed by gameplay collision for remote soldiers (read-only, within the existing per-pose query budget);
-  - per-profile support-grip targets;
-  - a bounded head/neck look-at toward the aim point.
-  - Gates: pure Generation goldens, EditMode, the Client build, reference-laptop CPU and a named visual review.
-  - Corrected poses stay cosmetic and must never feed Simulation, hit volumes or AI (ADR-004).
+**Spike gates for any library:**
+- the version is pinned;
+- provenance passes;
+- the pure suites and cross-lane goldens pass;
+- the Client build passes;
+- reference-laptop CPU is measured;
+- a named review is done.
 
 ## ADR-076 — Accepted: offline-only scope and bounded local evidence
 
-Date 2026-11-16. The owner accepted this as part of an architecture review. Context: the C: drive filled up (2.9 GB free). Of the repository's 53 GB, `Artifacts/` held 37 GB:
-- 50 full IL2CPP client players (about 1.2 GB each);
-- 31 dedicated-server builds;
-- 27 release packages, each a second copy of a player, plus extract and corrupt rehearsal trees;
-- 22 installers.
+Date 2026-11-16. **Context.** The C: drive filled. `Artifacts/` held 37 GB of retained players, servers, packages and installers, and nothing pruned them.
 
-Every wrapper created a new `<commit>/<action>-<run id>` folder and nothing pruned it. `Clean-Artifacts.ps1` was manual, and it kept every run cited by any tracked file, which was most of them.
-
-Decision:
-
+**Decision.**
 1. **Offline scope.** The product is offline TDM against bots until the owner decides on multiplayer.
    - `Networking` stays in git but is parked: no new code, and no Unity assembly references it.
-   - The Dedicated Server build is not run by CI (`foundation.yml` builds and smokes the Client only) or by the release flow. `Build.ps1 -Target Server` still works on request.
-   - New code adds no `UNITY_SERVER` guards or transport hooks. Simulation stays the single authority and Presentation stays read-only, since that structure also suits offline play.
-   - Server gates in the docs read as Parked (offline scope), not Pending.
-2. **One output per pipeline.**
-   - When a wrapper run finishes with any result other than FAIL, `Save-ShooterRun` (`Tools/Unity.Common.ps1`) deletes older runs of the same action across all commits. `Package-Release.ps1` and `Build-Installer.ps1` do the same for `package-*` and `installer-*`.
-   - Only the newest run is kept, so there is one client player, one package and one last release installer. `SHOOTER_KEEP_RUNS` raises the count.
-   - A failed run never deletes the last good one.
-   - Before a pruned run is deleted, its top-level `*.json` reports under 1 MB are copied to `Artifacts/reports/<action>/<commit>/<run>/`. That small history is what handoffs cite; they do not cite stored players.
-3. **Scratch is deleted.** On success, `Package-Release.ps1` removes its `extract-rehearsal/` and `corrupt-rehearsal/` trees. Their results remain in `validation.json` and `corrupt-rehearsal.json`.
-4. **Free-space floor.** `New-ShooterRun`, `Package-Release.ps1` and `Build-Installer.ps1` refuse to start with less than `SHOOTER_MIN_FREE_GB` free (default 5). `Tools/Disk-Report.ps1` is a read-only report covering the repository, the Artifacts areas and the per-user caches outside the repository.
-5. **One-time cleanup (2026-11-16).** These were deleted, freeing about 33 GB:
-   - all `player/` folders except the newest client build;
-   - all server runs, `package-*` runs and older installers;
-   - the ad-hoc review folders (`weapon-visuals-evidence`, `worker-evidence`, `T08xPreview`, `unity-soldier-tests`, `tooling-tests`).
+   - Neither CI nor the release flow builds the Dedicated Server; `Build.ps1 -Target Server` still works on request.
+   - No new `UNITY_SERVER` guards or transport hooks are added.
+   - Simulation stays the single authority and Presentation stays read-only.
+   - Server gates read as **Parked**, not Pending.
+2. **One output per pipeline.** After a non-FAIL run, `Save-ShooterRun` (`Tools/Unity.Common.ps1`), `Package-Release` and `Build-Installer` delete older runs of the same action. `SHOOTER_KEEP_RUNS` raises the count. Small JSON reports are first copied to `Artifacts/reports/<action>/<commit>/<run>/`. A failed run never deletes the last good one.
+3. **Scratch deleted.** Package rehearsal trees are deleted after success.
+4. **Free-space floor.** Heavy wrappers refuse to start below `SHOOTER_MIN_FREE_GB` (default 5). `Tools/Disk-Report.ps1` reports usage.
+5. **One-time cleanup.** About 33 GB was deleted.
 
-   The written results in handoffs remain the record of those runs.
+**Consequences.** Handoffs cite reports and commits, not stored players. Run heavy wrappers one at a time.
 
-Consequences:
-- A milestone handoff can no longer point at a stored player from an older commit. It cites the report under `Artifacts/reports/` and the commit, and a rebuild from that commit reproduces the binary.
-- Two sessions running the same action at once in one checkout may prune each other's older output. Run heavy wrappers one at a time, as the runbook already requires for SDK wrappers.
-
-Addendum 2026-11-16 (Phase 2 of the architecture review):
-- **FastNoiseLite is wired into materials.** `material.surface` **1.1.0** is added next to the frozen 1.0.1, and `MaterialRecipe.IsSupportedVersion` accepts both. In 1.1.0 the baker samples its broad, medium, grain, wear and pore fields through `NoiseField`: domain-warped FBm, gradient, gradient, ridged FBm and cellular respectively. Each field gets its own `NamedRandomStream` key (`material/<family>/noise-1.1/<field>`). The family shading formulas are unchanged.
-  - Every shipped recipe stays on 1.0.1, so no content hash or material look changes.
-  - Moving a recipe to 1.1.0 is a per-recipe change that needs a named visual review and the cross-lane golden check required by ADR-075.
-  - `feature-content-lock.json` was refrozen with owner approval: the material sources, a schema whose `generatorVersion` is now `enum ["1.0.1", "1.1.0"]`, and a second `material.surface` generator entry.
-- **`TwoBoneIk` is final.** It stays the only IK solver, and Animation Rigging won't be revisited. IK runs inside the pure, deterministic motion generator, whose output is baked into hashed content, and the product uses no Animator or Playables.
-- **The JSON readers stay separate, on purpose.** Each enforces a different policy:
-  - `JsonValue`: the canonical, integer-only subset used for hashing.
-  - `MapJsonValue`: printable-ASCII map documents.
-  - `UserSettingsJson`: tolerant user files with diagnostics.
-  - `CombatAudioManifest`: Unicode provenance text.
-
-  Merging them would weaken a validation rule, so they are not merged.
-- **Tool helpers are shared.**
-  - The pure SDK wrappers call `Invoke-ShooterCheckedProcess` and `Get-ShooterRestoreArguments` in `Tools/TestResults.ps1` instead of five private copies.
-  - The Python analyzers import `sha`, `utc` and `percentile` from `Tools/shooterlib.py`.
-
-Addendum 2026-11-16 (Phase 3 of the architecture review: structure):
-- **The pure build mirrors the asmdefs.** `Tools/Foundation`, which compiled eight assemblies as one, is gone. Each pure asmdef now has its own `Tools/<Assembly>` project with the same assembly name and references: Bootstrap.Core, Bootstrap.Release, Simulation, Networking, Content.Maps, World.Runtime, Game.Settings, Game.Session and Presentation.Model. `Tools/verify_asmdef_graph.py` runs in the fast CI lane and fails on drift, so the .NET lane catches boundary violations that only the manual Unity lane used to find.
-- **`Presentation/Model` holds the Unity-free presentation code** in the `Shooter.Presentation.Model` asmdef (`noEngineReferences`). That covers View, Hud, Menus, Scoreboard, the audio mixer, the FX pool and `ShellSessionCoordinator`. The Unity adapters (`UnitySynthAudioOutput`, `AnalyticFxPresenter`, `CosmeticGrenadePresenter`) stay in `Shooter.Presentation`. `Simulation.Tests` references the project, so the old folder links and `Compile Remove` exclusions are gone.
-- **`World/Navigation` and `World/Streaming` moved under `World/Runtime`** into `Shooter.World.Runtime`. `World.Unity` keeps only the PhysX/NavMesh adapters, and the pure test projects no longer compile those folders twice.
-- **Asmdef hygiene.** Unity references are not transitive, so every assembly that references `Presentation` or `World.Unity` now references `Presentation.Model` or `World.Runtime` directly. (`Bootstrap.Client`'s GUID `df380645…` is the Core RP package runtime `Unity.RenderPipelines.Core.Runtime`, which lives outside `Assets/Shooter`. It is not a dangling reference.) Moved files kept their `.meta` GUIDs.
-- **Deferred to their own reviewed tasks:**
-  - splitting the large classes (`CombatAiDirector`, `ProductSessionView`, `ProductShellHost`);
-  - moving map packaging (`MapPackageBuilder`, `UnityNavMeshBakeCodec`, the map document reader and writer) out of `Generation/Core/Environment`. That code is not lock-hashed, but `MapRecipe` and the Editor asset compiler both depend on the nav-bake codec, so a move first needs that dependency split. Otherwise Content.Maps, Generation.Core and AssetCompiler.Editor would have to reference each other in a circle.
-
-Addendum 2026-11-16 (superseded content packages are pruned):
-- **Problem.** Every content republish (ADR-078 weapon split, ADR-079 hash change, ADR-081 AO volume) added new content-addressed package directories, and nothing ever deleted the old ones. The two map caches grew by about 700 MB per republish; 254 stale directories (about 1.5 GB) were deleted by hand.
-- **Decision.** After a successful publish, `MapPackagePublisher.PruneSuperseded` deletes package directories that the new index no longer references, under these rules:
-  - A map package is deleted only when its map id and profile were both part of this publish, so a partial publish (`-Map oil`, `-Profile low`) never touches other maps or profiles.
-  - Older weapon packages are deleted only when a weapon package was published.
-  - Staging `.tmp` directories, unreadable roots and anything still referenced are kept. A failed deletion is never fatal.
-  - `MapContent` deletes its `cancel-probe` scratch folder after the cancellation check and reports `prunedSupersededPackages` in its proof.
-- **Validation.** `MapPackagePruneTests` (3).
+**Architecture review addenda (2026-11-16):**
+- **`material.surface` 1.1.0** samples its fields through `NoiseField`. Shipped recipes stay on 1.0.1 until reviewed.
+- **IK.** `TwoBoneIk` is the only IK solver.
+- **JSON readers.** The four readers (`JsonValue`, `MapJsonValue`, `UserSettingsJson`, `CombatAudioManifest`) stay separate on purpose, because each enforces a different policy.
+- **Shared helpers.** Tools share helpers through `Tools/TestResults.ps1` and `Tools/shooterlib.py`.
+- **Asmdef mirroring.** Each pure asmdef has its own `Tools/<Assembly>` project. `Tools/verify_asmdef_graph.py` fails on drift.
+- **Moved code.** `Presentation/Model` holds the Unity-free presentation code. `World/Navigation` and `World/Streaming` moved under `World/Runtime`.
+- **Pruning.** `MapPackagePublisher.PruneSuperseded` deletes package directories the new index no longer references, but only for maps, profiles and weapons included in that publish.
+- **Deferred:** splitting the large classes, and moving map packaging out of `Generation/Core/Environment`.
 
 ## ADR-077 — Accepted: weapon definition files generate both weapon catalogs
 
-Date 2026-11-16. The owner asked for an easier way to add weapons and their weapon-specific settings, sounds and animation, as step 1 of the architecture review. Sole integrator owns the generator, the two catalogs, routing, tests, CI and docs. No C0, Game-v1, PredictionSchema, content-format or feature-content lock change; no acceptance waiver.
+Date 2026-11-16. **Context.** After ADR-072, adding a weapon still meant editing two parallel catalogs plus id switches for the kill feed and audio.
 
-Context: after ADR-072 a new weapon still needed hand edits in two parallel C# catalogs (`WeaponCatalog`, `WeaponVisualProfiles`) whose rows were positional constructor calls, plus id switches in `KillFeedCause` and `ProductAudioEventRouter`. `WeaponVisualProfile.AudioShotKey` was never read, and shot sounds were chosen by family, so a new gun could not pick its own voice.
+**Decision.** There is one file per weapon: `Content/Weapons/<name>.weapon.json` (`shooter.weapon.v1`). It holds:
+- the id and order;
+- the label and family;
+- `combat`;
+- `visual` (mesh key, recipe link, optic, magazine cycle, handling);
+- `audio.shot`;
+- `hud.killFeedGlyph`.
 
-Decision:
-- **One file per weapon.** `Content/Weapons/<name>.weapon.json` (`schemaId` `shooter.weapon.v1`) holds the id, catalog `order`, `displayLabel`, `family`, `combat` (named fields; spread and recoil in degrees), `visual` (mesh key, optional `geometryRecipe` link to `Generation/FeatureRecipes`, optic, magazine cycle, near-field handling), `audio.shot` (a `SynthVoiceKind`) and `hud.killFeedGlyph` (a `KillFeedWeapon`).
-- **Build-time generation, not runtime tables.** `Tools/generate_weapon_catalog.py` validates every file and writes `Simulation/Combat/WeaponCatalog.g.cs` and `Presentation/Model/View/WeaponVisualProfiles.g.cs` (partial classes, with deterministic `.meta` GUIDs). The catalogs stay frozen compiled C#, as ADR-072 requires. Numbers are emitted with their exact JSON literal text, so the generated rows are bit-identical to the former hand-written ones. `--check` fails on stale output and runs in the fast CI lane.
-- **Validation.** Unknown or missing fields, duplicate keys, ids or orders, a file name that does not match the id, exponent or out-of-range numbers, a fire mode that does not suit the family, optics or magazine cycles on melee/throwables, a missing or mismatched geometry recipe, CRLF, and a catalog missing any of the four families are all rejected. Enum values are read from the C# sources, so the file format cannot drift from the code.
-- **Routing by profile.** `WeaponVisualProfile.AudioShotKey` is replaced by `ShotVoice` and `KillFeedGlyph`. `ProductAudioEventRouter.MapShotVoice` and `KillFeedCause.MapWeapon` read the profile; unknown ids keep the rifle voice and glyph.
+`Tools/generate_weapon_catalog.py` validates every file and writes `WeaponCatalog.g.cs` and `WeaponVisualProfiles.g.cs`. Numbers keep their exact JSON literal text, so the output is bit-identical. Enum values are read from the C# sources. `--check` runs in CI.
 
-Not in scope (later steps of the review): reload/equip voices per weapon (reload events carry only the slot), new bank sample kinds, packaged weapon meshes still listed per weapon in `MapVisualClosure`/`MapPackageBuilder`/`ProductActorPresentation`, slot-keyed first-person equip timing (closed by [ADR-099](#adr-099--accepted-per-weapon-first-person-hand-and-weapon-choreography)), and the part-based geometry grammar. A weapon with a new silhouette still needs a `geometry.weapon` change.
-
-Validation: `WeaponDefinitionFileTests` (catalogs agree, meshes resolve, combat rows bit-identical to the pre-ADR values, voice and glyph come from the profile) and the existing catalog, profile, kill-feed and audio tests pass in `Tools/Simulation.Tests`; `Tools/test_generate_weapon_catalog.py` (16 cases) covers the generator. On 2026-11-16 Simulation 326, Game 96 and Generation 462 passed, source provenance passed with the two new `.meta` files, and Unity EditMode passed 71/71 with the generated files compiled by the locked editor. A client player build and in-game listen/kill-feed check are Pending. Rollback: revert the ADR-077 merge; the hand-written rows are restored with it.
+Profiles route the shot voice (`ShotVoice`) and the kill-feed glyph. Unknown ids fall back to the rifle ([weapons](features/geometry-weapons.md#adding-or-tuning-a-weapon-adr-077)).
 
 ## ADR-078 — Accepted: shared weapon package separate from map packages
 
-Date 2026-11-16. Step 2 of the owner-approved architecture review (after ADR-077). Sole integrator owns map/weapon packaging, the verified store, actor presentation, release tooling, tests and docs. No C0, Game-v1, content-format, feature-content or toolchain lock change; no acceptance waiver.
+Date 2026-11-16. **Context.** Every map visual package embedded every weapon mesh, so a new weapon touched many files and every map package.
 
-Context: every map visual package (3 maps × low/balanced/high) embedded all weapon meshes. A new weapon meant per-weapon constants and decode methods in `MapVisualClosure`, per-weapon build code in `MapPackageBuilder`, 22 per-weapon mesh fields in `ProductActorPresentation`, and republishing every map package. Knife and grenade meshes were even encoded under each map's generator fingerprint.
+**Decision.**
+- The generator also emits `WeaponMeshCatalog.g.cs`, with one source per mesh key: a `geometry.weapon` recipe or a built-in prop.
+- `WeaponPackage` builds one `shooter.weapon-package.v1` package, published beside the maps, and `weapons.json` (`shooter.weapon-package-index.v1`) names it. Gun bytes equal the former embedded artifacts. Props use `geometry.loadout-prop`.
+- Map visual packages drop weapon meshes, so their roots change once.
+- `VerifiedMapPackageStore` verifies the weapon package once and attaches it (`WithWeapons`).
+- `Package-Release` ships and closure-hashes it. The native guard requires identical weapon packages.
 
-Decision:
-- **Weapon mesh catalog.** `Tools/generate_weapon_catalog.py` also emits `Generation/Core/Environment/WeaponMeshCatalog.g.cs`: one source per distinct `visual.meshKey`, either a `geometry.weapon` recipe (embedded compactly from `Generation/FeatureRecipes`) or a built-in prop (`knife`, `grenade`). Paths follow `mesh-<key>-lod<n>.bin`, `-magazine.bin`, `-cycle.bin`, so existing names are unchanged. A mesh key maps to exactly one recipe; several weapons may share it.
-- **Shared weapon package.** `WeaponPackage` builds `shooter.weapon-package.v1` (root JSON with schema, toolchain hash, generator ids, mesh keys and hashed dependencies). Gun meshes use the `geometry.weapon` fingerprint, so their bytes equal the former map-embedded artifacts; props use a new `geometry.loadout-prop` 1.0.0 fingerprint. `MapPackagePublisher.Publish` publishes it whenever a visual profile is published, with atomic staging, reuse of identical bytes and retention of corrupt bytes, and writes `weapons.json` (`shooter.weapon-package-index.v1`). The frozen release catalog and map package index schemas are untouched.
-- **Map packages drop weapon meshes.** `MapVisualClosure.RequiredPaths` and `MapPackageBuilder` no longer include them, so every map visual package root changes once. Gameplay packages, collision and navigation are unchanged.
-- **Loading.** `VerifiedMapPackageStore` verifies the weapon package once per store and attaches it with `PackagedVisualPayloads.WithWeapons`. Decoders (`DecodeWeaponLod/Magazine/Cycle`) are generic by mesh key and fail when no weapon package is attached. `FromBuild` (editor/tests) attaches an in-memory build. `ProductActorPresentation` keeps one mesh set per catalog key.
-- **Release tooling.** `Package-Release.ps1` verifies, ships and closure-hashes the weapon package; the installer policy requires `Content/map-packages/weapons.json`; the native `Compile-GameContent.ps1` guard requires identical weapon packages in the pure and native caches.
-
-Consequences: adding a weapon whose mesh key exists needs only its definition file and a content republish, which rewrites the weapon package and `weapons.json` but no map package. A new silhouette still needs a recipe (frozen feature registry) and possibly a `geometry.weapon` change. Packages published before ADR-078 no longer load: republish content. Weapon materials and first-person hands stay in map packages.
-
-Validation: new `WeaponPackageTests` (Generation) and `VerifiedWeaponPackageStoreTests` (Game), updated `MapVisualClosureTests`, `FirstPersonHandlingTests` and generator tests (20 cases); release/installer wrapper regressions. Evidence on 2026-11-16 at `5af3ae7`: Simulation 326, Game 98, Generation 469, Test-Maps 15 + 53, source provenance, asmdef/fixture/contract/feature/content-format locks, Unity EditMode 71/71 and PlayMode all PASS. `Compile-GameContent.ps1 -Native` PASS with 12 native map packages and weapon package `0e0c4b6f…a911`, whose 27 files matched the pure cache. The IL2CPP client built; Smoke PASS; a diagnostic `TDM-5v5-v1` run on the native cache logged `packaged visuals ready profile=low … weaponLod=3`; `Package-Release.ps1 -RequireNativeNav` PASS (extract and corrupt rehearsals PASS) and ships `weapons.json` with the weapon package. A named in-game visual review and installer run are Pending. Rollback: revert the ADR-078 merge and republish the ADR-077 packages.
+**Consequences.** A weapon that reuses an existing mesh key needs only its definition file and a content republish.
 
 ## ADR-079 — Accepted: engine toolchain lock separate from the build lock
 
-Date 2026-11-16. Step 3 of the owner-approved architecture review (after ADR-077/078). The owner approved this step, including its one-time refreeze of the toolchain hash. Sole integrator owns the lock files, wrappers, `ShooterBuild`, provenance regeneration, content republication and docs. No C0, Game-v1 or content-format source, schema or fixture change; no acceptance waiver.
+Date 2026-11-16. **Context.** `toolchainHash` (the SHA-256 of `toolchain-lock.json`) is embedded in all content and frozen in three locks, yet it also covered packages that never affect generated bytes.
 
-Context: `toolchainHash` is the SHA-256 of the whole `toolchain-lock.json`. It is embedded in every SGAF artifact, map/weapon package root, release catalog and settings provenance, and frozen in `contract-lock.json`, `content-format-lock.json` and `game-contract-lock.json`. The file also listed runtime/test packages and build settings that never change generated bytes, so adding any package (the ADR-075 Animation Rigging spike) forced a refreeze of all three locks and a republish of all content. That cost is why Animation Rigging was rejected.
+**Decision.**
+- **`toolchain-lock.json` schema 2** keeps only content-shaping inputs: editor and revision, URP/curated Core RP, AI Navigation, graphics API and the .NET SDK.
+- **`build-lock.json`** (`shooter.build-lock.v1`) holds the other packages (Input System, Test Framework), backends, targets, modules, the allowlist version and the transport version. Changing it leaves `toolchainHash` unchanged.
 
-Decision:
-- **`toolchain-lock.json` schema 2** keeps only what shapes generated content or the engine itself: editor version and revision, URP (and the curated Core RP archive), AI Navigation (native nav bakes), graphics API and the .NET SDK. Its SHA-256 keeps the same meaning: `toolchainHash`.
-- **`build-lock.json` (`shooter.build-lock.v1`)** holds every other direct package as `packages` (name + version: today Input System 1.20.1 and Test Framework 1.6.0), plus client/server backends and targets, required editor modules, `provenanceAllowlistVersion` and `transportVersion`. Changing it does not change `toolchainHash`.
-- **Enforcement.** `Assert-ShooterLockedPackages` (`Tools/Unity.Common.ps1`) requires every direct `manifest.json` dependency to match one of the two locks, in both `manifest.json` and `packages-lock.json`. Engine modules and the curated Core RP tarball are exempt. An engine package may not be repeated in the build lock. `ShooterBuild.CheckToolchain` merges both files, checks every locked package inside the editor, and build manifests record `buildLockHash`. `Package-Release.ps1` checks that hash when present and ships `build-lock.json`; `Benchmark.ps1` rejects a build made with a different build lock.
-- **One-time refreeze.** The new `toolchainHash` is `a8331fe2bc5b4293773762d829dc293c8aa5185024bd1a771543ac4eda840500`, replacing `9ac31fe8…7a8`. The `toolchainHash` field alone changed in the three locks; their source inventories are unchanged and verify. `Assets/Shooter/Settings/provenance.json` was regenerated by `ShooterBuild.WriteSettingsProvenance`, not hand-edited. All content caches, builds and packages made with the old hash are stale and must be republished or rebuilt.
+**Enforcement.**
+- `Assert-ShooterLockedPackages` requires every direct manifest dependency to match one of the two locks.
+- `ShooterBuild.CheckToolchain` merges them.
+- Build manifests record `buildLockHash`, and `Package-Release` and `Benchmark` check it.
 
-Consequences: a future runtime or editor package (for example Steam Audio, ADR-075) is a `manifest.json` + `packages-lock.json` + `build-lock.json` change with a new build, but no lock refreeze or content republish. An engine, URP, AI Navigation, graphics API or SDK change still changes `toolchainHash`, as it should. ADR-075's Animation Rigging rejection rested on the refreeze cost; ADR-075 keeps its later decision that `TwoBoneIk` stays the only solver.
-
-Validation: `Tools/test_build_lock.ps1` (8 synthetic cases, in CI) plus the full pure, tool and Unity lanes. Evidence on 2026-11-16 at `06106e3`: Test-Contracts, Simulation, Game, Generation, Maps and SourceProvenance PASS; C0/format/Game-v1/feature/asmdef/fixture verifiers PASS; package-release, build-installer, smoke, unity-results and source-provenance wrapper regressions PASS; Unity EditMode PASS. `Compile-GameContent.ps1` and `-Native` PASS under the new hash (weapon package `fd14e0c3…6abb`). The IL2CPP client built with `buildLockHash` `10495a1c…749b`; Smoke PASS; a diagnostic `TDM-5v5-v1` run logged `packaged visuals ready`; `Package-Release.ps1 -RequireNativeNav` PASS and ships `build-lock.json`. Installer run and named in-game review Pending. Rollback: revert the ADR-079 commit (restoring the old lock file and the three lock hashes) and republish content.
+There was a one-time refreeze to `toolchainHash` `a8331fe2…0500`. Only that field changed in the three locks. Settings provenance was regenerated, and all content was republished.
 
 ## ADR-080 — Accepted: code-built post-processing, HDR and SSAO per quality tier
 
-Date 2026-11-16. Step 4 of the owner-approved architecture review. Sole integrator owns project settings, the editor configurator, presentation post-processing, tests and docs. No C0, Game-v1, content-format or content change; gameplay is untouched; no acceptance waiver.
+Date 2026-11-16. **Context.** URP post data references stock images that the art audit forbids, so the image was untonemapped LDR with no AO.
 
-Context: ADR-013 set `postProcessData = null` and `supportsHDR = false` because URP's post-process data references stock images (blue noise, film grain, SMAA lookups) that the player art audit forbids. The result was an untonemapped LDR image with no ambient occlusion, which is most of the "flat" look.
+**Decision.**
+- `ShooterPostProcessingBuild.ConfigureAssets` builds `Settings/ProductPostProcessData.asset` with stock post shaders and generated lookups only: a 16 px ordered dither and one-pixel zero lookups. Film grain and SMAA are never enabled.
+- Balanced and High get their own renderers with InterleavedGradient SSAO, so URP strips the stock noise images. HDR is on for Balanced and High.
+- `ProductPostProcessing` builds one code-created global volume from `PostProcessingTier`. Only the product camera uses it, and a quality change reapplies it.
 
-Decision:
-- **Code-built post data.** `ShooterPostProcessingBuild.ConfigureAssets` (Bootstrap/Editor; run by `ShooterPostProcessingBuild.Configure` and at the end of `ShooterBuild.InitializeFoundation`) creates `Settings/ProductPostProcessData.asset` with URP's stock post shaders (code) and generated lookups only: a 16-pixel ordered dither for `blueNoise16LTex` and a one-pixel zero lookup in the film-grain and SMAA slots. Film grain and SMAA are never enabled. Settings provenance records the configurator source and every generated asset.
-- **Per-tier renderers.** Low keeps `FoundationRenderer` (post data, no SSAO). Balanced and High get `FoundationRendererBalanced/High` with a URP SSAO feature using InterleavedGradient (no noise texture): Balanced is half resolution, 4 samples, Gaussian blur, intensity 1.2 and radius 0.3 m; High is full resolution, 8 samples, bilateral blur, intensity 1.4 and radius 0.4 m. Because no active SSAO uses blue noise, URP's `ScreenSpaceAmbientOcclusionDynamicResourcesStripper` removes the stock noise images from players, and the existing imported-art audit fails the build if that changes. HDR is off on Low and on for Balanced and High.
-- **Runtime volume.** `ProductPostProcessing` (Presentation/Rendering) builds one global `Volume` with a code-created profile (no profile assets) from the pure `PostProcessingTier` table (Presentation.Model). Low: no tonemapping, contrast +6, saturation −4, vignette 0.16. Balanced/High: Neutral tonemapping, exposure +0.25, contrast +10, saturation −6, bloom (threshold 1.0, intensity 0.25/0.35, high-quality filtering on High) and vignette 0.2. Only the product camera opts in; menu, gallery and B01 diagnostic cameras are unchanged. `ProductClientSettingsApplier` reapplies the tier after a quality change.
-- **Baked GI is deferred, with a design.** True lightmaps or vertex AO are not possible today: C0 `MeshData` has no vertex-colour or second-UV channel, and map meshes are uploaded at runtime from packages, so Unity's lightmapper cannot bake them. The proposed follow-up is a deterministic pure-.NET sky-visibility/AO volume per map (ray casts against the collision boxes in double precision), shipped as a map package artifact and sampled by the map surface shader. It needs its own ADR, a visual-package change and a shader change, but no C0 change.
-
-Consequences: Low gains a single LDR uber-post pass (colour adjustment and vignette) and nothing else. Its frame cost on the reference laptop must be measured before any Low claim. Balanced and High gain HDR, tonemapping, bloom and SSAO, at a cost the existing Low-only benchmark cannot measure. All numbers are presentation tuning that still needs a named visual review. `FoundationEditorTests` now asserts the new per-tier contract and that post data references only generated textures.
-
-Evidence on 2026-11-16 at `c1a99d4`: Simulation 329 (including `PostProcessingTierTests`), Game, source provenance and the lock/asmdef verifiers PASS; Unity EditMode 72/72 and PlayMode PASS. The IL2CPP client built with zero packed image files, and the post data, dither lookups and per-tier renderers are in the player. URP's build preprocessor kept the SSAO variants for Balanced/High (prefilter fields recorded). Smoke PASS. A diagnostic `TDM-5v5-v1` Low run logged `SHOOTER_POST_PROCESSING tier=0 hdr=False …` and packaged visuals. Diagnostic Low frame p95 over three 5 s runs was 4.85 ms (before) and then 4.93 and 5.52 ms (after), which is within run-to-run noise. That is diagnostic only, not a reference capture. Balanced/High player runs (the benchmark supports Low only), their GPU cost and a named visual review of all tiers are Pending.
-
-Rollback: revert the ADR-080 commit, then run `ShooterBuild.InitializeFoundation` or restore the previous Settings assets, and regenerate provenance.
+Per-tier values are in [materials and rendering](features/materials-rendering.md#shaders-and-lighting). Baked AO followed in ADR-081.
 
 ## ADR-081 — Accepted: baked ambient-occlusion volume per map
 
-Date 2026-11-16. Follow-up to ADR-080, which deferred baked GI. The owner asked for the baked AO volume. Sole integrator owns the baker, map packaging, the map surface shader, presentation binding, tests and docs. No C0, Game-v1, content-format, feature-content or toolchain lock change; no acceptance waiver.
-
-Context: indoor and covered areas received the same sky ambient as open ground. Unity lightmapping cannot bake runtime-uploaded package meshes, and C0 `MeshData` has no vertex-colour or lightmap-UV channel, so the occlusion has to come from a separate artifact.
-
-Decision:
-- **Bake.** `MapAmbientOcclusionVolume` (Generation/Core/Environment) bakes a sky-visibility volume over a fixed 80 × 16 × 96 m box (X −40…40, Y 0…16, Z −48…48) at 0.5 m in X/Z and 1 m in Y: 160 × 16 × 192 cells. Each cell centre casts the 17 integer-lattice directions with y ≥ 0, up to 6 m, against the plan's axis-aligned collision boxes; upward rays weigh more (0.5 + 0.5·y). Cells inside solids are filled from their open neighbours over three dilation passes, so trilinear sampling does not bleed black. All arithmetic is IEEE double add/sub/mul/div/sqrt on integer-derived inputs (no trigonometry). A 4 m column binning keeps one map to about 0.6–0.9 s in the tools lane, and the result is cached per map and collision hash.
-- **Packaging.** Every map visual package adds `lighting-ambient-occlusion.bin`: an SGAF material under the map fingerprint, holding an `rgba8-linear` 160 × 768 atlas with four Y layers per texel and the full mip chain the frozen codec requires (lower mips are unused). `MapVisualClosure.RequiredPaths` requires it and `ValidateVisualClosure` decodes it. Visual package roots change and content must be republished. Gameplay packages, collision and navigation are unchanged.
-- **Shading.** `Shooter/MapSurface` keeps URP Lit 17.3's forward pass (same properties, pragmas and per-material CBUFFER) with one change: `surfaceData.occlusion` (indirect light only) is multiplied by the volume, sampled 0.35 m along the normal. Shadow, depth, depth-normals (SSAO) and meta passes are `UsePass` of URP Lit. The volume, its transform and strength are global shader properties. `ProductMapView` uploads the volume as an R8 `Texture3D` and draws every map surface with this shader. Actors, weapons and the menu stay on URP Lit. `ShooterPostProcessingBuild` creates the single keyword variant material that map surfaces use, and the client build preloads the shader and that material.
-- **Per tier.** `PostProcessingTier.AoVolumeStrength` is 1.0 on Low (no SSAO) and 0.8 on Balanced and High, where SSAO adds contact detail. Strength is 0 whenever no map is bound.
-- **Cross-lane determinism.** Golden SHA-256 values per map are asserted in both `AmbientOcclusionVolumeTests` (.NET) and `AmbientOcclusionVolumeEditModeTests` (Unity Mono).
-
-Consequences: covered, indoor and wall-adjacent areas lose sky ambient while direct sun and shadows are unchanged. Each visual package grows by about 160 KB. One 3D texture sample is added per map pixel. Dynamic actors don't receive the volume yet; probe-based actor AO is a possible follow-up. The values (ray length, weights, strengths) are tuning that still needs a named visual review.
-
-Evidence on 2026-11-16 at `de6f8b6`: Simulation 329, Game 98, Generation 475 (including six `AmbientOcclusionVolumeTests`), Test-Maps, source provenance and the lock/asmdef/fixture verifiers PASS. Unity EditMode passed 75/75, and the three Mono goldens matched the .NET bake byte for byte. `Compile-GameContent.ps1` and `-Native` PASS. The IL2CPP client built with `MapSurface.shader` and its variant material and zero packed image files; Smoke PASS. A diagnostic `TDM-5v5-v1` Low run bound the packaged map (`SHOOTER_PRODUCT_MAP_VIEW … packaged=1`) with frame p95 4.73 ms (diagnostic, not a reference capture). `Package-Release.ps1 -RequireNativeNav` PASS. A named visual review of the occlusion on all three maps and Balanced/High player runs are Pending.
-
-Rollback: revert the ADR-081 commit and republish content; map surfaces return to URP Lit.
+Date 2026-11-16. **Decision.**
+- **Bake.** `MapAmbientOcclusionVolume` bakes sky visibility over an 80 × 16 × 96 m box at 0.5 m × 1 m × 0.5 m (160 × 16 × 192 cells). Each cell casts 17 lattice directions up to 6 m against the collision boxes, with upward rays weighted more. Solid cells are dilated from their open neighbours. The math is IEEE double only, with no trigonometry.
+- **Packaging.** It ships as `lighting-ambient-occlusion.bin`, an SGAF `rgba8-linear` atlas required in every map visual package.
+- **Shading.** `Shooter/MapSurface` keeps URP Lit's forward pass, but multiplies indirect occlusion by the volume sampled 0.35 m along the normal.
+- **Strength.** 1.0 on Low and 0.8 on Balanced/High (`PostProcessingTier.AoVolumeStrength`).
+- **Determinism.** Golden hashes match in `AmbientOcclusionVolumeTests` (.NET) and `AmbientOcclusionVolumeEditModeTests` (Mono).
 
 ## ADR-082 — Accepted: geometry.weapon 1.1.0 parametric rifle parts
 
-Date 2026-11-16. Step 5 of the owner-approved architecture review. The owner asked for this step, including its reviewed refreeze of `feature-content-lock.json`. Sole integrator owns the weapon generator, recipe schema, fixtures, baseline, registry, the weapon definition generator, tests and docs. No C0, Game-v1, content-format or toolchain lock change; shipped content is unchanged; no acceptance waiver.
+Date 2026-11-16. **Decision.** `geometry.weapon` 1.1.0 sits beside the frozen 1.0.5. A rifle states `parameters.parts` in integer millimetres:
+- `handguardFrontMm`, `barrelFrontMm`, `topRailTeeth`;
+- the gas block, gas tube and front sight positions;
+- `stock` (`fixed`/`none`) and `optic` (`compact`/`none`).
 
-Context: after ADR-077/078 a new weapon that reuses an existing mesh is one definition file, but a new rifle shape needed `WeaponGeometry` code. The 1.0.5 generator only knew `standard` and `carbine`, written as about ten `carbine ? a : b` constants.
+`WeaponParts` enforces ranges and order. The 1.0.5 `standard`/`carbine` presets build byte-identical output under 1.1.0. Sockets, collision, magazine and cycle part keep the baseline.
 
-Decision:
-- **Parts, not silhouettes.** geometry.weapon **1.1.0** sits next to the frozen 1.0.5 (`WeaponRecipe.IsSupportedVersion`). A 1.1.0 rifle states `parameters.parts` in integer millimetres and counts:
-  - `handguardFrontMm`, `barrelFrontMm`, `topRailTeeth`
-  - `gasBlockZMm`, `gasTubeZMm`, `gasTubeLengthMm`, `frontSightZMm`
-  - two modules, `stock` (`fixed`/`none`) and `optic` (`compact`/`none`).
+Fingerprints use each recipe's own version. A definition may give `visual.geometryParts` inline instead of a recipe. `feature-content-lock.json` was refrozen.
 
-  A pistol states `parts: {}`. `WeaponParts` checks every range and the front-to-back order, so a recipe cannot escape the frozen construction envelope.
-- **Exact migration.** 1.0.5 `standard`/`carbine` resolve to the `WeaponParts.Standard`/`Carbine` presets. Rail, under-rail and forward-fastener counts are now derived by stopping at the handguard front, which reproduces both presets. `WeaponPartsTests` proves that a 1.1.0 recipe with the preset values builds byte-identical LODs, magazine, cycle part, collision and sockets, and that the 1.1.0 empty-parts pistol matches the 1.0.5 pistol.
-- **Gameplay stays put.** Sockets, collision, magazine and cycle part keep the numeric baseline for every part combination, as ADR-072 requires.
-- **Versioned fingerprints.** `WeaponAssetGenerator` and `WeaponMeshSource.Fingerprint` use the recipe's own generator version, so existing 1.0.5 artifacts keep their bytes.
-- **One-file rifles.** A weapon definition may give `visual.geometryParts` instead of `visual.geometryRecipe`. `Tools/generate_weapon_catalog.py` embeds an inline 1.1.0 recipe (id = weapon id) in `WeaponMeshCatalog.g.cs`, and the C# parser enforces the ranges when the catalog loads. `optic: none` cannot be combined with the `ScopedPip` profile optic.
-- **Registry.** `weapon.schema.json` accepts both versions (the parameter shape is tied to the version), `docs/feature-fixtures/rifle-1.1.0.json` is added, and `docs/weapon-recipe-baseline.md` documents the parts. `feature-content-lock.json` is refrozen with a `geometry.weapon` 1.1.0 generator row. `Tools/verify_feature_schemas.py` had been failing since 1.0.5 because it hard-coded 1.0.4 and 20 cases; it now checks the accepted version sets.
-
-Consequences: a new rifle shape is one `Content/Weapons/*.weapon.json` file plus a content republish. All shipped recipes stay on 1.0.5, and the published catalog, map index and weapon index were byte-identical after republishing. New module types (other stocks, optics, muzzle devices, magazines that change collision) would be a later generator version. No new product weapon is added: choosing one is a gameplay and balance decision.
-
-Validation on 2026-11-16: `WeaponPartsTests` 13/13 (byte identity, modules, ranges, canonical key order, asset generator fingerprint), generator tests 22/22, Simulation 329, Game 98, Generation 488, Test-Maps, source provenance, C0/format/feature registry and fixture verifiers, `verify_feature_schemas.py` 23/23 and Unity EditMode all PASS. A pure `Compile-GameContent.ps1` republish left `catalog.json`, `index.json` and `weapons.json` byte-identical. At `132f0a9` the IL2CPP client built, Smoke PASS, and a diagnostic `TDM-5v5-v1` Low run reached `packaged visuals ready` with no exceptions. No new product weapon was added, so in-game review of a 1.1.0 shape is Pending. Rollback: revert the ADR-082 commit; 1.0.5 content is unaffected.
+**Consequences.** A new rifle shape is one file plus a content republish ([recipe baseline](weapon-recipe-baseline.md)).
 
 ## ADR-083 — Accepted: map registry, arena layout documents and the generic map.arena recipe
 
-Date 2026-11-16. Step 6 of the owner-approved architecture review. The owner asked for this step, including its reviewed refreeze of `content-format-lock.json`. Sole integrator owns map generation, recipes, tooling, presentation hints, tests and docs. No C0, Game-v1, feature-content or toolchain change; every map's collision, navigation and package identity is unchanged; no acceptance waiver.
+Date 2026-11-16. **Context.** A map id was hard-coded in about fifteen places.
 
-Context: the arena planners already composed a reusable kit (`ArenaBoxBuilder`: shells, vehicles, covers, sandbags, walls), but a map id was hard-coded in about fifteen places:
+**Decision.**
+- **Registry.** Each map is one file, `Content/Maps/<id>.map.json` (`shooter.map-definition.v1`), holding:
+  - id, order, name, description and seed;
+  - the recipe generator and the planner;
+  - presentation hints (`sky`, `groundSurface`).
 
-- `MapRecipe` seed, generator, schema, name and description switches
-- the `ProductMapPlanner` switch
-- release catalog and release policy lists
-- `MapContent` and `Compile-GameContent` map selections
-- sky, yard-surface and menu-card checks in presentation.
+  `Tools/generate_map_registry.py` writes `MapRegistry.g.cs` (`--check` in CI). Recipes, planners, the release catalog, `MapContent`, `Compile-GameContent -Map`, the sky, the yard surface and the menu cards all read it. Release policy lists stay deliberate, and `MapRegistryReleasePolicyTests` fails until they match.
+- **Layout documents.** `ArenaLayoutDocument` is a planner written as data: identity, layout and ordered kit operations in integer millimetres.
+- **Generic recipe.** `map.arena` / `shooter.recipe.map-arena.v1` is the recipe for every new map. `content-format-lock.json` was refrozen (source hashes only).
 
-The frozen map-recipe schema also bound one generator to each of the three maps. Adding a map therefore meant code in many layers plus a content-format refreeze.
-
-Decision:
-- **Registry.** `Content/Maps/<id>.map.json` (`shooter.map-definition.v1`) holds a map's id, order, display name, description, seed, recipe generator, planner and presentation hints (`sky`, `groundSurface`). `Tools/generate_map_registry.py` validates the files and writes `MapRegistry.g.cs`. Unknown or duplicate fields, ids, orders and seeds are rejected, as are legacy recipes on the wrong map and unknown code planners. `--check` runs in the fast CI lane.
-- **Everything reads it.** `MapRecipe` identity and `IsApprovedMapId`, `ProductMapPlanner.Generate`, `ReleaseCatalogDocument.RequiredMaps`, `MapContent` (`all`, the aliases, or any registered id) and `Compile-GameContent -Map` all read the registry. So do the presentation hints: `GeneratedSky` presets, `ProductMapView.UsesAsphaltYard` and menu cards for every registered map in catalog order. `MapRecipe.Parse` also requires the map to be registered with the recipe's generator. The release policy lists stay deliberate, and `MapRegistryReleasePolicyTests` fails until they match the registry.
-- **Layout documents.** `ArenaLayoutDocument` interprets a planner written as data: identity, `ArenaLayout`, and ordered kit operations that map one-to-one onto `ArenaBoxBuilder` calls:
-  - `perimeter`, `shell`
-  - `cover`, `vehicle`, `feature`
-  - `sandbags`, `fence`, `grounded`, `box`
-  - `wallX`, `wallZ`
-  - `visualDetail`
-
-  All lengths are integer millimetres, converted with an exact int → float division, so documents parse identically in every runtime. Training Compound is converted: `CompoundArenaPlanner` is now a thin wrapper over its 40-operation document. Depot Yard and Oil Depot remain registered code planners (`code:depot-arena`, `code:oil-arena`).
-- **Generic recipe.** `map.arena` / `shooter.recipe.map-arena.v1` is for every map registered after the three frozen ones. `docs/content-schemas/map-recipe.schema.json` and `docs/content-format.md` gained it, and `content-format-lock.json` was refrozen (source hashes only).
-
-Consequences: a new arena is one definition file with a layout document, plus content compilation, native nav and a playtest. Layouts that need new kit primitives (stairs and catwalks are code-only today) still need code. An editor preview window that re-plans a layout live is a possible follow-up.
-
-Evidence on 2026-11-16 at `6509f82`: `MapRegistryTests` 12/12, release-policy test, map generator tests 7/7, Simulation 329, Game 99, Generation 500, Test-Maps, source provenance, C0/format/feature/asmdef/fixture verifiers, and Unity EditMode and PlayMode all PASS. A pure `Compile-GameContent.ps1` republish left `catalog.json`, `index.json` and `weapons.json` byte-identical. The IL2CPP client built and Smoke PASS. Two diagnostic `TDM-5v5-v1` runs stalled after workload validation while the machine was in interactive use. A third run completed: `SHOOTER_BENCHMARK_COMPLETE`, 1605 frames, p95 4.80 ms. Later runs completed with the player minimised and with Notepad holding the foreground, which rules out window focus. The stall's cause is not established. `BenchmarkProgressWatchdog` now aborts a stalled capture after 10 s with a state snapshot, and `Benchmark.ps1` reports that snapshot or the last player marker, so the next occurrence records its cause. A new map authored only as a document has not been built or played yet (Pending).
-
-Rollback: revert the ADR-083 commit; map content is unaffected.
+Adding a map is described in [maps](features/tdm-map-layouts.md#adding-a-map-adr-083).
 
 ## ADR-084 — Accepted: analytic SDF UI primitives and UI motion model
 
-Date 2026-11-16. Wave 1, step 1 of the owner-approved visual roadmap (UI, icons, badges first; the IMGUI shell stays, with an SDF layer added). Sole integrator owns the shader, presentation UI, build preload, tests and docs. No C0, Game-v1, content-format, feature-content or toolchain change; gameplay is untouched; no acceptance waiver.
+Date 2026-11-16. **Context.** `TacticalUi` drew everything as flat white rectangles. ADR-002 rules out sprite art.
 
-Context: `TacticalUi` drew every menu, HUD, loading screen and scoreboard as `Texture2D.whiteTexture` rectangles and 1-px rotated quads. There were no anti-aliased edges, rounded corners, gradients, shadows or glows. Icons were stacks of rectangles, and the only motion was alpha fades. ADR-002 rules out sprite or skin art, so the polish has to come from code.
+**Decision.**
+- **Shader.** `Shaders/UiSdf.shader` (`Shooter/UiSdf`) evaluates analytic signed distances:
+  - shapes: rounded rect, circle/ring, arc, triangle, diamond, vignette;
+  - styling: fill or stroke, gradients, soft shadow, glow and a glint.
+  - Output is premultiplied, it respects the IMGUI clip mask, and it samples no texture.
+- **Drawer.** `Presentation/Session/UiSdf.cs` draws one quad per shape during Repaint, with one-pixel AA at any scale. If the shader is unavailable, `TacticalUi` falls back to its flat path.
+- **Motion.** The pure `UiMotion` provides easing, a damped follow and stamp, slide, stagger, count-up and pulse envelopes. Reduced motion snaps; reduced flash removes the glint and softens glows.
+- **Tokens.** `UiShapeParams` ([UI design system](brandbook.md)).
+- **Build.** `ShooterBuild` preloads the shader in client players.
 
-Decision:
-- **Shader.** `Shaders/UiSdf.shader` (`Shooter/UiSdf`) evaluates analytic signed distances per pixel:
-  - shapes: rounded rect, circle/ring, arc, triangle, diamond and an edge-fade vignette;
-  - styling: fill or stroke, a vertical/horizontal/radial two-colour gradient, a soft drop shadow, an outer glow, and a one-pass diagonal glint.
-  - It outputs premultiplied alpha and multiplies by IMGUI's own clip mask (`_GUIClipTexture` / `unity_GUIClipTextureMatrix`), so groups and scroll views clip as before.
-  - It samples no other texture, so the player art audit is unchanged.
-- **Drawer.** `Presentation/Session/UiSdf.cs` draws one padded quad per shape with `Graphics.DrawTexture` during Repaint, in the caller's GUI space (UI scale, groups, rotation). Anti-aliasing stays one device pixel at any UI scale. Brand colours stay sRGB-authored and are converted for the linear colour space. If the shader is missing or unsupported, every call returns false, logs `SHOOTER_UI_SDF unavailable` once, and `TacticalUi` keeps its previous flat path. That fallback is still code-drawn, never imported art.
-- **TacticalUi.** These keep their signatures and use SDF when it is available:
-  - rounded shadowed panels, HUD plates, buttons, map cards and anti-aliased lines;
-  - capsule reticle arms, a ring headshot mark and rounded-part weapon silhouettes;
-  - pill sliders with a round thumb, switch-style toggles (replacing `[ ON ]` text), a glowing indeterminate loading segment and a single-draw vignette.
-  - Hover, focus and selection ease through a per-control emphasis value.
-  - The kill ribbon becomes a feathered banner with a stamped procedural medal (`TacticalUi.Medal`: gold rim, enamel, diamond emblem, laurel strokes, streak pips by tier 1–4) and one glint.
-- **Motion model.** Pure `Presentation/Model/Hud/UiMotion.cs` provides:
-  - easing (OutCubic, InOutCubic, OutBack) and a frame-rate-independent critically damped `Follow`;
-  - the stamp scale, slide, stagger and count-up envelopes, the glint sweep and a pulse.
-  - Reduced camera motion collapses movement to a snap or fade; reduced flash removes the glint, holds pulses and softens glows.
-  - `TacticalUi.ReducedMotion` and `ReducedFlash` are set from applied settings by `ProductShellHost` and `ProductSessionView`.
-- **Shape tokens.** Pure `UiShapeParams` holds radii, shadow, glow and hairline tokens, plus the rounded-box distance and coverage math the shader mirrors.
-- **Build.** `ShooterBuild` preloads `UiSdf.shader` in client players next to `AdsScopePip`.
-
-Consequences:
-- Each SDF shape is one extra material-bound draw. The HUD issues a few dozen per frame, and the menu more; the cost is presentation only and must be measured on the reference laptop.
-- Map-card media images keep square corners inside the rounded card.
-- Icons are still procedural parts drawn per frame. ADR-085 (planned) moves them into a generated SDF icon atlas.
-
-Evidence on 2026-11-16 (working tree on `fa2cbc9`, recorded in the commit that adds this ADR):
-- **Pure tests.** Simulation 344 PASS (15 new `UiMotionTests` and `UiShapeParamsTests`). Source provenance PASS after `ShooterBuild.WriteSettingsProvenance` regenerated `Settings/provenance.json` for the preload change.
-- **EditMode.** 79/79 PASS, including four `UiSdfEditModeTests`: the shader is supported, rounded corners are cut, rings are hollow and output is premultiplied.
-- **Build.** The IL2CPP client built with `UiSdf.shader` in the packed graphics list and no imported art. Smoke PASS.
-- **Player review.** The player logged `SHOOTER_UI_SDF ready`. Captures from the live 1080p window (`Artifacts/visual-design/adr-084/20261116-menu/`) show the recovery, main menu, setup and settings screens, including SDF controls inside the clipped settings scroll view.
-- **Fixes found during review.** The selected card's square accent border became a rounded stroke, and the caption plate is now rounded. The left scrim's 28 stepped strips (visible banding) became two smooth gradients.
-- **Pending.** The live combat HUD, kill-ribbon medal and loading screen in a running match were not driven: automated key input could not reach START MATCH reliably. Those, 720p at 100%/150% UI scale, reduced motion/flash, reference-laptop frame cost and a named visual review are Pending.
-
-Addendum 2026-11-16 (HUD review):
-- **How it was driven.** A live Oil Depot 6v6 match was started from the player and captured with the loading screen. A review-only `-shooterUiGallery 1` flag (`TacticalUi.DrawUiGallery`, which replaces Main) shows the medal tiers with a looping stamp, the kill ribbons, kill-feed icons at feed and large size, control states, the ammo plate, the reticle and the hit marker. This covers what an idle match cannot trigger. Captures are in `Artifacts/visual-design/adr-084/20261116-hud/`.
-- **Fixes from the review:**
-  - the ribbon banner was too transparent over bright scenes: its middle is now solid at 90% with 2-px rails;
-  - the ammo-plate accent hung off the rounded edge and now sits inside the plate;
-  - the loading track and slider track were too dark to read and are now lighter with a rim;
-  - the pistol, knife and grenade silhouettes were redrawn (angled grip and trigger guard, pointed blade, spoon lever and pull ring);
-  - hip reticle arms went from 1 px to 1.5 px and from 5 px to 6 px long.
-- **Hip framing (fixed in a follow-up).** In hip fire, the rifle muzzle projected about 0.7° below and 3° left of centre, right under the reticle. The T084 composition yawed the rifle 18° across the view from a hip offset that sat slightly high.
-  - `Content/Weapons/rifle.weapon.json` now uses `hipRotationDegrees [0, -12, -5]` and `nearFieldHipBias [0.08, -0.01, -0.10]`; the carbine uses `[0, -11, -4]` and `[0.08, -0.01, -0.09]`. `WeaponVisualProfiles.g.cs` was regenerated.
-  - ADS is unchanged, because the hip rotation still fades to identity and the ADS position uses the sight socket. Gameplay catalogs and packages are byte-identical.
-  - The new `FirstPersonHandlingTests.HipMuzzleStaysBelowAndOffTheReticle` projects the muzzle socket the way `ProductActorPresentation` does and requires it to sit at least 1.5° below, 0.5° right of and 2.5° away from the centre. It fails on the old values (0.65° below) and passes on the new ones.
-  - Player capture: `hud-hip-framing-after.png`. Live ADS capture and a named feel review are Pending.
-- **Pending.** The kill ribbon and kill feed during real kills, the scoreboard and results screens, 720p at 150% UI scale, reduced motion/flash, frame cost and a named review.
-
-Rollback: revert the ADR-084 commit and regenerate settings provenance; every primitive falls back to the flat path when the shader is absent.
+**Addendum (HUD review):**
+- The ribbon, ammo plate, tracks and weapon silhouettes were improved, and hip reticle arms are 1.5 px.
+- Rifle hip framing was moved so the muzzle sits below and off the reticle (`hipRotationDegrees`, `nearFieldHipBias`), guarded by `FirstPersonHandlingTests.HipMuzzleStaysBelowAndOffTheReticle`.
+- A review-only `-shooterUiGallery 1` flag shows the medals and controls.
 
 ## ADR-085 — Accepted: generated SDF icon atlas with mesh-traced weapon silhouettes
 
-Date 2026-11-16. Wave 1, step 2 of the owner-approved visual roadmap. Sole integrator owns the icon generator, shader, presentation UI, tests and docs. No C0, Game-v1, content-format, feature-content or toolchain change; no package or content republish; no acceptance waiver.
+Date 2026-11-16. **Decision.** The icon generator lives in `Generation/Core/Icons`:
+- **`IconShape` / `IconRecipe`.** Analytic SDF shapes in integer units, combined by union and subtraction. Math is IEEE only.
+- **`IconLibrary`.** Original glyphs:
+  - headshot, elimination, assist, ammo, magazine, health and reload;
+  - markers;
+  - ranks and stars;
+  - two fictional faction emblems that differ in shape;
+  - medal and crown;
+  - the settings categories.
+- **`MeshSilhouette`.** Traces each weapon's side view from its packaged meshes (4× supersampled coverage and an exact distance transform), so the icons match the 3D models.
+- **`IconAtlas`.** Packs one R8 SDF atlas: 64 px cells with an 8 px spread.
 
-Context: after ADR-084 the HUD and shell drew every icon as a stack of rounded parts each frame. Kill-feed weapon shapes were guesses rather than the real weapons, and there were no insignia, emblems or category glyphs. ADR-002 forbids painted or imported icons.
+**Runtime.** `UiIconAtlas` builds the atlas in memory at first use, and again when the weapons register (`RegisterWeapons`). It is never written to disk, so the art audit and the content format are unchanged. `Shooter/UiSdf` gains `UiShapeKind.Glyph`.
 
-Decision:
-- **Pure generator (`Generation/Core/Icons`).** The generator has four parts:
-  - `IconShape` and `IconRecipe` are analytic signed-distance shapes in integer icon units (1000 per cell): circle, ring, rounded box, capsule, polyline stroke and even-odd polygon, combined by union and subtraction. They use IEEE add/sub/mul/div/sqrt only, and the star points are precomputed integers.
-  - `IconLibrary` holds 22 original glyphs:
-    - headshot, elimination, assist, ammo, magazine, health and reload;
-    - objective, ally arrow and enemy marker;
-    - three chevron ranks and a star;
-    - two fictional faction emblems (ally shield, enemy hexagon), which differ in shape and not only in colour;
-    - a medal star and a crown;
-    - four settings-category glyphs.
-  - `MeshSilhouette` traces a weapon's side view (+Z right, +Y up) from its meshes. It uses 4× supersampled triangle coverage and an exact Felzenszwalb distance transform in double precision.
-  - `IconAtlas` packs the glyphs into one R8 signed-distance atlas: 64-px cells, 8-px spread, 1024 px wide, value 128 at the edge. Long guns and the knife take 3 cells, the pistol 2 and the grenade 1.
-- **Weapons match the 3D models.** `ProductActorPresentation` hands the decoded packaged LOD0 mesh, magazine and cycle part of every `WeaponMeshCatalog` row to `UiIconAtlas.RegisterWeapons`. Kill-feed and ammo-plate icons are therefore silhouettes of the same packaged meshes the player sees, including any future 1.1.0 parametric rifle. A repeat registration of identical sources is skipped.
-- **Runtime, not a package.** `UiIconAtlas` builds the atlas in memory at first use and again once weapons arrive. It is uploaded as an R8 linear `Texture2D` and never written to disk or packed as an image, so the player art audit and the content format are unchanged. This replaces the earlier plan for a `ui-icons` package; a package adds identity surface without changing the bytes. A build failure logs `SHOOTER_UI_ICONS unavailable` once and the ADR-084 part-drawn icons stay in use.
-- **Shader.** `Shooter/UiSdf` gains `UiShapeKind.Glyph`, which samples the atlas cell and converts it to logical-pixel distance. Fill, gradients, stroke, shadow, glow and glint all apply to icons. `UiSdf.Icon` fits an icon by aspect, and `TacticalUi.Icon` / `WeaponIconName` wrap it.
-- **Uses:**
-  - kill-feed weapon and headshot icons;
-  - a weapon silhouette on the ammo plate for the weapon shown in the hands;
-  - settings tab glyphs;
-  - scoreboard and results tables with faction emblems on team-tinted gradient headers, rounded zebra rows, a glowing YOU row and a crown on the top scorer (presentation only; it is absent while every score is 0);
-  - an icon library section in the review gallery.
+**Used by:**
+- kill-feed icons;
+- the ammo-plate silhouette;
+- settings tabs;
+- team tables with emblems and the top-scorer crown;
+- career insignia (ADR-108).
 
-Consequences: there is no new shipped file. The atlas is about 192 KB of texture memory, plus one atlas sample per icon pixel. Ranks have no data model (there is no progression), so the rank glyphs are available but unused. (Superseded for career insignia by ADR-108, which adds `rank-01`…`rank-20`.) Medal tier art stays the ADR-084 composite.
-
-Evidence on 2026-11-16 (working tree on `41fcdaa`, recorded in the commit that adds this ADR):
-- **Pure tests.** Generation 508 PASS, including five `IconAtlasTests`:
-  - exact shape distances;
-  - every glyph has ink and a clear border;
-  - the encoding;
-  - mesh-traced proportions (rifle 2.87, carbine 2.50, knife 4.86, pistol 1.12, grenade 0.58 ink aspect);
-  - determinism with library golden `22964e2d…98f0`.
-- **EditMode.** 82/82 PASS, including `IconAtlasEditModeTests`: the Mono library hash equals the .NET golden byte for byte, the runtime atlas exposes icons, and glyph mode draws the health cross with clear corners.
-- **Other checks.** Simulation 346, Game 99, source provenance (928 entries) and the feature registry PASS.
-- **Build.** The IL2CPP client built.
-- **Player.** The player logged `SHOOTER_UI_ICONS ready icons=22` (22.4 ms), then `icons=27 weapons=5` (66.9 ms) once the packaged weapons were decoded. Captures in `Artifacts/visual-design/adr-085/20261116/`: gallery, live-match scoreboard (held Tab), settings tabs, ammo-plate icon and an atlas preview.
-- **Pending.** Kill-feed rows during real kills, results with a crowned top scorer, 720p at 150% UI scale, reference-laptop cost and a named review.
-
-Rollback: revert the ADR-085 commit. Every icon call falls back to the ADR-084 shapes or the text it had before.
+If the build fails, the ADR-084 shapes are used instead. A cross-lane golden hash matches between .NET and Mono.
 
 ## ADR-086 — Accepted: animated debrief and front-end motion
 
-Date 2026-11-16. Wave 1, step 3 of the owner-approved visual roadmap (results and menu motion). Sole integrator owns presentation models, shell, menu stage, tests and docs. No C0, Game-v1, content-format, feature-content or toolchain change; scores and statistics are read only; no acceptance waiver.
+Date 2026-11-16. **Decision.**
+- **Debrief model.** The pure `ResultsPresentation` derives up to four awards from the final rows:
 
-Decision:
-- **Debrief model.** Pure `Presentation/Model/Scoreboard/ResultsPresentation` derives up to four award cards from the immutable final rows:
-  - MVP: highest score;
-  - Top Fragger: most kills;
-  - Survivor: fewest deaths among operators with at least one kill;
-  - Sharpest: best K/D, with at least two kills.
+  | Award | Winner |
+  |---|---|
+  | MVP | Highest score |
+  | Top Fragger | Most kills |
+  | Survivor | Fewest deaths, with at least 1 kill |
+  | Sharpest | Best K/D, with at least 2 kills |
 
-  Ties go to the earlier row in authority order, and a scoreless match has no awards. The same model owns the reveal timeline: banner sweep 0.55 s, team score count-up 1.1 s, awards staggered by 0.16 s from 0.65 s, tables fading in from 1.0 s. Reduced motion shows the final state at once.
-- **Results screen** (`ProductShellHost.DrawDebrief`):
-  - an outcome banner tinted by the winning team that sweeps in from the left;
-  - faction emblems flanking counting team scores;
-  - award cards that rise in with a stamped `TacticalUi.Medal` (tier per award) and a glow on the local player's own awards;
-  - the ADR-085 team tables, including the top-scorer crown, fading in last.
-
-  The previous outcome/reason lines are folded into the banner.
-- **Screen transitions.** Pure `ShellMotion` handles screen entry:
-  - Full-screen pages (Main, Setup, Settings, Results, Loading, Content recovery) rise 18 px out of a short dark veil over 0.26 s. The backdrop stays fixed while the content moves.
-  - Under reduced motion they only fade, over 0.12 s.
-  - Gameplay and the pause/confirm overlays never veil, so they never flash over the live match. `TacticalUi.Begin` takes an enter offset; input follows the GUI matrix.
-- **Menu stage camera.** `ProductMenuScene.ApplyCameraDrift` adds:
-  - two slow sideways sways (23 s and 37 s periods, at most about 0.09 m) and a vertical sway (29 s, 0.018 m);
-  - a one-time 0.35 m push-in over 3.2 s when the menu first opens;
-  - smoothed pointer parallax (0.04 m by 0.02 m).
-
-  The look target moves 35% as far as the eye, which reads as depth. Drift uses real elapsed time, because the stage renders at 30 Hz and the per-frame `sceneTime` under-counts about 3×. That pre-existing pacing still drives the dust motes and is unchanged. Reduced motion holds the camera still.
-- **Review preview.** `-shooterUiGallery results` replaces Main with the debrief over clearly sample rows, through `ScoreboardTable.BindPreview` (review only, never used by the match flow), looping every 7 s.
-
-Consequences: no new assets or allocations per frame beyond the existing UI draws. The real debrief needs a finished match, so it was reviewed through the preview, which uses the same drawing code. There is no kill timeline in `MatchResults`, so a kills-over-time graph would need a Game-v1 change and is not attempted.
-
-Evidence on 2026-11-16 (working tree on `170fb8d`, recorded in the commit that adds this ADR):
-- **Pure tests.** Simulation 353 PASS, including seven `ResultsAndShellMotionTests`:
-  - award choice and tie-break;
-  - the scoreless case;
-  - ratio formatting;
-  - preview sorting;
-  - the timeline under reduced motion;
-  - the veil not touching gameplay or overlays;
-  - drift bounds and the push-in settling.
-- **Other checks.** Game 99, EditMode 82/82, source provenance (932 entries) and the IL2CPP client build PASS.
-- **Player review.** Debrief preview captures show the mid-reveal frame (banner sweeping, scores counting, tables veiled) and the settled frame (four awards, crowned MVP). An earlier layout let the medal's laurel strokes overrun the card edge; the medal was moved inward and resized.
-- **Drift diagnostic.** A temporary player log showed the drift was smooth and bounded (0.05–0.085 m sideways) with no push-in replay. The apparent framing differences between menu captures come from the existing showcase idle moving the soldiers, not from the camera. The background holds still.
-- Captures are in `Artifacts/visual-design/adr-086/20261116/`.
-- **Pending.** A debrief after a real finished match, the defeat and draw tones, 720p at 150% UI scale, a reduced motion/flash pass, and a named review.
-
-Rollback: revert the ADR-086 commit; the debrief returns to the plain tables and screens appear instantly.
-
+  It also owns the reveal timeline: banner sweep, score count-up, staggered award cards, then tables. Reduced motion shows the final state at once.
+- **Results screen.** `ProductShellHost.DrawDebrief` draws the team-tinted banner, counting scores with emblems, medal award cards and the tables.
+- **Screen entry.** `ShellMotion` makes full-screen pages rise 18 px out of a short veil, or only fade under reduced motion. Gameplay and overlays are never veiled.
+- **Menu camera.** `ProductMenuScene.ApplyCameraDrift` adds slow bounded sway, a one-time push-in and pointer parallax, on real elapsed time. Reduced motion holds it still.
+- **Review preview.** `-shooterUiGallery results` previews the debrief over sample rows.
 
 ## ADR-087 — Accepted: tactical HUD craft, first tranche
 
-Date 2026-11-16. Context: owner requested continuation of the visual roadmap at `1676ff8`. This bounded Wave 1b tranche covers combat HUD presentation. Wave 1 verification debt remains open; no authority, sensing, gameplay, settings, content or toolchain identities change.
+Date 2026-11-16. **Decision.** HUD craft, read-only and with no authority change.
 
-Decision: use SDF arcs for damage direction and authority-tick reload progress, up to 30 round glyphs (a compact bar above 30), rotated ally/self arrows and enemy gunfire glyphs under unchanged ADR-058 rules, entering elimination rows with team plates and smooth row placement, a hit-marker pop and a gold headshot variant from DamageApplied region 1. The low-health vignette modulates the existing strength with a slow bounded pulse. Reduced motion removes pop/slide/row travel; reduced flash holds the vignette steady and softens damage arcs. Pure helpers stay in CombatHudVisual. No shader mode or generated payload is added.
+**First tranche:**
+- SDF damage-direction arcs;
+- an authority-tick reload ring;
+- up to 30 round glyphs;
+- rotated ally/self arrows and enemy gunfire glyphs (ADR-058 rules);
+- team-plated elimination rows with smooth placement;
+- a hit-marker pop with a gold headshot variant;
+- a bounded low-health pulse.
 
-Consequences: compass objective bearing, insertion blueprint/load scheduling, wordmark, cards and keycaps remain the next Wave 1b tranche. No enemy centroid is sampled for a compass marker. Full-match, 150% scale, named visual review and reference cost remain Pending until observed.
+Reduced motion removes pop, slide and row travel. Reduced flash holds the vignette and softens the arcs. Tokens are in the [UI design system](brandbook.md).
 
-Evidence:
-
-Checks on the implementation working tree (not a clean release candidate): Simulation **356**, Generation **508**, Game **99**, Contracts **79**, Unity EditMode **82**, source provenance **932 entries / 466 GUIDs**, specification fixtures and documentation verification PASS. No maps, generator bytes, shader modes, package settings or frozen contracts changed; Maps and native republishing are not required for this HUD-only tranche.
-
-- Pure evidence: `Artifacts/m2-combat-harness/1676ff88…/20261116T204610705Z-dc41535e`, `Artifacts/m1-procedural-feasibility/1676ff88…/20261116T204730964Z-3668d6a7`, `Artifacts/m8-runtime-composition/1676ff88…/20261116T204912772Z-04114e0d`, `Artifacts/m0-foundation/1676ff88…/20261116T205002218Z-16af2f26`.
-- Unity: `Artifacts/m0-foundation/1676ff88…/tests-editmode-20261116T204711784Z-23200cbf` PASS. Initial sandboxed SDK restore exited before tests; initial sandboxed Unity startup crashed (-536870911). Installed-environment retries pass. Wrapper pruning retains the failed editor run's small report under `Artifacts/reports/tests-editmode/`.
-- Client IL2CPP build: `Artifacts/m0-foundation/1676ff88…/build-client-20261116T205153588Z-df48c5d9` PASS; manifest remains `sourceCommit=1676ff88a0a0dffeabbb7859d441f5fd66293751`, `sourceDirty=true`, source hash `392b0a5fbaf239cee9ba04f82e2144ee87d5969c9caf4d7104426b5f742d7494`. It includes the concurrent focus fixes later committed by the owner as `edbefa7`. Do not relabel it as a clean build of this delivery commit. The first build attempt was rejected because another Unity session had this project open; retry occurred after that process exited.
-- Smoke PASS: `Artifacts/m0-foundation/f3a69461…/smoke-client-20261116T205435509Z-edc0faea`.
-- Low TDM-5v5 short diagnostic PASS: `Artifacts/m0-foundation/f3a69461…/benchmark-diagnostic-20261116T205447453Z-70dc40c3`: 1,532 frames / 300 ticks, frame p95 **5.1296 ms**, p99 **6.5061 ms**. The recent roadmap diagnostic range was 4.7–5.5 ms, not a controlled paired reference baseline. `gateStatus=PendingHardware`; no full-product or reference-performance PASS.
-- Gallery launch log: `Artifacts/visual-design/adr-087/20261116/gallery-player.log` reaches `SHOOTER_READY_CLIENT`, SDF/icon readiness and menu stage readiness. Computer-use app approval timed out before a screenshot could be inspected. The diagnostic player was closed; gallery/live HUD appearance is **Pending**, not observed. No screenshots or acceptance are claimed.
-- Remaining: full-match event review (including headshot/kill-feed/reload), reduced-motion/flash player pass, native 720p 100%/150% captures, named review, reference costs, P05/VD/REL and a future clean installer. The current shipped installer remains 0.3.17; no installer was rebuilt for this partial Wave 1b step.
-
-Rollback: revert this tranche; no save/content migration.
-
-
-### ADR-087 second tranche — 2026-11-16
-
-Owner assigned the full remaining visual roadmap. Compass chevron reads team-2 spawn coordinates from verified map metadata, never live enemy poses. Insertion draws collision footprints and both spawn markers only once verified map data is available; cold boot has no invented map. Media pans slowly, tips rotate every seven seconds, reduced motion freezes both. Wordmark has numeric stencil cuts; operation cards lift by four logical pixels and carry the objective glyph; Controls/reload hints use outlined keycaps. Verified binding is split into cancellable map mesh/material, weapon, soldier, FX and final session phases with a paint yield after each work unit. Indivisible Unity uploads exceeding 33 ms emit an overrun diagnostic; real player overruns remain Pending measurement. No fake percentages or shortened match rules. Checks and remaining slice work are recorded in the final roadmap handoff.
-
+**Second tranche:**
+- **Compass.** The chevron points to the team-2 spawn from verified map metadata, never live enemy poses.
+- **Insertion screen.** Draws collision footprints and spawn markers once verified data exists.
+- **Rotating content.** Tips rotate. Media and tips freeze under reduced motion.
+- **Branding.** A stencil wordmark, lifting operation cards and outlined keycaps.
+- **Binding phases.** Verified binding is split into cancellable phases (map, weapon, soldier, FX, session) with a paint yield after each. Indivisible uploads over 33 ms log an overrun.
 
 ## ADR-088 — Accepted: seeded noise material family
 
@@ -1358,7 +1215,6 @@ Evidence: required pure/cross-lane/provenance/build checks and limitations are r
 
 Rollback: revert this ADR implementation and republish matching source/content; retained old packages keep their original identities.
 
-
 ## ADR-089 — Accepted: weathered map surface shading
 
 Date 2026-11-16. Context: owner assigned the complete visual roadmap after `08eb4de`. Sole integrator; no gameplay or acceptance waiver.
@@ -1370,7 +1226,6 @@ Consequences: procedural numeric sources only, presentation read-only, quality-i
 Evidence: required pure/cross-lane/provenance/build checks and limitations are recorded in the visual-roadmap handoff before delivery. Missing player, reference and owner evidence remains Pending.
 
 Rollback: revert this ADR implementation and republish matching source/content; retained old packages keep their original identities.
-
 
 ## ADR-090 — Accepted: packaged procedural decals and versioned visual layout operations
 
@@ -1384,7 +1239,6 @@ Evidence: required pure/cross-lane/provenance/build checks and limitations are r
 
 Rollback: revert this ADR implementation and republish matching source/content; retained old packages keep their original identities.
 
-
 ## ADR-091 — Accepted: numeric sky atmospheres, map grades and actor grounding light
 
 Date 2026-11-16. Context: owner assigned the complete visual roadmap after `08eb4de`. Sole integrator; no gameplay or acceptance waiver.
@@ -1396,7 +1250,6 @@ Consequences: procedural numeric sources only, presentation read-only, quality-i
 Evidence: required pure/cross-lane/provenance/build checks and limitations are recorded in the visual-roadmap handoff before delivery. Missing player, reference and owner evidence remains Pending.
 
 Rollback: revert this ADR implementation and republish matching source/content; retained old packages keep their original identities.
-
 
 ## ADR-092 — Accepted: numeric volume-noise combat flipbooks
 
@@ -1410,72 +1263,85 @@ Evidence: required pure/cross-lane/provenance/build checks and limitations are r
 
 Rollback: revert this ADR implementation and republish matching source/content; retained old packages keep their original identities.
 
-
 ## ADR-093 — Accepted: bounded particle combat presentation
 
-Date 2026-11-16. Context: owner assigned the complete visual roadmap after `08eb4de`. Sole integrator; no gameplay or acceptance waiver.
+Date 2026-11-16. **Decision.** Combat mesh proxies are replaced by code-built, manually advanced ParticleSystems that use the verified SGAF flipbooks (ADR-092). The bounded `AnalyticFxPool` and the event timing stay.
+- **Low** emits fewer particles and skips depth softening.
+- **Weapon definitions** gain a validated `muzzleFx` profile, plus a smoke wisp and HDR tracers.
+- **Grenades** add flash, fire, smoke, a shockwave, debris and a scorch mark, with cosmetic camera shake gated by reduced motion.
+- **Movement** produces bounded footstep and slide dust.
+- **Reduced flash** suppresses flash, fire and tracers.
 
-Decision: Replace combat mesh proxies with code-built manually advanced ParticleSystems using verified SGAF flipbooks. Keep the existing bounded AnalyticFxPool and event timing; Low emits fewer particles and skips depth softening. Surface-tag impacts choose sparks, dust or chips. Weapon definitions gain a validated muzzleFx profile; gunfire adds a smoke wisp and HDR tracers. Grenades add flash/fire/smoke/shockwave/debris/scorch plus reduced-motion-gated cosmetic camera shake. Copied movement produces bounded footstep/slide dust without new physics/sensing. ReducedFlash suppresses flash/fire/tracers while readable dust/smoke remains. No simulation, damage, shot or hit-volume behavior changes.
+No simulation change.
 
-Consequences: procedural numeric sources only, presentation read-only, quality-independent gameplay and the pinned toolchain remain binding. New visual bytes are republished under their stated identities.
+**Addendum (surface impacts).** The pure `ImpactSurfaceFx` resolves the impact type read-only from the verified packaged boxes (`MapSolidsMesh.Classify`) and the registry `groundSurface`:
 
-Evidence: required pure/cross-lane/provenance/build checks and limitations are recorded in the visual-roadmap handoff before delivery. Missing player, reference and owner evidence remains Pending.
+| Surface | Effect |
+|---|---|
+| Metal | Sparks |
+| Concrete | Dust and chips |
+| Dirt | A brown kick-up |
 
-Rollback: revert this ADR implementation and republish matching source/content; retained old packages keep their original identities.
-
-Addendum 2026-11-17 (surface impacts): the first implementation split bullet impacts only by the cover tag (sparks vs dust plus additive debris). Impacts now resolve three families through pure `ImpactSurfaceFx`: metal (cover tag, or the hit packaged collision box classifies to a metal role through the same `MapSolidsMesh.Classify` the solids mesh uses, plus oil-depot tank drums) gives sparks; concrete (other solids, or the floor on an asphalt-ground map) gives grey dust and chips; dirt (the floor on a soil-ground map) gives a brown upward kick-up and clods. Lookup is read-only against the verified packaged boxes and the registry `groundSurface`; the impact payload, simulation and package bytes are unchanged. Known limit: arena feature envelopes (vehicles, sandbags, tarp fences) are classified from their box alone, because their feature list is not in the packaged collision. Evidence: Simulation 364/364 (`Artifacts/m2-combat-harness/ff105841f92da3e717339607cbca30509a6e43ab/20261117T071440472Z-257ce52b`, 6 new `ImpactSurfaceFxTests`), EditMode 87/87 (`Artifacts/m0-foundation/ff105841f92da3e717339607cbca30509a6e43ab/tests-editmode-20261117T071546961Z-1bcef835`), source provenance PASS. Player look and owner review remain Pending.
-
+Feature envelopes (vehicles, sandbags) are classified by box alone.
 
 ## ADR-094 — Accepted: bounded soldier presentation revision and P05 reopening
 
-Date 2026-11-16. Context: owner assigned the complete visual roadmap after `08eb4de`. Sole integrator; no gameplay or acceptance waiver.
+Date 2026-11-16. **Decision.** The visual roadmap reopened ADR-024 for at most three measured candidates or 90 minutes of P05 clearance and eye-solver work. The P05 gate stayed unchanged.
 
-Decision: The owner roadmap reopens ADR-024 only for this assignment. Bound: at most three measured candidate parameter sets and 90 minutes of P05 clearance/eye solver work after the first candidate measurement; retain all failed JSON/captures. Stop the search when either bound is reached. P05-D01 forearm/strap clearance, D02 eye/sight line and D03 trigger-arm penetration must be measured with the unchanged conservative proxy; no acceptance waiver or narrower measurement envelope. Add soldier.loft 1.0.3 with a 10-micrometre output lattice, canonical radius finite differences and explicit double frame arithmetic to make Mono/.NET publication portable, while retaining explicit 1.0.2 generation and the historical failing solver default for regression evidence. Current product uses the baseline pose solver; the failed correction is opt-in diagnostics only via `-shooterP05Candidate`. It uses lofted uniform/equipment modules, camo/fabric and numeric faction insignia. Cosmetic ground reads installed gameplay collision boxes, grip targets come from each weapon profile and head look-at is bounded. None feeds Simulation, hit volumes, AI or authoritative root motion. If the bounded correction still fails, keep P05 FAIL and deliver the implemented visual improvements with those residuals explicit.
+The new soldier kit, `soldier.loft` 1.0.3, adds:
+- lofted uniform and equipment modules;
+- camo and fabric;
+- numeric insignia;
+- a 10-µm output lattice for Mono/.NET portability.
 
-Consequences: procedural numeric sources only, presentation read-only, quality-independent gameplay and the pinned toolchain remain binding. New visual bytes are republished under their stated identities.
+1.0.2 stays buildable. Cosmetic ground reads the gameplay collision boxes, and each weapon profile supplies its own grip targets.
 
-Evidence: required pure/cross-lane/provenance/build checks and limitations are recorded in the visual-roadmap handoff before delivery. Missing player, reference and owner evidence remains Pending.
-
-Rollback: revert this ADR implementation and republish matching source/content; retained old packages keep their original identities.
-
+**Outcome.** All three candidates **FAILED**: arm clearance −55.6, −57.7 and −11.5 mm. The product kept the baseline solver, and the failed correction stayed opt-in (`-shooterP05Candidate`). Superseded by ADR-095.
 
 ## ADR-095 — Accepted: structural weapon-from-eye shooting posture (P05 reopening)
 
-Date 2026-11-17. Context: the ADR-094 bound is exhausted (three candidates, P05 FAIL). All three candidates changed only a neck look-at that pulled the head onto the sight line of a weapon whose stock stays on an unraised right shoulder joint. With the rifle sockets the sight line runs only 55 mm above the stock socket, so a head moved onto it lands on the trigger arm (worst at the +/-45 degree aim-yaw limit) and arm clearance got worse (-55.6 / -57.7 / -11.5 mm). The shipping baseline keeps the head clear but misses the sight line by up to 127 mm and still has a -1.9 mm left-forearm overlap at down-aim reload phase 0.45. The owner reviewed this root-cause analysis and authorized a structural revision instead of further head-only tuning.
+Date 2026-11-17. **Context.** All three ADR-094 candidates only pulled the head onto the sight line of a weapon whose stock stayed on an unraised shoulder. The sight line runs just 55 mm above the stock socket, so the head landed on the trigger arm.
 
-Decision: the owner reopens P05 once more for one structural solver revision of `SoldierMotion` presentation posture. Allowed changes: a right-shoulder shooting posture (clavicle elevation/protraction moves the shoulder joint, and so the stock socket, toward the line of sight); a head pose that puts the right eye on the sight line by construction (cheek-weld cant/flex with the neck chain solved to that eye target); spine distribution of aim yaw; the existing clearance-aware elbow solve applied after the head is final; and an outward offset of the support-hand reload path where it passes the carrier. The skeleton, bind pose, limb lengths, weapon recipes/sockets, `ArmBodyClearance` proxy, gameplay pose/hit volumes, Simulation, AI and authoritative root motion stay unchanged. Nothing from the corrected pose feeds authority (ADR-004).
+**Decision.** The owner reopened P05 once more for one structural revision of the `SoldierMotion` presentation posture (`ShootingPosture`). It may change:
+- the right-clavicle shooting posture, which moves the stock socket;
+- a head pose that puts the right eye on the sight line by construction, with the neck solved to that target;
+- the spine distribution of aim yaw;
+- the elbow solve after the head;
+- an outward support-hand reload bow.
 
-Gate, fixed before the first measurement: the unchanged `SoldierClearanceTests` envelope (stand/crouch x aim yaw -45/0/+45 x pitch -25/0/+25 x held plus reload phases 0..1 in 0.01 steps) on the baseline rifle must show minimum `ArmBodyClearance` >= 0 m, eye/sight-line residual <= 0.005 m on every sample, grip <= 0.02 m and stock socket error <= 1e-5 m. No tolerance relaxation, proxy change, narrower envelope or waiver. Bound: 180 minutes of solver work after the first full-envelope measurement; every measured parameter set's residuals are retained under `Artifacts/visual-design/adr-095/`. Stop at the bound.
+The skeleton, limbs, recipes, sockets, the `ArmBodyClearance` proxy, gameplay hit volumes and Simulation stay unchanged.
 
-If the gate passes, the revision becomes the product default under a new motion identity and the `-shooterP05Candidate` diagnostic is retired; P05-D01..D03 become numerically resolved, and P05 itself stays FAIL until a named visual review of front/side/back/three-quarter and live near/far captures accepts the candidate (the historical FAIL record is retained either way). If the gate fails, the product keeps the baseline solver, residuals are recorded and P05 stays FAIL.
+**Gate**, fixed in advance on the unchanged `SoldierClearanceTests` envelope:
+- arm clearance ≥0;
+- eye/sight residual ≤5 mm;
+- grip ≤2 cm;
+- stock error ≤1e-5 m.
 
-Consequences: presentation-only change; quality-independent gameplay, procedural numeric sources and the pinned toolchain remain binding. A changed motion identity requires the feature-content lock refresh through its tool and republication of affected visual bytes.
+The bound was 180 minutes.
 
-Rollback: revert the solver and identity change; the baseline v5 solver and all ADR-024/094 evidence remain reproducible.
+**Outcome.** PASS. Clearance +3.0 mm and eye residual 0 mm. `soldier.motion.v6.shooting` became the product default (later v7, ADR-100), and `-shooterP05Candidate` was retired. P05-D01–D03 are numerically resolved. P05 visual acceptance stays **FAIL** until a named visual review ([defect inventory](visual-defect-inventory.md)).
 
 ## ADR-096 — Accepted: music channel, combat sample bank v5 and owner audio-source relaxation
 
-Date 2026-11-17. Context: owner reported that only rifle/pistol shots sound good; reload, knife and grenade cues sounded synthetic or were missing, and there was no music. The v4 bank (ADR-062, shipped as `combat-audio-bank-v4-stereo` after ADR-064's knife/grenade cues) used real recordings for gunshots and knife swing only; reload, impacts, footsteps, UI and ambience were project-rendered Foley. Nothing played in the menu or when a match finished.
+Date 2026-11-17. **Context.** Reload, knife and grenade cues sounded synthetic, and there was no music.
 
-Decision:
-- **Source policy.** Owner decision: this is a non-commercial build, so a source's license no longer gates selection. Any freely downloadable recording or track may ship. Each file still records its source note, license (informational) and SHA-256 in its manifest. Extracting audio from commercial games stays out of scope. This amends the license sentence of ADR-055/062 and `features/audio.md`.
-- **Bank v5.** `combat-audio-bank-v5-stereo` keeps the v4 slot order and adds `reload_pistol`, `knife_hit_flesh`, `knife_hit_hard`, `grenade_pin`, `grenade_bounce`, `grenade_explode_far`, `dry_fire`, `weapon_switch`, `hit_marker`, `kill_confirm`, `bullet_flyby`, `distant_battle`, `ui_hover`, `ui_click` and `ui_back`. A manifest may ship 1–8 variations per cue; each missing cue falls back to its nearest generated recipe. `Tools/build_audio_bank.py` renders the bank from `Tools/audio-sources.json`. Downloads stay under the ignored `.local/audio-src`. `keep` entries retain the v4 gunshot files byte-for-byte.
-- **Routing (presentation only).**
-  - Reload Foley is chosen by slot family (sidearm vs long gun). It is time-fitted within ±12 % to the `ActionPayload` reload window and faded out on the owner's death or next shot.
-  - Knife `DamageApplied`/`Impact` on the swing's tick plays a flesh or hard hit.
-  - The local instigator hears a hit tick and a kill confirm.
-  - Enemy rounds passing within 2.5 m of the head play a flyby.
-  - Grenade blasts add a distant layer. Two bounce clinks are scheduled analytically where the arc meets the thrower's feet height; a blast cancels them.
-  - Dry fire, weapon switch and grenade pin come from the local lifecycle state.
-  - A session-seeded distant-battle bed plays every 6–20 s.
-  - No Simulation, C0 or Game-v1 event changes.
-- **Music.** `MusicDirector` (pure, `Presentation.Model`) maps shell screens to: menu theme → silence while loading → calm bed → tension bed (latched when the leading team is within 15 kills of the limit or 60 s remain) → victory/defeat/draw stinger → results loop. Beds duck by up to −6 dB under local fire or a blast within 15 m. `UnityMusicOutput` crossfades two 2D `AudioSource`s and loads Vorbis-compressed OGG from `Content/Audio/music` (manifest with SHA-256 and optional loop region). It needs the built-in engine modules `com.unity.modules.unitywebrequest` and `com.unity.modules.unitywebrequestaudio`, which are exempt from the package locks (ADR-079). A missing or invalid music bank is silent with one warning. `Package-Release` ships the folder when present.
-- **Menu UI sound.** A second small mixer instance sharing the bank plays hover/click/back from `TacticalUi`, so the menu has sound without an attached session.
-- **Settings.** `UserSettings` gains `musicVolume` (default 0.6) as an additive, optional schema-2 key. Older files load with the default and older builds ignore the key, so `SettingsSchema` stays 2. The Game-v1 lock is refrozen for `GameData.cs`. The Audio tab gets a Music slider. Music gain = master × music.
+**Decision.**
+- **Source policy.** In this non-commercial build, a source's license no longer gates selection. It is still recorded with the SHA-256. This amends ADR-055/062. Audio extracted from commercial games stays forbidden.
+- **Bank v5.** Adds sidearm reload, knife hits, grenade pin/bounce/far blast, dry fire, weapon switch, hit marker, kill confirm, flyby, distant battle and UI hover/click/back. Each cue has 1–8 variations. It is built by `Tools/build_audio_bank.py` from `Tools/audio-sources.json`.
+- **Routing.** Presentation only:
+  - reload Foley is time-fitted to the reload window;
+  - knife hit pairing;
+  - local hit and kill ticks;
+  - flybys within 2.5 m;
+  - analytic grenade bounces;
+  - a distant-battle bed.
 
-Consequences: bank memory grows with the added cues. Music is decoded by the engine outside the 0.5 ms SFX mix target. Pure tests cover the new routing, the director, the manifest, the tracker and the settings key. Named listening review (FIX10/SET02) stays Pending until the owner records it.
+  No event contract changes.
+- **Music.** `MusicDirector` drives `UnityMusicOutput`: menu → silence while loading → calm bed → tension bed → stinger → results loop, with ducking. Tracks are OGG from `Content/Audio/music`, with hashes. The built-in UnityWebRequest audio modules are lock-exempt.
+- **Menu sound.** A UI mixer gives the menu sound.
+- **Settings.** An additive `musicVolume` (default 0.6). Schema stays 2, and the Game-v1 lock is refrozen.
 
-Rollback: revert this change. The v4 manifest and its files are recoverable from git, and older settings files remain valid.
+See [audio](features/audio.md).
 
 ## ADR-097 — Accepted: headshot kill Score bonus
 
@@ -1489,507 +1355,361 @@ Rollback: set the bonus to 0 or revert this change.
 
 ## ADR-098 — Accepted: per-weapon first-person recoil presentation (camera climb + per-shot kick)
 
-Date 2026-11-17. Context: owner playtest reported that the rifle's firing animation did not match its shot sound, and that recoil showed neither on the weapon nor on the camera while aiming. Simulation already deflected every shot by the authoritative recoil offset (`AuthoritativeRecoil`, up to 5° climb), but the camera never showed it, and a scoped ADS hides the rifle mesh, so the scope had no recoil feedback at all. The viewmodel spring (`x'' + 12x' + 40x`, about 1 Hz) used fixed slot impulses. At 600 RPM it piled up into a slow drift instead of one kick per report.
+Date 2026-11-17. **Context.** Simulation deflected shots by authoritative recoil, but neither the camera nor a scoped view showed it. The viewmodel spring piled up into drift at 600 RPM.
 
-Decision:
-- **Recoil stays weapon data.** `Tools/generate_weapon_catalog.py` copies each definition file's `combat.recoilPitchDegrees` / `recoilYawHalfDegrees` into `WeaponVisualProfile.RecoilPitchDegrees` / `RecoilYawHalfDegrees`, the same numbers the Simulation catalog uses. A new weapon gets its own camera and viewmodel recoil from its `.weapon.json` alone; presentation has no slot or id switches for recoil.
-- **Camera recoil** (`Presentation/Model/View/FirstPersonCameraRecoil`, applied in `ProductSessionView`): the *climb* mirrors the authoritative pitch tick for tick (per-tick decay at 8/s, the extra decay inside `ApplyImpulse`, minus the weapon's pitch, clamp 5°). The screen centre and the scope reticle then stay on where rounds go. A cosmetic *punch* spring (peak ≈ 0.9 × one shot's climb, about 31 ms after the event, about 85% settled by 100 ms) gives every report a visible kick, ADS and scope included. Reduced camera motion drops the punch and keeps the climb. Authoritative yaw is seeded in Simulation, so it is not mirrored; only a small alternating cosmetic yaw punch is shown. The values are added to the camera rotation only and never reach aim input or authority. Combat events are now leased before the camera is posed, so the kick lands on the same frame as the shot audio.
-- **Viewmodel kick** (`ProceduralViewModel`): each local ShotAccepted adds an impulse sized from the firing weapon's profile (`ShotKickImpulse`, peak 0.16 rad per recoil degree) to a stiff exact spring (`DampedSpring`, damping 18, frequency 36: peak about 31 ms, about 85% settled by 100 ms), so automatic fire pulses once per round. `EquipmentRecoilKick` scales up the rearward punch (about 1.7 cm at the rifle peak), which remains at full ADS. The ADS rotation and lateral offsets stay suppressed for sight alignment.
-
-Unchanged: C0/Game-v1 contracts, Simulation recoil and hit results, weapon definition schema (no new fields), audio.
-
-Validation: `WeaponRecoilPresentationTests` (profile/catalog recoil parity, camera climb equals `AuthoritativeRecoil` per tick for rifle, carbine and pistol, punch timing, reduced motion, remote/knife/duplicate filtering, per-weapon kick ordering, and per-shot pulsing under automatic fire). On 2026-11-17 Simulation 404, Game 102 and Generation 520 passed, and source provenance and `generate_weapon_catalog.py --check` passed. Unity EditMode, a client build and an in-game feel check are Pending.
-
-Rollback: revert this change. The generated profile fields are optional constructor parameters.
+**Decision.**
+- **Recoil is weapon data.** The generator copies `combat.recoilPitchDegrees` and `recoilYawHalfDegrees` into `WeaponVisualProfile`. Presentation has no slot or id switches.
+- **Camera** (`FirstPersonCameraRecoil`):
+  - The *climb* mirrors the authoritative pitch tick for tick, so the screen centre and the reticle stay where rounds go.
+  - A cosmetic *punch* spring kicks every report: about 31 ms to peak, about 85% settled by 100 ms.
+  - Reduced motion drops the punch.
+  - Authoritative yaw is seeded and not mirrored.
+  - These values touch only the camera rotation. Events are leased before the camera is posed.
+- **Viewmodel** (`ProceduralViewModel`). Each local shot adds an impulse sized from the profile to a stiff exact `DampedSpring`, so automatic fire pulses once per round.
 
 ## ADR-099 — Accepted: per-weapon first-person hand and weapon choreography
 
-Date 2026-11-17. Context: the owner asked for better first-person hand animation per weapon, covering the regular view, shooting, reload, switching, grenade and knife. Before this change, one generic sine arc served every reload, and the same magazine went out and came back. Switches took a fixed 0.34 s regardless of the simulation's `equipTicks`. The knife played one 0.22 s arc against a 0.4 s interval, and the grenade cook snapped to a static pose. The throw was cut on the release tick, because the simulation switches back to the rifle in the same tick and the presentation dropped the throw with the slot. Sprint, jump/land, crouch and look had no viewmodel motion.
+Date 2026-11-17. **Context.** One generic reload arc served every weapon, switches took a fixed 0.34 s, and the knife and grenade had poor or cut motion. There was no movement on the viewmodel.
 
-Decision:
-- **Timing stays weapon data.** `Tools/generate_weapon_catalog.py` copies `combat.equipTicks`, `fireIntervalTicks`, `reloadTicks` and `fuseTicks` into `WeaponVisualProfile`. It also adds an optional `visual.adsSeconds` (default 0.15). The Simulation catalog is unchanged.
-- **Choreography is numeric key tables, not clips.** `MotionCurve` is a C1 Hermite track whose extreme keys hold still. Every beat is an equipment-relative waypoint table in pure `Presentation/Model/View`. There are no authored bone poses or recordings, consistent with AGENTS.md and the motion graph in `soldiers-animation.md`.
-- **Reload** (`FirstPersonReloadChoreography`): runs on the authoritative ActionPayload phase.
-  - Rifle and carbine: tilt, press the release, then strip and drop the old magazine (tactical) or let it fall (empty). The hand fetches a second, fresh magazine from the belt, inserts it and slaps it home. Empty reloads add a bolt-catch press that releases the locked-back bolt.
-  - Pistol: cant, thumb release (the magazine falls), fetch, insert and palm-seat. Empty reloads add an overhand slide rack.
-  - The packaged magazine part is the dropped one. A second "FP fresh magazine" child that reuses the same mesh rides in the support hand until it seats, so no geometry is added.
-  - The support wrist follows the hand track, and the elbow stays anchored (ADR-069).
-  - Reduced motion halves the tilt and keeps the hand, magazine and weapon travel.
-  - Third-person avatars keep `FirstPersonMagazineTravel`.
-- **Shooting:** the bolt or slide cycle closes within `min(90 ms, 0.8 × fire interval)`, eased so it lingers at the rear and then slams home. On an empty magazine it stays locked back until the reload releases it.
-- **Switching** (`FirstPersonEquipChoreography`): a presentation-only tuck of at most 0.10 s (and at most 35% of the window), then a per-weapon draw that fills the rest of the incoming weapon's equip window and ends with a small overshoot settle.
-  - Rifle: swings up with a roll.
-  - Pistol: rises muzzle-down.
-  - Knife: wrist flip.
-  - Grenade: comes up from the belt.
+**Decision.** Timing comes from weapon data: the generator copies the equip, fire, reload and fuse ticks into `WeaponVisualProfile`, plus an optional `visual.adsSeconds`. Choreography is numeric `MotionCurve` key tables of equipment-relative waypoints in pure `Presentation/Model/View`, not clips.
+- **Reload** (`FirstPersonReloadChoreography`):
+  - **Rifle:** tilt, release, strip or drop the magazine, fetch a fresh one from the belt, insert, slap. An empty reload adds a bolt-catch press.
+  - **Pistol:** cant, thumb drop, insert, palm seat. An empty reload adds a slide rack.
+  - An `FP fresh magazine` child reuses the magazine mesh.
+- **Shooting.** The cycle closes within min(90 ms, 0.8 × interval). On empty it stays locked back.
+- **Switching** (`FirstPersonEquipChoreography`). A tuck of at most 0.10 s, then a per-weapon draw that fills the authoritative equip window.
+- **Knife.** Swings fill the fire interval and alternate direction.
+- **Grenade.** A pin pull, a cocked raise and a fuse tremble. The throw survives the authority's same-tick switch back.
+- **Movement** (`FirstPersonLocomotionPose`):
+  - sprint carry and bob;
+  - jump lag and a landing dip;
+  - crouch tuck and slide roll;
+  - look inertia;
+  - idle breathing;
+  - eased eye height.
 
-  This closes ADR-077's "slot-keyed first-person equip timing".
-- **Knife:** each swing lasts the knife's fire interval and alternates right-to-left and left-to-right. A short wind-up is followed by a fast cut and recovery. A same-tick hit still upgrades the swing to a stab.
-- **Grenade:**
-  - Cook: a pin pull at the start (support hand to the ring, yank, lower away), then an eased raise into a cocked pose and a tremble that grows with the elapsed fuse share.
-  - Throw: starts from the pose at release, hides the prop at 12% of the throw and keeps the hands through the follow-through.
-  - `FirstPersonHandling` holds the outgoing grenade mesh while the throw plays, then swaps without a tuck and draws the rifle in the rest of its equip window (at least 0.18 s).
-- **Movement** (`FirstPersonLocomotionPose`): `LocalMovementView` adds `Sprinting`, `Grounded` and `VerticalSpeedMetersPerSecond`, copied from `MotorBodyState`; `LocalMovementView` is not a frozen contract. The pose adds:
-  - a sprint carry and figure-eight bob, dropped within about 50 ms by a shot, reload, special action, switch or ADS;
-  - a jump lag and a landing dip scaled by fall speed (exact `DampedSpring`);
-  - a crouch tuck and a slide roll;
-  - look inertia: the gun trails a turn by at most 0.07 rad.
+  Rotation layers fade out at ADS.
 
-  Rotation layers fade fully at ADS, so the verified sight line is unchanged. The camera eye height now eases between stances (45 ms time constant) instead of snapping. The authoritative eye and ballistic origin are untouched.
-- **Idle:** a slow breathing rise and fall is added to the existing sway.
-
-Unchanged:
-- C0/Game-v1 contracts, Simulation timing, hit results and recoil.
-- Hand rig `fp.hand.v2` and the packaged meshes (no map-package republish).
-- Third-person animation and audio.
-
-Validation:
-- `FirstPersonChoreographyTests` covers:
-  - curve keys and overshoot;
-  - reload continuity for every family and reload kind;
-  - the magazine drop before the fresh one seats;
-  - the empty-reload cycle lock and release;
-  - reduced motion;
-  - the draw finishing on the authoritative equip window for every weapon;
-  - draw continuity;
-  - the held throw swap;
-  - knife duration and alternation;
-  - pin pull and fuse tremble;
-  - the throw surviving the switch back;
-  - cycle timing;
-  - the ADS profile time;
-  - sprint blend in and out, landing dip scaling, frame-rate independence, look inertia bounds, crouch and reset.
-- The Game test covers the new movement-view fields.
-- Unity EditMode adds `ReloadDropsTheOldMagazineAndSeatsAFreshOneFromTheBelt`.
-- `ShooterFeatureBuild.CaptureHandling` adds frames for the empty-reload fresh magazine, the bolt or slide release, the knife slash, the grenade pin pull and the grenade throw.
-- On 2026-11-17: Simulation 434, Game 103, Generation 520 and Unity EditMode 88/88 passed. Source provenance, `generate_weapon_catalog.py --check` (generator tests 23) and the asmdef graph also passed. A client build, the CaptureHandling render and the in-game feel review are Pending.
-
-Rollback: revert this change. The new profile fields and `LocalMovementView` fields are optional constructor parameters with neutral defaults.
+Contracts, timing, the hand rig and the packages are unchanged.
 
 ## ADR-100 — Accepted: third-person directional gait, airborne pose and bot hops/slides
 
-Date 2026-11-17. Context: owner playtest. When bots strafe, their legs float instead of stepping, the same happens in jumps, and jumps and slides either have no third-person animation or are never seen. Root causes:
-- `SoldierMotion` placed every foot target along the aim heading. Bots strafe at 90 degrees to their aim (`CombatAiDirector.EngageMove`), so planted anchors and swing targets trailed sideways by up to a full stride cycle and the leg IK clamped at 98% reach (0.89 m foot-to-root measured on a 3 m/s strafe).
-- There was no airborne pose. `ProductActorPresentation.PoseAvatar` ignored `Grounded` and vertical speed for third person, so the gait kept cycling in the air and sampled ground under elevated feet.
-- The slide dive faced the aim, not the travel, and switched 0/1 without a blend.
-- Bots jumped only when stuck (never in combat) and slid only in SeekCover/Reposition after 30 sprint ticks, with a 600-tick cooldown and 5 m of straight path, so players almost never saw either.
+Date 2026-11-17. **Context.** Strafing bots had floating legs because foot targets ran along the aim. There was no airborne pose, and bots rarely jumped or slid.
 
-The owner approved bots jumping and sliding more often, and the `feature-content-lock.json` refreeze for the motion generator.
+**Decision.** `soldier.motion.v7.locomotion` (ADR-095 posture plus the following):
+- **Directional gait.** `MoveHeadingRadians` sets the stride along the travel heading while the torso and weapon keep the aim. Stance width turns toward the travel perpendicular. Side-step and backpedal use 1.0 / 1.6 m cycles.
+- **Reversals.** A turn of more than 120° mirrors the gait phase. A turn of 60–120° re-aims a swing that is less than halfway done. Both stay within the two-ground-query budget.
+- **Airborne.** A tuck pose with no ground samples. Feet lift while rising and reach down while falling.
+- **Landing.** The pelvis dips up to 7 cm.
+- **Slide.** Faces the direction of travel, with the spine twisted back to the aim.
+- **Presentation.** `LocalMovementView` gains velocity. `ThirdPersonLocomotionBlend` derives heading hold, airborne hysteresis, landing and slide easing.
+- **Bots:**
+  - more and sooner slides (300-tick cooldown);
+  - a knee-height traversal hop over low obstacles (`TraversalJumps`);
+  - a 25% hop on safe strafe reversals (`CombatHops`).
 
-Decision:
-- **Motion identity `soldier.motion.v7.locomotion`** (the ADR-095 shooting posture plus the items below; `ShootingPosture.Version`). The v5 baseline solver keeps `soldier.motion.spike.v5`; new `SoldierMotionInput` fields default to the previous behaviour (no heading means travel along aim; airborne 0; land -1).
-- **Directional gait.** `SoldierMotionInput.MoveHeadingRadians` (world travel yaw). The stride offset of every foot target runs along the travel heading while the torso, weapon and knees keep the aim. The stance-width axis turns from the body blade toward the travel perpendicular as the actor side-steps (sign fixed to the body's right, widened up to 40%), so strafing feet shuffle staggered instead of crossing. Side-step/backpedal (travel more than about 60 degrees off aim, with hysteresis) uses a 1.0/1.6 m walk/run cycle and replans contacts on the mode change, like walk/run.
-- **Reversals.** A travel turn of more than 120 degrees (a bot strafe flip) mirrors the gait phase: the planted foot's anchor becomes the leading contact for the new direction, and each swinging foot runs back along its own arc. The swing is continuous because the smoothing curve is symmetric. A turn of 60-120 degrees re-aims a swinging foot that is less than half way, with the swing start solved so the foot does not jump. Both stay inside the two-ground-query budget.
-- **Airborne.** `Airborne` 0..1 selects a tuck pose with no ground samples. Pelvis at the gait's nominal height minus 4 cm; feet lift up to 0.30 m with a 0.14 m front/back split along travel while rising, and reach back down as the fall speed approaches 4 m/s. Gait contacts are released so feet re-plant on landing. Gait and airborne share one torso and upper-body solve.
-- **Landing.** `Land` 0..1 dips the gait pelvis by `0.07 sin(pi land)` m; the leg IK supplies the knee bend.
-- **Slide.** Hips, legs and the lead/trail feet use the travel heading; the spine twists back to the aim within the 45-degree torso budget, so the weapon stays on target.
-- **Presentation.** `LocalMovementView` gains `VelocityXMetersPerSecond`/`VelocityZMetersPerSecond` (optional, not a frozen contract), copied from the motor in `OfflineGameSession.TryGetMovementView`. The pure `Presentation/Model/View/ThirdPersonLocomotionBlend` turns copied authority movement into the cosmetic inputs:
-  - the heading follows velocity above 0.3 m/s, is held through slow frames (a strafe flip) and released below 0.05 m/s;
-  - airborne when ungrounded and rising faster than 0.5 m/s, or ungrounded for more than 0.10 s (stairs and step edges do not flicker), blended over 0.08 s;
-  - a 0.20 s landing after at least 0.15 s of airtime;
-  - the slide eases in over 0.10 s and out over 0.15 s.
-- **Bots** (`CombatAiDirector`, `AiTuning`, deterministic from id and tick):
-  - Slides: also in Investigate and Search; 18 sprint ticks (was 30); 4 m straight path (was 5); 300-tick cooldown plus the `(id % 5) * 60` jitter (was 600). The motor's own slide gates are unchanged.
-  - Traversal hop: while travelling (not engaging, firing, reloading or crouched), every 6 ticks a knee-height ray (0.35 m, above the 0.25 m motor step) looks 0.9 m along the move direction. A hit with a clear ray at 0.75 m (below the ~0.6 m jump apex plus the body) presses jump, with the existing 90-tick jump cooldown. Counter `TraversalJumps`.
-  - Combat hop: on a strafe reversal whose new side is safe, at close or mid range, 25% chance (`AiNoise.SaltHop`), never while firing, in a burst, reloading, crouched or holding still; 180-tick hop cooldown and the jump cooldown. Counter `CombatHops`. The AI has no tightness readout, so the motor still refuses a jump below its tightness cost.
-
-Unchanged: C0/Game-v1 contracts, motor, hit volumes and gameplay pose, simulation timing, skeleton and sockets, first-person presentation, map packages.
-
-Validation:
-- Generation `SoldierMotionTests`: strafe (max foot-to-root 0.33 m versus 0.89 m on the aim-heading stride; plant error and slide below 1e-6 m), backpedal, repeated strafe reversals with no contact reset, airborne tuck and reach with a ground sampler that always fails, landing dip, slide along travel with the weapon on aim, input validation. `SoldierClearanceTests` asserts the v7 identity on the unchanged ADR-095 gate.
-- Simulation `ThirdPersonLocomotionBlendTests` (heading hold and release, jump and landing, stairs flicker, slide easing, reset) and `BotJumpSlideTests` (low-obstacle hop, tall walls ignored, deterministic combat hops with cooldown and no fire/crouch, none at long range, sooner and repeated slides).
-- Game test: the movement view velocity matches the copied horizontal speed.
-- `feature-content-lock.json` refrozen (source hashes, `motionVersion`).
-
-Pending: client build and the owner's in-game look at bot strafes, hops and slides; P05 visual acceptance stays FAIL pending a named review.
-
-Rollback: revert this change. That restores v6, the aim-heading stride and the previous bot tuning; the new input and view fields are optional with neutral defaults.
+`feature-content-lock.json` was refrozen. Contracts, motor and hit volumes are unchanged.
 
 ## ADR-101 — Accepted: selectable team sizes 5 / 8 / 10 / 15
 
-Date 2026-11-17. Context: owner request to replace the product Setup choice of 5v5/6v6 with per-team sizes 5, 8, 10 and 15. Game-v1 was frozen at team sizes {5,6}, `MaxParticipants`/`MaxActiveActors` 12 and `CombatAiDirector.MaxBots` 11; arena maps emitted exactly 12 spawn slots per team; the bot display-name pool held 24 names. 15v15 needs 30 actors and 29 bots.
-
-Decision:
-- **Allowlist.** `SessionRequest.TeamSize` and catalog `supportedTeamSizes` accept only `{5,8,10,15}`. Product Setup shows a 2×2 grid (5v5 / 8v8 / 10v10 / 15v15). Default and unknown prefs/CLI values (including legacy saved `6`) clamp to **5**.
-- **Capacity.** `GameContractVersion.MaxParticipants` / `MaxActiveActors` = **30**; `CombatAiDirector.MaxBots` = **29**. `TeamSizesMin`/`Max` = 5/15 with the explicit allowlist above. Game-v1 `ruleVersion` stays 1; C0-v1 and package encoding versions are unchanged.
-- **AI budgets.** Keep the global **≤16 vision rays / ≤2 new paths per tick**. Every bot must still receive a sensing opportunity within **`MaxBots` active ticks** under a full roster; starvation remains a reject. No silent per-size budget scaling.
-- **Spawns.** `MapSpawnLayout.SlotsPerTeam` = **15**; ArenaRules expects 15/team. Catalog gameplay packages are republished (hashes change).
-- **Names.** `BotDisplayNames.Pool` grows to ≥29 unique short ASCII first names.
-- **Workloads.** Keep `TDM-5v5-*`. Replace product `TDM-6v6-*` and soak-6v6 rows with `TDM-8v8-*`, `TDM-10v10-*`, `TDM-15v15-*` measurement identities and `TDM-soak-15v15-*` soaks. Historical 6v6 evidence stays archival; the product shell no longer starts size 6.
-- **Locks.** Refreeze `game-contract-lock.json` after Contracts/fixture migration; refresh `content-format-lock.json` for the release-catalog schema/sample enum change.
-
-Consequences: playtest matrix becomes three maps × four sizes; larger fights stress AI round-robin and presentation actor counts; reference captures/soaks must use the new workload IDs.
-
-Rollback: revert this change, restore {5,6} allowlist and prior caps/slots/workloads, and republish catalog packages from the prior source.
-
-Evidence: pure Game/Simulation/Generation/Maps lanes and lock verifiers after implementation; Unity EditMode for shell/setup; native content republish when the locked editor is available. Manual playtest and hardware remain Pending.
+Date 2026-11-17. **Decision.**
+- **Allowlist.** Team sizes are {5, 8, 10, 15}, shown as a 2×2 grid in Setup. Unknown or legacy values (6) clamp to 5.
+- **Capacity.**
+  - `GameContractVersion.MaxParticipants` / `MaxActiveActors` = 30.
+  - `CombatAiDirector.MaxBots` = 29.
+  - `ruleVersion` stays 1.
+- **AI budgets.** The global limits stay at ≤16 rays and ≤2 paths per tick, and every bot is sensed within `MaxBots` ticks. There is no per-size scaling.
+- **Spawns.** 15 slots per team (`MapSpawnLayout.SlotsPerTeam`), so packages are republished.
+- **Names.** At least 29 bot names.
+- **Workloads.** `TDM-5v5/8v8/10v10/15v15-*` and `TDM-soak-15v15-*`. The 6v6 evidence is archival.
+- **Locks.** `game-contract-lock.json` and `content-format-lock.json` are refrozen.
 
 ## ADR-102 — Accepted: named real-world arsenal, random spawn loadouts and muzzle flash fix
 
-Date 2026-11-17. Context: owner request. Every gun was generic ("Rifle", "Sidearm"), shared two shapes, two shot sounds and two reload tracks, and the HUD showed slot names. The owner asked for guns modelled on real firearms (AK-47, AK-102, M16, a McMillan-style sniper, an "Mk 2" marksman rifle, Glock, a golden Desert Eagle), each with its own look, sound, animation and handling. Separately, firing showed smoke but no muzzle flash. Owner decisions: random loadout per spawn (no UI), "Mk 2" means a Mk 14 EBR-style DMR, brand names are replaced by close stand-ins, and shot sounds come from real recordings.
+Date 2026-11-17. **Context.** Every gun was generic, and the muzzle flash never showed.
 
-Decision:
-- **Roster.** Five primaries and two sidearms, one `Content/Weapons/*.weapon.json` file each (ADR-077):
+**Decision.**
+- **Roster.** Seven named guns, one definition file each:
 
-  | id | label | fire | dmg | falloff m (min) | mag | optic FOV |
-  |---|---|---|---|---|---|---|
-  | weapons/ak47 | AK-47 | auto, 6 ticks | 36 | 25-60 (0.75) | 30/90 | irons |
-  | weapons/ak102 | AK-102 | auto, 5 ticks | 28 | 15-40 (0.70) | 30/90 | irons |
-  | weapons/m16 | M16A4 | 3-round burst, 4 ticks inside, 18 after | 32 | 35-80 (0.80) | 30/90 | 2x scope, 40 deg |
-  | weapons/mk14 | Mk 14 EBR | semi, 9 ticks | 55 | 60-150 (0.85) | 20/60 | 4x scope, 20 deg |
-  | weapons/mtac338 | M-TAC 338 | bolt (semi, 72 ticks) | 120 | none | 5/25 | 8x scope, 10 deg |
-  | weapons/g17 | G17 | semi, 7 ticks | 24 | 10-30 (0.60) | 17/51 | irons |
-  | weapons/golden-eagle | Golden Eagle .50 | semi, 22 ticks | 55 | 15-40 (0.70) | 7/28 | irons |
+  | Gun | Fire mode | Damage | Magazine | Optic |
+  |---|---|---|---|---|
+  | AK-47 | Auto | 36 | 30 | Irons |
+  | AK-102 | Auto | 28 | 30 | Irons |
+  | M16A4 | 3-round burst | 32 | 30 | 2x |
+  | Mk 14 EBR | Semi | 55 | 20 | 4x |
+  | M-TAC 338 | Bolt | 120 | 5 | 8x |
+  | G17 | Semi | 24 | 17 | Irons |
+  | Golden Eagle .50 | Semi | 55 | 7 | Irons |
 
-  The generic `weapons/rifle`, `weapons/rifle-carbine` and `weapons/pistol` stay in the catalog with `spawnWeight 0`: they are never issued in a match, and remain the fixed default loadout for harness tests, diagnostics and the C0 fixtures, which are not migrated.
-- **Simulation (not locked).** `WeaponDefinition` gains optional `burstCount`/`burstIntervalTicks` (`FireMode.Burst`), `falloffStartMeters`/`falloffEndMeters`/`falloffMinScale`, `moveSpeedScale` (clamped 0.5-1.2 in the motor) and `spawnWeight`. Burst progress is read back from `ShotIndex` (each burst starts on a multiple of the burst count), so the frozen C0 `WeaponState` is unchanged; any interruption ends the burst. Falloff scales base damage by the shot-origin-to-hit distance before the ADR-063 region multiplier.
-- **Random loadout.** `WeaponLoadoutPolicy.CreateRandomLoadout(seed, actor, tick)` draws a weighted primary and sidearm (SplitMix64 of session seed, entity and tick), so a replay draws the same guns. `OfflineGameSession.RandomLoadouts` (default true) turns it on for product sessions; `CombatHarnessSimulation.RandomLoadouts` is off by default. Bots read magazine size and cadence from the guns they were issued (`IActorLoadoutSource`), and marksman/sniper guns aim down sights from medium range and wait for settled aim.
-- **Geometry `geometry.weapon` 1.2.0.** Six archetype kinds (`ak`, `ar`, `dmr`, `bolt`, `pistol-striker`, `pistol-eagle`) with parts `barrelFrontMm`, `furniture` (black/gold/polymer/wood), `muzzle` (birdcage/brake/flash/none/slant), `optic` (irons/scope2/scope4/scope8) and `stock` (chassis/fixed/folding/none/wood). New `ArsenalGeometry` builds four LODs, magazine (curved AK, STANAG, box), cycle part (AK charging handle, AR charging handle, op rod, bolt, slides), sockets, collision and per-kind envelopes; 1.0.5/1.1.0 output is byte-identical. Material slot 5 (oiled wood) and 6 (polished gold) are presentation tints of the verified polymer and steel planes; no new textures. The first-person support hand follows each gun's `left-hand-grip` socket and soldier motion accepts every long-gun kind.
-- **Handling.** Profile `handlingStyle` (Rifle, Ak, Bolt, Pistol): the AK rocks its magazine and, when empty, racks the right-side charging handle; the bolt gun swaps its box magazine and works the bolt on every reload and after every shot within the fire interval. `adsFovDegrees` sets magnified-optic zoom. `muzzleFlashScale` and `muzzleFlashSideJets` size each gun's flash; brakes vent two side jets.
-- **Muzzle flash fix.** The flipbook bake writes frame 0 at byte row 0, but raw texture rows start at the bottom and the texture-sheet animation plays the top-left tile first, so every flipbook ran backwards and the flash peaked after it had faded. The presenter now flips rows on upload (`AnalyticFxPool.FlipTextureRows`); the `fx.flipbook` bake and map packages are unchanged. The flash is placed on the muzzle socket of the weapon the viewer sees (first-person view model or held weapon) and sorts above its smoke.
-- **Audio bank v6.** `combat-audio-bank-v6-stereo` appends `ak47_shot`, `ak102_shot`, `m16_shot`, `mk14_shot`, `tac338_shot`, `g17_shot`, `eagle_shot`, `bolt_cycle`, `reload_ak` and `reload_bolt` after the unchanged v5 slots. Clips are cut from the already-sourced CC0 Free Firearm Sound Library (AK-47, AR-15, Tikka, Mosin Nagant, Arisaka, Walther PPQ, 1911) and the existing reload Foley; no new downloads. Missing cues derive from the real rifle/pistol takes by varispeed. Reload Foley follows the gun that last fired from that slot; bolt shots schedule the bolt cycle.
-- **HUD.** The ammo panel shows the gun's display label; kill-feed glyphs gain one value per named gun with mesh-traced icons.
+  Each gun has its own falloff. The generic rifle, carbine and pistol stay with `spawnWeight 0` for tests and fixtures.
+- **Simulation.** Optional burst, falloff, `moveSpeedScale` and `spawnWeight` fields. Burst progress is derived from `ShotIndex`, so C0 `WeaponState` is unchanged. Falloff scales damage before the region multiplier.
+- **Random loadout.** `WeaponLoadoutPolicy.CreateRandomLoadout(seed, actor, tick)` draws a weighted primary and sidearm, so replays draw the same guns. Bots read their issued guns. The human uses the Armory since ADR-107.
+- **Geometry.** `geometry.weapon` 1.2.0, with archetypes `ak`, `ar`, `dmr`, `bolt`, `pistol-striker` and `pistol-eagle`, and parts for barrel, furniture, muzzle, optic and stock. Wood (slot 5) and gold (slot 6) are tints.
+- **Handling.** `handlingStyle`, `adsFovDegrees` and muzzle flash scale and side jets.
+- **Muzzle flash fix.** Flipbooks played backwards because of the row order. The presenter now flips rows on upload (`AnalyticFxPool.FlipTextureRows`) and places the flash on the visible muzzle.
+- **Audio.** Bank v6 adds per-gun shots, `bolt_cycle`, `reload_ak` and `reload_bolt`.
 
-Consequences: `feature-content-lock.json` is refrozen for the 1.2.0 generator, sources, schema and the `rifle-1.2.0` fixture. The weapon package grows by seven mesh sets and must be republished with `Compile-GameContent.ps1`. No C0, Game-v1 or content-format lock change. Spawn weights favour assault rifles (3) over the DMR and sniper (2).
-
-Rollback: set the new definitions' `spawnWeight` to 0 and the generic ones back to 1 (or revert the change), regenerate the catalogs and republish content.
-
-Evidence: pure Simulation, Generation, Game and fixture lanes; Unity EditMode/PlayMode and a client build when the locked editor is available. Visual, audio and balance acceptance by the owner in a packaged build remain Pending.
+`feature-content-lock.json` is refrozen.
 
 ## ADR-103 — Accepted: optical scope lens camera, Balanced/High quality uplift, flicker geometry fixes and damage feedback v2
 
-Date 2026-11-17. Context: owner playtest at 1920x1080 High with VSync. (1) Map textures flicker sometimes. (2) Graphics look poor, worst through a sniper scope at range. (3) Taking damage, especially at low health, lacks feedback. The owner allowed project rules to bend where that gives the best graphics; this ADR records the decisions and supersedes ADR-065 (no second optic camera) and parts of ADR-080 and ADR-087.
+Date 2026-11-17. **Context.** At 1080p High, maps flickered, scopes looked poor at range and damage gave weak feedback. This supersedes ADR-065 (no second optic camera) and parts of ADR-080 and ADR-087.
 
-Findings: the PiP lens was an 8x stretch of the hip-FOV 1080p frame (about 113 source pixels across the M-TAC 338 lens) with hip-FOV mips, LOD and shadows. `camera.allowMSAA` was set once before the saved tier was applied, so High rendered without anti-aliasing, and the post stack forced AA off. Generated wall trims had faces coplanar with the wall (top trim top, band/trim/end-cap ends) or 0.5-4 mm apart; metal cover slabs shared side planes with the sandbag top course; the apron sat 4 cm under the yard pad. Fog ended at 88-100 m on a 256 m map. The decal atlas had no mips.
+**Decision.**
+- **Lens camera.** `AdsScopePipPresenter` renders a child lens camera at the lens FOV into a square target sized to the lens (capped at 512 / 768 / 1024 per tier), and samples it 1:1. Targets use D32 depth.
+- **Anti-aliasing.** `ProductPostProcessing.Apply` owns AA: Low FXAA, Balanced MSAA 2x, High MSAA 4x.
+- **Tier budgets** (`ShooterBuild.Profile*`):
+  - shadows 40 / 80 / 150 m with 2 / 3 / 4 cascades, soft above Low;
+  - anisotropic filtering 2 / 8 / 16;
+  - a mipmapped decal atlas;
+  - fog scaled per tier.
 
-Decision:
-- **Optical lens camera.** `AdsScopePipPresenter` adds a child lens camera once the near-field rifle is hidden (`AdsOpticVisual.UsesLensCamera`). It renders at `AdsOpticVisual.LensCameraFovDegrees(hip, lensRadius, zoom)` (identical framing to the old digital zoom) into a square target sized to the lens diameter (cap 512/768/1024 per tier), with the tier MSAA and D32 depth, and the composite samples it 1:1. Blur, rim, recoil offset and reticle are unchanged. Reduced camera motion keeps the digital path. Camera targets use D32 depth instead of D24.
-- **Anti-aliasing.** `ProductPostProcessing.Apply` owns per-camera MSAA and AA on every tier change: Low FXAA (texture-free), Balanced MSAA 2x, High MSAA 4x. SMAA stays off (ADR-080 lookup audit).
-- **Tier budgets** (`ShooterBuild.Profile*`, regenerated by `InitializeFoundation`): shadows 40/80/150 m, cascades 2/3/4, atlas 1024/2048/4096, soft shadows on Balanced/High (High quality on High), normal bias 0.6 above Low. The sun uses pipeline bias and Soft mode. Generated surfaces and the decal atlas use anisotropic 2/8/16; the decal atlas is mipmapped/trilinear; projector draw distance 80/120/200 m. Fog start/end scale x1/x1.8/x2.6 per tier (height-fog density divided by the same factor). Low is unchanged apart from FXAA, so the 4600H Low gate budget is preserved.
-- **Flicker geometry** (`MapSolidsMesh.AddWallDetails`, `MinDetailSeparation` 8 mm): the foundation band stops short of the end caps, the top trim rises 8 mm above the wall top and overhangs the ends, joints run between band and trim at 10 mm proud, end caps sit 8 mm proud of the wall end. Collision is unchanged. `ProductMapView` skips metal slabs on dressing-replaced features, lifts slabs so their top clears the cover top by 3 cm, and drops the apron top to -0.12 m. Low decal quads lift 15 mm, impact marks 20 mm.
-- **Damage feedback v2.** `FirstPersonDamagePunch`: presentation-only flinch (pitch 1.2-4 deg up, yaw 0.8-2.5 deg away from the attacker, headshot x1.5, peak at 55 ms, settled by ~0.4 s), off under reduced motion. Damage-scaled edge flash (`DamageFlashStrength(..., damage)`, peak 0.38) is drawn again; translation shake doubled to 9 mm. A second code-built global volume ("Product damage volume", priority 20) applies `CombatHudVisual.LowHealth`: below 40 HP a red vignette 0.25-0.5, saturation to -55, contrast +8, exposure -0.25, pulsing with a heartbeat (1.1 Hz rising to 1.8 Hz at 25 HP), plus a 0.45 s hit grade. The IMGUI health vignette cap rises to 0.38. `LowHealthAudioFx` (post-mix, synthesised live) adds a sub-bass heartbeat below 40 HP, a body thud on each hit and a ~2.5 kHz low-pass muffle below 25 HP, scaled by master x effects volume. Reduced flash halves the grade and removes pulses and the hit grade.
+  Low is unchanged apart from FXAA.
+- **Flicker.** `MapSolidsMesh.AddWallDetails` keeps an 8 mm minimum separation. Coplanar slabs are lifted, and decal quads are offset.
+- **Damage feedback.**
+  - `FirstPersonDamagePunch` flinches the view.
+  - The edge flash scales with damage.
+  - A second global volume adds a low-health grade with a heartbeat pulse below 40 HP, and a hit grade.
+  - `LowHealthAudioFx` adds a heartbeat, a thud and a muffle below 25 HP.
 
-Not done: the 512 px High surface bake (the frozen `material.noise` recipe only allows 128/256), and a near-plane change (viewmodel clipping risk; D32 reversed-Z already gives the precision).
-
-Consequences: High costs more GPU (4x MSAA, 4096 four-cascade soft shadows, lens camera while scoped). Settings assets and `provenance.json` are regenerated; map packages recompiled. No C0, Game-v1, content-format or feature-content lock change.
-
-Rollback: revert the commit and rerun `ShooterBuild.InitializeFoundation` and `Compile-GameContent.ps1 -Native`.
-
-Evidence: pure Simulation (new `DamageFeedbackV2Tests`, lens FOV and tier tests), Generation, Maps, Game and SourceProvenance lanes; Unity EditMode/PlayMode, client build and smoke when run. Visual acceptance (scoped M-TAC 338 at 1080p High, flicker at 50-150 m, low-health feel) and a High benchmark remain Pending owner review.
+Reduced motion and reduced flash gate all of it.
 
 ## ADR-104 — Accepted: circular heading-up minimap with ring compass
 
-Date 2026-11-17. Context: owner playtest after 0.3.20: the minimap did not show the local player or teammates and looked weak; the owner asked for a round minimap that turns with the view and for the compass to ring the minimap instead of sitting at the top of the screen, with the compass letters turning so N always points to north on the map. Supersedes ADR-058's north-up / Fill-pip clause and removes the top compass strip; gunfire reveal rules from ADR-058 are unchanged.
+Date 2026-11-17. **Context.** The minimap did not show the player or teammates: rotated glyphs inside a `GUI.BeginGroup` were clipped away. The owner asked for a round, rotating minimap ringed by the compass. This supersedes ADR-058's north-up clause and removes the top compass strip. The gunfire-reveal rules are unchanged.
 
-Finding: `DrawTacticalMap` drew inside `GUI.BeginGroup` and the self/ally markers were rotated `TacticalUi.MapGlyph` icons. IMGUI applies the group offset before `GUI.matrix`, so the rotation also rotated the group offset and every marker with a non-zero yaw landed outside the group and was clipped (the ADR-058 bug, reintroduced by the rotated glyphs). Unrotated gunfire blips still showed.
+**Decision.** The minimap is drawn in absolute HUD space through a `_ClipCircle` SDF mask (`UiSdf.BeginCircleClip`). It is a heading-up disc with a 75 px radius covering 50 m, showing:
+- the range ring and view cone;
+- structures;
+- ally arrows, with rim pips when out of range;
+- gunfire blips;
+- the self arrow.
 
-Decision:
-- The minimap is drawn in absolute HUD space with no group. `UiSdf.BeginCircleClip/EndCircleClip` set a new `_ClipCircle` shader mask (view-space device px) applied to every SDF draw; flat fallbacks are culled to rects fully inside the circle.
-- Heading-up disc, radius 75 px for 50 m (`CombatHudVisual.MinimapRadius/MinimapRangeMeters`), bottom-left of the safe area. Layers: shadowed bezel, radial-gradient disc, 25 m range ring, forward view cone, structures as rotated rounded rects, teammate arrows (rim pips when out of range), gunfire blips (rim-clamped and dimmed), centred self arrow pointing up.
-- Compass: a 16 px bezel band around the disc with ticks every 15 degrees and N/E/S/W letters placed by `CompassRingAngle(bearing, heading)` so they turn with the map (N in amber); the objective (enemy spawn) marker sits just outside the ring at its bearing. A fixed amber notch and a three-digit heading readout sit above the ring. The HP/stamina block moves right of the ring.
-- Pure math (`MinimapProject`, `MinimapClampToRim`, `CompassRingAngle`, `HeadingDegrees`, `RectInsideCircle`) lives in `CombatHudVisual` with xUnit coverage; the shader mask has an EditMode test.
-
-Consequences: presentation only. No C0, Game-v1, content-format, sensing or authority change.
-
-Rollback: revert the commit.
-
-Evidence: Simulation pure lane and Unity EditMode; interactive review (rotation, markers, clipping, 150% UI scale) Pending owner playtest.
+A 16 px compass bezel rings the disc, with letters placed by `CompassRingAngle`, the objective marker and a heading readout. The pure math lives in `CombatHudVisual`.
 
 ## ADR-105 — Accepted: dropped primary weapons and G pickup
 
-Date 2026-11-18. Context: owner request: when a bot or the player dies, their main weapon should fall to the floor and stay for 15 seconds; the player walks to it and presses G to take it in place of their own main weapon; if it is the same gun, the player instead gets its ammo. Owner choices for this ADR: same-gun ammo goes to the reserve capped at the gun's reserve capacity; on a swap the old primary drops in its place; only the human picks up (bots keep their spawn loadout).
+Date 2026-11-18. **Decision.** When a soldier dies, their primary drops for 15 s, and the human can take it with G.
 
-Decision:
-- Authority: `Simulation/Combat/DroppedWeaponField` is a pure bounded list (32 entries; when full the entry closest to expiry is replaced) of dropped primaries with definition id, magazine, reserve, position and an expiry in **active match ticks** (`LifetimeActiveTicks = 900`, 15 s), so pause and the pre-match countdown do not run the clock. Only `WeaponFamily.PrimaryGun` with ammo drops.
-- `OfflineGameSession.Step` captures the dying actor's slot 0 and motor feet inside the ordered death batch, before `RetireLife` removes the actor. Out-of-world kill-volume deaths (no instigator) drop nothing.
-- Pickup: `TryFindPickup` picks the nearest entry within 1.75 m horizontally and 1.5 m vertically of the living human's feet. A different id is a **swap**: `CombatHarnessSimulation.ReplacePrimary` installs the dropped gun (magazine clamped to its size; `Equipping` for its equip time when slot 0 is in hand, which cancels a reload) and the old primary drops at the same spot with a fresh 15 s. The same id is an **ammo top-up**: `SetPrimaryReserve` to `min(ReserveCapacity, reserve + dropped magazine + dropped reserve)` and the drop is removed; it is offered only when it would add rounds. The pickup resolves after the death batch and retire step; the new gun first acts on the next tick.
-- Expiry runs at end of tick after `EvaluateEndOfTick`; the field is cleared on runtime release.
-- Input: like slide (ADR-039) the press travels beside the frozen C0 command: `LocalPlayerCommand.PickupPressed` → `OfflineGameSession.Step(human, slide, pickupRequested)`. C0 `InputButtons` is unchanged.
-- Game-v1 additive binding `Pickup` (default Key.G, settings label "Pick up weapon"). Legacy schema-2 settings gain `Pickup=Key.G` when G is free, otherwise `Unbound` (ADR-056 pattern). `game-contract-lock.json` refrozen for `GameData.cs`.
-- Presentation (read-only): `ProductActorPresentation.SyncDroppedWeapons` shows each drop with its packaged held mesh and palette lying on its side; it blinks in the last 3 s. `ProductSessionView.DrawPickupPrompt` shows "[G] TAKE AK-47" or "[G] TAKE AMMO" under the reticle using the same query as the authority (`TryGetHumanPickupPrompt`).
-- A picked-up gun lasts one life: respawn re-draws the ADR-102 loadout.
+**Authority.**
+- `Simulation/Combat/DroppedWeaponField` is a bounded list (32 entries) of dropped primaries.
+- Expiry counts **active match ticks** (`LifetimeActiveTicks` = 900), so pause and the countdown do not run the clock.
+- `OfflineGameSession.Step` captures slot 0 and the dying actor's feet inside the death batch.
+- Out-of-world deaths drop nothing.
 
-Consequences: Game-v1 lock refreeze (bindings only); no C0, content-format, network or schema change. No new audio cue: a swap re-uses the equip timing; a pickup sound is a possible follow-up.
+**Pickup.** `TryFindPickup` finds the nearest drop within 1.75 m horizontally and 1.5 m vertically.
+- **A different gun** is a swap through `ReplacePrimary`. The old primary drops in its place.
+- **The same gun** tops up the reserve to capacity (`SetPrimaryReserve`), and is offered only if it adds rounds.
+- The pickup resolves after the death batch.
 
-Rollback: revert the commit and restore the prior `game-contract-lock.json`. Settings saved with `Pickup` still load in the older build, whose binding validator keeps unknown additive actions.
+**Input.** `LocalPlayerCommand.PickupPressed` travels beside the frozen C0 command. An additive Game-v1 binding `Pickup` (G) uses the ADR-056 legacy rule, and the lock is refrozen.
 
-Evidence: `Tools/Test-Simulation.ps1` (`DroppedWeaponFieldTests`), `Tools/Test-Game.ps1` (`DroppedWeaponSessionTests`, legacy Pickup migration), EditMode `InputBufferTests` pickup edge. In-game look/feel review Pending owner playtest.
+**Presentation.** `SyncDroppedWeapons` shows each drop, blinking for its last 3 s. `DrawPickupPrompt` shows the prompt using the same query as the authority. Bots do not pick up.
 
 ## ADR-106 — Accepted: kernel-built weapons, gloves, soldiers and structured map surfaces
 
-Date 2026-11-18. Context: owner playtest at 1920×1080 High (GPU lightly loaded, 60+ FPS, about 15% CPU and 600 MB RAM) reported that map textures look over-sharpened, first-person hands and bots look like puppets, and weapons look like a few boxes combined. The owner allowed project rules to bend for the best result and chose gloved hands and fully covered faces. The cause was content, not render settings: weapons were about 60 bevelled `PrimitiveGeometry.Box` parts, each glove finger segment was a separate cone rigidly bound to one joint, soldiers used boxes and an ellipsoid head, and the map noise put about 48 aggregate cells across a 128 px, 2 m tile (under 3 texels per feature) behind a 1.38 bump and a 1.7/m same-map detail re-sample.
+Date 2026-11-18. **Context.** At 1080p High, textures looked over-sharpened, hands and bots looked like puppets, and weapons looked like boxes. The cause was content, not settings. The owner allowed rule bends and chose gloved hands and covered faces.
 
-Decision:
-- **Modelling kernel** `Generation/Core/Geometry/ShapeKit.cs` (pure, deterministic, C# 9): `RoundedOutline` + `Extrude`/`Slab` (side-view outline with per-corner fillets extruded with quarter-round edge rolls; ear-clipped caps; the roll halves until the cap is simple), `Lathe` (turned parts with crease detection and capped ends), `Loft` (superellipse sections), `Spline` + `Tube` (parallel-transport sweep with a domed tip). Every part is validated as a closed, outward solid when built.
-- **geometry.weapon 1.3.0** (`Weapons/ProfileArsenalGeometry.cs`): the seven ADR-102 recipes move to 1.3.0 and are rebuilt from rounded side profiles, turned barrels/muzzle devices/optics, lofted stocks and handguards, a sampled grip loft with palm swell and finger ridges, curved extruded magazines and real rail teeth. Sockets, collision, envelopes, magazine/cycle split and material slots reuse the 1.2.0 functions, so gameplay and hand placement are unchanged; 1.2.0 stays buildable. LOD0 is 3k (G17) to 19k (Mk 14) triangles; test ceilings rise to 34k/14k/5k/2.5k (long guns) and 16k/7k/2.5k/1.2k (pistols).
-- **Gloves** (`FirstPersonHandGeometry.Build`, rig `fp.hand.v2` unchanged): pillow-shaped palm, one swept tube per finger and the thumb through the rig joints with two-joint smoothstep blending across each knuckle (`ChainWeights`), knuckle guard, back-of-hand pad and wrist cuff. Slots stay sleeve/glove/reinforcement.
-- **soldier.loft 1.1.0** (`SoldierGeometry.BuildProfile`, product soldiers via `MapPackageBuilder`): the 1.0.3 anatomy at higher resolution; balaclava head with nose, turned helmet with rails and NVG mount, goggles on a strap, gloved hands, shaped boots with soles, plate carrier with webbing, pouches and straps, backpack, belt with buckle, cargo pockets and knee pads. No skin slot is used (covered faces). LOD0 about 14.7k triangles. 1.0.2/1.0.3 stay buildable.
-- **Distance LOD (presentation only):** `ProductActorPresentation.SelectBodyLod` swaps each avatar between the packaged soldier LODs at 15 m and 40 m (1.5 m hysteresis), never finer than the tier's own LOD.
-- **material.noise 1.1.0** for map surfaces: features sized in metres over a 4 m tile, never under six texels per noise cell; concrete panel joints every 2 m, form-tie holes on a 0.6 m grid and sparse cracks; gentler relief; mask mips carry Toksvig roughness (`alpha^2 + 2(1-|n|)/|n|`) so averaged bumps widen highlights instead of glittering. 256 px on Low, 512 px on Balanced/High (`MaterialBaker` caps planes at 512). Presentation repeats every 4 m (`MapPackageBuilder.MapNoiseTileMm`). The soldier camo keeps 1.0.0.
-- **Shader and response:** `MapSurface.shader` detail re-sample 1.7/m at 0.18 → 0.55/m at 0.10, macro variation gains a second ~7 m band; map bump scales drop about a quarter (concrete 1.38 → 1.05).
-- **Render polish:** HDR colour grading on the HDR tiers, decal renderer `maxDrawDistance` 80 → 200 m (the ADR-103 120/200 m projectors were clamped), product reflection probe 128 → 256 px, and four pooled point lights for muzzle flashes (60 ms, 5 m) and explosions (300 ms, 14 m) on Balanced/High.
+**Decision.**
+- **Kernel.** `Generation/Core/Geometry/ShapeKit.cs` provides `RoundedOutline` + `Extrude`/`Slab`, `Lathe`, superellipse `Loft`, and `Spline` + `Tube`. Every part is validated as a closed outward solid.
+- **Weapons.** `geometry.weapon` 1.3.0 (`ProfileArsenalGeometry`) rebuilds the seven named guns from profiles, turned parts, lofts and grip lofts. Sockets, collision and slots reuse 1.2.0. LOD ceilings rise.
+- **Gloves.** One swept tube per finger with smoothstep knuckle blending (`ChainWeights`). Rig `fp.hand.v2` is unchanged.
+- **Soldiers.** `soldier.loft` 1.1.0 is the full covered-face kit (≈14.7k triangles). `SelectBodyLod` switches at 15 / 40 m.
+- **Map surfaces.** `material.noise` 1.1.0: metre-sized features over a 4 m tile, joints, tie holes, cracks and Toksvig mask mips. 256 px on Low, 512 px above.
+- **Shader.** Detail at 0.55/m, and bumps lower by about a quarter.
+- **Polish.** HDR grading, decals out to 200 m, a 256 px probe and pooled flash lights on Balanced/High.
 
-Rule bends (owner-authorised): feature-content-lock refreeze for three new generator versions, ADR-088's 128/256 noise limit (1.1.0 adds 512), higher LOD0 triangle ceilings for weapons and soldiers, and a 3.6× heavier soldier LOD0 on High (mitigated by distance LOD). No C0, Game-v1, content-format, simulation or network change.
-
-Rollback: revert the commit; restore the recipe versions (1.2.0 weapons, 1.0.3 soldier, material.noise 1.0.0 surfaces at 2 m), the prior feature-content-lock and the post-processing settings.
-
-Evidence: `Tools/Test-Generation.ps1` (`ShapeKitTests`, `ArsenalGeometryTests`, `SoldierProfileTests`, `NoiseMaterialStructuredTests`, updated surface/closure tests), `Tools/verify_feature_schemas.py`, offline captures under `Artifacts/adr106-preview/` (`ShooterFeatureBuild.CaptureArsenal`, `CaptureHandling`, new `CaptureSoldierKit`). In-game visual acceptance and a High benchmark are Pending the owner playtest of the next installer.
+The owner authorized these rule bends: a feature-lock refreeze, ADR-088's 128/256 limit, and higher LOD ceilings.
 
 ## ADR-107 — Accepted: Armory loadouts and reusable rail-mounted sights
 
-Date 2026-11-18. Context: owner request: (1) add a collimator sight and make the M16 sight reusable; (2) add an Armory page to the main menu where the player picks a gun for each slot and a buff for each gun, with sights the only buffs for now. The player always uses the guns chosen in the Armory before the match; bots keep random guns. Owner choices for this ADR: every primary (AK-47, AK-102, M16, Mk 14, M-TAC 338) can take iron sights, the collimator or the M16 2x prism; the Mk 14 can also take its 4x scope and the M-TAC 338 its 8x scope; sidearms keep their own iron sights. Bots roll a random compatible sight on every life. This replaces ADR-102's "random loadout per spawn (no UI)" for the human only.
+Date 2026-11-18. **Decision.** This replaces ADR-102's random loadout for the human only.
 
-Decision:
-- **geometry.weapon 1.4.0** (`WeaponRecipe.MountVersion`): the 1.3.0 profile bodies with the optic taken off (`optic: "mount"`, long guns only; 1.3.0 and older reject `mount`). The five shipped primaries move to 1.4.0; the pistols stay on 1.3.0. A bare body keeps its integral irons parts (AR A2 front tower, AK rear leaf and front post) and its own `sight-eye` socket is now the iron-sight line.
-- **Rail-mounted sights** (`Weapons/WeaponSights.cs`, built by `ProfileArsenalGeometry.BuildSight`): `irons` (the 1.3.0 AR rear block, a flip-up rear/front pair on the DMR and bolt rails; part of the AK body), `collimator` (new open-tube red dot on a low clamp, tinted glass, brightness turret, dot 32 mm above the rail), and `scope2`/`scope4`/`scope8` (the 1.3.0 optic constructions, unchanged). Each mesh is built in the gun's own weapon space for its archetype rail (AR, DMR, bolt top rails; an AK dust-cover rail adapter ending ahead of the rear leaf), inside a sight envelope topping out at 0.27 m. `WeaponSights.EyeFor(kind, sight)` gives the line of sight; the AR prism keeps the 1.3.0 M16 `sight-eye` (0, 153, −10) mm.
-- **Packaging:** `WeaponMeshCatalog` gains sight sources (`sight-<sight>-<kind>`, four LODs each, fingerprint `geometry.weapon-sight.1.0.0`) for every (sight, archetype) a gun allows, 13 sets in all; the weapon package root records `sightGenerator`.
-- **Definitions:** `Content/Weapons/*.weapon.json` primaries gain `visual.sights {default, allowed}`; `Tools/generate_weapon_catalog.py` validates it (1.4.0 rail recipe required, loadout order, `optic` must match the default sight) and also writes `Simulation/Combat/SightCatalog.g.cs` and `Presentation/Model/View/WeaponSightChoices.g.cs`. Factory sights stay the 0.3.x look (AK irons, M16 prism, Mk 14 4x, M-TAC 8x).
-- **Authority:** sights never change combat rules. `CombatHarnessSimulation` carries a primary sight per actor next to the frozen C0 `WeaponState`; `ReplacePrimary` takes the picked-up gun's sight and `DroppedWeaponField` keeps a sight per drop (ADR-105 pickups keep their sight; a same-gun ammo top-up keeps the holder's sight). Random lives draw `WeaponLoadoutPolicy.RandomSight` on its own stream, so the ADR-102 gun draw is unchanged.
-- **Human loadout:** `PlayerLoadout` (primary + sight, sidearm; per-field fallback to M16 + prism and G17). `HarnessActorLifecycle.PinLoadout(participant, loadout)` issues it to every life that participant spawns, and `ResetActor` reissues it; `OfflineGameSession.UseArmoryLoadout` pins it to the human before the roster spawns. A picked-up gun still lasts one life.
-- **Armory file:** `shooter-armory.json` beside the settings (`Game/Settings/ArmoryProfile`, `ArmoryJson`, `FileArmoryStore`): `shooter.armory.v1` with primary, sidearm and a sight per primary, with the settings store's atomic write, last-good copy, quarantine and newer-schema preservation. It is a separate file, so the frozen Game-v1 `UserSettings` and `game-contract-lock.json` are unchanged. Fixtures and schema live in `docs/armory-fixtures/`.
-- **Shell:** `ShellScreen.Armory` (opens from Main and Setup, returns there; menu music; front-end staging). `ArmorySelection` (pure) offers the catalog guns that spawn for bots (`ArmoryCatalog`); the page shows slot tabs (knife and grenade standard issue), gun rows with mesh-traced icons and stats, and the sight list for the equipped primary. Each change saves at once. Main and Setup show the current loadout.
-- **Presentation (read-only):** `OpticMode.Collimator` keeps the gun in view, narrows ADS to 56/80 of the hip FOV and lights a red dot (`TacticalUi.CollimatorDot`) once the sight is at the eye. `WeaponSightChoices.Apply` gives every gun its mounted sight's optic mode and ADS FOV; `ProductActorPresentation` parents the sight mesh to first-person, held and dropped guns, aligns ADS on the mounted sight's eye line, and passes it to the third-person head solve (`SoldierMotion.SetVisualWeapon(recipe, sightEye)`). HUD icons include the factory sight.
+- **Bare-rail primaries.** `geometry.weapon` 1.4.0 (`optic: "mount"`) gives long guns without an optic. They keep their integral irons, and the body's `sight-eye` is the iron line. Pistols stay on 1.3.0.
+- **Sights** (`WeaponSights.cs`, `BuildSight`). `irons`, `collimator`, `scope2`, `scope4` and `scope8` are built per archetype rail, inside a 0.27 m envelope. `EyeFor(kind, sight)` gives the line of sight. They ship as `sight-<sight>-<kind>` meshes in the weapon package.
+- **Definitions.** `visual.sights {default, allowed}`. The generator validates it and writes `SightCatalog.g.cs` and `WeaponSightChoices.g.cs`.
+- **Authority.** Sights never change combat. Each actor carries a primary sight. Pickups keep the dropped gun's sight. Bots roll `WeaponLoadoutPolicy.RandomSight` on its own stream.
+- **Human loadout.** `PlayerLoadout` is pinned with `HarnessActorLifecycle.PinLoadout` and `OfflineGameSession.UseArmoryLoadout`. Fields fall back to the M16 with prism and the G17.
+- **Armory file.** `shooter-armory.json` (`shooter.armory.v1`), stored separately from the frozen settings, with fixtures in `docs/armory-fixtures/`.
+- **Shell.** `ShellScreen.Armory` ([game shell](features/game-shell.md#armory-adr-107)).
+- **Presentation.** `OpticMode.Collimator` and sight meshes parented to the first-person, held and dropped guns. ADS aligns on the mounted sight.
 
-Consequences: feature-content-lock refreeze (geometry.weapon 1.4.0, weapon schema, rifle-1.4.0 fixture) and a new weapon package. No C0, Game-v1, content-format or network change; no settings migration.
-
-Rollback: revert the commit and restore the 1.3.0 recipes and the prior feature-content-lock. An Armory file left behind is ignored by older builds.
-
-Evidence: `Tools/Test-Generation.ps1` (`SightGeometryTests`, `ArsenalGeometryTests`, `WeaponPackageTests`, `IconAtlasTests`), `Tools/Test-Simulation.ps1` (`SightLoadoutTests`, `ArmorySelectionTests`), `Tools/Test-Game.ps1` (`ArmoryTests`), `Tools/verify_feature_schemas.py`. In-game look (collimator dot, sight placement per gun) and Armory usability are Pending the owner playtest.
+The feature-content lock is refrozen.
 
 ## ADR-108 — Accepted: career ranks, unlocks, buffs and local service record
 
-Date 2026-11-18. Context: owner request: (1) a lightweight local statistic; (2) career progress with military ranks, earned from each match's score, where each rank opens a new weapon, a sight or a gun buff. The player starts with the default weapon without extra sights. Every rank needs a unique icon, shown in all scoreboards, and the Armory shows the rank icon and name. Owner choices: bots show seeded cosmetic ranks; buffs are global (all firearms) and small; bots keep the full arsenal and no buffs; statistics get their own Career page. This supersedes the "no progression" lines of the vision non-goals, the brandbook, the TDM feature page, ADR-059/ADR-073 (which carved progression out of score badges) and ADR-085 (rank glyphs unused).
+Date 2026-11-18. **Decision.** A local career. This supersedes the "no progression" lines in the vision, the brandbook, the TDM page and ADR-059/073/085.
+- **Career points** per finished match: personal score, +500 for finishing, +1000 for a win (+500 for a draw). Aborted matches earn nothing.
+- **Ladder** (`Game/Settings/CareerLadder`). Rank *n* needs `1000·(n²−1)` CP. Each rank above Private unlocks one reward: a gun, a sight, or a small human-only buff for all firearms. Every gun's factory optic unlocks before the gun. The ladder was originally 20 ranks; ADR-119 extended it to 30 ([career](features/career.md)).
+- **Locks.** `ArmorySelection` takes a lock rule, and locked saved choices fall back.
+- **Buffs.** `Simulation/Combat/WeaponModifiers` uses integer per-mille scales. They never change damage, fire rate or movement. They ride on `PlayerLoadout.Modifiers` and are applied where `WeaponSimulator.Step` reads a definition. `Identity` is bit-identical for bots and replays. Presentation mirrors timing.
+- **Service record.** `shooter-career.json` (`shooter.career.v1`) with the same store rules plus "an unreadable file is never overwritten". Fixtures are in `docs/career-fixtures/`. `OfflineGameSession.LocalTally` supplies assists, headshots and streaks. `CareerRecorder` applies each match once.
+- **Insignia.** Procedural `rank-NN` glyphs tinted by band.
+- **Bots.** `BotRanks.Resolve` gives a cosmetic seeded rank within ±3 of the player's.
+- **Shell.** The Career page, the Armory header, the menu badge, insignia before every name, and the debrief CP strip.
 
-Decision:
-- **Career points (CP)** per finished match: the human's personal score (ADR-059/097) + 500 for finishing + 1000 for a win (500 for a draw). Aborted, left or restarted matches produce no `MatchResults` and earn nothing. A typical 15-minute match earns about 3–5k CP.
-- **Ladder** (`Game/Settings/CareerLadder`): 20 ranks; rank *n* needs `1000·(n²−1)` cumulative CP (step cost rises by 2k per rank; about 6 matches to Corporal, 25 to First Sergeant, 100 to General).
-
-| # | Rank | CP | Reward |
-|---|---|---|---|
-| 1 | Private | 0 | M16A4 on iron sights, G17, knife, grenade |
-| 2 | Private 2nd Class | 3,000 | Collimator sight |
-| 3 | Private First Class | 8,000 | Fast Hands I: reload −8% |
-| 4 | Specialist | 15,000 | AK-102 |
-| 5 | Corporal | 24,000 | 2x prism |
-| 6 | Sergeant | 35,000 | Golden Eagle sidearm |
-| 7 | Staff Sergeant | 48,000 | Steady Aim I: ADS spread −8% |
-| 8 | Sergeant First Class | 63,000 | AK-47 |
-| 9 | Master Sergeant | 80,000 | Extra Mag I: +1 spare magazine |
-| 10 | First Sergeant | 99,000 | 4x scope |
-| 11 | Sergeant Major | 120,000 | Mk 14 DMR |
-| 12 | Warrant Officer | 143,000 | Recoil Control I: recoil −8% |
-| 13 | Second Lieutenant | 168,000 | Quick Draw: equip −20% |
-| 14 | First Lieutenant | 195,000 | 8x scope |
-| 15 | Captain | 224,000 | M-TAC 338 |
-| 16 | Major | 255,000 | Fast Hands II: reload −15% |
-| 17 | Lieutenant Colonel | 288,000 | Recoil Control II: recoil −15% |
-| 18 | Colonel | 323,000 | Extra Mag II: +2 spare magazines |
-| 19 | Brigadier General | 360,000 | Steady Aim II: ADS spread −15% |
-| 20 | General | 399,000 | Gold insignia (no gameplay change) |
-
-- **Unlocks:** sights unlock globally and then follow each gun's ADR-107 `allowed` list; every reward gun's factory optic unlocks before the gun (4x before the Mk 14, 8x before the M-TAC). The starter M16 begins on irons (its factory prism unlocks at Corporal). `ArmorySelection` takes a lock rule: locked guns and sights are listed with "Unlocks at …" and cannot be selected; a locked saved choice falls back to the first unlocked gun or sight; promotion re-applies the rule. A picked-up gun (ADR-105) can be any gun for that life.
-- **Buffs** (human only, all firearms, never knife/grenade, never damage, fire rate or movement): `Simulation/Combat/WeaponModifiers` with integer per-mille scales (caps −15% recoil, reload and ADS spread, −20% equip, +2 magazines). It rides on `PlayerLoadout.Modifiers`, is pinned per actor next to the sight, and is applied where `WeaponSimulator.Step` reads a definition (reload/equip ticks; the buffed definition travels inside `AcceptedShot` to hitscan spread and `AuthoritativeRecoil`). Spare magazines are added at issue. `Identity` is bit-identical, so bots, harness scenarios and replays are unchanged. Presentation mirrors recoil and reload/equip timing (`WeaponHandlingScale`, `WeaponVisualProfile.WithHandling`) with the same rounding.
-- **Service record and file:** `shooter-career.json` beside the settings (`CareerProfile`, `CareerJson`, `FileCareerStore`, schema `shooter.career.v1`): CP, matches, wins/losses/draws, kills, deaths, assists, headshot kills, total and best score, best kill streak and active ticks. Same store rules as the Armory (atomic write, last-good, quarantine, newer-schema preservation) plus: an unreadable file is never overwritten. Assists, headshots and the best streak come from a human-only `OfflineGameSession.LocalTally` (the frozen results rows carry only kills, deaths and score). `CareerRecorder` applies a match once per (load epoch, authority session).
-- **Insignia:** 20 unique procedural glyphs `rank-01`…`rank-20` in `IconLibrary` (bar, chevrons and rockers, specialist shield, diamond and star for senior NCOs, segmented warrant bar, lieutenant and captain bars, oak leaves, eagle, general stars), tinted per band (enlisted khaki, warrant/officer silver, bronze, general gold). The icon atlas golden changes accordingly.
-- **Bots:** `BotRanks.Resolve(participant, seed, playerRank)` gives each bot a rank within ±3 of the player's on its own SplitMix64 stream (cosmetic; nothing in authority reads it).
-- **Shell:** `ShellScreen.Career` (from Main, the main-menu rank badge or the Armory header; Escape/Back returns): current rank card with CP bar and next reward, active buffs, a 20-row ladder and the service record. The Armory header and the main menu show insignia, rank name and CP bar. `ScoreboardRow.RankIndex` puts the insignia before every name on the Tab board and the debrief tables. The debrief shows a career strip: CP earned with its breakdown, the bar filling from the old total to the new one, and a promotion line with the unlocked reward.
-
-Consequences: no C0, Game-v1, content-format, feature-content or network change; no settings migration. The existing Armory file keeps working: a fresh career locks every gun except the M16 and G17 until earned. The icon atlas golden and its EditMode copy are updated.
-
-Rollback: revert the commit. A `shooter-career.json` left behind is ignored by older builds.
-
-Evidence: `Tools/Test-Game.ps1` (`CareerTests`: ladder, award, store, fixtures, bot ranks, buffed human loadout), `Tools/Test-Simulation.ps1` (`CareerBuffTests`, `CareerShellTests`), `Tools/Test-Generation.ps1` (`IconAtlasTests`), Unity EditMode/PlayMode. Fixtures and schema: `docs/career-fixtures/`. In-game check of the Career page, insignia legibility, the debrief strip and buff feel is Pending the owner playtest.
+No C0, Game-v1 or content change.
 
 ## ADR-109 — Accepted: site-planned maps (Old Town, Harbour, rebuilt Oil Depot)
 
-Date 2026-11-18. Context: owner review of the ADR-074 maps: Oil Depot is "more or less good" but not good enough as map design; Training Compound and Depot Yard are "completely garbage": too many random objects, enemies visible right after leaving the respawn, a long empty space. The owner asked to re-think how maps are generated so each map is unique, meaningful and imitates a real place with no random pillars or walls in the middle of nothing. Owner choices: replace the two weak maps with a **small town centre** and a **port/docks**; rebuild Oil Depot on the new system; a few two-storey buildings with walkable upper floors. Root cause: the ADR-074 planners dropped hand-coordinated boxes into an empty walled rectangle, and the validator rewarded that (more scattered cover passed the cover rule), while spawn safety was only checked from the slots, not from the exits.
+Date 2026-11-18. **Context.** The ADR-074 planners dropped boxes into empty rectangles. The validator rewarded scatter, and spawn safety ignored the exits.
 
-Decision:
-- **Site-plan layer** (`Generation/Core/Environment/Site/`): planners describe a place in team-1 coordinates with `SiteBuilder` — a boundary (building backs, fence, water, site wall), buildings with doors, windows (sill + lintel), partitions, upper floors and stairs, named open zones (street, alley, yard, plaza, quay, staging), props that must name a host (against a facade, parked in a zone, against the boundary, overhead in a zone) and a few named landmarks (tank, crane, platform). It compiles to the existing `ArenaBoxBuilder` boxes and symmetry twins and records a `SiteLayout` (buildings, zones, landmarks and the role of every gameplay box) on `CompoundPlan.Site`. There is no API for an unowned box.
-- **`SiteRules`** run with `ArenaRules` and topology in `ProductMapPlanner.ValidateOrThrow`: every gameplay box has a role and attached props touch their host (≤ 0.5 m); ≤ 5 landmarks per half; built coverage 25–60 %; no open void wider than a 9 m radius outside a declared plaza/quay (13 m inside); **spawn-exit exposure** — no ground point within 10 m of a team exit sees enemy ground beyond z = 8 m or the enemy staging; **first contact** ≥ 18 m of walking from an exit; sightlines ≤ 40 m outside the plaza/quay; every upper floor reachable from the anchor with ≥ 2 stairs. `ArenaRules` path bounds become 26–52 m (anchor→centre) and 60–110 m (anchor→enemy) because routes now go through doors and dog-leg exits and the 4-neighbour grid overstates the walk.
-- **Maps** (ids, seeds, recipes and package format unchanged; display names change):
-  - `training-compound` → **Old Town** (`environment.town.site` 1.0.0, Rotate180): inn-yard spawns, weavers' alley and chapel, high street to a market square with a market hall, two-storey town hall with a gallery over the square.
-  - `depot-yard` → **Harbour** (`environment.harbour.site` 1.0.0, MirrorZ): spawns inside transit sheds, quay with cargo, crane and pilot house along the water, container terminal and Fish Lane to the pier under the portal crane, customs lane and the two-storey harbour office; fish market and customs house stand on the dividing line.
-  - `oil-depot` → **Oil Depot** (`environment.oil.site` 1.0.0, MirrorZ): fenced loading bay with gate lanes and the rack house, tank farm and manifold house, pump house with switch house and foam store, two-storey control rooms joined by a pipe bridge over the pipe alley (elevated route with an underpass), overhead pipe rack along the road.
-- **Dressing:** `SiteDressing` adds pitched roofs with stepped gables, parapets and roof plant, a church tower and spire and per-side backdrops (town houses beyond the boundary, harbour water and a moored freighter). Harbour containers use the existing 6 × 2.5 m container styling. `OilDepotDressing` reads `OilDepotSitePlanner.Tanks`, skips perimeter pipes where a building backs onto the fence and lays pipes on the overhead racks; the ADR-074 pipe bridges to the old pump-house roof are removed. All dressing is mesh-only.
-- **Bots:** for site maps `RouteCorners` (the patrol source in the release catalog) is a circuit anchor → lane → anchor through every lane point, so patrols use all three routes; combat destinations already include the lane points (the Oil Depot pipe bridge is one).
-- **Review aid:** `SiteMapSvg` renders a top-down plan with box roles, zones, slots, exits, lanes, exposure rays and the rule table; `SiteMapTests` writes it to `Artifacts/maps/<id>-site.svg`.
-- Retired: `CompoundArenaPlanner`, `DepotArenaPlanner`, `OilArenaPlanner`, the training-compound layout document and their layout tests. `ArenaLayoutDocument` and `ArenaVisualDetail` stay for data-driven (`map.arena`) maps. The legacy W01 compound and the B02/B03 freeze are untouched.
+**Decision.**
+- **Site-plan layer** (`Generation/Core/Environment/Site/`). `SiteBuilder` describes a real place:
+  - a boundary;
+  - buildings with doors, windows, partitions, upper floors and stairs;
+  - named zones;
+  - props that must name a host;
+  - a few landmarks.
 
-Consequences: collision, navigation and gameplay package identities change for all three maps (re-frozen in `MapRegistryTests`; AO volume goldens follow the boxes); native navigation must be republished with `Compile-GameContent.ps1 -Native`. No C0, Game-v1, content-format, feature-content, settings or network change (recipe ids, generator versions and seeds are unchanged; the site planner ids only feed the gameplay hashes). Layout docs: [tdm-map-layouts.md](features/tdm-map-layouts.md).
+  It compiles to `ArenaBoxBuilder` boxes, with a `SiteLayout` on `CompoundPlan.Site`. There is no API for an unowned box.
+- **`SiteRules`.** They run alongside `ArenaRules` and check:
+  - every box has a role;
+  - built coverage is 25–60%;
+  - no open void;
+  - spawn-exit exposure;
+  - first contact at ≥18 m;
+  - sightlines ≤40 m outside the plaza/quay;
+  - upper floors are reachable.
 
-Rollback: revert the commit and republish map content.
+  Path bounds widen to 26–52 / 60–110 m.
+- **Maps.** Ids, seeds, recipes and format are unchanged:
 
-Evidence: `Tools/Test-Generation.ps1` (`SiteMapTests`, `ArenaRulesTests`, `MapRegistryTests`), `Tools/Test-Maps.ps1`, native content compile and the M11 handoff entry. Whether the maps play well — time to first contact, spawn pressure, bot routing, upper-floor use — is Pending the owner playtest.
+  | Map id | Becomes | Planner | Symmetry |
+  |---|---|---|---|
+  | `training-compound` | Old Town | `environment.town.site` | Rotate180 |
+  | `depot-yard` | Harbour | `environment.harbour.site` | MirrorZ |
+  | `oil-depot` | Oil Depot (rebuilt) | `environment.oil.site` | MirrorZ |
+
+  Layouts are in [maps](features/tdm-map-layouts.md).
+- **Dressing.** `SiteDressing` and `OilDepotDressing` are mesh-only.
+- **Bots.** `RouteCorners` is a circuit through every lane.
+- **Review aid.** `SiteMapSvg` renders the plans.
+- **Retired:** the ADR-074 arena planners.
+
+Gameplay package identities change and native nav is republished.
 
 ## ADR-110 — Accepted: body armor (100 points, torso and limbs)
 
-Date 2026-11-18. Context: owner request to add armor, 100 points like health, that covers the body. Until now every soldier had only 100 health and armor was listed as postponed in [combat](features/combat.md). Owner choices: armor covers the torso and limbs but not the head; each covered hit is split 50/50 between armor and health; everyone spawns and respawns with full armor and there are no pickups; grenade blasts are absorbed like torso hits.
+Date 2026-11-18. **Decision.** Every actor has 100 armor (`DamageMath.MaxArmor`). It is set on spawn, restored by `ResetActor` and kept by `RelocateActor`.
 
-Decision:
-- **Pool:** every actor (human and bots) has `DamageMath.MaxArmor` = 100 armor, set on spawn and restored by `ResetActor`; `RelocateActor` (embedded-actor rescue) keeps it, like health.
-- **Coverage:** `DamageMath.ArmorCovers` is true for hit regions 2–6 (torso, arms, legs). Headshots (region 1) go straight to health, so the ADR-063 rifle/pistol head one-shot is unchanged.
-- **Split:** after region and falloff rounding, armor takes `floor(d/2)` of a covered hit, capped by the armor left; health takes the rest (`DamageMath.SplitArmor`). Broken armor (0) absorbs nothing. Grenade blasts are emitted as region 2 and follow the same split, including self-damage.
-- **Events:** `DamagePayload.Amount` and `RemainingHealth` keep meaning health damage. Health always takes `ceil(d/2) ≥ 1`, so the C0 rule `amount > 0` still holds and every accepted hit still emits exactly one `DamageApplied`. Assist credit, kill feed, hit feedback and bots read health as before.
-- **Read path:** armor lives only in the authority (`CombatHarnessSimulation.Actor.Armor`) and is read through `TryGetArmor` on `CombatHarnessSimulation`, `HarnessActorLifecycle` and `OfflineGameSession`, the ADR-107 side-channel pattern. No snapshot field.
-- **HUD:** an "AR" number and a five-segment steel-blue bar sit to the right of the HP block (`CombatHudVisual.ArmorBlockOffset`), dimmed when armor is 0.
-- **Bots:** spawn with armor like the human; AI tactics still read health only.
+**Rules:**
+- **Coverage.** Armor covers regions 2–6: torso, arms and legs (`ArmorCovers`). Headshots go straight to health, so the ADR-063 one-shot is unchanged.
+- **Split.** After rounding, armor takes `floor(d/2)` of a covered hit, capped by what remains, and health takes the rest (`SplitArmor`). Grenade blasts count as region 2.
+- **Events.** `DamagePayload` still means health damage. Health always takes at least 1, so the C0 `amount > 0` rule holds.
+- **Read path.** Armor is authority-only, read through `TryGetArmor`. There is no snapshot field.
+- **HUD.** An AR number and bar beside HP. AI reads health only.
 
-Consequences: body time-to-kill rises (rifle torso 30 → 15 health per hit until armor breaks: about 6 hits instead of 4; limbs about 10 instead of 7); headshots are unchanged. No C0, Game-v1, content-format, feature-content, settings or network change; `contract-lock.json` and `game-contract-lock.json` are untouched.
-
-Rollback: revert the commit.
-
-Evidence: `Tools/Test-Simulation.ps1` (`CombatTests` armor split/coverage theories; `CombatHarnessTests` body hit, headshot bypass, grenade absorption, reset/relocate), the other pure lanes and the M11 handoff entry. The HUD block and the feel of the longer body time-to-kill are Pending the locked-editor run and the owner playtest.
-
+**Consequences.** Body time-to-kill rises: about 6 rifle torso hits instead of 4. No lock changes.
 
 ## ADR-111 — Accepted: knife and grenade overhaul (one-handed hold, cut and throw, half-map grenade range, sound, explosion, models)
 
-Date 2026-11-18. Context: owner playtest of 0.3.21. The knife and grenade sounded primitive, the knife was held like a pistol with two hands and had no real cut, the grenade reached only about 18 m against 64 × 80 m arenas, the explosion looked cheap, and both models looked cheap. Owner choices: keep the 2 s fuse; reach about half a small map; re-mix the audio from the sources already downloaded (no new downloads); hold the knife and the grenade with one hand only.
+Date 2026-11-18. **Context.** The knife and grenade sounded and looked cheap, the knife was held two-handed, and the grenade reached only about 18 m.
 
-Decision:
-- **Ballistics (authority).** Grenade `throwSpeedMetersPerSecond` 18 → 28; `GrenadeSimulator.GravityY` −20 → −24; `GrenadeSimulator.Loft` adds 8° to the launch pitch (capped at 80°), so a level aim still arcs. The fuse stays 120 ticks. A 45° launch (37° aim) lands about 34 m away after about 1.65 s; a 30° launch about 28 m. With a fixed fuse, range is g·T²/2, so the arc is heavier and faster, not lighter. Bots solve the low ballistic launch pitch for the target distance (`AimController.GrenadeLaunchPitch`) and throw out to 32 m (`AiTuning.GrenadeMaxMeters` 22 → 32).
-- **C0 fixture refreeze (owner-approved).** `docs/fixtures/gameplay-defaults.json` `throwMmPerSecond` 18000 → 28000; its hash in `contract-lock.json` is refreshed. No C0 source, schema or wire change.
-- **First person.** Knife and grenade are one-handed: the support hand is shown only for guns (`FirstPersonSpecialActions.SupportHandVisible`), and aim never pulls them to the sights (`FirstPersonHandling.ViewAimTarget(..., slot)`). New rest poses in `knife.weapon.json` (low right, blade forward-up, edge down) and `grenade.weapon.json` (grenade cradled in the palm). The slash is a large diagonal cut (cocked wind-up, fast strike across the view, heavy follow-through, alternating direction); the stab that connects drives forward and holds (hit-stop). An additive blade trail (`KnifeBladeTrail`) is drawn through the cut. The grenade cook keeps the throwing hand in view; the pin pull is carried by its sound.
-- **Trajectory preview.** While cooking, `GrenadeArcPresenter` draws the `GrenadeArcPreview` path (authority constants, stepped at 60 Hz, bounces from map collision layer 8) and a pulsing ring where it first lands.
-- **Thrown grenade.** `CosmeticGrenadeFlight` mirrors authority gravity, bounce (0.45) and ground friction (0.85) through a map sweep probe and tumbles; `CosmeticGrenadePresenter` draws the packaged grenade prop with its finishes instead of a sphere.
-- **Third person.** Other players swing the right arm and the prop across for a knife cut, cock it back while cooking and throw overhand (presentation overlay on the solved pose; `SoldierMotion` is unchanged).
-- **Explosion.** Presenter-only blast layers: `BlastFlash`, fireball colour ramp, staggered `FirePuff`s, `Sparks` streaks with gravity, `Embers`, a brighter shockwave and a ground `DustRing`, double debris, a 5.5 s rising smoke column; flash light 16 / 22 m with flicker; camera shake falling off to 25 m; 3 m scorch. `fx.flipbook` is unchanged. Reduced flash and reduced motion still suppress flash, light and shake.
-- **Audio bank v7** (`combat-audio-bank-v7-stereo`). Re-mixed knife swing (whoosh + blade "shing"), knife hits (flesh thud + wet transient, metal scrape), and a 2.2–2.8 s grenade explosion (the v6 core + generated sub-bass drop + crack transient + debris rain + tail); longer far explosion. The v6 explosion takes are now build inputs under `.local/audio-src/kept/` (restore them from the v6 `Content/Audio/combat` in git before a rebuild). The emergency fallback synth recipes are layered too.
-- **Models and finishes.** `geometry.loadout-prop` 1.0.0 → 1.1.0: the knife and grenade are rebuilt on `ShapeKit` (clip-point blade with fuller, separate edge grind, hooked guard, moulded grip, lathe pommel; M67-style lathe body, yellow band, curved spoon, seamless pull ring via the new `ShapeKit.ClosedTube`). New first-person surface families 7 blade steel, 8 edge grind, 9 grenade paint, plus a yellow band tint (weapon finish slots 7–10).
-
-Consequences: grenades reach about half a small map; bots lob them. `feature-content-lock.json` hashes for `ShapeKit.cs` and `LoadoutPropGeometry.cs` are refreshed; map visual packages and the weapon package are republished. No Game-v1, content-format, settings or network change.
-
-Rollback: revert the commit and republish content.
-
-Evidence: `Tools/Test-Simulation.ps1` (`KnifeGrenadeTests` loft and half-map range, bot launch pitch; `GrenadeThrowPresentationTests` constant parity, preview landing, bounce, one-handed hold, no sights, blade trail; `GrenadeBlastFxTests`; audio tests), `Tools/Test-Generation.ps1` (prop meshes, surface families), the other pure lanes, editor `CaptureHandling` renders (`knife-hold`, `knife-slash`, `grenade-hold`, `grenade-pin`, `grenade-throw`) under `Artifacts/adr111-preview/`, and the M11 handoff entry. Feel, sound and the in-game explosion are Pending the owner playtest.
-
-Addendum 2026-11-18 — bank v8 level fix: `Tools/build_audio_bank.py` measured peaks with ffmpeg `volumedetect`, which reads through 16-bit and saturates at 0 dBFS. A layered float mix louder than full scale therefore read as 0 dB, and its clip shipped up to 5.4 dB above its kind's `PEAK_DB` target (56 clips more than 0.5 dB hot, 4 touching full scale: `ak102_shot` and `reload_complete`). The gain is applied in float before the 16-bit export, so the clips were too loud rather than flat-topped. Every kind is now normalised on the true float peak (`astats`); 66 clips change level (named-gun reports, reloads, bolt cycle, headshot, impact, kill confirm, distant battle, grenade bounce, bullet flyby, two footsteps), the ADR-111 knife and grenade clips are unchanged, and the bank becomes `combat-audio-bank-v8-stereo`. After the rebuild no clip reaches full scale and none sits more than 0.5 dB above its target. Owner listening review is Pending.
+**Decision.**
+- **Ballistics.**
+  - Throw speed rises from 18 to 28 m/s, and gravity from −20 to −24.
+  - `GrenadeSimulator.Loft` adds +8° to the launch, giving about 34 m at a 45° launch. The 120-tick fuse is kept.
+  - Bots solve a low launch pitch and throw out to 32 m.
+  - The C0 fixture `gameplay-defaults.json` (`throwMmPerSecond` 28000) is refrozen, with owner approval.
+- **First person.**
+  - Knife and grenade are one-handed (`SupportHandVisible` is for guns only), and never pulled to the sights.
+  - The knife has a large diagonal cut and a stab with hit-stop, with a `KnifeBladeTrail`.
+  - `GrenadeArcPresenter` previews the arc and the landing point.
+  - `CosmeticGrenadeFlight` mirrors authority bounce and friction.
+  - Third-person cut and throw overlays are added.
+- **Explosion.** Presenter-only layers: flash, fireball, sparks, embers, shockwave, dust ring, a smoke column, a light and shake. Reduced flash and reduced motion gate them.
+- **Audio.** Bank v7 re-mixes the knife and the explosion. Addendum (v8): peaks are normalized on the true float peak, so no clip reaches full scale.
+- **Models.** `geometry.loadout-prop` 1.1.0 on `ShapeKit` (`ClosedTube`), with finish slots 7–10.
 
 ## ADR-112 — Accepted: crosshair-true hits, rig-aligned hit volumes, and bots that use map cover, flank and move smoothly
 
-Date 2026-11-18. Context: owner report on 0.3.21: "sometimes I shoot into a bot's head but nothing happens", and "bots stack in one place and shoot; they should use the map; their movement and actions should be smoother". Investigation found real defects behind both. Owner choices: the crosshair is the truth for hits; map tactics use cover and lanes now, without a content-format change; the hip crosshair shows the real spread.
+Date 2026-11-18. **Context.** Centred headshots sometimes did nothing, and bots stacked and moved jerkily.
 
-Decision — hits:
-- **Eye-ray resolution.** `HitscanResolver` resolves the shot along the eye (crosshair) ray against the static world and every hostile actor capsule, nearest first. Before, the eye ray only chose a far aim point and the bullet flew from the canonical muzzle (eye +0.18 m right, −0.15 m, +0.45 m) toward it, so a centred head shot against open sky passed about 0.22 m off a 0.12 m head sphere; whether it registered depended on what stood behind the target. The eye→muzzle wall check stays (a gun pushed into a wall is still blocked); the muzzle is now only the tracer origin.
-- **Teammates do not soak bullets.** Same-team capsules are skipped (they took the bullet with zero damage before). This supersedes "friendly bodies block bullets" in the gameplay baseline.
-- **Hit volumes follow the drawn soldier** (`GameplayPoseEvaluator.Version` 2). The head sphere (radius 0.13 m) sits where `SoldierMotion` with the ADR-095 shooting posture draws the head: pelvis 0.943 m still, 0.78 m moving, 0.66 m crouched, head 0.649 m above it, 0.094 m to the shooting side and 0.101 m back at level aim, following aim pitch. The torso spans the drawn pelvis to the shoulders and stays below the head; the legs are symmetric at ±0.1 m. Before, the head sphere sat at a fixed 1.65 m (1.05 m crouched) on the feet axis, 0.22 m below a crouched soldier's drawn head. `Evaluate` takes the planar speed; the harness passes motor velocity. `Tools/Generation.Tests/HitVolumeRigAlignmentTests` guards ≤5 cm head and chest alignment for still, walking, sprinting and crouched poses at three aim pitches.
-- **Drawn bodies stop trailing their hit volumes.** `ProductActorPresentation` advances the displayed root by the authoritative velocity before the cosmetic blend (it trailed by speed/18, 0.3 m at a sprint) and never lets it drift more than 0.25 m from the authoritative feet.
-- **Presentation.** The hip reticle gap is the active weapon's real hip cone (`OfflineGameSession.HipSpreadRadians`) at the current field of view. Development builds toggle an authoritative hitbox overlay with F8 (`OfflineGameSession.CopyHitVolumes`).
-- **Bots.** `AimController.IdealAngles` drops the muzzle-parallax correction. Bot aim points move to the chest of the new torso (1.15 m standing, 0.80 m crouched). Accuracy recovery is 66 ticks (was 60) so opening shots stay visibly off target now that hits land where they are aimed.
+**Decision: hits.**
+- **Eye-ray resolution.** `HitscanResolver` resolves along the eye ray against static geometry and hostile capsules, nearest first. Previously the shot flew from the muzzle offset and missed by about 0.22 m. The eye→muzzle wall check stays, and the muzzle is only the tracer origin.
+- **Teammates.** Same-team capsules are skipped. This supersedes "friendly bodies block bullets".
+- **Hit volumes.** `GameplayPoseEvaluator` v2 follows the drawn ADR-095 posture (head radius 0.13 m), checked by `HitVolumeRigAlignmentTests` to within 5 cm.
+- **Presentation.** Drawn bodies advance by velocity and never drift more than 0.25 m from authority. The hip reticle shows the real cone. F8 shows a dev hitbox overlay.
+- **Bot aim.** The muzzle-parallax correction is removed. Bots aim at the chest, and recovery takes 66 ticks.
 
-Decision — bots (all inside the unchanged 16-ray / 2-path budgets, `AiNoise` determinism and the Game-v1 planner seam):
-- **Smoothness.** A bot that saw its target within 12 ticks keeps engaging through a tick where the shared ray budget gave it no look (`AiTuning.VisibleHoldTicks`); before, every starved tick switched the aim point, stopped the strafe and cut the burst. A ray that says "not visible" still ends it. Aim error glides between seeded points (polar interpolation keeps the miss size) instead of jumping every 10 ticks. Direction changes between moving ticks ease over about three ticks (strafe reversals pass through a slow-down; starts, stops and ledge flips are immediate). Routes bend into the next leg within 1.5 m of a corner, and the look leads into it. The strafe leash is ±3 m. An engaged bot standing still on purpose (long-range or crouch shooter) no longer counts as stuck.
-- **Map cover.** Packages already carried authored cover boxes in their metadata; `CompoundMapRuntime` now parses them and exposes them through the optional side port `World.Runtime.IMapCoverSource` (not part of Game-v1), and `OfflineGameSession` passes them to the planner (`SetMapCovers`). The hiding spot is computed against the live threat: 0.6 m off the box face away from it, slid toward the bot along the face. A spot is scored by travel (≤18 m), hard cover and ally spacing, and is never next to the threat, behind it, or a charge of more than 6 m toward it. No rays are spent. Runtime probes remain the fallback.
-- **Fights move.** After a seeded 2–4 s exchange in the open, a bot with authored cover in reach moves to it (cooldown 8 s). Behind low cover (<1.6 m) it ducks and rises to peek and shoot in a 1.5 s cycle, and keeps the spot while it is still trading shots.
-- **No pile-ons.** Allies already engaging or searching near a contact count toward the crowd limit. The bots above it no longer just wait: they take a flank goal, a route/lane point 8–30 m from the contact at 45–135° off their own approach, spread from allies' flank goals. A bot that loses sight of an enemy its allies are already pressing searches via a flank point instead of walking straight to the last-seen spot.
-- **Team-aware destinations.** Patrol and combat destinations avoid the bot's own spawn (15 m), lean toward the enemy side, and avoid spots where two or more allies are already fighting.
+**Decision: bots** (same budgets):
+- **Visibility hold.** A target seen within 12 ticks is held through starved ticks.
+- **Smoother motion.** Aim error glides, direction changes ease, routes bend into corners, and the leash is ±3 m.
+- **Map cover.** Authored package cover reaches the bots through `World.Runtime.IMapCoverSource`. Scoring uses no rays.
+- **Fights move.** Bots go to cover after 2–4 s in the open and duck-peek behind low cover.
+- **Flanking.** Bots over the crowd limit flank.
+- **Destinations** avoid the own spawn and lean toward the enemy side.
 
-Consequences: C0-v1, Game-v1, content-format and feature-content locks are unchanged; no package is republished. Bot time-to-kill medians stay inside the T085 envelope. `GameContractTests.OfflineSession_Rebinds_Bot_And_Human_Replacement_Lives` checked that all 16 actors were alive when the shot bot respawned; that only held because the human's shots missed and the victim fell out of the floorless test world with everyone else. It now checks that the authority holds exactly the living participants, the invariant the test already uses for the human. High ground, upper floors and zones are not published to the bots yet (they need a content-format ADR).
-
-Rollback: revert the commit.
-
-Evidence: `Tools/Test-Simulation.ps1` (`EyeRayHitscanTests`, `PoseTests`, `WeaponDefectTests`, `CombatHarnessTests`, `BotMapTacticsTests`, updated `BotMovementTests`, the lethality envelope and determinism tests), `Tools/Test-Generation.ps1` (`HitVolumeRigAlignmentTests`), `Tools/Test-Game.ps1`, Unity EditMode, and the M11 handoff entry. In-game feel (headshots on moving and crouched bots, bot cover use, flanking and smoothness) is Pending the owner playtest.
+No lock changes.
 
 ## ADR-113 — Accepted: career progress line, layered rank emblems and reward art
 
-Date 2026-11-18. Context: owner request to revise the ADR-108 career progress line, rewards and interface so icons and the whole design look solid, like an AAA shooter. The rank insignia were single-ink glyphs, the CP bars were 3–6 px flat fills, the ladder was a vertical list of text rows, and rewards had no icons.
+Date 2026-11-18. **Decision.** Presentation only, drawn with UiSdf and no imported art.
+- **Rank emblems** (`CareerArt.RankEmblem`). An enamel plate (shield, hexagon, or a general's burst in a laurel wreath), a metal rim, and the embossed insignia in the band metal. Below 34 px only the insignia is drawn.
+- **CP bars** (`CareerArt.ProgressBar`). Recessed bars with segment ticks and a lit gain.
+- **Rewards.** `Game/Settings/CareerRewardCatalog` gives every rank an icon, title and detail. New plate, sight, perk, dog-tag, crown, lock and check glyphs. `CareerArt.RewardCard` uses kind colours.
+- **Career page.** A hero band, a horizontal progress line with one node and card per rank, perk chips and service-record tiles.
 
-Decision (presentation only; no imported art, every shape is a numeric recipe drawn with the code-only UiSdf shader):
-- **Layered rank emblems** (`Presentation/Session/CareerArt.RankEmblem`). From 34 px up: an enamel plate (enlisted shield, warrant/officer hexagon, general sixteen-point burst inside a laurel wreath) with a soft shadow, a metal-gradient rim and inner hairline, and the existing ADR-108 insignia embossed on top (dark offset, vertical metal gradient, light edge, optional glint). Colours per band: olive brass, steel, bronze, gold. Below 34 px (Tab board, debrief tables, Armory lock rows) only the embossed insignia is drawn so it stays legible. Locked ranks are desaturated.
-- **Recessed CP bars** (`CareerArt.ProgressBar`): dark groove, metal fill with sheen and a hot leading edge, ten segment ticks, and a lit gain segment on the debrief strip.
-- **Reward art.** `Game/Settings/CareerRewardCatalog` gives every rank an icon, title, tier numeral and detail line (an explicit table beside `CareerLadder`; the ladder, thresholds, buffs and `shooter-career.json` are unchanged). New `IconLibrary` glyphs: `career-plate-enlisted`, `career-plate-officer`, `career-plate-general`, `career-wreath`; side-view sights `reward-sight-irons`, `-collimator`, `-prism`, `-scope4`, `-scope8` (two cells wide); perks `reward-buff-fast-hands`, `-steady-aim`, `-extra-mag`, `-recoil`, `-quick-draw`; `reward-starter` (dog tags), `reward-final` (crown in wreath), `ui-lock`, `ui-check`. Guns reuse the ADR-085 mesh-traced `weapon.*` silhouettes. Reward cards (`CareerArt.RewardCard`) carry a kind colour (weapon amber, optic cyan, perk green, insignia gold), a backlit icon, title, detail and a state chip (locked with the rank number, next unlock, unlocked).
-- **Career page.** A hero band (large emblem with a glint on open, rank name, 14 px bar, CP to the next rank, the next reward card), a horizontal **progress line** (recessed rail filled to the current CP through one emblem node per rank, the current node haloed, each rank's reward card under its node; 3–8 ranks visible by width, wheel and end-arrow scrolling, a position rail) replacing the vertical ladder list, and a lower row of active-perk chips and a 4×3 service-record tile grid. Main menu and Armory badges, Armory lock tags and the debrief strip use the same emblems and bars; a promotion lights the strip's edge and shows the unlocked reward's icon.
-- The icon atlas library golden changes because glyphs were appended (`IconAtlasGoldens.Library` and the EditMode copy, regenerated from the test output).
-
-Consequences: C0-v1, Game-v1, content-format and feature-content locks are unchanged; no package is republished. Reduced motion and reduced flash keep the static layout without glints or pulses. When the UiSdf shader is unavailable the flat fills and single-ink glyphs remain.
-
-Rollback: revert the commit.
-
-Evidence: `Tools/Test-Generation.ps1` (`IconAtlasTests` including `Every_career_reward_icon_is_in_the_atlas`), `Tools/Test-Game.ps1` (`CareerTests.Reward_art_matches_the_ladder`), Unity EditMode, and the M11 handoff entry. The owner's visual review of the Career page, emblems and debrief strip at 1080p and 720p is Pending.
-
+The icon-atlas golden changes.
 
 ## ADR-114 — Accepted: corner-bob motor fix, nav bake that respects walls, and a tabbed Career page
 
-Date 2026-11-18. Context: owner report on 0.3.22: on the new maps bots run into walls and get stuck; a player or bot pushing into the corner of an object still rises and falls for a few seconds; the Career page is crowded, and progress and statistics should be on separate tabs with a progress line that is not overlapped.
+Date 2026-11-18. **Decision.**
+- **Corner bobbing (motor).** A PhysX `CapsuleCast` that starts in contact reports distance 0 with normal −dir. At box corners this lifted actors repeatedly. `KinematicMotor` now:
+  - routes every sweep through `Sweep()`, which re-sweeps an inset capsule on a start contact;
+  - lets `TryStep` require a measured step top;
+  - settles `ProbeGround` from the true distance;
+  - never has `SlideMove` lift a ground-following actor.
 
-Decision:
-- **Corner bobbing (motor).** A PhysX `CapsuleCast` that starts already touching a collider reports distance 0 with normal = −direction in every direction. At a convex box corner this looked like walkable ground under the feet and like an open step top, so `TryStep` lifted the actor a full 0.27 m. `ProbeGround` then raised it by Skin every tick while it touched the box, and the actor fell and repeated. ADR-067 had clamped velocity only, never position. `KinematicMotor` now:
-  - routes every sweep through `Sweep()`. On a start contact it re-sweeps a capsule inset by Skin: no hit means the motion leaves the touch; a hit gives the real normal and distance; only genuine penetration keeps the raw hit, and overlap recovery handles that;
-  - `TryStep` requires a measured step top above the current feet, and never ends higher than that top plus Skin;
-  - `ProbeGround` settles to Skin from the true distance, and when the down sweep grazes a wall or ledge face it looks past it with the inset capsule;
-  - `SlideMove` never lifts a ground-following actor's position off a non-walkable contact, matching the existing velocity clamp.
-- **Test world.** `SlopeWorld.PhysxStartContact` imitates the PhysX start-contact hits and adds a ComputePenetration-like overlap. New motor tests: a convex box corner at several overlaps, strafes and jitters; a 0.30 m ledge; and a real step still climbed. Six of them fail on the old motor. A real-PhysX PlayMode test (`ProductLocomotionPhysXTests.PushingIntoBoxCornerAgainstPhysXDoesNotBob`) runs the same box corner and ledge through `UnityWorldQueries`.
-- **Bot navigation.** Two defects sent bots into walls on the ADR-109 maps:
-  - **The bake.** The native bake marked tall solids Not-Walkable with modifier volumes that started exactly on the floor top, so Unity left the floor walkable inside most walls. The shipped Harbour bake had walkable floor inside 151 of its 225 blocking solids.
-  - **The runtime install.** `UnityNavMeshBakeInstaller` installed only about 1% of every product bake. The packaged ground is a zero-thickness surface at y = 0.0133, which Unity drops between voxel layers. Every runtime NavMesh query therefore missed, and every bot path came from the packaged fallback, which snapped up to 8.1 m and thinned corners straight across walls.
+  `SlopeWorld.PhysxStartContact` and a real-PhysX PlayMode test cover it.
+- **Bot navigation.**
+  - The bake (`UnityNavMeshBakeEditorBridge`) gives each solid a Not-Walkable volume from one agent height below it up to 0.1 m under its top, padded by the clearance margin.
+  - The pure `NavCollisionAudit` rejects nav inside or too close to blocking solids. It runs on every native bake and logs `SHOOTER_NAV_COLLISION_AUDIT`.
+  - `UnityNavMeshBakeInstaller` snaps heights to 5 cm, so the whole bake installs. Previously about 1% did.
+  - The fallback snaps ≤1.5 m and thins corners only when `NavMesh.Raycast` is clear.
+  - The bot corner bend requires clear probes.
+- **Career page.** PROGRESS and STATISTICS tabs (`TacticalUi.TabStrip`, Q/E). The pure `CareerLayout` / `CareerLineLayout` remove overlaps at 720p–1080p and 100–150%. `TacticalUi.LabelFit` keeps labels on one line. Opening with `-shooterUiGallery career` is for captures.
 
-  Fixes:
-  - **Bake** (`UnityNavMeshBakeEditorBridge`): each solid's Not-Walkable volume spans from one agent height below the solid to 0.1 m under its top. A deck resting on a box top and the floor under high beams stay walkable. Its footprint is padded by the 0.05 m clearance margin plus a quarter voxel.
-  - **Gate:** the pure `Generation/Core/Environment/NavCollisionAudit` rejects a native bake that has a nav triangle inside a blocking solid's footprint (covered area ≥ 0.001 m²), or a nav vertex closer to such a solid than agentRadius − 0.05. It runs in `MapPackageBuilder.Build` for every native bake and in `ShooterNativeContentBuild`, which logs `SHOOTER_NAV_COLLISION_AUDIT`. Stage and publication tests now inject a clean test bake instead of the coarse software grid labelled native.
-  - **Install:** heights are snapped to 5 cm (`InstallHeightQuantum`, at most 2.5 cm of movement), so the whole bake installs.
-  - **Fallback:** the packaged fallback snaps at most 1.5 m at runtime (`RuntimeMaxSnapMeters`), and it skips a corner only when `NavMesh.Raycast` says the shortcut is clear (`ThinVisibleCorners`).
-  - **Bots** (`CombatAiDirector.RouteDirection`): the ADR-112 corner bend applies only when three horizontal probes toward the bent point are clear.
-
-  Native packages are republished. No tracked lock or golden file changed.
-- **Career page (presentation only).**
-  - A tab strip under the header switches between **PROGRESS** (hero band and the progress line) and **STATISTICS** (active perks and the service record). Q / E switch tabs, and the page opens on PROGRESS.
-  - Settings and Career share the new `TacticalUi.TabStrip`.
-  - Geometry comes from the pure `Presentation/Model/Menus/CareerLayout` and `CareerLineLayout`:
-    - the node row sits below the section label by the full halo radius;
-    - the rank code and CP labels sit below the halo ring, which used to overlap them;
-    - cards start below the lowest label with room for the hover lift, and are left out only under 56 px;
-    - the hero collapses to one row on short screens;
-    - service-record tiles always stack label over value, and switch to 6 × 2 when 4 × 3 tiles would be too short.
-  - `TacticalUi.LabelFit` draws one-line labels that shrink, then cut with an ellipsis, so card titles, chips and values never spill.
-  - `-shooterUiGallery career` opens the page on a seeded mid-ladder profile that is never saved, for UI captures.
-
-Consequences: C0-v1, Game-v1, content-format and feature-content locks are unchanged; the native map packages are republished with the wall-respecting bake. The motor change affects players and bots alike. Step-up, ramps and the 0.3.5 spawn-contact behaviour are kept, covered by the existing tests.
-
-Rollback: revert the commit.
-
-Evidence (navigation):
-- **Republish:** `Compile-GameContent -Native` PASS with 0 leaks and 0 clearance violations. Minimum clearance is 0.27 / 0.32 / 0.349 m for Old Town / Harbour / Oil Depot (`m8-runtime-composition/32390a6…/compile-gamecontent-20261118T182602124Z-fd3de305`).
-- **Installed NavMesh samples:** 550/550, 556/556 and 583/583, up from 9, 6 and 12.
-- **PlayMode `ProductBotNavigationTests`, 30 s of 5v5 per map:** stuck 0 / 1 / 0 with no relocations, down from 55 / 37 / 20.
-- **Tests:** `NavCollisionAuditTests`, `NavFallbackPathTests`, `BotCornerBendTests`, `ProductNavMeshInstallTests`.
-- **Still open:** about half of bot goal points lie more than 0.74 m from the NavMesh. Those paths still use the fallback, which is now wall-safe but less smooth.
-
-Evidence (motor and Career): `Tools/Simulation.Tests` (`MotorSlopeAndStepTests` corner, ledge and step cases; `CareerLayoutTests` at 1280×720, 1366×768, 1600×900 and 1920×1080 with UI scale 1.0, 1.25 and 1.5); Unity PlayMode 25/25 PASS including the real-PhysX corner test; the M11 handoff entry. The owner's in-game feel check at corners and visual review of both Career tabs at 720p and 1080p are Pending.
+Native packages are republished. About half of bot goal points still miss the NavMesh and use the wall-safe fallback.
 
 ## ADR-115 — Accepted: open reflex collimator with a clear glass pane
 
-Date 2026-11-18. Context: owner report: in ADS the collimator shows a black disc with the red dot on it instead of a see-through lens, and the sight should look like an open reflex sight (a low base carrying a rounded-rectangle window). Cause: the ADR-107 collimator capped both ends of its tube with discs in weapon material slot 3 (recess/rubber, opaque near-black), and the dot is a screen overlay drawn on top of them.
+Date 2026-11-18. **Context.** The collimator showed an opaque black disc behind the dot.
 
-Decision:
-- **Geometry** (`ProfileArsenalGeometry.Collimator`, `geometry.weapon-sight` 1.0.0 → 1.1.0): a 28 mm box base with a chamfered nose on a rail clamp, a rear dot emitter, two brightness buttons on the right and a battery cap on the left; a full-width plinth carrying a rounded-rectangle frame (33 × 25 mm to the tube centreline, 6 mm corners, `ShapeKit.ClosedTube` of 1.6 mm radius) leaning back 8°; one 1 mm glass pane seated in the frame. The eye line stays 32 mm above the rail, so ADS alignment, `WeaponSights.EyeFor` and the third-person head solve are unchanged. The other sights are byte-identical constructions.
-- **Material slot 11, clear sight glass.** Mounted sights may use slot 11. `ProductSurfaceMaterial.WeaponFinishes` appends it as `Shooter/SightGlass`: transparent (queue 3000, alpha blend, no depth write, both faces), about 7% opacity head-on with a faint blue-cyan coating tint, a Fresnel rim toward grazing angles and a soft sky sheen. No texture planes. The shader is a preloaded build asset like the other Shooter shaders. The gallery and capture palettes never draw sight meshes and are unchanged.
-- **Dot.** `TacticalUi.CollimatorDot` is unchanged; it now sits in the middle of the clear pane.
-- **Test.** `SightGeometryTests.Collimator_eye_line_passes_only_through_clear_glass`: on every rail and LOD, the bore-parallel eye line crosses glass triangles and no other material.
+**Decision.** `geometry.weapon-sight` 1.1.0 (`ProfileArsenalGeometry.Collimator`) builds an open reflex sight:
+- a 28 mm box base on a rail clamp, with an emitter, buttons and a battery cap;
+- a rounded-rectangle frame leaning back 8°;
+- one 1 mm glass pane.
 
-Consequences: weapon packages republish the 13 sight sets under the new sight fingerprint. Feature-content-lock source hashes change for `ProfileArsenalGeometry.cs`, `WeaponSights.cs` and `docs/weapon-recipe-baseline.md`. C0-v1, Game-v1 and content-format locks are unchanged; combat numbers and sight choices are unchanged.
-
-Rollback: revert the commit and republish the weapon package.
-
-Evidence: [M11 handoff](milestones/m11-playable-release/handoff.md#adr-115-open-reflex-collimator--2026-11-18).
+The eye line stays 32 mm above the rail. Slot 11 is a clear `Shooter/SightGlass` material: transparent, about 7% opacity, a Fresnel rim and sheen, and no textures. `SightGeometryTests.Collimator_eye_line_passes_only_through_clear_glass` checks the eye line. The weapon package and the feature-lock source hashes change.
 
 ## ADR-116 — Accepted: realistic map colour, texture and shadows (material.noise 1.2.0)
 
-Date 2026-11-18. Context: owner report: every map reads "almost grey". Four causes stacked. (1) material.noise 1.1.0 baked dark, near-neutral albedo (concrete about .37/.375/.35 linear, painted steel .085/.16/.19, asphalt .04). (2) Presentation tints were all at or below 1, so they only darkened (apron .38), and the ADR-044/050 architectural accents multiplied already-dark steel, so "tank white" rendered dark teal and "safety yellow" dark olive. (3) Every tier desaturated (Low −4 plus the map grade, Balanced/High −6 plus the LUT). (4) Grey horizon fog started at 34–40 m on 64 × 80 m maps, Harbour's sun was a cool 0.65, and Low had hard 1024 px shadows.
+Date 2026-11-18. **Context.** Maps read as almost grey. Four causes stacked:
+- dark, neutral albedo;
+- tints that only darkened;
+- desaturating grades;
+- early grey fog, a cool Harbour sun and hard Low shadows.
 
-Decision:
-- **material.noise 1.2.0** (`NoiseMaterial.cs`): the 1.1.0 relief, normals, Toksvig mask mips and noise keys are reused unchanged; 1.2.0 adds four colour fields and replaces each role's albedo. Concrete is a warm grey (~.50/.475/.43) with per-panel pour jitter, rain efflorescence and damp darkening. Plaster is ~.72/.66/.54 with ochre wash, exposed-brick spalls and damp. Painted steel is olive-teal paint chipped through to red-oxide primer with rust runs. Corrugated sheet is galvanized (~.42/.435/.44) with white-rust mottle and rust in the troughs. Asphalt (~.075) gains pale aggregate and tar patches. Gravel mixes warm and cool stones (~.30/.26/.20). Rust and camo are unchanged. 1.0.0 and 1.1.0 bytes are unchanged; every map surface (`MapPackageBuilder`, `MapVisualClosure`) now bakes 1.2.0. New fixture `docs/feature-fixtures/material-noise-1.2.0.json`; the schema enum accepts 1.2.0.
-- **Presentation tints** (`ProductSurfaceResponse`): near 1 and only nudging hue (concrete 1/.99/.97, trim 1.04/1/.92, cover .95/.96/.96, soil 1.02/.95/.84, asphalt 1/1/1.02, apron .80/.80/.82). The ordering asserted by `ProductSurfaceMaterialTests` is kept.
-- **Accent fix** (`ProductSurfaceMaterial.ArchitecturalAccents`): each tint is the target paint colour divided by the source plane's mean linear albedo (recorded at upload from the smallest mip), clamped to 0..8, the same lift the walnut and HE-band tints use. Targets: depot blue .10/.22/.34, oxide .30/.10/.05, footing .28/.27/.25, tank white .70/.70/.66, safety yellow .62/.42/.04.
-- **Shader** (`MapSurface.shader`): the macro bands also shift hue between warm and cool; walls get world-space rain-streak runs; the ground dirt tint is warmer (.52/.44/.33); the detail-normal blend is .14 (was .10, still at 0.55/m); the height-fog mix is .22 (was .35).
-- **Light and atmosphere**: sun intensity 1.35 for compound, 1.25 for Harbour (was .65) and petroleum, all warm; sun shadow strength .92 (was .85). Fog: compound 42–130 m, Harbour 40–120 m, petroleum 38–115 m, and the compound ambient ground is warmer. The 50 m readability bands in `GeneratedSkyTests` still hold.
-- **Grade**: every tier adds +10 saturation (was −4 Low, −6 Balanced/High). The map grade integers and the sky/grade golden are unchanged; the net result is slightly saturated rather than desaturated.
-- **Shadows** (amends ADR-103 "Low unchanged", as the owner allowed): Low gets soft shadows (SoftShadowQuality.Low), 50 m (was 40), a 2048 atlas (was 1024) and normal bias .6. It keeps 2 cascades and no SSAO. Balanced/High SSAO intensity is 1.4/1.6 (was 1.2/1.4).
+**Decision.**
+- **`material.noise` 1.2.0** (`NoiseMaterial.cs`). It reuses the 1.1.0 relief and adds colour fields:
+  - warm concrete with pour jitter and damp;
+  - plaster with ochre wash and brick spalls;
+  - steel chipped to red-oxide primer with rust;
+  - galvanized corrugated sheet;
+  - asphalt with aggregate;
+  - mixed gravel.
 
-Consequences: map visual packages republish under the material.noise 1.2.0 fingerprint (gameplay roots unchanged). The feature-content-lock adds the 1.2.0 generator row and refreezes source hashes. The settings assets and `provenance.json` regenerate through `ShooterBuild.InitializeFoundation` and `ShooterPostProcessingBuild.Configure`. C0-v1, Game-v1 and content-format locks are unchanged. The Low GPU cost on the 4600H reference is Pending until measured; if Low misses the 27 ms p95 budget, drop the Low atlas back to 1024 first.
+  Fixture `material-noise-1.2.0.json`.
+- **Tints** (`ProductSurfaceResponse`) sit near 1.
+- **Accents** (`ArchitecturalAccents`) divide the target paint colour by the plane's mean albedo.
+- **Shader.** Warm/cool hue drift, rain streaks, a warmer dirt tint and lighter fog.
+- **Light.** Warm suns (1.25–1.35), and fog that starts at about 40 m.
+- **Grade.** +10 saturation on every tier.
+- **Shadows.** This amends ADR-103's "Low unchanged". Low gets soft 50 m / 2048 px shadows. SSAO is 1.4 / 1.6.
 
-Rollback: revert the commit, regenerate the settings and republish content.
-
-Evidence: [M11 handoff](milestones/m11-playable-release/handoff.md#adr-116-map-realism--2026-11-18).
+If Low misses its GPU budget, drop the Low atlas back to 1024 first.
 
 ## ADR-117 — Accepted: single-point collimator dot and 1.2x collimator zoom
 
@@ -2009,117 +1729,68 @@ Evidence: [M11 handoff](milestones/m11-playable-release/handoff.md#adr-117-colli
 
 ## ADR-118 — Accepted: M4A1, Mk 16, M24 SWS and M870: pellets, shell reloads and geometry.weapon 1.5.0
 
-Date 2026-11-19. Context: the owner asked for a bolt-action sniper, a shotgun and a couple of famous rifles, and picked the M24 SWS, the Remington 870 pump shotgun, the M4A1 and the FN SCAR-L from a shortlist. Following ADR-102, brand names are avoided: the SCAR-L appears under its US designation **Mk 16** and the 870 as **M870**. The M24 and M4A1 fit existing bodies (`bolt`, `ar`). The shotgun needed engine work: there was one hitscan ray per shot, a whole-magazine reload and no pump handling. The SCAR needed a new body.
+Date 2026-11-19. **Decision.** Four primaries are added: M4A1, Mk 16 (SCAR-L, under its US designation), M24 SWS and M870.
 
-Decision:
-- **Simulation (pellets, shell reloads).** `WeaponDefinition` gains optional `PelletCount` (default 1), `PelletSpreadRadians` and `ReloadPerRound`.
-  - A multi-pellet shot emits one `ShotAccepted` and one recoil impulse. It then resolves each pellet inside the pellet cone around the aimed direction, using its own spread channels (16 + 2p, 17 + 2p), with an impact and falloff damage per pellet.
-  - Pellet 0 decides whether the muzzle is blocked.
-  - Single-projectile guns never take the pellet path, so they are bit-identical.
-  - A tube-fed gun loads one round per `ReloadTicks` phase and chains phases until full or out of reserve. A trigger press with at least one round loaded cancels the reload and can fire on the same tick. The frozen C0 `WeaponState` is unchanged.
-  - `WeaponModifiers.Apply` copies the new fields. A reflection test checks that every unscaled field survives.
-  - The catalog generator accepts `pelletCount` (1–16), `pelletSpreadDegrees` (0–15) and `reloadPerRound`. Pellets need a cone and semi-automatic fire. Older rows generate byte-identically.
-- **geometry.weapon 1.5.0** builds every 1.4.0 recipe byte-identically and adds kinds `scar` and `pump` and the stock `collapsible` (AR and SCAR), all rejected below 1.5.0.
-  - Sockets, envelopes and collision are declared for each new kind, so nothing falls through to the pistol case.
-  - Both new kinds take rail-mounted sights: Mk 16 flip-up irons, and an M870 ghost ring with a barrel blade.
-  - The M870's cycle part is the pump forend and its magazine part is a single shell lying in the loading port.
-  - Recipes: `m4a1` (ar 1.5.0, 540 mm, collapsible), `m24` (bolt 1.4.0, 780 mm), `mk16` (scar 1.5.0, 560 mm, folding) and `m870` (pump 1.5.0, 680 mm).
-  - New fixture `docs/feature-fixtures/rifle-1.5.0.json`; the schema accepts 1.5.0.
-  - `Tools/verify_feature_registry.py --refreeze ADR-NNN [--generator id@version@schema]` is the explicit, reviewed way to refreeze the source registry.
-- **Content.** Four definition files are added (orders 12–15). Stats at 60 Hz:
+**Pellets and shell reloads.** `WeaponDefinition` gains `PelletCount`, `PelletSpreadRadians` and `ReloadPerRound`.
+- A multi-pellet shot is one `ShotAccepted` and one recoil impulse. Each pellet has its own channels (16 + 2p, 17 + 2p), impact and falloff. Pellet 0 decides whether the muzzle is blocked.
+- Single-projectile guns are bit-identical.
+- A tube-fed gun loads one round per phase, and a press with a round loaded fires at once.
+- C0 `WeaponState` is unchanged, and `WeaponModifiers.Apply` copies the new fields.
 
-  | Weapon | Fire | Damage | Magazine | Range |
-  |---|---|---|---|---|
-  | M4A1 | full auto, 5-tick interval (720 rpm) | 29 | 30/90 | falloff 20–55 m to 0.75 |
-  | Mk 16 | full auto, 6 ticks (600 rpm) | 31 | 30/90 | falloff 30–70 m to 0.80 |
-  | M24 SWS | bolt, 60 ticks | 100 | 5/30 | — |
-  | M870 | pump, 36 ticks | 8 pellets × 25 in a 2.6° cone | 7/28, one shell per 28 ticks | falloff 8–30 m to 0.30, max range 60 m |
+**Geometry.** `geometry.weapon` 1.5.0 builds every 1.4.0 recipe byte-identically and adds:
+- `scar`;
+- `pump` (forend cycle part, shell magazine part, ghost ring);
+- the `collapsible` stock.
 
-  - Spawn weights: M4A1 3, Mk 16 2, M24 1, M870 2.
-  - Sights: M4A1 and Mk 16 take irons, collimator and 2x; the M24 takes 8x (default), irons, collimator, 2x and 4x; the M870 takes irons and collimator.
-- **Presentation and bots.**
-  - A `Pump` handling style: the forend runs back and forward after each shot, and the shell-insert reload track lifts one shell per reload phase.
-  - New kill-feed glyphs and shot sounds for the four guns, plus pump-cycle and shell-insert sounds.
-  - The Armory shows "8 × 25" damage and a PUMP action.
-  - Bots treat a multi-pellet gun as close range: no long-range fire, close in past the falloff end, no aiming down sights up close.
+`Tools/verify_feature_registry.py --refreeze ADR-NNN` is the reviewed refreeze path.
 
-Consequences:
-- The feature-content-lock adds the geometry.weapon 1.5.0 generator row and refreezes the source hashes. C0-v1, Game-v1 and content-format locks are unchanged.
-- The weapon package republishes with the new meshes and sight sets.
-- Seeded bot loadouts change, because the total spawn weight changes, so earlier TDM benchmark runs are not comparable.
-- Networking (parked, ADR-076) would not replicate individual pellets.
-- The look, feel, sound and balance are Pending owner playtest.
+**Content:**
 
-Rollback: revert the ADR-118 commits, refreeze the feature registry and republish content.
+| Gun | Fire | Damage | Magazine |
+|---|---|---|---|
+| M4A1 | Auto, 720 rpm | 29 | 30 |
+| Mk 16 | Auto, 600 rpm | 31 | 30 |
+| M24 | Bolt | 100 | 5 |
+| M870 | Pump | 8 × 25 in a 2.6° cone, falloff 8–30 m | 7 |
 
-Evidence: [M11 handoff](milestones/m11-playable-release/handoff.md#adr-118-new-weapons--2026-11-19).
+Spawn weights are 3 / 2 / 1 / 2, which changes seeded bot loadouts.
+
+**Presentation and bots.**
+- A `Pump` handling style.
+- New sounds (bank v9).
+- Bots treat shotguns as close range.
 
 ## ADR-119 — Accepted: 30-rank career ladder and four new perks
 
-Date 2026-11-19. Context: the owner asked to extend the progress bar with new military ranks, the ADR-118 weapons and new perks if needed. The ADR-108 ladder ended at General after 20 ranks and had no place for the four new guns. The owner chose the full US Army ladder and accepted that existing progress is re-read or reset; no migration.
+Date 2026-11-19. **Decision.** The ladder grows to 30 ranks on the same scale (`1000·(n²−1)`, rank 30 = 899,000 CP):
 
-Decision:
-- **30 ranks, same CP scale** (`1000·(n²−1)`, so rank 30 is 899,000 CP):
-  - Enlisted: PVT, PV2, PFC, SPC, CPL, SGT, SSG, SFC, MSG, 1SG, SGM, **CSM**, **SMA** (1–13).
-  - Warrant: **WO1, CW2, CW3, CW4, CW5** (14–18).
-  - Officer: 2LT, 1LT, CPT, MAJ, LTC, COL (19–24).
-  - General: BG, **MG**, **LTG**, GEN, **General of the Army**, **General of the Armies** (25–30).
-- **Rewards:**
+| Band | Ranks |
+|---|---|
+| Enlisted | PVT to SMA (1–13) |
+| Warrant | WO1 to CW5 (14–18) |
+| Officer | 2LT to COL (19–24) |
+| General | BG to General of the Armies (25–30) |
 
-  | Rank | Reward |
-  |---|---|
-  | 1 | starter kit |
-  | 2 | collimator |
-  | 3 | Fast Hands I |
-  | 4 | M4A1 |
-  | 5 | AK-102 |
-  | 6 | 2x prism |
-  | 7 | Hip Shooter I |
-  | 8 | Golden Eagle |
-  | 9 | Steady Aim I |
-  | 10 | M870 |
-  | 11 | AK-47 |
-  | 12 | Extra Mag I |
-  | 13 | 4x |
-  | 14 | Mk 16 |
-  | 15 | Choke |
-  | 16 | Recoil Control I |
-  | 17 | Mk 14 |
-  | 18 | Quick Draw |
-  | 19 | 8x |
-  | 20 | M24 SWS |
-  | 21 | Slick Action I |
-  | 22 | Fast Hands II |
-  | 23 | M-TAC 338 |
-  | 24 | Recoil Control II |
-  | 25 | Light Load |
-  | 26 | Extra Mag II |
-  | 27 | Hip Shooter II |
-  | 28 | Steady Aim II |
-  | 29 | Slick Action II |
-  | 30 | gold insignia |
+Rewards add the ADR-118 guns, and every factory optic still precedes its gun ([career](features/career.md)).
 
-  Every factory optic still precedes its gun.
-- **New perks (amends ADR-108 "fire rate and movement are never modified"):**
-  - Hip Shooter I/II: hip spread −8%/−15%.
-  - Choke: shotgun pellet cone −15%.
-  - Slick Action I/II: the fire interval of manual-action guns (semi-automatic with at least 30 ticks between shots: the bolt rifles and the M870) −8%/−15%, rounded to whole ticks.
-  - Light Load: move speed +3% with a gun out, capped at +5%.
-  - All are per-mille fields of `WeaponModifiers`/`CareerBuffs`; identity leaves every definition bit-identical, so bots and replays are unchanged.
-  - The motor now reads move speed through the buffed definition.
-  - The presentation mirrors the cycle for bolt and pump timing and the hip/pellet cone for the reticle gap.
-- **One source of truth for the length:** `CareerLadder.RankCount`. Mirrors that cannot reference Game.Settings are pinned to it by `CareerRankCountAgreementTests`:
-  - `IconLibrary.CareerRankCount`
-  - `BotRanks.MaxRank`
-  - `ScoreboardRow.MaxRankIndex`, which replaces a literal 20
-  - the reward-art table
-- **Insignia:** procedural insignia for every grade (the CSM wreathed star, the SMA's two stars, warrant bars with one to four squares and the CW5 stripe, two to four general stars and five stars in a ring), plus four perk glyphs. The icon-library golden changes to `b5f08aab…`.
-- **Career page:** active perk chips wrap onto two rows past five.
+**New perks.** This amends ADR-108's "fire rate and movement never change".
+- Hip Shooter: hip spread −8% / −15%.
+- Choke: pellet cone −15%.
+- Slick Action: manual-action cycle −8% / −15%.
+- Light Load: +3% move speed with a gun out.
 
-Consequences:
-- Saves keep CP only, so an existing career is re-read on the new ladder and some unlocks re-lock (owner-accepted; the Armory falls back per field).
-- No contract, content-format, feature or game lock changes; `docs/career-fixtures` is unchanged.
+They are per-mille fields of `WeaponModifiers`. Identity is unchanged for bots and replays.
 
-Rollback: revert the commit.
+**Rank count.** `CareerLadder.RankCount` is the single source. `CareerRankCountAgreementTests` pins the mirrors:
+- `IconLibrary.CareerRankCount`;
+- `BotRanks.MaxRank`;
+- `ScoreboardRow.MaxRankIndex`;
+- the reward art.
 
-Evidence: [M11 handoff](milestones/m11-playable-release/handoff.md#adr-119-30-rank-career--2026-11-19). The in-game look of the insignia and the balance of the perks are Pending owner playtest.
+**Art.** New insignia and perk glyphs; the icon golden is `b5f08aab…`.
+
+Saves keep CP only, so some unlocks re-lock. The owner accepted this, and there is no migration.
+
+## Decision change template
+
+ID/title; date; owner; status; requirement affected; measured problem; alternatives; chosen behavior; contract/schema impact; migration; affected work packages; validation and rollback; supersedes ID. Integrator approves compatibility changes; an agent cannot relax art or performance requirements by silently updating a baseline.
