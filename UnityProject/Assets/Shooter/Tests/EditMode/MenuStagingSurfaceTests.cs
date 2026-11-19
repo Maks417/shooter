@@ -39,13 +39,13 @@ namespace Shooter.Tests
             {
                 var scene = root.AddComponent<ProductMenuScene>();
                 scene.BindVerified(visuals);
-                var concrete = root.transform.Find("Skyline shell").GetComponent<MeshRenderer>().sharedMaterial;
-                var warm = root.transform.Find("Hangar volume").GetComponent<MeshRenderer>().sharedMaterial;
-                Assert.That(concrete.GetTexture("_BaseMap"), Is.Not.Null);
-                Assert.That(warm.GetTexture("_BaseMap"), Is.SameAs(concrete.GetTexture("_BaseMap")),
+                var mast = root.transform.Find("Roof mast").GetComponent<MeshRenderer>().sharedMaterial;
+                var vent = root.transform.Find("Roof vent").GetComponent<MeshRenderer>().sharedMaterial;
+                Assert.That(mast.GetTexture("_BaseMap"), Is.Not.Null);
+                Assert.That(vent.GetTexture("_BaseMap"), Is.SameAs(mast.GetTexture("_BaseMap")),
                     "Tint variants share uploaded planes instead of duplicating texture residency.");
-                var asphalt = root.transform.Find("Apron slab").GetComponent<MeshRenderer>().sharedMaterial;
-                var apronTint = root.transform.Find("Apron seam").GetComponent<MeshRenderer>().sharedMaterial;
+                var asphalt = root.transform.Find("Roof slab").GetComponent<MeshRenderer>().sharedMaterial;
+                var apronTint = root.transform.Find("Roof seam").GetComponent<MeshRenderer>().sharedMaterial;
                 Assert.That(asphalt.GetTexture("_BaseMap"), Is.Not.Null);
                 Assert.That(apronTint.GetTexture("_BaseMap"), Is.SameAs(asphalt.GetTexture("_BaseMap")),
                     "Apron variants reuse packaged asphalt planes.");
@@ -71,9 +71,9 @@ namespace Shooter.Tests
                                 occupancy = Mathf.Max(occupancy, Mathf.Abs(screen.x - .5f), Mathf.Abs(screen.y - .5f));
                             }
                     Assert.That(occupancy, Is.GreaterThan(.40f), "Compact maps must fill the card, not disappear on a historical-size plate.");
-                    Assert.That(root.transform.Find("Map card ground " + map), Is.Not.Null);
-                    Assert.That(root.transform.Find("Map card plate " + map), Is.Not.Null);
-                    Assert.That(root.transform.Find("Map card rim N " + map), Is.Not.Null);
+                    Assert.That(card.Find("Map card ground " + map), Is.Not.Null);
+                    Assert.That(card.Find("Map card plate " + map), Is.Not.Null);
+                    Assert.That(card.Find("Map card rim N " + map), Is.Not.Null);
                     Assert.That(scene.MapCard(map), Is.Not.Null);
                 }
                 foreach (var filter in root.GetComponentsInChildren<MeshFilter>())
@@ -97,22 +97,39 @@ namespace Shooter.Tests
         }
 
         [Test]
-        public void DepthBandsAtmosphereAndReducedMotionPolicy()
+        public void RooftopOverlookStagesTheFocusedMapVista()
         {
             var root = new GameObject("MenuStagingDepthTests");
+            bool fog = RenderSettings.fog;
+            var sky = RenderSettings.skybox;
             try
             {
                 var scene = root.AddComponent<ProductMenuScene>();
                 scene.BindVerified(visuals);
-                Assert.That(MenuStagingComposition.InApronBand(root.transform.Find("Apron slab").localPosition.z), Is.True);
+                Assert.That(MenuStagingComposition.InApronBand(root.transform.Find("Roof slab").localPosition.z), Is.True);
                 Assert.That(MenuStagingComposition.InSoldierBand(root.transform.Find("Hero pad A").localPosition.z), Is.True);
                 Assert.That(MenuStagingComposition.InSoldierBand(root.transform.Find("Hero pad C").localPosition.z), Is.True);
-                Assert.That(MenuStagingComposition.InDistantBand(root.transform.Find("Skyline shell").localPosition.z), Is.True);
-                Assert.That(root.transform.Find("Distant haze shell"), Is.Not.Null);
+                Assert.That(root.transform.Find("Skyline shell"), Is.Null, "ADR-123 removed the box diorama.");
                 Assert.That(root.transform.Find("Warm key light"), Is.Not.Null);
-                Assert.That(root.transform.Find("Distant shell wash"), Is.Not.Null);
-                Assert.That(MenuStagingComposition.FogDensity, Is.GreaterThan(.02f));
                 Assert.That(MenuStagingComposition.Lights.Length, Is.GreaterThanOrEqualTo(6));
+
+                // Cards are captured first; the vista is staged once their cameras are gone.
+                scene.CaptureCardsNow();
+                foreach (string map in new[] { "training-compound", "depot-yard", "oil-depot" })
+                {
+                    scene.SetFocusedMap(map);
+                    Assert.That(scene.StagedMap, Is.EqualTo(map));
+                    var shot = Shooter.Presentation.Menus.MenuVistaShot.For(map);
+                    foreach (string other in new[] { "training-compound", "depot-yard", "oil-depot" })
+                        Assert.That(root.transform.Find("Verified map card " + other).gameObject.activeSelf, Is.EqualTo(other == map));
+                    var ground = root.transform.Find("Verified map card " + map).Find("Map card ground " + map);
+                    Assert.That(ground.position.y, Is.LessThan(-shot.DropMeters + .5f).And.GreaterThan(-shot.DropMeters - .5f));
+                    Assert.That(ground.GetComponent<MeshRenderer>().bounds.min.z,
+                        Is.GreaterThan(Shooter.Presentation.Menus.MenuVistaShot.RoofEdgeZ), "The map lies beyond the roof edge.");
+                }
+                Assert.That(scene.Frame, Is.Not.Null);
+                Assert.That(RenderSettings.fog, Is.EqualTo(fog), "Stage atmosphere is scoped to the stage render.");
+                Assert.That(RenderSettings.skybox, Is.SameAs(sky));
 
                 var dust = root.GetComponentsInChildren<Transform>(true)
                     .Where(t => t.name == "Mesh dust").ToArray();

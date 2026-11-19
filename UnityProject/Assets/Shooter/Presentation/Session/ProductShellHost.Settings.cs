@@ -12,6 +12,8 @@ using Shooter.Presentation.Scoreboard;
 using Shooter.Generation.Icons;
 using Shooter.Contracts;
 using Shooter.Presentation.View;
+using Shooter.Presentation.Hud;
+using Shooter.Presentation.Style;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -107,11 +109,12 @@ namespace Shooter.Presentation.Session
         private void DrawSettings(float s)
         {
             if (settingsEditor == null || bindingEditor == null) return;
-            ui.Backdrop(navigation.SettingsReturn == ShellScreen.Paused);
+            ui.Backdrop(navigation.SettingsReturn == ShellScreen.Paused, dim: .5f);
             ui.Header(ShellUiCopy.EyebrowPreferences, ShellUiCopy.SettingsTitle);
             Rect a = ui.Safe;
-            // ADR-085 category glyphs; ADR-114 shared tab strip.
-            int pickedTab = ui.TabStrip(new Rect(a.x, a.y + 74, a.width, 36), "settings.tab", SettingsTabs, SettingsTabIcons, settingsTab);
+            // ADR-123 page skeleton (pure SettingsLayout); ADR-085 category glyphs; ADR-114 shared tab strip.
+            var layout = SettingsLayout.Build(new HudRect(a.x, a.y, a.width, a.height));
+            int pickedTab = ui.TabStrip(R(layout.Tabs), "settings.tab", SettingsTabs, SettingsTabIcons, settingsTab);
             if (pickedTab != settingsTab)
             {
                 settingsTab = pickedTab;
@@ -126,45 +129,49 @@ namespace Shooter.Presentation.Session
             bool vsync = draft.VSync, invertY = draft.InvertY, reducedMotion = draft.ReducedCameraMotion;
             bool reducedFlash = draft.ReducedFlash, subtitles = draft.Subtitles;
             float fov = draft.HipFovDegrees, sens = draft.MouseSensitivity, scale = draft.UiScale, contrast = draft.Contrast;
-            Rect viewport = new Rect(a.x, a.y + 120, a.width, a.height - 214);
+            // ADR-123: controls sit on a Hero frame so sliders read over the vista; the scroll view is inset inside it.
+            Rect controlsPanel = R(layout.Controls);
+            ui.Frame(controlsPanel, FrameKind.Hero);
+            Rect viewport = new Rect(controlsPanel.x + 16, controlsPanel.y + 12, controlsPanel.width - 24, controlsPanel.height - 20);
+            if (layout.Help.HasValue) DrawSettingsHelp(R(layout.Help.Value), settingsTab);
             float contentHeight = settingsTab == 2 ? 300 + bindingEditor.Working.Count * 40 : settingsTab == 3 ? 350 : settingsTab == 1 ? 310 : 285;
             float cw = viewport.width - 30;
             settingsScroll = GUI.BeginScrollView(viewport, settingsScroll, new Rect(0, 0, cw, contentHeight));
             float y = 4;
             if (settingsTab == 0)
             {
-                ui.Section(new Rect(0, y, cw, 18), "SOUND LEVELS");
+                ui.Section(new Rect(0, y, cw, 18), ShellUiCopy.SettingsSound);
                 y += 28;
                 master = SettingsSlider(ref y, cw, "Master volume", master, 0, 1, (master * 100).ToString("0") + "%");
                 effects = SettingsSlider(ref y, cw, "Effects volume", effects, 0, 1, (effects * 100).ToString("0") + "%");
                 uiVol = SettingsSlider(ref y, cw, "Interface volume", uiVol, 0, 1, (uiVol * 100).ToString("0") + "%");
                 music = SettingsSlider(ref y, cw, "Music volume", music, 0, 1, (music * 100).ToString("0") + "%");
-                ui.Label(new Rect(0, y + 8, cw, 36), "Set a channel to 0% to mute it.", 16, TacticalUi.Muted);
+                ui.Label(new Rect(0, y + 8, cw, 36), ShellUiCopy.SettingsMuteHint, UiType.Body, TacticalUi.Muted);
             }
             else if (settingsTab == 1)
             {
-                ui.Section(new Rect(0, y, cw, 18), "DISPLAY OUTPUT");
+                ui.Section(new Rect(0, y, cw, 18), ShellUiCopy.SettingsDisplay);
                 y += 28;
                 if (SettingButton(ref y, cw, "quality", "QUALITY", QualityLabel(quality))) quality = (byte)((quality + 1) % 3);
                 if (SettingButton(ref y, cw, "resolution", "RESOLUTION", width + " x " + height)) CycleResolution(ref width, ref height);
                 if (SettingButton(ref y, cw, "display", "DISPLAY MODE", mode.ToString())) mode = NextDisplayMode(mode);
                 vsync = ui.Toggle(new Rect(0, y, cw, 36), "settings.vsync", "V-SYNC", vsync); y += 46;
                 if (SettingButton(ref y, cw, "cap", "FRAME RATE LIMIT", fps == 0 ? "Uncapped" : fps + " FPS")) fps = NextFpsCap(fps);
-                ui.Label(new Rect(0, y + 10, cw, 56), "Display changes must be kept within 15 seconds. Otherwise your previous display is restored.", 16, TacticalUi.Muted);
+                ui.Label(new Rect(0, y + 10, cw, 56), ShellUiCopy.SettingsDisplayHint, UiType.Body, TacticalUi.Muted);
             }
             else if (settingsTab == 2)
             {
-                ui.Section(new Rect(0, y, cw, 18), "LOOK AND AIM");
+                ui.Section(new Rect(0, y, cw, 18), ShellUiCopy.SettingsLook);
                 y += 28;
                 fov = SettingsSlider(ref y, cw, "Vertical field of view", fov, GameContractVersion.MinHipFovDegrees, GameContractVersion.MaxHipFovDegrees, fov.ToString("0") + " deg");
                 sens = SettingsSlider(ref y, cw, "Mouse sensitivity", sens, GameContractVersion.MinMouseSensitivity, GameContractVersion.MaxMouseSensitivity, sens.ToString("0.00") + " deg / unit");
                 invertY = ui.Toggle(new Rect(0, y, cw, 36), "settings.invert", "INVERT VERTICAL LOOK", invertY); y += 48;
-                ui.Section(new Rect(0, y, cw, 18), "BINDINGS / ESCAPE IS RESERVED FOR PAUSE"); y += 28;
+                ui.Section(new Rect(0, y, cw, 18), ShellUiCopy.SettingsBindings); y += 28;
                 DrawBindingRows(1, ref y, cw);
             }
             else
             {
-                ui.Section(new Rect(0, y, cw, 18), "READABILITY");
+                ui.Section(new Rect(0, y, cw, 18), ShellUiCopy.SettingsReadability);
                 y += 28;
                 scale = SettingsSlider(ref y, cw, "Interface scale", scale, GameContractVersion.MinUiScale, GameContractVersion.MaxUiScale, (scale * 100).ToString("0") + "%");
                 contrast = SettingsSlider(ref y, cw, "Scene contrast", contrast, GameContractVersion.MinContrast, GameContractVersion.MaxContrast, contrast.ToString("0.00"));
@@ -176,28 +183,40 @@ namespace Shooter.Presentation.Session
                 fov, sens, invertY, scale, reducedMotion, reducedFlash, contrast, subtitles, bindingEditor.ToArray(), music));
             GUI.EndScrollView();
 
-            float by = a.yMax - 72;
-            float bw = (a.width - 24) / 4;
+            Rect notice = R(layout.Notice);
             if (settingsApplier != null && settingsApplier.HasPendingDisplayChange)
             {
-                ui.Label(new Rect(a.x, by - 28, a.width, 24), "KEEP THIS DISPLAY?   " + displayClock.RemainingSeconds.ToString("0") + " seconds remaining", 16, TacticalUi.Accent);
-                if (ui.Button(new Rect(a.x, by, bw, 38), "settings.keep", "KEEP", primary: true)) ConfirmPendingDisplay();
-                if (ui.Button(new Rect(a.x + bw + 8, by, bw, 38), "settings.revert", "REVERT")) RevertPendingDisplay();
+                ui.Label(notice, ShellUiCopy.SettingsKeepDisplay(displayClock.RemainingSeconds), UiType.Body, TacticalUi.Accent);
+                if (ui.Button(R(layout.Action(0)), "settings.keep", ShellUiCopy.SettingsKeep, primary: true)) ConfirmPendingDisplay();
+                if (ui.Button(R(layout.Action(1)), "settings.revert", ShellUiCopy.SettingsRevert)) RevertPendingDisplay();
             }
             else
             {
                 GUI.enabled = !bindingEditor.IsListening;
-                if (ui.Button(new Rect(a.x, by, bw, 38), "settings.apply", "APPLY", primary: true)) ApplySettingsDraft();
+                if (ui.Button(R(layout.Action(0)), "settings.apply", ShellUiCopy.SettingsApply, primary: true)) ApplySettingsDraft();
                 GUI.enabled = true;
-                if (ui.Button(new Rect(a.x + bw + 8, by, bw, 38), "settings.cancel", "CANCEL")) CancelSettingsAndClose();
-                if (ui.Button(new Rect(a.x + (bw + 8) * 2, by, bw, 38), "settings.defaults", "DEFAULTS"))
+                if (ui.Button(R(layout.Action(1)), "settings.cancel", ShellUiCopy.ConfirmCancel)) CancelSettingsAndClose();
+                if (ui.Button(R(layout.Action(2)), "settings.defaults", ShellUiCopy.SettingsDefaults))
                 {
-                    settingsEditor.RestoreDefaults(); bindingEditor.RestoreDefaults(); settingsStatus = "Defaults staged. Apply to save.";
+                    settingsEditor.RestoreDefaults(); bindingEditor.RestoreDefaults(); settingsStatus = ShellUiCopy.SettingsDefaultsStaged;
                 }
-                if (ui.Button(new Rect(a.x + (bw + 8) * 3, by, bw, 38), "settings.back", "BACK")) CancelSettingsAndClose();
+                if (ui.Button(R(layout.Action(3)), "settings.back", ShellUiCopy.SetupBack)) CancelSettingsAndClose();
             }
-            ui.Label(new Rect(a.x, a.yMax - 26, a.width, 24), string.IsNullOrEmpty(settingsStatus)
-                ? (settingsEditor.IsDirty ? "Unsaved changes. Apply to save." : "Preferences are saved on this PC.") : settingsStatus, 14, TacticalUi.Muted);
+            string status = string.IsNullOrEmpty(settingsStatus)
+                ? (settingsEditor.IsDirty ? ShellUiCopy.SettingsUnsaved : ShellUiCopy.SettingsSaved) : settingsStatus;
+            ui.KeyHints(status, ShellUiCopy.KeyTab, ShellUiCopy.HintNavigate, ShellUiCopy.KeyEnter, ShellUiCopy.HintSelect, ShellUiCopy.KeyEsc, ShellUiCopy.HintBack);
+        }
+
+        /// <summary>ADR-123 help pane: what the open tab controls and how changes are kept.</summary>
+        private void DrawSettingsHelp(Rect r, int tab)
+        {
+            ui.Frame(r, FrameKind.Hero);
+            string icon = SettingsTabIcons[Mathf.Clamp(tab, 0, SettingsTabIcons.Length - 1)];
+            TacticalUi.Icon(new Rect(r.x + 18, r.y + 18, 28, 28), icon, TacticalUi.Accent);
+            ui.Label(new Rect(r.x + 56, r.y + 22, r.width - 74, 20), SettingsTabs[Mathf.Clamp(tab, 0, SettingsTabs.Length - 1)], UiType.Lead, TacticalUi.Text);
+            TacticalUi.Fill(new Rect(r.x + 18, r.y + 58, r.width - 36, 1), UiInk.Alpha(TacticalUi.PanelEdge, .8f));
+            ui.Label(new Rect(r.x + 18, r.y + 70, r.width - 36, r.height - 120), ShellUiCopy.SettingsHelp(tab), UiType.Body, TacticalUi.Muted);
+            ui.Label(new Rect(r.x + 18, r.yMax - 44, r.width - 36, 32), ShellUiCopy.SettingsHelpFooter, UiType.Caption, TacticalUi.Dim);
         }
 
         private float SettingsSlider(ref float y, float width, string label, float value, float min, float max, string formatted)
@@ -209,7 +228,9 @@ namespace Shooter.Presentation.Session
 
         private bool SettingButton(ref float y, float width, string id, string label, string value)
         {
-            bool next = ui.Button(new Rect(0, y, width, 36), "settings." + id, label + "   /   " + value);
+            // ADR-123: label on the left, current value on the right, like sliders and toggles.
+            bool next = ui.Button(new Rect(0, y, width, 36), "settings." + id, label);
+            ui.Label(new Rect(width * .5f, y, width * .5f - 18, 36), value, UiType.Lead, TacticalUi.Accent, TextAnchor.MiddleRight);
             y += 46;
             return next;
         }
@@ -219,15 +240,15 @@ namespace Shooter.Presentation.Session
             if (bindingEditor == null) return;
             if (bindingEditor.HasConflict)
             {
-                ui.Label(new Rect(0, y, width, 50), "Already assigned to " + bindingEditor.ConflictAction + ". Swap or cancel?", 18, TacticalUi.Accent); y += 54;
-                if (ui.Button(new Rect(0, y, 160, 36), "binding.swap", "SWAP")) bindingEditor.TrySwapConflict();
-                if (ui.Button(new Rect(170, y, 160, 36), "binding.cancel", "CANCEL")) bindingEditor.TryCancelConflict();
+                ui.Label(new Rect(0, y, width, 50), ShellUiCopy.BindingConflict(bindingEditor.ConflictAction), UiType.Lead, TacticalUi.Accent); y += 54;
+                if (ui.Button(new Rect(0, y, 160, 36), "binding.swap", ShellUiCopy.BindingSwap)) bindingEditor.TrySwapConflict();
+                if (ui.Button(new Rect(170, y, 160, 36), "binding.cancel", ShellUiCopy.ConfirmCancel)) bindingEditor.TryCancelConflict();
                 y += 46;
                 return;
             }
             if (bindingEditor.IsListening)
             {
-                ui.Label(new Rect(0, y, width, 46), "Press a key or mouse button for " + bindingEditor.ListeningAction + ". Escape cancels.", 18, TacticalUi.Accent); y += 54;
+                ui.Label(new Rect(0, y, width, 46), ShellUiCopy.BindingListen(bindingEditor.ListeningAction), UiType.Lead, TacticalUi.Accent); y += 54;
                 string? captured = Time.frameCount > bindingListenAfterFrame ? BoundControlMap.TryCapturePressedControlThisFrame() : null;
                 if (captured != null)
                 {
@@ -238,17 +259,12 @@ namespace Shooter.Presentation.Session
             for (int i = 0; i < bindingEditor.Working.Count; i++)
             {
                 var binding = bindingEditor.Working[i];
-                string action = binding.Action == "Slide" ? "Slide (hold Sprint)"
-                    : binding.Action == "LastWeapon" ? "Last weapon"
-                    : binding.Action == "Slot3" ? "Knife"
-                    : binding.Action == "Slot4" ? "Grenade"
-                    : binding.Action == "Pickup" ? "Pick up weapon"
-                    : binding.Action;
+                string action = ShellUiCopy.BindingLabel(binding.Action);
                 bool pause = string.Equals(binding.Action, "Pause", StringComparison.Ordinal);
-                ui.Label(new Rect(0, y, width * .5f, 34), action, 18, TacticalUi.Text, TextAnchor.MiddleLeft);
-                if (pause) ui.Label(new Rect(width * .5f, y, width * .5f, 34), "Escape / reserved", 18, TacticalUi.Muted, TextAnchor.MiddleLeft);
+                ui.Label(new Rect(0, y, width * .5f, 34), action, UiType.Lead, TacticalUi.Text, TextAnchor.MiddleLeft);
+                if (pause) ui.Label(new Rect(width * .5f, y, width * .5f, 34), ShellUiCopy.BindingReserved, UiType.Lead, TacticalUi.Muted, TextAnchor.MiddleLeft);
                 else if (ui.Button(new Rect(width * .5f, y, width * .5f, 34), "binding." + binding.Action,
-                    bindingEditor.IsListening && bindingEditor.ListeningAction == binding.Action ? "LISTENING..." : ""))
+                    bindingEditor.IsListening && bindingEditor.ListeningAction == binding.Action ? ShellUiCopy.BindingListening : ""))
                 {
                     bindingEditor.TryBeginListen(binding.Action);
                     bindingListenAfterFrame = Time.frameCount;

@@ -14,6 +14,7 @@
   <Project Path="Game.Settings/Shooter.Game.Settings.csproj" />
   <Project Path="Generation.Tests/Generation.Tests.csproj" />
   <Project Path="Generation/Shooter.Generation.Core.csproj" />
+  <Project Path="InstallerArt/InstallerArt.csproj" />
   <Project Path="M1Content/M1Content.csproj" />
   <Project Path="MapContent/MapContent.csproj" />
   <Project Path="Presentation.Model/Shooter.Presentation.Model.csproj" />

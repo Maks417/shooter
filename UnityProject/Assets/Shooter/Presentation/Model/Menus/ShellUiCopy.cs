@@ -21,18 +21,19 @@ namespace Shooter.Presentation.Menus
         public const string MainBattles = "OFFLINE BATTLES / TEAM DEATHMATCH";
         public const string MainCardSubtitle = "5v5–15v15  ·  LOCAL BOTS";
         public const string MainNavigate = "TAB / ARROWS  Navigate     ENTER  Select";
-        public const string MapCompound = "TRAINING COMPOUND";
-        public const string MapDepot = "DEPOT YARD";
+        public const string MapCompound = "OLD TOWN";
+        public const string MapDepot = "HARBOUR";
         public const string MapOil = "OIL DEPOT";
 
         public const string SetupTitle = "Choose your fight";
         public const string SetupSelectArea = "SELECT OPERATION AREA";
-        public const string SetupCompound = "01   TRAINING COMPOUND";
-        public const string SetupDepot = "02   DEPOT YARD";
+        public const string SetupCompound = "01   OLD TOWN";
+        public const string SetupDepot = "02   HARBOUR";
         public const string SetupOil = "03   OIL DEPOT";
         public const string SetupMode = "TEAM DEATHMATCH";
         public const string SetupRules = "RULES";
         public const string SetupRulesBody = "150 kills to win\n15 minute time limit";
+        public const string SetupBriefing = "OPERATION BRIEFING";
         public const string SetupStart = "START MATCH";
         public const string SetupBack = "BACK";
 
@@ -50,6 +51,53 @@ namespace Shooter.Presentation.Menus
         public const string ConfirmAccept = "CONFIRM";
 
         public const string SettingsTitle = "Settings";
+        // ADR-123 Settings copy (was inline in the screen).
+        public const string SettingsSound = "SOUND LEVELS";
+        public const string SettingsMuteHint = "Set a channel to 0% to mute it.";
+        public const string SettingsDisplay = "DISPLAY OUTPUT";
+        public const string SettingsDisplayHint = "Display changes must be kept within 15 seconds. Otherwise your previous display is restored.";
+        public const string SettingsLook = "LOOK AND AIM";
+        public const string SettingsBindings = "BINDINGS / ESCAPE IS RESERVED FOR PAUSE";
+        public const string SettingsReadability = "READABILITY";
+        public const string SettingsKeep = "KEEP";
+        public const string SettingsRevert = "REVERT";
+        public const string SettingsApply = "APPLY";
+        public const string SettingsDefaults = "DEFAULTS";
+        public const string SettingsDefaultsStaged = "Defaults staged. Apply to save.";
+        public const string SettingsUnsaved = "Unsaved changes. Apply to save.";
+        public const string SettingsSaved = "Preferences are saved on this PC.";
+        public const string SettingsHelpFooter = "Apply saves every tab at once. Cancel or Back discards the draft.";
+        public const string BindingSwap = "SWAP";
+        public const string BindingListening = "LISTENING...";
+        public const string BindingReserved = "Escape / reserved";
+
+        /// <summary>"KEEP THIS DISPLAY?   12 seconds remaining".</summary>
+        public static string SettingsKeepDisplay(float seconds) =>
+            "KEEP THIS DISPLAY?   " + seconds.ToString("0", System.Globalization.CultureInfo.InvariantCulture) + " seconds remaining";
+
+        public static string BindingConflict(string action) => "Already assigned to " + action + ". Swap or cancel?";
+
+        public static string BindingListen(string action) => "Press a key or mouse button for " + action + ". Escape cancels.";
+
+        /// <summary>Player-facing name of a bindable action.</summary>
+        public static string BindingLabel(string action) => action switch
+        {
+            "Slide" => "Slide (hold Sprint)",
+            "LastWeapon" => "Last weapon",
+            "Slot3" => "Knife",
+            "Slot4" => "Grenade",
+            "Pickup" => "Pick up weapon",
+            _ => action
+        };
+
+        /// <summary>Help-pane text for a Settings tab (Audio, Video, Controls, Accessibility).</summary>
+        public static string SettingsHelp(int tab) => tab switch
+        {
+            0 => "Balance the mix between gunfire and effects, interface cues and music. Changes play back as soon as they are applied.",
+            1 => "Quality sets lighting, shadows and post-processing. Gameplay is identical on every tier. Resolution and display mode changes ask you to keep them.",
+            2 => "Field of view and sensitivity apply to hip fire and aiming alike. Select an action to rebind it, then press the new key or mouse button.",
+            _ => "Interface scale enlarges every menu and the HUD. Reduced motion stops camera sway and menu drift; reduced flash removes muzzle and explosion flashes. Captions show sound cues as text."
+        };
         public const string RecoveryTitle = "Game content needs attention";
         public const string RecoveryRetry = "RETRY";
         public const string RecoveryQuit = "QUIT TO DESKTOP";
@@ -59,6 +107,24 @@ namespace Shooter.Presentation.Menus
         public const string ResultsMain = "MAIN MENU";
         public const string ScoreboardTitle = "Scoreboard";
         public const string TeamDeathmatch = "TEAM DEATHMATCH";
+
+        // ADR-123 shared chrome: footer key hints, loading template, match banners.
+        public const string KeyTab = "TAB";
+        public const string KeyEnter = "ENTER";
+        public const string KeyEsc = "ESC";
+        public const string KeyQe = "Q / E";
+        public const string HintNavigate = "Navigate";
+        public const string HintSelect = "Select";
+        public const string HintBack = "Back";
+        public const string HintResume = "Resume";
+        public const string HintTabs = "Tabs";
+        public const string LoadingActivity = "PREPARING THE BATTLEFIELD";
+        public const string LoadingTip = "FIELD TIP";
+        public const string LoadingCancel = "CANCEL";
+        public const string MatchStartsIn = "MATCH STARTS IN";
+        public const string MatchFight = "FIGHT!";
+        public const string DebriefTitle = "Match debrief";
+        public const string MainRankSection = "RANK";
 
         public const string Play = "PLAY";
         public const string Armory = "ARMORY";
@@ -80,6 +146,9 @@ namespace Shooter.Presentation.Menus
         public const string ArmoryLoadout = "LOADOUT";
         public const string ArmorySaveFailed = "Armory could not be saved; picks apply to this session only.";
         public const string ArmoryLocked = "LOCKED";
+        public const string ArmoryStatDamage = "DAMAGE";
+        public const string ArmoryStatRate = "FIRE RATE";
+        public const string ArmoryStatMagazine = "MAGAZINE";
 
         // ADR-108 Career page and debrief.
         public const string Career = "CAREER";

@@ -12,6 +12,7 @@ using Shooter.Presentation.Scoreboard;
 using Shooter.Generation.Icons;
 using Shooter.Contracts;
 using Shooter.Presentation.View;
+using Shooter.Presentation.Style;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -29,7 +30,7 @@ namespace Shooter.Presentation.Session
             TacticalUi.CombatPlate(new Rect(x, y, w, h), strong: true);
             TacticalUi.Fill(new Rect(x, y, 2, h), TacticalUi.Ally);
             TacticalUi.Fill(new Rect(x + w - 2, y, 2, h), TacticalUi.Enemy);
-            TacticalUi.Fill(new Rect(x + 2, y + h - 1, w - 4, 1), new Color(1f, 1f, 1f, .06f));
+            TacticalUi.Fill(new Rect(x + 2, y + h - 1, w - 4, 1), UiInk.Light(.06f));
             ui.Label(new Rect(x + 10, y + 1, 54, 24), snap.Team1Kills.ToString("000"), 20, TacticalUi.Ally, TextAnchor.MiddleLeft);
             ui.Label(new Rect(x + 64, y + 1, w - 128, 24), TacticalUi.Clock(snap.RemainingActiveTicks), 16, TacticalUi.Text, TextAnchor.MiddleCenter);
             ui.Label(new Rect(x + w - 64, y + 1, 54, 24), snap.Team2Kills.ToString("000"), 20, TacticalUi.Enemy, TextAnchor.MiddleRight);
@@ -43,9 +44,9 @@ namespace Shooter.Presentation.Session
             int remaining = session != null ? session.PreMatchTicksRemaining : 0;
             string? banner = null;
             if (remaining > 0)
-                banner = "MATCH STARTS IN " + ((remaining + 59) / 60).ToString();
+                banner = ShellUiCopy.MatchStartsIn + " " + ((remaining + 59) / 60).ToString();
             else if (session != null && session.PreMatchCountdownTicks > 0 && snap.ActiveTicksElapsed < 60)
-                banner = "FIGHT!";
+                banner = ShellUiCopy.MatchFight;
             if (banner != null)
             {
                 float bw = 640, bh = 84;
@@ -55,7 +56,7 @@ namespace Shooter.Presentation.Session
 
         private void DrawResults(float s)
         {
-            ui.Backdrop();
+            ui.Backdrop(dim: .55f);
             var results = coordinator.RetainedResults;
             if (results == null)
             {
@@ -71,7 +72,7 @@ namespace Shooter.Presentation.Session
         /// <summary>Review-only debrief preview with sample rows (<c>-shooterUiGallery results</c>); loops every 7 s.</summary>
         private void DrawDebriefPreview()
         {
-            ui.Backdrop();
+            ui.Backdrop(dim: .55f);
             var rows = new[]
             {
                 new ScoreboardRow(new ParticipantId(1), "Player", 1, true, 1450, 14, 5, true, true, 7),
@@ -89,7 +90,7 @@ namespace Shooter.Presentation.Session
         {
             bool reduced = ui.ReducedMotion;
             Rect a = ui.Safe;
-            ui.Header(ShellUiCopy.EyebrowDebrief, "Match debrief", ActiveMode.DisplayName.ToUpperInvariant());
+            ui.Header(ShellUiCopy.EyebrowDebrief, ShellUiCopy.DebriefTitle, ActiveMode.DisplayName.ToUpperInvariant());
 
             // Outcome banner: sweeps in from the left, team emblems flank counting scores.
             string outcome = scoreboard.LocalOutcomeLabel(1).ToUpperInvariant();
@@ -98,14 +99,14 @@ namespace Shooter.Presentation.Session
             Rect band = new Rect(a.x, a.y + 74, a.width, 92);
             float reveal = ResultsPresentation.BannerReveal(t, reduced);
             TacticalUi.Plate(new Rect(band.x, band.y, Mathf.Max(8f, band.width * reveal), band.height),
-                UiSdf.Style.Solid(new Color(tone.r * .35f, tone.g * .35f, tone.b * .35f, .92f), Hud.UiShapeParams.PlateRadius)
-                    .WithGradient(new Color(.03f, .04f, .045f, .9f), UiSdf.Gradient.Horizontal).WithShadow());
+                UiSdf.Style.Solid(UiInk.Alpha(UiInk.Dim(tone, .35f), .92f), UiSpace.FrameRadius)
+                    .WithGradient(UiInk.Of(UiTokens.Well, .9f), UiSdf.Gradient.Horizontal).WithShadow());
             TacticalUi.Plate(new Rect(band.x, band.y, Mathf.Max(8f, band.width * reveal), 2f), UiSdf.Style.Solid(tone, 1f));
             float textAlpha = reduced ? 1f : Hud.UiMotion.EnterAlpha(t - .2f);
-            Color ink = new Color(TacticalUi.Text.r, TacticalUi.Text.g, TacticalUi.Text.b, textAlpha);
+            Color ink = UiInk.Alpha(TacticalUi.Text, textAlpha);
             ui.Label(new Rect(band.x, band.y + 8, band.width, 56), outcome, 52, ink, TextAnchor.MiddleCenter);
             string reason = scoreboard.Reason == FinishReason.ScoreLimit ? "SCORE LIMIT REACHED" : "TIME LIMIT REACHED";
-            ui.Label(new Rect(band.x, band.y + 62, band.width, 20), reason, 12, new Color(TacticalUi.Muted.r, TacticalUi.Muted.g, TacticalUi.Muted.b, textAlpha), TextAnchor.MiddleCenter);
+            ui.Label(new Rect(band.x, band.y + 62, band.width, 20), reason, 12, UiInk.Alpha(TacticalUi.Muted, textAlpha), TextAnchor.MiddleCenter);
             for (byte team = 1; team <= 2; team++)
             {
                 Color c = team == 1 ? TacticalUi.Ally : TacticalUi.Enemy;
@@ -134,13 +135,13 @@ namespace Shooter.Presentation.Session
                     float alpha = reduced ? 1f : Hud.UiMotion.EnterAlpha(ResultsPresentation.AwardElapsed(t, i));
                     if (alpha <= 0.01f) continue;
                     Rect card = new Rect(a.x + i * (cw + gap), y, cw, ch);
-                    var plate = UiSdf.Style.Solid(new Color(.05f, .065f, .072f, .94f * alpha), Hud.UiShapeParams.CardRadius)
-                        .WithGradient(new Color(.03f, .04f, .045f, .94f * alpha), UiSdf.Gradient.Vertical).WithShadow(.35f * alpha);
+                    var plate = UiSdf.Style.Solid(UiInk.Of(UiTokens.Panel, .94f * alpha), UiSpace.FrameRadius)
+                        .WithGradient(UiInk.Of(UiTokens.Well, .94f * alpha), UiSdf.Gradient.Vertical).WithShadow(.35f * alpha);
                     if (award.IsLocal) plate = plate.WithGlow(TacticalUi.Accent, 8f, (ui.ReducedFlash ? .14f : .26f) * alpha);
                     TacticalUi.Plate(card, plate);
                     Color team = award.Team == 1 ? TacticalUi.Ally : TacticalUi.Enemy;
-                    ui.Label(new Rect(card.x + 12, card.y + 4, cw - 24, 14), award.Title + "  ·  " + award.Stat, 11, new Color(TacticalUi.Accent.r, TacticalUi.Accent.g, TacticalUi.Accent.b, alpha));
-                    ui.Label(new Rect(card.x + 12, card.y + 20, cw - 24, 22), (award.IsLocal ? "YOU / " : "") + award.DisplayName, 16, new Color(team.r, team.g, team.b, alpha));
+                    ui.Label(new Rect(card.x + 12, card.y + 4, cw - 24, 14), award.Title + "  ·  " + award.Stat, 11, UiInk.Alpha(TacticalUi.Accent, alpha));
+                    ui.Label(new Rect(card.x + 12, card.y + 20, cw - 24, 22), (award.IsLocal ? "YOU / " : "") + award.DisplayName, 16, UiInk.Alpha(team, alpha));
                 }
                 y += DebriefAwardLayout.BlockHeight(DebriefAwardMode.Compact);
             }
@@ -156,8 +157,8 @@ namespace Shooter.Presentation.Session
                     if (alpha <= 0.01f) continue;
                     float rise = reduced ? 0f : (1f - Hud.UiMotion.OutCubic(Hud.UiMotion.Progress(e, .3f))) * 14f;
                     Rect card = new Rect(a.x + i * (cw + gap), y + rise, cw, ch);
-                    var plate = UiSdf.Style.Solid(new Color(.05f, .065f, .072f, .94f * alpha), Hud.UiShapeParams.CardRadius)
-                        .WithGradient(new Color(.03f, .04f, .045f, .94f * alpha), UiSdf.Gradient.Vertical).WithShadow(.35f * alpha);
+                    var plate = UiSdf.Style.Solid(UiInk.Of(UiTokens.Panel, .94f * alpha), UiSpace.FrameRadius)
+                        .WithGradient(UiInk.Of(UiTokens.Well, .94f * alpha), UiSdf.Gradient.Vertical).WithShadow(.35f * alpha);
                     if (award.IsLocal) plate = plate.WithGlow(TacticalUi.Accent, 8f, (ui.ReducedFlash ? .14f : .26f) * alpha);
                     TacticalUi.Plate(card, plate);
                     // Medal centre leaves room for its laurel strokes (about 0.4 × size each side) inside the card.
@@ -166,9 +167,9 @@ namespace Shooter.Presentation.Session
                         Hud.UiMotion.GlintPosition(e, ui.ReducedFlash));
                     float tx = card.x + 110;
                     Color team = award.Team == 1 ? TacticalUi.Ally : TacticalUi.Enemy;
-                    ui.Label(new Rect(tx, card.y + 14, cw - 118, 16), award.Title, 12, new Color(TacticalUi.Accent.r, TacticalUi.Accent.g, TacticalUi.Accent.b, alpha));
-                    ui.Label(new Rect(tx, card.y + 34, cw - 118, 28), (award.IsLocal ? "YOU / " : "") + award.DisplayName, 22, new Color(team.r, team.g, team.b, alpha));
-                    ui.Label(new Rect(tx, card.y + 66, cw - 118, 20), award.Stat, 14, new Color(TacticalUi.Muted.r, TacticalUi.Muted.g, TacticalUi.Muted.b, alpha));
+                    ui.Label(new Rect(tx, card.y + 14, cw - 118, 16), award.Title, 12, UiInk.Alpha(TacticalUi.Accent, alpha));
+                    ui.Label(new Rect(tx, card.y + 34, cw - 118, 28), (award.IsLocal ? "YOU / " : "") + award.DisplayName, 22, UiInk.Alpha(team, alpha));
+                    ui.Label(new Rect(tx, card.y + 66, cw - 118, 20), award.Stat, 14, UiInk.Alpha(TacticalUi.Muted, alpha));
                 }
                 y += DebriefAwardLayout.BlockHeight(DebriefAwardMode.Full);
             }
@@ -179,7 +180,7 @@ namespace Shooter.Presentation.Session
             float tablesVeil = 1f - ResultsPresentation.TablesAlpha(t, reduced);
             if (tablesVeil > .005f)
                 TacticalUi.Fill(new Rect(a.x - 4, y - 4, a.width + 8, tableHeight + 8),
-                    new Color(TacticalUi.Background.r, TacticalUi.Background.g, TacticalUi.Background.b, tablesVeil));
+                    UiInk.Alpha(TacticalUi.Background, tablesVeil));
 
             float by = a.yMax - 52;
             if (ui.Button(new Rect(a.x, by, 180, 40), "results.replay", ShellUiCopy.ResultsPlayAgain, primary: true)) RestartMatch();
@@ -198,7 +199,7 @@ namespace Shooter.Presentation.Session
             Rect a = ui.Safe;
             var snap = session?.TryAcquireSnapshot();
             var rows = scoreboard.Rows;
-            TacticalUi.Fill(new Rect(-40, -60, ui.Width + 80, ui.Height + 120), new Color(.01f, .016f, .02f, .5f));
+            TacticalUi.Fill(new Rect(-40, -60, ui.Width + 80, ui.Height + 120), UiInk.Shade(.5f));
 
             // Header: team totals vs the score limit, alive counts and the match clock.
             float y0 = a.y + 2;
@@ -223,7 +224,7 @@ namespace Shooter.Presentation.Session
                 ui.Label(aliveRect, alive + " / " + size + " ALIVE", 11, TacticalUi.Muted, left ? TextAnchor.MiddleLeft : TextAnchor.MiddleRight);
                 float fill = halfBar * Mathf.Clamp01(kills / (float)ActiveMode.ScoreLimit);
                 Rect track = left ? new Rect(a.x, y0 + 44, halfBar, 3) : new Rect(a.xMax - halfBar, y0 + 44, halfBar, 3);
-                TacticalUi.Fill(track, new Color(1f, 1f, 1f, .08f));
+                TacticalUi.Fill(track, UiInk.Light(.08f));
                 TacticalUi.Fill(left ? new Rect(track.x, track.y, fill, 3) : new Rect(track.xMax - fill, track.y, fill, 3), color);
             }
 
@@ -233,7 +234,7 @@ namespace Shooter.Presentation.Session
             {
                 if (!rows[i].IsLocal) continue;
                 var me = rows[i];
-                TacticalUi.Fill(new Rect(a.x, y1, a.width, 22), new Color(TacticalUi.Accent.r, TacticalUi.Accent.g, TacticalUi.Accent.b, .1f));
+                TacticalUi.Fill(new Rect(a.x, y1, a.width, 22), UiInk.Alpha(TacticalUi.Accent, .1f));
                 TacticalUi.Fill(new Rect(a.x, y1, 3, 22), TacticalUi.Accent);
                 string line = "YOU   #" + ScoreboardStats.LocalOverallRank(rows) + " OF " + rows.Count
                     + "     SCORE " + me.Score + "     KILLS " + me.Kills + "     DEATHS " + me.Deaths
@@ -268,7 +269,7 @@ namespace Shooter.Presentation.Session
                 ui.Label(new Rect(killsX, y2, 36, 16), "K", 11, TacticalUi.Muted, TextAnchor.MiddleRight);
                 ui.Label(new Rect(deathsX, y2, 36, 16), "D", 11, TacticalUi.Muted, TextAnchor.MiddleRight);
                 ui.Label(new Rect(kdX, y2, 44, 16), "K/D", 11, TacticalUi.Muted, TextAnchor.MiddleRight);
-                TacticalUi.Fill(new Rect(x, y2 + 18, w, 2), new Color(color.r, color.g, color.b, .85f));
+                TacticalUi.Fill(new Rect(x, y2 + 18, w, 2), UiInk.Alpha(color, .85f));
 
                 bool pinHere = pinLocal && team == localTeam;
                 int slots = pinHere ? metrics.VisibleRows - 1 : metrics.VisibleRows;
@@ -283,7 +284,7 @@ namespace Shooter.Presentation.Session
                     if (pinHere && row.IsLocal)
                     {
                         float py = rowsTop + slots * metrics.RowHeight;
-                        TacticalUi.Fill(new Rect(x, py - 1, w, 1), new Color(TacticalUi.Accent.r, TacticalUi.Accent.g, TacticalUi.Accent.b, .6f));
+                        TacticalUi.Fill(new Rect(x, py - 1, w, 1), UiInk.Alpha(TacticalUi.Accent, .6f));
                         DrawLiveRow(new Rect(x, py, w, metrics.RowHeight - 2), row, rowIndex + 1, color, false, font);
                     }
                     rowIndex++;
@@ -309,20 +310,20 @@ namespace Shooter.Presentation.Session
             LiveColumns(r.x, r.width, out float rankX, out float nameX, out float scoreX, out float killsX, out float deathsX, out float kdX);
             if (row.IsLocal)
             {
-                TacticalUi.Fill(r, new Color(TacticalUi.Accent.r, TacticalUi.Accent.g, TacticalUi.Accent.b, .2f));
+                TacticalUi.Fill(r, UiInk.Alpha(TacticalUi.Accent, .2f));
                 TacticalUi.Fill(new Rect(r.x, r.y, 3, r.height), TacticalUi.Accent);
             }
-            else if (stripe) TacticalUi.Fill(r, new Color(1f, 1f, 1f, .05f));
+            else if (stripe) TacticalUi.Fill(r, UiInk.Light(.05f));
             float alpha = row.Alive ? 1f : .45f;
-            Color text = new Color(TacticalUi.Text.r, TacticalUi.Text.g, TacticalUi.Text.b, alpha);
-            Color muted = new Color(TacticalUi.Muted.r, TacticalUi.Muted.g, TacticalUi.Muted.b, alpha);
+            Color text = UiInk.Alpha(TacticalUi.Text, alpha);
+            Color muted = UiInk.Alpha(TacticalUi.Muted, alpha);
             ui.Label(new Rect(rankX, r.y, 24, r.height), rank.ToString(), font - 2, muted, TextAnchor.MiddleRight);
             // Alive: solid team marker; down: hollow marker plus dimmed row (shape cue, not colour alone).
             float m = 7f, my = r.y + (r.height - m) * .5f, mx = rankX + 30;
             if (row.Alive) TacticalUi.Fill(new Rect(mx, my, m, m), team);
             else
             {
-                Color edge = new Color(team.r, team.g, team.b, .6f);
+                Color edge = UiInk.Alpha(team, .6f);
                 TacticalUi.Fill(new Rect(mx, my, m, 1), edge);
                 TacticalUi.Fill(new Rect(mx, my + m - 1, m, 1), edge);
                 TacticalUi.Fill(new Rect(mx, my, 1, m), edge);
@@ -336,7 +337,7 @@ namespace Shooter.Presentation.Session
                 if (DrawRankIcon(new Rect(nameX, r.y + (r.height - icon) * .5f, icon, icon), row.RankIndex, alpha)) nameX += icon + 6f;
             }
             ui.Label(new Rect(nameX, r.y, scoreX - nameX - 4, r.height), name, font, row.IsLocal ? TacticalUi.Accent : text, TextAnchor.MiddleLeft);
-            ui.Label(new Rect(scoreX, r.y, 56, r.height), row.Score.ToString(), font, new Color(TacticalUi.Accent.r, TacticalUi.Accent.g, TacticalUi.Accent.b, alpha), TextAnchor.MiddleRight);
+            ui.Label(new Rect(scoreX, r.y, 56, r.height), row.Score.ToString(), font, UiInk.Alpha(TacticalUi.Accent, alpha), TextAnchor.MiddleRight);
             ui.Label(new Rect(killsX, r.y, 36, r.height), row.Kills.ToString(), font, text, TextAnchor.MiddleRight);
             ui.Label(new Rect(deathsX, r.y, 36, r.height), row.Deaths.ToString(), font, muted, TextAnchor.MiddleRight);
             ui.Label(new Rect(kdX, r.y, 44, r.height), ScoreboardStats.KillDeathRatio(row.Kills, row.Deaths), font - 1, muted, TextAnchor.MiddleRight);
@@ -369,8 +370,8 @@ namespace Shooter.Presentation.Session
                 ui.Panel(new Rect(x, y, w, height - 8));
                 // Header band: team-tinted gradient, faction emblem, name and kills.
                 Rect band = new Rect(x, y, w, 40);
-                TacticalUi.Plate(band, UiSdf.Style.Solid(new Color(color.r, color.g, color.b, .28f), Hud.UiShapeParams.PlateRadius)
-                    .WithGradient(new Color(color.r, color.g, color.b, 0f), UiSdf.Gradient.Horizontal));
+                TacticalUi.Plate(band, UiSdf.Style.Solid(UiInk.Alpha(color, .28f), Hud.UiShapeParams.PlateRadius)
+                    .WithGradient(UiInk.Alpha(color, 0f), UiSdf.Gradient.Horizontal));
                 TacticalUi.Fill(new Rect(x + 4, y, w - 8, 2), color);
                 bool emblem = TacticalUi.Icon(new Rect(x + 10, y + 6, 28, 28), team == 1 ? IconLibrary.EmblemAlly : IconLibrary.EmblemEnemy, color, shadow: true);
                 float tx = emblem ? x + 46 : x + 12;
@@ -392,8 +393,8 @@ namespace Shooter.Presentation.Session
                     if (!metrics.IsVisible(debriefFirstRow, rowIndex)) { rowIndex++; continue; }
                     float ry = rowY + 20 + (rowIndex - debriefFirstRow) * rh;
                     Rect rowRect = new Rect(x + 4, ry, w - 8, rh - 3);
-                    Color rowFill = row.IsLocal ? new Color(TacticalUi.Accent.r, TacticalUi.Accent.g, TacticalUi.Accent.b, .16f)
-                        : rowIndex % 2 == 0 ? new Color(.05f, .065f, .07f, .7f) : new Color(.035f, .048f, .055f, .55f);
+                    Color rowFill = row.IsLocal ? UiInk.Alpha(TacticalUi.Accent, .16f)
+                        : rowIndex % 2 == 0 ? UiInk.Of(UiTokens.Panel, .7f) : UiInk.Of(UiTokens.Well, .55f);
                     var rowStyle = UiSdf.Style.Solid(rowFill, Hud.UiShapeParams.ChipRadius);
                     if (row.IsLocal) rowStyle = rowStyle.WithGlow(TacticalUi.Accent, 6f, ui.ReducedFlash ? .1f : .18f);
                     TacticalUi.Plate(rowRect, rowStyle);
@@ -421,10 +422,10 @@ namespace Shooter.Presentation.Session
         private static void DrawScrollRail(Rect track, TeamTableMetrics metrics, int firstRow, Color color)
         {
             if (track.height <= 0f || metrics.TotalRows <= 0) return;
-            TacticalUi.Fill(track, new Color(1f, 1f, 1f, .08f));
+            TacticalUi.Fill(track, UiInk.Light(.08f));
             float thumb = track.height * metrics.VisibleRows / metrics.TotalRows;
             float top = track.y + track.height * metrics.ClampFirstRow(firstRow) / metrics.TotalRows;
-            TacticalUi.Fill(new Rect(track.x, top, track.width, Mathf.Max(6f, thumb)), new Color(color.r, color.g, color.b, .8f));
+            TacticalUi.Fill(new Rect(track.x, top, track.width, Mathf.Max(6f, thumb)), UiInk.Alpha(color, .8f));
         }
     }
 }

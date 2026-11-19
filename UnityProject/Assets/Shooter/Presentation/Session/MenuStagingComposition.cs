@@ -4,8 +4,9 @@ using UnityEngine;
 namespace Shooter.Presentation.Session
 {
     /// <summary>
-    /// Battlefield V–like staging depth bands and scoped atmosphere for the cosmetic menu only.
-    /// Numeric layout recipes; no imported backgrounds, generators, or gameplay adapters.
+    /// Staging bands, camera and lights for the cosmetic menu only (ADR-123: a rooftop overlook in front of the
+    /// focused map's vista, see <c>MenuVistaShot</c>). Numeric layout recipes; no imported backgrounds, generators,
+    /// or gameplay adapters.
     /// </summary>
     public static class MenuStagingComposition
     {
@@ -26,8 +27,9 @@ namespace Shooter.Presentation.Session
         public static readonly Color AmbientEquator = new Color(.13f, .175f, .205f);
         public static readonly Color AmbientGround = new Color(.055f, .06f, .055f);
 
-        public static readonly Vector3 CameraPosition = new Vector3(-1.45f, 1.58f, -3.25f);
-        public static readonly Vector3 CameraLookAt = new Vector3(1.35f, 1.05f, 2.55f);
+        public static readonly Vector3 CameraPosition = new Vector3(-1.6f, 1.7f, -7.5f);
+        // ADR-123: the squad sits in the right third, leaving the left rail and the horizon line open over the vista.
+        public static readonly Vector3 CameraLookAt = new Vector3(-.1f, .28f, 6f);
         public const float CameraFieldOfView = 34f;
 
         /// <summary>Orthographic overview framing so map solids sit inside a readable plate.</summary>

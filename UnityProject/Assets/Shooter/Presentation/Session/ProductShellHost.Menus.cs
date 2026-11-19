@@ -7,7 +7,9 @@ using Shooter.Game.Session;
 using Shooter.Game.Settings;
 using Shooter.Presentation.Input;
 using Shooter.Presentation.Audio;
+using Shooter.Presentation.Hud;
 using Shooter.Presentation.Menus;
+using Shooter.Presentation.Style;
 using Shooter.Presentation.Scoreboard;
 using Shooter.Generation.Icons;
 using Shooter.Contracts;
@@ -20,89 +22,114 @@ namespace Shooter.Presentation.Session
     /// <summary>Main, setup, loading, pause and confirm screens of the product shell.</summary>
     public sealed partial class ProductShellHost : MonoBehaviour
     {
+        /// <summary>
+        /// ADR-123 Main: brand lockup, headline and navigation on a scrimmed rail over the live map vista; operation cards
+        /// along the bottom right. Hovering or focusing a card stages that map's vista. Rects come from the pure
+        /// <see cref="MainMenuLayout"/>.
+        /// </summary>
         private void DrawMain(float s)
         {
             ui.Backdrop();
-            Rect a = ui.Safe;
-            float navWidth = Mathf.Min(236, a.width * .22f);
-            ui.BrandMark(new Rect(a.x, a.y, navWidth, 28), ShellUiCopy.Brand);
-            ui.Section(new Rect(a.x, a.y + 34, navWidth, 16), ShellUiCopy.LocalMatch);
-            ui.Label(new Rect(a.x, a.y + 58, navWidth + 56, 64), ShellUiCopy.MainHeadline, 28);
-            float y = a.y + 140;
-            if (ui.Button(new Rect(a.x, y, navWidth, 36), "main.play", ShellUiCopy.Play, quiet: true)) navigation.OpenSetup();
-            if (ui.Button(new Rect(a.x, y + 40, navWidth, 36), "main.armory", ShellUiCopy.Armory, quiet: true)) OpenArmory();
-            if (ui.Button(new Rect(a.x, y + 80, navWidth, 36), "main.career", ShellUiCopy.Career, quiet: true)) OpenCareer();
-            if (ui.Button(new Rect(a.x, y + 120, navWidth, 36), "main.settings", ShellUiCopy.Settings, quiet: true)) OpenSettingsScreen();
-            if (ui.Button(new Rect(a.x, y + 160, navWidth, 36), "main.quit", ShellUiCopy.Quit, quiet: true))
+            var l = MainMenuLayout.Build(new HudRect(ui.Safe.x, ui.Safe.y, ui.Safe.width, ui.Safe.height));
+            ui.BrandMark(R(l.Brand), ShellUiCopy.Brand);
+            if (l.Compact) ui.LabelFit(R(l.Headline), ShellUiCopy.MainHeadline.Replace('\n', ' '), UiType.Heading + 4, TacticalUi.Text, TextAnchor.UpperLeft, UiType.Heading);
+            else
             {
-                quitRequested = true;
-                Application.Quit();
+                ui.Section(new Rect(l.Headline.X, l.Headline.Y, l.Headline.Width, 16), ShellUiCopy.LocalMatch);
+                ui.Label(new Rect(l.Headline.X, l.Headline.Y + 22, l.Headline.Width, l.Headline.Height - 22), ShellUiCopy.MainHeadline, UiType.Title);
+            }
+            string[] ids = { "main.play", "main.armory", "main.career", "main.settings", "main.quit" };
+            string[] labels = { ShellUiCopy.Play, ShellUiCopy.Armory, ShellUiCopy.Career, ShellUiCopy.Settings, ShellUiCopy.Quit };
+            for (int i = 0; i < MainMenuLayout.NavCount; i++)
+            {
+                Rect row = R(l.Nav(i));
+                if (!ui.Button(row, ids[i], labels[i], quiet: true)) continue;
+                switch (i)
+                {
+                    case 0: navigation.OpenSetup(); break;
+                    case 1: OpenArmory(); break;
+                    case 2: OpenCareer(); break;
+                    case 3: OpenSettingsScreen(); break;
+                    default:
+                        quitRequested = true;
+                        Application.Quit();
+                        break;
+                }
             }
             // ADR-108: current rank under the menu, one click from the Career page.
-            DrawRankBadge(new Rect(a.x, y + 210, navWidth + 40, 44), "main.rank");
+            DrawRankBadge(R(l.Rank), "main.rank");
             if (armory != null)
             {
-                ui.Section(new Rect(a.x, y + 266, navWidth, 16), ShellUiCopy.ArmoryLoadout);
-                ui.Label(new Rect(a.x, y + 286, navWidth + 40, 40), armory.Summary, 14, TacticalUi.Muted);
+                ui.Section(new Rect(l.Loadout.X, l.Loadout.Y, l.Loadout.Width, 16), ShellUiCopy.ArmoryLoadout);
+                ui.LabelFit(new Rect(l.Loadout.X, l.Loadout.Y + 24, l.Loadout.Width, 20), armory.Summary, UiType.Small, TacticalUi.Muted, TextAnchor.UpperLeft, UiType.Caption);
             }
-            float cardsX = a.x + navWidth + 28;
-            float cardsWidth = a.xMax - cardsX;
-            float cardGap = 10f;
-            float cardWidth = (cardsWidth - cardGap * 2f) / 3f;
-            float cardHeight = Mathf.Min(198, a.height * .38f);
-            float cardsY = a.yMax - cardHeight - 22;
-            ui.Section(new Rect(cardsX, cardsY - 22, cardsWidth, 16), ShellUiCopy.MainBattles);
-            DrawMainMapCard(new Rect(cardsX, cardsY, cardWidth, cardHeight), "main.compound", WellKnownMaps.TrainingCompound, ShellUiCopy.MapCompound);
-            DrawMainMapCard(new Rect(cardsX + cardWidth + cardGap, cardsY, cardWidth, cardHeight), "main.depot", WellKnownMaps.DepotYard, ShellUiCopy.MapDepot);
-            DrawMainMapCard(new Rect(cardsX + (cardWidth + cardGap) * 2f, cardsY, cardWidth, cardHeight), "main.oil", WellKnownMaps.OilDepot, ShellUiCopy.MapOil);
+            ui.Section(R(l.CardsLabel), ShellUiCopy.MainBattles);
+            string? hovered = null;
+            hovered = DrawMainMapCard(R(l.Card(0, 3)), "main.compound", WellKnownMaps.TrainingCompound, ShellUiCopy.MapCompound) ?? hovered;
+            hovered = DrawMainMapCard(R(l.Card(1, 3)), "main.depot", WellKnownMaps.DepotYard, ShellUiCopy.MapDepot) ?? hovered;
+            hovered = DrawMainMapCard(R(l.Card(2, 3)), "main.oil", WellKnownMaps.OilDepot, ShellUiCopy.MapOil) ?? hovered;
+            // ADR-123: the vista follows the card under the pointer or keyboard focus, else the selected operation.
+            menuScene?.SetFocusedMap(hovered ?? setup!.SelectedMapId.Value);
             string status = !string.IsNullOrEmpty(navigation.StatusMessage) ? navigation.StatusMessage : menuScene?.Status ?? "";
-            DrawFooter(string.IsNullOrEmpty(status) ? ShellUiCopy.MainNavigate : status);
+            DrawFooter(status);
         }
 
+        /// <summary>ADR-123 Setup: operation list and briefing on the left, mode and roster on the right, over the vista.</summary>
         private void DrawSetup(float s)
         {
-            ui.Backdrop();
-            ui.Header(ShellUiCopy.EyebrowBriefing, ShellUiCopy.SetupTitle);
+            ui.Backdrop(dim: .3f);
+            ui.Header(ShellUiCopy.EyebrowBriefing, ShellUiCopy.SetupTitle, ShellUiCopy.LocalMatch);
             Rect a = ui.Safe;
-            float y = a.y + 78;
-            float left = a.width * .54f;
-            float rx = a.x + left + 20;
-            float rw = a.width - left - 20;
+            var actions = ShellPage.Actions(new HudRect(a.x, a.y, a.width, a.height));
+            float y = a.y + ShellPage.HeaderHeight;
+            float left = Mathf.Min(560, a.width * .52f);
+            float rx = a.x + left + 24;
+            float rw = Mathf.Min(420, a.xMax - rx);
             ui.Section(new Rect(a.x, y, left, 18), ShellUiCopy.SetupSelectArea);
-            DrawSetupMapButton(new Rect(a.x, y + 24, left, 36), "setup.compound", WellKnownMaps.TrainingCompound, ShellUiCopy.SetupCompound);
-            DrawSetupMapButton(new Rect(a.x, y + 64, left, 36), "setup.depot", WellKnownMaps.DepotYard, ShellUiCopy.SetupDepot);
-            DrawSetupMapButton(new Rect(a.x, y + 104, left, 36), "setup.oil", WellKnownMaps.OilDepot, ShellUiCopy.SetupOil);
-            float previewH = Mathf.Min(118, a.height * .22f);
-            Rect preview = new Rect(a.x, y + 150, left, previewH);
-            ui.Panel(preview, rail: true);
-            Texture? card = menuScene?.MapCard(setup.SelectedMapId.Value);
-            if (card != null && Event.current.type == EventType.Repaint)
-                GUI.DrawTexture(new Rect(preview.x + 4, preview.y + 4, preview.width * .42f, preview.height - 8), card, ScaleMode.ScaleAndCrop);
-            float textX = card != null ? preview.x + preview.width * .44f : preview.x + 14;
-            float textW = card != null ? preview.width * .54f : preview.width - 28;
-            ui.Label(new Rect(textX, preview.y + 12, textW, 22), setup.SelectedDisplayName.ToUpperInvariant(), 16, TacticalUi.Text);
-            ui.Label(new Rect(textX, preview.y + 36, textW, preview.height - 48), setup.SelectedDescription, 16, TacticalUi.Muted);
+            DrawSetupMapButton(new Rect(a.x, y + 26, left, 36), "setup.compound", WellKnownMaps.TrainingCompound, ShellUiCopy.SetupCompound);
+            DrawSetupMapButton(new Rect(a.x, y + 66, left, 36), "setup.depot", WellKnownMaps.DepotYard, ShellUiCopy.SetupDepot);
+            DrawSetupMapButton(new Rect(a.x, y + 106, left, 36), "setup.oil", WellKnownMaps.OilDepot, ShellUiCopy.SetupOil);
+            float previewTop = y + 154;
+            float previewH = Mathf.Min(150, actions.Y - 16 - previewTop);
+            Rect preview = new Rect(a.x, previewTop, left, previewH);
+            ui.Frame(preview, FrameKind.Hero);
+            Texture? card = menuScene?.MapCard(setup!.SelectedMapId.Value);
+            float textX = preview.x + 16, textW = preview.width - 32;
+            if (card != null)
+            {
+                Rect media = new Rect(preview.x + 10, preview.y + 10, preview.width * .4f, preview.height - 20);
+                TacticalUi.DrawFrame(media, FrameKind.Card);
+                if (Event.current.type == EventType.Repaint)
+                    GUI.DrawTexture(new Rect(media.x + 2, media.y + 2, media.width - 4, media.height - 4), card, ScaleMode.ScaleAndCrop);
+                textX = media.xMax + 14;
+                textW = preview.xMax - textX - 14;
+            }
+            ui.Label(new Rect(textX, preview.y + 14, textW, 16), ShellUiCopy.SetupBriefing, UiType.Caption, TacticalUi.Accent);
+            ui.LabelFit(new Rect(textX, preview.y + 32, textW, 28), setup!.SelectedDisplayName.ToUpperInvariant(), UiType.Heading, TacticalUi.Text, TextAnchor.UpperLeft, UiType.Lead);
+            ui.Label(new Rect(textX, preview.y + 64, textW, preview.height - 72), setup.SelectedDescription, UiType.Small, TacticalUi.Muted);
+
             ui.Section(new Rect(rx, y, rw, 18), ShellUiCopy.SetupMode);
             float half = (rw - 8) * .5f;
-            if (ui.Button(new Rect(rx, y + 24, half, 36), "setup.5", "5 v 5", selected: setup.SelectedTeamSize == 5)) setup.SelectTeamSize(5);
-            if (ui.Button(new Rect(rx + half + 8, y + 24, half, 36), "setup.8", "8 v 8", selected: setup.SelectedTeamSize == 8)) setup.SelectTeamSize(8);
-            if (ui.Button(new Rect(rx, y + 64, half, 36), "setup.10", "10 v 10", selected: setup.SelectedTeamSize == 10)) setup.SelectTeamSize(10);
-            if (ui.Button(new Rect(rx + half + 8, y + 64, half, 36), "setup.15", "15 v 15", selected: setup.SelectedTeamSize == 15)) setup.SelectTeamSize(15);
-            ui.Panel(new Rect(rx, y + 110, rw, 128), accentTop: true);
-            ui.Label(new Rect(rx + 14, y + 122, rw - 28, 22), ShellUiCopy.SetupRules, 12, TacticalUi.Accent);
-            ui.Label(new Rect(rx + 14, y + 144, rw - 28, 40), ShellUiCopy.SetupRulesBody, 18);
-            ui.Label(new Rect(rx + 14, y + 188, rw - 28, 40), ShellUiCopy.SetupRosterLine(setup.SelectedTeamSize), 16, TacticalUi.Muted);
-            if (armory != null)
+            if (ui.Button(new Rect(rx, y + 26, half, 36), "setup.5", "5 v 5", selected: setup.SelectedTeamSize == 5)) setup.SelectTeamSize(5);
+            if (ui.Button(new Rect(rx + half + 8, y + 26, half, 36), "setup.8", "8 v 8", selected: setup.SelectedTeamSize == 8)) setup.SelectTeamSize(8);
+            if (ui.Button(new Rect(rx, y + 66, half, 36), "setup.10", "10 v 10", selected: setup.SelectedTeamSize == 10)) setup.SelectTeamSize(10);
+            if (ui.Button(new Rect(rx + half + 8, y + 66, half, 36), "setup.15", "15 v 15", selected: setup.SelectedTeamSize == 15)) setup.SelectTeamSize(15);
+            Rect rules = new Rect(rx, y + 114, rw, 118);
+            ui.Frame(rules, FrameKind.Plate, rail: true);
+            ui.Label(new Rect(rx + 16, y + 126, rw - 32, 16), ShellUiCopy.SetupRules, UiType.Caption, TacticalUi.Accent);
+            ui.Label(new Rect(rx + 16, y + 146, rw - 32, 44), ShellUiCopy.SetupRulesBody, UiType.Lead);
+            ui.Label(new Rect(rx + 16, y + 194, rw - 32, 24), ShellUiCopy.SetupRosterLine(setup.SelectedTeamSize), UiType.Small, TacticalUi.Muted);
+            if (armory != null && y + 280 < actions.Y)
             {
                 // ADR-107: the loadout this match will use, one click from the Armory.
-                ui.Section(new Rect(rx, y + 250, rw, 18), ShellUiCopy.ArmoryLoadout);
-                if (ui.Button(new Rect(rx, y + 274, rw, 36), "setup.armory", armory.Summary)) OpenArmory();
+                ui.Section(new Rect(rx, y + 244, rw, 18), ShellUiCopy.ArmoryLoadout);
+                if (ui.Button(new Rect(rx, y + 270, rw, 36), "setup.armory", armory.Summary)) OpenArmory();
             }
             GUI.enabled = !coordinator.StartInFlight;
-            if (ui.Button(new Rect(rx, a.yMax - 66, rw, 44), "setup.start", ShellUiCopy.SetupStart, primary: true)) StartSelectedMatch();
+            if (ui.Button(new Rect(rx, actions.Y, rw, actions.Height), "setup.start", ShellUiCopy.SetupStart, primary: true)) StartSelectedMatch();
             GUI.enabled = true;
-            if (ui.Button(new Rect(a.x, a.yMax - 66, 150, 44), "setup.back", ShellUiCopy.SetupBack)) navigation.ResetToMain();
-            DrawFooter(navigation.StatusMessage);
+            if (ui.Button(new Rect(a.x, actions.Y, 160, actions.Height), "setup.back", ShellUiCopy.SetupBack)) navigation.ResetToMain();
+            DrawFooter(navigation.StatusMessage, back: true);
         }
 
         private void DrawLoading(float s)
@@ -144,40 +171,44 @@ namespace Shooter.Presentation.Session
             await Task.Yield();
         }
 
+        /// <summary>ADR-123 Pause: command column and a hold briefing on a modal frame over the dimmed match.</summary>
         private void DrawPause(float s)
         {
             ui.Backdrop(overlay: true);
-            ui.Header(ShellUiCopy.EyebrowPaused, ShellUiCopy.PauseTitle);
+            ui.Header(ShellUiCopy.EyebrowPaused, ShellUiCopy.PauseTitle, ActiveMode.DisplayName.ToUpperInvariant());
             Rect a = ui.Safe;
-            float w = Mathf.Min(300, a.width * .40f), y = a.y + 82;
-            ui.Section(new Rect(a.x, y - 22, w, 18), ShellUiCopy.PauseCommands);
-            if (ui.Button(new Rect(a.x, y, w, 42), "pause.resume", ShellUiCopy.Resume, primary: true)) ResumeMatch();
-            if (ui.Button(new Rect(a.x, y + 50, w, 38), "pause.settings", ShellUiCopy.Settings)) OpenSettingsScreen();
-            if (ui.Button(new Rect(a.x, y + 96, w, 38), "pause.restart", ShellUiCopy.RestartMatch)) navigation.AskRestart();
-            if (ui.Button(new Rect(a.x, y + 142, w, 38), "pause.leave", ShellUiCopy.MainMenu)) navigation.AskLeave();
-            float px = a.x + w + 24;
-            float pw = a.xMax - px;
-            ui.Panel(new Rect(px, y, pw, 180), accentTop: true, rail: true);
-            ui.Label(new Rect(px + 16, y + 16, pw - 32, 22), ShellUiCopy.PauseHold, 14, TacticalUi.Accent);
-            ui.Label(new Rect(px + 16, y + 46, pw - 32, 72), ShellUiCopy.PauseBody, 18, TacticalUi.Muted);
-            ui.Label(new Rect(px + 16, y + 128, pw - 32, 36), ShellUiCopy.PauseHint, 14, TacticalUi.Muted);
-            DrawFooter(ShellUiCopy.PauseFooter);
+            float w = Mathf.Min(320, a.width * .4f), y = a.y + ShellPage.HeaderHeight + 26;
+            ui.Section(new Rect(a.x, y - 26, w, 18), ShellUiCopy.PauseCommands);
+            if (ui.Button(new Rect(a.x, y, w, 44), "pause.resume", ShellUiCopy.Resume, primary: true)) ResumeMatch();
+            if (ui.Button(new Rect(a.x, y + 52, w, 40), "pause.settings", ShellUiCopy.Settings)) OpenSettingsScreen();
+            if (ui.Button(new Rect(a.x, y + 100, w, 40), "pause.restart", ShellUiCopy.RestartMatch)) navigation.AskRestart();
+            if (ui.Button(new Rect(a.x, y + 148, w, 40), "pause.leave", ShellUiCopy.MainMenu)) navigation.AskLeave();
+            float px = a.x + w + 28;
+            float pw = Mathf.Min(520, a.xMax - px);
+            Rect panel = new Rect(px, y, pw, 188);
+            ui.Frame(panel, FrameKind.Modal);
+            ui.Label(new Rect(px + 20, y + 18, pw - 40, 16), ShellUiCopy.PauseHold, UiType.Caption, TacticalUi.Accent);
+            ui.Label(new Rect(px + 20, y + 42, pw - 40, 72), ShellUiCopy.PauseBody, UiType.Lead, TacticalUi.Text);
+            ui.Label(new Rect(px + 20, y + 124, pw - 40, 44), ShellUiCopy.PauseHint, UiType.Small, TacticalUi.Muted);
+            ui.KeyHints("", ShellUiCopy.KeyEsc, ShellUiCopy.HintResume, ShellUiCopy.KeyTab, ShellUiCopy.HintNavigate, ShellUiCopy.KeyEnter, ShellUiCopy.HintSelect);
         }
 
+        /// <summary>ADR-123 confirm dialog: centred modal frame, the safe choice focused first.</summary>
         private void DrawConfirm(float s, string message, Action confirm, Action cancel)
         {
             ui.Backdrop(overlay: true);
-            float w = Mathf.Min(540, ui.Safe.width), x = (ui.Width - w) * .5f, y = ui.Height * .5f - 92;
-            ui.Panel(new Rect(x, y, w, 184), accentTop: true);
-            ui.Label(new Rect(x + 22, y + 18, w - 44, 24), ShellUiCopy.ConfirmTitle, 20);
-            ui.Label(new Rect(x + 22, y + 54, w - 44, 48), message, 18, TacticalUi.Muted);
-            float bw = (w - 56) * .5f;
+            float w = Mathf.Min(560, ui.Safe.width), x = (ui.Width - w) * .5f, y = ui.Height * .5f - 98;
+            ui.Frame(new Rect(x, y, w, 196), FrameKind.Modal);
+            ui.Label(new Rect(x + 24, y + 20, w - 48, 16), ShellUiCopy.ConfirmTitle, UiType.Caption, TacticalUi.Accent);
+            ui.Label(new Rect(x + 24, y + 44, w - 48, 60), message, UiType.Heading - 2, TacticalUi.Text);
+            float bw = (w - 60) * .5f;
             // Safe choice receives initial keyboard focus.
-            if (ui.Button(new Rect(x + 22, y + 124, bw, 40), "confirm.cancel", ShellUiCopy.ConfirmCancel)) cancel();
-            if (ui.Button(new Rect(x + 34 + bw, y + 124, bw, 40), "confirm.accept", ShellUiCopy.ConfirmAccept, primary: true)) confirm();
+            if (ui.Button(new Rect(x + 24, y + 128, bw, 44), "confirm.cancel", ShellUiCopy.ConfirmCancel)) cancel();
+            if (ui.Button(new Rect(x + 36 + bw, y + 128, bw, 44), "confirm.accept", ShellUiCopy.ConfirmAccept, primary: true)) confirm();
         }
 
-        private void DrawMainMapCard(Rect rect, string id, MapId mapId, string title)
+        /// <summary>Draws one operation card; returns its map id while the pointer or keyboard focus is on it.</summary>
+        private string? DrawMainMapCard(Rect rect, string id, MapId mapId, string title)
         {
             bool selected = setup!.SelectedMapId.Equals(mapId);
             if (ui.MapCard(rect, id, menuScene?.MapCard(mapId.Value), title, ShellUiCopy.MainCardSubtitle, selected))
@@ -185,6 +216,7 @@ namespace Shooter.Presentation.Session
                 setup.SelectMap(mapId);
                 navigation.OpenSetup();
             }
+            return rect.Contains(Event.current.mousePosition) || ui.IsFocused(id) ? mapId.Value : null;
         }
 
         private void DrawSetupMapButton(Rect rect, string id, MapId mapId, string label)
@@ -196,12 +228,13 @@ namespace Shooter.Presentation.Session
 
         // ------------------------------------------------------------ ADR-107 Armory
 
-        private void DrawFooter(string text)
+        /// <summary>ADR-123 shared footer: keycap hints plus the page status line.</summary>
+        private void DrawFooter(string text, bool back = false)
         {
-            Rect a = ui.Safe;
-            TacticalUi.Fill(new Rect(a.x, a.yMax - 24, Mathf.Min(96, a.width * .16f), 1), TacticalUi.Raised);
-            TacticalUi.Fill(new Rect(a.x, a.yMax - 24, 16, 1), TacticalUi.Accent);
-            ui.Label(new Rect(a.x, a.yMax - 16, a.width, 16), text, 12, TacticalUi.Muted);
+            if (back)
+                ui.KeyHints(text, ShellUiCopy.KeyTab, ShellUiCopy.HintNavigate, ShellUiCopy.KeyEnter, ShellUiCopy.HintSelect, ShellUiCopy.KeyEsc, ShellUiCopy.HintBack);
+            else
+                ui.KeyHints(text, ShellUiCopy.KeyTab, ShellUiCopy.HintNavigate, ShellUiCopy.KeyEnter, ShellUiCopy.HintSelect);
         }
     }
 }

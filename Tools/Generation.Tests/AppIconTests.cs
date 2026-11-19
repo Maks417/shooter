@@ -3,7 +3,7 @@ using System.Security.Cryptography;
 using Shooter.Generation.Icons;
 using Xunit;
 
-/// <summary>Analytic executable icon: deterministic, transparent outside the rounded tile, opaque reticle centre.</summary>
+/// <summary>ADR-123 analytic brand icon: deterministic, transparent outside the tile, amber emblem on charcoal.</summary>
 public sealed class AppIconTests
 {
     [Fact]
@@ -16,22 +16,38 @@ public sealed class AppIconTests
         Assert.Equal(Convert.ToBase64String(sha.ComputeHash(a)), Convert.ToBase64String(sha.ComputeHash(b)));
     }
 
-    [Fact]
-    public void Corners_are_transparent_and_centre_is_opaque_red_pip()
+    [Theory]
+    [InlineData(16)]
+    [InlineData(24)]
+    [InlineData(32)]
+    [InlineData(48)]
+    [InlineData(64)]
+    [InlineData(128)]
+    [InlineData(256)]
+    public void Every_size_has_clear_corners_charcoal_centre_and_amber_ring(int s)
     {
-        int s = AppIcon.DefaultSize;
         var px = AppIcon.Rgba(s);
         Assert.Equal(0, px[3]);                                 // bottom-left
         Assert.Equal(0, px[((s - 1) * s + (s - 1)) * 4 + 3]);   // top-right
-        int c = ((s / 2) * s + s / 2) * 4;
+        // Inside the ring, below the chevron (icon units y = 700): plain charcoal tile.
+        int row = s - 1 - (int)(s * 0.70);
+        int c = (row * s + s / 2) * 4;
         Assert.Equal(255, px[c + 3]);
-        Assert.True(px[c] > 180 && px[c + 1] < 120, "centre pip is red");
+        if (s >= 32) Assert.True(px[c] < 90 && px[c + 1] < 90 && px[c + 2] < 90, "tile is charcoal inside the ring at " + s + " px");
+        // Left edge of the ring on the horizontal centre line: the W tick and ring are amber (R > G > B, bright).
+        int x = (int)Math.Round(s * (BrandEmblem.Centre - BrandEmblem.RingRadiusUnits) / 1000.0);
+        int o = ((s / 2) * s + x) * 4;
+        Assert.True(px[o] > 150 && px[o] > px[o + 2] + 60, "ring is amber at " + s + " px");
     }
 
     [Fact]
-    public void Smaller_sizes_render()
+    public void Top_down_rows_mirror_bottom_up_rows()
     {
-        foreach (int size in new[] { 16, 32, 48, 64, 128 })
-            Assert.Equal(size * size * 4, AppIcon.Rgba(size).Length);
+        const int s = 32;
+        var up = AppIcon.Rgba(s);
+        var down = AppIcon.RgbaTopDown(s);
+        for (int y = 0; y < s; y++)
+            for (int i = 0; i < s * 4; i++)
+                Assert.Equal(up[y * s * 4 + i], down[(s - 1 - y) * s * 4 + i]);
     }
 }

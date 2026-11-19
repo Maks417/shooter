@@ -135,6 +135,7 @@ Accepting a decision never certifies a runtime or hardware gate. The headings be
 | [ADR-120](#adr-120--accepted-parked-networking-behind-a-define-and-build-once-pure-lanes) | Accepted | parked networking behind a define and build-once pure lanes | amends ADR-076 |
 | [ADR-121](#adr-121--accepted-feature-lock-hashes-c-code-tokens-and-every-lock-has-a-refreeze-command) | Accepted | feature lock hashes C# code tokens; every lock has a refreeze command |  |
 | [ADR-122](#adr-122--accepted-mode-rules-as-data-and-team-indexed-kills-game-v1-additive) | Accepted | mode rules as data and team-indexed kills (Game-v1 additive) | amends ADR-034 |
+| [ADR-123](#adr-123--accepted-unified-front-end-visual-system) | Accepted | unified front-end visual system | amends ADR-084, ADR-086, ADR-087 |
 
 ## ADR-001 — Accepted: Unity 6 URP rasterization
 
@@ -1838,3 +1839,25 @@ A full version bump to `Game-v2` was rejected. Every change is additive, and the
 - `game-contract-lock.json` was refrozen with `verify_game_contract_lock.py --refreeze ADR-122`. Game fixtures are unchanged, since none carries a snapshot or results.
 - Team Deathmatch behaviour and limits are identical.
 - More than two teams still needs participant/spawn team ids and a team-indexed outcome before `MaxTeams` rises.
+
+## ADR-123 — Accepted: unified front-end visual system
+
+Date 2026-11-19 (T196, owner-assigned). **Context.** Each screen had grown its own look. Only part of the palette was tokenised: about 190 colour literals sat in `TacticalUi`, `CareerArt`, the HUD and the shell pages, and Career art kept a second palette. Type sizes were raw numbers. Most pages used inline magic-number layouts. The main menu backdrop was a diorama of flat tinted boxes. The app icon used olive, sand and red, unrelated to the UI. The installer showed the default Inno Setup art. Subtitles used the engine font in white.
+
+**Decision.** The owner chose to evolve the existing charcoal, amber and Barlow look into one strict system:
+- **Tokens.** `Presentation/Model/Style/UiTokens.cs` (pure) holds every colour role, the type scale (`UiType`), spacing and frame anatomy (`UiSpace`, `FrameKind`). `Presentation/Session/UiInk.cs` is the only bridge to Unity colours. `UiTokensTests` fails on any new `new Color(<number>` in the UI files. It also checks WCAG 4.5:1 text contrast on every surface, HUD text over a bright scene, and ally/enemy luminance separation. Enemy coral moved from `#E47B70` to `#E68074` to reach 4.5:1 on raised plates.
+- **Frame language.** `TacticalUi.Frame` gives four weights: Plate, Card, Hero and Modal. All are hard-edged (2 px radius) with a tone gradient, 1 px top highlight, hairline rim and soft shadow. Hero and Modal frames carry amber corner brackets. Every page shares `Header` (eyebrow tick, title, rule, emblem) and `KeyHints` (keycap footer). The flat fallback draws the same geometry.
+- **Layouts.** Main, Settings and Armory are placed by pure `MainMenuLayout`, `SettingsLayout` and `ArmoryLayout` (`Presentation/Model/Menus/ShellLayouts.cs`). They are tested for overlap at 720p–1080p and 100–150% UI scale, like `CareerLayout`.
+- **Menu vista.** `ProductMenuScene` drops the box diorama. The showcase squad stands on a rooftop overlook, and the focused map's packaged solids lie below it under that map's sky gradient, linear fog and trilight ambient, graded by the tier post-processing. These are the same root and mesh the operation card was rendered from. The pure `MenuVistaShot` holds one reviewed shot per registered map. The vista follows the hovered or focused card, else the selected operation, and cross-fades over 0.4 s (snaps under reduced motion). Low renders it at 15 Hz, other tiers at 30 Hz. Loading and Results show its last frame, so the stage never renders during a match.
+- **Brand emblem.** `Generation/Core/Icons/BrandEmblem.cs` is one numeric recipe: a reticle ring, four ticks and a chevron. It is used by:
+  - `AppIcon`, now a charcoal tile with an amber emblem, rendered natively at 16–256 px with thicker strokes at small sizes;
+  - `TacticalUi.Emblem` and `BrandMark`;
+  - `InstallerArt`, which writes the multi-size setup `.ico` and the 164×314 and 55×55 wizard BMPs that `Tools/InstallerArt` produces for `Build-Installer.ps1`.
+- **Copy and type.** Settings, binding and match-banner strings moved into `ShellUiCopy`. Subtitles draw on a HUD plate in the brand face.
+
+**Consequences.**
+- This is presentation only: no C0, Game-v1, content-format or gameplay change. Fonts stay the ADR-066 exception, and there is still no imported art.
+- `AppIcon`, `BrandEmblem` and `InstallerArt` are outside the feature lock's source registry, so no lock refreeze was needed. The icon atlas and its golden are unchanged. `AppIconTests` and `InstallerArtTests` pin their behaviour.
+- The ADR-041 AppId and install behaviour are unchanged. The setup exe now carries the brand icon and wizard art.
+- VD7, REL03 and UI02 owner review stays Pending. AI review of captures does not count.
+

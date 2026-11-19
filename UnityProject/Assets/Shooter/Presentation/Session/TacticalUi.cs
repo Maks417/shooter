@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Shooter.Presentation.Hud;
 using Shooter.Presentation.Menus;
+using Shooter.Presentation.Style;
 using UnityEngine;
 
 namespace Shooter.Presentation.Session
@@ -10,25 +11,28 @@ namespace Shooter.Presentation.Session
     /// <summary>Code-only tactical shell. Coordinates are logical pixels after the applied UI scale.</summary>
     public sealed class TacticalUi
     {
-        // Brandbook tokens: charcoal surface, ivory text, sand-amber focus, ally cyan, danger coral.
-        public static readonly Color Background = new Color32(22, 28, 32, 255);
-        public static readonly Color Surface = new Color32(28, 36, 41, 255);
-        public static readonly Color Raised = new Color32(42, 52, 57, 255);
-        public static readonly Color PanelEdge = new Color32(54, 66, 72, 255);
-        public static readonly Color Text = new Color32(241, 243, 239, 255);
-        public static readonly Color Muted = new Color32(173, 183, 183, 255);
-        public static readonly Color Accent = new Color32(230, 197, 106, 255);
-        public static readonly Color Ally = new Color32(123, 197, 209, 255);
-        public static readonly Color Enemy = new Color32(228, 123, 112, 255);
-        // Combat HUD plates: thinner charcoal with restrained edge contrast (world-first readability).
-        public static readonly Color HudPlate = new Color(.035f, .048f, .055f, .48f);
-        public static readonly Color HudPlateStrong = new Color(.03f, .042f, .05f, .62f);
-        public static readonly Color HudEdge = new Color(1f, 1f, 1f, .09f);
-        public static readonly Color HudEdgeSoft = new Color(1f, 1f, 1f, .05f);
+        // ADR-123: Unity views of the pure brand tokens (Presentation/Model/Style/UiTokens.cs). No literals here.
+        public static readonly Color Background = UiInk.Of(UiTokens.Base);
+        public static readonly Color Surface = UiInk.Of(UiTokens.Panel);
+        public static readonly Color Raised = UiInk.Of(UiTokens.Raised);
+        public static readonly Color PanelEdge = UiInk.Of(UiTokens.Edge);
+        public static readonly Color Text = UiInk.Of(UiTokens.Text);
+        public static readonly Color Muted = UiInk.Of(UiTokens.TextMuted);
+        public static readonly Color Dim = UiInk.Of(UiTokens.TextDim);
+        public static readonly Color Accent = UiInk.Of(UiTokens.Accent);
+        public static readonly Color AccentBright = UiInk.Of(UiTokens.AccentBright);
+        public static readonly Color AccentDeep = UiInk.Of(UiTokens.AccentDeep);
+        public static readonly Color Ally = UiInk.Of(UiTokens.Ally);
+        public static readonly Color Enemy = UiInk.Of(UiTokens.Enemy);
+        // Combat HUD plates: translucent charcoal with restrained edge contrast (world-first readability).
+        public static readonly Color HudPlate = UiInk.Of(UiTokens.HudPlate);
+        public static readonly Color HudPlateStrong = UiInk.Of(UiTokens.HudPlateStrong);
+        public static readonly Color HudEdge = UiInk.Light(.09f);
+        public static readonly Color HudEdgeSoft = UiInk.Light(.05f);
 
-        public static readonly Color SurfaceTop = new Color32(35, 44, 49, 255);
-        public static readonly Color Gold = new Color32(232, 196, 104, 255);
-        public static readonly Color GoldDeep = new Color32(150, 108, 42, 255);
+        public static readonly Color SurfaceTop = UiInk.Of(UiTokens.PanelTop);
+        public static readonly Color Gold = Accent;
+        public static readonly Color GoldDeep = UiInk.Of(UiTokens.AccentShadow);
 
         private readonly List<string> controls = new List<string>(48);
         private readonly Dictionary<int, GUIStyle> labels = new Dictionary<int, GUIStyle>();
@@ -57,6 +61,12 @@ namespace Shooter.Presentation.Session
         public float Height { get; private set; }
         public Rect Safe { get; private set; }
         public Texture? SceneTexture { get; set; }
+        /// <summary>ADR-123 previous vista frame drawn over <see cref="SceneTexture"/> while it cross-fades out.</summary>
+        public Texture? SceneFade { get; set; }
+        public float SceneFadeAlpha { get; set; }
+
+        /// <summary>True while <paramref name="id"/> holds keyboard focus.</summary>
+        public bool IsFocused(string id) => focused == id;
         private float enterOffset;
 
         public static Rect SafeArea(float width, float height) => new Rect(width * .05f, height * .05f, width * .9f, height * .9f);
@@ -290,26 +300,77 @@ namespace Shooter.Presentation.Session
             GUI.Label(r, text, style);
         }
 
-        public void Panel(Rect r, bool accentTop = false, bool rail = false)
+        public void Panel(Rect r, bool accentTop = false, bool rail = false) => Frame(r, FrameKind.Plate, rail, accentTop);
+
+        /// <summary>
+        /// ADR-123 frame language, one look for every surface: a hard-edged plate (2 px radius) with a vertical tone
+        /// gradient, a 1 px top highlight, a hairline rim and a soft drop shadow. Hero and Modal frames add amber corner
+        /// brackets. The flat fallback draws the same geometry without the soft shadow.
+        /// </summary>
+        public void Frame(Rect r, FrameKind kind = FrameKind.Plate, bool rail = false, bool accentTop = false, float alpha = 1f) =>
+            DrawFrame(r, kind, rail, accentTop, alpha);
+
+        public static void DrawFrame(Rect r, FrameKind kind, bool rail = false, bool accentTop = false, float alpha = 1f)
         {
-            var style = UiSdf.Style.Solid(SurfaceTop, Hud.UiShapeParams.PlateRadius)
-                .WithGradient(Surface, UiSdf.Gradient.Vertical)
-                .WithShadow();
-            if (UiSdf.Rect(r, style))
+            if (alpha <= 0.01f || r.width < 2f || r.height < 2f) return;
+            Color top, bottom;
+            float shadow;
+            switch (kind)
             {
-                var edge = UiSdf.Style.Solid(new Color(1f, 1f, 1f, .07f), Hud.UiShapeParams.PlateRadius);
-                edge.Stroke = 1f;
-                UiSdf.Rect(r, edge);
-                if (accentTop) Plate(new Rect(r.x + 6, r.y, r.width - 12, 2), UiSdf.Style.Solid(Accent, 1f));
-                if (rail) Plate(new Rect(r.x, r.y + 6, 3, r.height - 12), UiSdf.Style.Solid(Accent, 1.5f));
-                return;
+                case FrameKind.Card:
+                    top = UiInk.Of(UiTokens.Well, .97f); bottom = UiInk.Of(UiTokens.Shade, .98f); shadow = .42f; break;
+                case FrameKind.Hero:
+                    top = UiInk.Of(UiTokens.Panel, .9f); bottom = UiInk.Of(UiTokens.Base, .94f); shadow = .45f; break;
+                case FrameKind.Modal:
+                    top = UiInk.Of(UiTokens.PanelTop); bottom = UiInk.Of(UiTokens.Base); shadow = .6f; break;
+                default:
+                    top = UiInk.Of(UiTokens.PanelTop, .94f); bottom = UiInk.Of(UiTokens.Panel, .96f); shadow = .38f; break;
             }
-            Fill(r, Surface);
-            Fill(new Rect(r.x, r.y, r.width, 1), PanelEdge);
-            Fill(new Rect(r.x, r.yMax - 1, r.width, 1), new Color(0, 0, 0, .35f));
-            Fill(new Rect(r.xMax - 1, r.y, 1, r.height), new Color(0, 0, 0, .22f));
-            if (accentTop) Fill(new Rect(r.x, r.y, r.width, 2), Accent);
-            if (rail) Fill(new Rect(r.x, r.y, 3, r.height), Accent);
+            top = A(top, alpha);
+            bottom = A(bottom, alpha);
+            const float radius = UiSpace.FrameRadius;
+            if (UiSdf.Rect(r, UiSdf.Style.Solid(top, radius).WithGradient(bottom, UiSdf.Gradient.Vertical).WithShadow(shadow * alpha, 12f, 3f)))
+            {
+                var rim = UiSdf.Style.Solid(UiInk.Light(.07f * alpha), radius);
+                rim.Stroke = 1f;
+                UiSdf.Rect(r, rim);
+            }
+            else
+            {
+                Fill(r, bottom);
+                Fill(new Rect(r.x, r.yMax - 1, r.width, 1), UiInk.Dark(.35f * alpha));
+                Fill(new Rect(r.xMax - 1, r.y, 1, r.height), UiInk.Dark(.22f * alpha));
+            }
+            Fill(new Rect(r.x + 1, r.y, r.width - 2, 1), UiInk.Light(.12f * alpha));
+            if (accentTop) Fill(new Rect(r.x, r.y, r.width, 2), A(Accent, alpha));
+            if (rail) Fill(new Rect(r.x, r.y, UiSpace.Rail, r.height), A(Accent, alpha));
+            if (kind == FrameKind.Hero || kind == FrameKind.Modal) Brackets(r, A(Accent, alpha));
+        }
+
+        /// <summary>Amber corner brackets on the top-left and bottom-right corners (the frame signature).</summary>
+        public static void Brackets(Rect r, Color ink, float length = UiSpace.Bracket, float thickness = 2f)
+        {
+            Fill(new Rect(r.x, r.y, length, thickness), ink);
+            Fill(new Rect(r.x, r.y, thickness, length), ink);
+            Fill(new Rect(r.xMax - length, r.yMax - thickness, length, thickness), ink);
+            Fill(new Rect(r.xMax - thickness, r.yMax - length, thickness, length), ink);
+        }
+
+        /// <summary>Soft dark fade over the top (or bottom) of media so overlaid text stays readable.</summary>
+        public static void MediaScrim(Rect r, float height, float alpha, bool bottom = false)
+        {
+            height = Mathf.Min(height, r.height);
+            Rect band = bottom ? new Rect(r.x, r.yMax - height, r.width, height) : new Rect(r.x, r.y, r.width, height);
+            Color dark = UiInk.Shade(alpha), clear = UiInk.Shade(0f);
+            if (UiSdf.Rect(band, UiSdf.Style.Solid(bottom ? clear : dark).WithGradient(bottom ? dark : clear, UiSdf.Gradient.Vertical))) return;
+            const int steps = 8;
+            for (int i = 0; i < steps; i++)
+            {
+                float u = i / (float)(steps - 1);
+                float a = alpha * (1f - u);
+                float y = bottom ? band.yMax - (i + 1) * height / steps : band.y + i * height / steps;
+                Fill(new Rect(band.x, y, band.width, height / steps + 1f), UiInk.Shade(a));
+            }
         }
 
         /// <summary>Compact in-match plate: translucent charcoal + 1px edge, optional accent hairline.</summary>
@@ -338,9 +399,9 @@ namespace Shooter.Presentation.Session
         public static void Edge(Rect r)
         {
             Fill(new Rect(r.x, r.y, r.width, 1), HudEdge);
-            Fill(new Rect(r.x, r.yMax - 1, r.width, 1), new Color(0, 0, 0, .22f));
+            Fill(new Rect(r.x, r.yMax - 1, r.width, 1), UiInk.Dark(.22f));
             Fill(new Rect(r.x, r.y, 1, r.height), HudEdgeSoft);
-            Fill(new Rect(r.xMax - 1, r.y, 1, r.height), new Color(0, 0, 0, .14f));
+            Fill(new Rect(r.xMax - 1, r.y, 1, r.height), UiInk.Dark(.14f));
         }
 
         /// <summary>Thin accent rail or progress fill (ally/enemy/amber).</summary>
@@ -351,12 +412,12 @@ namespace Shooter.Presentation.Session
         {
             float rr = Mathf.Min(rect.width, rect.height) * .5f;
             if (UiSdf.Rect(new Rect(rect.x - 0.9f, rect.y - 0.9f, rect.width + 1.8f, rect.height + 1.8f),
-                    UiSdf.Style.Solid(new Color(0.02f, 0.03f, 0.035f, 0.8f), rr + .9f)))
+                    UiSdf.Style.Solid(UiInk.Shade(.8f), rr + .9f)))
             {
                 UiSdf.Rect(rect, UiSdf.Style.Solid(Text, rr));
                 return;
             }
-            Fill(new Rect(rect.x - 0.75f, rect.y - 0.75f, rect.width + 1.5f, rect.height + 1.5f), new Color(0.02f, 0.03f, 0.035f, 0.85f));
+            Fill(new Rect(rect.x - 0.75f, rect.y - 0.75f, rect.width + 1.5f, rect.height + 1.5f), UiInk.Shade(.85f));
             Fill(rect, Text);
         }
 
@@ -366,8 +427,8 @@ namespace Shooter.Presentation.Session
             if (alpha <= 0.02f || Event.current.type != EventType.Repaint) return;
             float arm = 5.5f * scale, gap = 3.5f * scale, thick = 1.25f;
             Color tint = headshot ? Accent : Text;
-            Color ink = new Color(tint.r, tint.g, tint.b, alpha);
-            Color under = new Color(0.02f, 0.03f, 0.035f, alpha * 0.9f);
+            Color ink = UiInk.Alpha(tint, alpha);
+            Color under = UiInk.Shade(alpha * 0.9f);
             DrawDiagonal(centerX - gap - arm, centerY - gap - arm, centerX - gap, centerY - gap, under, thick + 1.2f);
             DrawDiagonal(centerX + gap, centerY - gap - arm, centerX + gap + arm, centerY - gap, under, thick + 1.2f);
             DrawDiagonal(centerX - gap - arm, centerY + gap + arm, centerX - gap, centerY + gap, under, thick + 1.2f);
@@ -395,7 +456,7 @@ namespace Shooter.Presentation.Session
             const float radius = CombatHudVisual.DamageIndicatorRadius;
             float half = CombatHudVisual.DamageIndicatorLength / radius * .5f;
             UiSdf.Arc(new Rect(x - radius, y - radius, radius * 2, radius * 2), angle - half, angle + half, 5f,
-                UiSdf.Style.Solid(new Color(Enemy.r, Enemy.g, Enemy.b, alpha)));
+                UiSdf.Style.Solid(UiInk.Alpha(Enemy, alpha)));
         }
 
         public static void AmmoRounds(Rect track, int rounds, Color ink)
@@ -421,8 +482,8 @@ namespace Shooter.Presentation.Session
                 ScoreRibbonSdf(banner, alpha, elapsed, streak, reducedMotion, reducedFlash);
                 return;
             }
-            Fill(banner, new Color(0.04f, 0.055f, 0.06f, 0.72f * alpha));
-            // Alternating amber/green stripes (Battlefield-style composition reference only).
+            Fill(banner, UiInk.Of(UiTokens.Well, 0.72f * alpha));
+            // Alternating amber stripes: the same banner, disk and rails as the SDF path, flat.
             float stripe = Mathf.Max(6f, banner.width / 18f);
             for (int i = 0; i < 18; i++)
             {
@@ -430,20 +491,20 @@ namespace Shooter.Presentation.Session
                 if (x >= banner.xMax) break;
                 float w = Mathf.Min(stripe * 0.55f, banner.xMax - x);
                 Color c = (i % 2 == 0)
-                    ? new Color(Accent.r, Accent.g, Accent.b, 0.55f * alpha)
-                    : new Color(0.25f, 0.55f, 0.32f, 0.45f * alpha);
+                    ? UiInk.Alpha(Accent, 0.55f * alpha)
+                    : UiInk.Alpha(AccentDeep, 0.35f * alpha);
                 Fill(new Rect(x, banner.y + 4, w, banner.height - 8), c);
             }
             float disk = Mathf.Min(banner.height - 6f, 28f);
             float cx = banner.x + banner.width * 0.5f;
             float cy = banner.y + banner.height * 0.5f;
-            Fill(new Rect(cx - disk * 0.5f, cy - disk * 0.5f, disk, disk), new Color(0.92f, 0.9f, 0.82f, 0.95f * alpha));
-            Fill(new Rect(cx - disk * 0.28f, cy - disk * 0.28f, disk * 0.56f, disk * 0.56f), new Color(0.55f, 0.42f, 0.18f, 0.9f * alpha));
-            AccentBar(new Rect(banner.x, banner.y, banner.width, 2), new Color(Accent.r, Accent.g, Accent.b, alpha));
-            AccentBar(new Rect(banner.x, banner.yMax - 2, banner.width, 2), new Color(Accent.r, Accent.g, Accent.b, 0.7f * alpha));
+            Fill(new Rect(cx - disk * 0.5f, cy - disk * 0.5f, disk, disk), UiInk.Of(UiTokens.MedalHighlight, 0.95f * alpha));
+            Fill(new Rect(cx - disk * 0.28f, cy - disk * 0.28f, disk * 0.56f, disk * 0.56f), UiInk.Of(UiTokens.AccentShadow, 0.9f * alpha));
+            AccentBar(new Rect(banner.x, banner.y, banner.width, 2), UiInk.Alpha(Accent, alpha));
+            AccentBar(new Rect(banner.x, banner.yMax - 2, banner.width, 2), UiInk.Alpha(Accent, 0.7f * alpha));
         }
 
-        private static Color A(Color c, float alpha) => new Color(c.r, c.g, c.b, c.a * alpha);
+        private static Color A(Color c, float alpha) => UiInk.A(c, alpha);
 
         /// <summary>ADR-084 kill ribbon: feathered banner, stamped medal, streak pips and one glint.</summary>
         private static void ScoreRibbonSdf(Rect banner, float alpha, float elapsed, int streak, bool reducedMotion, bool reducedFlash)
@@ -454,8 +515,8 @@ namespace Shooter.Presentation.Session
             float cx = banner.x + banner.width * 0.5f, cy = banner.y + banner.height * 0.5f;
             float spread = reducedMotion ? 1f : Mathf.Lerp(0.55f, 1f, Hud.UiMotion.OutCubic(Hud.UiMotion.Progress(elapsed, Hud.UiMotion.TransitionSeconds * 1.4f)));
             float half = banner.width * 0.5f * spread;
-            Color dark = new Color(0.03f, 0.042f, 0.048f, 0.9f * alpha);
-            Color clear = new Color(dark.r, dark.g, dark.b, 0f);
+            Color dark = UiInk.Of(UiTokens.Well, 0.9f * alpha);
+            Color clear = UiInk.Alpha(dark, 0f);
             float top = banner.y + 6, height = banner.height - 12, fadeW = half * 0.6f;
             UiSdf.Rect(new Rect(cx - half, top, fadeW, height), UiSdf.Style.Solid(clear).WithGradient(dark, UiSdf.Gradient.Horizontal));
             UiSdf.Rect(new Rect(cx - half + fadeW - 0.5f, top, (half - fadeW) * 2f + 1f, height), UiSdf.Style.Solid(dark));
@@ -499,15 +560,15 @@ namespace Shooter.Presentation.Session
                 .WithShadow(0.45f * alpha, s * 0.18f, s * 0.06f).WithGlint(glint, 0.6f * alpha));
             float inset = s * 0.14f;
             Rect enamel = new Rect(disk.x + inset, disk.y + inset, s - inset * 2f, s - inset * 2f);
-            Color enamelTop = tier >= 3 ? new Color32(122, 42, 36, 255) : new Color32(30, 62, 52, 255);
-            Color enamelBottom = tier >= 3 ? new Color32(70, 20, 18, 255) : new Color32(16, 34, 30, 255);
+            Color enamelTop = UiInk.Of(tier >= 3 ? UiTokens.EnamelRedTop : UiTokens.EnamelGreenTop);
+            Color enamelBottom = UiInk.Of(tier >= 3 ? UiTokens.EnamelRedBottom : UiTokens.EnamelGreenBottom);
             UiSdf.Circle(enamel, UiSdf.Style.Solid(A(enamelTop, alpha)).WithGradient(A(enamelBottom, alpha), UiSdf.Gradient.Radial));
-            var ring = UiSdf.Style.Solid(A(new Color(1f, .92f, .7f, .55f), alpha));
+            var ring = UiSdf.Style.Solid(UiInk.Of(UiTokens.MedalHighlight, .55f * alpha));
             ring.Stroke = Mathf.Max(0.8f, s * 0.035f);
             UiSdf.Circle(enamel, ring);
             float e = enamel.width * 0.52f;
             UiSdf.Shape(new Rect(enamel.center.x - e * 0.5f, enamel.center.y - e * 0.5f, e, e), Hud.UiShapeKind.Diamond,
-                UiSdf.Style.Solid(A(new Color(.98f, .9f, .66f, 1f), alpha)).WithGradient(A(Gold, alpha), UiSdf.Gradient.Vertical));
+                UiSdf.Style.Solid(UiInk.Of(UiTokens.MedalHighlight, alpha)).WithGradient(A(Gold, alpha), UiSdf.Gradient.Vertical));
             // Streak pips above the medal.
             if (tier > 1)
             {
@@ -526,7 +587,7 @@ namespace Shooter.Presentation.Session
         public static void DamagePlateFlash(float width, float height, float strength)
         {
             if (strength <= 0.01f || Event.current.type != EventType.Repaint) return;
-            Fill(new Rect(0, 0, width, height), new Color(Enemy.r, Enemy.g, Enemy.b, strength * 0.55f));
+            Fill(new Rect(0, 0, width, height), UiInk.Alpha(Enemy, strength * 0.55f));
             EdgeVignette(width, height, strength * 0.85f, Enemy);
         }
 
@@ -544,7 +605,7 @@ namespace Shooter.Presentation.Session
             {
                 float u = i / (float)(steps - 1);
                 float a = strength * (1f - u) * (1f - u);
-                Color c = new Color(tint.r, tint.g, tint.b, a);
+                Color c = UiInk.Alpha(tint, a);
                 float t = band * u / steps + 1f;
                 Fill(new Rect(0, i * band / steps, width, t), c);
                 Fill(new Rect(0, height - (i + 1) * band / steps, width, t), c);
@@ -571,7 +632,7 @@ namespace Shooter.Presentation.Session
             // Housing ring only — clear lens (~0.62 of pad) aligned to LensRadiusPixels; the mask is transparent at
             // its square edges, so no rectangle is drawn on wide screens.
             float pad = radius / 0.62f;
-            GUI.color = new Color(1f, 1f, 1f, a * 0.85f);
+            GUI.color = UiInk.Light(a * 0.85f);
             GUI.DrawTexture(new Rect(cx - pad, cy - pad, pad * 2f, pad * 2f), mask, ScaleMode.StretchToFill);
             GUI.color = prior;
             DrawMilDotReticle(cx, cy, radius, a);
@@ -585,7 +646,7 @@ namespace Shooter.Presentation.Session
         public static void CollimatorDot(float cx, float cy, float radius, float opacity)
         {
             if (opacity <= 0.01f) return;
-            Color core = new Color(1f, .12f, .08f, opacity);
+            Color core = UiInk.Of(UiTokens.ReticleRed, opacity);
             var rect = new Rect(cx - radius, cy - radius, radius * 2f, radius * 2f);
             if (UiSdf.Circle(rect, UiSdf.Style.Solid(core))) return;
             Fill(rect, core);
@@ -595,7 +656,7 @@ namespace Shooter.Presentation.Session
         public static void AdsIronVignette(float width, float height, float opacity)
         {
             if (opacity <= 0.01f) return;
-            EdgeVignette(width, height, opacity, new Color(0.02f, 0.025f, 0.03f, 1f));
+            EdgeVignette(width, height, opacity, UiInk.Shade(1f));
         }
 
         private static void DrawMilDotReticle(float cx, float cy, float radius, float opacity)
@@ -604,8 +665,8 @@ namespace Shooter.Presentation.Session
             int dots = View.AdsOpticVisual.MilDotCount(radius);
             float arm = spacing * dots + 2f;
             float gap = 3.5f;
-            Color ink = new Color(0.04f, 0.045f, 0.05f, 0.92f * opacity);
-            Color soft = new Color(0.02f, 0.025f, 0.03f, 0.55f * opacity);
+            Color ink = UiInk.Of(UiTokens.Well, 0.92f * opacity);
+            Color soft = UiInk.Shade(0.55f * opacity);
             // Cross arms with center gap (scope picture stays clear at the aim point).
             Fill(new Rect(cx - arm, cy - 0.6f, arm - gap, 1.2f), ink);
             Fill(new Rect(cx + gap, cy - 0.6f, arm - gap, 1.2f), ink);
@@ -730,21 +791,61 @@ namespace Shooter.Presentation.Session
             return selected;
         }
 
+        /// <summary>ADR-123 section title: amber diamond, caption caps and a full-width rule with an amber lead.</summary>
         public void Section(Rect r, string title)
         {
-            Label(r, title, 12, Accent);
-            Fill(new Rect(r.x, r.yMax - 2, Mathf.Min(88, r.width), 1), Raised);
+            const float d = 6f;
+            float lineH = Mathf.Min(r.height, 16f);
+            Rect pip = new Rect(r.x, r.y + (lineH - d) * .5f - 1f, d, d);
+            if (!UiSdf.Shape(pip, UiShapeKind.Diamond, UiSdf.Style.Solid(Accent))) Fill(pip, Accent);
+            Label(new Rect(r.x + 12, r.y, r.width - 12, r.height), title, UiType.Caption, Accent);
+            Fill(new Rect(r.x, r.yMax - 2, r.width, 1), UiInk.Alpha(PanelEdge, .7f));
             Fill(new Rect(r.x, r.yMax - 2, 18, 1), Accent);
         }
 
-        /// <summary>Compact brand mark used on Main left rail — charcoal plate + amber chip.</summary>
+        /// <summary>
+        /// ADR-123 brand emblem (<see cref="Generation.Icons.BrandEmblem"/>): the same reticle ring, ticks and chevron
+        /// the app icon rasterizes, drawn with analytic SDF strokes in <paramref name="ink"/>.
+        /// </summary>
+        public static void Emblem(Rect r, Color ink)
+        {
+            if (Event.current.type != EventType.Repaint) return;
+            float s = Mathf.Min(r.width, r.height);
+            float ox = r.center.x - s * .5f, oy = r.center.y - s * .5f;
+            Vector2 P(double x, double y) => new Vector2(ox + (float)x * s, oy + (float)y * s);
+            float ringR = (float)Generation.Icons.BrandEmblem.RingRadius * s;
+            var ring = UiSdf.Style.Solid(ink);
+            ring.Stroke = Mathf.Max(1f, (float)Generation.Icons.BrandEmblem.RingStroke * s);
+            Vector2 c = P(.5, .5);
+            if (!UiSdf.Circle(new Rect(c.x - ringR - ring.Stroke * .5f, c.y - ringR - ring.Stroke * .5f,
+                    (ringR + ring.Stroke * .5f) * 2f, (ringR + ring.Stroke * .5f) * 2f), ring))
+            {
+                Fill(new Rect(r.center.x - s * .3f, r.center.y - s * .3f, s * .6f, s * .6f), ink);
+                return;
+            }
+            float tick = Mathf.Max(1f, (float)Generation.Icons.BrandEmblem.TickWidth * s);
+            var ticks = Generation.Icons.BrandEmblem.Ticks;
+            for (int i = 0; i < ticks.Length; i++)
+                UiSdf.Line(P(ticks[i].X0, ticks[i].Y0), P(ticks[i].X1, ticks[i].Y1), ink, tick);
+            float chevron = Mathf.Max(1.2f, (float)Generation.Icons.BrandEmblem.ChevronStroke * s);
+            var points = Generation.Icons.BrandEmblem.Chevron;
+            for (int i = 0; i + 1 < points.Length; i++)
+                UiSdf.Line(P(points[i].X, points[i].Y), P(points[i + 1].X, points[i + 1].Y), ink, chevron);
+        }
+
+        /// <summary>Brand lockup on the Main rail: the emblem, then the stencil-cut condensed wordmark.</summary>
         public void BrandMark(Rect r, string title)
         {
-            Fill(new Rect(r.x, r.y + 6, 4, r.height - 12), Accent);
-            Label(new Rect(r.x + 14, r.y, r.width - 14, r.height), title, 24);
-            // Numeric stencil cuts across the condensed bold wordmark, not a bitmap logo.
-            Fill(new Rect(r.x + 14, r.y + r.height * .47f, r.width - 14, 1.5f), Background);
+            float e = r.height + 6f;
+            Emblem(new Rect(r.x - 3f, r.y - 3f, e, e), Accent);
+            float tx = r.x + e + 6f;
+            Label(new Rect(tx, r.y - 2f, r.xMax - tx + 80f, r.height + 4f), title, 28);
+            // Numeric stencil cut across the wordmark, not a bitmap logo.
+            Fill(new Rect(tx, r.y + r.height * .5f, TextWidth(title, 28), 1.5f), UiInk.Shade(.9f));
         }
+
+        /// <summary>Rendered width of <paramref name="text"/> in the label face at <paramref name="size"/>.</summary>
+        public float TextWidth(string text, int size) => string.IsNullOrEmpty(text) ? 0f : FitStyle(size).CalcSize(new GUIContent(text)).x;
 
         /// <summary>
         /// Eased 0..1 emphasis for a control (hover/focus/selection), advanced once per Repaint.
@@ -777,15 +878,15 @@ namespace Shooter.Presentation.Session
             const float radius = Hud.UiShapeParams.ButtonRadius;
             if (!GUI.enabled)
             {
-                UiSdf.Rect(r, UiSdf.Style.Solid(quiet ? new Color(1, 1, 1, 0) : Surface, radius));
+                UiSdf.Rect(r, UiSdf.Style.Solid(quiet ? UiInk.Clear : UiInk.Alpha(Surface, .7f), radius));
                 return true;
             }
             if (quiet)
             {
                 if (e > 0.01f)
                 {
-                    UiSdf.Rect(r, UiSdf.Style.Solid(new Color(1, 1, 1, .10f * e), radius)
-                        .WithGradient(new Color(1, 1, 1, .02f * e), UiSdf.Gradient.Horizontal));
+                    UiSdf.Rect(r, UiSdf.Style.Solid(UiInk.Light(.12f * e), radius)
+                        .WithGradient(UiInk.Light(0f), UiSdf.Gradient.Horizontal));
                 }
                 float rail = Mathf.Max(e * (focus || selected ? 1f : 0.45f), f);
                 if (rail > 0.01f)
@@ -795,13 +896,13 @@ namespace Shooter.Presentation.Session
                 }
                 return true;
             }
-            Color baseTop = primary ? Color.Lerp(Accent, new Color(1f, .9f, .62f, 1f), .35f * e) : Color.Lerp(SurfaceTop, new Color32(56, 68, 74, 255), e);
-            Color baseBottom = primary ? Color.Lerp(new Color32(196, 160, 72, 255), Accent, .3f * e) : Color.Lerp(Surface, Raised, e);
+            Color baseTop = primary ? Color.Lerp(Accent, AccentBright, .35f * e) : UiInk.Alpha(Color.Lerp(SurfaceTop, UiInk.Of(UiTokens.RaisedHover), e), .94f);
+            Color baseBottom = primary ? Color.Lerp(AccentDeep, Accent, .3f * e) : UiInk.Alpha(Color.Lerp(Surface, Raised, e), .96f);
             var style = UiSdf.Style.Solid(baseTop, radius).WithGradient(baseBottom, UiSdf.Gradient.Vertical).WithShadow(.3f, 6f, 2f);
-            if (f > 0.01f) style = style.WithGlow(primary ? new Color(1f, .9f, .6f, 1f) : Accent, Hud.UiShapeParams.FocusGlowWidth,
+            if (f > 0.01f) style = style.WithGlow(primary ? AccentBright : Accent, Hud.UiShapeParams.FocusGlowWidth,
                 Hud.UiShapeParams.FocusGlowAlpha * f * (ReducedFlash ? .6f : 1f));
             UiSdf.Rect(r, style);
-            var edge = UiSdf.Style.Solid(primary ? new Color(1f, .95f, .8f, .35f) : new Color(1f, 1f, 1f, .06f + .08f * e), radius);
+            var edge = UiSdf.Style.Solid(primary ? UiInk.Alpha(AccentBright, .35f) : UiInk.Light(.06f + .08f * e), radius);
             edge.Stroke = 1f;
             UiSdf.Rect(r, edge);
             float sel = Mathf.Max(f, selected ? 1f : 0f);
@@ -827,13 +928,14 @@ namespace Shooter.Presentation.Session
             if (!ButtonSdf(r, id, primary, selected, quiet, focus, hover))
             {
                 Color fill = quiet
-                    ? new Color(1, 1, 1, hover || selected || focus ? .12f : 0)
+                    ? UiInk.Light(hover || selected || focus ? .12f : 0)
                     : primary ? Accent : (hover || selected ? Raised : Surface);
                 Fill(r, GUI.enabled ? fill : Surface);
+                if (!quiet) Fill(new Rect(r.x + 1, r.y, r.width - 2, 1), primary ? UiInk.Alpha(AccentBright, .5f) : UiInk.Light(.08f));
                 if (quiet && (focus || selected))
                 {
                     Fill(new Rect(r.x, r.y, 3, r.height), Accent);
-                    Fill(new Rect(r.x + 3, r.y, r.width - 3, r.height), new Color(1, 1, 1, .06f));
+                    Fill(new Rect(r.x + 3, r.y, r.width - 3, r.height), UiInk.Light(.06f));
                 }
                 else if (focus || selected)
                 {
@@ -854,7 +956,7 @@ namespace Shooter.Presentation.Session
                 foreach (var state in new[] { buttonStyle.normal, buttonStyle.hover, buttonStyle.active, buttonStyle.focused }) state.background = null;
             }
             Color ink = StyleInk(GUI.enabled ? (primary ? Background : Text) : Muted);
-            buttonStyle.fontSize = quiet ? 20 : 18;
+            buttonStyle.fontSize = quiet ? UiType.NavButton : UiType.Button;
             buttonStyle.padding = quiet ? new RectOffset(18, 12, 0, 0) : new RectOffset(16, 12, 0, 0);
             buttonStyle.normal.textColor = ink;
             buttonStyle.hover.textColor = ink;
@@ -879,56 +981,33 @@ namespace Shooter.Presentation.Session
             // Operation tile: charcoal well, inset media plate, caption bar — still draws real map RTTs.
             float lift = UiSdf.Available ? Emphasis(id + "#card", selected || r.Contains(Event.current.mousePosition)) : 0f;
             r.y -= ReducedMotion ? 0f : 4f * lift;
-            var well = UiSdf.Style.Solid(new Color(.02f, .03f, .035f, .98f), Hud.UiShapeParams.CardRadius)
-                .WithShadow(.35f + .15f * lift, 10f + 6f * lift, 3f + 2f * lift);
-            if (selected) well = well.WithGlow(Accent, 10f, .22f * (ReducedFlash ? .6f : 1f));
-            if (UiSdf.Rect(r, well))
-            {
-                var rim = UiSdf.Style.Solid(new Color(1f, 1f, 1f, .08f + .08f * lift), Hud.UiShapeParams.CardRadius);
-                rim.Stroke = 1f;
-                UiSdf.Rect(r, rim);
-            }
-            else
-            {
-                Fill(r, new Color(.02f, .03f, .035f, .98f));
-                Edge(r);
-            }
+            DrawFrame(r, FrameKind.Card);
+            if (selected || lift > 0.01f)
+                UiSdf.Rect(r, UiSdf.Style.Solid(UiInk.Clear, UiSpace.FrameRadius).WithGlow(Accent, 10f, (selected ? .24f : .1f * lift) * (ReducedFlash ? .6f : 1f)));
             Rect media = new Rect(r.x + 3, r.y + 3, r.width - 6, r.height - 66);
             Fill(media, Surface);
             if (image != null && Event.current.type == EventType.Repaint)
                 GUI.DrawTexture(media, image, ScaleMode.ScaleAndCrop);
-            // Soft top scrim so title plate stays readable over bright map solids.
-            for (int i = 0; i < 7; i++)
-            {
-                float u = i / 6f;
-                Fill(new Rect(media.x, media.y + i * 3f, media.width, 4f), new Color(0f, 0f, 0f, .16f * (1f - u)));
-            }
+            // Soft top and bottom scrims so the brackets and caption plate stay readable over bright map solids.
+            MediaScrim(media, 22f, .35f);
+            MediaScrim(media, 30f, .55f, bottom: true);
             Rect plate = new Rect(r.x, r.yMax - 62, r.width, 62);
-            // Rounded so the card's lower corners stay round; the plate's top corners blend into the dark well.
-            Plate(plate, UiSdf.Style.Solid(new Color(.025f, .035f, .04f, .96f), Hud.UiShapeParams.CardRadius)
-                .WithGradient(new Color(.015f, .02f, .025f, .98f), UiSdf.Gradient.Vertical));
-            Fill(new Rect(plate.x, plate.y, plate.width, 1), new Color(1f, 1f, 1f, .10f));
+            Fill(plate, UiInk.Shade(.96f));
+            Fill(new Rect(plate.x, plate.y, plate.width, 1), UiInk.Light(.10f));
             Icon(new Rect(plate.xMax - 27, plate.y + 12, 16, 16), Generation.Icons.IconLibrary.Objective, selected ? Accent : Muted);
-            AccentBar(new Rect(plate.x + 14, plate.y + 10, 20, 2), Accent);
+            AccentBar(new Rect(plate.x + 14, plate.y + 10, selected ? 32 : 20, 2), Accent);
             bool clicked = Button(r, id, "", selected: selected, quiet: true);
-            Label(new Rect(r.x + 14, r.yMax - 48, r.width - 28, 22), title, 18);
-            Label(new Rect(r.x + 14, r.yMax - 24, r.width - 28, 16), subtitle, 12, Muted);
-            if (selected && UiSdf.Available)
+            Label(new Rect(r.x + 14, r.yMax - 48, r.width - 28, 22), title, UiType.Lead);
+            Label(new Rect(r.x + 14, r.yMax - 24, r.width - 28, 16), subtitle, UiType.Caption, Muted);
+            if (selected)
             {
-                var ring = UiSdf.Style.Solid(Accent, Hud.UiShapeParams.CardRadius);
-                ring.Stroke = 2f;
-                UiSdf.Rect(r, ring);
-                UiSdf.Rect(new Rect(r.xMax - 22, r.y + 8, 14, 2), UiSdf.Style.Solid(Accent, 1f));
-                UiSdf.Rect(new Rect(r.xMax - 10, r.y + 8, 2, 14), UiSdf.Style.Solid(Accent, 1f));
+                // The ring is drawn as four hairlines so the SDF and flat paths share one geometry.
+                Fill(new Rect(r.x, r.y, r.width, 2), Accent);
+                Fill(new Rect(r.x, r.yMax - 2, r.width, 2), Accent);
+                Fill(new Rect(r.x, r.y, 2, r.height), Accent);
+                Fill(new Rect(r.xMax - 2, r.y, 2, r.height), Accent);
             }
-            else if (selected)
-            {
-                AccentBar(new Rect(r.x, r.y, 3, r.height), Accent);
-                AccentBar(new Rect(r.x, r.y, r.width, 2), Accent);
-                AccentBar(new Rect(r.x, r.yMax - 3, r.width, 3), Accent);
-                AccentBar(new Rect(r.xMax - 18, r.y + 6, 12, 1), Accent);
-                AccentBar(new Rect(r.xMax - 7, r.y + 6, 1, 12), Accent);
-            }
+            Brackets(new Rect(media.x + 6, media.y + 6, media.width - 12, media.height - 12), selected ? Accent : UiInk.Light(.35f + .4f * lift), 10f, 2f);
             return clicked;
         }
 
@@ -944,12 +1023,12 @@ namespace Shooter.Presentation.Session
                 value = Mathf.Clamp(value + (Event.current.keyCode == KeyCode.LeftArrow ? -1 : 1) * (max - min) * .02f, min, max);
                 Event.current.Use();
             }
-            bool sdf = UiSdf.Rect(track, UiSdf.Style.Solid(new Color32(52, 62, 68, 255), 3f).WithGradient(new Color32(36, 44, 49, 255), UiSdf.Gradient.Vertical));
+            bool sdf = UiSdf.Rect(track, UiSdf.Style.Solid(UiInk.Of(UiTokens.Shade, .9f), 3f).WithGradient(Raised, UiSdf.Gradient.Vertical));
             if (sdf)
             {
                 float fillW = Mathf.InverseLerp(min, max, value) * track.width;
                 if (fillW > 0.5f)
-                    UiSdf.Rect(new Rect(track.x, track.y, Mathf.Max(6f, fillW), 6), UiSdf.Style.Solid(new Color32(196, 160, 72, 255), 3f)
+                    UiSdf.Rect(new Rect(track.x, track.y, Mathf.Max(6f, fillW), 6), UiSdf.Style.Solid(AccentDeep, 3f)
                         .WithGradient(Accent, UiSdf.Gradient.Horizontal));
             }
             else
@@ -969,7 +1048,7 @@ namespace Shooter.Presentation.Session
                 float f = Emphasis(id + "#thumb", focused == id || hit.Contains(Event.current.mousePosition));
                 float tx = track.x + Mathf.InverseLerp(min, max, next) * track.width;
                 float d = 14f + 4f * f;
-                var thumb = UiSdf.Style.Solid(Text).WithGradient(new Color32(206, 210, 204, 255), UiSdf.Gradient.Vertical).WithShadow(.4f, 5f, 1.5f);
+                var thumb = UiSdf.Style.Solid(Text).WithGradient(UiInk.Of(UiTokens.ThumbShade), UiSdf.Gradient.Vertical).WithShadow(.4f, 5f, 1.5f);
                 if (f > 0.01f) thumb = thumb.WithGlow(Accent, 7f, .3f * f);
                 UiSdf.Circle(new Rect(tx - d * 0.5f, track.center.y - d * 0.5f, d, d), thumb);
                 UiSdf.Circle(new Rect(tx - 3f, track.center.y - 3f, 6f, 6f), UiSdf.Style.Solid(Accent));
@@ -982,18 +1061,22 @@ namespace Shooter.Presentation.Session
 
         public bool Toggle(Rect r, string id, string text, bool value)
         {
-            if (!UiSdf.Available)
-            {
-                if (Button(r, id, text + (value ? "   [ ON ]" : "   [ OFF ]"), selected: value)) value = !value;
-                return value;
-            }
             if (Button(r, id, text, selected: value)) value = !value;
             // Switch pill on the right edge; knob eases between OFF and ON.
             float on = Emphasis(id + "#switch", value);
             Rect pill = new Rect(r.xMax - 56, r.center.y - 10, 42, 20);
-            UiSdf.Rect(pill, UiSdf.Style.Solid(Color.Lerp(new Color32(20, 26, 30, 255), new Color32(196, 160, 72, 255), on), 10f)
+            if (!UiSdf.Available)
+            {
+                // Same pill, knob and state text as the SDF path, as flat fills.
+                Fill(pill, value ? AccentDeep : UiInk.Of(UiTokens.Well));
+                Fill(new Rect(pill.x, pill.y, pill.width, 1), UiInk.Light(.12f));
+                Fill(new Rect(value ? pill.xMax - 17 : pill.x + 3, pill.y + 3, 14, 14), Text);
+                Label(new Rect(pill.x - 50, r.y, 44, r.height), value ? "ON" : "OFF", UiType.Caption, value ? Accent : Muted, TextAnchor.MiddleRight);
+                return value;
+            }
+            UiSdf.Rect(pill, UiSdf.Style.Solid(Color.Lerp(UiInk.Of(UiTokens.Well), AccentDeep, on), 10f)
                 .WithGradient(Color.Lerp(Raised, Accent, on), UiSdf.Gradient.Vertical));
-            var rim = UiSdf.Style.Solid(new Color(1f, 1f, 1f, .12f), 10f);
+            var rim = UiSdf.Style.Solid(UiInk.Light(.12f), 10f);
             rim.Stroke = 1f;
             UiSdf.Rect(pill, rim);
             float kx = Mathf.Lerp(pill.x + 3, pill.xMax - 17, on);
@@ -1002,45 +1085,70 @@ namespace Shooter.Presentation.Session
             return value;
         }
 
-        public void Backdrop(bool overlay = false)
+        /// <summary>
+        /// ADR-123 shell backdrop. The live map vista fills the screen under token scrims; <paramref name="dim"/> darkens
+        /// it further for content-heavy pages so every page reads as the same place. Overlays (pause, confirm) dim the
+        /// paused frame with a deep scrim and vignette.
+        /// </summary>
+        public void Backdrop(bool overlay = false, float dim = 0f)
         {
             // The backdrop stays put while page content rises in (ADR-086 enter offset).
             Matrix4x4 contentMatrix = GUI.matrix;
             GUI.matrix = contentMatrix * Matrix4x4.Translate(new Vector3(0f, -enterOffset, 0f));
-            try { DrawBackdrop(overlay); }
+            try { DrawBackdrop(overlay, dim); }
             finally { GUI.matrix = contentMatrix; }
         }
 
-        private void DrawBackdrop(bool overlay)
+        private void DrawBackdrop(bool overlay, float dim)
         {
-            if (!overlay && SceneTexture != null)
+            if (overlay)
             {
-                if (Event.current.type == EventType.Repaint) GUI.DrawTexture(new Rect(0, 0, Width, Height), SceneTexture, ScaleMode.ScaleAndCrop);
-                // Compact left rail scrim + soft bottom fade so nav/cards stay readable over the live stage.
+                Fill(new Rect(0, 0, Width, Height), UiInk.Shade(.78f));
+                EdgeVignette(Width, Height, .6f, UiInk.Shade(1f));
+                return;
+            }
+            if (SceneTexture != null)
+            {
+                if (Event.current.type == EventType.Repaint)
+                {
+                    GUI.DrawTexture(new Rect(0, 0, Width, Height), SceneTexture, ScaleMode.ScaleAndCrop);
+                    if (SceneFade != null && SceneFadeAlpha > 0.01f)
+                    {
+                        Color prior = GUI.color;
+                        GUI.color = UiInk.Light(SceneFadeAlpha);
+                        GUI.DrawTexture(new Rect(0, 0, Width, Height), SceneFade, ScaleMode.ScaleAndCrop);
+                        GUI.color = prior;
+                    }
+                }
+                if (dim > 0f) Fill(new Rect(0, 0, Width, Height), UiInk.Shade(dim));
+                // Left rail scrim, top fade and bottom fade so navigation, header and cards stay readable over the vista.
                 if (UiSdf.Available)
                 {
                     // Two smooth gradient spans approximate the eased falloff without banding.
-                    Color deep = new Color(.02f, .03f, .035f, .9f), mid = new Color(.02f, .03f, .035f, .38f), none = new Color(.02f, .03f, .035f, 0f);
+                    Color deep = UiInk.Shade(.88f), mid = UiInk.Shade(.36f), none = UiInk.Shade(0f);
                     float spanA = Width * .2f, spanB = Width * .38f;
                     UiSdf.Rect(new Rect(0, 0, spanA, Height), UiSdf.Style.Solid(deep).WithGradient(mid, UiSdf.Gradient.Horizontal));
                     UiSdf.Rect(new Rect(spanA, 0, spanB, Height), UiSdf.Style.Solid(mid).WithGradient(none, UiSdf.Gradient.Horizontal));
-                    float fade = Height * .26f;
-                    UiSdf.Rect(new Rect(0, Height - fade, Width, fade), UiSdf.Style.Solid(new Color(.015f, .025f, .03f, 0f))
-                        .WithGradient(new Color(.015f, .025f, .03f, .5f), UiSdf.Gradient.Vertical));
+                    float top = Height * .14f, fade = Height * .3f;
+                    UiSdf.Rect(new Rect(0, 0, Width, top), UiSdf.Style.Solid(UiInk.Shade(.45f)).WithGradient(none, UiSdf.Gradient.Vertical));
+                    UiSdf.Rect(new Rect(0, Height - fade, Width, fade), UiSdf.Style.Solid(none).WithGradient(UiInk.Shade(.62f), UiSdf.Gradient.Vertical));
+                    UiSdf.EdgeFade(new Rect(0, 0, Width, Height), UiInk.Shade(1f), Height * .2f, .45f);
                     return;
                 }
                 for (int i = 0; i < 28; i++)
                 {
                     float u = i / 27f;
-                    Fill(new Rect(i * Width / 48, 0, Width / 48 + 1, Height), new Color(.02f, .03f, .035f, .9f * Mathf.Pow(1 - u, 1.85f)));
-                    Fill(new Rect(0, Height - i * Height / 110, Width, Height / 110 + 1), new Color(.015f, .025f, .03f, .48f * (1 - u)));
+                    Fill(new Rect(i * Width / 48, 0, Width / 48 + 1, Height), UiInk.Shade(.88f * Mathf.Pow(1 - u, 1.85f)));
+                    Fill(new Rect(0, Height - i * Height / 110, Width, Height / 110 + 1), UiInk.Shade(.55f * (1 - u)));
                 }
                 return;
             }
-            Fill(new Rect(0, 0, Width, Height), overlay ? new Color(.03f, .045f, .05f, .95f) : Background);
-            if (overlay) return;
+            Fill(new Rect(0, 0, Width, Height), Background);
+            if (UiSdf.Available)
+                UiSdf.Rect(new Rect(0, 0, Width, Height), UiSdf.Style.Solid(UiInk.Of(UiTokens.Panel, .55f))
+                    .WithGradient(UiInk.Of(UiTokens.Panel, 0f), UiSdf.Gradient.Radial));
             // Analytic contour lines: decorative terrain, never a tactical map or an imported image.
-            Color contour = new Color(.20f, .27f, .28f, .28f);
+            Color contour = UiInk.Of(UiTokens.Contour, .28f);
             float x0 = Width * .46f;
             for (int band = 0; band < 12; band++)
             {
@@ -1058,14 +1166,43 @@ namespace Shooter.Presentation.Session
             Fill(new Rect(0, Height - 8, Width * .22f, 2), Accent);
         }
 
-        public void Header(string eyebrow, string title, string right = "LOCAL MATCH")
+        /// <summary>
+        /// ADR-123 screen header shared by every page: amber tick + eyebrow, condensed title, optional context on the
+        /// right, then a full-width rule with an amber lead and the brand emblem at its right end.
+        /// </summary>
+        public void Header(string eyebrow, string title, string right = "")
         {
-            Label(new Rect(Safe.x, Safe.y, Safe.width * .65f, 16), eyebrow, 12, Accent);
-            Label(new Rect(Safe.x, Safe.y + 16, Safe.width * .7f, 36), title, 32);
-            Label(new Rect(Safe.x + Safe.width * .62f, Safe.y, Safe.width * .38f, 18), right, 12, Muted, TextAnchor.UpperRight);
-            Fill(new Rect(Safe.x, Safe.y + 58, Safe.width, 1), Raised);
-            Fill(new Rect(Safe.x, Safe.y + 58, 56, 2), Accent);
-            Fill(new Rect(Safe.x + 56, Safe.y + 58, 24, 1), PanelEdge);
+            Fill(new Rect(Safe.x, Safe.y + 3, UiSpace.Rail, 10), Accent);
+            Label(new Rect(Safe.x + 10, Safe.y, Safe.width * .6f, 16), eyebrow, UiType.Caption, Accent);
+            LabelFit(new Rect(Safe.x, Safe.y + 15, Safe.width * .7f, 40), title, UiType.Title, Text, TextAnchor.UpperLeft, UiType.Heading);
+            if (!string.IsNullOrEmpty(right))
+                Label(new Rect(Safe.x + Safe.width * .62f, Safe.y, Safe.width * .38f - 26, 18), right, UiType.Caption, Muted, TextAnchor.UpperRight);
+            Emblem(new Rect(Safe.xMax - 18, Safe.y - 1, 18, 18), UiInk.Alpha(Accent, .8f));
+            float rule = Safe.y + UiSpace.HeaderHeight - 4;
+            Fill(new Rect(Safe.x, rule, Safe.width, 1), UiInk.Alpha(PanelEdge, .8f));
+            Fill(new Rect(Safe.x, rule - .5f, 56, 2), Accent);
+        }
+
+        /// <summary>
+        /// ADR-123 footer shared by every page: keycap hints on the left, a status line on the right, above a hairline.
+        /// </summary>
+        public void KeyHints(string status, params string[] keyAction)
+        {
+            float y = Safe.yMax - 20;
+            Fill(new Rect(Safe.x, y - 8, Safe.width, 1), UiInk.Alpha(PanelEdge, .55f));
+            Fill(new Rect(Safe.x, y - 8, 16, 1), Accent);
+            float x = Safe.x;
+            for (int i = 0; i + 1 < keyAction.Length; i += 2)
+            {
+                float kw = Mathf.Max(22f, TextWidth(keyAction[i], UiType.Micro + 1) + 12f);
+                Keycap(new Rect(x, y, kw, 18), keyAction[i]);
+                x += kw + 6;
+                float aw = TextWidth(keyAction[i + 1], UiType.Caption);
+                Label(new Rect(x, y + 1, aw + 4, 16), keyAction[i + 1], UiType.Caption, Muted);
+                x += aw + 18;
+            }
+            if (!string.IsNullOrEmpty(status))
+                LabelFit(new Rect(x + 12, y + 1, Safe.xMax - x - 12, 16), status, UiType.Caption, Muted, TextAnchor.UpperRight);
         }
 
         /// <summary>
@@ -1085,21 +1222,20 @@ namespace Shooter.Presentation.Session
             System.Collections.Generic.IReadOnlyList<Shooter.Generation.Environment.CollisionBox>? blueprint = null,
             Shooter.Contracts.Float3? spawn1 = null, Shooter.Contracts.Float3? spawn2 = null)
         {
-            Backdrop();
+            Backdrop(dim: .35f);
             Header(ShellUiCopy.EyebrowInsertion, headerTitle);
             Rect a = Safe;
-            float panelW = Mathf.Min(920, a.width);
-            float panelH = Mathf.Min(268, a.height * .48f);
-            Rect panel = new Rect(a.x, a.y + 78, panelW, panelH);
-            Panel(panel, accentTop: true, rail: true);
+            float panelW = Mathf.Min(940, a.width);
+            float panelH = Mathf.Min(286, a.height * .5f);
+            Rect panel = new Rect(a.x, a.y + 80, panelW, panelH);
+            Frame(panel, FrameKind.Hero, rail: true);
 
             float mediaW = 0f;
             if (media != null || blueprint != null)
             {
-                mediaW = Mathf.Min(280, panel.width * .34f);
-                Rect mediaRect = new Rect(panel.x + 14, panel.y + 16, mediaW, panel.height - 32);
-                Fill(mediaRect, new Color(.02f, .03f, .035f, .98f));
-                Edge(mediaRect);
+                mediaW = Mathf.Min(300, panel.width * .36f);
+                Rect mediaRect = new Rect(panel.x + 16, panel.y + 16, mediaW, panel.height - 32);
+                DrawFrame(mediaRect, FrameKind.Card);
                 Rect inset = new Rect(mediaRect.x + 3, mediaRect.y + 3, mediaRect.width - 6, mediaRect.height - 6);
                 Fill(inset, Surface);
                 if (blueprint != null) DrawBlueprint(inset, blueprint, spawn1, spawn2, reducedMotion);
@@ -1108,102 +1244,74 @@ namespace Shooter.Presentation.Session
                     float pan = reducedMotion ? 0f : Mathf.Sin(Time.unscaledTime * .08f) * .025f;
                     GUI.DrawTextureWithTexCoords(inset, media, new Rect(.04f + pan, .04f, .92f, .92f));
                 }
-                for (int i = 0; i < 7; i++)
-                {
-                    float u = i / 6f;
-                    Fill(new Rect(inset.x, inset.y + i * 3f, inset.width, 4f), new Color(0f, 0f, 0f, .18f * (1f - u)));
-                }
-                // Selection-style corner brackets on the media plate.
-                AccentBar(new Rect(mediaRect.x, mediaRect.y, 14, 2), Accent);
-                AccentBar(new Rect(mediaRect.x, mediaRect.y, 2, 14), Accent);
-                AccentBar(new Rect(mediaRect.xMax - 14, mediaRect.y, 14, 2), Accent);
-                AccentBar(new Rect(mediaRect.xMax - 2, mediaRect.y, 2, 14), Accent);
-                AccentBar(new Rect(mediaRect.x, mediaRect.yMax - 2, 14, 2), Accent);
-                AccentBar(new Rect(mediaRect.x, mediaRect.yMax - 14, 2, 14), Accent);
-                AccentBar(new Rect(mediaRect.xMax - 14, mediaRect.yMax - 2, 14, 2), Accent);
-                AccentBar(new Rect(mediaRect.xMax - 2, mediaRect.yMax - 14, 2, 14), Accent);
-                mediaW += 18f;
+                MediaScrim(inset, 24f, .4f);
+                Brackets(new Rect(inset.x + 6, inset.y + 6, inset.width - 12, inset.height - 12), Accent, 14f, 2f);
+                mediaW += 20f;
             }
 
-            float textX = panel.x + 18 + mediaW;
-            float textW = panel.xMax - textX - 18;
-            Label(new Rect(textX, panel.y + 18, textW, 28), briefingTitle, 22);
-            Label(new Rect(textX, panel.y + 52, textW, 28), (mapDisplayName ?? "").ToUpperInvariant(), 26);
-            Label(new Rect(textX, panel.y + 88, textW, 22), rulesLine ?? "", 14, Muted);
+            float textX = panel.x + 20 + mediaW;
+            float textW = panel.xMax - textX - 20;
+            Label(new Rect(textX, panel.y + 18, textW, 18), briefingTitle ?? "", UiType.Caption, Accent);
+            LabelFit(new Rect(textX, panel.y + 36, textW, 40), (mapDisplayName ?? "").ToUpperInvariant(), UiType.Title, Text, TextAnchor.UpperLeft, UiType.Heading);
+            Label(new Rect(textX, panel.y + 80, textW, 22), rulesLine ?? "", UiType.Small, Muted);
 
-            // Phase strip with accent tick.
-            float phaseY = panel.y + 128;
-            Fill(new Rect(textX, phaseY, 3, 36), Accent);
-            Fill(new Rect(textX + 3, phaseY, textW - 3, 36), new Color(1f, 1f, 1f, .04f));
-            Label(new Rect(textX + 14, phaseY + 6, textW - 28, 24), phaseText ?? "", 16, Muted);
+            // Phase strip with an amber tick.
+            float phaseY = panel.y + 116;
+            Fill(new Rect(textX, phaseY, UiSpace.Rail, 36), Accent);
+            Fill(new Rect(textX + UiSpace.Rail, phaseY, textW - UiSpace.Rail, 36), UiInk.Light(.04f));
+            Label(new Rect(textX + 14, phaseY + 9, textW - 28, 22), phaseText ?? "", UiType.Body, Text);
 
-            // Dual-track indeterminate activity with corner brackets (never a fabricated %).
-            float barY = panel.yMax - 36;
-            float barX = textX;
-            float barW = textW;
-            if (UiSdf.Rect(new Rect(barX, barY, barW, 10), UiSdf.Style.Solid(new Color32(48, 58, 64, 255), 5f).WithGradient(new Color32(30, 38, 43, 255), UiSdf.Gradient.Vertical)))
+            // Indeterminate activity only, never a fabricated percentage. SDF and flat paths share the geometry.
+            Rect bar = new Rect(textX, panel.yMax - 38, textW, 8);
+            float seg = Mathf.Max(48f, bar.width * .22f);
+            float travel = Mathf.Max(1f, bar.width - 4f - seg);
+            float offset = reducedMotion ? 0f : Hud.UiMotion.InOutCubic(Mathf.PingPong(Time.realtimeSinceStartup * .42f, 1f)) * travel;
+            Rect run = reducedMotion ? new Rect(bar.x + 2, bar.y + 2, bar.width - 4, 4) : new Rect(bar.x + 2 + offset, bar.y + 2, seg, 4);
+            if (UiSdf.Rect(bar, UiSdf.Style.Solid(UiInk.Of(UiTokens.Shade, .9f), 4f).WithGradient(Raised, UiSdf.Gradient.Vertical)))
             {
-                var trackRim = UiSdf.Style.Solid(new Color(1f, 1f, 1f, .10f), 5f);
+                var trackRim = UiSdf.Style.Solid(UiInk.Light(.10f), 4f);
                 trackRim.Stroke = 1f;
-                UiSdf.Rect(new Rect(barX, barY, barW, 10), trackRim);
-                if (reducedMotion)
-                {
-                    UiSdf.Rect(new Rect(barX + 2, barY + 2, barW - 4, 6), UiSdf.Style.Solid(Accent, 3f));
-                }
-                else
-                {
-                    float seg = Mathf.Max(48f, barW * .22f);
-                    float travel = Mathf.Max(1f, barW - 4f - seg);
-                    float offset = Hud.UiMotion.InOutCubic(Mathf.PingPong(Time.realtimeSinceStartup * .42f, 1f)) * travel;
-                    UiSdf.Rect(new Rect(barX + 2 + offset, barY + 2, seg, 6), UiSdf.Style.Solid(new Color(Accent.r, Accent.g, Accent.b, .25f), 3f)
-                        .WithGradient(Accent, UiSdf.Gradient.Horizontal).WithGlow(Accent, 8f, ReducedFlash ? .12f : .3f));
-                }
+                UiSdf.Rect(bar, trackRim);
+                UiSdf.Rect(run, UiSdf.Style.Solid(reducedMotion ? Accent : UiInk.Alpha(Accent, .25f), 2f)
+                    .WithGradient(Accent, UiSdf.Gradient.Horizontal).WithGlow(Accent, 8f, ReducedFlash ? .12f : .3f));
             }
             else
             {
-                Fill(new Rect(barX, barY, barW, 10), Raised);
-                Fill(new Rect(barX, barY, barW, 1), PanelEdge);
-                Fill(new Rect(barX, barY + 9, barW, 1), new Color(0f, 0f, 0f, .35f));
-                AccentBar(new Rect(barX, barY - 4, 10, 2), Accent);
-                AccentBar(new Rect(barX, barY - 4, 2, 10), Accent);
-                AccentBar(new Rect(barX + barW - 10, barY - 4, 10, 2), Accent);
-                AccentBar(new Rect(barX + barW - 2, barY - 4, 2, 10), Accent);
-                AccentBar(new Rect(barX, barY + 12, 10, 2), Accent);
-                AccentBar(new Rect(barX, barY + 4, 2, 10), Accent);
-                AccentBar(new Rect(barX + barW - 10, barY + 12, 10, 2), Accent);
-                AccentBar(new Rect(barX + barW - 2, barY + 4, 2, 10), Accent);
-                if (reducedMotion)
-                {
-                    Fill(new Rect(barX, barY + 3, barW, 4), Accent);
-                }
-                else
-                {
-                    float seg = Mathf.Max(48f, barW * .22f);
-                    float travel = Mathf.Max(1f, barW - seg);
-                    float offset = Mathf.PingPong(Time.realtimeSinceStartup * .42f, 1f) * travel;
-                    Fill(new Rect(barX + offset, barY + 2, seg, 6), Accent);
-                    Fill(new Rect(barX + offset, barY + 2, 3, 6), Text);
-                }
+                Fill(bar, Raised);
+                Fill(new Rect(bar.x, bar.y, bar.width, 1), PanelEdge);
+                Fill(run, Accent);
             }
+            Label(new Rect(textX, bar.yMax + 8, textW, 16), ShellUiCopy.LoadingActivity, UiType.Micro + 1, Muted);
 
-            Label(new Rect(a.x, panel.yMax + 16, panelW, 38),
-                InsertionScreenCopy.TipAt(Time.unscaledTime, reducedMotion), 14, Muted);
+            // Rotating field tip under the briefing, on its own plate.
+            Rect tip = new Rect(a.x, panel.yMax + 14, panelW, 46);
+            Frame(tip, FrameKind.Plate, rail: true);
+            Label(new Rect(tip.x + 16, tip.y + 6, 80, 14), ShellUiCopy.LoadingTip, UiType.Micro, Accent);
+            LabelFit(new Rect(tip.x + 16, tip.y + 20, tip.width - 32, 20),
+                InsertionScreenCopy.TipAt(Time.unscaledTime, reducedMotion), UiType.Small, Text, TextAnchor.UpperLeft, UiType.Caption);
             bool cancel = false;
             if (showCancel)
-                cancel = Button(new Rect(a.x, a.yMax - 66, 180, 44), "load.cancel", "CANCEL");
-
-            Fill(new Rect(a.x, a.yMax - 24, Mathf.Min(96, a.width * .16f), 1), Raised);
-            Fill(new Rect(a.x, a.yMax - 24, 16, 1), Accent);
-            Label(new Rect(a.x, a.yMax - 16, a.width, 16), footer ?? "", 12, Muted);
+                cancel = Button(new Rect(a.x, a.yMax - 74, 180, 44), "load.cancel", ShellUiCopy.LoadingCancel);
+            KeyHints(footer ?? "", showCancel ? new[] { "ESC", ShellUiCopy.LoadingCancel } : Array.Empty<string>());
             return cancel;
         }
 
+        /// <summary>ADR-123 keycap: raised plate with a darker lip, hairline rim and condensed caps.</summary>
         public void Keycap(Rect r, string label, Color? ink = null)
         {
-            var style = UiSdf.Style.Solid(ink ?? Text, 3f); style.Stroke = 1f;
-            UiSdf.Rect(r, UiSdf.Style.Solid(Raised, 3f));
-            UiSdf.Rect(r, style);
-            Label(r, label, 11, ink ?? Text, TextAnchor.MiddleCenter);
+            Color c = ink ?? Text;
+            if (UiSdf.Rect(r, UiSdf.Style.Solid(Raised, 3f).WithGradient(Surface, UiSdf.Gradient.Vertical).WithShadow(.4f, 3f, 1.5f)))
+            {
+                var rim = UiSdf.Style.Solid(UiInk.Alpha(c, .45f), 3f);
+                rim.Stroke = 1f;
+                UiSdf.Rect(r, rim);
+            }
+            else
+            {
+                Fill(r, Raised);
+                Fill(new Rect(r.x, r.yMax - 2, r.width, 2), UiInk.Dark(.4f));
+            }
+            LabelFit(r, label, UiType.Micro + 1, c, TextAnchor.MiddleCenter, 8);
         }
 
         private void DrawBlueprint(Rect r, System.Collections.Generic.IReadOnlyList<Shooter.Generation.Environment.CollisionBox> boxes,
@@ -1217,7 +1325,7 @@ namespace Shooter.Presentation.Session
             GUI.BeginGroup(r);
             try
             {
-                Color grid = new Color(.25f, .65f, .72f, .14f);
+                Color grid = UiInk.Of(UiTokens.Blueprint, .14f);
                 for (int i = 0; i <= 10; i++)
                 {
                     Fill(new Rect(i * r.width / 10, 0, 1, r.height), grid);
@@ -1228,11 +1336,11 @@ namespace Shooter.Presentation.Session
                     var box = boxes[i]; if (!box.Gameplay || box.Size.Y < .3f) continue;
                     float x = r.width * .5f + box.Center.X * scale, y = r.height * .5f - box.Center.Z * scale;
                     var q = new Rect(x - box.Size.X * scale * .5f, y - box.Size.Z * scale * .5f, box.Size.X * scale, box.Size.Z * scale);
-                    Fill(q, new Color(.15f, .48f, .56f, .32f)); Edge(q);
+                    Fill(q, UiInk.Of(UiTokens.BlueprintFill, .32f)); Edge(q);
                 }
                 if (spawn1.HasValue) MapGlyph(r.width * .5f + spawn1.Value.X * scale, r.height * .5f - spawn1.Value.Z * scale, Generation.Icons.IconLibrary.AllyArrow, Ally);
                 if (spawn2.HasValue) MapGlyph(r.width * .5f + spawn2.Value.X * scale, r.height * .5f - spawn2.Value.Z * scale, Generation.Icons.IconLibrary.EnemyMarker, Enemy);
-                if (!reducedMotion) Fill(new Rect(0, Mathf.Repeat(Time.unscaledTime * 14f, r.height), r.width, 1), new Color(.5f, .9f, 1f, .35f));
+                if (!reducedMotion) Fill(new Rect(0, Mathf.Repeat(Time.unscaledTime * 14f, r.height), r.width, 1), UiInk.Of(UiTokens.BlueprintScan, .35f));
             }
             finally { GUI.EndGroup(); }
         }
@@ -1326,7 +1434,7 @@ namespace Shooter.Presentation.Session
 
         // Unity's IMGUI font path linearizes style tints; compensate so the displayed sRGB
         // text matches the palette used for contrast, just like the DrawTexture backing plates.
-        private static Color StyleInk(Color color) => QualitySettings.activeColorSpace == ColorSpace.Linear ? color.gamma : color;
+        internal static Color StyleInk(Color color) => QualitySettings.activeColorSpace == ColorSpace.Linear ? color.gamma : color;
 
         public static string ControlLabel(string control)
         {

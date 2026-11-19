@@ -6,6 +6,7 @@ using Shooter.Game.Settings;
 using Shooter.Generation.Icons;
 using Shooter.Presentation.Hud;
 using Shooter.Presentation.Menus;
+using Shooter.Presentation.Style;
 using UnityEngine;
 
 namespace Shooter.Presentation.Session
@@ -131,7 +132,7 @@ namespace Shooter.Presentation.Session
 
         private void DrawLockTag(Rect r)
         {
-            TacticalUi.Plate(r, UiSdf.Style.Solid(new Color(0f, 0f, 0f, .35f), r.height * .5f));
+            TacticalUi.Plate(r, UiSdf.Style.Solid(UiInk.Dark(.35f), r.height * .5f));
             float x = r.x + 6f;
             if (TacticalUi.Icon(new Rect(x, r.y + 2f, r.height - 4f, r.height - 4f), IconLibrary.UiLock, TacticalUi.Muted)) x += r.height;
             ui.Label(new Rect(x, r.y, r.xMax - x - 4f, r.height), ShellUiCopy.ArmoryLocked, 10, TacticalUi.Muted, TextAnchor.MiddleLeft);
@@ -140,7 +141,7 @@ namespace Shooter.Presentation.Session
         private void DrawLockedWeaponRow(Rect row, DefinitionId weapon)
         {
             float iconW = Mathf.Min(150, row.width * .3f);
-            Color dim = new Color(TacticalUi.Muted.r, TacticalUi.Muted.g, TacticalUi.Muted.b, .45f);
+            Color dim = UiInk.Alpha(TacticalUi.Muted, .45f);
             if (Shooter.Presentation.View.WeaponVisualProfiles.TryGet(weapon, out var profile))
                 TacticalUi.KillFeedWeaponIcon(new Rect(row.x + 14, row.y + row.height * .2f, iconW, row.height * .6f), profile.KillFeedGlyph, dim);
             float tx = row.x + iconW + 28;
@@ -167,7 +168,7 @@ namespace Shooter.Presentation.Session
         /// </summary>
         private void DrawCareer()
         {
-            ui.Backdrop();
+            ui.Backdrop(dim: .45f);
             ui.Header(ShellUiCopy.CareerEyebrow, ShellUiCopy.CareerTitle, "");
             var layout = CareerLayout.Build(new HudRect(ui.Safe.x, ui.Safe.y, ui.Safe.width, ui.Safe.height));
             var profile = career.Profile;
@@ -222,8 +223,8 @@ namespace Shooter.Presentation.Session
             {
                 Color wash = pal.MetalBottom;
                 UiSdf.Rect(new Rect(hero.x, hero.y, hero.width * .5f, hero.height),
-                    UiSdf.Style.Solid(new Color(wash.r, wash.g, wash.b, .14f), Hud.UiShapeParams.PlateRadius)
-                        .WithGradient(new Color(wash.r, wash.g, wash.b, 0f), UiSdf.Gradient.Horizontal));
+                    UiSdf.Style.Solid(UiInk.Alpha(wash, .14f), Hud.UiShapeParams.PlateRadius)
+                        .WithGradient(UiInk.Alpha(wash, 0f), UiSdf.Gradient.Horizontal));
             }
             float glint = ui.ReducedFlash || ui.ReducedMotion ? -1f : Hud.UiMotion.GlintPosition(opened, ui.ReducedFlash);
             string progress = next == null ? ShellUiCopy.CareerTopRank : ShellUiCopy.CareerProgress(profile.CareerPoints, next.Threshold);
@@ -320,7 +321,7 @@ namespace Shooter.Presentation.Session
                 if (UiSdf.Available)
                 {
                     Rect discR = R(line.HaloRect(slot, current));
-                    UiSdf.Circle(discR, UiSdf.Style.Solid(new Color(.02f, .03f, .035f, .85f)));
+                    UiSdf.Circle(discR, UiSdf.Style.Solid(UiInk.Shade(.85f)));
                     if (current)
                     {
                         var ring = UiSdf.Style.Solid(TacticalUi.Accent).WithGlow(TacticalUi.Accent, 10f, ui.ReducedFlash ? .2f : .35f);
@@ -347,7 +348,7 @@ namespace Shooter.Presentation.Session
 
             // Window position rail.
             Rect pos = R(line.PositionRail);
-            TacticalUi.Plate(pos, UiSdf.Style.Solid(new Color(1f, 1f, 1f, .08f), 1.5f));
+            TacticalUi.Plate(pos, UiSdf.Style.Solid(UiInk.Light(.08f), 1.5f));
             float thumbW = pos.width * visible / CareerLadder.RankCount;
             float thumbX = pos.x + (pos.width - thumbW) * (maxFirst <= 0 ? 0f : careerFirstRow / (float)maxFirst);
             TacticalUi.Plate(new Rect(thumbX, pos.y, thumbW, pos.height), UiSdf.Style.Solid(TacticalUi.Accent, 1.5f));
@@ -369,7 +370,7 @@ namespace Shooter.Presentation.Session
             if (chips.Count == 0)
             {
                 Rect empty = R(layout.Perks);
-                TacticalUi.Plate(empty, UiSdf.Style.Solid(new Color(0f, 0f, 0f, .25f), Hud.UiShapeParams.PlateRadius));
+                TacticalUi.Plate(empty, UiSdf.Style.Solid(UiInk.Dark(.25f), Hud.UiShapeParams.PlateRadius));
                 ui.LabelFit(new Rect(empty.x + 12, empty.y, empty.width - 24, empty.height), ShellUiCopy.CareerNoBuffs, 13, TacticalUi.Muted, TextAnchor.MiddleLeft);
                 return;
             }
@@ -397,12 +398,12 @@ namespace Shooter.Presentation.Session
                 ("BEST STREAK", ShellUiCopy.Thousands(p.BestStreak)),
                 ("TIME PLAYED", ShellUiCopy.PlayTime(p.ActiveTicks)),
             };
-            Color rule = new Color(TacticalUi.Accent.r, TacticalUi.Accent.g, TacticalUi.Accent.b, .7f);
+            Color rule = UiInk.Alpha(TacticalUi.Accent, .7f);
             for (int i = 0; i < cells.Length; i++)
             {
                 Rect c = R(layout.RecordTile(i));
-                TacticalUi.Plate(c, UiSdf.Style.Solid(new Color(.12f, .15f, .16f, .92f), Hud.UiShapeParams.PlateRadius)
-                    .WithGradient(new Color(.06f, .075f, .08f, .92f), UiSdf.Gradient.Vertical));
+                TacticalUi.Plate(c, UiSdf.Style.Solid(UiInk.Of(UiTokens.PanelTop, .92f), UiSpace.FrameRadius)
+                    .WithGradient(UiInk.Of(UiTokens.Panel, .92f), UiSdf.Gradient.Vertical));
                 TacticalUi.Fill(new Rect(c.x, c.y + 4f, 2f, c.height - 8f), rule);
                 // Always stacked: label on top, value below at a size the tile can hold (ADR-114).
                 float labelH = c.height >= 80f ? 16f : 14f;
@@ -430,11 +431,11 @@ namespace Shooter.Presentation.Session
             long shownCp = award.Before.CareerPoints + (long)Math.Round(award.Total * (double)Hud.UiMotion.OutCubic(fillT));
             int shownRank = CareerLadder.RankFor(shownCp);
             bool promotedNow = award.Promoted && shownRank > award.RankBefore;
-            TacticalUi.Plate(r, UiSdf.Style.Solid(new Color(.07f, .085f, .092f, .94f * alpha), Hud.UiShapeParams.PlateRadius)
-                .WithGradient(new Color(.035f, .045f, .05f, .94f * alpha), UiSdf.Gradient.Vertical).WithShadow(.35f * alpha));
+            TacticalUi.Plate(r, UiSdf.Style.Solid(UiInk.Of(UiTokens.Panel, .94f * alpha), UiSpace.FrameRadius)
+                .WithGradient(UiInk.Of(UiTokens.Well, .94f * alpha), UiSdf.Gradient.Vertical).WithShadow(.35f * alpha));
             if (promotedNow && UiSdf.Available)
             {
-                var edge = UiSdf.Style.Solid(new Color(TacticalUi.Gold.r, TacticalUi.Gold.g, TacticalUi.Gold.b, .6f * alpha), Hud.UiShapeParams.PlateRadius)
+                var edge = UiSdf.Style.Solid(UiInk.Alpha(TacticalUi.Gold, .6f * alpha), Hud.UiShapeParams.PlateRadius)
                     .WithGlow(TacticalUi.Gold, 8f, (ui.ReducedFlash ? .15f : .3f) * alpha);
                 edge.Stroke = 1f;
                 UiSdf.Rect(r, edge);
@@ -444,11 +445,11 @@ namespace Shooter.Presentation.Session
             float tx = r.x + r.height + 10;
             float tw = r.width * .58f - tx + r.x;
             string outcomeLabel = award.Outcome == CareerMatchOutcome.Win ? "WIN" : "DRAW";
-            Color accent = new Color(TacticalUi.Accent.r, TacticalUi.Accent.g, TacticalUi.Accent.b, alpha);
+            Color accent = UiInk.Alpha(TacticalUi.Accent, alpha);
             ui.Label(new Rect(tx, r.y + 4, tw, 18),
                 ShellUiCopy.CareerAwardLine(award.Total, award.ScorePoints, award.CompletionPoints, award.OutcomePoints, outcomeLabel), 14, accent);
             var next = CareerLadder.Next(shownRank);
-            Color muted = new Color(TacticalUi.Muted.r, TacticalUi.Muted.g, TacticalUi.Muted.b, alpha);
+            Color muted = UiInk.Alpha(TacticalUi.Muted, alpha);
             ui.Label(new Rect(tx, r.y + 24, tw, 16), CareerLadder.Get(shownRank).Name.ToUpperInvariant() + "  ·  "
                 + (next == null ? ShellUiCopy.CareerTopRank : ShellUiCopy.CareerProgress(shownCp, next.Threshold)), 11, muted);
 
@@ -462,7 +463,7 @@ namespace Shooter.Presentation.Session
             {
                 var reached = CareerLadder.Get(shownRank);
                 var art = CareerRewardCatalog.For(reached);
-                Color gold = new Color(TacticalUi.Gold.r, TacticalUi.Gold.g, TacticalUi.Gold.b, alpha);
+                Color gold = UiInk.Alpha(TacticalUi.Gold, alpha);
                 float iconW = art.Wide ? 44f : 18f;
                 Rect iconR = new Rect(track.xMax - iconW, r.y + 3, iconW, 18);
                 if (CareerArt.RewardIcon(iconR, art, Color.Lerp(Color.white, TacticalUi.Gold, .3f), TacticalUi.GoldDeep, alpha))

@@ -6,7 +6,9 @@ param(
     [Parameter(Mandatory = $true)][string]$ReleaseVersion,
     [string]$IsccPath = '',
     # Optional installer-report.json of the previous release; ReleaseVersion must be strictly greater.
-    [string]$PreviousInstallerReport = ''
+    [string]$PreviousInstallerReport = '',
+    # ADR-123 installer-art tool project; defaults to Tools/InstallerArt next to this script (synthetic tests pass the real one).
+    [string]$InstallerArtProject = ''
 )
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
@@ -73,6 +75,7 @@ $report = [ordered]@{
     installerBytes = $null
     releaseAcceptance = 'NotClaimed'
     scope = 'Installer artifact build only. INS01-INS06 and REL01/REL06 are separate evidence; nothing here is acceptance.'
+    installerArt = $null
     failure = $null
 }
 
@@ -197,6 +200,20 @@ try {
         note = 'Immutable build identities of the installed release pair. Written by Build-Installer.ps1; user settings are not stored here.'
     }
     ($installerIdentity | ConvertTo-Json -Depth 6) | Set-Content -LiteralPath (Join-Path $extraDir 'installer-identity.json') -Encoding utf8
+
+    # ---- ADR-123 generated installer art (setup icon, wizard bitmaps) from the analytic brand recipe ----
+    $artProject = if ($InstallerArtProject) { $InstallerArtProject } else { Join-Path $PSScriptRoot 'InstallerArt/InstallerArt.csproj' }
+    $previousPreference = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try { $artOutput = & dotnet run --project $artProject --configuration Release -- $extraDir 2>&1 | Out-String; $artExit = $LASTEXITCODE }
+    finally { $ErrorActionPreference = $previousPreference }
+    if ($artExit -ne 0) { throw "InstallerArt failed with exit code ${artExit}: $artOutput" }
+    $report.installerArt = [ordered]@{}
+    foreach ($artName in @('setup.ico', 'wizard.bmp', 'wizard-small.bmp')) {
+        $artPath = Join-Path $extraDir $artName
+        if (!(Test-Path -LiteralPath $artPath -PathType Leaf)) { throw "InstallerArt did not write $artName" }
+        $report.installerArt[$artName] = Get-Sha256File $artPath
+    }
 
     # ---- Compile ----
     $outputName = "Shooter-Setup-$ReleaseVersion"

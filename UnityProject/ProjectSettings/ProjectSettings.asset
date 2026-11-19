@@ -326,27 +326,27 @@ PlayerSettings:
       m_Height: 256
       m_Kind: 0
     - serializedVersion: 2
-      m_Icon: {fileID: 2800000, guid: 80086c6dd477c63468db98eca0fe5a43, type: 2}
+      m_Icon: {fileID: 2800000, guid: 8bc9e6a652c949649a20a4bffee9cb84, type: 2}
       m_Width: 128
       m_Height: 128
       m_Kind: 0
     - serializedVersion: 2
-      m_Icon: {fileID: 2800000, guid: 80086c6dd477c63468db98eca0fe5a43, type: 2}
+      m_Icon: {fileID: 2800000, guid: 81343eeba2520f3419f07d67bf96e246, type: 2}
       m_Width: 64
       m_Height: 64
       m_Kind: 0
     - serializedVersion: 2
-      m_Icon: {fileID: 2800000, guid: 80086c6dd477c63468db98eca0fe5a43, type: 2}
+      m_Icon: {fileID: 2800000, guid: 777c06b5936299e4994bbf8d894a977d, type: 2}
       m_Width: 48
       m_Height: 48
       m_Kind: 0
     - serializedVersion: 2
-      m_Icon: {fileID: 2800000, guid: 80086c6dd477c63468db98eca0fe5a43, type: 2}
+      m_Icon: {fileID: 2800000, guid: c097c2cfb19b7d543966d6d9417dbb38, type: 2}
       m_Width: 32
       m_Height: 32
       m_Kind: 0
     - serializedVersion: 2
-      m_Icon: {fileID: 2800000, guid: 80086c6dd477c63468db98eca0fe5a43, type: 2}
+      m_Icon: {fileID: 2800000, guid: 562d280f6817cec489c84e0cc34539b2, type: 2}
       m_Width: 16
       m_Height: 16
       m_Kind: 0

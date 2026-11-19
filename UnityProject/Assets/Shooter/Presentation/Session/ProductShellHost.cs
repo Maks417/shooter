@@ -496,7 +496,14 @@ namespace Shooter.Presentation.Session
                 Event.current.Use();
             }
             float s = 1f;
-            ui.SceneTexture = menuScene != null && menuScene.gameObject.activeInHierarchy ? menuScene.Frame : null;
+            // ADR-123: the live map vista backs every front-end page; Loading and Results keep its last (frozen) frame of
+            // the selected map, so the whole shell reads as one place. The stage itself only renders on front-end pages.
+            if (menuScene != null && navigation.Screen != ShellScreen.Main) menuScene.SetFocusedMap(setup.SelectedMapId.Value);
+            bool vistaPage = menuScene != null && (menuScene.gameObject.activeInHierarchy
+                || navigation.Screen == ShellScreen.Loading || navigation.Screen == ShellScreen.Results);
+            ui.SceneTexture = vistaPage ? menuScene!.Frame : null;
+            ui.SceneFade = vistaPage ? menuScene!.PreviousFrame : null;
+            ui.SceneFadeAlpha = vistaPage ? menuScene!.FadeAlpha : 0f;
             if (settingsEditor != null)
             {
                 ui.ReducedMotion = settingsEditor.Applied.ReducedCameraMotion;
@@ -559,7 +566,7 @@ namespace Shooter.Presentation.Session
             float veil = ShellMotion.EnterVeil(navigation.Screen, sinceEnter, ui.ReducedMotion);
             if (veil > 0.005f)
                 TacticalUi.Fill(new Rect(-40, -60, ui.Width + 80, ui.Height + 120),
-                    new Color(TacticalUi.Background.r, TacticalUi.Background.g, TacticalUi.Background.b, veil * .85f));
+                    UiInk.Alpha(TacticalUi.Background, veil * .85f));
             }
             finally { ui.End(); }
         }

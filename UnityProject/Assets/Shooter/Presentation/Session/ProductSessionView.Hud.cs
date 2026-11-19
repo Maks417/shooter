@@ -12,6 +12,7 @@ using Shooter.Presentation.Input;
 using Shooter.Presentation.Menus;
 using Shooter.Presentation.Rendering;
 using Shooter.Presentation.Rig;
+using Shooter.Presentation.Style;
 using Shooter.Presentation.View;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -167,13 +168,13 @@ namespace Shooter.Presentation.Session
                     // Cinematic KIA: soft letterbox + centered status plate (code-only fills).
                     if (!reducedFlash)
                     {
-                        TacticalUi.Fill(new Rect(0, 0, combatUi.Width, combatUi.Height * .16f), new Color(.02f, .03f, .035f, .72f));
-                        TacticalUi.Fill(new Rect(0, combatUi.Height * .84f, combatUi.Width, combatUi.Height * .16f), new Color(.02f, .03f, .035f, .72f));
+                        TacticalUi.Fill(new Rect(0, 0, combatUi.Width, combatUi.Height * .16f), UiInk.Shade(.72f));
+                        TacticalUi.Fill(new Rect(0, combatUi.Height * .84f, combatUi.Width, combatUi.Height * .16f), UiInk.Shade(.72f));
                     }
                     Rect panel = new Rect(combatUi.Width * .5f - 210, combatUi.Height * .5f - 58, 420, 116);
                     TacticalUi.CombatPlate(panel, strong: true);
                     TacticalUi.Fill(new Rect(panel.x, panel.y, 3, panel.height), TacticalUi.Enemy);
-                    TacticalUi.Fill(new Rect(panel.x + 3, panel.y, panel.width - 3, 1), new Color(TacticalUi.Enemy.r, TacticalUi.Enemy.g, TacticalUi.Enemy.b, .5f));
+                    TacticalUi.Fill(new Rect(panel.x + 3, panel.y, panel.width - 3, 1), UiInk.Alpha(TacticalUi.Enemy, .5f));
                     combatUi.Label(new Rect(panel.x + 18, panel.y + 14, panel.width - 32, 16), ShellUiCopy.StatusLabel, 11, TacticalUi.Muted, TextAnchor.UpperLeft);
                     combatUi.Label(new Rect(panel.x + 18, panel.y + 34, panel.width - 32, 32), ShellUiCopy.StatusKilled, 26, TacticalUi.Enemy, TextAnchor.UpperLeft);
                     TacticalUi.Fill(new Rect(panel.x + 18, panel.y + 74, 42, 1), TacticalUi.Enemy);
@@ -243,7 +244,7 @@ namespace Shooter.Presentation.Session
             {
                 var volume = overlayVolumes[i];
                 if (volume.EntityId.Equals(human)) continue;
-                GUI.color = volume.RegionId == 1 ? new Color(1f, .25f, .2f, .9f) : new Color(1f, .9f, .2f, .75f);
+                GUI.color = volume.RegionId == 1 ? UiInk.Of(UiTokens.DebugKill, .9f) : UiInk.Of(UiTokens.DebugWarn, .75f);
                 var a = volume.Capsule.BottomSphereCenter; var b = volume.Capsule.TopSphereCenter;
                 var sa = camera.WorldToScreenPoint(new Vector3(a.X, a.Y, a.Z));
                 var sb = camera.WorldToScreenPoint(new Vector3(b.X, b.Y, b.Z));
@@ -389,17 +390,17 @@ namespace Shooter.Presentation.Session
             float segW = (barW - gap * (CombatHudVisual.HealthSegments - 1)) / CombatHudVisual.HealthSegments;
             float barY = safe.yMax - barH;
             // Dual-layer track under segmented fill.
-            TacticalUi.Fill(new Rect(hx, barY, barW, barH), new Color(.05f, .07f, .08f, .7f));
-            TacticalUi.Fill(new Rect(hx, barY, barW, 1), new Color(1f, 1f, 1f, .05f));
+            TacticalUi.Fill(new Rect(hx, barY, barW, barH), UiInk.Of(UiTokens.HudBarWell));
+            TacticalUi.Fill(new Rect(hx, barY, barW, 1), UiInk.Light(.05f));
             for (int s = 0; s < CombatHudVisual.HealthSegments; s++)
             {
                 float sx = hx + s * (segW + gap);
                 float fill = CombatHudVisual.SegmentFill(human.Health, s, segW);
                 if (fill <= 0f) continue;
-                var ink = new Color(healthInk.r, healthInk.g, healthInk.b, healthInk.a * pulse);
+                var ink = UiInk.Alpha(healthInk, healthInk.a * pulse);
                 TacticalUi.Fill(new Rect(sx, barY, fill, barH), ink);
                 if (fill > 1.5f)
-                    TacticalUi.Fill(new Rect(sx, barY, Mathf.Min(1.5f, fill), barH), new Color(1f, 1f, 1f, .16f * pulse));
+                    TacticalUi.Fill(new Rect(sx, barY, Mathf.Min(1.5f, fill), barH), UiInk.Light(.16f * pulse));
             }
 
             // ADR-110 armor block to the right of HP: same segmented bar, steel-blue, dimmed once broken.
@@ -407,11 +408,11 @@ namespace Shooter.Presentation.Session
             if (session != null) session.TryGetArmor(session.HumanEntityId, out armor);
             {
                 float ax = hx + barW + CombatHudVisual.ArmorBlockOffset;
-                var armorInk = armor > 0 ? new Color(.62f, .74f, .86f, 1f) : TacticalUi.Muted;
+                var armorInk = armor > 0 ? UiInk.Of(UiTokens.Armor) : TacticalUi.Muted;
                 combatUi.Label(new Rect(ax, hy - 2, 44, 26), armor.ToString(), 24, armorInk, TextAnchor.MiddleLeft);
                 combatUi.Label(new Rect(ax + 42, hy + 8, 60, 11), "AR", 9, TacticalUi.Muted, TextAnchor.MiddleLeft);
-                TacticalUi.Fill(new Rect(ax, barY, barW, barH), new Color(.05f, .07f, .08f, .7f));
-                TacticalUi.Fill(new Rect(ax, barY, barW, 1), new Color(1f, 1f, 1f, .05f));
+                TacticalUi.Fill(new Rect(ax, barY, barW, barH), UiInk.Of(UiTokens.HudBarWell));
+                TacticalUi.Fill(new Rect(ax, barY, barW, 1), UiInk.Light(.05f));
                 for (int s = 0; s < CombatHudVisual.HealthSegments; s++)
                 {
                     float fill = CombatHudVisual.SegmentFill(armor, s, segW);
@@ -426,7 +427,7 @@ namespace Shooter.Presentation.Session
                 tightness01 = movement.Tightness01;
             float tightH = CombatHudVisual.TightnessBarHeight;
             float tightY = barY - CombatHudVisual.TightnessBarGap - tightH;
-            TacticalUi.Fill(new Rect(hx, tightY, barW, tightH), new Color(.05f, .07f, .08f, .7f));
+            TacticalUi.Fill(new Rect(hx, tightY, barW, tightH), UiInk.Of(UiTokens.HudBarWell));
             float tightFill = CombatHudVisual.TightnessFillWidth(tightness01, barW);
             if (tightFill > 0f)
             {
@@ -446,22 +447,22 @@ namespace Shooter.Presentation.Session
             Rect bezel = new Rect(centre.x - outer, centre.y - outer, outer * 2f, outer * 2f);
 
             // 1. Bezel plate with a soft shadow, then the map disc (lighter centre, darker edge).
-            var bezelStyle = UiSdf.Style.Solid(new Color(.045f, .058f, .066f, .86f)).WithShadow(.35f, 8f, 2f);
-            if (!UiSdf.Circle(bezel, bezelStyle)) TacticalUi.Fill(bezel, new Color(.045f, .058f, .066f, .7f));
-            UiSdf.Circle(disc, UiSdf.Style.Solid(new Color(.09f, .115f, .125f, .82f))
-                .WithGradient(new Color(.035f, .046f, .052f, .9f), UiSdf.Gradient.Radial));
+            var bezelStyle = UiSdf.Style.Solid(UiInk.Of(UiTokens.Well, .86f)).WithShadow(.35f, 8f, 2f);
+            if (!UiSdf.Circle(bezel, bezelStyle)) TacticalUi.Fill(bezel, UiInk.Of(UiTokens.Well, .7f));
+            UiSdf.Circle(disc, UiSdf.Style.Solid(UiInk.Of(UiTokens.Panel, .82f))
+                .WithGradient(UiInk.Of(UiTokens.Well, .9f), UiSdf.Gradient.Radial));
 
             // 2. Map content, masked to the disc.
             UiSdf.BeginCircleClip(centre, radius);
             try
             {
-                var rangeRing = UiSdf.Style.Solid(new Color(.6f, .72f, .75f, .09f));
+                var rangeRing = UiSdf.Style.Solid(UiInk.Of(UiTokens.HudRangeRing, .09f));
                 rangeRing.Stroke = 1f;
                 float half = radius * .5f;
                 UiSdf.Circle(new Rect(centre.x - half, centre.y - half, half * 2f, half * 2f), rangeRing);
                 // Forward view cone (always up on a heading-up map).
                 UiSdf.Arc(disc, -35f * Mathf.Deg2Rad, 35f * Mathf.Deg2Rad, radius,
-                    UiSdf.Style.Solid(new Color(TacticalUi.Accent.r, TacticalUi.Accent.g, TacticalUi.Accent.b, .09f)));
+                    UiSdf.Style.Solid(UiInk.Alpha(TacticalUi.Accent, .09f)));
                 DrawMinimapStructures(centre, human, pxPerMeter);
             }
             finally { UiSdf.EndCircleClip(); }
@@ -478,7 +479,7 @@ namespace Shooter.Presentation.Session
                     if (CombatHudVisual.MinimapClampToRim(ref rx, ref dy, rim))
                     {
                         Rect pip = new Rect(centre.x + rx - 3f, centre.y + dy - 3f, 6f, 6f);
-                        if (!UiSdf.Circle(pip, UiSdf.Style.Solid(new Color(TacticalUi.Ally.r, TacticalUi.Ally.g, TacticalUi.Ally.b, .7f))))
+                        if (!UiSdf.Circle(pip, UiSdf.Style.Solid(UiInk.Alpha(TacticalUi.Ally, .7f))))
                             TacticalUi.Fill(pip, TacticalUi.Ally);
                         continue;
                     }
@@ -491,7 +492,7 @@ namespace Shooter.Presentation.Session
                 if (alpha <= 0.02f) continue;
                 CombatHudVisual.MinimapProject(yaw, human.Feet.X, human.Feet.Z, gunfireRevealX[i], gunfireRevealZ[i], pxPerMeter, out float rx, out float dy);
                 bool clamped = CombatHudVisual.MinimapClampToRim(ref rx, ref dy, rim);
-                var ink = new Color(TacticalUi.Enemy.r, TacticalUi.Enemy.g, TacticalUi.Enemy.b, clamped ? alpha * .7f : alpha);
+                var ink = UiInk.Alpha(TacticalUi.Enemy, clamped ? alpha * .7f : alpha);
                 TacticalUi.MapGlyph(centre.x + rx, centre.y + dy, Generation.Icons.IconLibrary.EnemyMarker, ink, 0f, clamped ? 9f : 12f);
             }
 
@@ -504,7 +505,7 @@ namespace Shooter.Presentation.Session
             hairline.Stroke = 1f;
             UiSdf.Circle(bezel, hairline);
             UiSdf.Circle(new Rect(disc.x - .5f, disc.y - .5f, disc.width + 1f, disc.height + 1f),
-                new UiSdf.Style { Fill = new Color(1f, 1f, 1f, .14f), Fill2 = new Color(1f, 1f, 1f, .14f), Stroke = 1f, Glint = -1f });
+                new UiSdf.Style { Fill = UiInk.Light(.14f), Fill2 = UiInk.Light(.14f), Stroke = 1f, Glint = -1f });
             float headingDeg = Mathf.Repeat(yaw * Mathf.Rad2Deg, 360f);
             for (int bearing = 0; bearing < 360; bearing += 15)
             {
@@ -513,8 +514,8 @@ namespace Shooter.Presentation.Session
                 float angle = CombatHudVisual.CompassRingAngle(bearing, headingDeg);
                 float len = bearing % 45 == 0 ? 5f : 3f;
                 var dir = new Vector2(Mathf.Sin(angle), -Mathf.Cos(angle));
-                var tickInk = bearing % 45 == 0 ? new Color(TacticalUi.Text.r, TacticalUi.Text.g, TacticalUi.Text.b, .55f)
-                    : new Color(TacticalUi.Muted.r, TacticalUi.Muted.g, TacticalUi.Muted.b, .4f);
+                var tickInk = bearing % 45 == 0 ? UiInk.Alpha(TacticalUi.Text, .55f)
+                    : UiInk.Alpha(TacticalUi.Muted, .4f);
                 TacticalUi.Line(centre + dir * (outer - 2f - len), centre + dir * (outer - 2f), tickInk, 1f);
             }
             for (int c = 0; c < 4; c++)
@@ -557,8 +558,8 @@ namespace Shooter.Presentation.Session
             float yaw = human.AimYaw;
             float turn = -yaw * Mathf.Rad2Deg;
             bool sdf = UiSdf.Available;
-            var fill = new Color(.55f, .63f, .65f, .82f);
-            var edge = new UiSdf.Style { Fill = new Color(.02f, .03f, .035f, .5f), Fill2 = new Color(.02f, .03f, .035f, .5f), Radius = 1f, Stroke = 1f, Glint = -1f };
+            var fill = UiInk.Of(UiTokens.HudFeature, .82f);
+            var edge = new UiSdf.Style { Fill = UiInk.Shade(.5f), Fill2 = UiInk.Shade(.5f), Radius = 1f, Stroke = 1f, Glint = -1f };
             Matrix4x4 prior = GUI.matrix;
             try
             {
@@ -836,29 +837,38 @@ namespace Shooter.Presentation.Session
                 float w = Screen.width;
                 float h = Screen.height;
                 var prev = GUI.color;
-                GUI.color = new Color(1f, 0.92f, 0.68f, alpha);
+                GUI.color = UiInk.Of(UiTokens.Caption, alpha);
                 GUI.DrawTexture(new Rect(w * 0.28f, h * 0.42f, w * 0.44f, h * 0.38f), Texture2D.whiteTexture);
-                GUI.color = new Color(1f, 0.85f, 0.45f, alpha * 0.55f);
+                GUI.color = UiInk.Of(UiTokens.CaptionGlow, alpha * 0.55f);
                 GUI.DrawTexture(new Rect(w * 0.38f, h * 0.52f, w * 0.24f, h * 0.22f), Texture2D.whiteTexture);
                 GUI.color = prev;
             }
             if (subtitlesEnabled && subtitleRemaining > 0f && !string.IsNullOrEmpty(subtitleText))
             {
-                GUI.Label(
-                    new Rect(Screen.width * 0.5f - 160f, Screen.height - 178f * hud.Settings.UiScale, 320f, 28f),
-                    subtitleText,
-                    GuiStyle());
+                // ADR-123 caption: brand face on a HUD plate, in the same scaled logical space as the rest of the HUD.
+                float scale = Mathf.Max(.5f, hud.Settings.UiScale);
+                var priorMatrix = GUI.matrix;
+                GUI.matrix = Matrix4x4.Scale(new Vector3(scale, scale, 1f));
+                float lw = Screen.width / scale, lh = Screen.height / scale;
+                float tw = Mathf.Min(lw * .6f, combatUi.TextWidth(subtitleText, UiType.Lead) + 36f);
+                Rect plate = new Rect((lw - tw) * .5f, lh - 178f, tw, 30f);
+                TacticalUi.CombatPlate(plate, strong: true, accentLeft: true);
+                combatUi.LabelFit(plate, subtitleText, UiType.Lead, UiInk.Of(UiTokens.Caption), TextAnchor.MiddleCenter, UiType.Small);
+                GUI.matrix = priorMatrix;
             }
         }
 
         private static GUIStyle GuiStyle()
         {
             if (cached != null) return cached;
+            // Diagnostic (non-shell) HUD still uses the brand face and text token.
             cached = new GUIStyle(GUI.skin.label)
             {
-                fontSize = 18,
-                normal = { textColor = Color.white }
+                fontSize = UiType.Lead,
+                normal = { textColor = TacticalUi.StyleInk(TacticalUi.Text) }
             };
+            var face = UiFonts.ForLabelSize(UiType.Lead);
+            if (face != null) cached.font = face;
             return cached;
         }
     }

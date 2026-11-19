@@ -12,6 +12,8 @@ using Shooter.Presentation.Scoreboard;
 using Shooter.Generation.Icons;
 using Shooter.Contracts;
 using Shooter.Presentation.View;
+using Shooter.Presentation.Hud;
+using Shooter.Presentation.Style;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -68,40 +70,41 @@ namespace Shooter.Presentation.Session
             armoryStatus = result.Succeeded ? "" : ShellUiCopy.ArmorySaveFailed;
         }
 
+        /// <summary>
+        /// ADR-123 Armory: slots, the weapon list for the chosen slot, and a hero panel (large mesh-traced silhouette,
+        /// stat bars) with the sight choices under it. Rects come from the pure <see cref="ArmoryLayout"/>.
+        /// </summary>
         private void DrawArmory()
         {
             if (armory == null) return;
-            ui.Backdrop();
-            ui.Header(ShellUiCopy.ArmoryEyebrow, ShellUiCopy.ArmoryTitle, "");
+            ui.Backdrop(dim: .45f);
+            ui.Header(ShellUiCopy.ArmoryEyebrow, ShellUiCopy.ArmoryTitle);
             Rect a = ui.Safe;
-            DrawRankBadge(new Rect(a.xMax - 320, a.y + 2, 320, 50), "armory.rank", alignRight: true);
-            float top = a.y + 74;
-            float bottom = a.yMax - 74;
-            float slotW = Mathf.Min(220, a.width * .2f);
-            float sightW = Mathf.Min(300, a.width * .28f);
-            float gap = 16;
-            float listX = a.x + slotW + gap;
-            float listW = a.width - slotW - sightW - gap * 2;
-            float sightX = listX + listW + gap;
+            var l = ArmoryLayout.Build(new HudRect(a.x, a.y, a.width, a.height));
+            DrawRankBadge(new Rect(a.xMax - 300, a.y + 2, 276, 48), "armory.rank", alignRight: true);
 
             // Slots: primary and sidearm are chosen here; knife and grenade are standard issue.
-            ui.Section(new Rect(a.x, top, slotW, 18), ShellUiCopy.ArmoryLoadout);
-            if (ArmorySlotButton(new Rect(a.x, top + 24, slotW, 54), "armory.slot.primary", ShellUiCopy.ArmorySlotPrimary, armory.Primary, ArmorySlot.Primary))
+            Rect slots = R(l.Slots);
+            ui.Section(new Rect(slots.x, slots.y, slots.width, 18), ShellUiCopy.ArmoryLoadout);
+            if (ArmorySlotButton(new Rect(slots.x, slots.y + 26, slots.width, 54), "armory.slot.primary", ShellUiCopy.ArmorySlotPrimary, armory.Primary, ArmorySlot.Primary))
             { armory.SelectSlot(ArmorySlot.Primary); }
-            if (ArmorySlotButton(new Rect(a.x, top + 84, slotW, 54), "armory.slot.sidearm", ShellUiCopy.ArmorySlotSidearm, armory.Sidearm, ArmorySlot.Sidearm))
+            if (ArmorySlotButton(new Rect(slots.x, slots.y + 86, slots.width, 54), "armory.slot.sidearm", ShellUiCopy.ArmorySlotSidearm, armory.Sidearm, ArmorySlot.Sidearm))
             { armory.SelectSlot(ArmorySlot.Sidearm); }
-            FixedSlot(new Rect(a.x, top + 144, slotW, 44), ShellUiCopy.ArmorySlotKnife);
-            FixedSlot(new Rect(a.x, top + 194, slotW, 44), ShellUiCopy.ArmorySlotGrenade);
-            ui.Label(new Rect(a.x, top + 252, slotW, 80), ShellUiCopy.ArmoryHint, 13, TacticalUi.Muted);
+            FixedSlot(new Rect(slots.x, slots.y + 146, slots.width, 44), ShellUiCopy.ArmorySlotKnife);
+            FixedSlot(new Rect(slots.x, slots.y + 196, slots.width, 44), ShellUiCopy.ArmorySlotGrenade);
+            if (slots.yMax - (slots.y + 252) > 40)
+                ui.Label(new Rect(slots.x, slots.y + 252, slots.width, slots.yMax - slots.y - 252), ShellUiCopy.ArmoryHint, UiType.Caption + 1, TacticalUi.Muted);
 
             // Weapons offered for the selected slot.
+            Rect list = R(l.List);
             var weapons = armory.WeaponsFor(armory.Slot);
-            ui.Section(new Rect(listX, top, listW, 18), ShellUiCopy.ArmoryWeapons);
-            float rowH = Mathf.Min(64, (bottom - top - 24) / Mathf.Max(1, weapons.Count) - 6);
+            ui.Section(new Rect(list.x, list.y, list.width, 18), ShellUiCopy.ArmoryWeapons);
+            float rowH = Mathf.Clamp((list.height - 26) / Mathf.Max(1, weapons.Count) - 6, 36, 64);
             for (int i = 0; i < weapons.Count; i++)
             {
                 var weapon = weapons[i];
-                Rect row = new Rect(listX, top + 24 + i * (rowH + 6), listW, rowH);
+                Rect row = new Rect(list.x, list.y + 26 + i * (rowH + 6), list.width, rowH);
+                if (row.yMax > list.yMax + .5f) break;
                 bool equipped = armory.SelectedIn(armory.Slot).Equals(weapon);
                 if (ui.Button(row, "armory.weapon." + weapon, "", selected: equipped) && !armory.IsLocked(weapon))
                 {
@@ -111,17 +114,24 @@ namespace Shooter.Presentation.Session
                 DrawWeaponRow(row, weapon, equipped);
             }
 
-            // Sight buffs for the equipped primary (sidearms keep their own irons).
-            ui.Section(new Rect(sightX, top, sightW, 18), ShellUiCopy.ArmorySights);
+            // Hero: the equipped weapon at full size with comparable stat bars.
             DefinitionId gun = armory.Slot == ArmorySlot.Primary ? armory.Primary : armory.Sidearm;
+            ui.Section(new Rect(l.Hero.X, l.Hero.Y - 24, l.Hero.Width, 18), ShellUiCopy.ArmoryEquipped);
+            DrawArmoryHero(R(l.Hero), gun, weapons);
+
+            // Sight buffs for the equipped primary (sidearms keep their own irons).
+            Rect sightsArea = R(l.Sights);
+            ui.Section(new Rect(sightsArea.x, sightsArea.y, sightsArea.width, 18), ShellUiCopy.ArmorySights);
             var sights = armory.SightsFor(gun);
             if (sights.Count == 0)
-                ui.Label(new Rect(sightX, top + 28, sightW, 40), ShellUiCopy.ArmorySidearmSights, 14, TacticalUi.Muted);
+                ui.Label(new Rect(sightsArea.x, sightsArea.y + 28, sightsArea.width, 40), ShellUiCopy.ArmorySidearmSights, UiType.Small, TacticalUi.Muted);
             DefinitionId mounted = armory.SightFor(gun);
+            float sightH = Mathf.Clamp((sightsArea.height - 26) / Mathf.Max(1, sights.Count) - 6, 40, 56);
             for (int i = 0; i < sights.Count; i++)
             {
                 var sight = sights[i];
-                Rect row = new Rect(sightX, top + 24 + i * 62, sightW, 56);
+                Rect row = new Rect(sightsArea.x, sightsArea.y + 26 + i * (sightH + 6), sightsArea.width, sightH);
+                if (row.yMax > sightsArea.yMax + .5f) break;
                 bool on = mounted.Equals(sight.Id);
                 bool sightLocked = armory.IsLocked(sight.Id);
                 if (ui.Button(row, "armory.sight." + sight.Name, "", selected: on) && !sightLocked)
@@ -129,31 +139,71 @@ namespace Shooter.Presentation.Session
                     armory.SelectSight(sight.Id, gun);
                     SaveArmoryIfChanged();
                 }
-                ui.Label(new Rect(row.x + 16, row.y + 7, row.width - 24, 20), sight.DisplayLabel, 16,
-                    on ? TacticalUi.Accent : sightLocked ? TacticalUi.Muted : TacticalUi.Text);
-                ui.Label(new Rect(row.x + 16, row.y + 29, row.width - 24, 20), sightLocked ? LockedText(sight.Id) : sight.Summary, 12, TacticalUi.Muted);
+                ui.LabelFit(new Rect(row.x + 16, row.y + 6, row.width - 108, 20), sight.DisplayLabel, UiType.Body,
+                    on ? TacticalUi.Accent : sightLocked ? TacticalUi.Muted : TacticalUi.Text, TextAnchor.UpperLeft, UiType.Caption);
+                ui.LabelFit(new Rect(row.x + 16, row.y + row.height - 22, row.width - 24, 16), sightLocked ? LockedText(sight.Id) : sight.Summary, UiType.Caption, TacticalUi.Muted, TextAnchor.UpperLeft, UiType.Micro);
                 if (sightLocked) DrawLockTag(new Rect(row.xMax - 84, row.y + 7, 72, 16));
             }
 
-            ui.Panel(new Rect(a.x, a.yMax - 66, a.width, 44), accentTop: true);
-            ui.Label(new Rect(a.x + 170, a.yMax - 54, a.width - 190, 24), armory.Summary, 16, TacticalUi.Text);
-            if (ui.Button(new Rect(a.x, a.yMax - 66, 150, 44), "armory.back", ShellUiCopy.SetupBack)) CloseArmory();
-            DrawFooter(armoryStatus);
+            Rect actions = R(l.Actions);
+            if (ui.Button(new Rect(actions.x, actions.y, 160, actions.height), "armory.back", ShellUiCopy.SetupBack)) CloseArmory();
+            Rect summary = new Rect(actions.x + 172, actions.y, actions.width - 172, actions.height);
+            ui.Frame(summary, FrameKind.Plate, rail: true);
+            ui.LabelFit(new Rect(summary.x + 16, summary.y, summary.width - 32, summary.height), armory.Summary, UiType.Body, TacticalUi.Text, TextAnchor.MiddleLeft, UiType.Caption);
+            DrawFooter(armoryStatus, back: true);
+        }
+
+        /// <summary>Hero panel: large silhouette, name and stat bars scaled against the best weapon offered in the slot.</summary>
+        private void DrawArmoryHero(Rect r, DefinitionId gun, System.Collections.Generic.IReadOnlyList<DefinitionId> offered)
+        {
+            ui.Frame(r, FrameKind.Hero);
+            bool hasStats = backend != null && backend.Armory.TryGetStats(gun, out _, out _, out _, out _, out _);
+            float statsH = hasStats ? Mathf.Min(78f, r.height * .42f) : 0f;
+            Rect art = new Rect(r.x + 18, r.y + 14, r.width - 36, r.height - statsH - 50);
+            if (Shooter.Presentation.View.WeaponVisualProfiles.TryGet(gun, out var profile) && art.height > 12)
+                TacticalUi.KillFeedWeaponIcon(art, profile.KillFeedGlyph, TacticalUi.Text);
+            ui.LabelFit(new Rect(r.x + 18, art.yMax + 4, r.width - 36, 26), ArmorySelection.LabelFor(gun), UiType.Heading, TacticalUi.Text, TextAnchor.UpperLeft, UiType.Body);
+            if (!hasStats) return;
+            backend!.Armory.TryGetStats(gun, out int damage, out int pellets, out int magazine, out int rpm, out string mode);
+            int maxDamage = 1, maxMag = 1, maxRpm = 1;
+            for (int i = 0; i < offered.Count; i++)
+                if (backend.Armory.TryGetStats(offered[i], out int d, out int p, out int m, out int f, out _))
+                {
+                    maxDamage = Mathf.Max(maxDamage, d * Mathf.Max(1, p));
+                    maxMag = Mathf.Max(maxMag, m);
+                    maxRpm = Mathf.Max(maxRpm, f);
+                }
+            float sy = r.yMax - statsH - 8;
+            float rowH = (statsH - 6) / 3f;
+            StatBar(new Rect(r.x + 18, sy, r.width - 36, rowH), ShellUiCopy.ArmoryStatDamage, damage * Mathf.Max(1, pellets) / (float)maxDamage,
+                pellets > 1 ? pellets + " × " + damage : damage.ToString());
+            StatBar(new Rect(r.x + 18, sy + rowH + 3, r.width - 36, rowH), ShellUiCopy.ArmoryStatRate, rpm / (float)maxRpm, rpm + " RPM");
+            StatBar(new Rect(r.x + 18, sy + (rowH + 3) * 2, r.width - 36, rowH), ShellUiCopy.ArmoryStatMagazine, magazine / (float)maxMag, magazine + " RND");
+            ui.Label(new Rect(r.x + 18, r.y + 12, r.width - 36, 14), mode.ToUpperInvariant(), UiType.Micro + 1, TacticalUi.Accent, TextAnchor.UpperRight);
+        }
+
+        private void StatBar(Rect r, string label, float value01, string value)
+        {
+            float labelW = Mathf.Min(96f, r.width * .3f), valueW = Mathf.Min(80f, r.width * .24f);
+            ui.LabelFit(new Rect(r.x, r.y, labelW, r.height), label, UiType.Caption, TacticalUi.Muted, TextAnchor.MiddleLeft, UiType.Micro);
+            Rect track = new Rect(r.x + labelW, r.center.y - 3f, r.width - labelW - valueW - 8f, 6f);
+            CareerArt.ProgressBar(track, Mathf.Clamp01(value01), TacticalUi.Accent, TacticalUi.AccentDeep, 10, 1f);
+            ui.LabelFit(new Rect(track.xMax + 8f, r.y, valueW, r.height), value, UiType.Caption, TacticalUi.Text, TextAnchor.MiddleRight, UiType.Micro);
         }
 
         private bool ArmorySlotButton(Rect r, string id, string slot, DefinitionId weapon, ArmorySlot which)
         {
             bool clicked = ui.Button(r, id, "", selected: armory!.Slot == which);
-            ui.Label(new Rect(r.x + 16, r.y + 7, r.width - 24, 16), slot, 11, TacticalUi.Accent);
-            ui.Label(new Rect(r.x + 16, r.y + 24, r.width - 24, 22), ArmorySelection.LabelFor(weapon), 17, TacticalUi.Text);
+            ui.Label(new Rect(r.x + 16, r.y + 7, r.width - 24, 16), slot, UiType.Micro + 1, TacticalUi.Accent);
+            ui.LabelFit(new Rect(r.x + 16, r.y + 24, r.width - 24, 22), ArmorySelection.LabelFor(weapon), UiType.Lead - 1, TacticalUi.Text, TextAnchor.UpperLeft, UiType.Caption);
             return clicked;
         }
 
         private void FixedSlot(Rect r, string slot)
         {
-            ui.Panel(r);
-            ui.Label(new Rect(r.x + 16, r.y + 6, r.width - 24, 16), slot, 11, TacticalUi.Muted);
-            ui.Label(new Rect(r.x + 16, r.y + 22, r.width - 24, 18), ShellUiCopy.ArmoryFixed, 12, TacticalUi.Muted);
+            ui.Frame(r, FrameKind.Plate, alpha: .8f);
+            ui.Label(new Rect(r.x + 16, r.y + 6, r.width - 24, 16), slot, UiType.Micro + 1, TacticalUi.Muted);
+            ui.Label(new Rect(r.x + 16, r.y + 22, r.width - 24, 18), ShellUiCopy.ArmoryFixed, UiType.Caption, TacticalUi.Muted);
         }
 
         private void DrawWeaponRow(Rect row, DefinitionId weapon, bool equipped)

@@ -56,3 +56,22 @@ ADR-039 adds a rebindable Slide action (F + applied Sprint, default Left Shift +
 ## T075 presentation follow-up — 2026-11-15
 
 Three owner-authorized agents are integrated and temporary worktrees removed. Source `7407bc4` adds procedural map surface publication/binding, menu/card rendering and analytic near-field equipment handling. Canonical delivery, verification, migration and Pending evidence. No milestone or P05 acceptance is changed.
+
+## T196 unified front-end visual system — 2026-11-19
+
+Source on top of `833bcf8`, uncommitted at the time of this record ([ADR-123](../../decisions.md#adr-123--accepted-unified-front-end-visual-system)).
+
+| Check | Result | Evidence |
+|---|---|---|
+| `Tools/Test-All.ps1` | PASS (4 suites), including `UiTokensTests`, `ShellLayoutsTests`, `MenuVistaShotTests`, `AppIconTests` and `InstallerArtTests` | `Artifacts/m0-foundation/833bcf8…/test-all-20261119T120514200Z-e4a673b7` |
+| `Tools/Test-Unity.ps1 -Mode EditMode` | PASS (94), including the rooftop vista staging test | `Artifacts/m0-foundation/833bcf8…/tests-editmode-20261119T120811077Z-41d51589` |
+| `Tools/Test-SourceProvenance.ps1`, `docs/verify_docs.py`, lock verifiers | PASS | local runs |
+| `Tools/Build.ps1 -Target Client` | PASS | `Artifacts/m0-foundation/833bcf8…/build-client-20261119T120206670Z-0021f432` |
+| UI captures, 1280×720 windowed at 100% | Main, Setup, Armory, Settings, Loading and Pause reviewed by the agent; the menu-floor z-fight flicker (owner report) was fixed with a 0.3 m stage near plane and a lowered card ground | `Artifacts/visual-design/adr-123/run1`, `run2` (diagnostic only, not acceptance) |
+
+**Still Pending:**
+- Captures at 1080p and 150%.
+- Career and Results captures.
+- The installer build with the new wizard art (`Build-Installer`).
+- Menu frame time on the 4600H (PendingHardware).
+- Named owner review for VD7, REL03 and UI02.

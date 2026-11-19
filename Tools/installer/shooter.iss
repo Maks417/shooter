@@ -8,6 +8,9 @@
 #ifndef AppVersion
   #error AppVersion define missing
 #endif
+#ifndef ExtraDir
+  #error ExtraDir define missing
+#endif
 #ifndef SourceDir
   #error SourceDir define missing
 #endif
@@ -37,6 +40,10 @@ SolidCompression=yes
 OutputDir={#OutputDir}
 OutputBaseFilename={#OutputName}
 WizardStyle=modern
+; ADR-123: generated brand art written into ExtraDir by Tools/InstallerArt (no imported art).
+SetupIconFile={#ExtraDir}\setup.ico
+WizardImageFile={#ExtraDir}\wizard.bmp
+WizardSmallImageFile={#ExtraDir}\wizard-small.bmp
 
 [Tasks]
 Name: "desktopicon"; Description: "Create a &desktop shortcut"; Flags: checkedonce

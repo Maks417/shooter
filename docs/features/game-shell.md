@@ -38,7 +38,7 @@ flowchart LR
   Results --> Main
 ```
 
-**Main.** Main has Play, Armory, Career, Settings and Quit, with the current loadout shown underneath.
+**Main.** Main has Play, Armory, Career, Settings and Quit, with the rank badge and current loadout underneath, and the three operation cards along the bottom right ([ADR-123](../decisions.md#adr-123--accepted-unified-front-end-visual-system)). The backdrop is the live vista from `ProductMenuScene`: the showcase squad on a rooftop overlook above the focused map's packaged geometry. Hovering or focusing a card stages that map. Setup, Armory, Career and Settings reuse the vista, dimmed, and Loading and Results show its last frame. Every page shares `TacticalUi.Header` and the `KeyHints` footer. Main, Settings and Armory rects come from the pure `ShellLayouts`. The look is specified in the [UI design system](../brandbook.md).
 
 **Setup.** Setup offers:
 - the catalog maps with their descriptions;

@@ -6,7 +6,7 @@
     "sources": [
         {
             "path": "UnityProject/Assets/Shooter/Bootstrap/Editor/ShooterBuild.cs",
-            "sha256": "2a8e839f515e734c0090c0164ee1b3b8a4869e987534717a7cafac9ea504746b"
+            "sha256": "6e4f6689dfefc97cb4f2297f52273089142ac53380f91b1ae2011e635b9d9dda"
         },
         {
             "path": "UnityProject/Assets/Shooter/Bootstrap/Editor/ShooterPostProcessingBuild.cs",
@@ -19,8 +19,28 @@
             "sha256": "b8a4419173f3d8befdd7a86611290bad6cf1f06571585b3b8e1890297453bb17"
         },
         {
+            "path": "UnityProject/Assets/Shooter/Settings/AppIcon-128.asset",
+            "sha256": "b53910c18768ac9ebb40c59c5977202880b42b9a54ca278c74e21f9da355fa2d"
+        },
+        {
+            "path": "UnityProject/Assets/Shooter/Settings/AppIcon-16.asset",
+            "sha256": "39d41976c33869cb5698c09609e971f1030cc90daa2de10c8ab7feb4dde495ea"
+        },
+        {
+            "path": "UnityProject/Assets/Shooter/Settings/AppIcon-32.asset",
+            "sha256": "394e2d56cb91b7890202873e43ac9365a21477f659b405433ff04c037df26cb2"
+        },
+        {
+            "path": "UnityProject/Assets/Shooter/Settings/AppIcon-48.asset",
+            "sha256": "fb1488c6385c4706682b55232c7456251aafd2f473a6d7d5a1fa2b3f79c4cdf2"
+        },
+        {
+            "path": "UnityProject/Assets/Shooter/Settings/AppIcon-64.asset",
+            "sha256": "910b8ded53b1c609b4d2e658bc88c577e50e335c55ee1e6844d55f469cb21fab"
+        },
+        {
             "path": "UnityProject/Assets/Shooter/Settings/AppIcon.asset",
-            "sha256": "90e48673679139ee25b0794347d05d06f786cd73c8c38be8117b3b94dd0a2dd2"
+            "sha256": "0bcfaaf6ea92e96991585354b4ac22c33afaa3c8e59c32203a304c36f552d194"
         },
         {
             "path": "UnityProject/Assets/Shooter/Settings/Balanced.asset",

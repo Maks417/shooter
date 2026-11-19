@@ -64,7 +64,8 @@ function Invoke-Case([string]$Name, [scriptblock]$Setup, [string]$ExpectedError 
     $extraArgs = @()
     $r = & $Setup $c
     if ($r -is [hashtable] -and $r.ContainsKey('Args')) { $extraArgs = $r.Args }
-    $args = @('-NoProfile', '-File', (Join-Path $c.Root 'Tools/Build-Installer.ps1'), '-PackageDirectory', $c.Package, '-ReleaseVersion', $Version) + $extraArgs
+    $args = @('-NoProfile', '-File', (Join-Path $c.Root 'Tools/Build-Installer.ps1'), '-PackageDirectory', $c.Package, '-ReleaseVersion', $Version,
+        '-InstallerArtProject', (Join-Path $PSScriptRoot 'InstallerArt/InstallerArt.csproj')) + $extraArgs
     if ($IsccPath) { $args += @('-IsccPath', $IsccPath) }
     $log = Join-Path $c.Root 'wrapper.log'
     & (Join-Path $PSHOME 'pwsh.exe') @args *> $log

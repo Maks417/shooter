@@ -7,6 +7,7 @@ using Shooter.Contracts;
 using Shooter.Game.Contracts;
 using Shooter.Generation;
 using Shooter.Generation.Environment;
+using Shooter.Presentation.Menus;
 using Shooter.Presentation.Rig;
 using Shooter.Presentation.Rendering;
 using UnityEngine;
@@ -17,6 +18,8 @@ namespace Shooter.Presentation.Session
     /// <summary>
     /// A cosmetic staging area assembled from verified packaged meshes. No colliders, navigation,
     /// simulation, fake gameplay adapters, imported art, or generator invocation. Renders only while the shell owns it.
+    /// ADR-123: the showcase squad stands on a rooftop overlook and the focused map's real packaged geometry (the same
+    /// mesh the operation cards are rendered from) lies below it as a graded, fogged vista under its own sky.
     /// </summary>
     public sealed class ProductMenuScene : MonoBehaviour
     {
@@ -36,7 +39,44 @@ namespace Shooter.Presentation.Session
         private float nextRender;
         private float sceneTime;
         private readonly List<Transform> motes = new List<Transform>();
+        private readonly Dictionary<string, (Transform Root, Bounds Local)> vistas = new Dictionary<string, (Transform, Bounds)>();
+        private string focusedMap = "";
+        private string stagedMap = "";
+        private RenderTexture? previousFrame;
+        private float fadeStartedAt = -10f;
+        private Material? skyMaterial;
+        private Texture2D? skyGradient;
+        private Color fogColor = MenuStagingComposition.FogColor;
+        private Color ambientSky = MenuStagingComposition.AmbientSky;
+        private Color ambientEquator = MenuStagingComposition.AmbientEquator;
+        private Color ambientGround = MenuStagingComposition.AmbientGround;
+        private float fogStart = 40f, fogEnd = 120f;
         public Texture? Frame => built ? frame : null;
+
+        /// <summary>The vista before the last focus change while it cross-fades out; null when settled.</summary>
+        public Texture? PreviousFrame => built && FadeAlpha > 0f ? previousFrame : null;
+
+        /// <summary>Opacity of <see cref="PreviousFrame"/> over <see cref="Frame"/> (1 to 0 over the cross-fade).</summary>
+        public float FadeAlpha => reducedMotion ? 0f : Mathf.Clamp01(1f - (Time.unscaledTime - fadeStartedAt) / MenuVistaShot.CrossFadeSeconds);
+
+        /// <summary>The map whose vista is staged (empty until the operation cards are captured).</summary>
+        public string StagedMap => stagedMap;
+
+        /// <summary>Capture any pending operation cards now and stage the vista (EditMode tests and repair).</summary>
+        public void CaptureCardsNow()
+        {
+            if (!built || pendingCardCameras.Count == 0) return;
+            CaptureMapCards();
+            StageVista();
+        }
+
+        /// <summary>Stage the focused map's vista (the Main card under focus or the Setup selection).</summary>
+        public void SetFocusedMap(string mapId)
+        {
+            if (string.IsNullOrEmpty(mapId) || mapId == focusedMap) return;
+            focusedMap = mapId;
+            if (built && pendingCardCameras.Count == 0) StageVista();
+        }
         public bool IsReady => built;
         public string Status => failed ? "Menu scenery unavailable. Repair the installed game content." : built ? "" : "Preparing operations...";
         public int ShowcaseActorCount => actors?.LiveAvatarCount ?? 0;
@@ -116,6 +156,11 @@ namespace Shooter.Presentation.Session
                 mapCards.Clear();
                 pendingCardCameras.Clear();
                 motes.Clear();
+                vistas.Clear();
+                stagedMap = "";
+                previousFrame = null;
+                skyMaterial = null;
+                skyGradient = null;
                 built = false;
                 failed = true;
                 throw;
@@ -150,8 +195,7 @@ namespace Shooter.Presentation.Session
             Material light = Material(shader, "Stage lamps", new Color(.62f, .48f, .28f), .12f);
             Material sandbag = Variant(cover, "Stage sandbags", new Color(.94f, .88f, .68f));
 
-            PlaceDistantShells(concrete, concreteCool, concreteWarm, steel, steelMatte);
-            PlaceMidProps(concrete, concreteWarm, steel, steelMatte, sandbag, contact, light);
+            // ADR-123: the box diorama is gone; the squad stands on a rooftop overlook above the focused map's vista.
             PlaceApronAndSoldiersBand(asphalt, apron, apronWarm, soil, concreteWarm, steel, steelMatte, sandbag, contact);
 
             // Camera frames the three showcase soldiers with mid/background depth behind them.
@@ -160,7 +204,9 @@ namespace Shooter.Presentation.Session
             cam.transform.position = MenuStagingComposition.CameraPosition;
             cam.transform.LookAt(MenuStagingComposition.CameraLookAt);
             cam.fieldOfView = MenuStagingComposition.CameraFieldOfView;
-            cam.nearClipPlane = .05f;
+            // ADR-123: the nearest stage object is metres away; a 0.3 m near plane keeps depth precision across the
+            // 50-200 m vista, so the map floor and its card ground plate do not z-fight (flicker).
+            cam.nearClipPlane = .3f;
             cam.farClipPlane = 120;
             cam.clearFlags = CameraClearFlags.SolidColor;
             cam.backgroundColor = MenuStagingComposition.CameraClear;
@@ -168,7 +214,11 @@ namespace Shooter.Presentation.Session
             cam.allowHDR = false;
             cam.allowMSAA = false;
             cam.enabled = false;
+            cam.farClipPlane = 600f;
             stageCamera = cam;
+            // ADR-123: the tier's tonemap, bloom and anti-aliasing grade the vista like gameplay.
+            // (Play mode only: the shared volume is DontDestroyOnLoad; EditMode staging tests render ungraded.)
+            if (Application.isPlaying) ProductPostProcessing.Attach(cam);
             frame = Own(new RenderTexture(1280, 720, 24, RenderTextureFormat.ARGB32) { name = "Live procedural menu", antiAliasing = 1 });
             frame.Create();
             cam.targetTexture = frame;
@@ -191,89 +241,22 @@ namespace Shooter.Presentation.Session
             SetLayer(transform);
             built = true;
             RenderStage();
-            Debug.Log("SHOOTER_MENU_SCENE_READY actors=3 cards=2 colliders=0 authority=0");
+            Debug.Log("SHOOTER_MENU_SCENE_READY actors=3 cards=" + visuals.Length + " vistas=" + vistas.Count + " colliders=0 authority=0");
         }
 
-        /// <summary>Far band — industrial skyline and hangar shells read through staged fog.</summary>
-        private void PlaceDistantShells(Material concrete, Material concreteCool, Material concreteWarm, Material steel, Material steelMatte)
-        {
-            for (int i = 0; i < 6; i++)
-            {
-                float x = -24 + i * 9.2f;
-                float h = 7.4f + (i % 3) * 2.6f;
-                float z = MenuStagingComposition.DistantShellBandZ + (i % 2) * 10;
-                Place("Skyline shell", new Vector3(x, h * .5f, z), new Vector3(8.2f, h, 12), i % 2 == 0 ? concrete : concreteCool, castShadows: false);
-                Place("Skyline roof", new Vector3(x, h + .14f, z), new Vector3(8.6f, .28f, 12.4f), steel, castShadows: false);
-                // Functional loading-bay facades give the distant masses a human scale.
-                if (i % 2 == 0)
-                {
-                    Place("Warehouse loading shutter", new Vector3(x, 1.8f, z - 6.025f), new Vector3(4.2f, 3.6f, .06f), steelMatte);
-                    Place("Warehouse clerestory", new Vector3(x, 4.6f, z - 6.04f), new Vector3(5.6f, .72f, .08f), steel);
-                    Place("Warehouse lintel", new Vector3(x, 3.72f, z - 6.08f), new Vector3(4.5f, .18f, .18f), concreteWarm);
-                    for (int jamb = -1; jamb <= 1; jamb += 2)
-                        Place("Warehouse portal jamb", new Vector3(x + jamb * 2.2f, 1.8f, z - 6.08f), new Vector3(.18f, 3.6f, .18f), concreteWarm);
-                }
-                if (i % 2 == 0)
-                    Place("Skyline vent", new Vector3(x + 2.2f, h + 1.1f, z - 2f), new Vector3(1.4f, 1.6f, 1.4f), steelMatte, castShadows: false);
-            }
-            // Deep silhouette slab behind the skyline for BFV-like atmospheric layering.
-            Place("Distant haze shell", new Vector3(2f, 10f, MenuStagingComposition.DistantShellBandZ + 22f),
-                new Vector3(58f, 18f, 8f), concreteCool, castShadows: false);
-            Place("Hangar volume", new Vector3(18, 5.5f, 34), new Vector3(16, 11, 18), concreteWarm, castShadows: false);
-            Place("Hangar door frame", new Vector3(10.5f, 3.2f, 25.5f), new Vector3(.45f, 6.4f, 8), steel, castShadows: false);
-            Place("Hangar threshold", new Vector3(10.5f, .04f, 25.5f), new Vector3(1.2f, .06f, 8.4f), concrete, castShadows: false);
-        }
-
-        /// <summary>Mid band — cargo, barriers and gantries frame the soldier showcase.</summary>
-        private void PlaceMidProps(Material concrete, Material concreteWarm, Material steel, Material steelMatte, Material sandbag, Material contact, Material light)
-        {
-            for (int row = 0; row < 2; row++)
-            {
-                float x = row == 0 ? -5.6f : 7.1f;
-                float z = 10 + row * 3.6f;
-                Place("Cargo container", new Vector3(x, 1.25f, z), new Vector3(2.55f, 2.5f, 6.2f), steel, castShadows: true);
-                for (int rib = 0; rib < 10; rib++)
-                    Place("Container rib", new Vector3(x - 1.3f, 1.25f, z - 2.9f + rib * .58f), new Vector3(.09f, 2.48f, .07f), concrete, castShadows: false);
-                for (int door = -1; door <= 1; door += 2)
-                {
-                    Place("Cargo door panel", new Vector3(x + door * .61f, 1.25f, z - 3.13f),
-                        new Vector3(1.14f, 2.28f, .06f), steelMatte, castShadows: false);
-                    Place("Cargo locking bar", new Vector3(x + door * .58f, 1.25f, z - 3.19f),
-                        new Vector3(.055f, 2.12f, .055f), concrete, castShadows: false);
-                    Place("Cargo latch", new Vector3(x + door * .48f, 1.05f, z - 3.23f),
-                        new Vector3(.22f, .065f, .055f), steel, castShadows: false);
-                }
-                Place("Container contact", new Vector3(x, .02f, z), new Vector3(2.7f, .04f, 6.4f), contact, castShadows: false);
-            }
-            for (int i = 0; i < 7; i++)
-            {
-                Place("Blast barrier", new Vector3(-7.2f + i * 2.55f, .52f, 17.5f), new Vector3(2.1f, 1.05f, .58f), concreteWarm, castShadows: true);
-                Place("Barrier contact", new Vector3(-7.2f + i * 2.55f, .02f, 17.5f), new Vector3(2.2f, .035f, .7f), contact, castShadows: false);
-            }
-            for (int i = 0; i < 5; i++)
-                Place("Sandbag stack", new Vector3(-4.8f + i * 2.4f, .28f, MenuStagingComposition.MidPropBandZ), new Vector3(1.6f, .55f, .7f), sandbag, castShadows: true);
-            for (int i = 0; i < 2; i++)
-            {
-                float x = i == 0 ? -9.2f : 11.4f;
-                Place("Gantry upright", new Vector3(x, 6.2f, 22), new Vector3(.38f, 12.4f, .38f), steel, castShadows: true);
-                Place("Gantry crossbar", new Vector3(x + (i == 0 ? 3.4f : -3.4f), 12.2f, 22), new Vector3(7.2f, .32f, .32f), steel, castShadows: true);
-                Place("Apron lamp", new Vector3(x + (i == 0 ? 6.2f : -6.2f), 12f, 22), new Vector3(.7f, .14f, .45f), light, castShadows: false);
-                Place("Gantry brace", new Vector3(x + (i == 0 ? 1.6f : -1.6f), 8.4f, 22), new Vector3(3.2f, .18f, .18f), steelMatte, castShadows: false);
-            }
-            Place("Watch tower", new Vector3(-14.5f, 4.2f, 28), new Vector3(2.4f, 8.4f, 2.4f), concrete, castShadows: true);
-            Place("Tower cabin", new Vector3(-14.5f, 8.6f, 28), new Vector3(3.2f, 1.6f, 3.2f), steelMatte, castShadows: true);
-        }
-
-        /// <summary>Near apron + soldier-band pads/props under the showcase feet.</summary>
+        /// <summary>Rooftop overlook: roof slab, coping on the far edge, pads and props under the showcase feet.</summary>
         private void PlaceApronAndSoldiersBand(Material asphalt, Material apron, Material apronWarm, Material soil, Material concreteWarm, Material steel, Material steelMatte, Material sandbag, Material contact)
         {
-            Place("Apron slab", new Vector3(1.2f, -.12f, MenuStagingComposition.ApronBandZ), new Vector3(42, .22f, 48), asphalt, castShadows: false);
-            Place("Apron soil edge", new Vector3(1.2f, -.09f, 26f), new Vector3(42, .16f, 10f), soil, castShadows: false);
-            Place("Apron seam", new Vector3(1.2f, -.01f, 8), new Vector3(42, .02f, .08f), apron, castShadows: false);
-            Place("Apron seam B", new Vector3(1.2f, -.01f, 14), new Vector3(42, .02f, .08f), apron, castShadows: false);
-            Place("Apron seam C", new Vector3(1.2f, -.01f, 2.4f), new Vector3(42, .02f, .06f), apronWarm, castShadows: false);
-            Place("Apron seam cross", new Vector3(-2.4f, -.01f, 8), new Vector3(.06f, .02f, 36), apron, castShadows: false);
-            Place("Apron seam cross B", new Vector3(5.1f, -.01f, 8), new Vector3(.06f, .02f, 36), apron, castShadows: false);
+            const float roofBack = -11.5f, roofEdge = MenuVistaShot.RoofEdgeZ;
+            float roofDepth = roofEdge - roofBack, roofMid = (roofEdge + roofBack) * .5f;
+            Place("Roof slab", new Vector3(1.2f, -.12f, roofMid), new Vector3(42, .22f, roofDepth), asphalt, castShadows: false);
+            Place("Roof coping", new Vector3(1.2f, .04f, roofEdge - .2f), new Vector3(42, .12f, .4f), concreteWarm, castShadows: false);
+            Place("Roof seam", new Vector3(1.2f, -.01f, roofEdge - 3.5f), new Vector3(42, .02f, .08f), apron, castShadows: false);
+            Place("Roof seam C", new Vector3(1.2f, -.01f, 2.4f), new Vector3(42, .02f, .06f), apronWarm, castShadows: false);
+            Place("Roof seam cross", new Vector3(-2.4f, -.01f, roofMid), new Vector3(.06f, .02f, roofDepth), apron, castShadows: false);
+            Place("Roof seam cross B", new Vector3(5.1f, -.01f, roofMid), new Vector3(.06f, .02f, roofDepth), apron, castShadows: false);
+            Place("Roof vent", new Vector3(-6.2f, .45f, 3.6f), new Vector3(1.6f, .9f, 1.2f), steelMatte, castShadows: true);
+            Place("Roof mast", new Vector3(8.5f, 2.4f, 4.2f), new Vector3(.12f, 4.8f, .12f), steel, castShadows: true);
             Place("Apron curb", new Vector3(1.2f, .05f, -1.85f), new Vector3(18f, .12f, .22f), apronWarm, castShadows: false);
             // Soft contact discs then hard pads — staged under exact BindMenuShowcase feet.
             Place("Hero soft A", new Vector3(1.25f, .008f, .3f), new Vector3(1.55f, .02f, 1.55f), contact, castShadows: false);
@@ -282,16 +265,10 @@ namespace Shooter.Presentation.Session
             Place("Hero pad A", new Vector3(1.25f, .018f, .3f), new Vector3(1.05f, .028f, 1.05f), apron, castShadows: false);
             Place("Hero pad B", new Vector3(-.25f, .018f, 3.2f), new Vector3(1.05f, .028f, 1.05f), apron, castShadows: false);
             Place("Hero pad C", new Vector3(3.2f, .018f, 4.8f), new Vector3(1.05f, .028f, 1.05f), apron, castShadows: false);
-            Place("Crate near", new Vector3(-2.8f, .42f, -.4f), new Vector3(.9f, .84f, .9f), concreteWarm, castShadows: true);
-            Place("Crate near contact", new Vector3(-2.8f, .02f, -.4f), new Vector3(1.05f, .03f, 1.05f), contact, castShadows: false);
             Place("Ammo box", new Vector3(4.1f, .22f, .6f), new Vector3(.55f, .44f, .7f), steelMatte, castShadows: true);
             Place("Ammo box contact", new Vector3(4.1f, .02f, .6f), new Vector3(.65f, .03f, .8f), contact, castShadows: false);
-            Place("Low barrier FG", new Vector3(.4f, .28f, -1.1f), new Vector3(2.4f, .55f, .28f), sandbag, castShadows: true);
-            Place("Fence post L", new Vector3(-3.6f, .55f, -1.6f), new Vector3(.12f, 1.1f, .12f), steelMatte, castShadows: true);
-            Place("Fence post R", new Vector3(2.8f, .55f, -1.6f), new Vector3(.12f, 1.1f, .12f), steelMatte, castShadows: true);
-            Place("Fence rail", new Vector3(-.4f, .95f, -1.6f), new Vector3(6.4f, .08f, .08f), steel, castShadows: false);
-            Place("Shelter lean-to", new Vector3(6.4f, 1.6f, 7.2f), new Vector3(3.2f, .18f, 4.4f), steelMatte, castShadows: true);
-            Place("Shelter upright", new Vector3(5.1f, .9f, 7.2f), new Vector3(.22f, 1.8f, .22f), steel, castShadows: true);
+            Place("Shelter lean-to", new Vector3(6.4f, 1.6f, 4.2f), new Vector3(3.2f, .18f, 3.4f), steelMatte, castShadows: true);
+            Place("Shelter upright", new Vector3(5.1f, .9f, 4.2f), new Vector3(.22f, 1.8f, .22f), steel, castShadows: true);
         }
 
         private void ApplyStagingLights()
@@ -338,14 +315,17 @@ namespace Shooter.Presentation.Session
             int groundFamily = ProductMapView.UsesAsphaltYard(visuals.MapId) ? 3 : 2;
             Material ground = PackagedMaterial(visuals, shader, MapVisualClosure.MapMaterialPaths[groundFamily],
                 "Map card ground " + visuals.MapId, .5f);
-            Place("Map card ground " + visuals.MapId, new Vector3(center.x, -.05f, center.z), new Vector3(width, .1f, depth), ground);
+            // Ground top sits 4 cm under the packaged floor so the two never share a depth (vista flicker).
+            Group(root, Place("Map card ground " + visuals.MapId, new Vector3(center.x, -.09f, center.z), new Vector3(width, .1f, depth), ground));
             Material plate = Material(shader, "Map card plate " + visuals.MapId, new Color(.035f, .045f, .05f), .08f);
-            Place("Map card plate " + visuals.MapId, new Vector3(center.x, -.18f, center.z), new Vector3(width + 2f, .06f, depth + 2f), plate);
+            Group(root, Place("Map card plate " + visuals.MapId, new Vector3(center.x, -.18f, center.z), new Vector3(width + 2f, .06f, depth + 2f), plate));
             Material rim = Variant(ground, "Map card rim " + visuals.MapId, new Color(.18f, .22f, .24f));
-            Place("Map card rim N " + visuals.MapId, new Vector3(center.x, .02f, center.z + depth * .5f), new Vector3(width, .08f, .3f), rim);
-            Place("Map card rim S " + visuals.MapId, new Vector3(center.x, .02f, center.z - depth * .5f), new Vector3(width, .08f, .3f), rim);
-            Place("Map card rim E " + visuals.MapId, new Vector3(center.x + width * .5f, .02f, center.z), new Vector3(.3f, .08f, depth), rim);
-            Place("Map card rim W " + visuals.MapId, new Vector3(center.x - width * .5f, .02f, center.z), new Vector3(.3f, .08f, depth), rim);
+            Group(root, Place("Map card rim N " + visuals.MapId, new Vector3(center.x, .02f, center.z + depth * .5f), new Vector3(width, .08f, .3f), rim));
+            Group(root, Place("Map card rim S " + visuals.MapId, new Vector3(center.x, .02f, center.z - depth * .5f), new Vector3(width, .08f, .3f), rim));
+            Group(root, Place("Map card rim E " + visuals.MapId, new Vector3(center.x + width * .5f, .02f, center.z), new Vector3(.3f, .08f, depth), rim));
+            Group(root, Place("Map card rim W " + visuals.MapId, new Vector3(center.x - width * .5f, .02f, center.z), new Vector3(.3f, .08f, depth), rim));
+            // ADR-123: the card's ground, plate and rim ride with the solids, so the same root is the menu vista later.
+            vistas[visuals.MapId] = (root.transform, new Bounds(bounds.center, bounds.size + new Vector3(8f, 0f, 8f)));
             var camera = new GameObject("Map card camera").AddComponent<Camera>();
             camera.transform.SetParent(transform, false);
             MenuStagingComposition.FrameOverview(camera, new Bounds(center, bounds.size));
@@ -397,9 +377,13 @@ namespace Shooter.Presentation.Session
         private void LateUpdate()
         {
             if (built && pendingCardCameras.Count > 0 && cardWarmupFrames-- <= 0)
+            {
                 CaptureMapCards();
+                StageVista();
+            }
             if (!built || Time.unscaledTime < nextRender) return;
-            nextRender = Time.unscaledTime + 1f / 30;
+            int tier = ProductPostProcessing.AppliedTier >= 0 ? ProductPostProcessing.AppliedTier : QualitySettings.GetQualityLevel();
+            nextRender = Time.unscaledTime + 1f / MenuVistaShot.RenderHz(tier);
             float dt = reducedMotion ? 0 : Mathf.Min(Time.unscaledDeltaTime, .05f);
             sceneTime += dt;
             actors?.TickMenuShowcase(dt);
@@ -499,21 +483,29 @@ namespace Shooter.Presentation.Session
             Color ambientSky = RenderSettings.ambientSkyColor;
             Color ambientEquator = RenderSettings.ambientEquatorColor;
             Color ambientGround = RenderSettings.ambientGroundColor;
+            float fogStartDistance = RenderSettings.fogStartDistance, fogEndDistance = RenderSettings.fogEndDistance;
+            Material sky = RenderSettings.skybox;
             RenderTexture previous = RenderTexture.active;
             try
             {
+                // ADR-123: the staged map's own sky palette, linear fog band and trilight ambient.
                 RenderSettings.fog = true;
-                RenderSettings.fogMode = FogMode.ExponentialSquared;
-                RenderSettings.fogColor = MenuStagingComposition.FogColor;
-                RenderSettings.fogDensity = MenuStagingComposition.FogDensity;
+                RenderSettings.fogMode = FogMode.Linear;
+                RenderSettings.fogColor = fogColor;
+                RenderSettings.fogStartDistance = fogStart;
+                RenderSettings.fogEndDistance = fogEnd;
                 RenderSettings.ambientMode = AmbientMode.Trilight;
-                RenderSettings.ambientSkyColor = MenuStagingComposition.AmbientSky;
-                RenderSettings.ambientEquatorColor = MenuStagingComposition.AmbientEquator;
-                RenderSettings.ambientGroundColor = MenuStagingComposition.AmbientGround;
+                RenderSettings.ambientSkyColor = ambientSky;
+                RenderSettings.ambientEquatorColor = ambientEquator;
+                RenderSettings.ambientGroundColor = ambientGround;
+                if (skyMaterial != null) RenderSettings.skybox = skyMaterial;
                 stageCamera.Render();
             }
             finally
             {
+                RenderSettings.skybox = sky;
+                RenderSettings.fogStartDistance = fogStartDistance;
+                RenderSettings.fogEndDistance = fogEndDistance;
                 RenderSettings.fog = fog;
                 RenderSettings.fogColor = fogColor;
                 RenderSettings.fogMode = fogMode;
@@ -526,6 +518,82 @@ namespace Shooter.Presentation.Session
                 RenderTexture.active = previous;
             }
         }
+
+        private static void Group(GameObject root, GameObject child) => child.transform.SetParent(root.transform, true);
+
+        /// <summary>
+        /// Put the focused map below the overlook (MenuVistaShot), hide the others, switch to its sky and fog, and start
+        /// the cross-fade from the previous vista.
+        /// </summary>
+        private void StageVista()
+        {
+            if (vistas.Count == 0) return;
+            if (!vistas.ContainsKey(focusedMap)) focusedMap = vistas.Keys.First();
+            if (focusedMap == stagedMap) return;
+            if (stagedMap.Length > 0 && frame != null && !reducedMotion)
+            {
+                if (previousFrame == null)
+                {
+                    previousFrame = Own(new RenderTexture(frame.width, frame.height, 0, RenderTextureFormat.ARGB32) { name = "Previous menu vista" });
+                    previousFrame.Create();
+                }
+                Graphics.Blit(frame, previousFrame);
+                fadeStartedAt = Time.unscaledTime;
+            }
+            foreach (var pair in vistas) pair.Value.Root.gameObject.SetActive(pair.Key == focusedMap);
+            var (root, local) = vistas[focusedMap];
+            var shot = MenuVistaShot.For(focusedMap);
+            Quaternion yaw = Quaternion.Euler(0f, shot.YawDegrees, 0f);
+            var anchor = shot.Anchor(shot.RotatedHalfDepth(local.extents.x, local.extents.z));
+            Vector3 pivot = new Vector3(local.center.x, 0f, local.center.z);
+            root.rotation = yaw;
+            root.position = new Vector3(anchor.X, anchor.Y, anchor.Z) - yaw * pivot;
+            ApplyAtmosphere(focusedMap);
+            stagedMap = focusedMap;
+            if (gameObject.activeInHierarchy) RenderStage();
+        }
+
+        /// <summary>Per-map sky gradient (Skybox/Panoramic over a generated lat-long strip), fog band and ambient.</summary>
+        private void ApplyAtmosphere(string mapId)
+        {
+            GeneratedSkyMath.ResolveProductPalette(mapId, out var zenith, out var horizon, out var ground, out float start, out float end, out _);
+            fogColor = Tint(horizon);
+            fogStart = start;
+            fogEnd = end * 1.6f;
+            ambientSky = Tint(zenith);
+            ambientEquator = Tint(horizon) * .8f;
+            ambientGround = Tint(ground);
+            const int rows = 64;
+            if (skyGradient == null)
+                skyGradient = Own(new Texture2D(2, rows, TextureFormat.RGBA32, false, false) { name = "Menu vista sky", wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear });
+            var pixels = new Color32[2 * rows];
+            for (int y = 0; y < rows; y++)
+            {
+                float elevation = y / (rows - 1f) * 2f - 1f;
+                Color c = Tint(GeneratedSkyMath.SampleGradient(zenith, horizon, ground, elevation));
+                pixels[y * 2] = pixels[y * 2 + 1] = c;
+            }
+            skyGradient.SetPixels32(pixels);
+            skyGradient.Apply(false, false);
+            if (skyMaterial == null)
+            {
+                var shader = Shader.Find("Skybox/Panoramic");
+                if (shader != null) skyMaterial = Own(new Material(shader) { name = "Menu vista sky" });
+            }
+            if (skyMaterial != null)
+            {
+                if (skyMaterial.HasProperty("_MainTex")) skyMaterial.SetTexture("_MainTex", skyGradient);
+                if (skyMaterial.HasProperty("_Exposure")) skyMaterial.SetFloat("_Exposure", 1f);
+                if (stageCamera != null) stageCamera.clearFlags = CameraClearFlags.Skybox;
+            }
+            else if (stageCamera != null)
+            {
+                stageCamera.clearFlags = CameraClearFlags.SolidColor;
+                stageCamera.backgroundColor = fogColor;
+            }
+        }
+
+        private static Color Tint(GeneratedSkyMath.Rgb c) => new Color(c.R, c.G, c.B, 1f);
 
         private GameObject Place(string name, Vector3 position, Vector3 size, Material material, bool castShadows = false)
         {
@@ -592,7 +660,11 @@ namespace Shooter.Presentation.Session
 
         private void ReleaseOwned()
         {
-            if (stageCamera != null) stageCamera.targetTexture = null;
+            if (stageCamera != null)
+            {
+                ProductPostProcessing.Detach(stageCamera);
+                stageCamera.targetTexture = null;
+            }
             foreach (var camera in pendingCardCameras)
                 if (camera != null) camera.targetTexture = null;
             pendingCardCameras.Clear();
