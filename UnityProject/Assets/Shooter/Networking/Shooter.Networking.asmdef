@@ -11,5 +11,7 @@
   "autoReferenced": false,
   "allowUnsafeCode": false,
   "noEngineReferences": true,
-  "defineConstraints": []
+  "defineConstraints": [
+    "SHOOTER_NETWORKING"
+  ]
 }

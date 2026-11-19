@@ -53,7 +53,7 @@ Simulation stays the single authority and Presentation stays read-only.
 
 **Checks:**
 - **Docs:** run `python docs/fixtures/verify_fixtures.py` and `python docs/verify_docs.py` for specification changes. Refresh the docs manifest only for intentional edits.
-- **Pure lanes:** run Tools/Test-Contracts.ps1, Test-Generation.ps1, Test-Simulation.ps1 and Test-Game.ps1.
+- **Pure lanes:** run Tools/Test-All.ps1, or individually Tools/Test-Contracts.ps1, Test-Generation.ps1, Test-Simulation.ps1 and Test-Game.ps1.
 - **Unity, build and benchmark:** run the relevant wrappers described in docs/bootstrap-runbook.md. Each covers only its documented scope.
 - **Delivery:** `Compile-GameContent -Native`, then `Package-Release -RequireNativeNav`, then `Build-Installer`.
 

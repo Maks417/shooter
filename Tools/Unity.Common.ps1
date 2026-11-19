@@ -145,6 +145,19 @@ function Remove-ShooterPlayerDebugFolders([string]$PlayerDirectory) {
     }
 }
 
+# Post-build checks shared by Build.ps1 and Compile-GameContent -AndBuildClient: fresh manifest with the requested target,
+# result and toolchain, packed-provenance audit, Shooter.exe present; then removes the unshipped debug folders (IL2CPP
+# backup ~1.15 GB; Library/Bee keeps the incremental cache) and marks the run PASS.
+function Complete-ShooterPlayerBuild($Unity, $Run, [string]$BuildDirectory, [string]$ManifestPath, [string]$Target) {
+    if (!(Test-Path -LiteralPath $ManifestPath -PathType Leaf)) { throw 'Build produced no fresh manifest.' }
+    $manifest = Get-Content -LiteralPath $ManifestPath -Raw | ConvertFrom-Json
+    if ($manifest.result -cne 'Succeeded' -or $manifest.toolchainHash -cne $Unity.LockHash -or $manifest.target -cne $Target) { throw 'Build manifest result/target/toolchain mismatch.' }
+    Assert-ShooterPackedProvenance $manifest
+    if (!(Test-Path -LiteralPath (Join-Path $BuildDirectory 'Shooter.exe') -PathType Leaf)) { throw 'Build did not produce Shooter.exe.' }
+    $Run.Report.removedDebugFolders = @(Remove-ShooterPlayerDebugFolders $BuildDirectory)
+    $Run.Report.result = 'PASS'
+}
+
 function New-ShooterRun([string]$Action, $Unity) {
     $root = Get-ShooterRoot
     Assert-ShooterFreeSpace $root

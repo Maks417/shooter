@@ -1,0 +1,23 @@
+<Solution>
+  <!-- Pure SDK lane (ADR-076). Parked Tools/Networking and Tools/Networking.Tests are intentionally absent; see Test-Networking.ps1. -->
+  <Project Path="Bootstrap.Core/Shooter.Bootstrap.Core.csproj" />
+  <Project Path="Bootstrap.Release/Shooter.Bootstrap.Release.csproj" />
+  <Project Path="Content.Maps/Shooter.Content.Maps.csproj" />
+  <Project Path="ContentCompiler/Shooter.AssetCompiler.Editor.csproj" />
+  <Project Path="ContentRuntime/Shooter.Content.Runtime.csproj" />
+  <Project Path="Contracts.Tests/Contracts.Tests.csproj" />
+  <Project Path="Contracts/Shooter.Contracts.csproj" />
+  <Project Path="Game.Contracts.Tests/Game.Contracts.Tests.csproj" />
+  <Project Path="Game.Contracts/Shooter.Game.Contracts.csproj" />
+  <Project Path="Game.Session/Shooter.Game.Session.csproj" />
+  <Project Path="Game.Settings/Shooter.Game.Settings.csproj" />
+  <Project Path="Generation.Tests/Generation.Tests.csproj" />
+  <Project Path="Generation/Shooter.Generation.Core.csproj" />
+  <Project Path="M1Content/M1Content.csproj" />
+  <Project Path="MapContent/MapContent.csproj" />
+  <Project Path="Presentation.Model/Shooter.Presentation.Model.csproj" />
+  <Project Path="Simulation.Tests/Shooter.Simulation.Tests.csproj" />
+  <Project Path="Simulation/Shooter.Simulation.csproj" />
+  <Project Path="VectorMath/Shooter.VectorMath.csproj" />
+  <Project Path="World.Runtime/Shooter.World.Runtime.csproj" />
+</Solution>

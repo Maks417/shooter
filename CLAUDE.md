@@ -17,7 +17,7 @@ All C# lives under `UnityProject/Assets/Shooter/`, split into asmdefs with stric
 - `Contracts` (C0-v1) and `Game/Contracts` (Game-v1): BCL-only IDs/DTOs/ports, `noEngineReferences`. Frozen, with hashes in `contract-lock.json` and `game-contract-lock.json`. Changes need an ADR plus fixture migration.
 - `Generation/Core`: pure deterministic generators. `Generation/Editor` is the Unity-only asset compiler; runtime never references it. The content format is frozen in `content-format-lock.json` and the feature recipes in `feature-content-lock.json`.
 - `Simulation`: fixed 60 Hz authority (motor, combat, pose, AI, match, session, TDM). It has no Unity rendering, Editor or transport references. Tick order is specified in `docs/simulation-protocol.md`.
-- `World`: collision/nav adapters. `Content`: cache loading and map packages. `Networking`: codec, prediction and lag compensation, parked and dormant (ADR-076; no new code).
+- `World`: collision/nav adapters. `Content`: cache loading and map packages. `Networking`: codec, prediction and lag compensation, parked and dormant (ADR-076; no new code); it compiles only under `SHOOTER_NETWORKING` and is tested only by `Tools/Test-Networking.ps1` (ADR-120).
 - `Presentation`: client-only, read-only consumer of snapshots. It can never apply damage or mutate authority, and it is excluded under `UNITY_SERVER`.
 - `Bootstrap`: the only composition root (`Core`, `Client`, `Runtime`, `Release`, `Editor`). `ShooterBuild.*` Editor entry points (`BuildClient`, `BuildServer` (parked), `CompileContent`, `InitializeFoundation`, `WriteSettingsProvenance`, …) live here.
 
@@ -28,6 +28,7 @@ All C# lives under `UnityProject/Assets/Shooter/`, split into asmdefs with stric
 Pure tests run without Unity. Each wrapper checks the frozen lock identities first, pins the SDK, writes a report under `Artifacts/<milestone>/<commit>/<run-id>/` and exits nonzero on any failure, skip or timeout. Add `-Offline` to restore from the local NuGet cache only (advisory check then records PendingNetwork).
 
 ```powershell
+./Tools/Test-All.ps1            # one restore + build of Tools/Shooter.Pure.slnx, then the four suites below in parallel
 ./Tools/Test-Contracts.ps1      # Tools/Contracts.Tests (C0)
 ./Tools/Test-Generation.ps1     # Tools/Generation.Tests (generators, compiler, content store, map packages)
 ./Tools/Test-Simulation.ps1     # Tools/Simulation.Tests (motor/combat/AI/network/view/hud/shell)
@@ -64,6 +65,7 @@ Unity lanes need the locked editor. On a fresh checkout run Configure first: it 
 ./Tools/Smoke.ps1 -BuildRunDirectory <printed build-run dir>
 ./Tools/Compile-GameContent.ps1           # product map packages
 ./Tools/Package-Release.ps1 -ClientBuildRunDirectory <client build-run>
+./Tools/Deliver.ps1 -ForceContent [-ReleaseVersion <n.n.n>]  # content + client build in one editor session, smoke, package, installer
 ./Tools/Benchmark.ps1 -BuildRunDirectory <client build-run> -Workload TDM-5v5-v1 -Profile Low -RunIndex 1
 ```
 

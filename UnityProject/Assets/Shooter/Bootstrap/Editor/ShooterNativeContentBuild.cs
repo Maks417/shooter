@@ -47,7 +47,11 @@ public static class ShooterNativeContentBuild
     // stage lookup is keyed on them, so any drift fails loudly instead of publishing a mismatched bake).
     private const float AgentRadius = 0.32f, AgentHeight = 1.8f, MaxStep = 0.25f, MaxSlope = 45f, ClearanceMargin = 0.05f;
 
-    public static void Compile()
+    public static void Compile() => Compile("-shooterReport");
+
+    /// <summary>Bakes the staged native navigation; <paramref name="reportArgument"/> names the command-line option holding
+    /// the stage proof path, so a combined bake-and-build session can keep -shooterReport for the build manifest.</summary>
+    public static void Compile(string reportArgument)
     {
         var toolchain = ShooterBuild.CheckToolchain();
         string allowed = Path.Combine(ShooterBuild.RepositoryRoot, "Artifacts") + Path.DirectorySeparatorChar;
@@ -55,7 +59,7 @@ public static class ShooterNativeContentBuild
         string stage = Path.GetFullPath(ShooterBuild.Argument("-shooterNavStage"));
         if (!cacheRoot.StartsWith(allowed, StringComparison.OrdinalIgnoreCase) || !stage.StartsWith(allowed, StringComparison.OrdinalIgnoreCase))
             throw new ArgumentException("Package cache and nav stage must stay under repository Artifacts.");
-        string reportPath = ShooterBuild.Argument("-shooterReport");
+        string reportPath = ShooterBuild.Argument(reportArgument);
         // "mapId=packageRootSha256,mapId=packageRootSha256": one published .NET package per map (any profile; collision is shared).
         var sources = new List<KeyValuePair<string, string>>();
         foreach (string item in ShooterBuild.Argument("-shooterPackages").Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))

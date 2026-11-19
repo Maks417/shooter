@@ -15,7 +15,7 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="[4.0.1]" PrivateAssets="all" />
     <ProjectReference Include="../Contracts/Shooter.Contracts.csproj" />
     <ProjectReference Include="../Bootstrap.Release/Shooter.Bootstrap.Release.csproj" />
-    <ProjectReference Include="../Networking/Shooter.Networking.csproj" />
+    <ProjectReference Include="../Bootstrap.Core/Shooter.Bootstrap.Core.csproj" />
     <ProjectReference Include="../Game.Settings/Shooter.Game.Settings.csproj" />
     <ProjectReference Include="../Game.Session/Shooter.Game.Session.csproj" />
     <ProjectReference Include="../Generation/Shooter.Generation.Core.csproj" />

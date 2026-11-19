@@ -21,7 +21,7 @@ Read [contracts](contract-details.md), [Game-v1](game-session-contracts.md) and 
 | Shooter.World.Unity (`World/Foundation`) | PhysX queries, NavMesh adapter, map runtime | World.Runtime, Generation.Core, Content.Maps, Unity |
 | Shooter.Presentation.Model | Unity-free view, HUD, menu, scoreboard, mixer and FX models | Contracts, Game.Contracts, VectorMath |
 | Shooter.Presentation | URP rendering, procedural rig, input, audio/FX adapters, session views | Presentation.Model, Contracts, Content.Runtime, Unity |
-| Shooter.Networking (parked) | Codec, prediction history, authority adapter; dormant, referenced by no Unity assembly | Contracts, Bootstrap.Core, Simulation |
+| Shooter.Networking (parked) | Codec, prediction history, authority adapter; dormant, referenced by no Unity assembly, compiled only under `SHOOTER_NETWORKING` (never defined, so not in players) and tested only by `Tools/Networking.Tests` ([ADR-120](decisions.md#adr-120--accepted-parked-networking-behind-a-define-and-build-once-pure-lanes)) | Contracts, Bootstrap.Core, Simulation |
 | Shooter.Bootstrap.Core / .Runtime / .Release / .Client | The only composition root, tick driver, release helpers | Runtime assemblies |
 | Shooter.Build.Editor / .FeatureBuild.Editor | `ShooterBuild.*` entry points, native content build, feature compilers | Bootstrap, AssetCompiler.Editor |
 

@@ -468,6 +468,13 @@ public static class ShooterBuild
     }
     public static void CompileContent() => Guard(ShooterContentBuild.Compile);
     public static void CompileNativeGameContent() => Guard(ShooterNativeContentBuild.Compile);
+    // One batchmode session for the native navigation bake (-shooterNavReport) and the client build (-shooterReport):
+    // the build does not read map content, so sharing the launch only saves an editor start-up and asset refresh.
+    public static void CompileNativeGameContentAndBuildClient() => Guard(() =>
+    {
+        ShooterNativeContentBuild.Compile("-shooterNavReport");
+        Build(false);
+    });
 
     /// <summary>
     /// T089: ship stereo combat WAV bank beside the client (not under Assets — .wav is rejected as imported art).

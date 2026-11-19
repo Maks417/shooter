@@ -1,6 +1,9 @@
 [CmdletBinding()]
 param(
     [switch]$Offline,
+    # Set by Tools/Test-All.ps1 after its single locked restore (with the NuGet advisory check) and solution build:
+    # skip this wrapper's own restore and build and test the prebuilt binaries.
+    [switch]$NoBuild,
     [ValidateRange(30, 3600)][int]$TimeoutSeconds = 180
 )
 $ErrorActionPreference = 'Stop'
@@ -58,10 +61,14 @@ try {
     $report.dotnetSdk = (Invoke-CheckedProcess 'sdk' @('--version')).Trim()
     $expectedSdk = (Get-Content -LiteralPath (Join-Path $repoRoot 'global.json') -Raw | ConvertFrom-Json).sdk.version
     if ($report.dotnetSdk -ne $expectedSdk) { throw "Expected SDK $expectedSdk; got $($report.dotnetSdk)" }
-    $restoreArguments = Get-ShooterRestoreArguments $projectPath ([bool]$Offline)
-    $null = Invoke-CheckedProcess 'restore' $restoreArguments
-    if (!$Offline) { $report.nugetAdvisoryCheck = 'CompletedDuringRestore: all dependency levels' }
-    $null = Invoke-CheckedProcess 'tests' @('test', $projectPath, '--no-restore', '--configuration', 'Release', '--logger', 'trx;LogFileName=contracts.trx', '--results-directory', $reportDirectory)
+    if ($NoBuild) { $report.nugetAdvisoryCheck = 'CoveredBy Test-All restore'; $report['prebuilt'] = $true }
+    else {
+        $restoreArguments = Get-ShooterRestoreArguments $projectPath ([bool]$Offline)
+        $null = Invoke-CheckedProcess 'restore' $restoreArguments
+        if (!$Offline) { $report.nugetAdvisoryCheck = 'CompletedDuringRestore: all dependency levels' }
+    }
+    $buildMode = if ($NoBuild) { @('--no-build') } else { @() }
+    $null = Invoke-CheckedProcess 'tests' (@('test', $projectPath, '--no-restore', '--configuration', 'Release', '--logger', 'trx;LogFileName=contracts.trx', '--results-directory', $reportDirectory) + $buildMode)
     $trxPath = Join-Path $reportDirectory 'contracts.trx'
     if (!(Test-Path -LiteralPath $trxPath -PathType Leaf)) { throw 'Fresh test XML was not produced.' }
     $summary = Get-StrictTrxSummary -Path $trxPath -SuiteName 'Contracts'

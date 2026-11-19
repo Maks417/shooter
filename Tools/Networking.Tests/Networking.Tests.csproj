@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Parked networking (ADR-076): its tests run only in Tools/Test-Networking.ps1, never in the default pure lanes. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <IsTestProject>true</IsTestProject>
+    <IsPackable>false</IsPackable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="[18.11.0]" />
+    <PackageReference Include="xunit" Version="[2.9.3]" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="[4.0.1]" PrivateAssets="all" />
+    <ProjectReference Include="../Contracts/Shooter.Contracts.csproj" />
+    <ProjectReference Include="../Networking/Shooter.Networking.csproj" />
+    <ProjectReference Include="../Simulation/Shooter.Simulation.csproj" />
+    <ProjectReference Include="../Bootstrap.Core/Shooter.Bootstrap.Core.csproj" />
+    <!-- Shared test-only motor world, linked rather than copied. -->
+    <Compile Include="../Simulation.Tests/Motor/StaticPlaneWorld.cs" Link="Shared/StaticPlaneWorld.cs" />
+  </ItemGroup>
+</Project>

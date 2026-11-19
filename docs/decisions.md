@@ -88,7 +88,7 @@ Accepting a decision never certifies a runtime or hardware gate. The headings be
 | [ADR-073](#adr-073--accepted-life-scoped-multi-kill-and-headshot-hud-badges) | Accepted | life-scoped multi-kill and headshot HUD badges |  |
 | [ADR-074](#adr-074--accepted-compact-64--80-m-arenas-with-distinct-per-map-layouts) | Accepted | compact 64 × 80 m arenas with distinct per-map layouts | layouts replaced by ADR-109 |
 | [ADR-075](#adr-075--provisional-third-party-code-libraries-for-noise-runtime-rigging-and-spatial-audio) | Provisional | third-party code libraries for noise, runtime rigging and spatial audio |  |
-| [ADR-076](#adr-076--accepted-offline-only-scope-and-bounded-local-evidence) | Accepted | offline-only scope and bounded local evidence |  |
+| [ADR-076](#adr-076--accepted-offline-only-scope-and-bounded-local-evidence) | Accepted | offline-only scope and bounded local evidence | Networking build/test isolation amended by ADR-120 |
 | [ADR-077](#adr-077--accepted-weapon-definition-files-generate-both-weapon-catalogs) | Accepted | weapon definition files generate both weapon catalogs |  |
 | [ADR-078](#adr-078--accepted-shared-weapon-package-separate-from-map-packages) | Accepted | shared weapon package separate from map packages |  |
 | [ADR-079](#adr-079--accepted-engine-toolchain-lock-separate-from-the-build-lock) | Accepted | engine toolchain lock separate from the build lock |  |
@@ -132,6 +132,7 @@ Accepting a decision never certifies a runtime or hardware gate. The headings be
 | [ADR-117](#adr-117--accepted-single-point-collimator-dot-and-12x-collimator-zoom) | Accepted | single-point collimator dot and 1.2x collimator zoom |  |
 | [ADR-118](#adr-118--accepted-m4a1-mk-16-m24-sws-and-m870-pellets-shell-reloads-and-geometryweapon-150) | Accepted | M4A1, Mk 16, M24 SWS and M870: pellets, shell reloads and geometry.weapon 1.5.0 |  |
 | [ADR-119](#adr-119--accepted-30-rank-career-ladder-and-four-new-perks) | Accepted | 30-rank career ladder and four new perks |  |
+| [ADR-120](#adr-120--accepted-parked-networking-behind-a-define-and-build-once-pure-lanes) | Accepted | parked networking behind a define and build-once pure lanes | amends ADR-076 |
 
 ## ADR-001 — Accepted: Unity 6 URP rasterization
 
@@ -1794,3 +1795,15 @@ Saves keep CP only, so some unlocks re-lock. The owner accepted this, and there 
 ## Decision change template
 
 ID/title; date; owner; status; requirement affected; measured problem; alternatives; chosen behavior; contract/schema impact; migration; affected work packages; validation and rollback; supersedes ID. Integrator approves compatibility changes; an agent cannot relax art or performance requirements by silently updating a baseline.
+
+## ADR-120 — Accepted: parked networking behind a define and build-once pure lanes
+
+Date 2026-11-19 (T195 phase 2). **Context.** Parked Networking (ADR-076) was still compiled into every client player, referenced by every pure test project and rebuilt by every pure lane, so motor and session refactors had to keep it compiling. Each pure wrapper also restored and built the shared project graph on its own.
+
+**Decision.**
+- `Shooter.Networking.asmdef` declares `defineConstraints: [SHOOTER_NETWORKING]`. No build defines it, so Unity neither compiles nor ships it. Resuming multiplayer means defining the symbol in an ADR.
+- Its 21 tests live in `Tools/Networking.Tests` and run only in `Tools/Test-Networking.ps1`. No other test project may reference `Shooter.Networking`; `Tools/verify_asmdef_graph.py` enforces both rules.
+- `Tools/Shooter.Pure.slnx` holds every pure project except the parked pair. `Tools/Test-All.ps1` restores it once in locked mode (with the NuGet advisory check), builds it once, and runs Test-Contracts, Test-Generation, Test-Simulation and Test-Game with `-NoBuild` in parallel. Each suite still checks its own locks and writes its own evidence.
+- `ShooterBuild.CompileNativeGameContentAndBuildClient` bakes native navigation and builds the client in one editor session (`Compile-GameContent -Native -AndBuildClient`); `Tools/Deliver.ps1` chains content, build, smoke, package and the optional installer.
+
+**Consequences.** ADR-076's "no new Networking code" still holds: the code is unchanged and only moved out of the default lanes. A change that breaks Networking now fails only `Test-Networking.ps1`, which remains the owner's call to run while networking is parked.

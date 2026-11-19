@@ -16,7 +16,6 @@
     <ProjectReference Include="../Game.Contracts/Shooter.Game.Contracts.csproj" />
     <ProjectReference Include="../Contracts/Shooter.Contracts.csproj" />
     <ProjectReference Include="../Bootstrap.Release/Shooter.Bootstrap.Release.csproj" />
-    <ProjectReference Include="../Networking/Shooter.Networking.csproj" />
     <ProjectReference Include="../Game.Settings/Shooter.Game.Settings.csproj" />
     <ProjectReference Include="../Game.Session/Shooter.Game.Session.csproj" />
     <None Include="../../docs/game-fixtures/*" Link="Fixtures/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />

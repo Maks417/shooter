@@ -11,10 +11,16 @@ param(
     # A hard guard then proves every non-navigation file equals the pure package. Default (no switch) stays the pure
     # MapContent software NVB1 path, always labelled software-walkable-grid / Pending.
     [switch]$Native,
+    # With -Native: build the IL2CPP client in the same editor session as the navigation bake (one editor start-up).
+    # The build is an ordinary build-client run (same manifest, checks and pruning as Tools/Build.ps1); its folder is
+    # recorded as buildRunDirectory in this wrapper's validation.json.
+    [switch]$AndBuildClient,
+    [ValidateRange(60, 7200)][int]$BuildTimeoutSeconds = 1800,
     [ValidateRange(30, 3600)][int]$TimeoutSeconds = 600
 )
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
+if ($AndBuildClient -and -not $Native) { throw '-AndBuildClient requires -Native (the pure path launches no editor).' }
 $repoRoot = Split-Path -Parent $PSScriptRoot
 & python (Join-Path $PSScriptRoot 'verify_content_format.py') | Out-Host
 if ($LASTEXITCODE -ne 0) { throw 'Frozen content-format identity check failed.' }
@@ -49,8 +55,10 @@ $report = [ordered]@{
     seeds = @()
     nativeUnityNavBake = 'Pending'
     releasePlayerLoad = 'Pending'
+    buildRunDirectory = $null
     failure = $null
 }
+$buildRun = $null
 try {
     Write-Host "Compile-GameContent report: $reportDirectory"
     # Preserve diagnostic compilers as separate named tools; this wrapper publishes map packages only.
@@ -114,10 +122,30 @@ try {
         $navStageDir = Join-Path $reportDirectory 'nav-stage'
         $stageProofPath = Join-Path $reportDirectory 'nav-stage-proof.json'
         $nativeRun = [pscustomobject]@{ Path = $reportDirectory; Report = [ordered]@{ commands = @() } }
-        $editorArgs = @('-quit', '-executeMethod', 'ShooterBuild.CompileNativeGameContent',
-            '-shooterPackageCache', $purePackageCache, '-shooterPackages', $sourceArg,
-            '-shooterNavStage', $navStageDir, '-shooterReport', $stageProofPath)
-        Invoke-ShooterEditor $unity $nativeRun $editorArgs $TimeoutSeconds
+        $editorArgs = @('-quit', '-shooterPackageCache', $purePackageCache, '-shooterPackages', $sourceArg, '-shooterNavStage', $navStageDir)
+        $editorTimeout = $TimeoutSeconds
+        if ($AndBuildClient) {
+            $buildRun = New-ShooterRun 'build-client' $unity
+            $report.buildRunDirectory = $buildRun.Path
+            $buildDirectory = Join-Path $buildRun.Path 'player'
+            $buildManifest = Join-Path $buildRun.Path 'build-manifest.json'
+            $editorArgs += @('-executeMethod', 'ShooterBuild.CompileNativeGameContentAndBuildClient', '-shooterNavReport', $stageProofPath,
+                '-shooterOutput', $buildDirectory, '-shooterReport', $buildManifest)
+            $editorTimeout = [Math]::Min(7200, $TimeoutSeconds + $BuildTimeoutSeconds)
+        }
+        else { $editorArgs += @('-executeMethod', 'ShooterBuild.CompileNativeGameContent', '-shooterReport', $stageProofPath) }
+        try { Invoke-ShooterEditor $unity $nativeRun $editorArgs $editorTimeout }
+        finally {
+            if ($buildRun) {
+                $buildRun.Report.commands = $nativeRun.Report.commands
+                $buildRun.Report['editorLog'] = Join-Path $reportDirectory 'editor.log'
+            }
+        }
+        if ($buildRun) {
+            try { Complete-ShooterPlayerBuild $unity $buildRun $buildDirectory $buildManifest 'Client' }
+            catch { $buildRun.Report.error = $_.Exception.Message; throw }
+            finally { Save-ShooterRun $buildRun }
+        }
         $report.editorCommands = $nativeRun.Report.commands
         if (!(Test-Path -LiteralPath $stageProofPath -PathType Leaf)) { throw 'Native nav bake produced no nav-stage-proof.json' }
         $stageProof = Get-Content -LiteralPath $stageProofPath -Raw | ConvertFrom-Json
@@ -259,6 +287,10 @@ try {
 }
 catch {
     $report.failure = "$_"
+    if ($buildRun -and !(Test-Path -LiteralPath (Join-Path $buildRun.Path 'run.json'))) {
+        $buildRun.Report.error = "Combined native bake + build session failed: $_"
+        Save-ShooterRun $buildRun
+    }
     $report | ConvertTo-Json -Depth 8 | Set-Content (Join-Path $reportDirectory 'validation.json') -Encoding UTF8
     throw
 }

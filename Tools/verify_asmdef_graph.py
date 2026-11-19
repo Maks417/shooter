@@ -12,6 +12,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 ASSETS = ROOT / "UnityProject/Assets/Shooter"
+# Parked assemblies (ADR-076) compile only under their define, so players never build or ship them, and only their own
+# test project may reference them, so the default pure lanes never rebuild them.
+PARKED = {"Shooter.Networking": ("SHOOTER_NETWORKING", "Networking.Tests")}
 
 
 def load_asmdefs(assets=ASSETS):
@@ -44,9 +47,23 @@ def project_info(csproj):
     return name, includes, refs
 
 
+def verify_parked(root):
+    errors = []
+    for path in (root / "UnityProject/Assets/Shooter").rglob("*.asmdef"):
+        data = json.loads(path.read_text(encoding="utf-8-sig"))
+        if data["name"] in PARKED and PARKED[data["name"]][0] not in data.get("defineConstraints", []):
+            errors.append(f"{data['name']}: parked assembly must declare defineConstraints [{PARKED[data['name']][0]}]")
+    for csproj in sorted((root / "Tools").glob("*.Tests/*.csproj")):
+        _, _, refs = project_info(csproj)
+        for name, (_, owner) in PARKED.items():
+            if name in refs and csproj.parent.name != owner:
+                errors.append(f"{csproj.relative_to(root).as_posix()}: references parked {name}; only {owner} may")
+    return errors
+
+
 def verify(root=ROOT):
     asmdefs = load_asmdefs(root / "UnityProject/Assets/Shooter")
-    checked, errors = [], []
+    checked, errors = [], verify_parked(root)
     for csproj in sorted((root / "Tools").glob("*/*.csproj")):
         if csproj.parent.name.endswith(".Tests"):
             continue

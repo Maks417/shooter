@@ -1,6 +1,9 @@
 [CmdletBinding()]
 param(
     [switch]$Offline,
+    # Set by Tools/Test-All.ps1 after its single locked restore (with the NuGet advisory check) and solution build:
+    # skip this wrapper's own restore and build and test the prebuilt binaries.
+    [switch]$NoBuild,
     [ValidateRange(30, 3600)][int]$TimeoutSeconds = 180
 )
 $ErrorActionPreference = 'Stop'
@@ -44,10 +47,14 @@ try {
     $report.dotnetSdk = (Invoke-CheckedProcess 'sdk' @('--version')).Trim()
     $expectedSdk = (Get-Content -LiteralPath (Join-Path $repoRoot 'global.json') -Raw | ConvertFrom-Json).sdk.version
     if ($report.dotnetSdk -ne $expectedSdk) { throw "Expected SDK $expectedSdk; got $($report.dotnetSdk)" }
-    $restoreArgs = Get-ShooterRestoreArguments $projectPath ([bool]$Offline)
-    $null = Invoke-CheckedProcess 'restore' $restoreArgs
-    if (!$Offline) { $report.nugetAdvisoryCheck = 'CompletedDuringRestore: all dependency levels' }
-    $null = Invoke-CheckedProcess 'tests' @('test', $projectPath, '-c', 'Release', '--no-restore', '--logger', 'trx;LogFileName=game.trx', '--results-directory', $reportDirectory)
+    if ($NoBuild) { $report.nugetAdvisoryCheck = 'CoveredBy Test-All restore'; $report['prebuilt'] = $true }
+    else {
+        $restoreArgs = Get-ShooterRestoreArguments $projectPath ([bool]$Offline)
+        $null = Invoke-CheckedProcess 'restore' $restoreArgs
+        if (!$Offline) { $report.nugetAdvisoryCheck = 'CompletedDuringRestore: all dependency levels' }
+    }
+    $buildMode = if ($NoBuild) { @('--no-build') } else { @() }
+    $null = Invoke-CheckedProcess 'tests' (@('test', $projectPath, '-c', 'Release', '--no-restore', '--logger', 'trx;LogFileName=game.trx', '--results-directory', $reportDirectory) + $buildMode)
     $summary = Get-StrictTrxSummary -Path (Join-Path $reportDirectory 'game.trx') -SuiteName 'Game'
     $report.testCount = $summary.Total
     $report.executedTestCount = $summary.Executed
@@ -65,3 +72,4 @@ finally {
 Write-Host ($report | ConvertTo-Json -Depth 6)
 if ($report.result -ne 'PASS') { exit 1 }
 Complete-ShooterReportRun $reportDirectory 'test-game'
+Write-Host "PASS: $($report.testCount) Game-v1 tests. Evidence: $reportDirectory"

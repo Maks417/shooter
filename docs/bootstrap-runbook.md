@@ -10,21 +10,25 @@ Every wrapper:
 
 Each wrapper covers only its own scope. Builder, smoke, package and installer PASS results are not gameplay evidence ([acceptance](acceptance.md#evidence-rules)).
 
-Do not run two SDK wrappers at the same time in one checkout, because they share `bin/obj`.
+Do not run two SDK wrappers that build at the same time in one checkout, because they share `bin/obj`. `Test-All.ps1` is the exception: it builds once, then runs its suites in parallel with `-NoBuild`, which only reads the build output.
 
 ## Pure lanes (no Unity)
 
 ```powershell
+./Tools/Test-All.ps1              # the four suites below from one restore + build (Tools/Shooter.Pure.slnx), in parallel
 ./Tools/Test-Contracts.ps1        # C0 (Tools/Contracts.Tests)
 ./Tools/Test-Generation.ps1       # generators, compiler, content store, map packages
 ./Tools/Test-Simulation.ps1       # motor, combat, AI, view, HUD, shell
 ./Tools/Test-Game.ps1             # Game-v1, TDM, settings, workloads
 ./Tools/Test-Maps.ps1             # map catalog, spawn and package tests
 ./Tools/Test-SourceProvenance.ps1 # Assets sources, .meta/GUID completeness, settings provenance
+./Tools/Test-Networking.ps1       # parked networking only (ADR-120); not part of the default lanes
 python docs/fixtures/verify_fixtures.py
 python docs/verify_docs.py
 python Tools/verify_contract_lock.py
 ```
+
+`Test-All` does the locked restore (with the NuGet advisory check) and the Release build once for the whole solution, then starts each suite with `-NoBuild`; each suite still checks its own locks and writes its own evidence, and `test-all-<run>/run.json` lists them with their durations (about 170 s in total on the dev laptop, bounded by Test-Generation). The single suites still restore and build on their own when run directly.
 
 `-Offline` restores from the local NuGet cache only and records the advisory lookup as PendingNetwork. For iteration you can run a single `dotnet test ... --filter`. That skips the lock guard and produces no evidence report.
 
@@ -75,7 +79,13 @@ Every Unity wrapper re-runs the curation check. After one full hash verification
 ## Content, build, package and installer
 
 ```powershell
-./Tools/Compile-GameContent.ps1 -Native -Force
+./Tools/Deliver.ps1 -ForceContent [-ReleaseVersion <n.n.n> -PreviousInstallerReport <installer-report.json>]
+```
+
+`Deliver.ps1` needs a clean tree and runs the steps below with no manual run-folder copying. It writes `deliver.json` with each step's arguments, exit code and duration under `Artifacts/m11-playable-release/<commit>/deliver-<run>/`. Without `-ReleaseVersion` it stops after Package-Release. The individual steps:
+
+```powershell
+./Tools/Compile-GameContent.ps1 -Native -Force [-AndBuildClient]
 ./Tools/Build.ps1 -Target Client
 ./Tools/Smoke.ps1 -BuildRunDirectory <printed build-run>
 ./Tools/Package-Release.ps1 -ClientBuildRunDirectory <client build-run> -MapCacheRoot Artifacts/map-packages-native -RequireNativeNav
@@ -85,6 +95,8 @@ Every Unity wrapper re-runs the curation check. After one full hash verification
 **Content (`-Native`).** Pure .NET content is published first. Then `ShooterBuild.CompileNativeGameContent` bakes navigation from that collision, and .NET republishes with the native bakes ([ADR-043](decisions.md#adr-043--accepted-two-stage-native-navigation-publication)). The step writes `nav-provenance.json` and reports `nativeUnityNavBake=PASS` only after re-verifying every package. Without `-Native`, the bake is the labelled `software-walkable-grid` diagnostic. `-RequireNativeNav` refuses software navigation.
 - The pure stage produces the reproduction, cancel and corrupt-recovery proofs. The native republication skips them (`selfProofs=false` in its proof) because the non-navigation byte-identity guard covers its output.
 - After the guard passes, identical non-navigation files in `Artifacts/map-packages` become NTFS hard links to their `map-packages-native` twins (`nonNavByteIdentityGuard.sharedBytes`). Package files are only ever replaced through atomic staging, never rewritten in place, so sharing is safe.
+
+**One editor session.** `-AndBuildClient` runs `ShooterBuild.CompileNativeGameContentAndBuildClient`: the navigation bake and the client build share one editor start-up. The build is an ordinary `build-client-<run>` folder with the same manifest and checks as `Build.ps1`, and `validation.json` records it as `buildRunDirectory`.
 
 **Build.** A build prints a run directory containing `player/Shooter.exe`, `build-manifest.json` and logs. The Client is IL2CPP/D3D11. Packed-source audits reject imported art, and splash and logo are off. After a successful build, `Build.ps1` deletes the never-shipped `*_BackUpThisFolder_ButDontShipItWithYourGame` and `*_BurstDebugInformation_DoNotShip` folders, about 1.15 GB per run, and records them in `run.json` as `removedDebugFolders`. The incremental IL2CPP cache stays in `UnityProject/Library`.
 
