@@ -1,11 +1,11 @@
 # Repository layout and toolchain
 
-The layout below is the actual repository as of 2026-11-17. Keep pure contracts, authority, Unity world adapters and client-only presentation in separate assemblies ([architecture](architecture.md)). The integrator alone adds assembly/project references and settings.
+The layout below is the actual repository. Keep pure contracts, authority, Unity world adapters and client-only presentation in separate assemblies ([architecture](architecture.md)). The integrator alone adds assembly/project references and settings.
 
 ```text
 shooter/
   AGENTS.md, CLAUDE.md               # binding agent rules and orientation
-  docs/                              # specification and status record; docs/archive/ holds superseded pages
+  docs/                              # specification and status record (history lives in git)
   Content/                           # reviewed source data, no binary art: Maps/, Weapons/, Audio/, Fonts/
   UnityProject/
     Assets/Shooter/
@@ -36,13 +36,22 @@ shooter/
   .github/workflows/                 # fast pure lane; manual Unity lane
 ```
 
-## Version pinning gate M0
+## Toolchain
 
-Choose one supported Unity 6 LTS patch available in the installed environment, install Windows build support (dedicated-server support only for the parked server build), then commit exact editor version to ProjectVersion.txt and build-agent configuration. Select the URP major delivered for that editor; pin exact package versions in manifest and lock. Do not invent a patch number in docs or float package dependencies. Record editor revision, URP/Input System/Test Framework/AI Navigation/transport versions, scripting backend and graphics API in `toolchain-lock.json` at repository root. Compiler fails if lock and editor disagree.
+Exact versions are pinned in `toolchain-lock.json` and `global.json`. Never upgrade or substitute them during feature work:
+- Unity 6000.3.28f1 (8f082d2fe476);
+- URP/Core 17.3.0;
+- Input System 1.20.1;
+- Test Framework 1.6.0;
+- AI Navigation 2.0.0;
+- .NET SDK 10.0.301, with no roll-forward.
 
-Baseline uses conventional GameObjects, Input System, Unity Test Framework and AI Navigation adapters. Burst/Collections/Mathematics require a measured use case and compatible locked versions. No networking dependency in Contracts; transport selection is parked with networking (ADR-076). IL2CPP release client is the performance acceptance build; faster Mono development builds may be used for iteration. M0 proved a headless server build; it is now built only on request.
+The editor setup:
+- The release client is IL2CPP/D3D11. The parked server is Mono.
+- Burst, Collections and Mathematics enter only as locked URP dependencies.
+- A reproducible local Core RP curation is prepared by `Tools/Configure-Unity.ps1` ([ADR-013](decisions.md#adr-013--accepted-initial-m0-toolchain-and-explicit-engine-resource-curation)). Never replace it with a stock package.
 
-Resolved F01 values are authoritative in the lock: editor 6000.3.28f1 (8f082d2fe476), URP/Core 17.3.0, Input System 1.20.1, Test Framework 1.6.0 and AI Navigation 2.0.0. The parked dedicated server uses Mono; the release client uses IL2CPP/D3D11. Burst/Collections/Mathematics enter only as locked URP dependencies, not a game optimization decision. A reproducible local Core RP source curation removes unused debug UI Resources; prepare it through `Tools/Configure-Unity.ps1`, as described in [ADR-013](decisions.md#adr-013--accepted-initial-m0-toolchain-and-explicit-engine-resource-curation). Never replace it with a stock-package fallback.
+The baseline uses conventional GameObjects, Input System, Unity Test Framework and AI Navigation adapters. Contracts take no networking dependency.
 
 ## Source and generated data
 
@@ -53,4 +62,4 @@ Add `.gitattributes` for LF text and binary detection. A source provenance allow
 
 ## Bootstrap and logical identity
 
-Follow [bootstrap runbook](bootstrap-runbook.md) for actual initialization and [deterministic identity rules](deterministic-format.md) for GUID derivation and artifact hashing. Root AGENTS.md, the exact toolchain lock and M0 wrappers now exist. Future content-cache identity remains subject to the compiler milestone; current settings provenance describes only the foundation generator.
+Commands are in the [runbook](bootstrap-runbook.md). GUID derivation and artifact hashing follow the [deterministic identity rules](deterministic-format.md).

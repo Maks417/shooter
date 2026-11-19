@@ -1,90 +1,106 @@
 # Next playable build — current state and remaining work
 
-This page is the single source of truth for the current build, the product definition, task disposition and the order of remaining work. Other pages link here instead of repeating release banners. Exact identities, hashes and evidence live in the [M11 handoff](milestones/m11-playable-release/handoff.md); older deliveries (up to 0.3.12) are in the M11 handoff archive.
+This is the only page that tracks current status: the build, open findings, open tasks and the order of remaining work. Other pages link here and do not repeat status. Exact identities and evidence are in the [M11 handoff](milestones/m11-playable-release/handoff.md). Gates and scenario IDs are in [acceptance](acceptance.md).
 
 ## Current build
 
-**Since 0.3.24 (2026-11-19, committed, no installer yet):** [ADR-117](decisions.md#adr-117--accepted-single-point-collimator-dot-and-12x-collimator-zoom) single-dot 1.2x collimator, [ADR-118](decisions.md#adr-118--accepted-m4a1-mk-16-m24-sws-and-m870-pellets-shell-reloads-and-geometryweapon-150) M4A1, Mk 16, M24 SWS and M870 shotgun, [ADR-119](decisions.md#adr-119--accepted-30-rank-career-ladder-and-four-new-perks) 30-rank career with four new perks. Pure lanes PASS; Unity lanes, content republish, build and playtest Pending ([handoff](milestones/m11-playable-release/handoff.md#adr-119-30-rank-career--2026-11-19)).
+**Latest installer: 0.3.24 (2026-11-18).**
+- Installer: `Artifacts/deliveries/Shooter-Setup-0.3.24.exe`, from clean source `53cce26` ([delivery evidence](milestones/m11-playable-release/handoff.md#delivery-0324)).
+- Passed: native packages, IL2CPP Client, smoke, package and installer builders, pure lanes, and Unity EditMode/PlayMode.
+- Still Pending: an actual install/upgrade, a playtest of this build, the Low benchmark with the new shadows, and all acceptance.
 
-**Latest installer — 0.3.24 (2026-11-18):** `Artifacts/deliveries/Shooter-Setup-0.3.24.exe`, clean binary/content source `53cce26`. Adds to 0.3.23 [ADR-115](decisions.md#adr-115--accepted-open-reflex-collimator-with-a-clear-glass-pane) (open reflex collimator with clear glass) and [ADR-116](decisions.md#adr-116--accepted-realistic-map-colour-texture-and-shadows-materialnoise-120) (realistic map colour, texture and shadows; soft Low shadows). Native packages, clean IL2CPP Client, smoke, package and installer builders PASS; pure lanes and Unity EditMode/PlayMode PASS on the same content just before the commit. Actual install/upgrade, a playtest of this build, the Low benchmark with the new shadows and all acceptance remain Pending. [Delivery evidence](milestones/m11-playable-release/handoff.md#delivery-0324).
+**Committed since 0.3.24, not yet in an installer (2026-11-19):**
+- [ADR-117](decisions.md#adr-117--accepted-single-point-collimator-dot-and-12x-collimator-zoom): single-dot 1.2x collimator.
+- [ADR-118](decisions.md#adr-118--accepted-m4a1-mk-16-m24-sws-and-m870-pellets-shell-reloads-and-geometryweapon-150): M4A1, Mk 16, M24 SWS and the M870 shotgun.
+- [ADR-119](decisions.md#adr-119--accepted-30-rank-career-ladder-and-four-new-perks): a 30-rank career and four new perks.
+- Pure lanes and Unity EditMode/PlayMode pass ([record](milestones/m11-playable-release/handoff.md#adr-119-30-rank-career--2026-11-19)). Content republish, build and playtest are Pending.
 
-The visual roadmap tranche (ADR-087–095) has been in installers since 0.3.18. ADR-096 retains its three provisional audio cues pending the assigned follow-up and owner listening review.
+## Product and scope
 
-[Launch and playtest guide](playtest-guide.md) · [product state audit](next-playable-build.md) · visual roadmap.
+The deliverable is a source-matched Windows x64 installer with [in-place upgrades](features/windows-installer.md). ZIPs are internal artifacts only.
 
-## Scope: local play with bots
+The installed game launches offline into the main menu. The player picks:
+- a map: Old Town, Harbour or Oil Depot ([maps](features/tdm-map-layouts.md));
+- Team Deathmatch;
+- a team size: 5v5, 8v8, 10v10 or 15v15.
 
-The first version is a single offline process with one human and local allied/enemy bots ([vision](vision.md#first-version-scope-local-bots-only)). Under [ADR-076](decisions.md#adr-076--accepted-offline-only-scope-and-bounded-local-evidence) (2026-11-16) networking is **parked**: `Networking` stays in git with no new code, the Dedicated Server build is not run by CI or the release flow, and server gates read as *Parked (offline scope)*, not Pending. Simulation stays the single authority and Presentation stays read-only.
+Match rules:
+- The human joins Team 1 with 9–29 bots.
+- First team to 150 kills wins, or the match ends after 15 active minutes ([rules](features/team-deathmatch.md)).
+- Movement, every weapon slot, death/respawn, pause, live and final tables, replay and settings must all work.
 
-## Required playable product
+Native 1280×720 Low at 30 FPS on the reference machine is an acceptance gate. 60 FPS is a stretch goal.
 
-The deliverable is a source-matched Windows x64 installer with [in-place upgrades](features/windows-installer.md); the installed game launches offline into the Main menu. ZIPs are internal artifacts. The player selects Old Town, Harbour or Oil Depot ([ADR-109](decisions.md#adr-109--accepted-site-planned-maps-old-town-harbour-rebuilt-oil-depot)), Team Deathmatch, and 5v5 / 8v8 / 10v10 / 15v15 (ADR-101). One human joins Team 1 with nine to twenty-nine total bots. Teams race to 150 enemy kills or 15 active minutes; equal scores draw. Movement, sprint/slide, rifle/pistol/knife/grenade, aim/fire/reload, death/respawn, pause, live/final tables, replay and return to menu must work. Audio/video/control/accessibility settings persist and affect actual devices.
+Networking is parked ([ADR-076](decisions.md#adr-076--accepted-offline-only-scope-and-bounded-local-evidence)). See [vision](vision.md).
 
-[Team rules](features/team-deathmatch.md), [maps](features/tdm-map-layouts.md), [map layouts](features/tdm-map-layouts.md) and [shell](features/game-shell.md) retain exact requirements. Native 1280×720 Low 30 FPS on the reference machine remains an acceptance gate; 60 FPS is a separate stretch. No external art or online scope is added.
+A delivered installer is a **test candidate**, not proof of playability. Any observed functional blocker means a build cannot be called proven playable.
 
-## Task disposition
+## Open findings
 
-| Task | Delivered | Remaining |
+| ID | Finding | Status |
 |---|---|---|
-| T066 — baseline | Metadata/cancellation repairs; pure lanes and provenance PASS on every delivery since. | Maintain the regression baseline. |
-| T067 — content/navigation | Persisted catalog, packaged visuals, native NavMesh publication (`Compile-GameContent.ps1 -Native`, `Package-Release.ps1 -RequireNativeNav`) and truthful Complete/Partial/Failed path outcomes with diagnostics-only fallback. `nativeUnityNavBake=PASS` on all 12 packages since 0.3.16. | Named route/spawn evidence on all three maps, collected with the T071 playtest. |
-| T068 — authority presentation | Slot selection and action events drive packaged views for all four weapons. | FIX05 player captures and named visual review. |
-| T069 — preferences | Editable bindings/accessibility, staged display persistence, device modes. | Named UI/control/display/audio review, real Keep/Revert, 20 load/replay cycles. |
-| T070 — measurement | Finish/results/replay, soak capture, honest counters; capture/soak defects found on 9f2219f fixed. | Twelve reference captures + two soaks on the final build (PendingHardware); per-tick managed allocation still fails the zero-allocation gate. |
-| T071 — owner playtest | Owner playtest sessions on 0.3.x builds drove many fixes (see M11 handoff). | Formal matrix on the newest installer: 3 maps × 2 sizes, complete matches/results/replay, recovery and prior-pair rollback. |
-| T073 — installer | Inno Setup installer with stable AppId and monotonic version check (ADR-041), shipped 0.3.1–0.3.24. INS02 upgrade, INS03 repair, INS05 uninstall and INS06 rollback PASS as earlier silent software exercises on the owner PC. | Actual 0.3.24 installed upgrade, INS01 on a clean machine, INS04 mid-copy interruption, interactive wizard; [status](features/windows-installer.md#implementation-status). |
-| T062 — P05 soldier | ADR-095 structural shooting posture resolves the numeric P05 gate (D01–D03). | Named visual review; P05 visual acceptance stays FAIL until then. See [defect inventory](visual-defect-inventory.md). |
-| T065 — final acceptance | Operator checklist. | REL01–REL06 and FIX01–FIX14 on one stable final pair. NotClaimed. |
-| T091 — third-party provenance | ADR-075 allowlist categories enforced by `Test-SourceProvenance.ps1`. | Done (2026-11-16). |
-| T092 — noise primitive | FastNoiseLite port, `NoiseField`, cross-lane goldens; `material.noise` generator landed under ADR-088. | Done. |
-| T093 — runtime rig correction | Animation Rigging rejected (ADR-075 addendum); corrections stay in pure `SoldierMotion`/`TwoBoneIk`. | Collision-backed `ISoldierGround` for remote soldiers, per-profile support grip, bounded head look-at; EditMode, Client build, CPU and named review. |
-| T094 — spatial audio | Not started. | Steam Audio spike behind the stereo mixer, native-binary allowlist, Client build, CPU and named headphone review. |
-| T096 — named arsenal | [ADR-102](decisions.md#adr-102--accepted-named-real-world-arsenal-random-spawn-loadouts-and-muzzle-flash-fix): AK-47, AK-102, M16A4 (burst), Mk 14 EBR, M-TAC 338 (bolt sniper), G17 and Golden Eagle .50 with geometry.weapon 1.2.0 meshes, per-gun stats/falloff, AK and bolt-action choreography, scope zoom, bank v6 reports, random spawn loadouts; muzzle flash playback and placement fixed. Branch `weapons-roster`. | Republish content, Unity EditMode/PlayMode, client build and installer; owner look/sound/feel and balance review in a packaged build. |
-| T097 — dropped weapons | [ADR-105](decisions.md#adr-105--accepted-dropped-primary-weapons-and-g-pickup): a dead soldier's primary drops for 15 s; G swaps it for the human's primary (old one drops) or tops up reserve (capped) for the same gun; Pickup binding (Game-v1 refreeze), floor mesh and HUD prompt. Pure lanes PASS. In installer 0.3.22. | Unity EditMode/PlayMode on 0.3.22 source; owner feel review in play. |
-| T098 — graphics uplift v2 | [ADR-106](decisions.md#adr-106--accepted-kernel-built-weapons-gloves-soldiers-and-structured-map-surfaces): `ShapeKit` modelling kernel; profile-built geometry.weapon 1.3.0 guns; one-piece gloves with blended knuckles; soldier.loft 1.1.0 kit (balaclava, turned helmet, goggles, gloves, boots, plate carrier, pack) with distance LOD; material.noise 1.1.0 map surfaces (4 m tile, 256/512 px, Toksvig mips) with softer detail/bump; HDR grading, 200 m decals, 256 px probe and flash lights. Generation lane PASS; offline captures under `Artifacts/adr106-preview/`. In installer 0.3.22. | Unity EditMode/PlayMode on 0.3.22 source; owner look review in play and a High benchmark. |
-| T099 — Armory and sights | [ADR-107](decisions.md#adr-107--accepted-armory-loadouts-and-reusable-rail-mounted-sights): Armory main-menu page (primary, sidearm and a sight per primary, saved in `shooter-armory.json`); the human spawns and respawns with it while bots stay random with random sights; geometry.weapon 1.4.0 bare-rail primaries plus rail-mounted sight meshes (irons, new red-dot collimator, the reusable M16 2x prism, 4x, 8x) on every primary; collimator ADS with a lit dot. In installer 0.3.22. | Unity EditMode/PlayMode on 0.3.22 source; owner review of sight placement per gun, the dot and the Armory page in play. |
-| T100 — career ranks | [ADR-108](decisions.md#adr-108--accepted-career-ranks-unlocks-buffs-and-local-service-record): local career ladder (20 military ranks on `1000·(n²−1)` CP from match score + finish + win), unlocking guns, sights and small human-only buffs; starter kit M16 on irons + G17; 20 procedural rank insignia on the Tab board, debrief tables, Armory header and main menu; Career page with ladder and service record saved in `shooter-career.json`; debrief CP strip with promotions; seeded cosmetic bot ranks. [ADR-113](decisions.md#adr-113--accepted-career-progress-line-layered-rank-emblems-and-reward-art) redesign: layered metal emblems, recessed CP bars, a horizontal progress line with reward cards and procedural reward icons. In installer 0.3.22. | Unity PlayMode on 0.3.22 source; owner review of the Career page and progress line, emblem and reward-icon legibility at 1080p and 720p, the debrief strip and buff feel in play. |
-| T101 — site-planned maps | [ADR-109](decisions.md#adr-109--accepted-site-planned-maps-old-town-harbour-rebuilt-oil-depot): map generation rebuilt as site plans (buildings, zones, owned props, landmarks) with `SiteRules` (no orphan objects, no big voids, spawn-exit exposure, first contact, upper floors); `training-compound` is now Old Town, `depot-yard` is now Harbour, Oil Depot rebuilt with control rooms and a pipe bridge; one two-storey building per half; site dressing (roofs, church tower, town/harbour backdrops); bot patrol circuit through all routes; mirrored team-2 spawn rows. In installer 0.3.22. | Unity EditMode/PlayMode on 0.3.22 source; owner playtest of all three maps (first contact, spawn pressure, bot routing, upper floors) and look review. |
-| T102 — body armor | [ADR-110](decisions.md#adr-110--accepted-body-armor-100-points-torso-and-limbs): 100 armor on spawn/respawn for everyone, covering torso and limbs (not the head); each covered hit and grenade blast is split 50/50 (armor `floor(d/2)`, health the rest); AR bar beside HP. C0/Game-v1 unchanged. Pure lanes PASS. In installer 0.3.22. | Unity EditMode on 0.3.22 source, then play: AR bar, body vs head hits, respawn refill, time-to-kill feel |
-| T095 — audio overhaul | ADR-096 bank v5 (real reload/knife/grenade Foley, flybys, hit/kill confirm, menu UI sound) and music (menu, calm/tension bed, stingers, results) with a Music slider; commit `43adaca`. | Replace three placeholders after one more small download batch (owner approves the files): bullet flyby, defeat stinger, outdoor ambience. Then owner listening review of all takes. Steps: [audio follow-up](features/audio.md#follow-up-placeholders). |
+| C02 | Runtime NavMesh load cost and clearance | Bakes are native and deterministic. Cold/warm load cost and clearance on all three maps still need measurement (T067/T070). |
+| C04 | No proven gameplay handoff | The formal T071 matrix has not been recorded. |
+| C05 | Visual, device and performance acceptance | Named visual review, device reviews, reference captures and soaks are Pending. P05: see the [defect inventory](visual-defect-inventory.md). |
+
+C01 (native NavMesh publication) and C03 (truthful path outcomes) are resolved.
+
+## Open tasks
+
+| Task | Remaining |
+|---|---|
+| T067 content/navigation | Named route/spawn evidence on all three maps, collected with T071 |
+| T068 authority presentation | FIX05 player captures and named visual review |
+| T069 preferences | Named UI/control/display/audio review, real Keep/Revert, 20 load/replay cycles |
+| T070 measurement | Reference captures and soaks on the final build (PendingHardware). Per-tick managed allocation still fails the zero-allocation gate. |
+| T071 owner playtest | The formal matrix on the newest installer |
+| T073 installer | Actual installed upgrade, INS01 on a clean machine, INS04 mid-copy interruption, the interactive wizard ([status](features/windows-installer.md#implementation-status)) |
+| T062 P05 soldier | Named visual review. P05 visual acceptance stays FAIL until then. |
+| T065 final acceptance | REL01–REL06 and FIX01–FIX14 on one stable final build ([sequence](acceptance.md#final-acceptance-sequence-t065)) |
+| T093 runtime rig correction | Collision-backed ground for remote soldiers, per-profile support grip, bounded head look-at |
+| T094 spatial audio | Not started: Steam Audio spike behind the stereo mixer, with a native-binary allowlist |
+| T095 audio placeholders | Replace the bullet flyby, defeat stinger and outdoor ambience ([steps](features/audio.md#follow-up-placeholders)), then an owner listening review |
+
+Every feature since ADR-096 is in the installer. Each still needs owner review in play:
+
+| ADR | Feature |
+|---|---|
+| ADR-102 / ADR-118 | Named arsenal |
+| ADR-105 | Dropped weapons |
+| ADR-106 / ADR-116 | Graphics |
+| ADR-107 / ADR-115 / ADR-117 | Armory and sights |
+| ADR-108 / ADR-113 / ADR-119 | Career |
+| ADR-109 | Site-planned maps |
+| ADR-110 | Body armor |
+| ADR-111 | Knife and grenade |
+| ADR-112 / ADR-114 | Hits and bots |
 
 ## Order of remaining work
 
-1. **Install 0.3.24.** The source-matched installer is delivered ([delivery](milestones/m11-playable-release/handoff.md#delivery-0324)); actual installed upgrade, the in-game check of ADR-116 (map colour, accents and shadows at Low and High, plus the Low benchmark) and ADR-115 (collimator glass), of ADR-114 (bots on all three maps, corners, Career tabs) and of ADR-105–113, plus the still-unchecked ADR-098–104 items, remain Pending.
-2. **T071 formal playtest on that installer.** Follow the [guide](playtest-guide.md): all three maps × 5v5/8v8/10v10/15v15, at least one complete normal match per map, results and replay, missing/corrupt content recovery and a real prior-version upgrade. Record named reviewer, identities, logs and every blocker; route defects to their owning cards.
-3. **T096 named arsenal (ADR-102):** merge, republish content, build the next installer and review every gun in play.
-4. **T097 dropped weapons (ADR-105):** in installer 0.3.22; check pickup, swap, ammo top-up and the 15 s timer in play.
-5. **T098 graphics uplift v2 (ADR-106):** in installer 0.3.22; owner judges guns, gloves, bots and map surfaces in play at 1080p High.
-6. **T099 Armory and sights (ADR-107):** in installer 0.3.22; pick guns and sights in the Armory, check every sight on every primary in ADS and that the loadout survives respawn and restart.
-7. **T100 career ranks (ADR-108, ADR-113 look):** in installer 0.3.22; finish matches from a fresh career, check promotions, unlocks, buffs, insignia in every scoreboard and the Career page.
-8. **T101 site-planned maps (ADR-109):** in installer 0.3.22; play every map at 5v5 and 15v15, check that no spawn exit looks into the enemy half, that bots use all three routes and the upper floors, and judge whether each map reads as its place.
-9. **T102 body armor (ADR-110):** in installer 0.3.22; check the AR bar, that body hits drain armor and health, headshots skip armor, respawn refills it, and judge the longer body time-to-kill.
-10. **T093, T094 and the T095 audio placeholders** when the owner assigns them.
-11. **T070 + T062 + T065 on the final stable pair.** Reference captures and soaks on the idle reference laptop, named visual/UI/audio/display reviews, eight full matches, draw fixture, provenance/regressions and the remaining installer INS checks. Missing reviewers/hardware/counters stay Pending/PendingHardware.
+1. **Build and install the next installer.** It includes ADR-117–119. Do a real upgrade over 0.3.24.
+2. **T071 formal playtest on that installer.** Follow the [playtest guide](playtest-guide.md):
+   - every map at 5v5, 8v8, 10v10 and 15v15;
+   - at least one complete normal match per map;
+   - results and replay;
+   - recovery from missing or corrupt content;
+   - a real prior-version upgrade.
 
-One integrator owns Bootstrap, Contracts, settings, locks, workloads and `coordination.json`. Keep Unity 6000.3.28f1 / URP 17.3.0, C0-v1 and Game-v1; boundary changes need an ADR plus migration/fixtures before consumers.
+   Record the named reviewer, identities, logs and every blocker. Send each defect to its owning task.
+3. **Owner review in play** of every feature in the table above:
+   - every gun and sight in ADS;
+   - pickup and swap;
+   - promotions, unlocks and perks from a fresh career;
+   - spawn exits, bot routes and upper floors on every map;
+   - armor versus headshots;
+   - knife and grenade;
+   - map colour and shadows at Low and High.
+4. **T093, T094 and the T095 placeholders**, when the owner assigns them.
+5. **T070, T062 and T065 on the final stable build:**
+   - reference captures and soaks on the idle reference laptop;
+   - named visual, UI, audio and display reviews;
+   - the full match matrix;
+   - the remaining INS checks.
 
-## Playtest versus acceptance
+   Missing reviewers, hardware or counters stay Pending/PendingHardware.
 
-A delivered installer is a **test candidate**, not proof that T071 passed. A usable owner handoff needs all required interactions exercised and at least one complete normal match per map. Disclose P05 status and unmeasured reference performance. Any observed functional blocker prevents calling a build proven playable.
-
-T065 executes [REL01–REL06](acceptance.md#m11--release) and [FIX01–FIX14](acceptance.md): eight score/timeout full matches (both sizes per map), draw fixture, named reviews, 20 shell cycles, real display/audio/control behaviour, twelve reference Low captures and two ≥30-minute normal-AI soaks, provenance/regressions and independent installer install/update/repair/uninstall/rollback. Use the M11 operator runbook; its server-isolation step is Parked under ADR-076. Documentation hashes and Smoke/READY do not prove gameplay.
-
-## Source changes delivered since 0.3.12
-
-Compact index of handoff entries. All are included in the current installer; the exact first installer for each is in its record.
-
-| Change | Record |
-|---|---|
-| ADR-068 arsenal visual profiles | [handoff](milestones/m11-playable-release/handoff.md#arsenal-delivery-0314) |
-| T086/T089 combat audio bank, ADR-055/062 | [T089](milestones/m11-playable-release/handoff.md#t089--stereo-combat-wav-bank-and-footstep-distance-adr-062) |
-| T087 knife/grenade, ADR-057/064 | [handoff](milestones/m11-playable-release/handoff.md#t087--knife-slot-3-and-grenade-slot-4-adr-057) |
-| T088 weapon visuals and POV fire, ADR-061 | [handoff](milestones/m11-playable-release/handoff.md#t088--weapon-visual-overhaul-adr-061) |
-| ADR-063 hit-region damage, ADR-065 PiP scope | [damage](milestones/m11-playable-release/handoff.md#adr-063--hit-region-damage-coefficients--2026-11-15), [scope](milestones/m11-playable-release/handoff.md#adr-065--pip-rifle-scope-blurred-periphery--2026-11-15) |
-| ADR-066 UI copy and typeface, ADR-067 pose/motor fixes | [UI](milestones/m11-playable-release/handoff.md#adr-066--ui-copy--barlow-condensed-typeface-bank--2026-11-15), [pose](milestones/m11-playable-release/handoff.md#adr-067--soldier-pose--motor-corner-launch-fixes--2026-11-15) |
-| Death collapse, insertion loading, T090 bot tactics | [T090](milestones/m11-playable-release/handoff.md#t090--bot-tactics-cover-peek-wall-hearing-ledge-strafe-route-spread--2026-11-15) |
-| ADR-071 Oil Depot, combat feel, ADR-072 weapon profiles | [Oil Depot](milestones/m11-playable-release/handoff.md#adr-071--oil-depot-third-map--elevated-routes--2026-11-15), [profiles](milestones/m11-playable-release/handoff.md#adr-072--weapon-profiles) |
-| Kill-feed icons, ADR-073 badges, ADR-074 compact maps | [ADR-074](milestones/m11-playable-release/handoff.md#adr-074--compact-64--80-m-maps-with-distinct-layouts--2026-11-15) |
-| ADR-075–086 content pipeline, post-processing, SDF UI | [delivery](milestones/m11-playable-release/handoff.md#delivery-0317) |
-| ADR-096 audio overhaul: bank v5, music, menu UI sound (T095) | [handoff](milestones/m11-playable-release/handoff.md#adr-096-audio-overhaul-bank-v5-music-ui-sound--2026-11-17) |
-| 0.3.18 playtest fixes, ADR-097 headshot bonus, ADR-098 recoil, ADR-099 hand choreography, ADR-100 bot motion | [fixes](milestones/m11-playable-release/handoff.md#playtest-fixes-after-0318--2026-11-17), [ADR-098](decisions.md#adr-098--accepted-per-weapon-first-person-recoil-presentation-camera-climb--per-shot-kick), [ADR-099](decisions.md#adr-099--accepted-per-weapon-first-person-hand-and-weapon-choreography), [ADR-100](milestones/m11-playable-release/handoff.md#adr-100-bot-strafe-jump-and-slide-motion--2026-11-17), [delivery](milestones/m11-playable-release/handoff.md#delivery-0319) |
+One integrator owns Bootstrap, Contracts, settings, locks, workloads and `coordination.json`. Keep Unity 6000.3.28f1 / URP 17.3.0, C0-v1 and Game-v1. A boundary change needs an ADR plus migrated fixtures before any consumer uses it.

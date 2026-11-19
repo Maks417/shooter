@@ -2,7 +2,7 @@
 
 C0-v1 is frozen under `UnityProject/Assets/Shooter/Contracts`, compiled independently through `Tools/Contracts/Shooter.Contracts.csproj` and inside the Unity client. Root `contract-lock.json` pins source, metadata, specification-v1.1 fixture bytes and toolchain; `Tools/verify_contract_lock.py` and the test wrappers reject unreviewed drift. Breaking changes need an [ADR](decisions.md) plus fixture migration ([ADR-014](decisions.md#adr-014--accepted-initial-c0-source-freeze-and-failure-capture-lifecycle)). Names and fields below are normative; allocation/layout optimizations may not change semantics. All DTO fields are public read-only to consumers; serializers use explicit construction; no reflection-based arbitrary type deserialization.
 
-This page merges the former contracts overview (ports and envelopes) with the exact C0 freeze details. Product session records (Game-v1 and ADR-036/037/038 extensions) are separate in [session contracts](game-session-contracts.md). Production compiler formats are frozen separately under `Generation/Core` and `content-format-lock.json`. Original M0/M1 results and waivers remain in the M0 handoff and M1 handoff.
+Product session records live in [Game-v1](game-session-contracts.md). Compiler formats are frozen separately in [content format](content-format.md) and `content-format-lock.json`. `INetworkChannel` and the wire codec are frozen C0 code but are parked and dormant under ADR-076.
 
 ## Common rules
 
@@ -121,23 +121,20 @@ C0 requires typed in-memory MeshData=(positions:Float3[],normals:Float3[],tangen
 
 ContentLease exposes ContentId, Kind, read-only verified payload and Dispose. ContentLeaseResult=(error:ErrorCode,lease:ContentLease|null,diagnostic:string). Only success has nonnull lease; payload max 64 MiB/artifact, manifest max 1 MiB, ≤256 artifacts/content and ≤256 MiB decompressed/content. IContentStore cancellation returns Cancelled with no lease; callers must not receive both success and cancellation. One request error must not dispose another consumer's lease.
 
-## Freeze artifacts
+## Freeze artifacts and disk envelope
 
-New product/session records for M8–M11 are specified separately in [Game-v1](game-session-contracts.md). They do not extend C0 MatchState to represent Draw, repurpose Won/Lost into team outcomes, or promise N1 team-match wire compatibility. The integrator must compile/freeze that separate assembly and executable fixtures in T035 before dependent workers start; this prose plan leaves the existing lock unchanged.
+C0 is frozen by `contract-lock.json`. Game-v1 is a separate assembly with its own lock (`game-contract-lock.json`). It does not extend C0 `MatchState` with Draw or team outcomes. The compiler codecs in `Generation/Core/Codecs` are frozen by `content-format-lock.json`. [Fixtures](fixtures/index.md) are independent examples, not a replacement for the C# contracts.
 
-At F02 implement all core port/DTO types and negative/lease tests; at P02 freeze exact typed binary geometry formats before worker adapters merge. Network wire schema would freeze at N01 after transport selection; networking is parked under ADR-076. Do not force future codecs into M0 or leave motor/prediction state unspecified until M5. [Fixtures](fixtures/index.md) provide independent examples, not an exhaustive replacement for C# contracts.
+The disk envelope uses:
+- magic;
+- schema version;
+- little-endian payload length;
+- compression ID;
+- compressed and uncompressed lengths;
+- payload SHA-256;
+- generator and toolchain hashes.
 
-P02 now implements the initial field-by-field compiler codecs in `Generation/Core/Codecs`, separately frozen by root `content-format-lock.json`; see [format v1](content-format.md). C0 DTO/port bytes and specification fixtures are unchanged.
-
-## Wire and disk envelopes
-
-**Network part parked (ADR-076, 2026-11-16).** The first version is local-only with bots; the network wire schema below is retained as design but has no active work, CI lane or N01 freeze scheduled. The disk envelope is live and frozen by `content-format-lock.json` ([format v1](content-format.md)).
-
-Both use magic, schemaVersion, payloadLength and checksum/hash, but disk and network codecs are separate. Disk header includes endianness (little), compression ID, compressed/uncompressed lengths, payload SHA-256, generator/toolchain hashes. No BinaryFormatter, runtime type names or arbitrary object construction. Disk payload max sizes are declared in manifest and independently bounded by loader policy.
-
-Network initial proposed cap: 1200-byte application datagrams including application headers; verify transport overhead/fragmentation at M5. Header: protocol:uint16, messageType:uint8, flags:uint8, session:uint64, sequence:uint32, ackSequence:uint32, ackBits:uint32, payloadBytes:uint16. Reliable channel sequencing may be delegated to transport; do not duplicate ACK logic when transport provides it. Message types: Hello/Manifest, JoinResult, InputBatch, SnapshotDelta, EventBatch, ResyncRequest, Disconnect. Unknown required fields/schema cause explicit incompatibility; optional versioned fields are length-delimited.
-
-Positions encode signed int32 centimeters relative to chunk origin, velocity int16 cm/s, yaw/pitch uint16 normalized ranges; clamp overflow and request full state, never wrap. Local prediction retains full float state. Define per-field round-trip tolerances (position ≤0.01 m, angle ≤0.006 degrees, velocity ≤0.01 m/s). Bounds and packet fuzz tests precede network exposure. Snapshot baseline tick and ack identify deltas; if absent request reliable bounded full state. No unbounded network allocations.
+The disk envelope never uses BinaryFormatter, runtime type names or arbitrary object construction. Payload size limits are declared in the manifest and also bounded independently by loader policy. The parked network wire schema remains in git history and in `Networking/Codec`.
 
 ## Contract tests required
 

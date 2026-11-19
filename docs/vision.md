@@ -1,63 +1,95 @@
 # Vision, scope and requirements
 
-This page holds scope and requirements. Current build state and remaining work are in [next playable build](next-playable-build.md); finding status is in the [audit](next-playable-build.md). Product requirements and the Unity 6 URP toolchain remain fixed.
+This page holds scope and requirements. Current state and remaining work are in [next playable build](next-playable-build.md). The visual quality target is in [visual direction](visual-direction.md).
 
 ## Product
 
-Owner quality goal, 2026-11-14: **the finished visual design should be as good as Battlefield V, Bodycam and Warface**. [VD0–VD9](visual-direction.md) turn this into art-direction, representative-slice, component and final comparative review gates. No installer so far demonstrates this quality; the visual roadmap is the current execution plan. The procedural-art boundary, fixed gameplay/quality separation, reference Low30 budget and existing open acceptance remain binding. A demonstrated conflict requires an explicit owner decision instead of an automatic quality or performance reduction.
+A grounded, modern-world military FPS. All geometry, surface detail and motion come from algorithms and numeric definitions.
 
-A grounded, modern-world military FPS whose geometry, surface detail and motion come from algorithms and numeric definitions. Build a small, convincing combined indoor/outdoor combat space before expanding content. Realism means believable scale, silhouettes, material response, motion, lighting and feedback; visual parity with commercial AAA shooters is an aspiration, not an acceptance claim.
+Realism means believable scale, silhouettes, material response, motion, lighting and feedback. The owner's quality target is Battlefield V, Bodycam and Warface ([VD0–VD9](visual-direction.md)). Parity is an aspiration that needs named review, not a claim. If the target conflicts with the art boundary or the Low budget, the owner decides. Nothing is reduced automatically.
 
-The first playable slice is an offline 256 × 256 m training compound, one local player, eight hostile soldiers, one rifle and one pistol, a single objective, solid cover, repeatable lighting and a replayable benchmark. Simulation boundaries and command IDs supported networking from the first milestone; the planned multiplayer stages (four players plus eight bots, later eight players) are parked under [ADR-076](decisions.md#adr-076--accepted-offline-only-scope-and-bounded-local-evidence).
+## First release
 
-That paragraph defines the historical M0–M7 slice. **The next owner-requested deliverable** is a Windows offline game with distinct procedural maps (two originally, three since [ADR-071](decisions.md#adr-071--accepted-oil-depot-third-map-and-limited-elevated-routes): Training Compound, Depot Yard, Oil Depot); one human and allied bots versus enemy bots; 5v5 default and selectable 6v6; Team Deathmatch ends at 150 enemy kills or 15 active minutes, followed by team/player results. A main menu selects map, supported mode (only Team Deathmatch), team size and sound/video/control settings. [Exact rules](features/team-deathmatch.md), [maps](features/tdm-map-layouts.md) and [shell](features/game-shell.md) define defaults. This is new M8–M11 work, not a retroactive claim about M4 or a network-capacity expansion. No remote transport is needed to play this release.
+The first release is **one human with local allied and enemy bots, entirely offline on the player's PC**. Online play, LAN, an external server, hosting and online services are deferred. Under [ADR-076](decisions.md#adr-076--accepted-offline-only-scope-and-bounded-local-evidence) (2026-11-16):
+- **Networking is parked.** The `Networking` code stays in git but is dormant, and no Unity assembly references it.
+- **No server build.** The Dedicated Server build is not run by CI or by the release flow.
+- **Server gates are Parked, not Pending.**
 
-## First-version scope: local bots only
+Simulation stays the single authority and Presentation stays read-only.
 
-Owner clarification, 2026-11-14: the first version is **one human playing locally with allied/enemy bots**, entirely on the player's PC. No online multiplayer, LAN/remote player support, external server process, rented server, hosting purchase/account or online service is required to launch or complete it. Online multiplayer and hosting are deferred beyond this release. Owner decision 2026-11-16 ([ADR-076](decisions.md#adr-076--accepted-offline-only-scope-and-bounded-local-evidence)): networking is parked — the `Networking` code stays in git without new work, no Unity assembly references it, and the Dedicated Server build is not run by CI or the release flow. Server gates read as Parked, not Pending. Simulation stays the single authority and Presentation read-only. Existing local gameplay, visual/provenance and reference-performance requirements remain unchanged.
+In the game, the main menu selects:
+- a map: Old Town, Harbour or Oil Depot ([maps](features/tdm-map-layouts.md));
+- Team Deathmatch;
+- a team size: 5v5, 8v8, 10v10 or 15v15;
+- settings.
 
-## Windows installer delivery
+The other systems:
+- [Team Deathmatch rules](features/team-deathmatch.md) (150 enemy kills or 15 active minutes, then results);
+- the [shell and Armory](features/game-shell.md);
+- a local [career](features/career.md).
 
-Owner clarification, 2026-11-14: final delivery is a **Windows installer**, and running a newer version's installer must update the existing game in the system, preserving settings/controls and the installation identity/path/shortcuts. A ZIP is only a preview/internal artifact. [Installation and upgrade contract](features/windows-installer.md) defines the required install/update/repair/uninstall/rollback evidence. T073 implemented it under ADR-041; installers have shipped since 0.3.1.
+Delivery is a **Windows installer**. Running a newer installer updates the installed game in place and keeps settings, controls and the installation identity ([installer](features/windows-installer.md), ADR-041). ZIPs are internal artifacts only.
 
-## Confirmed constraints
+## Requirements
 
-| ID | Requirement | Evidence of acceptance |
+| ID | Requirement | Accepted by |
 |---|---|---|
-| R01 | Unity 6, URP, C# gameplay/generation, HLSL shading | Clean client build and locked toolchain (server build parked, ADR-076) |
-| R02 | No imported or manually modeled 3D meshes, painted/image-authored surface textures, sprites, authored skeletal clips or motion-capture animation | Provenance scan plus regeneration from source definitions |
-| R03 | Generated meshes, PBR texture arrays, LODs, skeletons, skin weights and algorithmically sampled motion caches are allowed | Cache manifests identify generator and inputs |
-| R04 | Ryzen 5 4600H Radeon integrated graphics, 16 GB DDR4-3200 with two slots occupied, NVMe SSD is minimum reference | Hardware report records adapter, driver, actual RAM channel mode and power conditions |
-| R05 | 1280 × 720 internal render, Low, 30 FPS initial target; 60 FPS stretch | [Performance gates](performance.md) on actual reference hardware |
-| R06 | Quality profiles and repeatable performance tests begin in foundation milestone | Profiles and benchmark artifacts exist at M0 |
-| R07 | Collision, cover, hit volumes, AI visibility and weapon rules do not change with graphics profile | Cross-profile simulation tests |
-| R08 | Asset generation is reproducible and versioned; expensive generation moves out of gameplay | [Generation contract](generation.md) and cache tests |
-| R09 | Independent agents implement bounded modules against frozen shared contracts | Coordination rules |
-| R10 | Modern weapons, procedural soldiers, environments, AI, FPS combat; staged networking parked (ADR-076) | Feature acceptance tests and [milestone gates](acceptance.md) |
-| R11 | Offline 5v5/6v6 with one human, allied/enemy bots, 150 kills / 15 minutes, safe respawn and immutable results | M9 TDM01–TDM08 and M11 REL02 |
-| R12 | Distinct packaged procedural maps (three since ADR-071), each supporting the team mode and sizes | M10 MAP01–MAP03; clean release REL01 |
-| R13 | Actual main/setup/pause/settings/scoreboard/results UI; persistent applied sound/video/control/accessibility preferences | M10 UI01–UI02, SET01–SET02; M11 player review |
-| R14 | Source-matched Windows installer, clean offline installation and in-place N→N+1 upgrade preserving user preferences; ZIP remains preview/internal only | M11 REL01–REL06, including new full-roster performance |
-| R15 | Reference-comparable visual design against the approved Battlefield V / Bodycam / Warface comparison set | VD0–VD9, named owner review of all applicable categories plus unchanged technical/release gates; no parity claim from software tests alone |
+| R01 | Unity 6, URP, C# gameplay and generation, HLSL shading on the locked toolchain | Clean Client build |
+| R02 | No imported or hand-modeled meshes, painted or image textures, sprites, authored skeletal clips or mocap | Provenance scan and regeneration from source |
+| R03 | Generated meshes, PBR arrays, LODs, skeletons, skin weights and sampled motion caches are allowed | Cache manifests name generator and inputs |
+| R04 | Reference: Ryzen 5 4600H integrated Radeon, 16 GB DDR4-3200 (two slots), NVMe | Hardware report records adapter, driver, channel mode and power |
+| R05 | Native 1280×720 Low at 30 FPS; 60 FPS is a stretch | [Performance](performance.md) gates on reference hardware |
+| R06 | Quality profiles and repeatable benchmarks | Profiles and workload fixtures |
+| R07 | Collision, cover, hit volumes, AI visibility and weapon rules are identical across graphics profiles | Cross-profile simulation tests |
+| R08 | Reproducible, versioned generation, done outside gameplay | [Generation](generation.md) and cache tests |
+| R10 | Modern weapons, procedural soldiers, environments, AI and FPS combat | Feature acceptance tests |
+| R11 | Offline TDM at every catalog size, with safe respawn and immutable results | [TDM01–TDM08](acceptance.md#m9--team-deathmatch), REL02 |
+| R12 | Distinct packaged procedural maps, each supporting every catalog size | [MAP01–MAP03](acceptance.md#m10--maps-shell-and-settings), REL01 |
+| R13 | Real menus, pause, settings, scoreboard and results; persistent settings that actually apply | UI01–UI02, SET01–SET02 |
+| R14 | Source-matched installer with offline install and in-place upgrade | [REL01–REL06](acceptance.md#m11--release), INS01–INS06 |
+| R15 | Reference-comparable visuals against the approved comparison set | VD0–VD9 named owner review |
 
-Two occupied memory slots do not prove dual-channel operation. The temporary memory-usage screenshot is explicitly excluded from requirements, budgets and diagnosis.
+Two occupied memory slots do not prove dual-channel operation.
 
 ## Art boundary
 
-Permitted source: code, numeric measurements, analytic curves, rule grammars, JSON definitions, scalar/vector key parameters and test fixtures. Human-written code and dimensions are necessary and allowed. Not permitted: hand-edited mesh vertices, sculpted surfaces, photo/PBR libraries, scanned assets, downloaded character rigs, AI image textures, hand-keyed joint pose sequences, exported DCC models or third-party visual asset packs. AI coding tools may write generators but may not smuggle authored assets into output.
+**Permitted sources:**
+- code;
+- numeric measurements;
+- analytic curves;
+- rule grammars;
+- JSON definitions;
+- test fixtures.
 
-Generated textures are algorithmic raster caches, not painted art. Generated geometry may be serialized in Unity native form with provenance. Runtime animation uses gait/IK dynamics; optional sampled caches must be regenerated from those equations. Generated particles use analytic geometry/materials rather than sprite atlases. No mesh impostor/billboard texture requirement is assumed; low detail uses simplified mesh geometry.
+**Not permitted:**
+- hand-edited mesh vertices or sculpts;
+- photo/PBR libraries or scans;
+- downloaded rigs;
+- AI image textures;
+- hand-keyed joint poses;
+- DCC exports;
+- third-party visual packs.
 
-Fonts and sound are not 3D/surface/animation assets. Baseline UI uses an engine-supplied licensed font with a recorded exception in the provenance allowlist. M0–M4 baseline sound was synthesized. [ADR-055](decisions.md#adr-055--accepted-generated-pcm-combat-sample-banks-t086) / [ADR-062](decisions.md#adr-062--accepted-stereo-foundauthored-combat-wav-bank-and-per-kind-distance-t089) authorize a provenance-recorded stereo PCM combat sample bank (`Content/Audio/combat`) for non-commercial builds; see [features/audio.md](features/audio.md). Extracting audio from third-party commercial games remains out of scope.
+AI coding tools may write generators, but they may not slip authored assets into the output.
 
-## Non-goals for the first release slice
+How generated output is treated:
+- **Textures** are algorithmic raster caches.
+- **Geometry** may be serialized in Unity native form with provenance.
+- **Animation** uses gait, IK and dynamics.
+- **Particles** use analytic geometry.
+- **Low detail** uses simplified meshes, not billboards.
 
-No open world, vehicles, playable aircraft, structural destruction, deformable terrain, weapon attachments marketplace, cinematic faces, lip sync, full cloth simulation, licensed brands, ranked matchmaking, online or account-bound progression (the local career ladder of [ADR-108](decisions.md#adr-108--accepted-career-ranks-unlocks-buffs-and-local-service-record) is the one exception), console/mobile support, VR, full photorealistic skin or ray-traced lighting. No deterministic PhysX lockstep, whole-world ray marching, general-purpose DCC replacement or custom engine. Do not silently trade these constraints for better visuals.
+**Fonts and sound** are outside the 3D art rule. UI uses allowlisted fonts ([ADR-066](decisions.md#adr-066--accepted-non-commercial-ui-typeface-bank-barlow-condensed)). Combat audio is a provenance-recorded stereo PCM bank for non-commercial builds ([ADR-062](decisions.md#adr-062--accepted-stereo-foundauthored-combat-wav-bank-and-per-kind-distance-t089), [audio](features/audio.md)). Audio extracted from commercial games is out of scope.
 
-## Defaults requiring validation, not a blocking user decision
+## Non-goals
 
-Windows x64/D3D11 is the client target; a Windows headless server target is parked with networking. Use fictional factions and unbranded weapons. Medium/high profiles are scalability probes. Player capsule defaults: 1.8 m standing, 0.32 m radius; walk 3.5 m/s, sprint 5.5 m/s; all tuning lives in versioned data. Networking transport selection and exact Unity patch are M0/M5 gates, recorded in [decisions](decisions.md). There is no commercial scope or schedule commitment.
+The first release excludes:
+- open world, vehicles, aircraft, structural destruction or deformable terrain;
+- cinematic faces, lip sync or full cloth simulation;
+- licensed brands or ranked matchmaking;
+- online or account-bound progression (the local career of [ADR-108](decisions.md#adr-108--accepted-career-ranks-unlocks-buffs-and-local-service-record) is the one exception);
+- console, mobile or VR;
+- photoreal skin or ray tracing;
+- PhysX lockstep, whole-world ray marching or a custom engine.
 
-## Definition of implementation-ready
-
-Every package has an owner, permitted folders, input/output contracts, dependencies, failure behavior and acceptance checks. Unknowns have a spike, a measurable exit and a fallback within the art constraint. Each milestone produces an executable artifact and evidence; completion cannot be claimed from documentation or screenshots alone.
+Factions and kit are fictional. Weapons use real-world names but no brand assets. Player capsule defaults are 1.8 m standing and 0.32 m radius, with walk at 3.5 m/s and sprint at 5.5 m/s. All tuning lives in versioned data.

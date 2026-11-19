@@ -1,90 +1,80 @@
-# Procedural military FPS — implementation documentation
+# Procedural military FPS — documentation
 
-Unity 6 URP / C# / HLSL design for a realistic modern-world shooter generated from code and numeric recipes. No imported/manual meshes, painted textures, sprites or authored animation. First version: one human plus local bots, offline Team Deathmatch on three maps, delivered as a Windows installer with in-place upgrades. Networking and the dedicated server are parked under [ADR-076](decisions.md#adr-076--accepted-offline-only-scope-and-bounded-local-evidence). Reference hardware: Ryzen 5 4600H integrated Radeon, 16 GB DDR4-3200, NVMe; native 720p Low at 30 FPS, 60 FPS stretch.
+This is a Unity 6 URP / C# / HLSL modern-world shooter. Every mesh, material, rig and motion is generated from code and numeric recipes; nothing is imported or hand-authored.
 
-**Current state, build and next work:** [next playable build](next-playable-build.md). It is the only page that tracks the current installer; other pages link to it instead of repeating release banners. Visual work follows the visual roadmap toward the Battlefield V / Bodycam / Warface quality target in the [design milestones](visual-direction.md).
+The first version is offline Team Deathmatch for one human plus local bots, on three maps. It ships as a Windows installer that upgrades in place. Networking is parked under [ADR-076](decisions.md#adr-076--accepted-offline-only-scope-and-bounded-local-evidence).
 
-## Reading order
+The reference machine is a Ryzen 5 4600H with integrated Radeon. The target is native 720p Low at 30 FPS.
 
-1. Implementation start, then [vision and requirements](vision.md)
-2. [Next playable build](next-playable-build.md) and [product state audit](next-playable-build.md)
-3. [Architecture](architecture.md), [domain model](architecture.md#domain-model), [contracts](contract-details.md)
-4. [Generation/compiler](generation.md) and [performance](performance.md)
-5. Assigned feature page, [validation](validation.md), [build/CI](build-ci.md) and the [bootstrap runbook](bootstrap-runbook.md)
+Start with [next playable build](next-playable-build.md), the only page that tracks current status. Then read [vision](vision.md) and [architecture](architecture.md). Git history keeps every removed or superseded page.
 
-## Current state and plans
+## Status and acceptance
 
 | Document | Purpose |
 |---|---|
-| [Next playable build](next-playable-build.md) | Current installer, product definition, task disposition and order of remaining work |
-| [Launch and playtest guide](playtest-guide.md) | Install/launch steps, controls, known limits and manual test record |
-| [Product state audit](next-playable-build.md) | Findings, evidence and milestone disposition |
-| Visual roadmap | Current visual execution plan and ledger (ADR-084–095) |
-| [Visual design milestones](visual-direction.md) | VD0–VD9 quality track, review rubric and evidence |
-| [VD0 visual art brief](visual-direction.md) | Art direction and comparison register |
-| [Product visual defect inventory](visual-defect-inventory.md) | P05 soldier defects and ADR-095 outcome |
-| [Release remediation validation](acceptance.md) | FIX01–FIX14 evidence contract |
+| [Next playable build](next-playable-build.md) | Current installer, open findings and tasks, order of remaining work |
+| [Acceptance](acceptance.md) | Milestone gates M8–M11, scenario IDs, FIX matrix, final release sequence |
+| [Playtest guide](playtest-guide.md) | Install, controls, T071 record sheet |
+| [Visual direction](visual-direction.md) | Quality target, references, VD0–VD9 gates and review rubric |
+| [Visual defect inventory](visual-defect-inventory.md) | P05 soldier status and open visual review items |
+| [Risks](risks.md) | Open risks and mitigations |
+| Milestone handoffs: [M8](milestones/m8-runtime-composition/handoff.md), [M9](milestones/m9-team-deathmatch/handoff.md), [M10](milestones/m10-maps-shell/handoff.md), [M11](milestones/m11-playable-release/handoff.md) | Evidence logs per delivery |
 
 ## Specifications
 
 | Document | Purpose |
 |---|---|
-| [Vision, scope and requirements](vision.md) | Scope, requirements, art constraint and non-goals |
-| [Architecture](architecture.md) | Assemblies, dependency rules and lifecycle |
-| [Repository layout and toolchain](repo-layout.md) | Actual paths and exact-version pinning |
-| [Domain model](architecture.md#domain-model) | Entities, units and invariants |
-| [Contracts — C0 specification](contract-details.md) | Ports, DTOs, enums, buffers and envelopes |
-| [Game session contracts](game-session-contracts.md) | Frozen Game-v1 ports and semantics |
-| [Simulation protocol](simulation-protocol.md) | Tick order, replay and prediction state |
-| [Gameplay baseline](gameplay-baseline.md) | Numeric gameplay, objective and collision matrix |
-| [Deterministic generation, compilation and caches](generation.md) | Generators, compiler, LODs and caches |
-| [Deterministic format and asset identity](deterministic-format.md) | Seeds, canonical JSON and identity rules |
-| [Content format v1](content-format.md) | Binary artifact/codec format (hash-locked) |
-| [Weapon recipe baseline](weapon-recipe-baseline.md) | Numeric weapon sockets (hash-locked) |
-| [Soldier recipe and motion baseline](soldier-baseline.md) | Soldier recipe and motion (hash-locked) |
-| [Quality profiles, budgets and measurement](performance.md) | Profiles, allocations and benchmark gates |
-| [Benchmark fixtures](performance.md) | Reproducible benchmark workloads |
-| [Visual direction and UI design system](brandbook.md) | Visual direction, HUD and accessibility |
-| [Machine-readable fixture catalog](fixtures/index.md) | Lock-pinned fixtures and schemas |
+| [Vision](vision.md) | Scope, requirements R01–R15, art boundary, non-goals |
+| [Architecture](architecture.md) | Assemblies, dependency rules, runtime composition, domain model |
+| [Repository layout](repo-layout.md) | Tree and toolchain |
+| [Contracts — C0](contract-details.md) | Frozen ports, DTOs, enums and buffers |
+| [Game session contracts](game-session-contracts.md) | Frozen Game-v1 records, ports and tick boundary |
+| [Simulation protocol](simulation-protocol.md) | Normative tick order |
+| [Gameplay baseline](gameplay-baseline.md) | Motor, weapon slot and layer defaults |
+| [Generation](generation.md) | Compiler pipeline, caches and locks |
+| [Deterministic format](deterministic-format.md) | PRNG, canonical JSON and identity |
+| [Content format v1](content-format.md) | Binary artifact format (hash-locked) |
+| [Weapon recipe baseline](weapon-recipe-baseline.md) | Weapon generator versions (hash-locked) |
+| [Soldier baseline](soldier-baseline.md) | Soldier recipe and motion log (hash-locked) |
+| [Performance](performance.md) | Profiles, budgets, workloads and protocol |
+| [UI design system](brandbook.md) | Tokens, typography, screens and accessibility |
+| [Fixture catalog](fixtures/index.md) | Lock-pinned fixtures and schemas |
 
 ## Features
 
 | Document | Purpose |
 |---|---|
-| [Procedural materials and rendering](features/materials-rendering.md) | Materials, shading, lighting and post-processing |
-| [Procedural geometry and modern weapons](features/geometry-weapons.md) | Weapon geometry and visual profiles |
-| [Generated soldiers, rigging and motion](features/soldiers-animation.md) | Soldier mesh, rig and analytic motion |
-| [Generated environments and streaming](features/tdm-map-layouts.md) | Environment generation and streaming |
-| [FPS movement and combat](features/combat.md) | Motor, weapons and damage |
-| [Combat AI](features/ai.md) | Bot perception, tactics and navigation |
-| [Team Deathmatch](features/team-deathmatch.md) | Rosters, scoring, timer, respawn and results |
-| [Playable maps](features/tdm-map-layouts.md) | Map catalog, packaging and safety |
-| [Compact TDM map layouts](features/tdm-map-layouts.md) | 64 × 80 m arena rules and per-map layouts |
-| [Game shell and settings](features/game-shell.md) | Menus, persistence, audio/video/controls |
-| [Career ranks and service record](features/career.md) | Military ranks, unlocks, buffs and local statistics |
-| [Combat audio](features/audio.md) | Stereo sample bank and distance model |
-| [Windows installer and upgrades](features/windows-installer.md) | Installer, in-place updates and INS01–INS06 |
-| [Staged authoritative networking](decisions.md#adr-076--accepted-offline-only-scope-and-bounded-local-evidence) | Parked under ADR-076 |
+| [Team Deathmatch](features/team-deathmatch.md) | Rosters, scoring, timer, respawn, results |
+| [Maps](features/tdm-map-layouts.md) | Catalog, site plans, rules, packages, adding a map |
+| [Combat](features/combat.md) | Motor, weapons, damage |
+| [Combat AI](features/ai.md) | Bot perception, tactics, navigation |
+| [Weapons geometry](features/geometry-weapons.md) | Procedural weapon meshes and sights |
+| [Soldiers and animation](features/soldiers-animation.md) | Soldier mesh, rig, analytic motion |
+| [Materials and rendering](features/materials-rendering.md) | Materials, lighting, post-processing |
+| [Audio](features/audio.md) | Sample bank, music, distance model |
+| [Game shell](features/game-shell.md) | Menus, settings, Armory |
+| [Career](features/career.md) | Ranks, unlocks, perks, service record |
+| [Windows installer](features/windows-installer.md) | Installer, upgrades, INS01–INS06 |
 
-## Process and records
+## Process
 
 | Document | Purpose |
 |---|---|
-| [Architecture decision records](decisions.md) | ADR-001–095 and the change process |
-| [Bootstrap runbook](bootstrap-runbook.md) | Wrapper commands, scopes and evidence rules |
-| [Build, CI and release strategy](build-ci.md) | Clean builds, CI lanes and release flow |
-| [Validation strategy](validation.md) | Tests, evidence and requirement traceability |
-| [Milestones and release gates](acceptance.md) | M0–M11 gate definitions |
-| [Milestone packs](acceptance.md) | Per-milestone handoffs and acceptance records |
-| Work packages and backlog | Work packages and ordered tasks T001+ |
-| Task cards | Task cards T026 onward |
-| Parallel implementation and agent rules | Ownership, branches and handoffs |
-| [Risk register](risks.md) | Risks, triggers and mitigation |
-| [Sources and version-sensitive guidance](references.md) | External references |
-| Documentation archive | Superseded plans and closed-milestone planning packs |
+| [Decisions](decisions.md) | ADR-001 onward and the change template |
+| [Runbook](bootstrap-runbook.md) | Wrapper commands and scopes |
+| [Build and CI](build-ci.md) | Lanes, gates, release |
+| [Validation](validation.md) | Test suites and requirement traceability |
+| [References](references.md) | External sources |
 
-## Operating rule
+## Rules for these docs
 
-C0 and Game-v1 are frozen; changes go through [decision records](decisions.md) with fixture migration. Each change updates affected docs with actual code references and measured evidence, and records results in the relevant milestone handoff. Keep generated-only art provenance, performance gates and gameplay/quality separation intact; do not hide scope reductions in tuning.
+C0 and Game-v1 are frozen. To change either, write an [ADR](decisions.md) and migrate the fixtures.
 
-`documentation-manifest.json` records file hashes and `verification-report.json` records the docs integrity check. Neither claims game tests have run. Run `python docs/verify_docs.py` after documentation edits; refresh the manifest with `--refresh-manifest` only for intentional changes.
+Every change updates the affected page using real code paths. Status goes only in [next playable build](next-playable-build.md) and the handoffs. Feature pages describe current behavior, not a changelog; history lives in ADRs and git.
+
+After editing docs:
+1. Run `python docs/verify_docs.py`.
+2. For an intentional change, run `--refresh-manifest`.
+3. Commit the updated `documentation-manifest.json`.
+
+Documentation hashes are never game test results.

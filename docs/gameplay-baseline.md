@@ -1,8 +1,6 @@
 # Gameplay baseline, objective and collision matrix
 
-These are fictional game tuning defaults, not claims about real weapons. Owner WP-05; objective WP-05 with integrator; world consumes this before M3 planning. Numeric values are mirrored in [fixture defaults](fixtures/gameplay-defaults.json); changing them requires tests and version bump. No user clarification is needed to begin with this baseline.
-
-Scope update 2026-11-13: this page and its frozen fixtures retain the historical Compound Clear baseline. New [Team Deathmatch](features/team-deathmatch.md) reuses motor/weapons/layers but defines separate team roster, respawn/refill, scoring and deadline rules through [Game-v1](game-session-contracts.md). These additions do not edit the old fixture or silently change Compound Clear/co-op behavior. The public release selector exposes only TDM; the old mode remains diagnostic/regression scope.
+These are the frozen motor, slot and layer defaults, mirrored in [`fixtures/gameplay-defaults.json`](fixtures/gameplay-defaults.json). Changing them needs tests and a version bump. The rifle and pistol rows are the baseline profile. Each named gun overrides them with its own per-weapon stats in `Content/Weapons/*.weapon.json` ([ADR-102](decisions.md#adr-102--accepted-named-real-world-arsenal-random-spawn-loadouts-and-muzzle-flash-fix), ADR-118; see [combat](features/combat.md)). Team rules are in [Team Deathmatch](features/team-deathmatch.md).
 
 ## Motor, camera and weapons
 
@@ -32,15 +30,16 @@ Scope update 2026-11-13: this page and its frozen fixtures retain the historical
 
 Recoil angular velocities in full prediction state are zero in v1, reserved for a future versioned spring model. Visual kick may use springs, but does not alter these offsets. Raw input yaw/pitch plus decayed authoritative offset defines aim; apply spread once. Uniform solid-angle cone: u,v from independent RNG samples in [0,1), cosθ=1−u(1−cosα), φ=2πv, construct basis from aim/up with a deterministic alternate axis near vertical. Spread/recoil use named shot substreams, not shared global RNG. No movement spread/bloom in v1.
 
-Gameplay muzzle default is eye-relative (x=+0.18,y=−0.15,z=+0.45)m in yaw/pitch aim frame. It is independent of optional visual handedness, FOV and body LOD. Canonical weapon definition refines muzzle/socket transforms only through a versioned test update. ADR-112: the eye ray resolves the hit to 300 m against static cover and enemy hit capsules; the eye→muzzle segment cannot pass through static cover, and the muzzle is otherwise only the tracer origin. Enemy bodies block bullets; teammates do not, and friendly damage is zero. Knife melee and one cook/throw grenade per life are in the four-slot loadout (ADR-057). Armor, penetration and extra throwable types remain deferred.
+Gameplay muzzle default is eye-relative (x=+0.18,y=−0.15,z=+0.45)m in yaw/pitch aim frame. It is independent of optional visual handedness, FOV and body LOD. Canonical weapon definition refines muzzle/socket transforms only through a versioned test update. ADR-112: the eye ray resolves the hit to 300 m against static cover and enemy hit capsules; the eye→muzzle segment cannot pass through static cover, and the muzzle is otherwise only the tracer origin. Enemy bodies block bullets; teammates do not, and friendly damage is zero. Knife melee and one cook/throw grenade per life are in the four-slot loadout (ADR-057). Body armor is [ADR-110](decisions.md#adr-110--accepted-body-armor-100-points-torso-and-limbs). Penetration and extra throwable types are deferred.
 
-## Mode: Compound Clear v1
+## Diagnostic mode: Compound Clear v1
 
-One player Team1 versus eight bots Team2, no respawns or reinforcement. Win when all eight bots dead and living player occupies the objective zone continuously for 120 ticks. Any living bot entering zone or player leaving resets capture progress. Player death gives Loss immediately. No time limit, waves, pickups, progression or save checkpoint. Objective completion is frozen once terminal; restart is explicit UI action.
+This is the original one-player-versus-eight-bots objective mode on the 256 m compound. It remains diagnostic and regression scope only, and the release selector exposes only TDM. The rules in brief:
+- no respawn;
+- the player wins when all bots are dead and the player holds the 3 m objective zone at (96, 0, 96) for 120 ticks;
+- the player's death is an immediate loss.
 
-Map coordinates X/Z −128..128m; +Y up. Objective center (96,0,96), horizontal radius3m, vertical test player feet within 2m of zone ground. Player spawn at (−104,0,−104) facing +Z. Candidate bot positions: (−48,0,−32),(0,0,−48),(48,0,−16),(−32,0,32),(16,0,32),(64,0,48),(48,0,96),(96,0,64); generator samples ground and searches nearest valid nav point in0.5m rings up to8m, ties X then Z. If none, reject world seed. No initial bot has unobstructed shot ray to player spawn; planner must insert generated static cover or reject seed, not invent runtime invisibility.
-
-Restart cancels nav tickets, releases cover/FX/content leases, clears event queues/history and allocates a new AuthoritySessionId. Reset all actors/ammo/health/objective/random streams from identical match seed. Entity IDs may restart only in a new authority session. World content reused by verified handles. Multiplayer N3 is private cooperative version of same mode: up to4 Team1 players, eight Team2 bots, no respawn; loss when all players dead, any living player can capture; player joining after Playing spectates until restart. This avoids undefined mid-match reinforcement. Disconnect removes actor and releases claims; if no active players remain, stop session. PvP and eight-player capacity remain later scope.
+Its fixtures stay frozen.
 
 ## Layer and query matrix
 
@@ -59,4 +58,4 @@ Actors do not physically push/block each other in slice; damage capsules are mat
 
 ## Validation
 
-Test exact damage rounding for rifle limb15 and pistol limb12.5→13, cadence at tick0 and subsequent allowed ticks, reload cancellation order, stance ceiling failure, objective120-tick boundary, same-tick death precedence, restart state and cooperative join spectator rule. World checks enforce valid spawn/capture routes at all fixture seeds. These choices are accepted defaults and may be tuned only with synchronized definitions/fixtures.
+Test exact damage rounding (rifle limb 15, pistol limb 12.5→13), cadence at tick 0 and later allowed ticks, reload cancellation order, stance ceiling failure, same-tick death precedence and restart state. World checks enforce valid spawn/capture routes at all fixture seeds. These choices are accepted defaults and may be tuned only with synchronized definitions/fixtures.

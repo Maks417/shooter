@@ -521,7 +521,7 @@ A manual disk cleanup deleted 40 ignored per-commit run folders under `Artifacts
 | `28df022`, `9f73624` | m0-foundation | Rejected prescribed attempt and failed sandbox restore (see M0 handoff). |
 | `2cbed1a` | m0-foundation | Runs at the B01-materials collection commit (see M1 handoff); the summary in `Artifacts/m1-continuation/` is intact. |
 
-No PASS/FAIL/Pending status changes because of this loss; any claim that depended on re-inspecting these raw files must be re-produced, not assumed. Future cleanup must use `Tools/Clean-Artifacts.ps1` ([runbook](../../bootstrap-runbook.md#reclaiming-disk-after-an-installermilestone-build)), which keeps runs cited by full or short hash. Its first dry run after the loss reported only empty leftover folders and kept 24 GB of cited/recent evidence.
+No PASS/FAIL/Pending status changes because of this loss; any claim that depended on re-inspecting these raw files must be re-produced, not assumed. Future cleanup must use `Tools/Clean-Artifacts.ps1` ([runbook](../../bootstrap-runbook.md#disk-policy)), which keeps runs cited by full or short hash. Its first dry run after the loss reported only empty leftover folders and kept 24 GB of cited/recent evidence.
 
 ## Oil Depot visual identity pass — 2026-11-15
 
