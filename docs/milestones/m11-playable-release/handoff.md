@@ -2,6 +2,11 @@
 
 Evidence log for M11, newest first. Each delivery and change records identities, results and what stays Pending. Records before 2026-11-15 (deliveries up to 0.3.12, T062–T085) are in git history. Current status is in [next playable build](../../next-playable-build.md) and gates are in [acceptance](../../acceptance.md).
 
+## Public repository, CI line-ending fix — 2026-11-22
+
+- **Publication.** The repository is public at `github.com/Maks417/shooter`. The 0.3.25 installer (binary commit `f9c3611`, SHA-256 `3e326441…c4c0`) is published as the GitHub pre-release `v0.3.25`. Publication is not acceptance, and REL01–REL06 stay NotClaimed.
+- **Line endings (ADR-040 addendum).** The first hosted CI run on a clean clone failed on the CRLF-derived `tdm-workloads.json` hash. That Game-v1 lock entry and the docs manifest were refrozen to the LF bytes, and the CRLF working copies were normalized. No blob, fixture or contract changed.
+
 ## T195 phase 3 decoupling (part 2) — 2026-11-19
 
 - **Class splits.** `CombatAiDirector` (2,182 lines), `ProductSessionView` (1,970) and `ProductShellHost` (1,599) are split by concern into partial files with `Tools/split_partial.py`. Whole members were moved verbatim. A line-multiset check showed every original line accounted for; the only additions are file headers and the `partial` modifier.

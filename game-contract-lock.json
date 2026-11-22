@@ -3,7 +3,7 @@
   "contractVersion": "Game-v1",
   "status": "FrozenByIntegrator",
   "reviewer": "Claude sole integrator, ADR-105 Pickup binding",
-  "reviewDate": "2026-11-19",
+  "reviewDate": "2026-11-22",
   "scope": "Game-v1 with ADR-036 schema 2, ADR-037/ADR-101 workloads (5/8/10/15), ADR-039 Slide, ADR-056 LastWeapon, ADR-057 Slot3/Slot4, ADR-105 Pickup, ADR-059 personal Score, ActorLifecycleState.WeaponAction. Caps MaxParticipants/MaxActiveActors=30. C0-v1/content-v1/N1-v1 separately locked. Runtime/player/hardware acceptance is separate.",
   "ruleVersion": 1,
   "settingsSchema": 2,
@@ -29,13 +29,14 @@
   "fixtures": {
     "docs/game-fixtures/session-request.invalid-size.json": "9429ca8c81ea95c7c88a01c7ac073b12688986a25381851436e909aaf4d01ae1",
     "docs/game-fixtures/session-request.valid.json": "02cbb1ccedcf45912c91ff669d815f3ee5fa12bb214e808604cbd6d8f6245669",
-    "docs/game-fixtures/tdm-workloads.json": "c2a5bc562181ceec73f86b83fe9e9e049b56cdfc133a4ed1bf98a27d9a079512",
+    "docs/game-fixtures/tdm-workloads.json": "8342cdb79ce0ccfd79d41fa1e9499c52f214621615426428097ef0c45ace6908",
     "docs/game-fixtures/user-settings-last-weapon.valid.json": "966b8455e53df40ed67c99a175effe2cba864e90538f95fdefe443d626ed4064",
     "docs/game-fixtures/user-settings-slide.valid.json": "4a3d69069a7c212e9679d0b194c13cd6a560c6c32772753479a07bc104611f6a",
     "docs/game-fixtures/user-settings.schema.json": "d6dca67eaf9f5b3ad2c1c05f71e33334a1084d8573accd71e4193a98751108fb",
     "docs/game-fixtures/user-settings.valid.json": "5fce4b51e5cf79f2f97b10f963dd625c6f6973a8a154c2d4f67b4cbb2ae2ae01"
   },
   "refreezeDecisions": [
-    "ADR-122"
+    "ADR-122",
+    "ADR-040"
   ]
 }

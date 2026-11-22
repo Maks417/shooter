@@ -572,6 +572,8 @@ Date 2026-11-14. **Context.** Thirteen lock entries in `content-format-lock.json
 
 **Addendum (2026-11-15).** `user-settings-last-weapon.valid.json` was refrozen to its LF hash under the same guarded rule.
 
+**Addendum (2026-11-22).** `7c0aa69` (ADR-122) froze `docs/game-fixtures/tdm-workloads.json` in `game-contract-lock.json` and the docs manifest from a CRLF working copy (`c2a5bc56…9512`). As a result, the first hosted CI run on a clean clone failed `verify_docs.py` and `verify_game_contract_lock.py`. The old hash equalled the LF→CRLF hash of the committed blob, so the entry was refrozen to the LF value `8342cdb7…6908` with `verify_game_contract_lock.py --refreeze ADR-040`. Only that entry changed. The 33 working copies left as CRLF were normalized to LF, and none of their blobs changed.
+
 ## ADR-041 — Accepted: Inno Setup per-user installer and in-place upgrade (T073)
 
 Date 2026-11-14. **Decision.** The installer ([contract](features/windows-installer.md)):
