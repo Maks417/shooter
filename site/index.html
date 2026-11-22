@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Shooter: procedural military FPS</title>
+  <meta name="description" content="Shooter is an offline military FPS for Windows where every mesh, material, rig and animation is generated from code. Team Deathmatch against bots on three procedural maps.">
+  <meta name="theme-color" content="#0b0d10">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Shooter: procedural military FPS">
+  <meta property="og:description" content="Every mesh, material, rig and animation generated from code. Offline Team Deathmatch against bots, 5v5 to 15v15.">
+  <meta property="og:image" content="https://maks417.github.io/shooter/assets/og-image.jpg">
+  <meta property="og:url" content="https://maks417.github.io/shooter/">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="nav" id="top">
+    <a class="brand" href="#top" aria-label="Shooter home">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="13" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M8 19 16 11l8 8" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"/><path d="M16 1v5M16 26v5M1 16h5M26 16h5" stroke="currentColor" stroke-width="2.4"/></svg>
+      <span>SHOOTER</span>
+    </a>
+    <nav aria-label="Sections">
+      <a href="#features">Features</a>
+      <a href="#gallery">Gallery</a>
+      <a href="#maps">Maps</a>
+      <a href="#pipeline">How it's made</a>
+      <a href="#controls">Controls</a>
+    </nav>
+    <a class="nav-gh" href="https://github.com/Maks417/shooter" aria-label="Source on GitHub">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      <span>GitHub</span>
+    </a>
+  </header>
+
+  <main id="main">
+    <section class="hero">
+      <div class="hero-bg" aria-hidden="true"></div>
+      <div class="hero-scan" aria-hidden="true"></div>
+      <div class="hero-inner">
+        <p class="eyebrow"><span class="pip"></span>Offline battles / Team Deathmatch</p>
+        <h1>Every bullet,<br>wall and soldier<br><em>built from code.</em></h1>
+        <p class="lede">Shooter is a military first-person shooter for Windows with no imported art. Geometry, materials, rigs and motion all come from numeric recipes. Drop into Team Deathmatch against allied and enemy bots on three procedural maps.</p>
+        <div class="cta">
+          <a class="btn btn-primary" href="https://github.com/Maks417/shooter/releases/download/v0.3.25/Shooter-Setup-0.3.25.exe">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 20h16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square"/></svg>
+            <span><strong>Download for Windows</strong><small>v0.3.25 · 94 MB · playtest build</small></span>
+          </a>
+          <a class="btn btn-ghost" href="https://github.com/Maks417/shooter">View source on GitHub</a>
+        </div>
+        <dl class="hud-stats">
+          <div><dt>Maps</dt><dd>03</dd></div>
+          <div><dt>Team sizes</dt><dd>5v5–15v15</dd></div>
+          <div><dt>Simulation</dt><dd>60 Hz</dd></div>
+          <div><dt>Imported art</dt><dd>000</dd></div>
+        </dl>
+      </div>
+    </section>
+
+    <section class="section" id="features">
+      <header class="section-head">
+        <p class="eyebrow"><span class="pip"></span>Field manual</p>
+        <h2>What you're getting</h2>
+      </header>
+      <div class="features">
+        <article class="card">
+          <span class="card-num">01</span>
+          <h3>Procedural everything</h3>
+          <p>Buildings, terrain, weapons, soldiers, their skeletons and their animation are all generated deterministically from recipes. There are no imported meshes, painted textures or mocap clips.</p>
+        </article>
+        <article class="card">
+          <span class="card-num">02</span>
+          <h3>Team Deathmatch vs bots</h3>
+          <p>One human with local allied and enemy bots in 5v5, 8v8, 10v10 or 15v15. First to 150 kills or the best score after 15 minutes wins.</p>
+        </article>
+        <article class="card">
+          <span class="card-num">03</span>
+          <h3>Fixed 60 Hz authority</h3>
+          <p>Movement, combat, hit volumes and AI run on a deterministic 60 Hz simulation. Rendering only reads snapshots, so behaviour doesn't change with quality settings.</p>
+        </article>
+        <article class="card">
+          <span class="card-num">04</span>
+          <h3>Fully offline</h3>
+          <p>You don't need an account, a network or a server. The per-user Windows installer upgrades in place and keeps your settings and key bindings.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section section-wide" id="gallery">
+      <header class="section-head">
+        <p class="eyebrow"><span class="pip"></span>Recon</p>
+        <h2>Screenshots</h2>
+        <p class="section-sub">Captured from the v0.3.25 Windows build. Click any image to enlarge it.</p>
+      </header>
+      <div class="gallery">
+        <figure class="shot shot-lg"><a href="assets/combat.jpg" data-caption="Combat at Depot Yard: compact tactical HUD with minimap, score and ammo"><img src="assets/combat.jpg" alt="First-person view holding a scoped rifle inside a warehouse while enemy soldiers move between containers" loading="lazy" width="1280" height="720"></a></figure>
+        <figure class="shot"><a href="assets/staging.jpg" data-caption="Procedurally rigged soldiers in the staging area"><img src="assets/staging-sm.jpg" alt="Three camouflaged soldiers aiming rifles on a concrete staging pad at night" loading="lazy" width="640" height="360"></a></figure>
+        <figure class="shot"><a href="assets/menu.jpg" data-caption="Main menu over a live map vista"><img src="assets/menu-sm.jpg" alt="Main menu with operation cards for three maps over a 3D view of soldiers on a rooftop" loading="lazy" width="640" height="360"></a></figure>
+        <figure class="shot"><a href="assets/briefing.jpg" data-caption="Operation briefing: pick the map, team size and loadout"><img src="assets/briefing-sm.jpg" alt="Match setup screen with map list, team size buttons and rules" loading="lazy" width="640" height="360"></a></figure>
+        <figure class="shot"><a href="assets/match-start.jpg" data-caption="Countdown to deployment"><img src="assets/match-start-sm.jpg" alt="Match starts in 5 countdown over a first-person rifle view" loading="lazy" width="640" height="360"></a></figure>
+        <figure class="shot"><a href="assets/pause.jpg" data-caption="Pause menu"><img src="assets/pause-sm.jpg" alt="Pause menu with resume, settings, restart and main menu commands" loading="lazy" width="640" height="360"></a></figure>
+      </div>
+    </section>
+
+    <section class="section" id="maps">
+      <header class="section-head">
+        <p class="eyebrow"><span class="pip"></span>Select operation area</p>
+        <h2>Three battlegrounds</h2>
+      </header>
+      <div class="maps">
+        <article class="map">
+          <div class="map-thumb"><img src="assets/map-training-compound.jpg" alt="Isometric overview of a dense town with red roofs" loading="lazy" width="432" height="244"></div>
+          <div class="map-body">
+            <span class="map-idx">01</span>
+            <h3>Training Compound</h3>
+            <p class="map-alias">Old Town</p>
+            <p>Inn yards, back alleys, a market square and a two-storey town hall.</p>
+            <p class="map-meta">5v5–15v15 · Local bots</p>
+          </div>
+        </article>
+        <article class="map map-active">
+          <div class="map-thumb"><img src="assets/map-depot-yard.jpg" alt="Isometric overview of a harbour with water, a quay and warehouses" loading="lazy" width="432" height="244"></div>
+          <div class="map-body">
+            <span class="map-idx">02</span>
+            <h3>Depot Yard</h3>
+            <p class="map-alias">Harbour</p>
+            <p>Transit sheds, a working quay, a container terminal and the harbour office.</p>
+            <p class="map-meta">5v5–15v15 · Local bots</p>
+          </div>
+        </article>
+        <article class="map">
+          <div class="map-thumb"><img src="assets/map-oil-depot.jpg" alt="Isometric overview of an industrial site with white storage tanks" loading="lazy" width="432" height="244"></div>
+          <div class="map-body">
+            <span class="map-idx">03</span>
+            <h3>Oil Depot</h3>
+            <p class="map-alias">Tank farm</p>
+            <p>A tank farm, a pump house and control rooms joined by a pipe bridge.</p>
+            <p class="map-meta">5v5–15v15 · Local bots</p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" id="pipeline">
+      <header class="section-head">
+        <p class="eyebrow"><span class="pip"></span>Engineering</p>
+        <h2>How it's made</h2>
+        <p class="section-sub">Every asset in the game is the output of a deterministic program, and the whole build is reproducible from source.</p>
+      </header>
+      <ol class="pipeline">
+        <li>
+          <span class="step">Recipes</span>
+          <p>Numeric recipes describe maps, weapons, soldiers and materials. Their formats are frozen and hash-locked.</p>
+        </li>
+        <li>
+          <span class="step">Generators</span>
+          <p>Pure, seeded C# generators build meshes, rigs, textures and motion. They run without Unity, so they're unit-tested in plain .NET.</p>
+        </li>
+        <li>
+          <span class="step">Content cache</span>
+          <p>An editor compiler bakes map packages and navmesh with recorded provenance for every generated byte.</p>
+        </li>
+        <li>
+          <span class="step">Simulation</span>
+          <p>A fixed 60 Hz authority runs motor, combat, poses, AI and match rules. It has no rendering dependencies.</p>
+        </li>
+        <li>
+          <span class="step">Presentation</span>
+          <p>Unity 6 URP renders read-only snapshots. IL2CPP / D3D11 player, shipped as a Windows installer.</p>
+        </li>
+      </ol>
+      <div class="tech">
+        <span>Unity 6000.3</span><span>URP 17.3</span><span>C# / HLSL</span><span>.NET 10 test lanes</span><span>xUnit</span><span>IL2CPP</span><span>Inno Setup</span>
+      </div>
+    </section>
+
+    <section class="section" id="controls">
+      <header class="section-head">
+        <p class="eyebrow"><span class="pip"></span>Loadout briefing</p>
+        <h2>Controls</h2>
+        <p class="section-sub">Every binding can be changed in Settings.</p>
+      </header>
+      <div class="controls">
+        <div class="ctl"><span class="keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span><span>Move</span></div>
+        <div class="ctl"><span class="keys"><kbd>Mouse</kbd></span><span>Look</span></div>
+        <div class="ctl"><span class="keys"><kbd>LMB</kbd></span><span>Fire</span></div>
+        <div class="ctl"><span class="keys"><kbd>RMB</kbd></span><span>Aim down sights</span></div>
+        <div class="ctl"><span class="keys"><kbd>R</kbd></span><span>Reload</span></div>
+        <div class="ctl"><span class="keys"><kbd>1</kbd><kbd>2</kbd></span><span>Rifle / pistol</span></div>
+        <div class="ctl"><span class="keys"><kbd>Shift</kbd></span><span>Sprint</span></div>
+        <div class="ctl"><span class="keys"><kbd>Ctrl</kbd></span><span>Crouch</span></div>
+        <div class="ctl"><span class="keys"><kbd>Space</kbd></span><span>Jump</span></div>
+        <div class="ctl"><span class="keys"><kbd>Shift</kbd><kbd>F</kbd></span><span>Slide while sprinting</span></div>
+        <div class="ctl"><span class="keys"><kbd>Tab</kbd></span><span>Scoreboard</span></div>
+        <div class="ctl"><span class="keys"><kbd>Esc</kbd></span><span>Pause</span></div>
+      </div>
+    </section>
+
+    <section class="section" id="download">
+      <div class="download">
+        <div class="download-copy">
+          <p class="eyebrow"><span class="pip"></span>Deploy</p>
+          <h2>Get v0.3.25</h2>
+          <p>This is a playtest build: it's playable, but still rough around the edges. You'll need 64-bit Windows 10 or 11 and a Direct3D 11 GPU. It installs per user, so you don't need admin rights.</p>
+          <p class="note">The installer isn't code-signed, so Windows SmartScreen may warn you. Choose <em>More info → Run anyway</em>.</p>
+          <div class="cta">
+            <a class="btn btn-primary" href="https://github.com/Maks417/shooter/releases/download/v0.3.25/Shooter-Setup-0.3.25.exe">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 20h16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square"/></svg>
+              <span><strong>Shooter-Setup-0.3.25.exe</strong><small>Windows installer · 94 MB</small></span>
+            </a>
+            <a class="btn btn-ghost" href="https://github.com/Maks417/shooter/releases/tag/v0.3.25">Release notes</a>
+          </div>
+          <div class="hash">
+            <span>SHA-256</span>
+            <code>3e3264414d24b465753b468435dce96356326864f831dc522827e794e34ac4c0</code>
+          </div>
+        </div>
+        <aside class="known">
+          <h3>Known limitations</h3>
+          <ul>
+            <li>Manual playtesting across every map and team size is still in progress.</li>
+            <li>Some soldier visual details (skin, straps, sights) have known residual defects.</li>
+            <li>The environment, weapon and hand-animation redesign is ongoing.</li>
+            <li>Performance on the reference machine hasn't been measured yet.</li>
+          </ul>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <a class="brand" href="#top">
+        <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="13" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M8 19 16 11l8 8" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"/><path d="M16 1v5M16 26v5M1 16h5M26 16h5" stroke="currentColor" stroke-width="2.4"/></svg>
+        <span>SHOOTER</span>
+      </a>
+      <p>Source code under the <a href="https://github.com/Maks417/shooter/blob/main/LICENSE">MIT License</a>. Barlow Condensed under the SIL OFL 1.1. The Unity runtime is under Unity's terms.</p>
+      <p><a href="https://github.com/Maks417/shooter">github.com/Maks417/shooter</a></p>
+    </div>
+  </footer>
+
+  <dialog class="lightbox" id="lightbox" aria-label="Screenshot viewer">
+    <button class="lb-close" type="button" aria-label="Close">×</button>
+    <img alt="">
+    <p class="lb-caption"></p>
+  </dialog>
+
+  <script>
+    (function () {
+      var dlg = document.getElementById('lightbox');
+      if (!dlg || typeof dlg.showModal !== 'function') return;
+      var img = dlg.querySelector('img');
+      var cap = dlg.querySelector('.lb-caption');
+      document.querySelectorAll('.gallery a').forEach(function (a) {
+        a.addEventListener('click', function (e) {
+          e.preventDefault();
+          img.src = a.getAttribute('href');
+          img.alt = a.querySelector('img').alt;
+          cap.textContent = a.dataset.caption || '';
+          dlg.showModal();
+        });
+      });
+      dlg.addEventListener('click', function (e) {
+        if (e.target === dlg || e.target.classList.contains('lb-close')) dlg.close();
+      });
+    })();
+  </script>
+</body>
+</html>
