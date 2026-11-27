@@ -13,7 +13,7 @@ using Debug = UnityEngine.Debug;
 
 /// <summary>
 /// ADR-124 editor review diagnostic: every licensed authored soldier variant in both team kits, standing aim, mid
-/// jog and crouched, with the held rifle, plus a close head shot. Flat stand-in team colours on URP Lit; not the
+/// jog, strafing left and right at the fixed aim (ADR-129) and crouched, with the held rifle, plus a close head shot. Flat stand-in team colours on URP Lit; not the
 /// packaged-player look, and never visual acceptance.
 /// </summary>
 public static class ShooterSoldierSkinCapture
@@ -84,7 +84,11 @@ public static class ShooterSoldierSkinCapture
             }
 
             var rifle = WeaponRecipe.Parse(File.ReadAllBytes(Path.Combine(Application.dataPath, "Shooter/Generation/FeatureRecipes/rifle.json")));
-            var rifleMesh = Upload(WeaponGeometry.Build(rifle).Lods[0]);
+            var rifleLod = WeaponGeometry.Build(rifle).Lods[0];
+            var rifleMesh = Upload(rifleLod);
+            // ADR-129: the support palm wraps the rifle's own handguard socket.
+            var (supportAxis, supportRadius) = AuthoredHandGrip.MeasureHandguard(rifleLod.Positions, WeaponGeometry.Sockets(rifle).First(s => s.Id == "left-hand-grip").Position);
+            var support = new SupportSocket(V(supportAxis), supportRadius);
             var gunMetal = Lit(new Color(.09f, .09f, .10f), .45f);
 
             var cameraObject = new GameObject("Soldier skin camera"); owned.Add(cameraObject);
@@ -103,10 +107,12 @@ public static class ShooterSoldierSkinCapture
             foreach (var variant in catalog.Variants)
             {
                 var shape = AuthoredSoldierBody.Prepare(catalog, variant, Upload, owned.Add);
+                if (shape.LeftHand != null)
+                    diagnostics.Add($"{variant.Id} ADR-129 support hand: palmSkin {shape.LeftHand.PalmSkin:F3} knuckles {shape.LeftHand.Knuckles:F3} base0 {shape.LeftHand.Base[0]:F3} contact {shape.LeftHand.Contact(supportRadius):F3} radius {supportRadius:F3} curls {string.Join(",", AuthoredHandGrip.WrapCurls(shape.LeftHand, supportRadius).Select(c => c.ToString("F0")))} wrapError {AuthoredHandGrip.WrapError(shape.LeftHand, supportRadius, AuthoredHandGrip.WrapCurls(shape.LeftHand, supportRadius)):F3}");
                 foreach (byte team in new byte[] { 1, 2 })
                 {
                     uniform[variant] = kits[team].paint[0]; webbing[variant] = kits[team].gear[1];
-                    foreach (var (pose, speed, crouch) in new[] { ("aim", 0f, 0f), ("jog", 3.5f, 0f), ("crouch", 0f, 1f) })
+                    foreach (var (pose, speed, crouch, travelDegrees) in new[] { ("aim", 0f, 0f, 0f), ("jog", 3.5f, 0f, 0f), ("strafe-left", 3.5f, 0f, -90f), ("strafe-right", 3.5f, 0f, 90f), ("crouch", 0f, 1f, 0f) })
                     {
                         var root = new GameObject("Soldier " + variant.Id).transform; owned.Add(root.gameObject);
                         var semantic = Semantic(root);
@@ -122,7 +128,7 @@ public static class ShooterSoldierSkinCapture
                             double distance = 0;
                             SoldierPose solved = null;
                             Vector3 weaponPosition = default;
-                            int frames = pose == "jog" ? 47 : 90;
+                            int frames = speed > 0f ? 47 : 90;
                             for (int i = 0; i < frames; i++)
                             {
                                 distance += speed / 60.0;
@@ -130,7 +136,7 @@ public static class ShooterSoldierSkinCapture
                                 for (int j = 0; j < semantic.Length; j++)
                                     semantic[j].SetPositionAndRotation(V(solved.WorldPositions[j]), Q(solved.WorldRotations[j]));
                                 weaponPosition = V(solved.WeaponPosition);
-                                body.Pose(1f / 60, speed, 0f, crouch, 0f, false, semantic, ref weaponPosition, Q(solved.WeaponRotation));
+                                body.Pose(1f / 60, speed, speed > 0f ? yaw + travelDegrees * Mathf.Deg2Rad : float.NaN, crouch, 0f, false, semantic, ref weaponPosition, Q(solved.WeaponRotation), SoldierGrip.Rifle, support);
                             }
                             weapon.transform.SetPositionAndRotation(weaponPosition, Q(solved.WeaponRotation));
                             if (team == 1 && pose == "aim") {
@@ -145,12 +151,16 @@ public static class ShooterSoldierSkinCapture
                                 diagnostics.Add(variant.Id + " semantic hand axes X " + (semantic[14].rotation * Vector3.right).ToString("F2") + " Y " + (semantic[14].rotation * Vector3.up).ToString("F2") + " Z " + (semantic[14].rotation * Vector3.forward).ToString("F2") + " weaponFwd " + (Q(solved.WeaponRotation) * Vector3.forward).ToString("F2") + " bindOffsetX " + (shape.BindOffset[14].Value * Vector3.right).ToString("F2"));
                                 diagnostics.Add(variant.Id + " semantic rightHand " + semantic[14].position.ToString("F3") + " rightForearm " + semantic[13].position.ToString("F3") + " weapon " + weaponPosition.ToString("F3"));
                             }
-                            var shots = pose == "aim" ? new[] { "front", "three-quarter", "back", "head" } : new[] { "three-quarter" };
+                            var shots = pose == "aim" ? new[] { "front", "three-quarter", "back", "head", "support-hand", "support-hand-under" } : new[] { "three-quarter" };
                             foreach (string angle in shots)
                             {
-                                Vector3 target = angle == "head" ? body.HeadCentre : new Vector3(0, crouch > 0 ? .65f : .92f, 0);
-                                Vector3 direction = angle == "front" ? Vector3.forward : angle == "back" ? Vector3.back : new Vector3(.75f, .22f, .85f).normalized;
-                                camera.transform.position = target + direction * (angle == "head" ? .9f : 4.6f);
+                                bool hand = angle.StartsWith("support-hand", StringComparison.Ordinal);
+                                if (hand && !body.SupportGripSocket.HasValue) throw new InvalidOperationException(variant.Id + ": support hand not on the rifle.");
+                                Vector3 target = angle == "head" ? body.HeadCentre : hand ? body.SupportGripSocket!.Value : new Vector3(0, crouch > 0 ? .65f : .92f, 0);
+                                Vector3 direction = angle == "front" ? Vector3.forward : angle == "back" ? Vector3.back
+                                    : angle == "support-hand" ? new Vector3(-.9f, .35f, .25f).normalized : angle == "support-hand-under" ? new Vector3(-.5f, -.6f, .6f).normalized
+                                    : new Vector3(.75f, .22f, .85f).normalized;
+                                camera.transform.position = target + direction * (angle == "head" ? .9f : hand ? .45f : 4.6f);
                                 camera.transform.LookAt(target);
                                 string path = Path.Combine(output, $"{variant.Id}-team{team}-{pose}-{angle}.png");
                                 ShooterFeatureBuild.Render(camera, path);

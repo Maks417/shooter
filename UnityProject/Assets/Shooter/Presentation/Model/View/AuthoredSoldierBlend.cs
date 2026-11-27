@@ -17,12 +17,20 @@ namespace Shooter.Presentation.View
     /// <summary>
     /// ADR-124 pure blend for an authored soldier: weights over the locomotion clip roles from the authoritative
     /// travel speed and heading (relative to facing), the crouch blend and the airborne blend, plus one shared gait
-    /// phase so every directional clip keeps its feet in step. Presentation only.
+    /// phase so every directional clip keeps its feet in step. The four-way split eases over
+    /// <see cref="DirectionSeconds"/> so a strafe reversal crossfades, and the phase rate follows the actual speed
+    /// against the playing clips' nominal speed so a slow strafe on a run clip does not skate (ADR-129). Presentation only.
     /// </summary>
     public sealed class AuthoredSoldierBlend
     {
         public const float WalkSpeed = 1.6f, RunSpeed = 4.2f, CrouchSpeed = 1.4f;
+        /// <summary>Time constant of the directional crossfade.</summary>
+        public const float DirectionSeconds = .12f;
+        /// <summary>Bounds of the stride-rate scale (speed over the playing clips' nominal speed).</summary>
+        public const float MinRate = .6f, MaxRate = 1.4f;
         private readonly float[] weights = new float[(int)SoldierClipRole.Count];
+        private float sf = 1f, sb, sl, sr;
+        private bool hasDirection;
         public float Phase { get; private set; }
         public ReadOnlySpan<float> Weights => weights;
 
@@ -46,6 +54,16 @@ namespace Shooter.Presentation.View
             float sum = wf + wb + wr + wl;
             if (sum < 1e-5f) { wf = 1f; sum = 1f; }
             wf /= sum; wb /= sum; wr /= sum; wl /= sum;
+            if (!hasDirection) { sf = wf; sb = wb; sl = wl; sr = wr; hasDirection = true; }
+            else
+            {
+                float k = 1f - (float)Math.Exp(-dt / DirectionSeconds);
+                sf += (wf - sf) * k; sb += (wb - sb) * k; sl += (wl - sl) * k; sr += (wr - sr) * k;
+                float total = sf + sb + sl + sr;
+                if (!(total > 1e-5f)) { sf = wf; sb = wb; sl = wl; sr = wr; total = 1f; }
+                sf /= total; sb /= total; sl /= total; sr /= total;
+            }
+            wf = sf; wb = sb; wl = sl; wr = sr;
 
             // Stand: idle → walk → run by speed. Crouch: idle → crouch walk.
             float move = Clamp01(speed / WalkSpeed);
@@ -69,17 +87,32 @@ namespace Shooter.Presentation.View
                 if (moved > 0f) weights[(int)SoldierClipRole.Idle] += moved;
             }
 
-            // Shared phase: the weighted cycle length of the moving roles drives one normalized clock.
-            float cycle = 0f, moving = 0f;
+            // Shared phase: the weighted cycle length of the moving roles drives one normalized clock, scaled by the
+            // speed over the nominal speed of the clips actually playing (after fallback).
+            float cycle = 0f, moving = 0f, nominal = 0f;
             for (int r = (int)SoldierClipRole.WalkForward; r < (int)SoldierClipRole.Count; r++)
             {
                 if (r == (int)SoldierClipRole.CrouchIdle || r == (int)SoldierClipRole.Airborne || weights[r] <= 0f) continue;
                 float length = cycleSeconds((SoldierClipRole)r);
-                if (length > 0f) { cycle += weights[r] * length; moving += weights[r]; }
+                if (length > 0f) { cycle += weights[r] * length; moving += weights[r]; nominal += weights[r] * NominalSpeed((SoldierClipRole)r); }
             }
             float period = moving > 1e-4f ? cycle / moving : Math.Max(0.5f, cycleSeconds(SoldierClipRole.Idle));
             if (!(period > 1e-3f)) period = 1f;
-            Phase = (Phase + dt / period) % 1f;
+            float rate = moving > 1e-4f ? Math.Max(MinRate, Math.Min(MaxRate, speed / (nominal / moving))) : 1f;
+            Rate = rate;
+            Phase = (Phase + dt * rate / period) % 1f;
+        }
+
+        /// <summary>Stride-rate scale applied on the last step (1 when nothing moves).</summary>
+        public float Rate { get; private set; } = 1f;
+
+        /// <summary>The speed a role's clip is authored for: walk, run or crouch walk.</summary>
+        public static float NominalSpeed(SoldierClipRole role)
+        {
+            if (role >= SoldierClipRole.WalkForward && role <= SoldierClipRole.WalkRight) return WalkSpeed;
+            if (role >= SoldierClipRole.RunForward && role <= SoldierClipRole.RunRight) return RunSpeed;
+            if (role >= SoldierClipRole.CrouchForward && role <= SoldierClipRole.CrouchRight) return CrouchSpeed;
+            return WalkSpeed;
         }
 
         private void Spread(SoldierClipRole forward, float amount, float wf, float wb, float wl, float wr)

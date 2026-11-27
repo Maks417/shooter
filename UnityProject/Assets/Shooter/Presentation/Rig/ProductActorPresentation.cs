@@ -127,6 +127,11 @@ namespace Shooter.Presentation.Rig
             public Float3 MuzzleSocket;
             public Float3 SupportSocket;
             public bool HasSupportSocket;
+            /// <summary>ADR-129 handguard cylinder (axis point and radius) at the support socket, from the gun's own LOD0 vertices.</summary>
+            public Float3 SupportAxis;
+            public float SupportRadius = AuthoredHandGrip.DefaultRadius;
+            public Float3 TriggerSocket;
+            public bool HasTriggerSocket;
         }
         private readonly Dictionary<string, WeaponMeshSet> weaponMeshes = new Dictionary<string, WeaponMeshSet>(StringComparer.Ordinal);
         /// <summary>ADR-107 rail-mounted sight meshes by key (<c>sight-&lt;sight&gt;-&lt;kind&gt;</c>): world LOD and arm's-length LOD0.</summary>
@@ -166,6 +171,18 @@ namespace Shooter.Presentation.Rig
         private MeshFilter? localCycleFilter;
         private SkinnedMeshRenderer? triggerHand;
         private SkinnedMeshRenderer? supportHand;
+        // ADR-129: licensed first-person arms cut from the local player's own authored body (replace the gloves above,
+        // whose hidden fp.hand.v2 bones stay the wrist, reach and elbow targets).
+        private AuthoredSoldierBody? fpArms;
+        private GameObject? fpArmsRoot;
+        private string? fpArmsKey;
+        private readonly float[] fpSupportCurls = new float[12];
+        private static readonly Vector3 FpShoulderRight = new Vector3(.19f, -.3f, 0f), FpShoulderLeft = new Vector3(-.21f, -.3f, .02f);
+        private const float TriggerGripRadius = .017f, GrenadeGripRadius = .03f;
+        /// <summary>The right-hand-grip socket is at the top of the grip; the palm wraps its middle.</summary>
+        private static readonly Vector3 TriggerGripDrop = new Vector3(0f, -.035f, -.008f);
+        /// <summary>The licensed first-person arms, when the authored bodies drive the view model (review and tests).</summary>
+        public AuthoredSoldierBody? FirstPersonArms => fpArms;
         private Shooter.Presentation.Fx.KnifeBladeTrail? bladeTrail;
         private Shooter.Presentation.Fx.GrenadeArcPresenter? grenadeArc;
         private static readonly Vector3 KnifeEdgeBase = new Vector3(0f, -.004f, .035f);
@@ -416,7 +433,7 @@ namespace Shooter.Presentation.Rig
                     }
                     // ADR-085: HUD weapon icons are traced from these same packaged LOD0 meshes.
                     silhouettes.Add(new WeaponSilhouetteSource(source.MeshKey, WeaponSilhouetteSource.SpanFor(source.MeshKey), silhouetteParts));
-                    if (source.Recipe != null) { var sockets = WeaponGeometry.Sockets(source.Recipe); set.SightSocket = FindSocket(sockets, "sight-eye"); set.MuzzleSocket = FindSocket(sockets, "muzzle"); set.SupportSocket = FindSocket(sockets, "left-hand-grip"); set.HasSupportSocket = true; }
+                    if (source.Recipe != null) { var sockets = WeaponGeometry.Sockets(source.Recipe); set.SightSocket = FindSocket(sockets, "sight-eye"); set.MuzzleSocket = FindSocket(sockets, "muzzle"); set.SupportSocket = FindSocket(sockets, "left-hand-grip"); set.HasSupportSocket = true; (set.SupportAxis, set.SupportRadius) = AuthoredHandGrip.MeasureHandguard(localData.Positions, set.SupportSocket); set.TriggerSocket = FindSocket(sockets, "right-hand-grip"); set.HasTriggerSocket = true; }
                     weaponMeshes[source.MeshKey] = set;
                     yield return 0;
                 }
@@ -513,6 +530,7 @@ namespace Shooter.Presentation.Rig
                 if (pair.Value.Root != null) DestroyObject(pair.Value.Root.gameObject);
             }
             avatars.Clear();
+            DisposeFirstPersonArms();
             ClearDroppedWeapons();
             if (localWeapon != null) localWeapon.gameObject.SetActive(false);
             aggregateMinArmClearance = float.MaxValue;
@@ -824,7 +842,16 @@ namespace Shooter.Presentation.Rig
                 float trigger = gun && reload <= 0f ? localView.CycleOpen01 : 0f;
                 PoseLocalHands(profile, shown, reloadPose, localView.SpecialSupportWrist, localView.SpecialSupportOpen, trigger);
                 // ADR-111: one-handed knife; the grenade rests in the throwing hand and the support hand appears for the pin.
-                supportHand!.enabled = FirstPersonSpecialActions.SupportHandVisible(shown, localView.Cooking, localView.CookSeconds);
+                bool supportVisible = FirstPersonSpecialActions.SupportHandVisible(shown, localView.Cooking, localView.CookSeconds);
+                // ADR-129: the licensed arms replace the procedural gloves, whose hidden bones remain the targets.
+                bool licensedArms = UseAuthoredBodies && EnsureFirstPersonArms(human);
+                triggerHand!.enabled = !licensedArms;
+                supportHand!.enabled = supportVisible && !licensedArms;
+                if (licensedArms)
+                {
+                    PoseFirstPersonArms(profile, shown, reloadPose, localView.SpecialSupportWrist, localView.SpecialSupportOpen, trigger, supportVisible);
+                    foreach (var renderer in fpArms!.Renderers) ApplyAmbient(renderer, visibility);
+                }
                 StepBladeTrail(shown, reducedMotion, dtSeconds);
                 StepGrenadeArc(ProductAuthorityActionView.IsGrenadeSlot(shown) && localView.Cooking && !localView.Throwing,
                     profile.FuseSeconds - localView.CookSeconds);
@@ -854,7 +881,107 @@ namespace Shooter.Presentation.Rig
                 localViewHuman = default;
             }
 
+            // ADR-129: the licensed arms show exactly when the view model does (alive, not hidden by a scope).
+            if (fpArmsRoot != null) fpArmsRoot.SetActive(localWeapon != null && localWeapon.gameObject.activeSelf);
             RefreshReviewAggregates();
+        }
+
+        /// <summary>ADR-129: (re)builds the first-person arms from the local player's authored body when its variant or team changes.</summary>
+        private bool EnsureFirstPersonArms(ActorLifecycleState human)
+        {
+            if (fpsCamera == null || !avatars.TryGetValue(human.EntityId.Value, out var avatar) || avatar.Authored == null) return false;
+            var shape = avatar.Authored.Shape;
+            string key = shape.Variant.Id + "/" + human.Team;
+            if (fpArms != null && fpArmsKey == key) return true;
+            DisposeFirstPersonArms();
+            if (shape.LeftHand == null || shape.RightHand == null)
+                throw new InvalidOperationException("ADR-129: hands of " + shape.Variant.Id + " not measured; no procedural-glove fallback.");
+            byte team = human.Team;
+            var variant = shape.Variant;
+            fpArmsRoot = new GameObject("FP licensed arms");
+            fpArmsRoot.transform.SetParent(fpsCamera.transform, false);
+            fpArms = new AuthoredSoldierBody(skinCatalog!, shape, fpArmsRoot.transform, human.EntityId.Value, m => RestyleAuthored(m, team, variant),
+                (team == 1 ? team1Gear : team2Gear)!, (team == 1 ? team1Paint : team2Paint)!);
+            fpArms.ConvertToFirstPersonArms(value => owned.Add(value));
+            fpArmsKey = key;
+            return true;
+        }
+
+        private void DisposeFirstPersonArms()
+        {
+            fpArms?.Dispose(); fpArms = null; fpArmsKey = null;
+            if (fpArmsRoot != null) DestroyObject(fpArmsRoot);
+            fpArmsRoot = null;
+        }
+
+        /// <summary>
+        /// ADR-129: trigger hand round the gun's pistol grip (or the knife or grenade in the fist), support palm under the
+        /// gun's own handguard and wrapped to its radius; reload, pin pull and other support tasks move the wrist with the
+        /// fp.hand.v2 reach and open the fingers. Elbows bend toward the rig's elbow binds.
+        /// </summary>
+        private void PoseFirstPersonArms(in WeaponVisualProfile profile, byte slot, in ReloadPose reloadPose, Float3 specialWrist,
+            float specialOpen, float trigger, bool supportVisible)
+        {
+            var arms = fpArms!; var shape = arms.Shape; var camera = fpsCamera!.transform; var weapon = localWeapon!;
+            var view = camera.rotation;
+            Vector3 forward = weapon.forward, up = weapon.up, right = weapon.right;
+            float scale = weapon.lossyScale.x;
+            weaponMeshes.TryGetValue(profile.MeshAssetKey, out var set);
+            bool gun = FirstPersonWeaponMechanics.HasMagazinePart(profile);
+            Vector3 rightShoulder = camera.TransformPoint(FpShoulderRight), leftShoulder = camera.TransformPoint(FpShoulderLeft);
+            // The arms take the view model's near-field scale, so hand and gun keep their proportions; radii in the
+            // curl solve stay unscaled for the same reason.
+            arms.BeginFirstPersonPose(view, (rightShoulder + leftShoulder) * .5f, scale);
+
+            var triggerFrame = AuthoredHandGrip.HandFrame(forward - up * .35f, right, false);
+            Vector3 triggerWrist;
+            float triggerRadius;
+            if (slot <= 1 && set != null && set.HasTriggerSocket)
+            {
+                triggerRadius = TriggerGripRadius;
+                triggerWrist = AuthoredHandGrip.SupportWrist(shape.RightHand!, triggerFrame, weapon.TransformPoint(V(set.TriggerSocket) + TriggerGripDrop), triggerRadius, scale);
+            }
+            else if (ProductAuthorityActionView.IsGrenadeSlot(slot))
+            {
+                // The grenade body is lathed round the prop origin: the palm wraps it there.
+                // Cradled from below with the palm up, so the grenade shows above the fingers.
+                triggerFrame = AuthoredHandGrip.HandFrame(forward * .6f - right * .4f, right * .5f - up * .8f, false);
+                triggerRadius = GrenadeGripRadius;
+                triggerWrist = AuthoredHandGrip.SupportWrist(shape.RightHand!, triggerFrame, weapon.position, triggerRadius, scale);
+            }
+            else
+            {
+                triggerRadius = .015f;
+                triggerWrist = handBones[0][2].position;
+            }
+            arms.PoseFirstPersonArm(0, view, rightShoulder, triggerWrist, handBones[0][1].position, triggerFrame,
+                AuthoredHandGrip.WrapCurls(shape.RightHand!, triggerRadius), gun ? .35f + .4f * trigger : 1f);
+
+            float open = gun ? Math.Max(reloadPose.SupportOpen01, specialOpen) : specialOpen;
+            Quaternion supportFrame;
+            Vector3 supportWrist;
+            float supportRadius;
+            if (slot == 0 && set != null && set.HasSupportSocket)
+            {
+                supportFrame = AuthoredHandGrip.HandFrame(right * .75f + forward * .35f + up * .1f, -up, true);
+                supportRadius = set.SupportRadius;
+                var reach = new Vector3(reloadPose.SupportWristOffset.X + specialWrist.X, reloadPose.SupportWristOffset.Y + specialWrist.Y,
+                    reloadPose.SupportWristOffset.Z + specialWrist.Z);
+                supportWrist = AuthoredHandGrip.SupportWrist(shape.LeftHand!, supportFrame, weapon.TransformPoint(V(set.SupportAxis)), supportRadius, scale)
+                    + weapon.TransformVector(reach);
+            }
+            else
+            {
+                // Pistol cup, grenade pin: the rig wrist already carries the reach.
+                supportFrame = AuthoredHandGrip.HandFrame(right * .8f + forward * .3f + up * .15f, -up - right * .3f, true);
+                supportRadius = .045f;
+                supportWrist = handBones[1][2].position;
+            }
+            var wrap = AuthoredHandGrip.WrapCurls(shape.LeftHand!, supportRadius);
+            float closed = 1f - .8f * Mathf.Clamp01(open);
+            for (int i = 0; i < fpSupportCurls.Length; i++) fpSupportCurls[i] = wrap[i] * closed;
+            arms.PoseFirstPersonArm(1, view, leftShoulder, supportWrist, handBones[1][1].position, supportFrame, fpSupportCurls);
+            arms.SetArmVisible(1, supportVisible);
         }
 
         private void RefreshReviewAggregates()
@@ -1119,14 +1246,17 @@ namespace Shooter.Presentation.Rig
             if (avatar.Authored != null)
             {
                 // ADR-124: clips drive legs/hips/spine; the solved upper body and the weapon ride the authored chest.
-                float localHeading = float.IsNaN(locomotion.HeadingRadians) || dying ? 0f
-                    : Mathf.DeltaAngle(yaw * Mathf.Rad2Deg, locomotion.HeadingRadians * Mathf.Rad2Deg) * Mathf.Deg2Rad;
+                // ADR-129: world travel; the body measures it against its own (bladed) facing, not the aim.
+                float travelYaw = dying ? float.NaN : locomotion.HeadingRadians;
                 Vector3 shifted = V(weaponPosition);
                 var grip = avatar.MeleeSeconds >= 0f || avatar.ThrowSeconds >= 0f ? SoldierGrip.None
                     : heldProfile.Family == WeaponVisualFamily.PrimaryGun ? SoldierGrip.Rifle
                     : heldProfile.Family == WeaponVisualFamily.Sidearm ? SoldierGrip.Pistol : SoldierGrip.None;
-                avatar.Authored.Pose(dtSeconds, dying ? 0f : speed, localHeading, crouching || slide > .5f ? 1f : 0f, dying ? 0f : locomotion.Airborne, dying,
-                    avatar.Bones, ref shifted, Q(weaponRotation), grip);
+                // ADR-129: off a reload, the support palm wraps the held gun's own handguard socket.
+                var support = grip == SoldierGrip.Rifle && avatar.ReloadPhase < 0f && weaponMeshes.TryGetValue(heldProfile.MeshAssetKey, out var heldSet) && heldSet.HasSupportSocket
+                    ? new SupportSocket(V(heldSet.SupportAxis), heldSet.SupportRadius) : default;
+                avatar.Authored.Pose(dtSeconds, dying ? 0f : speed, travelYaw, crouching || slide > .5f ? 1f : 0f, dying ? 0f : locomotion.Airborne, dying,
+                    avatar.Bones, ref shifted, Q(weaponRotation), grip, support);
                 weaponPosition = new Float3(shifted.x, shifted.y, shifted.z);
                 foreach (var renderer in avatar.Authored.Renderers) ApplyAmbient(renderer, visibility);
             }

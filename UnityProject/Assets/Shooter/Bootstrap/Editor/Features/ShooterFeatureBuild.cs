@@ -290,6 +290,9 @@ public static class ShooterFeatureBuild
                 presentation.Sync(snapshot,lifecycle,null,0,id,true,0,Array.Empty<CombatEvent>(),10);
                 string name=new[]{"rifle","pistol","knife","grenade"}[slot];
                 RenderHandPose(camera,Path.Combine(output,name+"-ready.png"));
+                // ADR-129 review: the same pose from beside and below the view, to judge arm placement and grips.
+                RenderHandPose(camera,Path.Combine(output,name+"-ready-side.png"),new Vector3(-.75f,-.05f,.45f));
+                RenderHandPose(camera,Path.Combine(output,name+"-ready-right.png"),new Vector3(.75f,-.15f,.45f));
                 if(slot>=2)
                 {
                     // ADR-111: one-handed knife/grenade rest after the aim blend and idle layers settle (no aim held).
@@ -330,28 +333,43 @@ public static class ShooterFeatureBuild
                 }
             }
             File.WriteAllText(Path.Combine(output,"scope.txt"),"Editor packaged Low visual diagnostic; fixed camera and copied authority/action fixtures, no gameplay acceptance. fp.hand.v2 / geometry.weapon " + WeaponRecipe.GeneratorVersion + " / ADR-099 choreography");
-            Debug.Log("SHOOTER_HANDLING_CAPTURE files=19");
+            Debug.Log("SHOOTER_HANDLING_CAPTURE files=27");
         }
         finally { sky?.Dispose(); UnityEngine.Object.DestroyImmediate(root); }
     });
 
-    private static void RenderHandPose(Camera camera,string path)
+    private static void RenderHandPose(Camera camera,string path,Vector3? sideOffset=null)
     {
         // Synchronous Editor render requests can retain skin matrices from the previous pose.
         // Bake the actual current bones, as the soldier diagnostic already does.
-        var sources=camera.GetComponentsInChildren<SkinnedMeshRenderer>();
+        // Only what is drawn: hidden gloves (ADR-129 licensed arms) and a hidden support arm stay hidden.
+        var sources=camera.GetComponentsInChildren<SkinnedMeshRenderer>().Where(r=>r.enabled).ToArray();
         var proxies=new List<GameObject>();var meshes=new List<Mesh>();
         try
         {
             foreach(var source in sources)
             {
+                // BakeMesh without scale is in the renderer's rotated, unscaled frame: imported bodies carry FBX scale 100.
                 var mesh=new Mesh();source.BakeMesh(mesh);meshes.Add(mesh);
-                var proxy=new GameObject("Baked diagnostic hand");proxy.transform.SetParent(source.transform,false);proxies.Add(proxy);
+                var proxy=new GameObject("Baked diagnostic hand");proxy.transform.SetPositionAndRotation(source.transform.position,source.transform.rotation);proxies.Add(proxy);
                 proxy.AddComponent<MeshFilter>().sharedMesh=mesh;
                 var renderer=proxy.AddComponent<MeshRenderer>();renderer.sharedMaterials=source.sharedMaterials;renderer.shadowCastingMode=source.shadowCastingMode;
                 source.enabled=false;
             }
-            Render(camera,path);
+            if(sideOffset.HasValue)
+            {
+                // A second camera beside the view, looking at the view model; the view camera is drawn as nothing.
+                var side=new GameObject("Side review camera").AddComponent<Camera>();
+                try
+                {
+                    side.CopyFrom(camera);side.nearClipPlane=.01f;side.fieldOfView=45;
+                    var focus=camera.transform.TransformPoint(new Vector3(.05f,-.15f,.3f));
+                    side.transform.position=camera.transform.TransformPoint(sideOffset.Value);side.transform.LookAt(focus,camera.transform.up);
+                    Render(side,path);
+                }
+                finally{UnityEngine.Object.DestroyImmediate(side.gameObject);}
+            }
+            else Render(camera,path);
         }
         finally
         {

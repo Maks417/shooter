@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using NUnit.Framework;
 using Shooter.Contracts;
 using Shooter.Game.Contracts;
@@ -264,6 +265,58 @@ namespace Shooter.Tests
                     Assert.That(weapon.Find("FP magazine").gameObject.activeSelf, Is.EqualTo(slot < 2));
                     Assert.That(weapon.Find("FP cycle").gameObject.activeSelf, Is.EqualTo(slot < 2));
                 }
+            }
+            finally { UnityEngine.Object.DestroyImmediate(root); }
+        }
+
+        /// <summary>
+        /// ADR-129: with the authored bodies on, the view model draws the local player's own licensed arms (cut to the
+        /// arms, no shadows) instead of the packaged gloves; both wrists reach their grips on every slot, the support arm
+        /// follows the packaged hand's visibility, and session teardown removes them.
+        /// </summary>
+        [Test]
+        public void LicensedArmsReplaceTheGlovesAndReachEveryGrip()
+        {
+            var root = new GameObject("Licensed first-person arms test");
+            try
+            {
+                var camera = new GameObject("Camera").AddComponent<Camera>();
+                camera.transform.SetParent(root.transform);
+                camera.nearClipPlane = .05f; // the product camera's (ProductSessionView)
+                var presentation = ProductActorPresentation.Create(root.transform, camera);
+                presentation.BindPackagedVisuals(PackagedVisualPayloads.FromBuild(MapPackageBuilder.Build("training-compound", "low",
+                    ContentIdentity.Hash(System.Text.Encoding.ASCII.GetBytes("fp-licensed-arms")))));
+                var lifecycle = new Lifecycle();
+                for (byte slot = 0; slot < 4; slot++)
+                {
+                    var id = new EntityId((ulong)slot + 1);
+                    lifecycle.State = new ActorLifecycleState(id, 1, true, 100, default, 0, 0, slot, 30, 90);
+                    var snapshot = new MatchViewSnapshot(1, 10, 10, 53990, GameMatchPhase.Playing, MatchOutcome.None, FinishReason.None, 0, 0,
+                        new[] { new ParticipantState(new ParticipantId(1), "Human", 1, true, id, new LifeId((uint)slot + 1), true, 0, 0, 0) }, 0);
+                    presentation.Sync(snapshot, lifecycle, null, 0, id, false, .016f, Array.Empty<CombatEvent>(), 10);
+                    var arms = presentation.FirstPersonArms;
+                    Assert.That(arms, Is.Not.Null, "slot " + slot + ": licensed arms missing");
+                    Assert.That(arms!.IsFirstPersonArms, Is.True);
+                    foreach (var glove in camera.GetComponentsInChildren<SkinnedMeshRenderer>(true).Where(r => r.name.Contains("glove and sleeve")))
+                        Assert.That(glove.enabled, Is.False, "slot " + slot + ": packaged glove still drawn");
+                    var drawn = arms.Renderers.OfType<SkinnedMeshRenderer>().ToList();
+                    Assert.That(drawn.Count, Is.GreaterThanOrEqualTo(2));
+                    Assert.That(drawn.All(r => r.shadowCastingMode == UnityEngine.Rendering.ShadowCastingMode.Off), Is.True);
+                    Assert.That(arms.Renderers.OfType<MeshRenderer>(), Is.Empty, "generated gear must not reach the view model");
+                    Assert.That(arms.ArmWristError[0], Is.LessThan(.015f), "slot " + slot + ": trigger wrist off its grip");
+                    if (slot < 2) Assert.That(arms.ArmWristError[1], Is.LessThan(.015f), "slot " + slot + ": support wrist off its grip");
+                    for (int side = 0; side < 2; side++)
+                    {
+                        var wrist = camera.transform.InverseTransformPoint(arms.ArmWrist(side));
+                        if (side == 1 && slot >= 2) continue;
+                        Assert.That(wrist.z, Is.GreaterThan(camera.nearClipPlane), $"slot {slot} side {side}: wrist behind the near plane");
+                    }
+                    bool supportShown = drawn.Where(r => r.name.Contains("FP left arm")).All(r => r.enabled);
+                    Assert.That(supportShown, Is.EqualTo(slot < 2), "slot " + slot + ": support arm visibility");
+                }
+                presentation.ClearAll();
+                Assert.That(presentation.FirstPersonArms, Is.Null);
+                Assert.That(camera.transform.Find("FP licensed arms"), Is.Null, "teardown must remove the licensed arms");
             }
             finally { UnityEngine.Object.DestroyImmediate(root); }
         }

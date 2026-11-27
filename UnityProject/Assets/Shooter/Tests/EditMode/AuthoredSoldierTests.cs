@@ -5,6 +5,7 @@ using System.Linq;
 using NUnit.Framework;
 using Shooter.Contracts;
 using Shooter.Generation;
+using Shooter.Generation.Environment;
 using Shooter.Presentation.Rig;
 using Shooter.Presentation.View;
 using Shooter.Simulation.Pose;
@@ -90,7 +91,7 @@ namespace Shooter.Tests
                         for (int j = 0; j < semantic.Length; j++)
                             semantic[j].SetPositionAndRotation(V(pose.WorldPositions[j]), Q(pose.WorldRotations[j]));
                         weapon = V(pose.WeaponPosition);
-                        body.Pose(1f / 60, speed, 0f, crouch ? 1f : 0f, 0f, false, semantic, ref weapon, Q(pose.WeaponRotation));
+                        body.Pose(1f / 60, speed, speed > 0f ? yaw : float.NaN, crouch ? 1f : 0f, 0f, false, semantic, ref weapon, Q(pose.WeaponRotation));
                     }
 
                     var volumes = new List<HitVolume>();
@@ -107,6 +108,109 @@ namespace Shooter.Tests
                 }
                 finally { body.Dispose(); }
             }
+        }
+
+        /// <summary>
+        /// ADR-129: a bot strafing at its fixed aim plays the clip that matches its world travel as seen from the drawn
+        /// (bladed) body, so the legs step where it moves instead of 35 degrees off.
+        /// </summary>
+        [TestCase(90f)]
+        [TestCase(-90f)]
+        [TestCase(180f)]
+        [TestCase(45f)]
+        public void StrafeClipsFollowTheWorldTravelFromTheDrawnFacing(float travelOffsetDegrees)
+        {
+            var catalog = SoldierSkinCatalog.Load();
+            var rifle = WeaponRecipe.Parse(File.ReadAllBytes(Path.Combine(Application.dataPath, "Shooter/Generation/FeatureRecipes/rifle.json")));
+            var shader = Shader.Find("Universal Render Pipeline/Lit");
+            var gearMaterials = Enumerable.Range(0, 4).Select(_ => Track(new Material(shader))).ToArray();
+            var variant = catalog.Variants[0];
+            var shape = AuthoredSoldierBody.Prepare(catalog, variant, Upload, o => created.Add(o));
+            var root = Track(new GameObject("Authored strafe test")).transform;
+            var semantic = BuildSemantic(root);
+            var body = new AuthoredSoldierBody(catalog, shape, root, 7, m => m, gearMaterials, gearMaterials.Take(3).ToArray());
+            try
+            {
+                const float yaw = 0.7f, speed = 3.5f;
+                float travel = yaw + travelOffsetDegrees * Mathf.Deg2Rad;
+                var motion = new SoldierMotion(rifle, new ShootingPosture());
+                var ground = new Flat();
+                double distance = 0;
+                for (int i = 0; i < 180; i++)
+                {
+                    distance += speed / 60.0;
+                    var feet = new Float3(Mathf.Sin(travel) * (float)distance, 0, Mathf.Cos(travel) * (float)distance);
+                    var pose = motion.Evaluate(new SoldierMotionInput(feet, yaw, distance, speed, 0f, 0f, 0f, -1f, i == 0), ground);
+                    root.position = new Vector3(feet.X, feet.Y, feet.Z);
+                    for (int j = 0; j < semantic.Length; j++)
+                        semantic[j].SetPositionAndRotation(V(pose.WorldPositions[j]), Q(pose.WorldRotations[j]));
+                    var weapon = V(pose.WeaponPosition);
+                    body.Pose(1f / 60, speed, travel, 0f, 0f, false, semantic, ref weapon, Q(pose.WeaponRotation));
+                }
+                float played = Mathf.DeltaAngle(0f, body.DrawnYawDegrees + body.ClipHeadingDegrees);
+                Assert.That(Mathf.Abs(Mathf.DeltaAngle(played, travel * Mathf.Rad2Deg)), Is.LessThan(1f),
+                    $"drawn {body.DrawnYawDegrees:F1} + clip {body.ClipHeadingDegrees:F1} vs travel {travel * Mathf.Rad2Deg:F1}");
+                // The four-way split must lean the way the body really moves.
+                float h = body.ClipHeadingDegrees * Mathf.Deg2Rad;
+                float side = body.ClipWeight(SoldierClipRole.RunRight) + body.ClipWeight(SoldierClipRole.WalkRight)
+                    - body.ClipWeight(SoldierClipRole.RunLeft) - body.ClipWeight(SoldierClipRole.WalkLeft);
+                if (Mathf.Abs(Mathf.Sin(h)) > .3f) Assert.That(Mathf.Sign(side), Is.EqualTo(Mathf.Sign(Mathf.Sin(h))), "side clip weight " + side);
+            }
+            finally { body.Dispose(); }
+        }
+
+        /// <summary>
+        /// ADR-129: on every long gun, every variant lays its support palm on the gun's own handguard socket and wraps
+        /// the fingers round it (fingertips on the handguard surface, not curled in the air beyond it).
+        /// </summary>
+        [TestCase(0f)]
+        [TestCase(3.5f)]
+        public void SupportHandWrapsEveryHandguard(float speed)
+        {
+            var catalog = SoldierSkinCatalog.Load();
+            var rifle = WeaponRecipe.Parse(File.ReadAllBytes(Path.Combine(Application.dataPath, "Shooter/Generation/FeatureRecipes/rifle.json")));
+            var shader = Shader.Find("Universal Render Pipeline/Lit");
+            var gearMaterials = Enumerable.Range(0, 4).Select(_ => Track(new Material(shader))).ToArray();
+            var guns = WeaponMeshCatalog.All.Where(g => g.Recipe != null && g.Recipe.IsLongGun).ToList();
+            Assert.That(guns, Is.Not.Empty);
+            var report = new List<string>();
+            foreach (var variant in catalog.Variants)
+            {
+                var shape = AuthoredSoldierBody.Prepare(catalog, variant, Upload, o => created.Add(o));
+                Assert.That(shape.LeftHand, Is.Not.Null, variant.Id + ": support hand not measured");
+                foreach (var gun in guns)
+                {
+                    var grip = WeaponGeometry.Sockets(gun.Recipe!).First(s => s.Id == "left-hand-grip").Position;
+                    var (socket, radius) = AuthoredHandGrip.MeasureHandguard(WeaponGeometry.Build(gun.Recipe!).Lods[0].Positions, grip);
+                    var root = Track(new GameObject("Authored grip test")).transform;
+                    var semantic = BuildSemantic(root);
+                    var body = new AuthoredSoldierBody(catalog, shape, root, 7, m => m, gearMaterials, gearMaterials.Take(3).ToArray());
+                    try
+                    {
+                        var motion = new SoldierMotion(rifle, new ShootingPosture());
+                        double distance = 0;
+                        Quaternion weaponRotation = Quaternion.identity;
+                        for (int i = 0; i < 60; i++)
+                        {
+                            distance += speed / 60.0;
+                            var pose = motion.Evaluate(new SoldierMotionInput(default, 0f, distance, speed, 0f, 0f, 0f, -1f, i == 0), new Flat());
+                            for (int j = 0; j < semantic.Length; j++)
+                                semantic[j].SetPositionAndRotation(V(pose.WorldPositions[j]), Q(pose.WorldRotations[j]));
+                            var weapon = V(pose.WeaponPosition);
+                            weaponRotation = Q(pose.WeaponRotation);
+                            body.Pose(1f / 60, speed, speed > 0f ? 0f : float.NaN, 0f, 0f, false, semantic, ref weapon, weaponRotation,
+                                SoldierGrip.Rifle, new SupportSocket(V(socket), radius));
+                        }
+                        Assert.That(body.SupportGripSocket.HasValue, Is.True, $"{variant.Id}/{gun.MeshKey}: support hand not on the gun");
+                        float gap = body.SupportFingertipGap(weaponRotation * Vector3.forward);
+                        report.Add($"{variant.Id}/{gun.MeshKey} r={radius * 1000:F0}mm wrist={body.LeftGripError * 1000:F0}mm tips={gap * 1000:F0}mm");
+                        Assert.That(body.LeftGripError, Is.LessThan(.02f), $"{variant.Id}/{gun.MeshKey}: wrist {body.LeftGripError:F3} m off its grip target");
+                        Assert.That(gap, Is.LessThan(.015f), $"{variant.Id}/{gun.MeshKey}: fingertips {gap:F3} m off the handguard (r {radius:F3})");
+                    }
+                    finally { body.Dispose(); }
+                }
+            }
+            TestContext.WriteLine(string.Join("\n", report));
         }
 
         private Transform[] BuildSemantic(Transform root)

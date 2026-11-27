@@ -50,6 +50,10 @@ namespace Shooter.Presentation.Rig
             public readonly Dictionary<string, Mesh> Copies = new Dictionary<string, Mesh>(StringComparer.Ordinal);
             /// <summary>T-pose world rotation of each mapped finger bone (semantic hand frame = identity at bind).</summary>
             public readonly Dictionary<HumanBodyBones, Quaternion> FingerBind = new Dictionary<HumanBodyBones, Quaternion>();
+            /// <summary>ADR-129 measured hands (palm, knuckles, finger segments) for the wrap grip; null when a finger is unmapped.</summary>
+            public AuthoredHandGrip.Geometry? LeftHand, RightHand;
+            /// <summary>ADR-129 first-person arm cuts per body renderer name (right, left); null when a side has no triangles.</summary>
+            public readonly Dictionary<string, (Mesh? right, Mesh? left)> ArmMeshes = new Dictionary<string, (Mesh? right, Mesh? left)>(StringComparer.Ordinal);
         }
 
         /// <summary>Painted body regions; also the submesh order of a painted mesh.</summary>
@@ -241,6 +245,8 @@ namespace Shooter.Presentation.Rig
                     var bone = animator.GetBoneTransform(finger);
                     if (bone != null) shape.FingerBind[finger] = bone.rotation;
                 }
+                shape.LeftHand = AuthoredHandGrip.Measure(animator, true, shape.Scale);
+                shape.RightHand = AuthoredHandGrip.Measure(animator, false, shape.Scale);
 
                 // Hidden material slots (hair under a generated helmet): empty those triangles and skip their vertices below.
                 var keep = new Dictionary<SkinnedMeshRenderer, bool[]>();
@@ -263,6 +269,29 @@ namespace Shooter.Presentation.Rig
                         if (sub < mats.Length && mats[sub] != null && variant.HideMaterials.Any(p => Matches(mats[sub].name, p))) copy.SetTriangles(Array.Empty<int>(), sub, false);
                     own(copy);
                     shape.Trimmed[smr.name] = copy;
+                }
+
+                // ADR-129: palm depth from the T-posed mesh (palm down): the lowest skin under the knuckle half of each palm.
+                foreach (var (geometry, handBone) in new[] { (shape.LeftHand, HumanBodyBones.LeftHand), (shape.RightHand, HumanBodyBones.RightHand) })
+                {
+                    if (geometry == null) continue;
+                    var handTransform = B(handBone);
+                    float k = Mathf.Abs(geometry.Knuckles.x);
+                    var depths = new List<float>();
+                    foreach (var smr in bodies)
+                    {
+                        var world = bakedWorld[smr]; var weights = smr.sharedMesh.boneWeights; var bonesOf = smr.bones;
+                        for (int i = 0; i < world.Length && i < weights.Length; i++)
+                        {
+                            if (Dominant(weights[i], bonesOf) != handTransform) continue;
+                            var offset = geometry.ToFrame(world[i] - handTransform.position) * shape.Scale;
+                            float along = Mathf.Abs(offset.x);
+                            if (along < .5f * k || along > k || Mathf.Sign(offset.x) != Mathf.Sign(geometry.Knuckles.x) || offset.y >= 0f) continue;
+                            depths.Add(-offset.y);
+                        }
+                    }
+                    // The palm skin, not the thenar or a stray cuff vertex: the 75th percentile of the palm-side depths.
+                    if (depths.Count > 0) { depths.Sort(); geometry.PalmSkin = Mathf.Clamp(depths[(int)(depths.Count * .75f)], .004f, .04f); }
                 }
 
                 // Regions per vertex for every body renderer; painted renderers also get the generated clothing layer.
@@ -503,9 +532,12 @@ namespace Shooter.Presentation.Rig
         /// <summary>
         /// Plays the clips for this frame, then lays the procedural upper body over them. <paramref name="semantic"/>
         /// holds the solved SoldierMotion joints; the weapon pose is shifted with the chest so it stays in the hands.
+        /// <paramref name="travelYawRadians"/> is the world travel direction (atan2(x, z); NaN when none). The clip
+        /// direction is measured against the drawn facing, which follows the bladed pelvis rather than the aim (ADR-129).
         /// </summary>
-        public void Pose(float dtSeconds, float speed, float localHeadingRadians, float crouch, float airborne, bool dying,
-            Transform[] semantic, ref Vector3 weaponPosition, Quaternion weaponRotation, SoldierGrip grip = SoldierGrip.Rifle)
+        public void Pose(float dtSeconds, float speed, float travelYawRadians, float crouch, float airborne, bool dying,
+            Transform[] semantic, ref Vector3 weaponPosition, Quaternion weaponRotation, SoldierGrip grip = SoldierGrip.Rifle,
+            SupportSocket support = default)
         {
             float dt = float.IsFinite(dtSeconds) && dtSeconds > 0f ? dtSeconds : 0f;
             // Facing follows the solved pelvis (yaw only); a dying body keeps the last living facing.
@@ -514,7 +546,7 @@ namespace Shooter.Presentation.Rig
                 var forward = Vector3.ProjectOnPlane(semantic[1].rotation * Vector3.forward, Vector3.up);
                 if (forward.sqrMagnitude > 1e-6f) facingYaw = Mathf.Atan2(forward.x, forward.z) * Mathf.Rad2Deg;
             }
-            float heading = float.IsFinite(localHeadingRadians) ? localHeadingRadians * Mathf.Rad2Deg : 0f;
+            float heading = float.IsFinite(travelYawRadians) && !dying ? Mathf.DeltaAngle(facingYaw, travelYawRadians * Mathf.Rad2Deg) : 0f;
             bool reverse = false;
             float wantedLegYaw = 0f;
             // When no clip covers the travel direction for this gait, the legs turn toward it (backpedal plays the
@@ -531,6 +563,7 @@ namespace Shooter.Presentation.Rig
             }
             legYaw = Mathf.MoveTowardsAngle(legYaw, wantedLegYaw, 300f * dt);
             Instance.transform.rotation = Quaternion.Euler(0f, facingYaw + legYaw, 0f) * Shape.Facing;
+            ClipHeadingDegrees = heading;
             blend.Step(dt, speed, heading * Mathf.Deg2Rad, crouch, airborne, RoleLength);
             idleTime += dt;
             var weights = blend.Weights;
@@ -561,13 +594,13 @@ namespace Shooter.Presentation.Rig
             }
             graph.Evaluate(0f);
 
-            if (upperWeight > 1e-3f) LayUpperBody(semantic, ref weaponPosition, weaponRotation, grip);
+            if (upperWeight > 1e-3f) LayUpperBody(semantic, ref weaponPosition, weaponRotation, grip, support);
             PlaceGear();
         }
 
         private float RoleLength(SoldierClipRole role) => hasRole[(int)role] ? catalog.Roles[(int)role]!.length : 0f;
 
-        private void LayUpperBody(Transform[] semantic, ref Vector3 weaponPosition, Quaternion weaponRotation, SoldierGrip grip)
+        private void LayUpperBody(Transform[] semantic, ref Vector3 weaponPosition, Quaternion weaponRotation, SoldierGrip grip, SupportSocket support)
         {
             float w = upperWeight;
             // 1. Chest, neck, head, clavicles and arms take the solver's rotations (aim, grips, reload, knife, grenade).
@@ -588,8 +621,8 @@ namespace Shooter.Presentation.Rig
                 Quaternion leftFootRotation = bones[17]!.rotation, rightFootRotation = bones[21]!.rotation;
                 bones[1]!.position += delta;
                 var forward = Instance.transform.rotation * Quaternion.Inverse(Shape.Facing) * Vector3.forward;
-                SolveLimb(bones[15]!, bones[16]!, bones[17]!, leftFoot, bones[16]!.position + forward * .5f, leftFootRotation, 1f);
-                SolveLimb(bones[19]!, bones[20]!, bones[21]!, rightFoot, bones[20]!.position + forward * .5f, rightFootRotation, 1f);
+                AuthoredHandGrip.SolveLimb(bones[15]!, bones[16]!, bones[17]!, leftFoot, bones[16]!.position + forward * .5f, leftFootRotation, 1f);
+                AuthoredHandGrip.SolveLimb(bones[19]!, bones[20]!, bones[21]!, rightFoot, bones[20]!.position + forward * .5f, rightFootRotation, 1f);
             }
 
             // 3. The weapon and hand targets ride the authored chest; both hands are solved onto the grips.
@@ -599,23 +632,68 @@ namespace Shooter.Presentation.Rig
             // Hand frames (semantic glove convention: fingers along ±X, back of the hand +Y). On a gun they come from
             // the weapon axes, since the solver's hand rotation only places the wrist.
             Quaternion leftHand = semantic[10].rotation, rightHand = semantic[14].rotation;
+            float[]? leftCurls = null;
+            SupportGripSocket = null;
             if (grip != SoldierGrip.None)
             {
                 Vector3 forward = weaponRotation * Vector3.forward, up = weaponRotation * Vector3.up, right = weaponRotation * Vector3.right;
-                rightHand = HandFrame(forward * .55f - up * .65f - right * .2f, right, false);
+                rightHand = AuthoredHandGrip.HandFrame(forward * .55f - up * .65f - right * .2f, right, false);
                 if (grip == SoldierGrip.Rifle)
                 {
-                    leftHand = HandFrame(right * .75f + forward * .35f + up * .1f, -up, true);
+                    leftHand = AuthoredHandGrip.HandFrame(right * .75f + forward * .35f + up * .1f, -up, true);
+                    // ADR-129: on the gun, the palm (not the wrist) lies under the held weapon's own handguard socket and
+                    // the fingers wrap its radius. Reload and other support tasks keep the solver's wrist target.
+                    if (support.Active && Shape.LeftHand != null)
+                    {
+                        var socket = weaponPosition + weaponRotation * support.Local;
+                        leftTarget = AuthoredHandGrip.SupportWrist(Shape.LeftHand, leftHand, socket, support.Radius);
+                        leftCurls = AuthoredHandGrip.WrapCurls(Shape.LeftHand, support.Radius);
+                        SupportGripSocket = socket;
+                        SupportGripRadius = support.Radius;
+                    }
                     // Short-armed bodies slide the support hand back along the handguard until it can reach.
                     float reach = (Vector3.Distance(bones[8]!.position, bones[9]!.position) + Vector3.Distance(bones[9]!.position, bones[10]!.position)) * .985f;
-                    for (int i = 0; i < 12 && Vector3.Distance(bones[8]!.position, leftTarget) > reach; i++) leftTarget -= forward * .02f;
+                    for (int i = 0; i < 12 && Vector3.Distance(bones[8]!.position, leftTarget) > reach; i++)
+                    {
+                        leftTarget -= forward * .02f;
+                        if (SupportGripSocket.HasValue) SupportGripSocket = SupportGripSocket.Value - forward * .02f;
+                    }
                 }
             }
-            SolveLimb(bones[8]!, bones[9]!, bones[10]!, leftTarget, semantic[9].position + shift, leftHand * Shape.BindOffset[10]!.Value, w);
-            SolveLimb(bones[12]!, bones[13]!, bones[14]!, rightTarget, semantic[13].position + shift, rightHand * Shape.BindOffset[14]!.Value, w);
-            LeftGripError = Vector3.Distance(bones[10]!.position, semantic[10].position + shift);
+            var supportTarget = leftTarget;
+            AuthoredHandGrip.SolveLimb(bones[8]!, bones[9]!, bones[10]!, leftTarget, semantic[9].position + shift, HandPose(true, leftHand, Shape.BindOffset[10]!.Value), w);
+            AuthoredHandGrip.SolveLimb(bones[12]!, bones[13]!, bones[14]!, rightTarget, semantic[13].position + shift, HandPose(false, rightHand, Shape.BindOffset[14]!.Value), w);
+            LeftGripError = Vector3.Distance(bones[10]!.position, leftCurls != null ? supportTarget : semantic[10].position + shift);
             RightGripError = Vector3.Distance(bones[14]!.position, rightTarget);
-            CurlFingers(leftHand, rightHand, w);
+            CurlFingers(leftHand, rightHand, w, leftCurls);
+        }
+
+        /// <summary>World handguard axis point the support hand is wrapped round on the last pose (null when not on the gun).</summary>
+        public Vector3? SupportGripSocket { get; private set; }
+        public float SupportGripRadius { get; private set; }
+
+        /// <summary>
+        /// Review metric: the worst distance of a support fingertip (distal joint plus its measured length along the bone)
+        /// from the handguard surface, metres; NaN when the hand is not on the gun.
+        /// </summary>
+        public float SupportFingertipGap(Vector3 weaponForward)
+        {
+            if (!SupportGripSocket.HasValue || Shape.LeftHand == null) return float.NaN;
+            var axisPoint = SupportGripSocket.Value; var axis = weaponForward.normalized;
+            float worst = 0f;
+            for (int f = 0; f < 4; f++)
+            {
+                var chain = AuthoredHandGrip.FingerChains[f];
+                var distal = animator.GetBoneTransform(chain[2]);
+                var intermediate = animator.GetBoneTransform(chain[1]);
+                if (distal == null || intermediate == null) continue;
+                // The rig's distal end bone when it has one; otherwise the intermediate direction carried on.
+                var tip = distal.childCount > 0 ? distal.GetChild(0).position
+                    : distal.position + (distal.position - intermediate.position).normalized * Shape.LeftHand.Segments[f, 2];
+                var offset = Vector3.ProjectOnPlane(tip - axisPoint, axis);
+                worst = Mathf.Max(worst, Mathf.Abs(offset.magnitude - SupportGripRadius - AuthoredHandGrip.FingerHalfThickness));
+            }
+            return worst;
         }
 
         private static readonly HumanBodyBones[] FingerBones =
@@ -636,52 +714,30 @@ namespace Shooter.Presentation.Rig
         /// Grip: fingers curl round the semantic hand frame's forward axis (palm down, fingers along ±X at bind);
         /// thumbs keep their bind line against the palm. Replaces whatever open hand the locomotion clips carry.
         /// </summary>
-        private void CurlFingers(Quaternion leftHand, Quaternion rightHand, float w)
+        private static readonly float[] ThumbCurl = { 10f, 25f, 40f }, FistCurl = { 55f, 115f, 150f };
+
+        /// <summary>World rotation of a hand or finger bone (T-pose rotation <paramref name="bind"/>) with the semantic hand frame at <paramref name="frame"/>, relative to the measured bind frame (ADR-129).</summary>
+        private Quaternion HandPose(bool left, Quaternion frame, Quaternion bind)
+        {
+            var hand = left ? Shape.LeftHand : Shape.RightHand;
+            return hand != null ? hand.Pose(frame, bind) : frame * bind;
+        }
+
+        private void CurlFingers(Quaternion leftHand, Quaternion rightHand, float w, float[]? leftWrap = null)
         {
             foreach (var (finger, bone, bind) in fingers)
             {
                 bool left = finger <= HumanBodyBones.LeftLittleDistal;
                 var hand = left ? leftHand : rightHand;
-                int segment = ((int)finger - (int)HumanBodyBones.LeftThumbProximal) % 3;
-                bool thumb = finger == HumanBodyBones.LeftThumbProximal || finger == HumanBodyBones.LeftThumbIntermediate || finger == HumanBodyBones.LeftThumbDistal
-                    || finger == HumanBodyBones.RightThumbProximal || finger == HumanBodyBones.RightThumbIntermediate || finger == HumanBodyBones.RightThumbDistal;
-                float curl = thumb ? new[] { 10f, 25f, 40f }[segment] : new[] { 55f, 115f, 150f }[segment];
+                int index = (int)finger - (int)(left ? HumanBodyBones.LeftThumbProximal : HumanBodyBones.RightThumbProximal);
+                int segment = index % 3, digit = index / 3; // digit 0 thumb, 1 index .. 4 little
+                bool thumb = digit == 0;
+                // ADR-129: the support fingers wrap the handguard radius when one is given; otherwise a fixed fist.
+                float curl = thumb ? ThumbCurl[segment] : left && leftWrap != null ? leftWrap[(digit - 1) * 3 + segment] : FistCurl[segment];
                 // Right fingers (+X) curl toward -Y about +Z with a negative angle; left fingers (-X) with a positive one.
-                var target = hand * Quaternion.AngleAxis(left ? curl : -curl, thumb ? Vector3.right * (left ? -1f : 1f) : Vector3.forward) * bind;
+                var target = HandPose(left, hand * Quaternion.AngleAxis(left ? curl : -curl, thumb ? Vector3.right * (left ? -1f : 1f) : Vector3.forward), bind);
                 bone.rotation = Quaternion.Slerp(bone.rotation, target, w);
             }
-        }
-
-        /// <summary>Hand rotation in the semantic glove convention whose fingers point along <paramref name="fingers"/> and whose back faces <paramref name="back"/>.</summary>
-        private static Quaternion HandFrame(Vector3 fingers, Vector3 back, bool left)
-        {
-            var x = (left ? -fingers : fingers).normalized;
-            var y = Vector3.ProjectOnPlane(back, x).normalized;
-            if (y.sqrMagnitude < 1e-6f) return Quaternion.identity;
-            return Quaternion.LookRotation(Vector3.Cross(x, y), y);
-        }
-
-        /// <summary>Analytic two-bone solve: the root and middle joints turn so the end reaches the target, bending toward the pole.</summary>
-        private static void SolveLimb(Transform upper, Transform lower, Transform end, Vector3 target, Vector3 pole, Quaternion endRotation, float w)
-        {
-            if (w <= 1e-4f) return;
-            Vector3 origin = upper.position;
-            float a = Vector3.Distance(origin, lower.position), b = Vector3.Distance(lower.position, end.position);
-            Vector3 toTarget = target - origin;
-            if (toTarget.sqrMagnitude < 1e-8f || a < 1e-4f || b < 1e-4f) return;
-            float c = Mathf.Clamp(toTarget.magnitude, Mathf.Abs(a - b) + 1e-4f, a + b - 1e-4f);
-            Vector3 dir = toTarget.normalized;
-            Vector3 bend = Vector3.ProjectOnPlane(pole - origin, dir);
-            if (bend.sqrMagnitude < 1e-8f) bend = Vector3.ProjectOnPlane(lower.position - origin, dir);
-            if (bend.sqrMagnitude < 1e-8f) bend = Vector3.down;
-            bend.Normalize();
-            float cosA = Mathf.Clamp((a * a + c * c - b * b) / (2f * a * c), -1f, 1f);
-            Vector3 middle = origin + dir * (a * cosA) + bend * (a * Mathf.Sqrt(1f - cosA * cosA));
-            var upperTurn = Quaternion.FromToRotation(lower.position - origin, middle - origin);
-            upper.rotation = Quaternion.Slerp(Quaternion.identity, upperTurn, w) * upper.rotation;
-            var lowerTurn = Quaternion.FromToRotation(end.position - lower.position, origin + dir * c - lower.position);
-            lower.rotation = Quaternion.Slerp(Quaternion.identity, lowerTurn, w) * lower.rotation;
-            end.rotation = Quaternion.Slerp(end.rotation, endRotation, w);
         }
 
         private void PlaceGear()
@@ -724,6 +780,182 @@ namespace Shooter.Presentation.Rig
             foreach (var (_, _, renderer, _, _) in gear) renderer.sharedMaterials = teamGear;
             foreach (var pair in authoredMaterials) pair.Key.sharedMaterials = pair.Value.Select(restyle).ToArray();
         }
+
+        // ---- ADR-129 first-person arms: the same licensed body, cut to its two arms and posed onto the view model ----
+
+        private readonly List<SkinnedMeshRenderer>[] armRenderers = { new List<SkinnedMeshRenderer>(), new List<SkinnedMeshRenderer>() };
+        private Vector3 shoulderMidLocal;
+        public bool IsFirstPersonArms { get; private set; }
+
+        /// <summary>
+        /// Turns this body into camera-only first-person arms: clips and gear go, every skinned mesh keeps only the
+        /// triangles of the forearms, hands and the outer upper arms (one renderer per side, so the support arm can hide),
+        /// and nothing casts a shadow. The arm meshes are cut once per variant and owned through <paramref name="own"/>.
+        /// </summary>
+        public void ConvertToFirstPersonArms(Action<UnityEngine.Object> own)
+        {
+            if (IsFirstPersonArms) return;
+            IsFirstPersonArms = true;
+            if (graph.IsValid()) graph.Destroy();
+            animator.enabled = false;
+            foreach (var (_, filter, renderer, _, _) in gear) { renderers.Remove(renderer); if (filter != null) Kill(filter.gameObject); }
+            gear.Clear();
+            foreach (var r in renderers.ToArray())
+            {
+                if (r is SkinnedMeshRenderer smr && smr.sharedMesh != null)
+                {
+                    if (!Shape.ArmMeshes.TryGetValue(smr.name, out var cut))
+                    {
+                        cut = (CutArm(smr, false, own), CutArm(smr, true, own));
+                        Shape.ArmMeshes[smr.name] = cut;
+                    }
+                    var right = cut.right; var left = cut.left;
+                    if (left != null)
+                    {
+                        var go = new GameObject(smr.name + " (FP left arm)");
+                        go.transform.SetParent(smr.transform.parent, false);
+                        var copy = go.AddComponent<SkinnedMeshRenderer>();
+                        copy.sharedMesh = left; copy.bones = smr.bones; copy.rootBone = smr.rootBone;
+                        copy.sharedMaterials = smr.sharedMaterials; copy.updateWhenOffscreen = true; copy.quality = SkinQuality.Bone4;
+                        renderers.Add(copy); skinned.Add(copy); armRenderers[1].Add(copy);
+                        if (authoredMaterials.TryGetValue(smr, out var materials)) authoredMaterials[copy] = materials;
+                        if (paintedSkin.TryGetValue(smr, out var skinMaterial)) paintedSkin[copy] = skinMaterial;
+                    }
+                    if (right != null) { smr.sharedMesh = right; armRenderers[0].Add(smr); continue; }
+                }
+                r.enabled = false;
+                renderers.Remove(r);
+                if (r is SkinnedMeshRenderer gone) { skinned.Remove(gone); paintedSkin.Remove(gone); }
+                authoredMaterials.Remove(r);
+            }
+            if (armRenderers[0].Count == 0 || armRenderers[1].Count == 0)
+                throw new InvalidOperationException("ADR-129: no arm triangles in " + Shape.Variant.Id + "; no procedural-glove fallback.");
+            foreach (var r in renderers) { r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; r.receiveShadows = false; }
+            shoulderMidLocal = Instance.transform.InverseTransformPoint((bones[8]!.position + bones[12]!.position) * .5f);
+        }
+
+        /// <summary>
+        /// Starts a first-person pose: the model faces the view, takes the view model's near-field <paramref name="scale"/>
+        /// (so hands and gun keep their proportions) and sits with its shoulders at <paramref name="shoulderMid"/>, so the
+        /// unposed torso bones stay next to the arms.
+        /// </summary>
+        public void BeginFirstPersonPose(Quaternion view, Vector3 shoulderMid, float scale)
+        {
+            if (!IsFirstPersonArms) throw new InvalidOperationException("Not first-person arms.");
+            var root = Instance.transform;
+            root.localScale = Vector3.one * Shape.Scale * (float.IsFinite(scale) && scale > 0f ? scale : 1f);
+            root.rotation = view * Shape.Facing;
+            root.position += shoulderMid - root.TransformPoint(shoulderMidLocal);
+        }
+
+        /// <summary>
+        /// Copy of <paramref name="smr"/>'s mesh keeping only one arm's triangles: every vertex dominated by the forearm or
+        /// a hand bone, plus upper-arm vertices on the outer 60 % toward the elbow (the shoulder stays out of view). A vertex
+        /// with more than 10 % weight on any other bone is dropped, since the torso bones are not posed in first person.
+        /// </summary>
+        private Mesh? CutArm(SkinnedMeshRenderer smr, bool left, Action<UnityEngine.Object> own)
+        {
+            var mesh = smr.sharedMesh; var bonesOf = smr.bones; var weights = mesh.boneWeights; var binds = mesh.bindposes;
+            var upperBone = animator.GetBoneTransform(left ? HumanBodyBones.LeftUpperArm : HumanBodyBones.RightUpperArm);
+            var lowerBone = animator.GetBoneTransform(left ? HumanBodyBones.LeftLowerArm : HumanBodyBones.RightLowerArm);
+            if (upperBone == null || lowerBone == null || weights.Length != mesh.vertexCount) return null;
+            int upperIndex = Array.IndexOf(bonesOf, upperBone), lowerIndex = Array.IndexOf(bonesOf, lowerBone);
+            Vector3 elbow = upperIndex >= 0 && lowerIndex >= 0
+                ? binds[upperIndex].MultiplyPoint3x4(binds[lowerIndex].inverse.MultiplyPoint3x4(Vector3.zero)) : Vector3.zero;
+            var vertices = mesh.vertices;
+            var keep = new bool[vertices.Length];
+            for (int i = 0; i < keep.Length; i++)
+            {
+                var w = weights[i];
+                int dominant = w.weight0 >= w.weight1 && w.weight0 >= w.weight2 && w.weight0 >= w.weight3 ? w.boneIndex0
+                    : w.weight1 >= w.weight2 && w.weight1 >= w.weight3 ? w.boneIndex1 : w.weight2 >= w.weight3 ? w.boneIndex2 : w.boneIndex3;
+                var bone = dominant >= 0 && dominant < bonesOf.Length ? bonesOf[dominant] : null;
+                if (bone == null) continue;
+                float outside = 0f;
+                void Outside(int index, float weight)
+                {
+                    var b = index >= 0 && index < bonesOf.Length ? bonesOf[index] : null;
+                    if (weight > 0f && (b == null || (b != upperBone && b != lowerBone && !b.IsChildOf(lowerBone)))) outside += weight;
+                }
+                Outside(w.boneIndex0, w.weight0); Outside(w.boneIndex1, w.weight1); Outside(w.boneIndex2, w.weight2); Outside(w.boneIndex3, w.weight3);
+                if (outside > .1f) continue;
+                if (bone == lowerBone || bone.IsChildOf(lowerBone)) { keep[i] = true; continue; }
+                if (bone != upperBone) continue;
+                if (elbow.sqrMagnitude < 1e-10f) { keep[i] = true; continue; }
+                var local = binds[dominant].MultiplyPoint3x4(vertices[i]);
+                keep[i] = Vector3.Dot(local, elbow) / elbow.sqrMagnitude > .4f;
+            }
+            var cut = UnityEngine.Object.Instantiate(mesh);
+            cut.name = mesh.name + (left ? " (ADR-129 left arm)" : " (ADR-129 right arm)");
+            int kept = 0;
+            for (int sub = 0; sub < mesh.subMeshCount; sub++)
+            {
+                var source = mesh.GetTriangles(sub);
+                var triangles = new List<int>(source.Length / 8);
+                for (int t = 0; t + 2 < source.Length; t += 3)
+                    if (keep[source[t]] && keep[source[t + 1]] && keep[source[t + 2]]) { triangles.Add(source[t]); triangles.Add(source[t + 1]); triangles.Add(source[t + 2]); }
+                cut.SetTriangles(triangles, sub, false);
+                kept += triangles.Count;
+            }
+            if (kept == 0) { Kill(cut); return null; }
+            cut.RecalculateBounds();
+            own(cut);
+            return cut;
+        }
+
+        /// <summary>Shows or hides one first-person arm (0 = trigger/right, 1 = support/left).</summary>
+        public void SetArmVisible(int side, bool visible)
+        {
+            foreach (var r in armRenderers[side]) r.enabled = visible;
+        }
+
+        /// <summary>
+        /// Poses one first-person arm: the upper arm starts at <paramref name="shoulder"/> (pulled toward the wrist only as
+        /// far as the arm cannot reach), the arm is solved onto <paramref name="wrist"/> bending toward
+        /// <paramref name="pole"/>, the hand takes <paramref name="handFrame"/> (semantic glove convention) and the four
+        /// fingers take <paramref name="curls"/> (finger × segment, cumulative degrees; null = relaxed). The index
+        /// finger's curl is scaled by <paramref name="indexScale"/> (trigger finger along the guard).
+        /// </summary>
+        public void PoseFirstPersonArm(int side, Quaternion view, Vector3 shoulder, Vector3 wrist, Vector3 pole, Quaternion handFrame,
+            float[]? curls, float indexScale = 1f)
+        {
+            if (!IsFirstPersonArms) throw new InvalidOperationException("Not first-person arms.");
+            bool left = side == 1;
+            int clavicle = left ? 7 : 11, upper = clavicle + 1, lower = upper + 1, hand = lower + 1;
+            var toWrist = wrist - shoulder;
+            float reach = (Vector3.Distance(bones[upper]!.position, bones[lower]!.position) + Vector3.Distance(bones[lower]!.position, bones[hand]!.position)) * .97f;
+            if (toWrist.magnitude > reach) shoulder = wrist - toWrist.normalized * reach;
+            bones[upper]!.position = shoulder;
+            bones[upper]!.rotation = view * Shape.BindOffset[upper]!.Value;
+            bones[lower]!.rotation = view * Shape.BindOffset[lower]!.Value;
+            bones[hand]!.rotation = view * Shape.BindOffset[hand]!.Value;
+            AuthoredHandGrip.SolveLimb(bones[upper]!, bones[lower]!, bones[hand]!, wrist, pole, HandPose(left, handFrame, Shape.BindOffset[hand]!.Value), 1f);
+            foreach (var (finger, bone, bind) in fingers)
+            {
+                bool fingerLeft = finger <= HumanBodyBones.LeftLittleDistal;
+                if (fingerLeft != left) continue;
+                int index = (int)finger - (int)(left ? HumanBodyBones.LeftThumbProximal : HumanBodyBones.RightThumbProximal);
+                int segment = index % 3, digit = index / 3;
+                float curl = digit == 0 ? ThumbCurl[segment] : curls != null ? curls[(digit - 1) * 3 + segment] : RelaxedCurl[segment];
+                if (digit == 1) curl *= indexScale;
+                var axis = digit == 0 ? Vector3.right * (left ? -1f : 1f) : Vector3.forward;
+                bone.rotation = HandPose(left, handFrame * Quaternion.AngleAxis(left ? curl : -curl, axis), bind);
+            }
+            ArmWristError[side] = Vector3.Distance(bones[hand]!.position, wrist);
+        }
+
+        private static readonly float[] RelaxedCurl = { 20f, 45f, 60f };
+        /// <summary>Wrist distance from its target after the last first-person pose, per side (review metric).</summary>
+        public readonly float[] ArmWristError = new float[2];
+        /// <summary>World position of a first-person arm's hand bone.</summary>
+        public Vector3 ArmWrist(int side) => bones[side == 0 ? 14 : 10]!.position;
+
+        /// <summary>Travel direction the clips played on the last pose, relative to <see cref="DrawnYawDegrees"/> (review metric).</summary>
+        public float ClipHeadingDegrees { get; private set; }
+        /// <summary>World yaw the authored model is drawn facing (pelvis facing plus any leg turn), degrees.</summary>
+        public float DrawnYawDegrees => facingYaw + legYaw;
+        /// <summary>Locomotion clip weights of the last pose, indexed by <see cref="SoldierClipRole"/>.</summary>
+        public float ClipWeight(SoldierClipRole role) => blend.Weights[(int)role];
 
         /// <summary>Wrist distance from the solver's grip targets after the arm solve (review metric, metres).</summary>
         public float LeftGripError { get; private set; }
