@@ -48,6 +48,20 @@ Owner request: shotguns are weak. A shotgun should throw a bunch of pellets per 
 
 Old Town runs at a steady 25 fps as the first match of a launch. The 383 came from the second match of that launch, and its stalls began in the opening seconds. The leading hypothesis is that state or load accumulates from one match to the next (presentation, effects, menu stage or GC), not Old Town's density. The PresentMon run below was also a first match, but it ran under a focus-forcing script and PresentMon itself.
 - **Next:** play two or more matches in one launch on 0.3.27 and compare the `SHOOTER_FRAME_SUMMARY` lines per match. Main-thread or GPU growth in match 2 would confirm it and show which side.
+- **Second 0.3.27 launch** (`Artifacts/playtest-logs/0.3.27/session2.log`): again Old Town as match 1 only. Frame 40.2/46.7 ms, main 35.7/41.2 ms, GPU 32.7/35.3 ms, 4 hitches, one award (+5,172).
+- **Code review for per-match leftovers (2026-11-27): none found.** Checked:
+  - `ProductActorPresentation.ClearAll`: authored bodies disposed; owned meshes and materials freed on the next bind.
+  - `ProductMapView.ClearVisuals`: solids, decals, probe, sky and owned assets destroyed.
+  - `CompoundMapRuntime`: unloads collision and removes the navmesh instance on reload and stop.
+  - `TeamBotPlanner`: synchronous, cancelled on release.
+  - `AnalyticFxPresenter`: fixed pool; fires removed on rebind.
+  - The menu stage is inactive during play, and there is one `ProductSessionView` per shell.
+
+  Remaining hypotheses:
+  - managed-heap growth with incremental GC (the 0.3.26 match 2 ran about 90 MB higher);
+  - match-to-match variance (smoke and fire load in that one match).
+
+  The two-match test decides between them.
 
 ## Delivery 0.3.27 — 2026-11-27
 
