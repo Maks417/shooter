@@ -165,9 +165,11 @@ namespace Shooter.Presentation.Session
 
             if (session.Phase == GameMatchPhase.Finished)
             {
-                var results = session.TryAcquireResults();
-                if (results != null) RecordCareer(results);
-                coordinator.MarkMatchFinished(results);
+                // The session stays Finished with the same results after the shell leaves the match (and a new
+                // epoch would pass CareerRecorder's guard), so the award is recorded only on this match's first
+                // Finished frame.
+                var results = coordinator.MatchActive ? session.TryAcquireResults() : null;
+                if (results != null && coordinator.TryFinishMatch(results)) RecordCareer(results);
                 navigation.SyncFromAuthority(matchFinished: true, sessionPaused: false);
                 view.SetGameplayFocus(false);
             }

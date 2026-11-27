@@ -2,6 +2,30 @@
 
 Evidence log for M11, newest first. Each delivery and change records identities, results and what stays Pending. Records before 2026-11-15 (deliveries up to 0.3.12, T062–T085) are in git history. Current status is in [next playable build](../../next-playable-build.md) and gates are in [acceptance](../../acceptance.md).
 
+## Career double award fix and owner playtest logs — 2026-11-27
+
+**Owner playtest of the installed 0.3.26** (two sessions, logs copied to `Artifacts/playtest-logs/0.3.26/`):
+- Session 1 (13:36): Harbour 10v10.
+- Session 2 (14:36): Oil Depot 10v10, then Old Town 10v10.
+
+No crash and no new exception. The only exception was the known menu re-entrant render (fixed below). Findings:
+- **Career award recorded twice per match** (also in the 0.3.25 log of 2026-11-26). Every finished match logged `SHOOTER_CAREER award=` twice: once on the finish frame, and again after leaving the results screen.
+  - Oil Depot: +1,631 twice. Old Town: +5,474 twice, and that duplicate crossed the rank-11 threshold.
+  - Cause: `OfflineGameSession.Stop()` advances the session epoch but keeps `phase = Finished`, and `TryAcquireResults()` keeps returning the same results. `ProductShellHost.Update` recorded them again under the new epoch, which passes `CareerRecorder.TryRecord`'s `(epoch, sessionId)` guard.
+  - The owner's `shooter-career.json` already holds the duplicated matches; the fix does not rewrite it.
+- **Old Town stutter (open).** 383 `SHOOTER_HITCH` events over about 6.6 min of play, about 36 s of stall in total, max 0.29 s, often several consecutive frames of 67–160 ms. Oil Depot had 12 (max 0.74 s, on the first tick). AI path counters were moderate, and memory went up and back down (0.88–1.08 GB), so neither is the obvious cause. Needs a profile on the reference laptop. Pending.
+- **Load-time overruns.** About 12 `SHOOTER_PRESENTATION_BIND_INDIVISIBLE_OVERRUN` lines (34–178 ms) per match load, and a 0.7 s hitch on the first match tick. Informational.
+- **Harbour bot paths (session 1).** `pathsPartial` rose from 1 to 16,058 between ticks 9,900 and 27,900. It did not recur on Oil Depot or Old Town. Open.
+
+**Fix.** `ShellSessionCoordinator.TryFinishMatch` accepts a finished match only while a started match is active (`MatchActive`), then marks it finished. `ProductShellHost` records the career award only when it returns true. Leaving to the menu, and replay setup, can no longer re-accept the stopped session's results.
+- Pure tests `ShellSessionCoordinatorTests.Finished_match_is_accepted_once_even_after_leaving_to_the_menu` and `Replay_from_results_accepts_the_replayed_match_once` replay the per-frame polling. They test the coordinator contract; the host wiring is covered by compile and the Unity lanes, not by a host-level test.
+
+**Checks** (uncommitted source on `157c6d5`):
+- `Test-All.ps1` PASS: Contracts 79, Game 168, Generation 664, Simulation 734 (`m0-foundation/157c6d5…/test-all-20261127T135652451Z-b3f82052`).
+- Unity EditMode **105/105 PASS** (`tests-editmode-20261127T135653332Z-518039dc`); PlayMode **32/32 PASS** (`tests-playmode-20261127T140144461Z-3ef9a661`).
+
+Not in an installer yet.
+
 ## Menu vista re-entrant render fix — 2026-11-27
 
 **Defect.** The owner's first 0.3.26 launch (2026-11-27 13:36) logged two URP exceptions: `InvalidOperationException: Type UnityEngine.Rendering.Universal.UniversalCameraData has already been created`. The 0.3.25 log has five, so this is not a 0.3.26 regression. The same launch shows the upgrade preserved career, armory and settings: rank 9, 96,640 CP, 20 matches, loadout `ak102 + scope2 / golden-eagle`, and `SHOOTER_MENU_SCENE_READY actors=3 cards=3 vistas=3`.

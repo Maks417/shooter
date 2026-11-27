@@ -69,6 +69,18 @@ namespace Shooter.Presentation.Session
             RetainedResults = results ?? throw new ArgumentNullException(nameof(results));
         }
 
+        /// <summary>
+        /// Accepts the results of the running match once. The session keeps reporting Finished (and the same results)
+        /// after the shell leaves the match, so per-match work such as the career award must run only when this
+        /// returns true: a started match is active and its results are available.
+        /// </summary>
+        public bool TryFinishMatch(MatchResults? results)
+        {
+            if (!MatchActive || results == null) return false;
+            MarkMatchFinished(results);
+            return true;
+        }
+
         public void MarkMatchFinished(MatchResults? results)
         {
             MatchActive = false;

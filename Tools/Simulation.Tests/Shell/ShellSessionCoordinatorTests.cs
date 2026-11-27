@@ -39,6 +39,63 @@ namespace Shooter.Simulation.Tests.Shell
             Assert.False(coord.MatchActive);
         }
 
+        /// <summary>
+        /// The session keeps reporting Finished with the same results after the shell leaves the match. The shell
+        /// polls every frame, so a finished match must be accepted (and the career award recorded) exactly once,
+        /// not again after LeaveToMenu (0.3.25/0.3.26 awarded every match twice).
+        /// </summary>
+        [Fact]
+        public void Finished_match_is_accepted_once_even_after_leaving_to_the_menu()
+        {
+            var coord = new ShellSessionCoordinator();
+            var request = new SessionRequest(WellKnownMaps.OilDepot, WellKnownModes.TeamDeathmatch, 10, 460072032UL);
+            var results = Results(request, 1001);
+            Assert.False(coord.TryFinishMatch(results), "No match was started.");
+
+            Assert.True(coord.TryBeginStart(request, out _));
+            coord.CompleteStartSuccess();
+            Assert.False(coord.TryFinishMatch(null), "Finished without results yet: nothing to accept.");
+            Assert.True(coord.MatchActive);
+
+            int accepted = 0;
+            for (int frame = 0; frame < 5; frame++) // Results screen: Finished every frame.
+                if (coord.TryFinishMatch(results)) accepted++;
+            Assert.Equal(1, accepted);
+            Assert.Same(results, coord.RetainedResults);
+
+            coord.LeaveToMenu();
+            for (int frame = 0; frame < 5; frame++) // Back at the menu: the stopped session still says Finished.
+                Assert.False(coord.TryFinishMatch(results));
+
+            // The next match is accepted once in its turn.
+            var second = Results(request, 1003);
+            Assert.True(coord.TryBeginStart(request, out _));
+            coord.CompleteStartSuccess();
+            Assert.True(coord.TryFinishMatch(second));
+            Assert.False(coord.TryFinishMatch(second));
+        }
+
+        [Fact]
+        public void Replay_from_results_accepts_the_replayed_match_once()
+        {
+            var coord = new ShellSessionCoordinator();
+            var request = new SessionRequest(WellKnownMaps.TrainingCompound, WellKnownModes.TeamDeathmatch, 10, 460072033UL);
+            Assert.True(coord.TryBeginStart(request, out _));
+            coord.CompleteStartSuccess();
+            Assert.True(coord.TryFinishMatch(Results(request, 1001)));
+
+            coord.PrepareReplay(out var replay, out _);
+            Assert.False(coord.TryFinishMatch(Results(request, 1001)), "The finished match is not accepted again during replay setup.");
+            Assert.True(coord.TryBeginStart(replay!, out _));
+            coord.CompleteStartSuccess();
+            Assert.True(coord.TryFinishMatch(Results(request, 1003)));
+            Assert.False(coord.TryFinishMatch(Results(request, 1003)));
+        }
+
+        private static MatchResults Results(SessionRequest request, ulong session)
+            => new MatchResults(request, request.MapId, "catalog", "gameplay", "build", session, 0, 100, 100, 150, 40,
+                MatchOutcome.Team1, FinishReason.ScoreLimit, System.Array.Empty<ParticipantState>());
+
         [Fact]
         public void Replay_reuses_last_request_after_teardown()
         {
