@@ -112,6 +112,8 @@ Other shot rules:
 
 [Body armor](../decisions.md#adr-110--accepted-body-armor-100-points-torso-and-limbs) gives 100 points on every spawn, covering the torso and limbs. Armor takes `floor(d/2)` of each covered hit and blast; health takes the rest.
 
+**Lethal on hit** ([ADR-125](../decisions.md#adr-125--accepted-bolt-action-snipers-kill-on-any-hit)). A gun flagged `lethalOnHit` (the M24 SWS and M-TAC 338) takes the target's remaining health with any hit, on any region and at any range. Armor is neither consulted nor spent.
+
 Penetration and ricochet are deferred. Damage never targets render meshes.
 
 **Career perks** ([ADR-119](../decisions.md#adr-119--accepted-30-rank-career-ladder-and-four-new-perks)) can narrow hip and pellet cones and shorten bolt and pump cycles, for the human only.

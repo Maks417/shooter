@@ -641,16 +641,17 @@ namespace Shooter.Simulation
             float dx = result.Impact.Point.X - result.Origin.X, dy = result.Impact.Point.Y - result.Origin.Y, dz = result.Impact.Point.Z - result.Origin.Z;
             float meters = (float)Math.Sqrt(dx * dx + dy * dy + dz * dz);
             ushort baseDamage = DamageMath.FalloffDamage(definition.BaseDamage, definition.FalloffScale(meters));
-            ApplyDirectDamage(shooter, result.Impact.EntityId, region, baseDamage, ref nextEvent, ref damageEvents);
+            ApplyDirectDamage(shooter, result.Impact.EntityId, region, baseDamage, definition.LethalOnHit, ref nextEvent, ref damageEvents);
         }
 
-        private void ApplyDirectDamage(Actor shooter, EntityId targetId, ushort region, ushort baseDamage, ref EventId nextEvent, ref int damageEvents)
+        private void ApplyDirectDamage(Actor shooter, EntityId targetId, ushort region, ushort baseDamage, bool lethal, ref EventId nextEvent, ref int damageEvents)
         {
             Actor? target = null;
             for (int a = 0; a < actors.Count; a++) if (actors[a].Id.Equals(targetId)) { target = actors[a]; break; }
             if (target == null || !target.Alive || target.Team == shooter.Team) return;
             if (region < 1 || region > 6) region = 2;
-            ushort amount = AbsorbWithArmor(target, DamageMath.RoundDamage(baseDamage, region), region);
+            // ADR-125: a lethal-on-hit gun takes the remaining health on any region; armor is neither consulted nor spent.
+            ushort amount = lethal ? target.Health : AbsorbWithArmor(target, DamageMath.RoundDamage(baseDamage, region), region);
             DamageMath.Apply(target.Health, amount, out ushort remaining);
             target.Health = remaining;
             tickEvents.Add(new CombatEvent(nextEvent, CombatEventKind.DamageApplied, shooter.Id, target.Id, new DamagePayload(amount, remaining, region)));

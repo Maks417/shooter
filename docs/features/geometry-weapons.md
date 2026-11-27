@@ -92,7 +92,7 @@ Weapon meshes ship in one shared `shooter.weapon-package.v1` package beside the 
 ## Adding or tuning a weapon (ADR-077)
 
 Each weapon is one file, `Content/Weapons/<name>.weapon.json`, which holds:
-- combat stats (fire mode, burst, falloff, move speed, `spawnWeight`; 0 keeps a gun out of random loadouts);
+- combat stats (fire mode, burst, falloff, move speed, `spawnWeight`; 0 keeps a gun out of random loadouts; optional `lethalOnHit` for single-projectile guns, [ADR-125](../decisions.md#adr-125--accepted-bolt-action-snipers-kill-on-any-hit));
 - near-field handling;
 - `visual.sights` (a default plus the allowed list);
 - muzzle flash;

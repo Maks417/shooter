@@ -96,7 +96,7 @@ namespace Shooter.Simulation.Combat
                 def.MaxRangeMeters, def.FuseTicks, def.ThrowSpeedMetersPerSecond, def.BlastRadiusMeters,
                 def.ConsumesAmmo, def.AllowsSprintFire, def.BurstCount, def.BurstIntervalTicks,
                 def.FalloffStartMeters, def.FalloffEndMeters, def.FalloffMinScale, ScaleExact(def.MoveSpeedScale, MoveSpeedPerMille), def.SpawnWeight,
-                def.PelletCount, ScaleExact(def.PelletSpreadRadians, PelletSpreadPerMille), def.ReloadPerRound);
+                def.PelletCount, ScaleExact(def.PelletSpreadRadians, PelletSpreadPerMille), def.ReloadPerRound, def.LethalOnHit);
         }
 
         /// <summary>Starting reserve: the catalog reserve plus <see cref="ExtraMagazines"/> full magazines for firearms.</summary>

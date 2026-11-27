@@ -113,7 +113,9 @@ COMBAT_OPTIONAL = {"maxRangeMeters": Literal("300"), "fuseTicks": Literal("0"),
                    "falloffStartMeters": Literal("0"), "falloffEndMeters": Literal("0"), "falloffMinScale": Literal("1"),
                    "moveSpeedScale": Literal("1"), "spawnWeight": Literal("1"),
                    # ADR-118: shotgun pellets per shot, their cone, and shell-by-shell reloading.
-                   "pelletCount": Literal("1"), "pelletSpreadDegrees": Literal("0"), "reloadPerRound": False}
+                   "pelletCount": Literal("1"), "pelletSpreadDegrees": Literal("0"), "reloadPerRound": False,
+                   # ADR-125: every hit takes the target's remaining health (bolt-action snipers).
+                   "lethalOnHit": False}
 
 
 def enum_members(root: Path, name: str) -> set:
@@ -243,6 +245,9 @@ def validate(root: Path, path: Path, doc, enums) -> dict:
         raise DefinitionError(c + "pelletSpreadDegrees is only valid with pelletCount > 1")
     if fields["reloadPerRound"] and family not in ("PrimaryGun", "Sidearm"):
         raise DefinitionError(c + "reloadPerRound is only valid for guns")
+    fields["lethalOnHit"] = boolean(combat.get("lethalOnHit", COMBAT_OPTIONAL["lethalOnHit"]), c + "lethalOnHit")
+    if fields["lethalOnHit"] and (family not in ("PrimaryGun", "Sidearm") or int(fields["pelletCount"]) != 1):
+        raise DefinitionError(c + "lethalOnHit is only valid for single-projectile guns")
     if fire_mode == "Burst" and (int(fields["burstCount"]) < 2 or int(fields["burstIntervalTicks"]) < 1):
         raise DefinitionError(c + "Burst needs burstCount >= 2 and burstIntervalTicks >= 1")
     if fire_mode != "Burst" and int(fields["burstCount"]) != 0:
@@ -429,6 +434,11 @@ def pellet_args(c) -> str:
             + ", reloadPerRound: " + b(c["reloadPerRound"]))
 
 
+def lethal_args(c) -> str:
+    """ADR-125 field, emitted only when set (other rows stay byte-identical)."""
+    return ", lethalOnHit: true" if c["lethalOnHit"] else ""
+
+
 def render_catalog(weapons) -> str:
     rows = []
     for w in weapons:
@@ -454,7 +464,7 @@ def render_catalog(weapons) -> str:
             + ", falloffStartMeters: " + f(c["falloffStartMeters"]) + ", falloffEndMeters: " + f(c["falloffEndMeters"])
             + ",\n"
             "                    falloffMinScale: " + f(c["falloffMinScale"]) + ", moveSpeedScale: " + f(c["moveSpeedScale"])
-            + ", spawnWeight: " + c["spawnWeight"] + pellet_args(c) + "),\n"
+            + ", spawnWeight: " + c["spawnWeight"] + pellet_args(c) + lethal_args(c) + "),\n"
             "                WeaponFamily." + w["family"] + ", \"" + w["id"] + "\")")
     return (HEADER + "#nullable enable\nusing Shooter.Contracts;\n\nnamespace Shooter.Simulation.Combat\n{\n"
             "    public static partial class WeaponCatalog\n    {\n"

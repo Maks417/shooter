@@ -119,6 +119,23 @@ class GeneratorTests(unittest.TestCase):
         self.repo.edit("rifle.weapon.json", lambda d: d["combat"].update(pelletCount=17, pelletSpreadDegrees=0))
         self.rejects("pelletCount")
 
+    def test_lethal_on_hit(self):
+        # ADR-125: only single-projectile guns may be lethal on hit; unset rows stay byte-identical.
+        gen.run(self.repo.root, check=False)
+        catalog = (self.repo.root / gen.CATALOG_OUT).read_text(encoding="utf-8")
+        self.assertEqual(2, catalog.count("lethalOnHit: true"))  # the shipped M24 and M-TAC 338
+        self.assertNotIn("lethalOnHit: false", catalog)
+        self.repo.edit("pistol.weapon.json", lambda d: d["combat"].update(lethalOnHit=True))
+        gen.run(self.repo.root, check=False)
+        self.assertEqual(3, (self.repo.root / gen.CATALOG_OUT).read_text(encoding="utf-8").count("lethalOnHit: true"))
+        self.repo.edit("pistol.weapon.json", lambda d: d["combat"].update(lethalOnHit=1))
+        self.rejects("lethalOnHit: expected true or false")
+        self.repo.edit("pistol.weapon.json", lambda d: d["combat"].update(lethalOnHit=True, pelletCount=8, pelletSpreadDegrees=2))
+        self.rejects("lethalOnHit is only valid for single-projectile guns")
+        self.repo.edit("pistol.weapon.json", lambda d: d["combat"].update(lethalOnHit=False, pelletCount=1, pelletSpreadDegrees=0))
+        self.repo.edit("knife.weapon.json", lambda d: d["combat"].update(lethalOnHit=True))
+        self.rejects("lethalOnHit is only valid for single-projectile guns")
+
     def test_unknown_and_missing_fields(self):
         self.repo.edit("rifle.weapon.json", lambda d: d["combat"].update(damage=5))
         self.rejects("unknown damage")

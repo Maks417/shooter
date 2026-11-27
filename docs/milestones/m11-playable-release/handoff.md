@@ -2,6 +2,14 @@
 
 Evidence log for M11, newest first. Each delivery and change records identities, results and what stays Pending. Records before 2026-11-15 (deliveries up to 0.3.12, T062–T085) are in git history. Current status is in [next playable build](../../next-playable-build.md) and gates are in [acceptance](../../acceptance.md).
 
+## ADR-125 bolt-action snipers kill on any hit — 2026-11-27
+
+Owner request: bolt sniper rifles one-shot on any part of the body at any distance. Implemented [ADR-125](../../decisions.md#adr-125--accepted-bolt-action-snipers-kill-on-any-hit): the `lethalOnHit` combat flag on the M24 SWS and M-TAC 338, generated into `WeaponCatalog.g.cs`, carried through `WeaponModifiers.Apply`, and applied in `CombatHarnessSimulation.ApplyDirectDamage`.
+
+Checks: `Test-All.ps1` (uncommitted source on `72765c1`, `m0-foundation/72765c1…/test-all-20261127T100720800Z-f113d38f`): Simulation 711/711 PASS (including `LethalOnHitTests`: one hit kills a full health and armor target on the torso and limbs at 4 m and 200 m), Game 168/168 PASS, Contracts 79/79 PASS. Generation failed 663/664 in that parallel run on `SoldierMotionTests.ReusedPoseEvaluationDoesNotAllocateAfterWarmup` (7752 bytes allocated), a test of soldier pose code this change does not touch. It passed 3/3 in isolation, and `Test-Generation.ps1` alone passed 664/664 (`m1-procedural-feasibility/72765c1…/test-generation-20261127T101028630Z-54c107e5`). The allocation check is flaky under parallel load. Weapon catalog generator `--check` and its 29 tests PASS.
+
+**Pending / NotClaimed:** Unity EditMode/PlayMode, client build and installer; the owner's in-game balance check.
+
 ## Public repository, CI line-ending fix — 2026-11-22
 
 - **Publication.** The repository is public at `github.com/Maks417/shooter`. The 0.3.25 installer (binary commit `f9c3611`, SHA-256 `3e326441…c4c0`) is published as the GitHub pre-release `v0.3.25`. Publication is not acceptance, and REL01–REL06 stay NotClaimed.

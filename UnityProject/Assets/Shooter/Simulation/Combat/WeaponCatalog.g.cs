@@ -139,7 +139,7 @@ namespace Shooter.Simulation.Combat
                     maxRangeMeters: 300f, fuseTicks: 0, throwSpeedMetersPerSecond: 0f,
                     blastRadiusMeters: 0f, consumesAmmo: true, allowsSprintFire: false,
                     burstCount: 0, burstIntervalTicks: 0, falloffStartMeters: 0f, falloffEndMeters: 0f,
-                    falloffMinScale: 1f, moveSpeedScale: 0.85f, spawnWeight: 2),
+                    falloffMinScale: 1f, moveSpeedScale: 0.85f, spawnWeight: 2, lethalOnHit: true),
                 WeaponFamily.PrimaryGun, "weapons/mtac338"),
             // Content/Weapons/g17.weapon.json
             new WeaponCatalogEntry(
@@ -191,7 +191,7 @@ namespace Shooter.Simulation.Combat
                     maxRangeMeters: 300f, fuseTicks: 0, throwSpeedMetersPerSecond: 0f,
                     blastRadiusMeters: 0f, consumesAmmo: true, allowsSprintFire: false,
                     burstCount: 0, burstIntervalTicks: 0, falloffStartMeters: 0f, falloffEndMeters: 0f,
-                    falloffMinScale: 1f, moveSpeedScale: 0.88f, spawnWeight: 1),
+                    falloffMinScale: 1f, moveSpeedScale: 0.88f, spawnWeight: 1, lethalOnHit: true),
                 WeaponFamily.PrimaryGun, "weapons/m24"),
             // Content/Weapons/mk16.weapon.json
             new WeaponCatalogEntry(

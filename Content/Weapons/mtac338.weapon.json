@@ -12,6 +12,7 @@
     "magazineSize": 5,
     "reserveCapacity": 25,
     "baseDamage": 120,
+    "lethalOnHit": true,
     "hipSpreadDegrees": 4.0,
     "adsSpreadDegrees": 0.02,
     "recoilPitchDegrees": 2.5,

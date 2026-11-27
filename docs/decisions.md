@@ -137,6 +137,7 @@ Accepting a decision never certifies a runtime or hardware gate. The headings be
 | [ADR-122](#adr-122--accepted-mode-rules-as-data-and-team-indexed-kills-game-v1-additive) | Accepted | mode rules as data and team-indexed kills (Game-v1 additive) | amends ADR-034 |
 | [ADR-123](#adr-123--accepted-unified-front-end-visual-system) | Accepted | unified front-end visual system | amends ADR-084, ADR-086, ADR-087 |
 | [ADR-124](#adr-124--accepted-licensed-authored-art-track-characters-first) | Accepted | licensed authored art track (characters first) | amends ADR-002, ADR-007 |
+| [ADR-125](#adr-125--accepted-bolt-action-snipers-kill-on-any-hit) | Accepted | bolt-action snipers kill on any hit | amends ADR-063, ADR-110 for flagged guns |
 
 ## ADR-001 — Accepted: Unity 6 URP rasterization
 
@@ -1881,3 +1882,18 @@ Date 2026-11-27 (T232, owner decision). **Context.** ADR-002 allowed only genera
 - `build-lock.json` `provenanceAllowlistVersion` moves to 2. The `com.unity.modules.animation` engine module joins the manifest (modules are exempt from the package lock).
 - An authored-body hit-volume alignment test replaces the generated-rig one as the visual guard for the head and torso capsules. P05/REL03 soldier sign-off reopens for owner review; AI review of captures does not count.
 
+## ADR-125 — Accepted: bolt-action snipers kill on any hit
+
+Date 2026-11-27. **Context.** Owner request: the bolt-action sniper rifles should kill with one shot to any part of the body at any distance. Under ADR-063 and ADR-110 the M24 did 50 health on an armored torso and 25 on a limb.
+
+**Decision.**
+- Weapon definition files gain an optional combat flag `lethalOnHit` (default `false`). `WeaponDefinition.LethalOnHit` carries it, and `WeaponModifiers.Apply` copies it, so perks never drop it.
+- A hit from a flagged gun takes the target's remaining health, whatever the region (head, torso or limb), range or armor. Armor is neither consulted nor spent. It is still one `DamageApplied` (amount = remaining health, remaining 0) followed by `Death`.
+- The generator accepts the flag only on single-projectile guns (no pellets, no knife or grenade). Unflagged rows in `WeaponCatalog.g.cs` stay byte-identical.
+- Flagged: M24 SWS and M-TAC 338. Neither has falloff, and the 300 m hitscan reach (ADR-112) covers every map, so "any distance" needs no range change.
+
+**Consequences.** Simulation and content only. C0, Game-v1, fixtures and locks are unchanged. Base damage, spread, recoil and cadence are unchanged, so the guns still need the shot to land: hip fire stays wide and ADS stays precise. Bot snipers kill faster in random-loadout matches.
+
+Rollback: remove the two flags from `Content/Weapons` and regenerate.
+
+Evidence: [M11 handoff](milestones/m11-playable-release/handoff.md#adr-125-bolt-action-snipers-kill-on-any-hit--2026-11-27). The in-game feel is Pending owner playtest.

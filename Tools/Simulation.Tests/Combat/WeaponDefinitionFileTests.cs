@@ -111,6 +111,7 @@ namespace Shooter.Simulation.Tests.Combat
             Assert.Equal(Bits(expected.BlastRadiusMeters), Bits(actual.BlastRadiusMeters));
             Assert.Equal(expected.ConsumesAmmo, actual.ConsumesAmmo);
             Assert.Equal(expected.AllowsSprintFire, actual.AllowsSprintFire);
+            Assert.Equal(expected.LethalOnHit, actual.LethalOnHit);
         }
 
         private static int Bits(float value) => BitConverter.SingleToInt32Bits(value);
