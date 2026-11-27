@@ -72,7 +72,15 @@ Sights are separate meshes (`ProfileArsenalGeometry.BuildSight`, `WeaponSights.c
 
 ## First-person handling
 
-**Hands.** The rig is `fp.hand.v2`, with 17 camera-only joints per hand ([ADR-069](../decisions.md#adr-069--accepted-articulated-near-field-hands-and-global-analytic-reflections)). The gloves are one piece with blended knuckles (ADR-106). The hands use skinned meshes from the verified package.
+**Hands.** The rig is `fp.hand.v2`, with 17 camera-only joints per hand ([ADR-069](../decisions.md#adr-069--accepted-articulated-near-field-hands-and-global-analytic-reflections)). The packaged gloves are one piece with blended knuckles (ADR-106).
+
+**Licensed arms** ([ADR-129](../decisions.md#adr-129--accepted-licensed-first-person-arms-wrapped-support-grips-strafe-clip-facing-and-grenade-start-contact)). With the authored bodies on (the product), the player sees the arms of their own licensed soldier, not the packaged gloves:
+- `ProductActorPresentation` builds a second `AuthoredSoldierBody` of the local player's variant and team under the camera. `ConvertToFirstPersonArms` drops its clips and gear and cuts each skinned mesh to the forearm, hand and outer upper-arm triangles, one renderer per side, with no shadows. The cut is made once per variant.
+- The `fp.hand.v2` bones stay posed but hidden. Their wrist (including reload and pin-pull reach) and elbow joints are the targets for the slots without a gun socket and the elbow poles for all slots.
+- **Trigger hand.** The palm lies on the gun's `right-hand-grip` socket, wraps it and keeps the index finger along the guard. The knife and grenade sit in the fist at the rig wrist.
+- **Support hand.** The palm lies under the gun's own `left-hand-grip` socket and the fingers wrap the measured handguard radius (`AuthoredHandGrip`). Reload reach moves the wrist and opens the fingers. The support arm shows only when the packaged hand would.
+- **Shoulders.** Fixed camera-space anchors, pulled toward the wrist only when the arm cannot reach.
+- **Missing data.** No glove fallback: a body without measured hands or arm triangles throws.
 
 **Choreography** comes from per-weapon numeric key tables (`MotionCurve`, [ADR-099](../decisions.md#adr-099--accepted-per-weapon-first-person-hand-and-weapon-choreography)):
 - the reload sequence for each handling style (`Rifle`, `Ak`, `Bolt`, `Pistol`, pump shell-by-shell), with a visible magazine exchange and a fresh magazine carried in the support hand;

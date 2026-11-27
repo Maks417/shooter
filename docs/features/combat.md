@@ -87,6 +87,7 @@ The four slots, with Q toggling to the last weapon:
 1. Holding fire cooks it on a 120-tick fuse.
 2. Releasing throws it (28 m/s with an 8° loft, about 34 m).
 3. The blast reaches 5 m. Self damage is on, friendly damage is zero.
+   - Flight ([ADR-129](../decisions.md#adr-129--accepted-licensed-first-person-arms-wrapped-support-grips-strafe-clip-facing-and-grenade-start-contact)): the throw starts at the muzzle point, pulled back toward the eye if a wall is in between. Each bounce places the centre from the sweep distance and stands it 2 cm off the surface. A sweep that starts touching (PhysX: distance 0, point (0,0,0)) is re-swept with a smaller sphere, then pushed out by overlap, never moved to the reported point. The cosmetic flight leaves on its thrower's blast, not on a bullet impact nearby.
 4. After the throw, authority equips the primary.
 
 **Shots** ([ADR-112](../decisions.md#adr-112--accepted-crosshair-true-hits-rig-aligned-hit-volumes-and-bots-that-use-map-cover-flank-and-move-smoothly)) are authoritative hitscan to 300 m.

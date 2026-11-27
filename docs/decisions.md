@@ -136,11 +136,12 @@ Accepting a decision never certifies a runtime or hardware gate. The headings be
 | [ADR-121](#adr-121--accepted-feature-lock-hashes-c-code-tokens-and-every-lock-has-a-refreeze-command) | Accepted | feature lock hashes C# code tokens; every lock has a refreeze command |  |
 | [ADR-122](#adr-122--accepted-mode-rules-as-data-and-team-indexed-kills-game-v1-additive) | Accepted | mode rules as data and team-indexed kills (Game-v1 additive) | amends ADR-034 |
 | [ADR-123](#adr-123--accepted-unified-front-end-visual-system) | Accepted | unified front-end visual system | amends ADR-084, ADR-086, ADR-087 |
-| [ADR-124](#adr-124--accepted-licensed-authored-art-track-characters-first) | Accepted | licensed authored art track (characters first) | amends ADR-002, ADR-007 |
+| [ADR-124](#adr-124--accepted-licensed-authored-art-track-characters-first) | Accepted | licensed authored art track (characters first) | amends ADR-002, ADR-007; first-person arms by ADR-129 |
 | [ADR-125](#adr-125--accepted-bolt-action-snipers-kill-on-any-hit) | Accepted | bolt-action snipers kill on any hit | amends ADR-063, ADR-110 for flagged guns |
 | [ADR-126](#adr-126--accepted-licensed-fire-and-smoke-flipbooks-and-burning-wrecks) | Accepted | licensed fire and smoke flipbooks and burning wrecks | second application of ADR-124; amends ADR-092, ADR-093, ADR-111 |
 | [ADR-127](#adr-127--accepted-m870-lethal-up-close-and-per-pellet-tracers) | Accepted | M870 lethal up close and per-pellet tracers | retunes the ADR-118 M870 |
 | [ADR-128](#adr-128--accepted-bot-replan-cooldown-also-after-arrival) | Accepted | bot replan cooldown also after arrival | amends the AI path budget (ai.md) |
+| [ADR-129](#adr-129--accepted-licensed-first-person-arms-wrapped-support-grips-strafe-clip-facing-and-grenade-start-contact) | Accepted | licensed first-person arms, wrapped support grips, strafe clip facing and grenade start contact | extends ADR-124 to the view model; amends ADR-111 grenade flight |
 
 ## ADR-001 — Accepted: Unity 6 URP rasterization
 
@@ -1971,3 +1972,46 @@ Regression test: `CombatAiTests.Immediate_arrival_does_not_bypass_the_replan_coo
 Rollback: restore `&& board.PathGoal.HasValue` on the cooldown check in `EnsurePath`.
 
 Evidence: [M11 handoff](milestones/m11-playable-release/handoff.md#adr-128-bot-replan-cooldown-after-arrival--2026-11-27).
+
+## ADR-129 — Accepted: licensed first-person arms, wrapped support grips, strafe clip facing and grenade start contact
+
+Date 2026-11-27 (owner playtest of 0.3.27). **Context.** The owner reported four defects:
+- **Puppet hands in first person.** ADR-124 replaced only the third-person body. The view model still drew the procedural `fp.hand.v2` gloves and sleeves.
+- **Bot legs wrong when strafing.** `AuthoredSoldierBody` draws the body facing the solver's pelvis, which is bladed 35° right of the aim (`SoldierMotion.BodyBladeRadians`). But the clip direction was measured from the aim. A side strafe therefore played `Run_Left` or `Run_Right` 35° off the real travel, and a left strafe read as a moonwalk. The run-sideways clips also kept full run cadence at the bots' 3.5 m/s or slower strafes, so the feet skated.
+- **Bot support fingers long and open.** The support wrist went onto the procedural glove's wrist target on the handguard axis. That put the Quaternius knuckles past the gun, with a fixed fist curl around nothing. Every primary also used the classic rifle's socket.
+- **Grenades vanishing near walls.** `GrenadeSimulator` placed a bounced grenade at `Hit.Point + n × 0.02`, which left the 0.08 m sphere 6 cm inside the surface. The next sweep then started in contact, and the PhysX multi-hit cast reports such a contact with distance 0 and point (0,0,0). That is the ADR-114 behaviour the motor already handles. The authority grenade jumped to the map origin and exploded there, while the cosmetic grenade flew on and vanished after 2.5 s. A real-PhysX test reproduces it: with the old code, a floor landing jumps 40 m and a wall bounce 30 m, both to the origin. A throw pressed against a wall also started inside the wall.
+
+**Decision.**
+- **First-person arms from the licensed body (second use of the ADR-124 track; no new art).** The view model builds the local player's own variant and team, then `ConvertToFirstPersonArms` drops its clips and gear. It cuts each skinned mesh to the forearm, hand and outer 60 % of the upper-arm triangles: one renderer per side, no shadows, cut once per variant.
+  - The arms are solved each frame onto the gun's own `right-hand-grip` and `left-hand-grip` sockets.
+  - The hidden `fp.hand.v2` bones remain the reach and elbow targets, so the ADR-099 reload and pin choreography carries over. The packaged gloves stay in content, unchanged, and are not drawn.
+  - There is no glove fallback: unmeasured hands or missing arm triangles throw.
+- **Wrapped grips (`AuthoredHandGrip`, shared by both views).** Each variant's hands are measured once in the T-pose:
+  - the hand's real bind frame from its knuckles (the thumb-based T-pose roll left it tilted, which also skewed every finger curl);
+  - the knuckle line, the finger segment lengths, and the palm depth (75th percentile of the palm-side skin under the knuckle half).
+  - **Handguard.** Treated as a cylinder measured from the gun's own LOD0 vertices around its `left-hand-grip` socket: radius = half width (clamped to 12–50 mm), axis that far above the underside.
+  - **Palm.** The palm, not the wrist, lies against the cylinder with the knuckles at its far side.
+  - **Curls.** Each finger's three cumulative curls are solved in the curl plane so the fingertips meet that radius, cached per variant and millimetre.
+  - Off a reload, third-person bots use the held gun's socket and radius; reload and other support tasks keep the solver's target.
+- **Strafe clip facing.** `AuthoredSoldierBody.Pose` takes the world travel heading and measures it from the drawn facing.
+  - `AuthoredSoldierBlend` eases the four-way split with a 0.12 s time constant.
+  - The gait phase runs at speed ÷ the nominal speed of the clips actually playing (walk 1.6, run 4.2, crouch 1.4 m/s), clamped to 0.6–1.4.
+- **Grenade start contact (Simulation).**
+  - Each bounce places the centre from the sweep distance, then 2 cm off the surface along the normal.
+  - A sweep that starts in contact is re-swept with a sphere 3 cm smaller, as `KinematicMotor.Sweep` does.
+  - Genuine penetration is pushed out along the measured overlap normal. With no usable normal, the grenade stops; it never moves to a reported point.
+  - The throw origin is the muzzle point, pulled back toward the eye when a wall is in between.
+  - The cosmetic flight leaves on its thrower's blast, not on any impact within 1.25 m, and its safety lifetime is 3.5 s.
+
+**Consequences.**
+- **Scope.** Presentation, Simulation grenade flight, editor captures and tests. C0, Game-v1, content, fixtures and locks are unchanged; no feature-lock generator changed.
+- **Grenade outcomes change.** Grenades now explode where they land, so match outcomes that involved grenades differ from earlier builds of the same seed.
+- **First-person look.** The arms, shoulders and hand frames in the view are a new look and need the owner's VD3 review.
+- **Pending.** Owner in-game review of the arms, bot strafes and grips, and of grenades near walls; a client build and installer.
+- **Rollback.** Per part:
+  - Arms: re-enable the glove renderers and drop `EnsureFirstPersonArms`.
+  - Grip: drop the `SupportSocket` argument.
+  - Strafe: measure from the aim again and remove the rate and ease.
+  - Grenade: revert `GrenadeSimulator.Step` and the spawn check.
+
+Evidence: [M11 handoff](milestones/m11-playable-release/handoff.md#adr-129-first-person-arms-grips-strafes-and-grenades--2026-11-27).

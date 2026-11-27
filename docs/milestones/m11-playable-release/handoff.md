@@ -2,6 +2,38 @@
 
 Evidence log for M11, newest first. Each delivery and change records identities, results and what stays Pending. Records before 2026-11-15 (deliveries up to 0.3.12, T062–T085) are in git history. Current status is in [next playable build](../../next-playable-build.md) and gates are in [acceptance](../../acceptance.md).
 
+## ADR-129 first-person arms, grips, strafes and grenades — 2026-11-27
+
+The owner's 0.3.27 playtest reported four defects: puppet hands in first person, wrong bot legs when strafing, bot support fingers long and not gripping, and grenades vanishing near walls with no explosion. Changes: [ADR-129](../../decisions.md#adr-129--accepted-licensed-first-person-arms-wrapped-support-grips-strafe-clip-facing-and-grenade-start-contact).
+
+**Root causes found.**
+- **Grenade.** A bounce left the sphere 6 cm inside the surface. The next PhysX sweep started in contact and reported point (0,0,0), so the authority grenade jumped to the map origin and exploded there. The cosmetic grenade flew on and vanished at 2.5 s.
+  - With the old `GrenadeSimulator` restored, the new real-physics `GrenadePhysXTests` fail. A floor landing jumps 40 m to (0, −0.006, −0.019) on tick 33; a wall bounce jumps 30 m to (0, 0, 0.02) on tick 8; a throw against a wall starts inside it.
+  - The pure `GrenadeSimulatorTests` (exact sphere fake with PhysX start contact) fail the same way on the old code.
+- **Strafe.** The drawn body faces the solver pelvis (aim + 35°), but the clip direction was measured from the aim. The run-sideways clips also kept full run cadence at strafe speeds.
+- **Bot support hand.** The Quaternius wrist was put where the procedural glove's wrist went, on the handguard axis, and every primary used the classic rifle's socket. The T-pose hand roll came from the thumb, which tilted every finger curl.
+- **First-person hands.** ADR-124 never replaced the `fp.hand.v2` gloves.
+
+**Tests.**
+- New pure tests: `GrenadeSimulatorTests` (floor, start contact, wall with and without start contact, throw against a wall), blast-only cosmetic despawn and lifetime past the fuse (`FeedbackTests`), and strafe cadence and reversal crossfade (`AuthoredSoldierBlendTests`).
+- New EditMode tests:
+  - `StrafeClipsFollowTheWorldTravelFromTheDrawnFacing`: ±90°, 180°, 45°.
+  - `SupportHandWrapsEveryHandguard`: 6 variants × 11 long guns, wrist 0 mm off target, fingertips ≤ 14 mm from the handguard surface.
+  - `LicensedArmsReplaceTheGlovesAndReachEveryGrip`.
+- New PlayMode test: `GrenadePhysXTests`.
+
+**Checks** (uncommitted source on `d42530f`):
+- `Test-All.ps1` **PASS**: Contracts 84, Game 168, Generation 664, Simulation 751 (`m0-foundation/d42530f…/test-all-20261127T185350664Z-695ec7e0`). An earlier run, with Unity saturating the CPU, failed the timing test `ContentStoreTests.AbandonedLoadRetiresAndCanBeRequestedAgain` once. It passed alone and in this run.
+- Unity EditMode **112/112 PASS** (`tests-editmode-20261127T184938223Z-c3757545`); PlayMode **35/35 PASS** (`tests-playmode-20261127T185634821Z-48296d59`).
+- Review renders (editor diagnostics, not acceptance): `capture-soldier-skins-20261127T185853944Z-08999d7c` (adds strafe-left/right and support-hand close-ups) and `capture-handling-20261127T185912713Z-af940a94` (`ShooterFeatureBuild.CaptureHandling` from the editor, now with side views; 27 files).
+
+**Known limits.**
+- In third person, the support palm still sits about 2 cm under the handguard; the fingers close on its side.
+- The first-person shoulders are fixed camera-space anchors pulled toward the wrist, so the forearms come in from the lower screen corners.
+- The packs have no walk-sideways or crouch-sideways clips; those strafes play the run clips at reduced cadence or use the leg turn.
+
+**Pending:** a client build and installer of this source; owner in-game review of the first-person arms on every weapon (VD3), of bot strafes and grips, and of grenades thrown against and near walls; the TDM-5v5 Low benchmark with the second authored body under the camera.
+
 ## ADR-127 M870 close-range lethality and pellet tracers — 2026-11-27
 
 Owner request: shotguns are weak. A shotgun should throw a bunch of pellets per shot, and up close one or two pellets on the body should kill. Owner choices: full damage to 10 m, and a visible tracer per pellet. Implemented [ADR-127](../../decisions.md#adr-127--accepted-m870-lethal-up-close-and-per-pellet-tracers):
