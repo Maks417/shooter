@@ -2,6 +2,27 @@
 
 Evidence log for M11, newest first. Each delivery and change records identities, results and what stays Pending. Records before 2026-11-15 (deliveries up to 0.3.12, T062–T085) are in git history. Current status is in [next playable build](../../next-playable-build.md) and gates are in [acceptance](../../acceptance.md).
 
+## ADR-129 follow-up: rifle hands on the real handguard and grip — 2026-11-28
+
+Owner screenshot from the reworked recording: on the AK the support hand hung open under the handguard, and the trigger hand did not show on the grip.
+
+**Cause.** On the loadout long guns the `left-hand-grip` socket sits about 4 cm under the handguard, whose low-poly box has no vertices near it. `MeasureHandguard` therefore fell back to a 25 mm cylinder round the socket, so every rifle's support hand wrapped empty air under the gun. `MeasurePistolGrip` similarly fell back to a vertical axis. The editor captures had used only the test rifle, so this never showed there.
+
+**Fix.**
+- Both measures slice the gun's triangles. For the handguard they also slice its moving part, which on the M870 is the forend.
+- The loadout guns now measure 28–34 mm. In first person the support palm sits 3–5 mm into the handguard surface and the fingertips are within 13–15 mm of it on the AK-47, M4A1, Mk14 and M870.
+- The editor capture adds these guns with wrist and grip metrics (`SHOOTER_FP_ARMS`).
+- `AuthoredSoldierBody.SetFirstPersonSupportGrip` lets the first-person arms report the same grip metrics as the bots.
+
+**Tests.**
+- New EditMode `LicensedSupportHandWrapsEveryLoadoutHandguard`: on every loadout long gun, the support wrist and fingertips are on the measured handguard, the palm is within 1 cm of it, and the radius is not the fallback.
+- Bots' `SupportHandWrapsEveryHandguard` fingertip bound is now 2 cm (was 1.5 cm against the phantom radius).
+- EditMode **114/114** (`tests-editmode-20261127T231509095Z-ed0cce95`), PlayMode **35/35** (`tests-playmode-20261127T232338036Z-102da24c`), pure `Test-All.ps1` PASS (`test-all-20261127T232345312Z-578a3676`).
+
+**Recordings.** Real client `Artifacts/visual-design/adr-129-fp-hands/rifle5/` (build `f21d69b…/build-client-20261127T231942996Z-c2bf05d4`). Side by side with 0.3.29: `…/compare-rifles.mp4`.
+
+**Pending:** the owner's in-game review; not in an installer.
+
 ## ADR-129 follow-up: sidearm hip view — 2026-11-27
 
 Owner choice after the real-client recording: rework the pistol view. Changes:

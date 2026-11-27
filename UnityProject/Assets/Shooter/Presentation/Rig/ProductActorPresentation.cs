@@ -438,7 +438,7 @@ namespace Shooter.Presentation.Rig
                     }
                     // ADR-085: HUD weapon icons are traced from these same packaged LOD0 meshes.
                     silhouettes.Add(new WeaponSilhouetteSource(source.MeshKey, WeaponSilhouetteSource.SpanFor(source.MeshKey), silhouetteParts));
-                    if (source.Recipe != null) { var sockets = WeaponGeometry.Sockets(source.Recipe); set.SightSocket = FindSocket(sockets, "sight-eye"); set.MuzzleSocket = FindSocket(sockets, "muzzle"); set.SupportSocket = FindSocket(sockets, "left-hand-grip"); set.HasSupportSocket = true; (set.SupportAxis, set.SupportRadius) = AuthoredHandGrip.MeasureHandguard(localData.Positions, set.SupportSocket); set.TriggerSocket = FindSocket(sockets, "right-hand-grip"); set.HasTriggerSocket = true; (set.TriggerGripTop, set.TriggerGripUp, set.TriggerGripRadius) = AuthoredHandGrip.MeasurePistolGrip(localData.Positions, set.TriggerSocket);  }
+                    if (source.Recipe != null) { var sockets = WeaponGeometry.Sockets(source.Recipe); set.SightSocket = FindSocket(sockets, "sight-eye"); set.MuzzleSocket = FindSocket(sockets, "muzzle"); set.SupportSocket = FindSocket(sockets, "left-hand-grip"); set.HasSupportSocket = true; (set.SupportAxis, set.SupportRadius) = AuthoredHandGrip.MeasureHandguard(localData, set.SupportSocket, cycle); set.TriggerSocket = FindSocket(sockets, "right-hand-grip"); set.HasTriggerSocket = true; (set.TriggerGripTop, set.TriggerGripUp, set.TriggerGripRadius) = AuthoredHandGrip.MeasurePistolGrip(localData, set.TriggerSocket);  }
                     weaponMeshes[source.MeshKey] = set;
                     yield return 0;
                 }
@@ -991,11 +991,14 @@ namespace Shooter.Presentation.Rig
                 supportRadius = set.SupportRadius * scale;
                 var reach = new Vector3(reloadPose.SupportWristOffset.X + specialWrist.X, reloadPose.SupportWristOffset.Y + specialWrist.Y,
                     reloadPose.SupportWristOffset.Z + specialWrist.Z);
-                supportWrist = AuthoredHandGrip.SupportWrist(shape.LeftHand!, supportFrame, weapon.TransformPoint(V(set.SupportAxis)), supportRadius, handScale)
+                var supportAxis = weapon.TransformPoint(V(set.SupportAxis));
+                supportWrist = AuthoredHandGrip.SupportWrist(shape.LeftHand!, supportFrame, supportAxis, supportRadius, handScale)
                     + weapon.TransformVector(reach);
+                arms.SetFirstPersonSupportGrip(grab < .01f ? supportAxis : (Vector3?)null, supportRadius);
             }
             else
             {
+                arms.SetFirstPersonSupportGrip(null, 0f);
                 // Pistol cup, grenade pin: the rig wrist already carries the reach.
                 supportFrame = Quaternion.Slerp(AuthoredHandGrip.HandFrame(right * .8f + forward * .3f + up * .15f, -up - right * .3f, true), magazineFrame, grab);
                 supportRadius = .045f * scale;

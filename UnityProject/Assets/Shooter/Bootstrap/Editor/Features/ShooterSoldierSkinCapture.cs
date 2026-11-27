@@ -87,7 +87,7 @@ public static class ShooterSoldierSkinCapture
             var rifleLod = WeaponGeometry.Build(rifle).Lods[0];
             var rifleMesh = Upload(rifleLod);
             // ADR-129: the support palm wraps the rifle's own handguard socket.
-            var (supportAxis, supportRadius) = AuthoredHandGrip.MeasureHandguard(rifleLod.Positions, WeaponGeometry.Sockets(rifle).First(s => s.Id == "left-hand-grip").Position);
+            var (supportAxis, supportRadius) = AuthoredHandGrip.MeasureHandguard(rifleLod, WeaponGeometry.Sockets(rifle).First(s => s.Id == "left-hand-grip").Position);
             var support = new SupportSocket(V(supportAxis), supportRadius);
             var gunMetal = Lit(new Color(.09f, .09f, .10f), .45f);
 

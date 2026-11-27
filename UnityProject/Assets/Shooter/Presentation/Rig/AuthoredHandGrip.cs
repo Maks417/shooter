@@ -193,22 +193,32 @@ namespace Shooter.Presentation.Rig
         public const float FirstPersonHandScale = .8f;
 
         /// <summary>
-        /// A gun's pistol grip from its own vertices below the right-hand-grip socket: the axis (fitted through the grip's
-        /// cross-sections, so it follows the rake), its point just under the receiver, and its half width.
+        /// A gun's pistol grip from its own triangles below the right-hand-grip socket: horizontal slices every 1.5 cm give
+        /// the grip's cross-sections, a line through their centres gives the axis (so it follows the rake), and the slices'
+        /// half width gives the radius. Slices, not vertices: low-poly grips have corners only at their ends.
         /// </summary>
         public static (Shooter.Contracts.Float3 top, Shooter.Contracts.Float3 up, float radius) MeasurePistolGrip(
-            System.Collections.Generic.IReadOnlyList<Shooter.Contracts.Float3> positions, Shooter.Contracts.Float3 socket)
+            Shooter.Contracts.MeshData mesh, Shooter.Contracts.Float3 socket)
         {
             double n = 0, sy = 0, sz = 0, syy = 0, syz = 0;
             var halfWidths = new System.Collections.Generic.List<float>();
-            for (int i = 0; i < positions.Count; i++)
+            var points = new System.Collections.Generic.List<Shooter.Contracts.Float3>();
+            for (float level = socket.Y - .025f; level >= socket.Y - .1f; level -= .015f)
             {
-                var p = positions[i];
-                if (Math.Abs(p.X - socket.X) > .035f || p.Y > socket.Y - .02f || p.Y < socket.Y - .12f || p.Z < socket.Z - .08f || p.Z > socket.Z + .03f) continue;
-                n++; sy += p.Y; sz += p.Z; syy += p.Y * (double)p.Y; syz += p.Y * (double)p.Z;
-                halfWidths.Add(Math.Abs(p.X - socket.X));
+                points.Clear();
+                Slice(mesh, 1, level, points);
+                float minZ = float.MaxValue, maxZ = float.MinValue, half = 0f;
+                foreach (var q in points)
+                {
+                    if (Math.Abs(q.X - socket.X) > .035f || q.Z < socket.Z - .08f || q.Z > socket.Z + .03f) continue;
+                    minZ = Math.Min(minZ, q.Z); maxZ = Math.Max(maxZ, q.Z); half = Math.Max(half, Math.Abs(q.X - socket.X));
+                }
+                if (minZ > maxZ) continue;
+                double z = (minZ + maxZ) * .5;
+                n++; sy += level; sz += z; syy += level * (double)level; syz += level * z;
+                halfWidths.Add(half);
             }
-            if (n < 8) return (socket, new Shooter.Contracts.Float3(0, 1, 0), .017f);
+            if (n < 2) return (socket, new Shooter.Contracts.Float3(0, 1, 0), .017f);
             double denominator = n * syy - sy * sy;
             double slope = Math.Abs(denominator) < 1e-12 ? 0 : (n * syz - sy * sz) / denominator; // dz/dy along the grip
             slope = Math.Max(-1.2, Math.Min(1.2, slope));
@@ -218,8 +228,30 @@ namespace Shooter.Presentation.Rig
             float length = (float)Math.Sqrt(1 + slope * slope);
             var up = new Shooter.Contracts.Float3(0, 1f / length, (float)slope / length);
             halfWidths.Sort();
-            float radius = Mathf.Clamp(halfWidths[(int)(halfWidths.Count * .9f)], .01f, .03f);
+            float radius = Mathf.Clamp(halfWidths[halfWidths.Count / 2], .01f, .03f);
             return (top, up, radius);
+        }
+
+        /// <summary>
+        /// Points where <paramref name="mesh"/>'s triangle edges cross the plane coordinate[<paramref name="axis"/>] =
+        /// <paramref name="value"/> (0 = X, 1 = Y, 2 = Z), appended to <paramref name="points"/>.
+        /// </summary>
+        public static void Slice(Shooter.Contracts.MeshData mesh, int axis, float value, System.Collections.Generic.List<Shooter.Contracts.Float3> points)
+        {
+            var positions = mesh.Positions; var indices = mesh.Indices;
+            float Coordinate(Shooter.Contracts.Float3 p) => axis == 0 ? p.X : axis == 1 ? p.Y : p.Z;
+            void Edge(Shooter.Contracts.Float3 p, Shooter.Contracts.Float3 q)
+            {
+                float a = Coordinate(p) - value, b = Coordinate(q) - value;
+                if ((a > 0f && b > 0f) || (a < 0f && b < 0f) || a == b) return;
+                float t = a / (a - b);
+                points.Add(new Shooter.Contracts.Float3(p.X + (q.X - p.X) * t, p.Y + (q.Y - p.Y) * t, p.Z + (q.Z - p.Z) * t));
+            }
+            for (int i = 0; i + 2 < indices.Count; i += 3)
+            {
+                var p0 = positions[(int)indices[i]]; var p1 = positions[(int)indices[i + 1]]; var p2 = positions[(int)indices[i + 2]];
+                Edge(p0, p1); Edge(p1, p2); Edge(p2, p0);
+            }
         }
 
         /// <summary>Hand rotation in the semantic glove convention whose fingers point along <paramref name="fingers"/> and whose back faces <paramref name="back"/>.</summary>
@@ -255,23 +287,33 @@ namespace Shooter.Presentation.Rig
         }
 
         /// <summary>
-        /// The handguard as a cylinder from the weapon's own vertices around the left-hand-grip socket (±3 cm along the
-        /// bore, rails and sights above the socket ignored): radius = its half width, axis = that far above its underside.
+        /// The handguard as a cylinder from the weapon's own triangles, sliced across the bore every 1.5 cm within
+        /// ±9 cm of the left-hand-grip socket. Each slice gives an underside (the lowest surface from just below the
+        /// socket up to 12 cm above it) and a half width from its lower 4 cm, so rails and sights on top do not count.
+        /// The widest slice wins, so a pump gun's hand goes on the forend rather than the bare magazine tube.
+        /// Result: radius = that half width, axis = that far above the underside. Slices, not vertices: a low-poly
+        /// handguard has corners only at its ends.
         /// </summary>
-        public static (Shooter.Contracts.Float3 axis, float radius) MeasureHandguard(System.Collections.Generic.IReadOnlyList<Shooter.Contracts.Float3> positions, Shooter.Contracts.Float3 socket)
+        public static (Shooter.Contracts.Float3 axis, float radius) MeasureHandguard(Shooter.Contracts.MeshData mesh, Shooter.Contracts.Float3 socket, Shooter.Contracts.MeshData? moving = null)
         {
-            float halfWidth = 0f, bottom = float.MaxValue; int count = 0;
-            for (int i = 0; i < positions.Count; i++)
+            var points = new System.Collections.Generic.List<Shooter.Contracts.Float3>();
+            float bestHalf = -1f, bestBottom = 0f, bestZ = socket.Z;
+            foreach (int step in new[] { 0, -1, 1, -2, 2, -3, 3, -4, 4, -5, 5, -6, 6 }) // nearest first; a farther slice must be clearly wider (5 mm)
             {
-                var p = positions[i];
-                if (Math.Abs(p.Z - socket.Z) > .03f || Math.Abs(p.X - socket.X) > .06f || p.Y > socket.Y + .02f || p.Y < socket.Y - .08f) continue;
-                halfWidth = Math.Max(halfWidth, Math.Abs(p.X - socket.X));
-                bottom = Math.Min(bottom, p.Y);
-                count++;
+                float z = socket.Z + step * .015f;
+                points.Clear();
+                Slice(mesh, 2, z, points);
+                if (moving != null) Slice(moving, 2, z, points); // a pump gun's forend is its moving part
+                float bottom = float.MaxValue, half = -1f;
+                foreach (var p in points)
+                    if (Math.Abs(p.X - socket.X) <= .06f && p.Y >= socket.Y - .03f && p.Y <= socket.Y + .12f) bottom = Math.Min(bottom, p.Y);
+                foreach (var p in points)
+                    if (Math.Abs(p.X - socket.X) <= .06f && p.Y >= bottom && p.Y <= bottom + .04f) half = Math.Max(half, Math.Abs(p.X - socket.X));
+                if (half >= 0f && (bestHalf < 0f || half > bestHalf + .005f)) { bestHalf = half; bestBottom = bottom; bestZ = z; }
             }
-            if (count == 0) return (socket, DefaultRadius);
-            float radius = Mathf.Clamp(halfWidth, MinRadius, MaxRadius);
-            return (new Shooter.Contracts.Float3(socket.X, bottom + radius, socket.Z), radius);
+            if (bestHalf < 0f) return (socket, DefaultRadius);
+            float radius = Mathf.Clamp(bestHalf, MinRadius, MaxRadius);
+            return (new Shooter.Contracts.Float3(socket.X, bestBottom + radius, bestZ), radius);
         }
     }
 }

@@ -379,6 +379,49 @@ namespace Shooter.Tests
             finally { UnityEngine.Object.DestroyImmediate(root); }
         }
 
+        /// <summary>
+        /// ADR-129 (owner review: the AK's support hand hung open under the handguard). On every loadout long gun the
+        /// first-person support palm lies on the gun's own handguard, measured from its triangles (not the 25 mm fallback
+        /// round the socket, which sits under the handguard), and the fingertips close round it.
+        /// </summary>
+        [Test]
+        public void LicensedSupportHandWrapsEveryLoadoutHandguard()
+        {
+            var root = new GameObject("Licensed support hand loadout test");
+            try
+            {
+                var camera = new GameObject("Camera").AddComponent<Camera>();
+                camera.transform.SetParent(root.transform);
+                camera.nearClipPlane = .05f; camera.fieldOfView = 80f; camera.aspect = 16f / 9f;
+                var presentation = ProductActorPresentation.Create(root.transform, camera);
+                presentation.BindPackagedVisuals(PackagedVisualPayloads.FromBuild(MapPackageBuilder.Build("training-compound", "low",
+                    ContentIdentity.Hash(System.Text.Encoding.ASCII.GetBytes("fp-support-loadout")))));
+                var lifecycle = new Lifecycle();
+                ulong entity = 0;
+                foreach (var profile in WeaponVisualProfiles.All.Where(p => p.Family == WeaponVisualFamily.PrimaryGun && !p.DefinitionId.ToString().StartsWith("weapons/rifle")))
+                {
+                    var id = new EntityId(++entity);
+                    lifecycle.State = new ActorLifecycleState(id, 1, true, 100, default, 0, 0, 0, 30, 90, WeaponAction.Ready, profile.DefinitionId);
+                    var snapshot = new MatchViewSnapshot(1, 10, 10, 53990, GameMatchPhase.Playing, MatchOutcome.None, FinishReason.None, 0, 0,
+                        new[] { new ParticipantState(new ParticipantId(1), "Human", 1, true, id, new LifeId((uint)entity), true, 0, 0, 0) }, 0);
+                    for (int settle = 0; settle < 6; settle++) presentation.Sync(snapshot, lifecycle, null, 0, id, false, .1f, Array.Empty<CombatEvent>(), (uint)(10 + settle));
+                    var arms = presentation.FirstPersonArms!;
+                    var held = camera.transform.Cast<Transform>().First(t => t.name.StartsWith("Local FP") && t.gameObject.activeSelf);
+                    string name = profile.DefinitionId.ToString();
+                    Assert.That(arms.SupportGripSocket.HasValue, Is.True, name + ": support hand not on the handguard");
+                    Assert.That(arms.ArmWristError[1], Is.LessThan(.015f), name + ": support wrist off its target");
+                    float tips = arms.SupportFingertipGap(held.forward), palm = arms.SupportPalmGap(held.forward);
+                    Assert.That(tips, Is.LessThan(.02f), $"{name}: fingertips {tips:F3} m off the handguard (r {arms.SupportGripRadius:F3})");
+                    Assert.That(palm, Is.InRange(-.01f, .01f), $"{name}: palm {palm:F3} m off the handguard");
+                    // The fallback cylinder (25 mm at the near-field scale) means the handguard was not found.
+                    Assert.That(Math.Abs(arms.SupportGripRadius - AuthoredHandGrip.DefaultRadius * held.lossyScale.x), Is.GreaterThan(.0005f),
+                        name + ": handguard not measured (fallback radius)");
+                }
+                Assert.That(entity, Is.GreaterThanOrEqualTo(5));
+            }
+            finally { UnityEngine.Object.DestroyImmediate(root); }
+        }
+
         [Test]
         public void PackagedRifleAndPistolSightsAlignWithCameraRayAndNewLifeClearsKick()
         {

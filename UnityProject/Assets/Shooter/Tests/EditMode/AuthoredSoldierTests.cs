@@ -181,7 +181,8 @@ namespace Shooter.Tests
                 foreach (var gun in guns)
                 {
                     var grip = WeaponGeometry.Sockets(gun.Recipe!).First(s => s.Id == "left-hand-grip").Position;
-                    var (socket, radius) = AuthoredHandGrip.MeasureHandguard(WeaponGeometry.Build(gun.Recipe!).Lods[0].Positions, grip);
+                    var build = WeaponGeometry.Build(gun.Recipe!);
+                    var (socket, radius) = AuthoredHandGrip.MeasureHandguard(build.Lods[0], grip, build.CyclePart);
                     var root = Track(new GameObject("Authored grip test")).transform;
                     var semantic = BuildSemantic(root);
                     var body = new AuthoredSoldierBody(catalog, shape, root, 7, m => m, gearMaterials, gearMaterials.Take(3).ToArray());
@@ -206,7 +207,9 @@ namespace Shooter.Tests
                         float palm = body.SupportPalmGap(weaponRotation * Vector3.forward);
                         report.Add($"{variant.Id}/{gun.MeshKey} r={radius * 1000:F0}mm wrist={body.LeftGripError * 1000:F0}mm tips={gap * 1000:F0}mm palmGap={palm * 1000:F0}mm");
                         Assert.That(body.LeftGripError, Is.LessThan(.02f), $"{variant.Id}/{gun.MeshKey}: wrist {body.LeftGripError:F3} m off its grip target");
-                        Assert.That(gap, Is.LessThan(.015f), $"{variant.Id}/{gun.MeshKey}: fingertips {gap:F3} m off the handguard (r {radius:F3})");
+                        // 2 cm: the handguards are now measured from their slices (28–34 mm radius), not the 25 mm
+                        // fallback the earlier 1.5 cm bound was set against; the hand cannot close fully round them.
+                        Assert.That(gap, Is.LessThan(.02f), $"{variant.Id}/{gun.MeshKey}: fingertips {gap:F3} m off the handguard (r {radius:F3})");
                         Assert.That(palm, Is.InRange(-.008f, .01f), $"{variant.Id}/{gun.MeshKey}: hand skin {palm:F3} m off the handguard surface");
                     }
                     finally { body.Dispose(); }

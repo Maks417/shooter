@@ -342,10 +342,11 @@ public static class ShooterFeatureBuild
                 }
             }
             // The loadout sidearms (the legacy slot-1 pistol above is not what players carry).
-            foreach(string sidearm in new[]{"g17","golden-eagle"})
+            ulong loadoutEntity=10;
+            foreach(var (sidearm,loadoutSlot) in new[]{("ak47",(byte)0),("m4a1",(byte)0),("mk14",(byte)0),("m870",(byte)0),("g17",(byte)1),("golden-eagle",(byte)1)})
             {
-                var id=new EntityId(10+(ulong)sidearm.Length);
-                lifecycle.State=new Shooter.Game.Contracts.ActorLifecycleState(id,1,true,100,default,0,0,1,7,35,WeaponAction.Ready,new DefinitionId("weapons/"+sidearm));
+                var id=new EntityId(++loadoutEntity);
+                lifecycle.State=new Shooter.Game.Contracts.ActorLifecycleState(id,1,true,100,default,0,0,loadoutSlot,7,35,WeaponAction.Ready,new DefinitionId("weapons/"+sidearm));
                 var snapshot=new Shooter.Game.Contracts.MatchViewSnapshot(1,10,10,53990,Shooter.Game.Contracts.GameMatchPhase.Playing,
                     Shooter.Game.Contracts.MatchOutcome.None,Shooter.Game.Contracts.FinishReason.None,0,0,
                     new[]{new Shooter.Game.Contracts.ParticipantState(new Shooter.Game.Contracts.ParticipantId(1),"Diagnostic",1,true,id,new Shooter.Game.Contracts.LifeId(20+(uint)sidearm.Length),true,0,0,0)},0);
@@ -357,7 +358,13 @@ public static class ShooterFeatureBuild
                     var b=r.bounds; var c=camera.transform.InverseTransformPoint(b.center);
                     Debug.Log($"SHOOTER_FP_BOUNDS {sidearm} {r.name} centre=({c.x:F3},{c.y:F3},{c.z:F3}) size={b.size.magnitude:F3}");
                 }
-                var reload=new CombatEvent(new EventId(1,410,id,1),CombatEventKind.ReloadStarted,id,default,new ActionPayload(1,410,510));
+                var fpArms=presentation.FirstPersonArms!;
+                Vector3 trig=camera.transform.InverseTransformPoint(fpArms.ArmWrist(0)), sup=camera.transform.InverseTransformPoint(fpArms.ArmWrist(1));
+                var held=camera.transform.Cast<Transform>().First(t=>t.name.StartsWith("Local FP")&&t.gameObject.activeSelf);
+                Debug.Log($"SHOOTER_FP_ARMS {sidearm} wristError=({fpArms.ArmWristError[0]*1000:F0},{fpArms.ArmWristError[1]*1000:F0}) mm trigger=({trig.x:F3},{trig.y:F3},{trig.z:F3}) support=({sup.x:F3},{sup.y:F3},{sup.z:F3}) supportTips={fpArms.SupportFingertipGap(held.forward)*1000:F0}mm supportPalm={fpArms.SupportPalmGap(held.forward)*1000:F0}mm radius={fpArms.SupportGripRadius*1000:F0}mm");
+                RenderHandPose(camera,Path.Combine(output,sidearm+"-grip.png"),new Vector3(.42f,-.2f,.32f),new Vector3(.06f,-.2f,.34f));
+                RenderHandPose(camera,Path.Combine(output,sidearm+"-under.png"),new Vector3(-.3f,-.45f,.5f),new Vector3(.05f,-.12f,.45f));
+                var reload=new CombatEvent(new EventId(1,410,id,1),CombatEventKind.ReloadStarted,id,default,new ActionPayload(loadoutSlot,410,510));
                 presentation.Sync(snapshot,lifecycle,null,0,id,false,.016f,new[]{reload},411);
                 foreach(int beat in new[]{10,20,30,45,58,75,90})
                 {
@@ -366,8 +373,8 @@ public static class ShooterFeatureBuild
                 }
                 presentation.Sync(snapshot,lifecycle,null,0,id,false,.016f,Array.Empty<CombatEvent>(),520);
                 // Empty reload: the overhand slide rack after the seat.
-                lifecycle.State=new Shooter.Game.Contracts.ActorLifecycleState(id,1,true,100,default,0,0,1,0,35,WeaponAction.Ready,new DefinitionId("weapons/"+sidearm));
-                var empty=new CombatEvent(new EventId(1,530,id,2),CombatEventKind.ReloadStarted,id,default,new ActionPayload(1,530,630));
+                lifecycle.State=new Shooter.Game.Contracts.ActorLifecycleState(id,1,true,100,default,0,0,loadoutSlot,0,35,WeaponAction.Ready,new DefinitionId("weapons/"+sidearm));
+                var empty=new CombatEvent(new EventId(1,530,id,2),CombatEventKind.ReloadStarted,id,default,new ActionPayload(loadoutSlot,530,630));
                 presentation.Sync(snapshot,lifecycle,null,0,id,false,.016f,new[]{empty},531);
                 foreach(int beat in new[]{72,76,80})
                 {

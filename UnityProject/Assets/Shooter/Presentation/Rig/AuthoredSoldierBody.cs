@@ -673,6 +673,13 @@ namespace Shooter.Presentation.Rig
         public Vector3? SupportGripSocket { get; private set; }
         public float SupportGripRadius { get; private set; }
 
+        /// <summary>First-person arms: the handguard axis point and world radius the support hand wraps (null when off the gun), for the grip metrics.</summary>
+        public void SetFirstPersonSupportGrip(Vector3? axisPoint, float radius)
+        {
+            SupportGripSocket = axisPoint;
+            SupportGripRadius = radius;
+        }
+
         /// <summary>
         /// Review metric: how far the drawn support hand's skin stays off the handguard surface (nearest skinned vertex
         /// dominated by the hand bone, measured to the handguard axis, minus its radius); negative when it sinks in, NaN

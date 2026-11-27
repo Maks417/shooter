@@ -2004,6 +2004,11 @@ Date 2026-11-27 (owner playtest of 0.3.27). **Context.** The owner reported four
       - The legacy `weapons/pistol` (pinned by the C0 fixture) is unchanged.
       - The pistol reload lift is (−2, +8, +1) cm.
       - A support reach up over the gun (slide rack, charging handle) takes an overhand frame, palm down, instead of the magazine grab.
+  - **Measured handguards and grips** (owner review: on the AK the support hand hung open under the handguard, and the gun hand did not show). On the loadout guns the `left-hand-grip` socket sits about 4 cm under the handguard. Their low-poly boxes also have no vertices near it, so the old vertex measure found nothing and every support hand wrapped a 25 mm phantom cylinder round the socket, under the gun. The pistol-grip fit had fallen back the same way, to a vertical axis.
+    - Both measures now slice the gun's triangles. Pistol grip: horizontal slices every 1.5 cm give its raked axis and half width.
+    - Handguard: slices across the bore every 1.5 cm within ±9 cm of the socket, including the moving part (a pump gun's forend). The underside is the lowest surface from 3 cm below the socket to 12 cm above it, the half width comes from its lower 4 cm, and the widest slice wins.
+    - The loadout long guns measure 28–34 mm.
+    - Bots use the same measure. Their fingertip bound is 2 cm, since the hand cannot close fully round these real handguards.
   - Off a reload, third-person bots use the held gun's socket and radius; reload and other support tasks keep the solver's target.
 - **Strafe clip facing.** `AuthoredSoldierBody.Pose` takes the world travel heading and measures it from the drawn facing.
   - `AuthoredSoldierBlend` eases the four-way split with a 0.12 s time constant.
