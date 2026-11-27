@@ -23,6 +23,33 @@ Owner request: shotguns are weak. A shotgun should throw a bunch of pellets per 
 
 **Pending:** not in an installer; owner in-game check of shotgun balance (players and bots) and the tracer look; the TDM-5v5 Low benchmark with the larger tracer cap.
 
+## Old Town stutter profile — 2026-11-27 (diagnostic, not acceptance)
+
+**Question.** Why did the owner's 0.3.26 Old Town 10v10 match log 383 `SHOOTER_HITCH` events (about 36 s of dropped simulation time in about 6.6 min), when Oil Depot logged 12 at the same settings?
+
+**Owner settings.** `qualityTier` 2 (High: MSAA 4×, 150 m shadows with 4 cascades on a 4096 atlas, soft shadows High, HDR, bloom, SSAO, four burning wrecks), 1920×1080 full-screen, no vsync or fps cap. Hardware: Ryzen 5 4600H with integrated Vega.
+
+**Measurement.**
+- PresentMon 2.6.0 on the `fbee447` IL2CPP client (gameplay identical to 0.3.26), Old Town 10v10, windowed 1920×1080, High: 1,800 frames over about 90 s (`Artifacts/playtest-logs/0.3.26/profile-oldtown-high/`).
+  - Frame interval p50 47 ms (about 21 fps), p95 81 ms, p99 107 ms.
+  - GPU busy p50 38 ms, p95 66 ms, p99 89 ms; GPU wait p50 0 ms.
+  - CPU busy p50 45 ms, p95 68 ms.
+  - The player logged 91 hitches in the first 75 s of that match, then quit for an unidentified reason.
+- `Benchmark.ps1 -Workload TDM-10v10-v1` (Old Town, Low, no player input) aborted at tick 2016 (about 34 s) on the gate's `Offline tick overload` (one frame over the 4-tick catch-up), before its capture window, so no frame CSVs were written. Two earlier attempts on each map aborted on window focus (the benchmark needs the game to be the foreground window).
+- The Oil Depot and 720p comparison runs did not complete. The owner stopped further client runs; the attribution below is therefore partly inference.
+
+**Reading.**
+1. **The stutter is the High tier running far below 60 fps, not a spike bug.** The GPU is never idle. Each frame already uses about 3 of the 4 simulation ticks the clock catches up per frame. Every frame slower than about 67 ms (the slowest 5–10% at High here) drops simulation time and logs `SHOOTER_HITCH`. 219 of the 383 match hitches came within 8 ticks of the previous one, which matches sustained slow stretches rather than isolated spikes.
+2. **Old Town is the heaviest map for this tier (inference).** It is the densest map (308 solids against 294 on Oil Depot, but tighter streets). With 4 shadow cascades out to 150 m and MSAA 4×, more of the town is drawn and shadowed per frame. Same settings, same session: Oil Depot 12 hitches, Old Town 383.
+3. **The ADR-124 soldiers likely raised the per-actor cost (inference, not measured).** Each authored body draws 4 skinned renderers (Swat Body, Feet, Head, Legs) plus its generated gear, against 1 skinned renderer for the generated body. All of them use `updateWhenOffscreen = true` and `AnimatorCullingMode.AlwaysAnimate`, so all 20 actors are skinned and posed every frame even behind walls, and every renderer is drawn again into each shadow cascade. CPU busy (45 ms) is about as high as GPU busy, which is consistent with draw-call and skinning load on top of GPU fill.
+4. Low is not clean on Old Town either: the benchmark gate saw at least one frame over 67 ms within 34 s.
+
+**Recommended next steps** (none implemented here):
+- Make ordinary play logs attribute stalls: a periodic `SHOOTER_FRAME_SUMMARY` with main-thread, render-thread and GPU p50/p95 from `FrameTimingManager`, as the benchmark already records. Benchmarks cannot run on this desktop without a manual focus click and abort on the first overload.
+- Cut the authored-soldier cost: skin and pose off-screen actors only when visible (`updateWhenOffscreen = false` with padded bounds, culled animation), and check gear and body renderer counts in shadow casting.
+- Re-check the High tier budget on the reference iGPU (shadow distance and cascades, MSAA 4×, SSAO at 1080p). Until then, Balanced or Low is the realistic setting on this laptop.
+- TDM-10v10 Old Town Low benchmark and named owner review remain Pending.
+
 ## Career double award fix and owner playtest logs — 2026-11-27
 
 **Owner playtest of the installed 0.3.26** (two sessions, logs copied to `Artifacts/playtest-logs/0.3.26/`):
