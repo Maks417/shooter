@@ -180,7 +180,11 @@ namespace Shooter.Presentation.Rig
         private GameObject? fpArmsRoot;
         private string? fpArmsKey;
         private readonly float[] fpSupportCurls = new float[12];
-        private static readonly Vector3 FpShoulderRight = new Vector3(.19f, -.3f, 0f), FpShoulderLeft = new Vector3(-.21f, -.3f, .02f);
+        /// <summary>
+        /// ADR-129 first-person shoulders, camera local: behind and below the eye, so the near-straight arms reach the gun
+        /// from the lower screen corners and the forearms run forward under the hands instead of pointing at the camera.
+        /// </summary>
+        private static readonly Vector3 FpShoulderRight = new Vector3(.27f, -.32f, -.2f), FpShoulderLeft = new Vector3(-.27f, -.32f, -.16f);
         private const float GrenadeGripRadius = .03f;
         /// <summary>The licensed first-person arms, when the authored bodies drive the view model (review and tests).</summary>
         public AuthoredSoldierBody? FirstPersonArms => fpArms;
@@ -972,9 +976,14 @@ namespace Shooter.Presentation.Rig
             Quaternion supportFrame;
             Vector3 supportWrist;
             float supportRadius;
+            // Reload reach (ADR-099 choreography): the support hand turns from the handguard to a magazine grab, palm on
+            // the magazine's front and fingers round its right side, as far as the wrist has travelled from the handguard.
+            float reachLength = new Vector3(reloadPose.SupportWristOffset.X, reloadPose.SupportWristOffset.Y, reloadPose.SupportWristOffset.Z).magnitude;
+            float grab = gun ? Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(reachLength / .06f)) : 0f;
+            var magazineFrame = AuthoredHandGrip.HandFrame(right * .8f + up * .2f, forward * .6f - up * .6f, true);
             if (slot == 0 && set != null && set.HasSupportSocket)
             {
-                supportFrame = AuthoredHandGrip.HandFrame(right * .75f + forward * .35f + up * .1f, -up, true);
+                supportFrame = Quaternion.Slerp(AuthoredHandGrip.HandFrame(right * .75f + forward * .35f + up * .1f, -up, true), magazineFrame, grab);
                 supportRadius = set.SupportRadius * scale;
                 var reach = new Vector3(reloadPose.SupportWristOffset.X + specialWrist.X, reloadPose.SupportWristOffset.Y + specialWrist.Y,
                     reloadPose.SupportWristOffset.Z + specialWrist.Z);
@@ -984,7 +993,7 @@ namespace Shooter.Presentation.Rig
             else
             {
                 // Pistol cup, grenade pin: the rig wrist already carries the reach.
-                supportFrame = AuthoredHandGrip.HandFrame(right * .8f + forward * .3f + up * .15f, -up - right * .3f, true);
+                supportFrame = Quaternion.Slerp(AuthoredHandGrip.HandFrame(right * .8f + forward * .3f + up * .15f, -up - right * .3f, true), magazineFrame, grab);
                 supportRadius = .045f * scale;
                 supportWrist = handBones[1][2].position;
             }

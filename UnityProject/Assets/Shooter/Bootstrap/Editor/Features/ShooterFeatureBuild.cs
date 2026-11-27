@@ -271,7 +271,8 @@ public static class ShooterFeatureBuild
         try
         {
             var camera=new GameObject("Diagnostic camera").AddComponent<Camera>(); camera.transform.SetParent(root.transform,false);
-            camera.fieldOfView=65; camera.nearClipPlane=.005f; camera.farClipPlane=10;
+            // The product camera: default hip FOV 80 (vertical), near plane 0.05 (ProductSessionView).
+            camera.fieldOfView=80; camera.nearClipPlane=.05f; camera.farClipPlane=10;
             camera.clearFlags=CameraClearFlags.SolidColor; camera.backgroundColor=new Color(.16f,.20f,.25f);
             var key=new GameObject("Diagnostic sun").AddComponent<Light>(); key.transform.SetParent(root.transform,false);
             key.type=LightType.Directional;key.intensity=1.5f;key.color=new Color(1,.94f,.84f);key.transform.rotation=Quaternion.Euler(44,-32,0);
@@ -313,6 +314,13 @@ public static class ShooterFeatureBuild
                     presentation.Sync(snapshot,lifecycle,null,0,id,true,0,new[]{empty},176); RenderHandPose(camera,Path.Combine(output,name+"-fresh.png"));
                     presentation.Sync(snapshot,lifecycle,null,0,id,true,0,Array.Empty<CombatEvent>(),199); RenderHandPose(camera,Path.Combine(output,name+"-release.png"));
                     presentation.Sync(snapshot,lifecycle,null,0,id,true,0,Array.Empty<CombatEvent>(),220);
+                    // Sprint carry (FirstPersonLocomotionPose), settled, from the view and from the right.
+                    lifecycle.State=new Shooter.Game.Contracts.ActorLifecycleState(id,1,true,100,default,0,0,slot,30,90);
+                    Func<EntityId,Shooter.Game.Session.LocalMovementView?> sprinting=_=>new Shooter.Game.Session.LocalMovementView(Stance.Standing,1.6f,false,1f,6f,2f,true);
+                    for(int step=0;step<12;step++) presentation.Sync(snapshot,lifecycle,null,0,id,false,.05f,Array.Empty<CombatEvent>(),(uint)(260+step),sprinting);
+                    RenderHandPose(camera,Path.Combine(output,name+"-sprint.png"));
+                    RenderHandPose(camera,Path.Combine(output,name+"-sprint-right.png"),new Vector3(.75f,-.15f,.45f));
+                    for(int step=0;step<12;step++) presentation.Sync(snapshot,lifecycle,null,0,id,false,.05f,Array.Empty<CombatEvent>(),(uint)(280+step));
                 }
                 else if(slot==2)
                 {

@@ -46,7 +46,8 @@ namespace Shooter.Tests
             Assert.That(handling.PositionOffset(0, -1, false).X, Is.Not.EqualTo(0f));
             Assert.That(handling.PositionOffset(0, -1, true).X, Is.EqualTo(0f));
             Assert.That(handling.PositionOffset(1, -1, false).X, Is.EqualTo(0f));
-            Assert.That(handling.PositionOffset(0, .5f, true).Y, Is.LessThan(-.05f));
+            // ADR-129: the reload lift cancels most of the choreography's drop, so the well stays in view.
+            Assert.That(handling.PositionOffset(0, .5f, true).Y, Is.GreaterThan(-.02f));
             Assert.That(handling.PositionOffset(0, 1, true).Y, Is.EqualTo(0f).Within(1e-7f));
             handling.Step(default, 1, 0f, false);
             Assert.That(handling.VisibleWeaponSlot, Is.EqualTo(0));
@@ -317,6 +318,61 @@ namespace Shooter.Tests
                 presentation.ClearAll();
                 Assert.That(presentation.FirstPersonArms, Is.Null);
                 Assert.That(camera.transform.Find("FP licensed arms"), Is.Null, "teardown must remove the licensed arms");
+            }
+            finally { UnityEngine.Object.DestroyImmediate(root); }
+        }
+
+        /// <summary>
+        /// ADR-129 follow-up (owner review of the real client): through the sprint carry and every beat of a reload
+        /// both licensed hands stay on their targets, and the reload brings the gun's well and the support hand onto
+        /// the screen of the product camera (hip FOV 80, 16:9) instead of below its edge.
+        /// </summary>
+        [Test]
+        public void LicensedArmsHoldTheGunThroughSprintAndReload()
+        {
+            var root = new GameObject("Licensed arms sprint and reload test");
+            try
+            {
+                var camera = new GameObject("Camera").AddComponent<Camera>();
+                camera.transform.SetParent(root.transform);
+                camera.nearClipPlane = .05f; camera.fieldOfView = 80f; camera.aspect = 16f / 9f;
+                var presentation = ProductActorPresentation.Create(root.transform, camera);
+                presentation.BindPackagedVisuals(PackagedVisualPayloads.FromBuild(MapPackageBuilder.Build("training-compound", "low",
+                    ContentIdentity.Hash(System.Text.Encoding.ASCII.GetBytes("fp-arms-sprint-reload")))));
+                var lifecycle = new Lifecycle();
+                Func<EntityId, Shooter.Game.Session.LocalMovementView?> sprinting = _ => new Shooter.Game.Session.LocalMovementView(Stance.Standing, 1.6f, false, 1f, 6f, 2f, true);
+                for (byte slot = 0; slot < 2; slot++)
+                {
+                    var id = new EntityId((ulong)slot + 1);
+                    lifecycle.State = new ActorLifecycleState(id, 1, true, 100, default, 0, 0, slot, 30, 90);
+                    var snapshot = new MatchViewSnapshot(1, 10, 10, 53990, GameMatchPhase.Playing, MatchOutcome.None, FinishReason.None, 0, 0,
+                        new[] { new ParticipantState(new ParticipantId(1), "Human", 1, true, id, new LifeId((uint)slot + 1), true, 0, 0, 0) }, 0);
+                    presentation.Sync(snapshot, lifecycle, null, 0, id, false, .016f, Array.Empty<CombatEvent>(), 10);
+                    for (int step = 0; step < 12; step++)
+                    {
+                        presentation.Sync(snapshot, lifecycle, null, 0, id, false, .05f, Array.Empty<CombatEvent>(), (uint)(11 + step), sprinting);
+                        var arms = presentation.FirstPersonArms!;
+                        Assert.That(arms.ArmWristError[0], Is.LessThan(.015f), $"slot {slot} sprint step {step}: trigger wrist off the grip");
+                        Assert.That(arms.ArmWristError[1], Is.LessThan(.015f), $"slot {slot} sprint step {step}: support wrist off the gun");
+                    }
+                    for (int step = 0; step < 12; step++) presentation.Sync(snapshot, lifecycle, null, 0, id, false, .05f, Array.Empty<CombatEvent>(), (uint)(30 + step));
+                    var reload = new CombatEvent(new EventId(1, 50, id, 1), CombatEventKind.ReloadStarted, id, default, new ActionPayload(slot, 50, 150));
+                    presentation.Sync(snapshot, lifecycle, null, 0, id, false, .016f, new[] { reload }, 50);
+                    for (uint tick = 52; tick < 150; tick += 4)
+                    {
+                        presentation.Sync(snapshot, lifecycle, null, 0, id, false, .016f, Array.Empty<CombatEvent>(), tick);
+                        var arms = presentation.FirstPersonArms!;
+                        Assert.That(arms.ArmWristError[0], Is.LessThan(.015f), $"slot {slot} reload tick {tick}: trigger wrist off the grip");
+                        Assert.That(arms.ArmWristError[1], Is.LessThan(.015f), $"slot {slot} reload tick {tick}: support wrist off its reach");
+                        Assert.That(camera.transform.InverseTransformPoint(arms.ArmWrist(0)).z, Is.GreaterThan(camera.nearClipPlane));
+                    }
+                    // Seat beat (rifle .66, pistol .58 of the window): the support hand is on screen at the well.
+                    presentation.Sync(snapshot, lifecycle, null, 0, id, false, .016f, Array.Empty<CombatEvent>(), slot == 0 ? 116u : 108u);
+                    var seat = camera.WorldToViewportPoint(presentation.FirstPersonArms!.ArmWrist(1));
+                    Assert.That(seat.x, Is.InRange(0f, 1f), $"slot {slot}: support hand off screen at the seat ({seat})");
+                    Assert.That(seat.y, Is.InRange(0f, 1f), $"slot {slot}: support hand off screen at the seat ({seat})");
+                    presentation.Sync(snapshot, lifecycle, null, 0, id, false, .016f, Array.Empty<CombatEvent>(), 160);
+                }
             }
             finally { UnityEngine.Object.DestroyImmediate(root); }
         }

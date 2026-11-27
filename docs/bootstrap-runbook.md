@@ -109,6 +109,12 @@ Every Unity wrapper re-runs the curation check. After one full hash verification
 - The installer is described in [installer](features/windows-installer.md) ([ADR-041](decisions.md#adr-041--accepted-inno-setup-per-user-installer-and-in-place-upgrade-t073)).
 - `-Target Server` builds only on request and is parked (ADR-076).
 
+**Real-client view recording** (review only, never acceptance; [ADR-129](decisions.md#adr-129--accepted-licensed-first-person-arms-wrapped-support-grips-strafe-clip-facing-and-grenade-start-contact)):
+- `./Tools/Record-ViewModel.ps1 -BuildRunDirectory <build-client run> -OutDir <dir>` starts the built player windowed, enters a match from Main, and records it with ffmpeg (which must be on `PATH`).
+- A fixed timeline of real keyboard and mouse input drives the player: rifle idle, ADS, fire, walk, sprint, tactical and empty reloads; then the pistol; then knife and grenade.
+- It writes `viewmodel.mp4`, `timeline.json`, stills per step and a labelled `sheet.png`.
+- It takes over the desktop for about 1.5 minutes. A bot can kill the player mid-run, so check the sheet.
+
 **Diagnostic compilers** never produce product content:
 - `Compile-Content.ps1`, `Compile-Gallery.ps1` and `Smoke-Gallery.ps1`;
 - `Compile-Soldier.ps1` and `Compile-M1Content.ps1`;

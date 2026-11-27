@@ -56,6 +56,13 @@ namespace Shooter.Presentation.View
         public const float DropGravity = 9.81f;
         /// <summary>A dropped magazine is hidden once it falls this far below the well (out of view).</summary>
         public const float DropHideDepth = 0.42f;
+        /// <summary>ADR-129: camera-local lift added to a long gun over its reload (in by <see cref="LiftInPhase"/>, out from <see cref="LiftOutPhase"/>).</summary>
+        public static readonly Float3 ReloadLift = new Float3(-0.03f, 0.06f, 0.03f);
+        /// <summary>ADR-129: the smaller lift of a pistol, whose well is closer to the hip view.</summary>
+        public static readonly Float3 PistolReloadLift = new Float3(-0.02f, 0.12f, 0.01f);
+        public const float LiftInPhase = 0.12f, LiftOutPhase = 0.86f;
+        /// <summary>ADR-129: muzzle-up pitch (degrees, negative X) added with the long-gun lift.</summary>
+        public const float ReloadLiftPitchDegrees = 0f;
 
         private sealed class Track
         {
@@ -321,7 +328,18 @@ namespace Shooter.Presentation.View
             float t = reloadPhase;
             // The weapon still has to come down to the hand (position kept); only the tilt/cant is halved.
             Float3 pos = track.Position.Sample(t);
-            Float3 rot = MotionCurve.Scale(track.Rotation.Sample(t), reducedMotion ? 0.5f : 1f);
+            Float3 rot = track.Rotation.Sample(t);
+            // ADR-129: the gun comes up and in toward the screen centre for the whole reload, so the well, the
+            // magazines and the support hand stay in view instead of working below the screen edge; a long gun also
+            // pitches its muzzle up so the lifted stock stays low.
+            {
+                bool pistol = style == WeaponHandlingStyle.Pistol;
+                var target = pistol ? PistolReloadLift : ReloadLift;
+                float lift = MotionCurve.Ramp(t, 0f, LiftInPhase) * (1f - MotionCurve.Ramp(t, LiftOutPhase, 1f));
+                pos = new Float3(pos.X + target.X * lift, pos.Y + target.Y * lift, pos.Z + target.Z * lift);
+                if (!pistol) rot = new Float3(rot.X + ReloadLiftPitchDegrees * lift, rot.Y, rot.Z);
+            }
+            rot = MotionCurve.Scale(rot, reducedMotion ? 0.5f : 1f);
             Float3 hand = track.Hand.Sample(t);
             float open = Math.Clamp(track.Open.Sample(t).X, 0f, 1f);
             Float3 inHand = MotionCurve.Sub(hand, track.Well);

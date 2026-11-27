@@ -74,7 +74,8 @@ namespace Shooter.Simulation.Tests.View
             Assert.NotEqual(0f, handling.PositionOffset(0, -1, false).X);
             Assert.Equal(0f, handling.PositionOffset(0, -1, true).X);
             Assert.Equal(0f, handling.PositionOffset(1, -1, false).X);
-            Assert.True(handling.PositionOffset(0, .5f, true).Y < -.05f);
+            // ADR-129: the reload lift cancels most of the choreography's drop, so the well stays in view.
+            Assert.True(handling.PositionOffset(0, .5f, true).Y > -.02f);
             Assert.InRange(Math.Abs(handling.PositionOffset(0, 1, true).Y), 0f, 1e-7f);
             // Slot change starts a holster of the visible rifle — mesh must not swap yet.
             handling.Step(default, 1, 0f, false);

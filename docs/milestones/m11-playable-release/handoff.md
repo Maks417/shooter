@@ -2,6 +2,39 @@
 
 Evidence log for M11, newest first. Each delivery and change records identities, results and what stays Pending. Records before 2026-11-15 (deliveries up to 0.3.12, T062–T085) are in git history. Current status is in [next playable build](../../next-playable-build.md) and gates are in [acceptance](../../acceptance.md).
 
+## ADR-129 follow-up: first-person arms in the real client — 2026-11-27
+
+Owner report after 0.3.29: the hands were still not fixed, the gun hand especially. The owner asked for a run of the real client with a recording, and a check of sprint and reload.
+
+**Recording.** New `Tools/Record-ViewModel.ps1` drives the built IL2CPP player with real input and records it (runbook). Baseline on the 0.3.29 code (`83b381b` build): `Artifacts/visual-design/adr-129-fp-hands/run1/before/`.
+- Pistol: both forearms rose from below straight at the camera, so the Golden Eagle's slide floated over two dark sleeves that hid the grip and hands.
+- Rifle: the trigger hand sat mostly behind the grip.
+- Reloads: the gun dropped, so the support hand and magazines worked below the screen edge.
+- Sprint: both hands stayed on the gun.
+
+The editor captures had hidden all this: they used a 65° FOV and a 5 mm near plane, against the game's 80° and 5 cm. They now use the game's values.
+
+**Changes** (ADR-129 amended):
+- shoulder anchors moved behind and outward;
+- the support hand turns to a magazine grab during the reload reach;
+- the reload choreography lifts the gun into view: long guns (−3, +6, +3) cm, pistols (−2, +12, +1) cm.
+
+A larger long-gun lift (+9 to +11 cm, with or without pitch) was recorded and rejected, because it swings the AK stock across the screen.
+
+Final recording, on uncommitted source over `0821b63` (build `build-client-20261127T215047568Z-d52ee307`): `…/run1/final/`. Side by side with the baseline: `…/run1/compare.mp4`.
+
+**Checks:**
+- Pure `Test-All.ps1` PASS (`test-all-20261127T215831979Z-2f501d3a`).
+- Unity EditMode **113/113** (`tests-editmode-20261127T215832700Z-107e1a26`) and PlayMode **35/35** (`tests-playmode-20261127T220318644Z-5ae10457`).
+- New EditMode test `LicensedArmsHoldTheGunThroughSprintAndReload`: wrists within 1.5 cm through the sprint carry and every reload beat; the support hand is on screen at the seat beat for rifle and pistol (product camera, 80°, 16:9).
+
+**Still visible in the final recording:**
+- At the hip the Golden Eagle is seen from behind, low and right, with the hands mostly round its grip.
+- Mid-reload the AK stock still crosses the right of the screen, as in 0.3.29.
+- Improving either needs the hip view-model placement itself changed (owner decision).
+
+**Pending:** the owner's in-game review; not in an installer.
+
 ## Delivery 0.3.29 — 2026-11-27
 
 `Tools/Deliver.ps1 -ForceContent -ReleaseVersion 0.3.29` on clean `83b381b` PASS (`m11-playable-release/83b381b…/deliver-20261127T201124441Z-c6182422`). It carries, on top of 0.3.28:

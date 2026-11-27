@@ -1994,6 +1994,11 @@ Date 2026-11-27 (owner playtest of 0.3.27). **Context.** The owner reported four
   - **Palm.** The palm, not the wrist, lies against the cylinder with the knuckles at its far side.
   - **Curls.** Each finger's three cumulative curls are solved in the curl plane so the fingertips meet that radius, cached per variant and millimetre. Thumbs curl toward the palm (the old sign turned them toward the back of the hand): round a pistol grip, opened along a handguard.
   - **First-person trigger hand** (owner review of 0.3.28: "incorrect holding"). Each gun's pistol grip is fitted from its own vertices under the `right-hand-grip` socket: a raked axis and a half width. The knuckles stack up that axis with the index knuckle just under the receiver, the fingers wrap the grip's front, and the index lies along the trigger guard, curling with the trigger. First-person hands are drawn at 0.8 of the body's (the licensed palm is about 14 cm long).
+  - **First-person composition, sprint and reload** (owner review of 0.3.29 in the real client, recorded with `Tools/Record-ViewModel.ps1`). The shoulders were at eye depth, so the bent forearms pointed at the camera and covered the grips.
+    - They now sit 16–20 cm behind and 27 cm to each side of the eye, so near-straight forearms reach the gun from the lower screen corners.
+    - Through a reload the support hand turns from the handguard to a magazine grab, as far as its choreography reach has travelled (full at 6 cm).
+    - The reload choreography lifts the gun toward the screen centre over the whole window (in by 12 %, out from 86 %): a long gun by (−3, +6, +3) cm, which cancels most of its old drop; a pistol by (−2, +12, +1) cm. A larger long-gun lift was tried and rejected, because it swings the stock across the view.
+    - The sprint carry needed no change: both hands stay on the gun.
   - Off a reload, third-person bots use the held gun's socket and radius; reload and other support tasks keep the solver's target.
 - **Strafe clip facing.** `AuthoredSoldierBody.Pose` takes the world travel heading and measures it from the drawn facing.
   - `AuthoredSoldierBlend` eases the four-way split with a 0.12 s time constant.
