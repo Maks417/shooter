@@ -2,6 +2,24 @@
 
 Evidence log for M11, newest first. Each delivery and change records identities, results and what stays Pending. Records before 2026-11-15 (deliveries up to 0.3.12, T062–T085) are in git history. Current status is in [next playable build](../../next-playable-build.md) and gates are in [acceptance](../../acceptance.md).
 
+## Delivery 0.3.29 — 2026-11-27
+
+`Tools/Deliver.ps1 -ForceContent -ReleaseVersion 0.3.29` on clean `83b381b` PASS (`m11-playable-release/83b381b…/deliver-20261127T201124441Z-c6182422`). It carries, on top of 0.3.28:
+- the first-person trigger-hand follow-up to ADR-129 (record below);
+- ADR-130, the sidearm lethality change from a parallel session.
+
+**Steps:**
+- Native content (12 packages) and IL2CPP Client: `m8-runtime-composition/83b381b…/compile-gamecontent-20261127T201124657Z-0ea35bb0`, `m0-foundation/83b381b…/build-client-20261127T201204631Z-c117ca53`.
+- Smoke PASS (`smoke-client-20261127T201604632Z-04443ed9`).
+- Package PASS with native nav required, 1,245 inventory files, extract and corrupt-content rehearsals PASS. The rollback rehearsal was skipped because the 0.3.28 package run had been pruned (`package-20261127T201612985Z-d5cad608`).
+- Installer `Shooter-Setup-0.3.29.exe`: 98,120,296 bytes, SHA-256 `6fb08b1f3a18d73375d14da7eea245380832fb252ce65b6f788dd4a0395189dd`, workspace clean (`installer-20261127T201619670Z-57bac2b2`). It is copied with its report to `Artifacts/deliveries/`.
+
+**Published:** GitHub pre-release `v0.3.29` (tag on `83b381b`) with the installer and its `.sha256`; the site and README point at it.
+
+**Not run on the combined source:** Unity EditMode and PlayMode passed on the trigger-hand change before ADR-130 was committed; ADR-130 recorded its Unity lanes as Pending.
+
+**Pending / NotClaimed:** an install and upgrade over 0.3.28; a playtest (first-person hands on every weapon, sidearm balance, and the 0.3.28 items); the TDM-5v5 Low benchmark; REL01–REL06.
+
 ## ADR-130 sidearm lethality — 2026-11-27
 
 Owner report after 0.3.28: pistols are useless, and it is almost impossible to kill with one. Owner choice: five G17 and three Golden Eagle torso hits up close. Implemented [ADR-130](../../decisions.md#adr-130--accepted-sidearms-kill-in-five-g17-and-three-golden-eagle-torso-hits):
@@ -35,7 +53,7 @@ The owner reviewed 0.3.28: the first-person hands, especially the one on the gun
 - Renders, including new `rifle-grip` and `pistol-grip` close-ups: `capture-handling-20261127T200716736Z-0e454ee6` and `capture-soldier-skins-20261127T200747244Z-b81b77e0`.
 - The pure lanes are unaffected: this change touches only `Presentation/Rig` and tests.
 
-**Pending:** owner review in game. Not in an installer.
+**Pending:** owner review in game (in 0.3.29).
 
 ## Delivery 0.3.28 — 2026-11-27
 
