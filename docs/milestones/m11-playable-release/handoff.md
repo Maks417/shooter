@@ -10,7 +10,15 @@ Evidence log for M11, newest first. Each delivery and change records identities,
 - Installer `Shooter-Setup-0.3.26.exe`: 98,074,711 bytes, SHA-256 `a4a2c9c250c9bcc79061dbcbcbf684529bfcba5d14953ed3e516694afcf2ca86`, workspace clean (`installer-20261127T120443455Z-2812944f`). It is copied with its report to `Artifacts/deliveries/`. The wrapper pruned the 0.3.25 installer run folder; that installer remains on the `v0.3.25` GitHub release.
 - Published as the GitHub pre-release `v0.3.26`. The site and README screenshots were recaptured from this player with `Tools/Capture-UiReview.ps1` on Harbour at 10v10 (`Artifacts/site-captures/0.3.26/`). They are publicity images, not review or acceptance evidence.
 
-**Pending / NotClaimed:** an actual install and upgrade over 0.3.25, the T071 playtest of this build, the TDM-5v5 Low benchmark on the reference laptop, named owner review of the soldiers, effects and sniper balance, and REL01–REL06.
+**Owner upgrade over 0.3.25 (2026-11-27, owner PC, interactive installer).** Checked from disk after the owner ran the installer:
+- One uninstall entry `{B01E0F69-…}_is1` at DisplayVersion 0.3.26, at the original path `%LOCALAPPDATA%\Programs\Shooter\`.
+- The Start menu shortcut targets that `Shooter.exe`.
+- `installer-identity.json` names binary commit `232c645` and 1,245 inventory files. All 1,245 `payload-files.txt` entries are present, and nothing else is on disk except the installer's own files (no stale content).
+- Settings, career and armory files in `LocalLow/Procedural Shooter/Shooter` keep their pre-install timestamps, so the installer did not touch them.
+
+This is file-level INS02 evidence only. The first launch of 0.3.26 and its preserved bindings in play are not yet observed.
+
+**Pending / NotClaimed:** the first launch of the upgraded install, the T071 playtest of this build, the TDM-5v5 Low benchmark on the reference laptop, named owner review of the soldiers, effects and sniper balance, and REL01–REL06.
 
 ## ADR-124 authored soldier asset ownership fix — 2026-11-27
 
