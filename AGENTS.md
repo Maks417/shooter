@@ -37,10 +37,9 @@ Simulation stays the single authority and Presentation stays read-only.
 ## Hard requirements
 
 **Art:**
-- No imported or manually modeled meshes.
-- No painted, photo or AI image textures.
-- No sprites, authored skeletal clips or mocap.
-- Geometry, materials, rigs and motion come from code or numeric recipes.
+- Geometry, materials, rigs and motion come from code or numeric recipes, except the licensed art track (ADR-124).
+- Licensed art track: CC0/CC-BY models, textures and clips only, only under `UnityProject/Assets/Shooter/Art/`, each file hash-pinned with author, source URL and license in `Tools/art-sources.json`. Nothing paid or non-redistributable (the repo is public).
+- No painted, photo or AI image textures and no sprites outside that track.
 - Generated caches require provenance.
 - Fonts and the audio bank are named, provenance-recorded exceptions (ADR-066, ADR-062/096).
 - No silent external art fallback.

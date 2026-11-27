@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "policy": "ADR-124 licensed authored art: CC0-1.0, CC-BY-4.0 or CC-BY-3.0 only, files only under UnityProject/Assets/Shooter/Art/, one sha256 per file. Refresh with Tools/Update-ArtSources.ps1 after a reviewed import.",
+  "packs": [
+    {
+      "id": "quaternius-ual",
+      "title": "Universal Animation Library (Standard)",
+      "author": "Quaternius",
+      "sourceUrl": "https://quaternius.com/packs/universalanimationlibrary.html",
+      "license": "CC0-1.0",
+      "notes": "UAL1_Standard.fbx (root motion disabled): crouch, jump and death clips."
+    },
+    {
+      "id": "quaternius-umm",
+      "title": "Ultimate Modular Men Pack",
+      "author": "Quaternius",
+      "sourceUrl": "https://quaternius.com/packs/ultimatemodularcharacters.html",
+      "license": "CC0-1.0",
+      "notes": "Humanoid Rig FBX: Swat body plus Adventurer, Casual2, Suit and Beach heads; Animations.fbx (24 clips incl. four-way run). The download ships no license file; CC0 is stated on the pack page."
+    }
+  ],
+  "files": [
+    {
+      "path": "UnityProject/Assets/Shooter/Art/Soldiers/quaternius-ual/Resources/SoldierArt/ual1/UAL1_Standard.fbx",
+      "sha256": "21b32d912da3cb93426d974fb945e86f5b2e86970acd2ce89905e0fbf9f1dcc2",
+      "pack": "quaternius-ual"
+    },
+    {
+      "path": "UnityProject/Assets/Shooter/Art/Soldiers/quaternius-umm/Resources/SoldierArt/umm/Adventurer.fbx",
+      "sha256": "2dd4bf1bc18968fdc5245863c25dfedcb572dbd63ae7581fe27ae4a8a063d6e3",
+      "pack": "quaternius-umm"
+    },
+    {
+      "path": "UnityProject/Assets/Shooter/Art/Soldiers/quaternius-umm/Resources/SoldierArt/umm/Animations.fbx",
+      "sha256": "259ed6f6e5f1bb2a15215a66a9ed02e8956083a281a8098103490d1a00292b7f",
+      "pack": "quaternius-umm"
+    },
+    {
+      "path": "UnityProject/Assets/Shooter/Art/Soldiers/quaternius-umm/Resources/SoldierArt/umm/Beach.fbx",
+      "sha256": "2ab227a41c6a8a594c61828fd63beec69b0d5f3d23edc2fd5a938e5859322862",
+      "pack": "quaternius-umm"
+    },
+    {
+      "path": "UnityProject/Assets/Shooter/Art/Soldiers/quaternius-umm/Resources/SoldierArt/umm/Casual2.fbx",
+      "sha256": "16087f97266eab15cbc154859dc9cb8c0dd068f7adcaa6ad4be685744bd61d49",
+      "pack": "quaternius-umm"
+    },
+    {
+      "path": "UnityProject/Assets/Shooter/Art/Soldiers/quaternius-umm/Resources/SoldierArt/umm/Suit.fbx",
+      "sha256": "fea0cd877573ec24e8882f3165708a1c6e3ed1aff7b886b3d867820dee916413",
+      "pack": "quaternius-umm"
+    },
+    {
+      "path": "UnityProject/Assets/Shooter/Art/Soldiers/quaternius-umm/Resources/SoldierArt/umm/Swat.fbx",
+      "sha256": "3c5eda6fe78350350363cb1e2ff8be0c7d8a02d58fc60584992b471c04357fa0",
+      "pack": "quaternius-umm"
+    }
+  ]
+}

@@ -1,0 +1,253 @@
+{
+  "schemaVersion": 1,
+  "bodyHeightMeters": 1.84,
+  "clipResource": "SoldierArt/ual1/UAL1_Standard",
+  "roles": [
+    {
+      "role": "Idle",
+      "clip": "SoldierArt/umm/Animations#Idle_Gun"
+    },
+    {
+      "role": "WalkForward",
+      "clip": "SoldierArt/umm/Animations#Walk"
+    },
+    {
+      "role": "RunForward",
+      "clip": "SoldierArt/umm/Animations#Run"
+    },
+    {
+      "role": "RunBackward",
+      "clip": "SoldierArt/umm/Animations#Run_Back"
+    },
+    {
+      "role": "RunLeft",
+      "clip": "SoldierArt/umm/Animations#Run_Left"
+    },
+    {
+      "role": "RunRight",
+      "clip": "SoldierArt/umm/Animations#Run_Right"
+    },
+    {
+      "role": "CrouchIdle",
+      "clip": "Crouch_Idle_Loop"
+    },
+    {
+      "role": "CrouchForward",
+      "clip": "Crouch_Fwd_Loop"
+    },
+    {
+      "role": "Airborne",
+      "clip": "Jump_Loop"
+    }
+  ],
+  "deaths": [
+    "SoldierArt/umm/Animations#Death",
+    "Death01"
+  ],
+  "variants": [
+    {
+      "id": "operator",
+      "model": "SoldierArt/umm/Swat",
+      "teams": [
+        1,
+        2
+      ],
+      "gear": {
+        "helmet": 0,
+        "vest": 0,
+        "backpack": false,
+        "kneePads": false,
+        "belt": false
+      },
+      "uniformMaterials": [
+        "Swat"
+      ],
+      "gearMaterials": [
+        "Swat_Black"
+      ],
+      "skinMaterials": [],
+      "hideRenderers": [],
+      "paintRenderers": [],
+      "skinTexture": "",
+      "gearFit": [],
+      "parts": [],
+      "hideMaterials": []
+    },
+    {
+      "id": "operator-pack",
+      "model": "SoldierArt/umm/Swat",
+      "teams": [
+        1,
+        2
+      ],
+      "gear": {
+        "helmet": 0,
+        "vest": 0,
+        "backpack": true,
+        "kneePads": false,
+        "belt": false
+      },
+      "uniformMaterials": [
+        "Swat"
+      ],
+      "gearMaterials": [
+        "Swat_Black"
+      ],
+      "skinMaterials": [],
+      "hideRenderers": [],
+      "paintRenderers": [],
+      "skinTexture": "",
+      "gearFit": [],
+      "parts": [],
+      "hideMaterials": []
+    },
+    {
+      "id": "rifleman-a",
+      "model": "SoldierArt/umm/Swat",
+      "teams": [
+        1,
+        2
+      ],
+      "gear": {
+        "helmet": 1,
+        "vest": 0,
+        "backpack": false,
+        "kneePads": false,
+        "belt": false
+      },
+      "uniformMaterials": [
+        "Swat"
+      ],
+      "gearMaterials": [
+        "Swat_Black"
+      ],
+      "skinMaterials": [],
+      "hideRenderers": [
+        "Swat_Head"
+      ],
+      "paintRenderers": [],
+      "skinTexture": "",
+      "gearFit": [],
+      "parts": [
+        {
+          "model": "SoldierArt/umm/Adventurer",
+          "renderer": "Adventurer_Head"
+        }
+      ],
+      "hideMaterials": [
+        "Hair"
+      ]
+    },
+    {
+      "id": "rifleman-b",
+      "model": "SoldierArt/umm/Swat",
+      "teams": [
+        1,
+        2
+      ],
+      "gear": {
+        "helmet": 2,
+        "vest": 0,
+        "backpack": true,
+        "kneePads": false,
+        "belt": false
+      },
+      "uniformMaterials": [
+        "Swat"
+      ],
+      "gearMaterials": [
+        "Swat_Black"
+      ],
+      "skinMaterials": [],
+      "hideRenderers": [
+        "Swat_Head"
+      ],
+      "paintRenderers": [],
+      "skinTexture": "",
+      "gearFit": [],
+      "parts": [
+        {
+          "model": "SoldierArt/umm/Casual2",
+          "renderer": "Casual2_Head"
+        }
+      ],
+      "hideMaterials": [
+        "Hair"
+      ]
+    },
+    {
+      "id": "rifleman-c",
+      "model": "SoldierArt/umm/Swat",
+      "teams": [
+        1,
+        2
+      ],
+      "gear": {
+        "helmet": 1,
+        "vest": 0,
+        "backpack": true,
+        "kneePads": false,
+        "belt": false
+      },
+      "uniformMaterials": [
+        "Swat"
+      ],
+      "gearMaterials": [
+        "Swat_Black"
+      ],
+      "skinMaterials": [],
+      "hideRenderers": [
+        "Swat_Head"
+      ],
+      "paintRenderers": [],
+      "skinTexture": "",
+      "gearFit": [],
+      "parts": [
+        {
+          "model": "SoldierArt/umm/Suit",
+          "renderer": "Suit_Head"
+        }
+      ],
+      "hideMaterials": [
+        "Hair"
+      ]
+    },
+    {
+      "id": "rifleman-d",
+      "model": "SoldierArt/umm/Swat",
+      "teams": [
+        1,
+        2
+      ],
+      "gear": {
+        "helmet": 2,
+        "vest": 0,
+        "backpack": false,
+        "kneePads": false,
+        "belt": false
+      },
+      "uniformMaterials": [
+        "Swat"
+      ],
+      "gearMaterials": [
+        "Swat_Black"
+      ],
+      "skinMaterials": [],
+      "hideRenderers": [
+        "Swat_Head"
+      ],
+      "paintRenderers": [],
+      "skinTexture": "",
+      "gearFit": [],
+      "parts": [
+        {
+          "model": "SoldierArt/umm/Beach",
+          "renderer": "Beach_Head"
+        }
+      ],
+      "hideMaterials": [
+        "Hair"
+      ]
+    }
+  ]
+}

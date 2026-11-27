@@ -35,7 +35,9 @@ namespace Shooter.Presentation.Rig
             public Transform Root = null!;
             public Transform Weapon = null!;
             public Transform[] Bones = null!;
-            public SkinnedMeshRenderer Body = null!;
+            public SkinnedMeshRenderer? Body;
+            /// <summary>ADR-124 licensed authored body; null when the generated body renders (diagnostics only).</summary>
+            public AuthoredSoldierBody? Authored;
             public MeshRenderer WeaponRenderer = null!;
             public MeshFilter WeaponFilter = null!;
             public Transform? MagazinePart;
@@ -134,6 +136,16 @@ namespace Shooter.Presentation.Rig
         private DefinitionId localVisibleSight;
         private Material[]? team1Palette;
         private Material[]? team2Palette;
+        // ADR-124 authored soldier bodies: catalog, per-variant prototypes, restyled materials and gear palettes.
+        /// <summary>True for the product: licensed authored bodies. False renders the generated soldier (diagnostics).</summary>
+        public bool UseAuthoredBodies { get; set; } = true;
+        private SoldierSkinCatalog? skinCatalog;
+        private Shader? surfaceShader;
+        private readonly Dictionary<string, AuthoredSoldierBody.Prototype> skinPrototypes = new Dictionary<string, AuthoredSoldierBody.Prototype>(StringComparer.Ordinal);
+        private readonly Dictionary<(Material, Texture?), Material> restyledMaterials = new Dictionary<(Material, Texture?), Material>();
+        private Material[]? team1Gear, team2Gear, team1Paint, team2Paint;
+        // Solid team kit for authored flat-colour packs, whose UVs cannot carry the camo texture: uniform, webbing.
+        private Material[]? team1Solid, team2Solid;
         private Material? rifleMetal;
         private Material? riflePolymer;
         private Material[] weaponMaterials = Array.Empty<Material>();
@@ -335,6 +347,7 @@ namespace Shooter.Presentation.Rig
             foreach(var value in owned)DestroyObject(value);owned.Clear();
             bodyMesh=null;Array.Clear(bodyLods,0,bodyLods.Length);contactMesh=null;contactMaterial=null;weaponMeshes.Clear();sightMeshes.Clear();weaponPalettes.Clear();
             weaponMaterials=Array.Empty<Material>();team1Palette=null;team2Palette=null;firstPersonHandMaterials=null;
+            skinPrototypes.Clear();restyledMaterials.Clear();team1Gear=null;team2Gear=null;team1Paint=null;team2Paint=null;team1Solid=null;team2Solid=null;surfaceShader=null;
             if (visuals == null) throw new ArgumentNullException(nameof(visuals));
             var shader = Shader.Find("Shooter/MapSurface");
             if (shader == null || !shader.isSupported)
@@ -441,6 +454,18 @@ namespace Shooter.Presentation.Rig
                 // Presentation-only numeric polish: team kits must read in sun/shade without touching generators.
                 ApplyPresentationSoldierPalette(team1Palette, team1: true);
                 ApplyPresentationSoldierPalette(team2Palette, team1: false);
+                // ADR-124: gear slots 0 cover, 1 webbing, 2 lens, 3 hardware reuse the team kit materials.
+                team1Gear = new[] { team1Palette[0], team1Palette[1], team1Palette[3], team1Palette[1] };
+                team2Gear = new[] { team2Palette[0], team2Palette[1], team2Palette[3], team2Palette[1] };
+                // Painted base bodies: uniform, gloves, boots.
+                team1Paint = new[] { team1Palette[0], team1Palette[1], team1Palette[1] };
+                team2Paint = new[] { team2Palette[0], team2Palette[1], team2Palette[1] };
+                // Lighter than the camo kit's average so a uniform read survives shade: olive-slate allies, desert enemies.
+                Material Solid(string label, Color color, float smoothness) { var m = Own(new Material(shader) { name = label }); SetLit(m, color, 0f, smoothness); return m; }
+                team1Solid = new[] { Solid("Team1 authored uniform", new Color(.46f, .54f, .45f), .26f), Solid("Team1 authored webbing", new Color(.22f, .27f, .25f), .34f) };
+                team2Solid = new[] { Solid("Team2 authored uniform", new Color(.86f, .72f, .52f), .24f), Solid("Team2 authored webbing", new Color(.36f, .26f, .17f), .30f) };
+                surfaceShader = shader;
+                if (UseAuthoredBodies && skinCatalog == null) skinCatalog = SoldierSkinCatalog.Load();
 
                 Material NearFieldSurface(string path, string label) => Shooter.Presentation.Rendering.ProductSurfaceMaterial.Create(
                     shader, MapVisualClosure.DecodeMapMaterial(visuals, path),
@@ -483,7 +508,10 @@ namespace Shooter.Presentation.Rig
             localHandling.Reset(ProductAuthorityActionView.RifleSlot);
             localViewHuman = default;
             foreach (var pair in avatars)
+            {
+                pair.Value.Authored?.Dispose();
                 if (pair.Value.Root != null) DestroyObject(pair.Value.Root.gameObject);
+            }
             avatars.Clear();
             ClearDroppedWeapons();
             if (localWeapon != null) localWeapon.gameObject.SetActive(false);
@@ -870,6 +898,7 @@ namespace Shooter.Presentation.Rig
             };
             avatar.Root.SetParent(transform, false);
             var skeleton = SoldierSkeleton.Definition;
+            // ADR-124: the semantic bones stay (unrendered under an authored body) as the SoldierMotion upper-body task.
             for (int j = 0; j < SoldierSkeleton.JointCount; j++)
             {
                 var definition = skeleton.Joints[j];
@@ -880,14 +909,19 @@ namespace Shooter.Presentation.Rig
                 bone.localRotation = Quaternion.identity;
             }
 
-            avatar.Body = avatar.Root.gameObject.AddComponent<SkinnedMeshRenderer>();
-            avatar.Body.sharedMesh = bodyMesh;
-            avatar.Body.bones = avatar.Bones;
-            avatar.Body.rootBone = avatar.Bones[0];
-            avatar.Body.sharedMaterials = state.Team == 1 ? team1Palette : team2Palette;
-            avatar.Body.quality = SkinQuality.Bone4;
-            avatar.Body.updateWhenOffscreen = true;
-            avatar.Body.localBounds = new Bounds(new Vector3(0, 1, 0), new Vector3(4, 4, 4));
+            if (UseAuthoredBodies)
+                avatar.Authored = CreateAuthoredBody(avatar.Root, state.EntityId.Value, state.Team);
+            else
+            {
+                avatar.Body = avatar.Root.gameObject.AddComponent<SkinnedMeshRenderer>();
+                avatar.Body.sharedMesh = bodyMesh;
+                avatar.Body.bones = avatar.Bones;
+                avatar.Body.rootBone = avatar.Bones[0];
+                avatar.Body.sharedMaterials = state.Team == 1 ? team1Palette : team2Palette;
+                avatar.Body.quality = SkinQuality.Bone4;
+                avatar.Body.updateWhenOffscreen = true;
+                avatar.Body.localBounds = new Bounds(new Vector3(0, 1, 0), new Vector3(4, 4, 4));
+            }
 
             avatar.Weapon = new GameObject("Held weapon").transform;
             avatar.Weapon.SetParent(avatar.Root, false);
@@ -917,8 +951,17 @@ namespace Shooter.Presentation.Rig
         /// </summary>
         private void SelectBodyLod(Avatar avatar)
         {
-            if (avatar.Body == null || bodyLods[bodyBaseLod] == null) return;
             float distance = fpsCamera != null ? Vector3.Distance(fpsCamera.transform.position, avatar.Root.position) : 0f;
+            if (avatar.Authored != null)
+            {
+                int was = avatar.BodyLod < 0 ? bodyBaseLod : avatar.BodyLod;
+                const float hysteresis = 1.5f;
+                int tier = distance > 40f + (was >= 2 ? -hysteresis : hysteresis) ? 2 : distance > 15f + (was >= 1 ? -hysteresis : hysteresis) ? 1 : 0;
+                avatar.BodyLod = Mathf.Max(tier, bodyBaseLod);
+                avatar.Authored.SetLod(avatar.BodyLod);
+                return;
+            }
+            if (avatar.Body == null || bodyLods[bodyBaseLod] == null) return;
             int current = avatar.BodyLod < 0 ? bodyBaseLod : avatar.BodyLod;
             float bias = 1.5f;
             int wanted = distance > 40f + (current >= 2 ? -bias : bias) ? 2 : distance > 15f + (current >= 1 ? -bias : bias) ? 1 : 0;
@@ -1073,6 +1116,20 @@ namespace Shooter.Presentation.Rig
             if (heldProfile.Family != WeaponVisualFamily.PrimaryGun && !avatar.Corpse && state.Alive)
                 weaponPosition = pose.WorldPositions[RightHandJoint];
             ApplyThirdPersonActionOverlay(avatar, slot, state.WeaponAction == WeaponAction.Cooking, dtSeconds, ref weaponPosition, ref weaponRotation);
+            if (avatar.Authored != null)
+            {
+                // ADR-124: clips drive legs/hips/spine; the solved upper body and the weapon ride the authored chest.
+                float localHeading = float.IsNaN(locomotion.HeadingRadians) || dying ? 0f
+                    : Mathf.DeltaAngle(yaw * Mathf.Rad2Deg, locomotion.HeadingRadians * Mathf.Rad2Deg) * Mathf.Deg2Rad;
+                Vector3 shifted = V(weaponPosition);
+                var grip = avatar.MeleeSeconds >= 0f || avatar.ThrowSeconds >= 0f ? SoldierGrip.None
+                    : heldProfile.Family == WeaponVisualFamily.PrimaryGun ? SoldierGrip.Rifle
+                    : heldProfile.Family == WeaponVisualFamily.Sidearm ? SoldierGrip.Pistol : SoldierGrip.None;
+                avatar.Authored.Pose(dtSeconds, dying ? 0f : speed, localHeading, crouching || slide > .5f ? 1f : 0f, dying ? 0f : locomotion.Airborne, dying,
+                    avatar.Bones, ref shifted, Q(weaponRotation), grip);
+                weaponPosition = new Float3(shifted.x, shifted.y, shifted.z);
+                foreach (var renderer in avatar.Authored.Renderers) ApplyAmbient(renderer, visibility);
+            }
 
             avatar.Weapon.SetPositionAndRotation(V(weaponPosition), Q(weaponRotation));
             avatar.Weapon.gameObject.SetActive(!avatar.Corpse && state.Alive);
@@ -1098,6 +1155,11 @@ namespace Shooter.Presentation.Rig
             avatar.PreviousFeet = state.Feet;
             avatar.PreviousHealth = state.Health;
             avatar.HasPrevious = true;
+            if (avatar.Authored != null && avatar.Team != state.Team)
+            {
+                var variant = avatar.Authored.Shape.Variant; byte team = state.Team;
+                avatar.Authored.SetMaterials(m => RestyleAuthored(m, team, variant), (team == 1 ? team1Gear : team2Gear)!, (team == 1 ? team1Paint : team2Paint)!);
+            }
             avatar.Team = state.Team;
             if (avatar.Body != null)
                 avatar.Body.sharedMaterials = state.Team == 1 ? team1Palette : team2Palette;
@@ -1350,6 +1412,7 @@ namespace Shooter.Presentation.Rig
             if (!avatars.TryGetValue(id.Value, out var avatar)) return;
             avatars.Remove(id.Value);
             actions.Forget(id);
+            avatar.Authored?.Dispose();
             if (avatar.Root != null) DestroyObject(avatar.Root.gameObject);
         }
 
@@ -1497,6 +1560,42 @@ namespace Shooter.Presentation.Rig
             return mesh;
         }
 
+        /// <summary>ADR-124: one authored body for an actor, its variant picked deterministically within the team.</summary>
+        private AuthoredSoldierBody CreateAuthoredBody(Transform root, ulong entityId, byte team)
+        {
+            var catalog = skinCatalog ?? throw new InvalidOperationException("ADR-124 soldier skin catalog not bound; no generated-body fallback.");
+            var variant = catalog.Pick(entityId, team);
+            if (!skinPrototypes.TryGetValue(variant.Id, out var shape))
+                skinPrototypes[variant.Id] = shape = AuthoredSoldierBody.Prepare(catalog, variant, mesh => Upload(mesh, false), value => owned.Add(value));
+            return new AuthoredSoldierBody(catalog, shape, root, entityId, m => RestyleAuthored(m, team, variant), (team == 1 ? team1Gear : team2Gear)!, (team == 1 ? team1Paint : team2Paint)!);
+        }
+
+        /// <summary>
+        /// ADR-124: uniform materials wear the team kit; every other authored material is rebuilt on the locked
+        /// MapSurface shader from its own texture (skin materials take the variant's skin-tone texture) and colour, so
+        /// actor ambient, fog and quality tiers stay one lighting model.
+        /// </summary>
+        private Material RestyleAuthored(Material source, byte team, SoldierSkinCatalog.Variant variant)
+        {
+            var palette = (team == 1 ? team1Palette : team2Palette)!;
+            if (source == null) return palette[0];
+            string name = source.name.Replace(" (Instance)", string.Empty);
+            var solid = (team == 1 ? team1Solid : team2Solid)!;
+            if (variant.UniformMaterials.Any(p => AuthoredSoldierBody.Matches(name, p))) return solid[0];
+            if (variant.GearMaterials.Any(p => AuthoredSoldierBody.Matches(name, p))) return solid[1];
+            Texture? skinTexture = variant.SkinMaterials.Any(p => AuthoredSoldierBody.Matches(name, p)) ? variant.SkinTexture : null;
+            if (restyledMaterials.TryGetValue((source, skinTexture), out var cached)) return cached;
+            var material = Own(new Material(surfaceShader!) { name = "Authored " + name });
+            var texture = skinTexture != null ? skinTexture : source.HasProperty("_BaseMap") ? source.GetTexture("_BaseMap") : source.mainTexture;
+            if (texture != null) material.SetTexture("_BaseMap", texture);
+            var color = source.HasProperty("_BaseColor") ? source.GetColor("_BaseColor") : source.HasProperty("_Color") ? source.color : Color.white;
+            material.SetColor("_BaseColor", color);
+            material.SetFloat("_Metallic", 0f);
+            material.SetFloat("_Smoothness", .25f);
+            restyledMaterials[(source, skinTexture)] = material;
+            return material;
+        }
+
         private void ApplyAmbient(Renderer? renderer,float visibility)
         {
             if(renderer==null)return;renderer.GetPropertyBlock(ambientBlock);ambientBlock.SetFloat("_ShooterActorMode",1);ambientBlock.SetFloat("_ShooterActorAo",visibility);renderer.SetPropertyBlock(ambientBlock);
@@ -1577,6 +1676,7 @@ namespace Shooter.Presentation.Rig
                 ? UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly
                 : UnityEngine.Rendering.ShadowCastingMode.On;
             if (avatar.Body != null) avatar.Body.shadowCastingMode = mode;
+            avatar.Authored?.SetShadowMode(mode);
             if (avatar.WeaponRenderer != null) avatar.WeaponRenderer.shadowCastingMode = mode;
             if (avatar.MagazineRenderer != null) avatar.MagazineRenderer.shadowCastingMode = mode;
             if (avatar.CycleRenderer != null) avatar.CycleRenderer.shadowCastingMode = mode;

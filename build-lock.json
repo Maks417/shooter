@@ -20,6 +20,6 @@
     "windows-il2cpp",
     "windows-server"
   ],
-  "provenanceAllowlistVersion": 1,
+  "provenanceAllowlistVersion": 2,
   "transportVersion": null
 }

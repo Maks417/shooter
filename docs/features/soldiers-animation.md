@@ -1,9 +1,11 @@
-# Feature: generated soldiers, rigging and motion
+# Feature: soldiers, rigging and motion
 
 Soldiers are the largest visual and engineering risk. The code lives in:
 - `Generation/Core/Soldiers` (geometry);
 - `Presentation/Rig` (motion and presentation);
 - `Simulation/Pose` (gameplay hit poses).
+
+**Product body ([ADR-124](../decisions.md#adr-124--accepted-licensed-authored-art-track-characters-first)).** In the product, players and bots wear a licensed authored body: CC0 humanoid models and animation clips under `Assets/Shooter/Art/Soldiers`, hash-pinned in `Tools/art-sources.json`. The generated soldier below remains the semantic motion rig and the diagnostics body (`ProductActorPresentation.UseAuthoredBodies = false`, the soldier gallery). See [authored body](#authored-body).
 
 The fixed anatomy, joint IDs, bind transforms, loft counts and the iteration history are in the hash-locked [soldier baseline](../soldier-baseline.md). P05 status is in the [defect inventory](../visual-defect-inventory.md). Animation never drives character movement; the capsule simulation owns root translation.
 
@@ -22,7 +24,7 @@ The kit:
 - cargo pockets and knee pads;
 - a team armband and a numeric emblem patch (1.0.3, [ADR-094](../decisions.md#adr-094--accepted-bounded-soldier-presentation-revision-and-p05-reopening)).
 
-No scanned body, imported rig or runtime cloth is used.
+The generated body uses no scanned body, imported rig or runtime cloth; the product's authored body is described below.
 
 **LODs.** LOD0 is about 14.7k triangles. `ProductActorPresentation.SelectBodyLod` switches each avatar's packaged LOD at 15 m and 40 m with 1.5 m hysteresis. It never goes finer than the quality tier's own LOD.
 
@@ -71,6 +73,21 @@ Each frame runs this pipeline:
 
 **Grounding.** `CollisionSoldierGround` gives cosmetic foot support from the verified gameplay boxes. `WeaponVisualProfiles` provides per-profile support sockets.
 
+## Authored body
+
+`Presentation/Rig/AuthoredSoldierBody` drives one licensed authored body per actor ([ADR-124](../decisions.md#adr-124--accepted-licensed-authored-art-track-characters-first)):
+- **Catalog.** `SoldierSkinCatalog` reads `Resources/SoldierArt/soldier-skins.json`: the body height, the clip roles and death clips (each may name its own clip file as `resource#clip`), and the variants. A variant names its model, eligible teams, generated gear, uniform and gear material names, hidden renderers and material slots (hair under a generated helmet), borrowed parts from other models of the pack, and an optional gear fit. A missing or broken catalog throws; there is no generated-body fallback in the product.
+- **Current art.** The Quaternius Ultimate Modular Men Swat body (CC0) in six variants: two with the Swat helmet, four with Adventurer, Casual2, Suit or Beach heads under a generated helmet, some with a generated backpack. Clips: Modular Men idle, walk and four-way run, plus Universal Animation Library crouch, jump and death.
+- **Variants.** `SoldierVariantPicker` picks a variant per actor deterministically from its entity id within the team, so a squad shows several bodies and kits.
+- **Clips.** A code-built `PlayableGraph` (manual evaluation, no controller asset) mixes the clip roles with `AuthoredSoldierBlend`: idle, four-way walk and run, crouch idle and four-way crouch walk, airborne, all on one shared gait phase. A missing role falls down a chain (same direction in the other gait, then forward, then idle); when no clip covers the travel direction the legs turn toward it and backpedal plays the forward cycle in reverse. A one-shot death clip, picked per actor, replaces the death collapse. Clips import in place; the root follows the authoritative feet as before.
+- **Upper body.** `SoldierMotion` still solves the shooting posture every frame on the unrendered semantic rig. Its chest, neck, head, clavicles and arms are retargeted onto the humanoid bones through T-pose offsets (A-pose packs are straightened into a T-pose first). The hips then carry the drawn head onto the solver's head, which ADR-112 keeps on the head hit sphere, and the legs re-solve onto the clip's foot plants. The weapon and hand targets shift with the authored chest, a two-bone solve puts the wrists on the grips (the support hand slides back along the handguard when the arms are short), the hands take frames from the weapon axes and the fingers curl round the grip. Reload, knife and grenade overlays keep their validated motion.
+- **Gear.** `SoldierGearKit` (generated, `Generation/Core/Environment`) builds the helmet, goggles, plate carrier or chest rig, pouches, backpack, belt and knee pads as rigid per-joint pieces in two detail levels; they ride the matching humanoid bones with a per-variant fit.
+- **Materials.** Uniform materials wear the team kit, skin the team skin tone, and other authored materials are rebuilt on `Shooter/MapSurface` from their own texture and colour, so actor ambient and tiers keep one lighting model.
+- **LOD.** The ADR-106 distances (15 m and 40 m, 1.5 m hysteresis) lower skin influences and switch gear to the coarse pieces.
+- **Import settings** are code: `Bootstrap/Editor/SoldierArtPostprocessor` sets the humanoid import, in-place clip flags and texture settings.
+
+**Tests.** `AuthoredSoldierTests` (EditMode) checks the catalog, humanoid validity and clip roles, that a broken catalog throws, and that the drawn authored head and chest stay inside the analytic hit volumes for stand, run, sprint and crouch. `AuthoredSoldierBlendTests` and `SoldierGearKitTests` cover the pure blend, the variant pick and the gear kit.
+
 ## Authoritative body
 
 The gameplay pose evaluator (v2, [ADR-112](../decisions.md#adr-112--accepted-crosshair-true-hits-rig-aligned-hit-volumes-and-bots-that-use-map-cover-flank-and-move-smoothly)) maps stance, velocity, aim and action phase to fixed head, torso and limb capsules.
@@ -94,4 +111,4 @@ The gameplay pose evaluator (v2, [ADR-112](../decisions.md#adr-112--accepted-cro
 
 **Visual review.** Silhouette and motion need a named review with images (VD2/VD4, [visual direction](../visual-direction.md)). That review is Pending, and thresholds alone never prove realism.
 
-**Fallbacks.** If the soldiers fail review, reduce exposed anatomy or kit complexity through an ADR. Never import a character.
+**Fallbacks.** If the soldiers fail review, change the authored variants or the generated kit through an ADR. Authored art enters only through the licensed art track ([ADR-124](../decisions.md#adr-124--accepted-licensed-authored-art-track-characters-first)).

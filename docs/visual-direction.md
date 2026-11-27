@@ -21,7 +21,7 @@ Store evidence captures under `Artifacts/visual-design/<source>/<VD-id>/<run>/`.
 
 ## Binding constraints
 
-- **Procedural only.** Geometry, materials, rigs and motion are procedural, with the engine-font exception ([art boundary](vision.md#art-boundary)). There is no silent external art fallback.
+- **Procedural by default.** Geometry, materials, rigs and motion are procedural, with the font exception and the licensed art track for soldier bodies and clips ([art boundary](vision.md#art-boundary), [ADR-124](decisions.md#adr-124--accepted-licensed-authored-art-track-characters-first)). There is no silent external art fallback.
 - **Locked toolchain and Low gate.** Use the locked toolchain. The gate is native 720p Low at 30 FPS on the reference machine, and 60 FPS is a separate stretch ([performance](performance.md)).
 - **Quality tiers never change gameplay.** They never change collision, navigation, visibility rules, hit volumes or weapon mechanics.
 - **Accessibility wins over cosmetics.** Reduced-motion and reduced-flash preferences are authoritative for camera and FX cosmetics. Camera effects keep aim truthful.

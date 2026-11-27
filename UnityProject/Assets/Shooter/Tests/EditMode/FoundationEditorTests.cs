@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using NUnit.Framework;
@@ -86,7 +87,17 @@ namespace Shooter.Tests
             Assert.That(EditorSettings.serializationMode, Is.EqualTo(SerializationMode.ForceText));
             Assert.That(EditorBuildSettings.scenes.Length, Is.EqualTo(1)); Assert.That(EditorBuildSettings.scenes[0].path, Is.EqualTo("Assets/Shooter/Bootstrap/Scenes/Bootstrap.unity"));
             string[] prohibited = { ".png", ".jpg", ".fbx", ".obj", ".anim", ".wav", ".mp3", ".blend", ".prefab" };
-            Assert.That(Directory.GetFiles(Application.dataPath, "*", SearchOption.AllDirectories).Any(p => prohibited.Contains(Path.GetExtension(p).ToLowerInvariant())), Is.False);
+            // ADR-124: only the hash-pinned licensed art in Tools/art-sources.json is exempt, and only under Shooter/Art.
+            string artSources = Path.Combine(Application.dataPath, "../../Tools/art-sources.json");
+            var licensed = new HashSet<string>(File.Exists(artSources)
+                ? System.Text.RegularExpressions.Regex.Matches(File.ReadAllText(artSources), @"""path""\s*:\s*""UnityProject/(Assets/Shooter/Art/[^""]+)""").Cast<System.Text.RegularExpressions.Match>().Select(m => m.Groups[1].Value)
+                : Enumerable.Empty<string>(), StringComparer.Ordinal);
+            string root = Path.GetFullPath(Path.Combine(Application.dataPath, "..")).Replace(Path.DirectorySeparatorChar, '/') + "/";
+            string[] unapproved = Directory.GetFiles(Application.dataPath, "*", SearchOption.AllDirectories)
+                .Where(p => prohibited.Contains(Path.GetExtension(p).ToLowerInvariant()))
+                .Select(p => Path.GetFullPath(p).Replace(Path.DirectorySeparatorChar, '/').Substring(root.Length))
+                .Where(p => !(p.StartsWith("Assets/Shooter/Art/", StringComparison.Ordinal) && licensed.Contains(p) && Path.GetExtension(p).ToLowerInvariant() is ".fbx" or ".png")).ToArray();
+            Assert.That(unapproved, Is.Empty);
         }
     }
 }

@@ -40,6 +40,34 @@ foreach ($binary in @($policy.PSObject.Properties['namedNativeBinaries'] | ForEa
         !(Test-UpstreamFields $binary) -or $binary.platform -cne 'Win64') { $failures.Add('Malformed namedNativeBinaries entry'); continue }
     $namedBinaries[[IO.Path]::GetFullPath((Join-Path $repoRoot $binary.path))] = $binary.sha256
 }
+# ADR-124: licensed authored art (CC0/CC-BY) lives only under Shooter/Art/, hash-pinned per file in a separate
+# art-sources manifest that names each pack's author, source URL and license. Malformed entries are reported.
+$namedArt = @{}
+$artManifestProperty = $policy.PSObject.Properties['artSourcesManifest']
+if ($null -ne $artManifestProperty -and $null -ne $artManifestProperty.Value) {
+    $artManifestPath = [IO.Path]::GetFullPath((Join-Path $repoRoot ([string]$artManifestProperty.Value)))
+    if (!$artManifestPath.StartsWith($repoRoot + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase) -or !(Test-Path -LiteralPath $artManifestPath -PathType Leaf)) { $failures.Add('Missing art sources manifest') }
+    else {
+        $art = Get-Content -LiteralPath $artManifestPath -Raw | ConvertFrom-Json
+        $licenses = @('CC0-1.0', 'CC-BY-4.0', 'CC-BY-3.0')
+        $packs = @{}
+        if ($art.schemaVersion -ne 1 -or $art.packs -isnot [array] -or $art.files -isnot [array]) { $failures.Add('Malformed art sources manifest') }
+        else {
+            foreach ($pack in $art.packs) {
+                $ok = $pack.id -is [string] -and $pack.id -cmatch '^[a-z0-9-]+$' -and $pack.author -is [string] -and ![string]::IsNullOrWhiteSpace($pack.author) -and
+                    $pack.sourceUrl -is [string] -and $pack.sourceUrl -cmatch '^https://' -and $pack.license -is [string] -and $pack.license -cin $licenses
+                if ($ok -and $pack.license -clike 'CC-BY-*') { $ok = $pack.attribution -is [string] -and ![string]::IsNullOrWhiteSpace($pack.attribution) }
+                if (!$ok -or $packs.ContainsKey($pack.id)) { $failures.Add("Malformed art pack entry: $($pack.id)"); continue }
+                $packs[$pack.id] = $pack
+            }
+            foreach ($file in $art.files) {
+                if ($file.path -isnot [string] -or $file.path -cnotmatch '^UnityProject/Assets/Shooter/Art/[A-Za-z0-9_./-]+\.(fbx|png|tga)$' -or $file.path.Contains('..') -or
+                    $file.sha256 -isnot [string] -or $file.sha256 -cnotmatch '^[0-9a-f]{64}$' -or $file.pack -isnot [string] -or !$packs.ContainsKey($file.pack)) { $failures.Add("Malformed art file entry: $($file.path)"); continue }
+                $namedArt[[IO.Path]::GetFullPath((Join-Path $repoRoot $file.path))] = $file.sha256
+            }
+        }
+    }
+}
 function Test-ProofFile($Proof, [string]$Kind) {
     if ($Proof -isnot [pscustomobject] -or $Proof.path -isnot [string] -or [string]::IsNullOrWhiteSpace($Proof.path) -or
         $Proof.sha256 -isnot [string] -or $Proof.sha256 -cnotmatch '^[0-9a-f]{64}$') { throw "Malformed $Kind provenance proof" }
@@ -84,7 +112,7 @@ else { $failures.Add('Generated settings provenance is missing') }
 $assetFiles = @(Get-ChildItem -LiteralPath $assetRoot -Recurse -Force)
 foreach ($item in $assetFiles) {
     if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) { $failures.Add("Unreviewed reparse point: $($item.FullName)") }
-    if (!$item.PSIsContainer -and $item.Extension -notin $policy.assetSourceExtensions -and !$generated.ContainsKey($item.FullName) -and !$namedNative.ContainsKey($item.FullName) -and !$namedFonts.ContainsKey($item.FullName) -and !$namedBinaries.ContainsKey($item.FullName)) { $failures.Add("Unapproved asset source: $($item.FullName)") }
+    if (!$item.PSIsContainer -and $item.Extension -notin $policy.assetSourceExtensions -and !$generated.ContainsKey($item.FullName) -and !$namedNative.ContainsKey($item.FullName) -and !$namedFonts.ContainsKey($item.FullName) -and !$namedBinaries.ContainsKey($item.FullName) -and !$namedArt.ContainsKey($item.FullName)) { $failures.Add("Unapproved asset source: $($item.FullName)") }
     if (!$item.PSIsContainer -and $item.Extension -ne '.meta' -and $item.FullName -match '[\\/]ThirdParty[\\/]' -and !$namedThirdParty.ContainsKey($item.FullName)) { $failures.Add("Unlisted third-party source: $($item.FullName)") }
     if ($item.Extension -eq '.meta') {
         $target = $item.FullName.Substring(0, $item.FullName.Length - 5)
@@ -115,6 +143,10 @@ foreach ($code in $namedThirdParty.GetEnumerator()) {
 foreach ($binary in $namedBinaries.GetEnumerator()) {
     if (!(Test-Path -LiteralPath $binary.Key -PathType Leaf)) { $failures.Add("Missing native binary: $($binary.Key)"); continue }
     if ((Get-FileHash -LiteralPath $binary.Key -Algorithm SHA256).Hash.ToLowerInvariant() -cne $binary.Value) { $failures.Add("Native binary hash mismatch: $($binary.Key)") }
+}
+foreach ($file in $namedArt.GetEnumerator()) {
+    if (!(Test-Path -LiteralPath $file.Key -PathType Leaf)) { $failures.Add("Missing named art source: $($file.Key)"); continue }
+    if ((Get-FileHash -LiteralPath $file.Key -Algorithm SHA256).Hash.ToLowerInvariant() -cne $file.Value) { $failures.Add("Named art source hash mismatch: $($file.Key)") }
 }
 $reportDirectory = Join-Path $repoRoot 'Artifacts/source-provenance'
 $null = New-Item -ItemType Directory -Path $reportDirectory -Force

@@ -1,5 +1,6 @@
 #nullable enable
 using System.Collections.Generic;
+using System.Linq;
 using NUnit.Framework;
 using Shooter.Contracts;
 using Shooter.Game.Contracts;
@@ -162,7 +163,8 @@ namespace Shooter.Tests
                 presentation.Sync(snap, lifecycle, null, 0, human, false, 1f / 60f, null, 10);
                 Assert.That(presentation.LiveAvatarCount, Is.EqualTo(1));
                 Assert.That(presentation.Actions.IsRifle(human), Is.True);
-                var localBody = System.Array.FindAll(root.GetComponentsInChildren<SkinnedMeshRenderer>(true),r=>r.gameObject.name.StartsWith("Actor "));
+                // ADR-124: the authored body renders on children of the actor root.
+                var localBody = System.Array.FindAll(root.GetComponentsInChildren<SkinnedMeshRenderer>(true),r=>r.enabled&&r.GetComponentsInParent<Transform>(true).Any(t=>t.name.StartsWith("Actor ")));
                 Assert.That(localBody.Length, Is.GreaterThan(0));
                 Assert.That(localBody[0].shadowCastingMode, Is.EqualTo(UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly),
                     "Local human world body must cast ShadowsOnly while the FP viewmodel is shown.");
@@ -237,10 +239,11 @@ namespace Shooter.Tests
                 Assert.That(presentation.Actions.IsRifle(replacement), Is.True);
                 Assert.That(presentation.Actions.IsReloading(human), Is.False);
                 var afterRespawn = root.GetComponentsInChildren<SkinnedMeshRenderer>(true);
-                int shadowsOnlyBodies = 0;
-                for (int i = 0; i < afterRespawn.Length; i++)
-                    if (afterRespawn[i].shadowCastingMode == UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly)
-                        shadowsOnlyBodies++;
+                // ADR-124: an authored body has several skinned renderers (body, eyes, brows); count actors, not renderers.
+                int shadowsOnlyBodies = afterRespawn
+                    .Where(r => r.shadowCastingMode == UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly)
+                    .Select(r => r.GetComponentsInParent<Transform>(true).FirstOrDefault(t => t.name.StartsWith("Actor ")))
+                    .Distinct().Count();
                 Assert.That(shadowsOnlyBodies, Is.EqualTo(1),
                     "After respawn, only the new local living body stays ShadowsOnly (corpse renders normally).");
 

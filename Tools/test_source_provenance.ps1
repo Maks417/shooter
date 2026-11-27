@@ -101,6 +101,24 @@ try {
     Invoke-ProvenanceCase 'native-binary-hash-mismatch' {} 'Native binary hash mismatch' -MutatePolicy { param($p, $r) & $listBinary $p $r ('0' * 64) }
     Invoke-ProvenanceCase 'native-binary-wrong-platform' {} 'Malformed namedNativeBinaries entry' -MutatePolicy { param($p, $r) & $listBinary $p $r '' 'Linux64' }
     Invoke-ProvenanceCase 'unlisted-native-binary' {} 'Unapproved asset source' -MutatePolicy { param($p, $r) Write-TestFile $r $binaryPath 'unlisted native binary bytes' }
+    # ADR-124 licensed authored art: hash-pinned per file under Shooter/Art with a licensed pack entry.
+    $artPath = 'UnityProject/Assets/Shooter/Art/Soldiers/Pack/Body.fbx'
+    $listArt = { param($p, $r, [string]$hash = '', [string]$license = 'CC0-1.0', [string]$path = $artPath, [string]$attribution = '')
+        Write-TestFile $r $path 'synthetic licensed model bytes'
+        if (!$hash) { $hash = (Get-TestProof $r $path).sha256 }
+        $pack = @{ id = 'pack'; author = 'Synthetic Author'; sourceUrl = 'https://example.invalid/pack'; license = $license }
+        if ($attribution) { $pack.attribution = $attribution }
+        Write-TestFile $r 'Tools/art-sources.json' (@{ schemaVersion = 1; packs = @($pack); files = @(@{ path = $path; sha256 = $hash; pack = 'pack' }) } | ConvertTo-Json -Depth 6)
+        $p.artSourcesManifest = 'Tools/art-sources.json'
+    }
+    Invoke-ProvenanceCase 'valid-licensed-art' {} '' -MutatePolicy { param($p, $r) & $listArt $p $r }
+    Invoke-ProvenanceCase 'valid-cc-by-art' {} '' -MutatePolicy { param($p, $r) & $listArt $p $r '' 'CC-BY-4.0' $artPath 'Model by Synthetic Author (CC BY 4.0)' }
+    Invoke-ProvenanceCase 'cc-by-art-without-attribution' {} 'Malformed art pack entry' -MutatePolicy { param($p, $r) & $listArt $p $r '' 'CC-BY-4.0' }
+    Invoke-ProvenanceCase 'art-hash-mismatch' {} 'Named art source hash mismatch' -MutatePolicy { param($p, $r) & $listArt $p $r ('0' * 64) }
+    Invoke-ProvenanceCase 'art-unlicensed' {} 'Malformed art pack entry' -MutatePolicy { param($p, $r) & $listArt $p $r '' 'Proprietary' }
+    Invoke-ProvenanceCase 'art-outside-art-folder' {} 'Malformed art file entry' -MutatePolicy { param($p, $r) & $listArt $p $r '' 'CC0-1.0' 'UnityProject/Assets/Shooter/Presentation/Body.fbx' }
+    Invoke-ProvenanceCase 'unlisted-art' {} 'Unapproved asset source' -MutatePolicy { param($p, $r) & $listArt $p $r; Write-TestFile $r 'UnityProject/Assets/Shooter/Art/Soldiers/Pack/Extra.png' 'unlisted texture bytes' }
+    Invoke-ProvenanceCase 'missing-art-manifest' {} 'Missing art sources manifest' -MutatePolicy { param($p, $r) $p.artSourcesManifest = 'Tools/art-sources.json' }
     $summary = [ordered]@{ result = 'PASS'; testCount = $results.Count; scope = 'Synthetic standalone provenance wrapper regressions only'; cases = @($results) }
     $summary | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $evidence 'results.json') -Encoding utf8NoBOM
     Write-Host "PASS: $($results.Count) provenance wrapper cases; evidence: $evidence"

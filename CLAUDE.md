@@ -2,11 +2,11 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-`AGENTS.md` holds the binding project rules (scope/ownership, the no-imported-art requirement, verification and completion duties). Read it first; this file only adds orientation and commands.
+`AGENTS.md` holds the binding project rules (scope/ownership, the art rule and its licensed art track, verification and completion duties). Read it first; this file only adds orientation and commands.
 
 ## What this is
 
-A Unity 6 URP procedural military FPS (offline team deathmatch vs bots; networking and the dedicated server are parked under ADR-076) where all geometry, materials, rigs and motion are generated from code/numeric recipes. The repo is spec-heavy: `docs/` is the authoritative specification and status record, and work is organized as milestones (M0–M11) and numbered tasks (T0xx). Before any edit, find the current state and assignment in `docs/next-playable-build.md` (the only status page); gates and scenario IDs are in `docs/acceptance.md`; `docs/index.md` links everything else. Superseded pages are not kept in the tree: use git history. Design changes go through ADRs in `docs/decisions.md` (index table at the top).
+A Unity 6 URP procedural military FPS (offline team deathmatch vs bots; networking and the dedicated server are parked under ADR-076) where geometry, materials, rigs and motion are generated from code/numeric recipes, except the licensed authored art track (ADR-124: CC0/CC-BY files under `Assets/Shooter/Art/`, pinned in `Tools/art-sources.json`; soldiers first). The repo is spec-heavy: `docs/` is the authoritative specification and status record, and work is organized as milestones (M0–M11) and numbered tasks (T0xx). Before any edit, find the current state and assignment in `docs/next-playable-build.md` (the only status page); gates and scenario IDs are in `docs/acceptance.md`; `docs/index.md` links everything else. Superseded pages are not kept in the tree: use git history. Design changes go through ADRs in `docs/decisions.md` (index table at the top).
 
 Toolchain is pinned in root `toolchain-lock.json` (Unity 6000.3.28f1 rev 8f082d2fe476, URP 17.3.0) and `global.json` (.NET SDK 10.0.301, no roll-forward). Never upgrade or substitute either.
 

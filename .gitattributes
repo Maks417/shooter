@@ -10,6 +10,10 @@
 *.bin binary
 *.wav binary
 *.ogg binary
+*.fbx binary
+*.png binary
+*.tga binary
+*.glb binary
 # Unity serializes empty YAML scalar values with a trailing space; retain native output.
 *.meta whitespace=-blank-at-eol
 *.unity whitespace=-blank-at-eol

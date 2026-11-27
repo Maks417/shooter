@@ -35,14 +35,14 @@ Delivery is a **Windows installer**. Running a newer installer updates the insta
 | ID | Requirement | Accepted by |
 |---|---|---|
 | R01 | Unity 6, URP, C# gameplay and generation, HLSL shading on the locked toolchain | Clean Client build |
-| R02 | No imported or hand-modeled meshes, painted or image textures, sprites, authored skeletal clips or mocap | Provenance scan and regeneration from source |
+| R02 | Generated art by default; authored models, textures and clips only through the licensed art track ([ADR-124](decisions.md#adr-124--accepted-licensed-authored-art-track-characters-first)), never painted, photo or AI image textures or sprites | Provenance scan, art-source manifest and regeneration from source |
 | R03 | Generated meshes, PBR arrays, LODs, skeletons, skin weights and sampled motion caches are allowed | Cache manifests name generator and inputs |
 | R04 | Reference: Ryzen 5 4600H integrated Radeon, 16 GB DDR4-3200 (two slots), NVMe | Hardware report records adapter, driver, channel mode and power |
 | R05 | Native 1280×720 Low at 30 FPS; 60 FPS is a stretch | [Performance](performance.md) gates on reference hardware |
 | R06 | Quality profiles and repeatable benchmarks | Profiles and workload fixtures |
 | R07 | Collision, cover, hit volumes, AI visibility and weapon rules are identical across graphics profiles | Cross-profile simulation tests |
 | R08 | Reproducible, versioned generation, done outside gameplay | [Generation](generation.md) and cache tests |
-| R10 | Modern weapons, procedural soldiers, environments, AI and FPS combat | Feature acceptance tests |
+| R10 | Modern weapons, soldiers (licensed authored bodies and clips with generated gear), environments, AI and FPS combat | Feature acceptance tests |
 | R11 | Offline TDM at every catalog size, with safe respawn and immutable results | [TDM01–TDM08](acceptance.md#m9--team-deathmatch), REL02 |
 | R12 | Distinct packaged procedural maps, each supporting every catalog size | [MAP01–MAP03](acceptance.md#m10--maps-shell-and-settings), REL01 |
 | R13 | Real menus, pause, settings, scoreboard and results; persistent settings that actually apply | UI01–UI02, SET01–SET02 |
@@ -71,6 +71,8 @@ Two occupied memory slots do not prove dual-channel operation.
 - third-party visual packs.
 
 AI coding tools may write generators, but they may not slip authored assets into the output.
+
+**Licensed art track** ([ADR-124](decisions.md#adr-124--accepted-licensed-authored-art-track-characters-first)). Authored models, textures and animation clips are permitted only when they are CC0 or CC-BY, live under `UnityProject/Assets/Shooter/Art/`, and are hash-pinned with author, source URL and license in `Tools/art-sources.json`. Soldiers are the first use: CC0 humanoid bodies and clips, dressed in generated military gear. Everything else in the list above still applies outside that track.
 
 How generated output is treated:
 - **Textures** are algorithmic raster caches.

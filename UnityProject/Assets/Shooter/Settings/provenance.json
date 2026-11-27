@@ -6,7 +6,7 @@
     "sources": [
         {
             "path": "UnityProject/Assets/Shooter/Bootstrap/Editor/ShooterBuild.cs",
-            "sha256": "6e4f6689dfefc97cb4f2297f52273089142ac53380f91b1ae2011e635b9d9dda"
+            "sha256": "ece655ab336d0a82a15a76f4b47bfd1c7d120d255fda63c76865df477dd0cc4a"
         },
         {
             "path": "UnityProject/Assets/Shooter/Bootstrap/Editor/ShooterPostProcessingBuild.cs",

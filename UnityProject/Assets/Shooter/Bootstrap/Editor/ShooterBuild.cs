@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -455,8 +456,11 @@ public static class ShooterBuild
             });
             string[] sourceAssets = report.packedAssets.SelectMany(p => p.contents).Select(p => p.sourceAssetPath).Distinct().OrderBy(p => p, StringComparer.Ordinal).ToArray();
             string[] artExtensions = { ".png", ".jpg", ".jpeg", ".tga", ".exr", ".hdr", ".psd", ".fbx", ".obj", ".blend", ".anim", ".spriteatlas", ".wav", ".mp3", ".ogg" };
-            string[] importedArt = sourceAssets.Where(p => artExtensions.Contains(Path.GetExtension(p).ToLowerInvariant())).ToArray();
-            string[] graphics = sourceAssets.Where(p => p.EndsWith(".shader", StringComparison.OrdinalIgnoreCase) || p.EndsWith(".mat", StringComparison.OrdinalIgnoreCase) || importedArt.Contains(p)).ToArray();
+            // ADR-124: only hash-pinned licensed art from Tools/art-sources.json may reach the player.
+            var licensedArt = new HashSet<string>(LicensedArtAssetPaths(), StringComparer.Ordinal);
+            string[] packedArt = sourceAssets.Where(p => artExtensions.Contains(Path.GetExtension(p).ToLowerInvariant())).ToArray();
+            string[] importedArt = packedArt.Where(p => !licensedArt.Contains(p)).ToArray();
+            string[] graphics = sourceAssets.Where(p => p.EndsWith(".shader", StringComparison.OrdinalIgnoreCase) || p.EndsWith(".mat", StringComparison.OrdinalIgnoreCase) || packedArt.Contains(p)).ToArray();
             var manifest = new BuildManifest { result = report.summary.result.ToString(), target = server ? "Server" : "Client", sourceCommit = sourceCommitAtRequest,
                 sourceDirty = sourceDirtyAtRequest, sourceHash = sourceHash, toolchainHash = HashFile(LockPath), buildLockHash = HashFile(BuildLockPath), contentManifestHash = HashFile(contentPath), editorVersion = toolchain.editorVersion, editorRevision = toolchain.editorRevision,
                 backend = server ? toolchain.serverBackend : toolchain.clientBackend, development = false, totalBytes = report.summary.totalSize, graphicsSourceAssets = graphics, sourceAssetPaths = sourceAssets };
@@ -477,6 +481,21 @@ public static class ShooterBuild
             // Record that actual engine-generated stage, rather than modifying its payload to match an old hash.
             WriteSettingsProvenance();
         }
+    }
+    [Serializable] private sealed class ArtSourceFile { public string path, sha256, pack; }
+    [Serializable] private sealed class ArtSources { public int schemaVersion; public ArtSourceFile[] files; }
+
+    /// <summary>ADR-124: Unity asset paths of the licensed art files pinned in Tools/art-sources.json (empty when absent).</summary>
+    public static string[] LicensedArtAssetPaths()
+    {
+        string path = Path.Combine(RepositoryRoot, "Tools", "art-sources.json");
+        if (!File.Exists(path)) return Array.Empty<string>();
+        var sources = JsonUtility.FromJson<ArtSources>(File.ReadAllText(path));
+        if (sources == null || sources.schemaVersion != 1 || sources.files == null) throw new InvalidOperationException("Malformed Tools/art-sources.json");
+        const string prefix = "UnityProject/";
+        return sources.files.Select(f => f.path.StartsWith(prefix + "Assets/Shooter/Art/", StringComparison.Ordinal)
+            ? f.path.Substring(prefix.Length)
+            : throw new InvalidOperationException("Licensed art outside Assets/Shooter/Art: " + f.path)).ToArray();
     }
     public static void CompileContent() => Guard(ShooterContentBuild.Compile);
     public static void CompileNativeGameContent() => Guard(ShooterNativeContentBuild.Compile);

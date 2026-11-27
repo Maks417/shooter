@@ -1,6 +1,6 @@
 # Procedural military FPS — documentation
 
-This is a Unity 6 URP / C# / HLSL modern-world shooter. Every mesh, material, rig and motion is generated from code and numeric recipes; nothing is imported or hand-authored.
+This is a Unity 6 URP / C# / HLSL modern-world shooter. Meshes, materials, rigs and motion are generated from code and numeric recipes. The one exception is the licensed art track ([ADR-124](decisions.md#adr-124--accepted-licensed-authored-art-track-characters-first)): CC0/CC-BY soldier bodies and animation clips, dressed in generated gear.
 
 The first version is offline Team Deathmatch for one human plus local bots, on three maps. It ships as a Windows installer that upgrades in place. Networking is parked under [ADR-076](decisions.md#adr-076--accepted-offline-only-scope-and-bounded-local-evidence).
 

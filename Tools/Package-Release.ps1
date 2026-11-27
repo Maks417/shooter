@@ -394,10 +394,20 @@ Diagnostic smoke remains a separate tool path and is not this package's acceptan
 "@
     [IO.File]::WriteAllText((Join-Path $stage 'CONTROLS.txt'), $controls)
 
+    # ADR-124 licensed authored art: one credit line per pack from the hash-pinned art manifest.
+    $artCredits = ''
+    $artManifestPath = Join-Path $repoRoot 'Tools/art-sources.json'
+    if (Test-Path -LiteralPath $artManifestPath -PathType Leaf) {
+        foreach ($pack in @((Get-Content -LiteralPath $artManifestPath -Raw | ConvertFrom-Json).packs)) {
+            $line = if ($pack.PSObject.Properties['attribution'] -and $pack.attribution) { [string]$pack.attribution } else { "$($pack.title) by $($pack.author)" }
+            $artCredits += "`n  - $line ($($pack.license)): $($pack.sourceUrl)"
+        }
+    }
     $licenses = @"
 Shooter local offline package — license / provenance summary
 ===========================================================
-- Game content is generated from numeric recipes under the repository procedural provenance policy.
+- Game content is generated from numeric recipes under the repository procedural provenance policy, except the licensed authored art track (ADR-124).
+- Licensed authored art (soldier bodies and animation clips):$artCredits
 - UI typeface bank (ADR-066): Barlow Condensed Regular/SemiBold/Bold under the SIL Open Font License 1.1 (ui-typeface-bank-v1). Full OFL text: Content/Fonts/OFL-BarlowCondensed.txt in the source tree; engine IMGUI font remains the load fallback.
 - Unity player/runtime redistribution remains under Unity's own terms for the pinned editor $($build.editorVersion) ($($build.editorRevision)).
 - This archive does not include PresentMon, Unity Editor, Library/Temp caches, or developer absolute path dependencies.
