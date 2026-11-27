@@ -2,6 +2,22 @@
 
 Evidence log for M11, newest first. Each delivery and change records identities, results and what stays Pending. Records before 2026-11-15 (deliveries up to 0.3.12, T062–T085) are in git history. Current status is in [next playable build](../../next-playable-build.md) and gates are in [acceptance](../../acceptance.md).
 
+## Delivery 0.3.30 — 2026-11-28
+
+`Tools/Deliver.ps1 -ForceContent -ReleaseVersion 0.3.30` on clean `19dd462` PASS (`m11-playable-release/19dd462…/deliver-20261127T232928896Z-1197bf63`). It carries, on top of 0.3.29, the three ADR-129 follow-ups below: real-client arm placement and reloads, the sidearm hip view, and hands on the measured handguard and grip.
+
+**Steps:**
+- Native content and IL2CPP Client: `m8-runtime-composition/19dd462…/compile-gamecontent-20261127T232929145Z-7fcc987c`, `m0-foundation/19dd462…/build-client-20261127T233006891Z-e8bdfd6c`.
+- Smoke PASS (`smoke-client-20261127T233255057Z-c82dcabb`).
+- Package PASS with native nav required (`package-20261127T233302544Z-24943028`).
+- Installer `Shooter-Setup-0.3.30.exe`: 98,117,540 bytes, SHA-256 `9d01daac298df7f632c6e5000fc9bc2ee6f6ff8a222b632dfe34e75d94e21759`, workspace clean (`installer-20261127T233310726Z-5907eb7c`). It is copied with its report to `Artifacts/deliveries/`.
+
+**Published:** GitHub pre-release `v0.3.30` (tag on `19dd462`) with the installer and its `.sha256`; the site and README point at it.
+
+**Tests on the delivered source:** Unity EditMode 114/114 and PlayMode 35/35, pure `Test-All.ps1` PASS (record below).
+
+**Pending / NotClaimed:** an install and upgrade over 0.3.29; a playtest (first-person hands on every weapon, sidearm balance, and the 0.3.28 items); the TDM-5v5 Low benchmark; REL01–REL06.
+
 ## ADR-129 follow-up: rifle hands on the real handguard and grip — 2026-11-28
 
 Owner screenshot from the reworked recording: on the AK the support hand hung open under the handguard, and the trigger hand did not show on the grip.

@@ -4,14 +4,15 @@ This is the only page that tracks current status: the build, open findings, open
 
 ## Current build
 
-**Latest installer: 0.3.29 (2026-11-27).**
-- Installer: `Artifacts/deliveries/Shooter-Setup-0.3.29.exe`, from clean source `83b381b` ([delivery evidence](milestones/m11-playable-release/handoff.md#delivery-0329--2026-11-27)). Published as the GitHub pre-release `v0.3.29`.
-- Contents beyond 0.3.28 (`ca663ae`):
-  - the first-person trigger hand on each gun's pistol grip and thumbs that curl toward the palm (the [ADR-129](decisions.md#adr-129--accepted-licensed-first-person-arms-wrapped-support-grips-strafe-clip-facing-and-grenade-start-contact) follow-up);
-  - stronger sidearms ([ADR-130](decisions.md#adr-130--accepted-sidearms-kill-in-five-g17-and-three-golden-eagle-torso-hits)).
-- Passed: native packages, IL2CPP Client, smoke, package and installer builders. Pure lanes on the ADR-130 source; Unity EditMode 112/112 and PlayMode 35/35 on the trigger-hand change, run before ADR-130 was committed.
-- Still Pending: an actual install and upgrade over 0.3.28, a playtest of this build (owner review of the first-person hands, sidearm balance, and the 0.3.28 items), the TDM-5v5 Low benchmark, and all acceptance.
-- Since 0.3.29, on `main` and not in an installer: the owner reported the first-person hands still wrong in 0.3.29. A real-client recording fixed shoulder placement, the reload hand and reload framing ([handoff](milestones/m11-playable-release/handoff.md#adr-129-follow-up-first-person-arms-in-the-real-client--2026-11-27)). The sidearms' hip pose was then reworked so both hands show on the grip ([handoff](milestones/m11-playable-release/handoff.md#adr-129-follow-up-sidearm-hip-view--2026-11-27)).
+**Latest installer: 0.3.30 (2026-11-28).**
+- Installer: `Artifacts/deliveries/Shooter-Setup-0.3.30.exe`, from clean source `19dd462` ([delivery evidence](milestones/m11-playable-release/handoff.md#delivery-0330--2026-11-28)). Published as the GitHub pre-release `v0.3.30`.
+- Contents beyond 0.3.29 (`83b381b`), all first-person and grip work under [ADR-129](decisions.md#adr-129--accepted-licensed-first-person-arms-wrapped-support-grips-strafe-clip-facing-and-grenade-start-contact), checked in recordings of the real client:
+  - support hands on the real handguard of every long gun, for the player and the bots ([handoff](milestones/m11-playable-release/handoff.md#adr-129-follow-up-rifle-hands-on-the-real-handguard-and-grip--2026-11-28));
+  - the gun hand on each gun's measured, raked pistol grip;
+  - forearms from the lower screen corners, and reloads lifted into view with a magazine-grab and overhand support hand ([handoff](milestones/m11-playable-release/handoff.md#adr-129-follow-up-first-person-arms-in-the-real-client--2026-11-27));
+  - a higher, inward sidearm hip pose ([handoff](milestones/m11-playable-release/handoff.md#adr-129-follow-up-sidearm-hip-view--2026-11-27)).
+- Passed: native packages, IL2CPP Client, smoke, package and installer builders. On the delivered source: Unity EditMode 114/114, PlayMode 35/35, pure lanes.
+- Still Pending: an actual install and upgrade over 0.3.29, a playtest of this build (owner review of the first-person hands on every weapon, sidearm balance, and the 0.3.28 items), the TDM-5v5 Low benchmark, and all acceptance.
 
 ## Product and scope
 
