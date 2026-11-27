@@ -43,6 +43,11 @@ namespace Shooter.Presentation.Rig
             public readonly Dictionary<string, Mesh> Painted = new Dictionary<string, Mesh>(StringComparer.Ordinal);
             /// <summary>Copies with hidden material slots emptied (hair under a generated helmet), by renderer name.</summary>
             public readonly Dictionary<string, Mesh> Trimmed = new Dictionary<string, Mesh>(StringComparer.Ordinal);
+            /// <summary>
+            /// Owned copies of every other visible authored mesh, by renderer name: a body never draws an imported
+            /// asset mesh, so destroying the owner (menu stage, match presentation) releases all of its geometry.
+            /// </summary>
+            public readonly Dictionary<string, Mesh> Copies = new Dictionary<string, Mesh>(StringComparer.Ordinal);
             /// <summary>T-pose world rotation of each mapped finger bone (semantic hand frame = identity at bind).</summary>
             public readonly Dictionary<HumanBodyBones, Quaternion> FingerBind = new Dictionary<HumanBodyBones, Quaternion>();
         }
@@ -118,7 +123,15 @@ namespace Shooter.Presentation.Rig
 
             foreach (var r in Instance.GetComponentsInChildren<Renderer>(true))
             {
-                if (shape.Variant.HideRenderers.Any(pattern => Matches(r.name, pattern))) { r.enabled = false; continue; }
+                if (shape.Variant.HideRenderers.Any(pattern => Matches(r.name, pattern)))
+                {
+                    // Hidden renderers drop their imported mesh and materials too, so the body holds no asset references.
+                    r.enabled = false;
+                    r.sharedMaterials = Array.Empty<Material>();
+                    if (r is SkinnedMeshRenderer hidden) hidden.sharedMesh = null;
+                    else if (r.TryGetComponent<MeshFilter>(out var hiddenFilter)) hiddenFilter.sharedMesh = null;
+                    continue;
+                }
                 renderers.Add(r);
                 if (r is SkinnedMeshRenderer smr)
                 {
@@ -131,7 +144,10 @@ namespace Shooter.Presentation.Rig
                         continue;
                     }
                     if (shape.Trimmed.TryGetValue(smr.name, out var trimmed)) smr.sharedMesh = trimmed;
+                    else if (shape.Copies.TryGetValue(smr.name, out var copy)) smr.sharedMesh = copy;
                 }
+                else if (r.TryGetComponent<MeshFilter>(out var staticFilter) && shape.Copies.TryGetValue(r.name, out var staticCopy))
+                    staticFilter.sharedMesh = staticCopy;
                 authoredMaterials[r] = r.sharedMaterials;
                 r.sharedMaterials = r.sharedMaterials.Select(restyle).ToArray();
             }
@@ -260,6 +276,22 @@ namespace Shooter.Presentation.Rig
                         shape.Painted[smr.name] = clothed;
                     }
                 if (variant.PaintRenderers.Length != 0 && shape.Painted.Count == 0) throw new InvalidOperationException("No paintable body renderer in " + variant.Id);
+
+                // Every other visible authored mesh is drawn from an owned copy: imported assets cannot be destroyed,
+                // so a body that referenced them would pin them past its owner (menu stage lifetime check).
+                foreach (var renderer in probe.GetComponentsInChildren<Renderer>(true))
+                {
+                    string rendererName = renderer.name;
+                    if (variant.HideRenderers.Any(p => Matches(rendererName, p)) || shape.Painted.ContainsKey(rendererName)
+                        || shape.Trimmed.ContainsKey(rendererName) || shape.Copies.ContainsKey(rendererName)) continue;
+                    var source = renderer is SkinnedMeshRenderer skinnedSource ? skinnedSource.sharedMesh
+                        : renderer.TryGetComponent<MeshFilter>(out var filterSource) ? filterSource.sharedMesh : null;
+                    if (source == null) continue;
+                    var owned = UnityEngine.Object.Instantiate(source);
+                    owned.name = source.name + " (ADR-124 owned)";
+                    own(owned);
+                    shape.Copies[rendererName] = owned;
+                }
 
                 // Measurements in the final (scaled) frame for the gear fit and the head centre.
                 float s = shape.Scale;

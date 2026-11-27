@@ -2,6 +2,16 @@
 
 Evidence log for M11, newest first. Each delivery and change records identities, results and what stays Pending. Records before 2026-11-15 (deliveries up to 0.3.12, T062–T085) are in git history. Current status is in [next playable build](../../next-playable-build.md) and gates are in [acceptance](../../acceptance.md).
 
+## ADR-124 authored soldier asset ownership fix — 2026-11-27
+
+The PlayMode 29/30 failure recorded under ADR-126 below is fixed. `MenuStagingLifetimeTests.DestroyingSuspendedStageReleasesMaterialsMeshesTexturesAndTargets` found imported FBX assets still referenced by the destroyed menu stage. These assets cannot be destroyed:
+- the `Swat_Black`, `Swat` and `Visor` materials stayed on the disabled `Swat_Head` renderer that the `rifleman-*` variants hide;
+- the `Swat_Body`, `Swat_Feet`, `Swat_Head` and `Swat_Legs` meshes were drawn directly by each actor.
+
+`AuthoredSoldierBody` now clears the mesh and materials of hidden renderers. `Prepare` gives every other visible authored mesh an owned copy (`Prototype.Copies`), which the owner destroys. The test is unchanged.
+
+Checks on uncommitted source on `e3404c9`: Unity PlayMode **30/30 PASS** (`m0-foundation/e3404c9…/tests-playmode-20261127T115023314Z-e8e375cb`); Unity EditMode **105/105 PASS** (`tests-editmode-20261127T115223577Z-8963d093`). The wrapper pruned the superseded `48c343f` PlayMode runs cited below.
+
 ## ADR-126 licensed fire and smoke flipbooks — 2026-11-27
 
 Owner request (T233): better fire and smoke, using assets like the soldiers. Implemented [ADR-126](../../decisions.md#adr-126--accepted-licensed-fire-and-smoke-flipbooks-and-burning-wrecks):
