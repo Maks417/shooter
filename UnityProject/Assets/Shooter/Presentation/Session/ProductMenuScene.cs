@@ -550,7 +550,10 @@ namespace Shooter.Presentation.Session
             root.position = new Vector3(anchor.X, anchor.Y, anchor.Z) - yaw * pivot;
             ApplyAtmosphere(focusedMap);
             stagedMap = focusedMap;
-            if (gameObject.activeInHierarchy) RenderStage();
+            // Render the new vista in the next LateUpdate, never here: focus changes arrive from the shell's OnGUI,
+            // which URP runs inside its own camera loop, and a nested Camera.Render there throws
+            // "UniversalCameraData has already been created". The cross-fade covers the one-frame wait.
+            nextRender = 0f;
         }
 
         /// <summary>Per-map sky gradient (Skybox/Panoramic over a generated lat-long strip), fog band and ambient.</summary>

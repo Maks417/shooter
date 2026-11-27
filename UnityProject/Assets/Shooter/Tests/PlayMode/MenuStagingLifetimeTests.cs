@@ -97,5 +97,71 @@ namespace Shooter.Tests
             }
             finally { if (root != null) Object.Destroy(root); }
         }
+
+        /// <summary>
+        /// The shell changes the menu focus from OnGUI, which URP invokes inside its camera loop. Staging a vista there
+        /// must not render the stage camera re-entrantly (URP throws "UniversalCameraData has already been created");
+        /// the new vista renders on the next LateUpdate.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator FocusChangeInsideACameraRenderDefersTheVistaRender()
+        {
+            var hash = ContentIdentity.Hash(Encoding.ASCII.GetBytes("menu-staging-reentrant-focus"));
+            var visuals = new[]
+            {
+                PackagedVisualPayloads.FromBuild(MapPackageBuilder.Build("training-compound", "low", hash)),
+                PackagedVisualPayloads.FromBuild(MapPackageBuilder.Build("depot-yard", "low", hash)),
+                PackagedVisualPayloads.FromBuild(MapPackageBuilder.Build("oil-depot", "low", hash))
+            };
+            var root = new GameObject("Menu staging re-entrant focus");
+            var target = new RenderTexture(64, 36, 24) { name = "Re-entrant focus probe target" };
+            var probe = new GameObject("Re-entrant focus probe").AddComponent<Camera>();
+            probe.enabled = false;
+            probe.targetTexture = target;
+            // OnRenderObject runs inside URP's render graph while the camera's UniversalCameraData is alive, the same
+            // window in which the player invokes the shell's OnGUI.
+            var hook = probe.gameObject.AddComponent<FocusDuringRender>();
+            try
+            {
+                var scene = root.AddComponent<ProductMenuScene>();
+                hook.Scene = scene;
+                scene.BindVerified(visuals);
+                for (int i = 0; i < 6 && scene.StagedMap.Length == 0; i++) yield return null; // cards first, then the vista
+                Assert.That(scene.StagedMap, Is.Not.Empty, "The vista is staged after the operation cards.");
+                foreach (string map in new[] { "depot-yard", "oil-depot", "training-compound" })
+                {
+                    hook.Map = map;
+                    hook.Armed = true;
+                    probe.Render(); // SetFocusedMap runs inside this render, as it does from the shell's OnGUI.
+                    hook.Armed = false;
+                    Assert.That(hook.Calls, Is.GreaterThan(0), "The focus change must happen inside the probe render.");
+                    Assert.That(scene.StagedMap, Is.EqualTo(map), "Staging itself stays synchronous.");
+                    yield return null; // The deferred stage render runs in LateUpdate, outside any camera loop.
+                    yield return null;
+                }
+            }
+            finally
+            {
+                Object.Destroy(probe.gameObject);
+                target.Release();
+                Object.Destroy(target);
+                Object.Destroy(root);
+            }
+        }
+
+        private sealed class FocusDuringRender : MonoBehaviour
+        {
+            public ProductMenuScene? Scene;
+            public string Map = "";
+            public bool Armed;
+            public int Calls;
+
+            private void OnRenderObject()
+            {
+                if (!Armed || Scene == null || Map.Length == 0) return;
+                Calls++;
+                Scene.SetFocusedMap(Map);
+            }
+        }
     }
 }

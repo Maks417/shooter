@@ -2,6 +2,24 @@
 
 Evidence log for M11, newest first. Each delivery and change records identities, results and what stays Pending. Records before 2026-11-15 (deliveries up to 0.3.12, T062–T085) are in git history. Current status is in [next playable build](../../next-playable-build.md) and gates are in [acceptance](../../acceptance.md).
 
+## Menu vista re-entrant render fix — 2026-11-27
+
+**Defect.** The owner's first 0.3.26 launch (2026-11-27 13:36) logged two URP exceptions: `InvalidOperationException: Type UnityEngine.Rendering.Universal.UniversalCameraData has already been created`. The 0.3.25 log has five, so this is not a 0.3.26 regression. The same launch shows the upgrade preserved career, armory and settings: rank 9, 96,640 CP, 20 matches, loadout `ak102 + scope2 / golden-eagle`, and `SHOOTER_MENU_SCENE_READY actors=3 cards=3 vistas=3`.
+
+**Cause.** `ProductShellHost.OnGUI` calls `ProductMenuScene.SetFocusedMap`, which went through `StageVista` to `RenderStage` and `stageCamera.Render()`. In the player, URP invokes `OnGUI` inside its own camera render, so this was a nested render on the same renderer's frame data. It throws, and the vista frame for that focus change was not rendered.
+
+**Fix.** `StageVista` still stages synchronously (vista placement, sky, fog band), but it now only requests the render, which happens in the next `LateUpdate`. The cross-fade covers the one-frame wait.
+
+**Regression test.** `MenuStagingLifetimeTests.FocusChangeInsideACameraRenderDefersTheVistaRender` changes focus from `OnRenderObject` during a probe camera render, inside the same URP window as the player's `OnGUI`.
+- With the old immediate render, the test fails with the player's exception: PlayMode 30/31, summary `Artifacts/reports/tests-playmode/039e2da…/tests-playmode-20261127T125004921Z-ae564568`.
+- A first variant using `endCameraRendering` did not reproduce the exception and was replaced.
+
+**Checks** (uncommitted source on `039e2da`): Unity PlayMode **31/31 PASS** (`m0-foundation/039e2da…/tests-playmode-20261127T125220641Z-26e96c28`); EditMode **105/105 PASS** (`tests-editmode-20261127T125426145Z-d7e13b56`). The run folders cited below for `e3404c9` were pruned by the wrapper; their summaries remain under `Artifacts/reports/`.
+
+**Not in an installer yet.** 0.3.26 still has this exception.
+
+**Open finding, not fixed.** In `RenderStage`, the locals that save `RenderSettings.fogColor`, `ambientSkyColor`, `ambientEquatorColor` and `ambientGroundColor` shadow the per-map fields of the same names that `ApplyAtmosphere` sets. So the stage render writes back the saved global values: the ADR-123 per-map fog colour and trilight ambient never reach the vista. Only the fog distances and the sky are applied. Fixing it changes the menu look and needs owner review.
+
 ## Delivery 0.3.26 — 2026-11-27
 
 `Tools/Deliver.ps1 -ForceContent -ReleaseVersion 0.3.26` on clean `232c645` PASS (`m11-playable-release/232c645…/deliver-20261127T115756252Z-83b980a5`). It carries ADR-124–126 and the ownership fix below on top of 0.3.25 (`f9c3611`).
