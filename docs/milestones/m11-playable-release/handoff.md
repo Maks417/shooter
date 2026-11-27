@@ -23,6 +23,20 @@ Owner request: shotguns are weak. A shotgun should throw a bunch of pellets per 
 
 **Pending:** not in an installer; owner in-game check of shotgun balance (players and bots) and the tracer look; the TDM-5v5 Low benchmark with the larger tracer cap.
 
+## ADR-128 bot replan cooldown after arrival — 2026-11-27
+
+The fix for the bot repath load found below. [ADR-128](../../decisions.md#adr-128--accepted-bot-replan-cooldown-also-after-arrival): `CombatAiDirector.EnsurePath` now holds the 30-tick replan cooldown whenever the bot has planned before, including after arrival cleared `PathGoal`. A goal at the bot's feet no longer gives a new synchronous path solve every tick.
+
+**Tests.**
+- New `CombatAiTests.Immediate_arrival_does_not_bypass_the_replan_cooldown`: one bot whose routes end at its feet. With the old condition restored, it fails with 240 path requests in 240 ticks; with the fix, it passes at no more than one per 30 ticks.
+- All existing AI behaviour tests pass unchanged.
+
+**Checks** (uncommitted source on `c7353a2`):
+- `Test-All.ps1` PASS: Contracts 84, Game 168, Generation 664, Simulation 743 (`m0-foundation/c7353a2…/test-all-20261127T164239161Z-08f2ee11`).
+- Unity EditMode **105/105 PASS** (`tests-editmode-20261127T164553540Z-ebbeb461`); PlayMode **32/32 PASS** (`tests-playmode-20261127T164950929Z-ef600b2e`).
+
+**Pending:** a client build with this change; an owner Old Town match whose `SHOOTER_FRAME_SUMMARY` and AI path counters show the main thread staying near its start-of-match level; owner review of bot movement. Not in an installer yet.
+
 ## Old Town stutter: bot repath rate on the main thread — 2026-11-27
 
 **Two matches in one 0.3.27 launch** (Old Town 10v10 both, High; `Artifacts/playtest-logs/0.3.27/session3-two-matches.log`): each match got a single career award (+5,582 and +4,762), and there were no errors.

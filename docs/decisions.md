@@ -140,6 +140,7 @@ Accepting a decision never certifies a runtime or hardware gate. The headings be
 | [ADR-125](#adr-125--accepted-bolt-action-snipers-kill-on-any-hit) | Accepted | bolt-action snipers kill on any hit | amends ADR-063, ADR-110 for flagged guns |
 | [ADR-126](#adr-126--accepted-licensed-fire-and-smoke-flipbooks-and-burning-wrecks) | Accepted | licensed fire and smoke flipbooks and burning wrecks | second application of ADR-124; amends ADR-092, ADR-093, ADR-111 |
 | [ADR-127](#adr-127--accepted-m870-lethal-up-close-and-per-pellet-tracers) | Accepted | M870 lethal up close and per-pellet tracers | retunes the ADR-118 M870 |
+| [ADR-128](#adr-128--accepted-bot-replan-cooldown-also-after-arrival) | Accepted | bot replan cooldown also after arrival | amends the AI path budget (ai.md) |
 
 ## ADR-001 — Accepted: Unity 6 URP rasterization
 
@@ -1954,3 +1955,19 @@ Date 2026-11-27. **Context.** Owner report: the shotgun is weak. A shotgun shoul
 Rollback: restore the three combat values in `m870.weapon.json` and regenerate; revert the tracker, tracer helper, caps and Armory clamp.
 
 Evidence: [M11 handoff](milestones/m11-playable-release/handoff.md#adr-127-m870-close-range-lethality-and-pellet-tracers--2026-11-27).
+
+## ADR-128 — Accepted: bot replan cooldown also after arrival
+
+Date 2026-11-27. **Context.** Owner playtests of 0.3.26 and 0.3.27 stuttered in Old Town matches. `SHOOTER_FRAME_SUMMARY` logs from two Old Town matches in one launch showed the CPU main thread climbing about 10 ms within each match while GPU time stayed flat. Main-thread time tracked the bot path rate (r = 0.72): about 0.1–0.5 completed paths per tick early, rising to about 2 per tick, the full `MaxNewPathsPerTick` budget, once combat started. Each path is a synchronous native `NavMesh.CalculatePath` inside the fixed tick.
+
+`CombatAiDirector.EnsurePath` applied the 30-tick `ReplanCooldownTicks` only while `PathGoal` was set, and arriving at a route's end clears it. A goal at or next to the bot (a search point by the last-seen enemy, an advance or flank goal it had reached) therefore gave a one-corner path, an immediate arrival, and a new request on the next tick. A unit test reproduces it: one bot with such routes made 240 path requests in 240 ticks.
+
+**Decision.** The replan cooldown holds whenever a bot has planned before (`LastReplanTick != 0`), including after arrival. A bot starts at most one new route per 30 ticks (0.5 s). The per-tick budget of 2 new paths, failure back-off, the retarget distance and the arrival logic are unchanged, so search and heard points are still spent on arrival, at most every 0.5 s. The first route after spawn or a life reset is still immediate.
+
+**Consequences.** Simulation AI and tests only. C0, Game-v1, fixtures and locks are unchanged. Bots that have just reached a nearby goal may wait up to 0.5 s before their next route instead of repathing every tick. Routes that take longer than 0.5 s to walk see no change.
+
+Regression test: `CombatAiTests.Immediate_arrival_does_not_bypass_the_replan_cooldown`. Pending: owner in-game review of bot movement, and frame summaries from a played Old Town match on a build with this change.
+
+Rollback: restore `&& board.PathGoal.HasValue` on the cooldown check in `EnsurePath`.
+
+Evidence: [M11 handoff](milestones/m11-playable-release/handoff.md#adr-128-bot-replan-cooldown-after-arrival--2026-11-27).

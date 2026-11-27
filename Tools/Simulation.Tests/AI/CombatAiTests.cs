@@ -237,6 +237,32 @@ namespace Shooter.Simulation.Tests.AI
             Assert.True(Math.Abs(commands[0].MoveX) < 0.25f);
         }
 
+        /// <summary>
+        /// ADR-128: a route that ends at the bot's feet arrives at once and clears PathGoal. The replan cooldown must
+        /// still hold, or the bot requests a new synchronous path solve every other tick (the 0.3.26/0.3.27 Old Town
+        /// main-thread stutter: bots in combat ran the per-tick path budget flat out).
+        /// </summary>
+        [Fact]
+        public void Immediate_arrival_does_not_bypass_the_replan_cooldown()
+        {
+            var world = new OcclusionWorld(occlude: false);
+            var nav = new FakeNav(new Float3(0, 0, 0)); // every route is one corner at the bot's feet
+            var ai = new CombatAiDirector(world, nav, 1u << 8);
+            ai.SetNavigationDestinations(new[] { new Float3(10, 0, 0), new Float3(-10, 0, 0) }, null);
+            ai.RegisterBot(new EntityId(1), new Float3(0, 0, 0), yaw: 0);
+            var commands = new InputCommand[1];
+            int requests = 0;
+            const uint ticks = 240;
+            for (uint t = 1; t <= ticks; t++)
+            {
+                ai.Plan(t, null, commands, 0);
+                requests += ai.Counters.PathsRequestedThisTick;
+            }
+            Assert.True(requests >= 2, "The bot still plans routes.");
+            Assert.True(requests <= ticks / CombatAiDirector.ReplanCooldownTicks + 1,
+                $"{requests} path requests in {ticks} ticks; at most one per {CombatAiDirector.ReplanCooldownTicks} ticks expected.");
+        }
+
         [Fact]
         public void Eleven_bots_obey_global_budgets_and_fair_sense_within_twelve_ticks()
         {

@@ -20,7 +20,7 @@ They plan through the Game-v1 `ITeamBotPlanner` seam and emit ordinary C0 `Input
 Every bot shares these global per-tick limits:
 - ≤16 vision rays (cover probes and peeks count toward this; at most 4 probe rays per tick);
 - ≤2 new path solves;
-- a 30-tick replan cooldown.
+- a 30-tick replan cooldown per bot, which also holds right after the bot arrives at a route's end ([ADR-128](../decisions.md#adr-128--accepted-bot-replan-cooldown-also-after-arrival)).
 
 When the budget runs out, sensing is deferred and its age is tracked. A hidden target is never marked visible. Every bot gets a sensing opportunity within 12 ticks.
 

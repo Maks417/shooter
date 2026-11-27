@@ -102,7 +102,10 @@ namespace Shooter.Simulation.AI
             }
             if (pathsThisTick >= MaxNewPathsPerTick) return;
             if (tick < board.RetryAfterTick) return;
-            if (tick - board.LastReplanTick < ReplanCooldownTicks && board.PathGoal.HasValue) return;
+            // ADR-128: one new route per bot per ReplanCooldownTicks, also after arriving (arrival clears PathGoal).
+            // A goal at the bot's feet otherwise gave a one-corner path, an immediate arrival and a new request on the
+            // next tick, so bots in combat filled the per-tick budget with synchronous native path solves every tick.
+            if (board.LastReplanTick != 0 && tick - board.LastReplanTick < ReplanCooldownTicks) return;
             var ticket = navigation.RequestPath(board.Self, goal, navRevision);
             board.PathTicket = ticket;
             board.PathGoal = goal;
