@@ -2,6 +2,16 @@
 
 Evidence log for M11, newest first. Each delivery and change records identities, results and what stays Pending. Records before 2026-11-15 (deliveries up to 0.3.12, T062–T085) are in git history. Current status is in [next playable build](../../next-playable-build.md) and gates are in [acceptance](../../acceptance.md).
 
+## Delivery 0.3.26 — 2026-11-27
+
+`Tools/Deliver.ps1 -ForceContent -ReleaseVersion 0.3.26` on clean `232c645` PASS (`m11-playable-release/232c645…/deliver-20261127T115756252Z-83b980a5`). It carries ADR-124–126 and the ownership fix below on top of 0.3.25 (`f9c3611`).
+- Native content and IL2CPP Client: `m8-runtime-composition/232c645…/compile-gamecontent-20261127T115756499Z-a48f8812`, `m0-foundation/232c645…/build-client-20261127T115838929Z-d1508d88`.
+- Smoke PASS (`smoke-client-20261127T120428904Z-255a848e`); package PASS with native nav required, 1,245 inventory files (`package-20261127T120436876Z-8f7f92ef`).
+- Installer `Shooter-Setup-0.3.26.exe`: 98,074,711 bytes, SHA-256 `a4a2c9c250c9bcc79061dbcbcbf684529bfcba5d14953ed3e516694afcf2ca86`, workspace clean (`installer-20261127T120443455Z-2812944f`). It is copied with its report to `Artifacts/deliveries/`. The wrapper pruned the 0.3.25 installer run folder; that installer remains on the `v0.3.25` GitHub release.
+- Published as the GitHub pre-release `v0.3.26`. The site and README screenshots were recaptured from this player with `Tools/Capture-UiReview.ps1` on Harbour at 10v10 (`Artifacts/site-captures/0.3.26/`). They are publicity images, not review or acceptance evidence.
+
+**Pending / NotClaimed:** an actual install and upgrade over 0.3.25, the T071 playtest of this build, the TDM-5v5 Low benchmark on the reference laptop, named owner review of the soldiers, effects and sniper balance, and REL01–REL06.
+
 ## ADR-124 authored soldier asset ownership fix — 2026-11-27
 
 The PlayMode 29/30 failure recorded under ADR-126 below is fixed. `MenuStagingLifetimeTests.DestroyingSuspendedStageReleasesMaterialsMeshesTexturesAndTargets` found imported FBX assets still referenced by the destroyed menu stage. These assets cannot be destroyed:
