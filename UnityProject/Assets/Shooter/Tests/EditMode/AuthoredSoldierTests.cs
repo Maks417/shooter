@@ -203,9 +203,11 @@ namespace Shooter.Tests
                         }
                         Assert.That(body.SupportGripSocket.HasValue, Is.True, $"{variant.Id}/{gun.MeshKey}: support hand not on the gun");
                         float gap = body.SupportFingertipGap(weaponRotation * Vector3.forward);
-                        report.Add($"{variant.Id}/{gun.MeshKey} r={radius * 1000:F0}mm wrist={body.LeftGripError * 1000:F0}mm tips={gap * 1000:F0}mm");
+                        float palm = body.SupportPalmGap(weaponRotation * Vector3.forward);
+                        report.Add($"{variant.Id}/{gun.MeshKey} r={radius * 1000:F0}mm wrist={body.LeftGripError * 1000:F0}mm tips={gap * 1000:F0}mm palmGap={palm * 1000:F0}mm");
                         Assert.That(body.LeftGripError, Is.LessThan(.02f), $"{variant.Id}/{gun.MeshKey}: wrist {body.LeftGripError:F3} m off its grip target");
                         Assert.That(gap, Is.LessThan(.015f), $"{variant.Id}/{gun.MeshKey}: fingertips {gap:F3} m off the handguard (r {radius:F3})");
+                        Assert.That(palm, Is.InRange(-.008f, .01f), $"{variant.Id}/{gun.MeshKey}: hand skin {palm:F3} m off the handguard surface");
                     }
                     finally { body.Dispose(); }
                 }

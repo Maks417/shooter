@@ -178,13 +178,49 @@ namespace Shooter.Presentation.Rig
         }
 
         /// <summary>
-        /// Wrist (hand bone) target that lays the palm contact against a grip cylinder of <paramref name="radius"/> whose
-        /// axis passes through <paramref name="axisWorld"/>; the back of the hand (<paramref name="handFrame"/> +Y) faces
-        /// away from it. <paramref name="handScale"/> is the drawn hand's (and grip's) scale over the measured one
-        /// (first-person near field); <paramref name="radius"/> is unscaled.
+        /// Wrist (hand bone) target that lays the palm contact against a grip cylinder of world radius
+        /// <paramref name="radius"/> whose axis passes through <paramref name="axisWorld"/>; the back of the hand
+        /// (<paramref name="handFrame"/> +Y) faces away from it. <paramref name="handScale"/> is the drawn hand's scale
+        /// over the measured one (first person: near-field scale times <see cref="FirstPersonHandScale"/>).
         /// </summary>
         public static Vector3 SupportWrist(Geometry hand, Quaternion handFrame, Vector3 axisWorld, float radius, float handScale = 1f) =>
-            axisWorld + handFrame * Vector3.up * (radius * handScale) - handFrame * (hand.Contact(radius) * handScale);
+            axisWorld + handFrame * Vector3.up * radius - handFrame * (hand.Contact(radius / handScale) * handScale);
+
+        /// <summary>
+        /// First-person hands are drawn at this fraction of the body's: the licensed palm is about 14 cm from wrist to
+        /// knuckles, much longer than a real one next to real-size guns.
+        /// </summary>
+        public const float FirstPersonHandScale = .8f;
+
+        /// <summary>
+        /// A gun's pistol grip from its own vertices below the right-hand-grip socket: the axis (fitted through the grip's
+        /// cross-sections, so it follows the rake), its point just under the receiver, and its half width.
+        /// </summary>
+        public static (Shooter.Contracts.Float3 top, Shooter.Contracts.Float3 up, float radius) MeasurePistolGrip(
+            System.Collections.Generic.IReadOnlyList<Shooter.Contracts.Float3> positions, Shooter.Contracts.Float3 socket)
+        {
+            double n = 0, sy = 0, sz = 0, syy = 0, syz = 0;
+            var halfWidths = new System.Collections.Generic.List<float>();
+            for (int i = 0; i < positions.Count; i++)
+            {
+                var p = positions[i];
+                if (Math.Abs(p.X - socket.X) > .035f || p.Y > socket.Y - .02f || p.Y < socket.Y - .12f || p.Z < socket.Z - .08f || p.Z > socket.Z + .03f) continue;
+                n++; sy += p.Y; sz += p.Z; syy += p.Y * (double)p.Y; syz += p.Y * (double)p.Z;
+                halfWidths.Add(Math.Abs(p.X - socket.X));
+            }
+            if (n < 8) return (socket, new Shooter.Contracts.Float3(0, 1, 0), .017f);
+            double denominator = n * syy - sy * sy;
+            double slope = Math.Abs(denominator) < 1e-12 ? 0 : (n * syz - sy * sz) / denominator; // dz/dy along the grip
+            slope = Math.Max(-1.2, Math.Min(1.2, slope));
+            double intercept = (sz - slope * sy) / n;
+            float topY = socket.Y - .015f;
+            var top = new Shooter.Contracts.Float3(socket.X, topY, (float)(intercept + slope * topY));
+            float length = (float)Math.Sqrt(1 + slope * slope);
+            var up = new Shooter.Contracts.Float3(0, 1f / length, (float)slope / length);
+            halfWidths.Sort();
+            float radius = Mathf.Clamp(halfWidths[(int)(halfWidths.Count * .9f)], .01f, .03f);
+            return (top, up, radius);
+        }
 
         /// <summary>Hand rotation in the semantic glove convention whose fingers point along <paramref name="fingers"/> and whose back faces <paramref name="back"/>.</summary>
         public static Quaternion HandFrame(Vector3 fingers, Vector3 back, bool left)

@@ -293,6 +293,7 @@ public static class ShooterFeatureBuild
                 // ADR-129 review: the same pose from beside and below the view, to judge arm placement and grips.
                 RenderHandPose(camera,Path.Combine(output,name+"-ready-side.png"),new Vector3(-.75f,-.05f,.45f));
                 RenderHandPose(camera,Path.Combine(output,name+"-ready-right.png"),new Vector3(.75f,-.15f,.45f));
+                if(slot<2)RenderHandPose(camera,Path.Combine(output,name+"-grip.png"),new Vector3(.42f,-.2f,.32f),new Vector3(.06f,-.2f,.34f));
                 if(slot>=2)
                 {
                     // ADR-111: one-handed knife/grenade rest after the aim blend and idle layers settle (no aim held).
@@ -333,12 +334,12 @@ public static class ShooterFeatureBuild
                 }
             }
             File.WriteAllText(Path.Combine(output,"scope.txt"),"Editor packaged Low visual diagnostic; fixed camera and copied authority/action fixtures, no gameplay acceptance. fp.hand.v2 / geometry.weapon " + WeaponRecipe.GeneratorVersion + " / ADR-099 choreography");
-            Debug.Log("SHOOTER_HANDLING_CAPTURE files=27");
+            Debug.Log("SHOOTER_HANDLING_CAPTURE files=29");
         }
         finally { sky?.Dispose(); UnityEngine.Object.DestroyImmediate(root); }
     });
 
-    private static void RenderHandPose(Camera camera,string path,Vector3? sideOffset=null)
+    private static void RenderHandPose(Camera camera,string path,Vector3? sideOffset=null,Vector3? sideFocus=null)
     {
         // Synchronous Editor render requests can retain skin matrices from the previous pose.
         // Bake the actual current bones, as the soldier diagnostic already does.
@@ -363,7 +364,7 @@ public static class ShooterFeatureBuild
                 try
                 {
                     side.CopyFrom(camera);side.nearClipPlane=.01f;side.fieldOfView=45;
-                    var focus=camera.transform.TransformPoint(new Vector3(.05f,-.15f,.3f));
+                    var focus=camera.transform.TransformPoint(sideFocus??new Vector3(.05f,-.15f,.3f));
                     side.transform.position=camera.transform.TransformPoint(sideOffset.Value);side.transform.LookAt(focus,camera.transform.up);
                     Render(side,path);
                 }

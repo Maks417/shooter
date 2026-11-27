@@ -290,8 +290,9 @@ namespace Shooter.Presentation.Rig
                             depths.Add(-offset.y);
                         }
                     }
-                    // The palm skin, not the thenar or a stray cuff vertex: the 75th percentile of the palm-side depths.
-                    if (depths.Count > 0) { depths.Sort(); geometry.PalmSkin = Mathf.Clamp(depths[(int)(depths.Count * .75f)], .004f, .04f); }
+                    // The palm skin the grip actually touches, not the thenar pad or the glove cuff: the 40th percentile of
+                    // the palm-side depths (deeper percentiles left a visible gap under the handguard).
+                    if (depths.Count > 0) { depths.Sort(); geometry.PalmSkin = Mathf.Clamp(depths[(int)(depths.Count * .4f)], .004f, .04f); }
                 }
 
                 // Regions per vertex for every body renderer; painted renderers also get the generated clothing layer.
@@ -673,6 +674,35 @@ namespace Shooter.Presentation.Rig
         public float SupportGripRadius { get; private set; }
 
         /// <summary>
+        /// Review metric: how far the drawn support hand's skin stays off the handguard surface (nearest skinned vertex
+        /// dominated by the hand bone, measured to the handguard axis, minus its radius); negative when it sinks in, NaN
+        /// when the hand is not on the gun. Bakes the skin: tests and captures only.
+        /// </summary>
+        public float SupportPalmGap(Vector3 weaponForward)
+        {
+            if (!SupportGripSocket.HasValue) return float.NaN;
+            var handBone = bones[10]!; var axis = weaponForward.normalized; float nearest = float.MaxValue;
+            foreach (var smr in skinned)
+            {
+                if (!smr.enabled || smr.sharedMesh == null) continue;
+                int index = Array.IndexOf(smr.bones, handBone);
+                if (index < 0) continue;
+                // Unscaled bake: in the renderer's rotated frame (imported bodies carry an FBX local scale of 100).
+                var baked = new Mesh();
+                smr.BakeMesh(baked, false);
+                var vertices = baked.vertices; var weights = smr.sharedMesh.boneWeights;
+                for (int i = 0; i < vertices.Length && i < weights.Length; i++)
+                {
+                    if (weights[i].boneIndex0 != index || weights[i].weight0 < .5f) continue;
+                    var world = smr.transform.position + smr.transform.rotation * vertices[i];
+                    nearest = Mathf.Min(nearest, Vector3.ProjectOnPlane(world - SupportGripSocket.Value, axis).magnitude);
+                }
+                Kill(baked);
+            }
+            return nearest == float.MaxValue ? float.NaN : nearest - SupportGripRadius;
+        }
+
+        /// <summary>
         /// Review metric: the worst distance of a support fingertip (distal joint plus its measured length along the bone)
         /// from the handguard surface, metres; NaN when the hand is not on the gun.
         /// </summary>
@@ -714,7 +744,16 @@ namespace Shooter.Presentation.Rig
         /// Grip: fingers curl round the semantic hand frame's forward axis (palm down, fingers along ±X at bind);
         /// thumbs keep their bind line against the palm. Replaces whatever open hand the locomotion clips carry.
         /// </summary>
-        private static readonly float[] ThumbCurl = { 10f, 25f, 40f }, FistCurl = { 55f, 115f, 150f };
+        private static readonly float[] ThumbCurl = { 10f, 25f, 40f }, GripThumbCurl = { 35f, 50f, 60f },
+            // The thumb's rest line already leans toward the palm on this rig: opened a little, it lies along a handguard.
+            SupportThumbCurl = { -60f, -45f, -30f }, FistCurl = { 55f, 115f, 150f };
+
+        /// <summary>
+        /// Finger curl in the semantic hand frame: the four fingers about +Z toward the palm (sign by side, since their
+        /// bind runs along ±X), the thumb about +X, which turns its forward bind line toward the palm on either hand.
+        /// </summary>
+        private static Quaternion Curl(bool left, bool thumb, float degrees) =>
+            thumb ? Quaternion.AngleAxis(degrees, Vector3.right) : Quaternion.AngleAxis(left ? degrees : -degrees, Vector3.forward);
 
         /// <summary>World rotation of a hand or finger bone (T-pose rotation <paramref name="bind"/>) with the semantic hand frame at <paramref name="frame"/>, relative to the measured bind frame (ADR-129).</summary>
         private Quaternion HandPose(bool left, Quaternion frame, Quaternion bind)
@@ -733,9 +772,11 @@ namespace Shooter.Presentation.Rig
                 int segment = index % 3, digit = index / 3; // digit 0 thumb, 1 index .. 4 little
                 bool thumb = digit == 0;
                 // ADR-129: the support fingers wrap the handguard radius when one is given; otherwise a fixed fist.
-                float curl = thumb ? ThumbCurl[segment] : left && leftWrap != null ? leftWrap[(digit - 1) * 3 + segment] : FistCurl[segment];
+                bool wrapped = left && leftWrap != null;
+                // The support thumb lies along the near side of the handguard.
+                float curl = thumb ? (wrapped ? SupportThumbCurl : ThumbCurl)[segment] : wrapped ? leftWrap![(digit - 1) * 3 + segment] : FistCurl[segment];
                 // Right fingers (+X) curl toward -Y about +Z with a negative angle; left fingers (-X) with a positive one.
-                var target = HandPose(left, hand * Quaternion.AngleAxis(left ? curl : -curl, thumb ? Vector3.right * (left ? -1f : 1f) : Vector3.forward), bind);
+                var target = HandPose(left, hand * Curl(left, thumb, curl), bind);
                 bone.rotation = Quaternion.Slerp(bone.rotation, target, w);
             }
         }
@@ -917,7 +958,7 @@ namespace Shooter.Presentation.Rig
         /// finger's curl is scaled by <paramref name="indexScale"/> (trigger finger along the guard).
         /// </summary>
         public void PoseFirstPersonArm(int side, Quaternion view, Vector3 shoulder, Vector3 wrist, Vector3 pole, Quaternion handFrame,
-            float[]? curls, float indexScale = 1f)
+            float[]? curls, float indexScale = 1f, float handScale = AuthoredHandGrip.FirstPersonHandScale)
         {
             if (!IsFirstPersonArms) throw new InvalidOperationException("Not first-person arms.");
             bool left = side == 1;
@@ -929,6 +970,7 @@ namespace Shooter.Presentation.Rig
             bones[upper]!.rotation = view * Shape.BindOffset[upper]!.Value;
             bones[lower]!.rotation = view * Shape.BindOffset[lower]!.Value;
             bones[hand]!.rotation = view * Shape.BindOffset[hand]!.Value;
+            bones[hand]!.localScale = Vector3.one * handScale;
             AuthoredHandGrip.SolveLimb(bones[upper]!, bones[lower]!, bones[hand]!, wrist, pole, HandPose(left, handFrame, Shape.BindOffset[hand]!.Value), 1f);
             foreach (var (finger, bone, bind) in fingers)
             {
@@ -936,10 +978,10 @@ namespace Shooter.Presentation.Rig
                 if (fingerLeft != left) continue;
                 int index = (int)finger - (int)(left ? HumanBodyBones.LeftThumbProximal : HumanBodyBones.RightThumbProximal);
                 int segment = index % 3, digit = index / 3;
-                float curl = digit == 0 ? ThumbCurl[segment] : curls != null ? curls[(digit - 1) * 3 + segment] : RelaxedCurl[segment];
+                // Trigger hand: the thumb wraps round the grip; support hand: it lies along the handguard.
+                float curl = digit == 0 ? (curls == null ? ThumbCurl : left ? SupportThumbCurl : GripThumbCurl)[segment] : curls != null ? curls[(digit - 1) * 3 + segment] : RelaxedCurl[segment];
                 if (digit == 1) curl *= indexScale;
-                var axis = digit == 0 ? Vector3.right * (left ? -1f : 1f) : Vector3.forward;
-                bone.rotation = HandPose(left, handFrame * Quaternion.AngleAxis(left ? curl : -curl, axis), bind);
+                bone.rotation = HandPose(left, handFrame * Curl(left, digit == 0, curl), bind);
             }
             ArmWristError[side] = Vector3.Distance(bones[hand]!.position, wrist);
         }

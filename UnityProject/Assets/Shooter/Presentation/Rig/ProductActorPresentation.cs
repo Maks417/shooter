@@ -132,6 +132,9 @@ namespace Shooter.Presentation.Rig
             public float SupportRadius = AuthoredHandGrip.DefaultRadius;
             public Float3 TriggerSocket;
             public bool HasTriggerSocket;
+            /// <summary>ADR-129 pistol grip from the gun's own vertices: axis point under the receiver, axis up the grip, half width.</summary>
+            public Float3 TriggerGripTop, TriggerGripUp = new Float3(0, 1, 0);
+            public float TriggerGripRadius = .017f;
         }
         private readonly Dictionary<string, WeaponMeshSet> weaponMeshes = new Dictionary<string, WeaponMeshSet>(StringComparer.Ordinal);
         /// <summary>ADR-107 rail-mounted sight meshes by key (<c>sight-&lt;sight&gt;-&lt;kind&gt;</c>): world LOD and arm's-length LOD0.</summary>
@@ -178,9 +181,7 @@ namespace Shooter.Presentation.Rig
         private string? fpArmsKey;
         private readonly float[] fpSupportCurls = new float[12];
         private static readonly Vector3 FpShoulderRight = new Vector3(.19f, -.3f, 0f), FpShoulderLeft = new Vector3(-.21f, -.3f, .02f);
-        private const float TriggerGripRadius = .017f, GrenadeGripRadius = .03f;
-        /// <summary>The right-hand-grip socket is at the top of the grip; the palm wraps its middle.</summary>
-        private static readonly Vector3 TriggerGripDrop = new Vector3(0f, -.035f, -.008f);
+        private const float GrenadeGripRadius = .03f;
         /// <summary>The licensed first-person arms, when the authored bodies drive the view model (review and tests).</summary>
         public AuthoredSoldierBody? FirstPersonArms => fpArms;
         private Shooter.Presentation.Fx.KnifeBladeTrail? bladeTrail;
@@ -433,7 +434,7 @@ namespace Shooter.Presentation.Rig
                     }
                     // ADR-085: HUD weapon icons are traced from these same packaged LOD0 meshes.
                     silhouettes.Add(new WeaponSilhouetteSource(source.MeshKey, WeaponSilhouetteSource.SpanFor(source.MeshKey), silhouetteParts));
-                    if (source.Recipe != null) { var sockets = WeaponGeometry.Sockets(source.Recipe); set.SightSocket = FindSocket(sockets, "sight-eye"); set.MuzzleSocket = FindSocket(sockets, "muzzle"); set.SupportSocket = FindSocket(sockets, "left-hand-grip"); set.HasSupportSocket = true; (set.SupportAxis, set.SupportRadius) = AuthoredHandGrip.MeasureHandguard(localData.Positions, set.SupportSocket); set.TriggerSocket = FindSocket(sockets, "right-hand-grip"); set.HasTriggerSocket = true; }
+                    if (source.Recipe != null) { var sockets = WeaponGeometry.Sockets(source.Recipe); set.SightSocket = FindSocket(sockets, "sight-eye"); set.MuzzleSocket = FindSocket(sockets, "muzzle"); set.SupportSocket = FindSocket(sockets, "left-hand-grip"); set.HasSupportSocket = true; (set.SupportAxis, set.SupportRadius) = AuthoredHandGrip.MeasureHandguard(localData.Positions, set.SupportSocket); set.TriggerSocket = FindSocket(sockets, "right-hand-grip"); set.HasTriggerSocket = true; (set.TriggerGripTop, set.TriggerGripUp, set.TriggerGripRadius) = AuthoredHandGrip.MeasurePistolGrip(localData.Positions, set.TriggerSocket);  }
                     weaponMeshes[source.MeshKey] = set;
                     yield return 0;
                 }
@@ -933,29 +934,39 @@ namespace Shooter.Presentation.Rig
             // curl solve stay unscaled for the same reason.
             arms.BeginFirstPersonPose(view, (rightShoulder + leftShoulder) * .5f, scale);
 
-            var triggerFrame = AuthoredHandGrip.HandFrame(forward - up * .35f, right, false);
+            // Drawn hands are smaller than the body's (FirstPersonHandScale); radii below are world radii.
+            float handScale = scale * AuthoredHandGrip.FirstPersonHandScale;
+            var rightHand = shape.RightHand!;
+            Quaternion triggerFrame;
             Vector3 triggerWrist;
             float triggerRadius;
             if (slot <= 1 && set != null && set.HasTriggerSocket)
             {
-                triggerRadius = TriggerGripRadius;
-                triggerWrist = AuthoredHandGrip.SupportWrist(shape.RightHand!, triggerFrame, weapon.TransformPoint(V(set.TriggerSocket) + TriggerGripDrop), triggerRadius, scale);
+                // Pistol grip: the knuckles stack up the grip's own (raked) axis with the index knuckle just under the
+                // receiver, the fingers wrap its front and the index finger lies forward along the trigger guard.
+                var gripUp = weapon.TransformDirection(V(set.TriggerGripUp)).normalized;
+                var back = Vector3.ProjectOnPlane(right, gripUp).normalized;
+                triggerFrame = AuthoredHandGrip.HandFrame(Vector3.Cross(back, gripUp), back, false);
+                triggerRadius = set.TriggerGripRadius * scale;
+                float indexAbove = (rightHand.Base[0].z - rightHand.Knuckles.z) * handScale;
+                var axis = weapon.TransformPoint(V(set.TriggerGripTop)) - gripUp * (indexAbove + .004f * scale);
+                triggerWrist = AuthoredHandGrip.SupportWrist(rightHand, triggerFrame, axis, triggerRadius, handScale);
             }
             else if (ProductAuthorityActionView.IsGrenadeSlot(slot))
             {
-                // The grenade body is lathed round the prop origin: the palm wraps it there.
-                // Cradled from below with the palm up, so the grenade shows above the fingers.
+                // The grenade body is lathed round the prop origin: cradled from below with the palm up, so it shows.
                 triggerFrame = AuthoredHandGrip.HandFrame(forward * .6f - right * .4f, right * .5f - up * .8f, false);
-                triggerRadius = GrenadeGripRadius;
-                triggerWrist = AuthoredHandGrip.SupportWrist(shape.RightHand!, triggerFrame, weapon.position, triggerRadius, scale);
+                triggerRadius = GrenadeGripRadius * scale;
+                triggerWrist = AuthoredHandGrip.SupportWrist(rightHand, triggerFrame, weapon.position, triggerRadius, handScale);
             }
             else
             {
-                triggerRadius = .015f;
+                triggerFrame = AuthoredHandGrip.HandFrame(forward - up * .35f, right, false);
+                triggerRadius = .015f * scale;
                 triggerWrist = handBones[0][2].position;
             }
             arms.PoseFirstPersonArm(0, view, rightShoulder, triggerWrist, handBones[0][1].position, triggerFrame,
-                AuthoredHandGrip.WrapCurls(shape.RightHand!, triggerRadius), gun ? .35f + .4f * trigger : 1f);
+                AuthoredHandGrip.WrapCurls(rightHand, triggerRadius / handScale), gun ? .12f + .3f * trigger : 1f);
 
             float open = gun ? Math.Max(reloadPose.SupportOpen01, specialOpen) : specialOpen;
             Quaternion supportFrame;
@@ -964,20 +975,20 @@ namespace Shooter.Presentation.Rig
             if (slot == 0 && set != null && set.HasSupportSocket)
             {
                 supportFrame = AuthoredHandGrip.HandFrame(right * .75f + forward * .35f + up * .1f, -up, true);
-                supportRadius = set.SupportRadius;
+                supportRadius = set.SupportRadius * scale;
                 var reach = new Vector3(reloadPose.SupportWristOffset.X + specialWrist.X, reloadPose.SupportWristOffset.Y + specialWrist.Y,
                     reloadPose.SupportWristOffset.Z + specialWrist.Z);
-                supportWrist = AuthoredHandGrip.SupportWrist(shape.LeftHand!, supportFrame, weapon.TransformPoint(V(set.SupportAxis)), supportRadius, scale)
+                supportWrist = AuthoredHandGrip.SupportWrist(shape.LeftHand!, supportFrame, weapon.TransformPoint(V(set.SupportAxis)), supportRadius, handScale)
                     + weapon.TransformVector(reach);
             }
             else
             {
                 // Pistol cup, grenade pin: the rig wrist already carries the reach.
                 supportFrame = AuthoredHandGrip.HandFrame(right * .8f + forward * .3f + up * .15f, -up - right * .3f, true);
-                supportRadius = .045f;
+                supportRadius = .045f * scale;
                 supportWrist = handBones[1][2].position;
             }
-            var wrap = AuthoredHandGrip.WrapCurls(shape.LeftHand!, supportRadius);
+            var wrap = AuthoredHandGrip.WrapCurls(shape.LeftHand!, supportRadius / handScale);
             float closed = 1f - .8f * Mathf.Clamp01(open);
             for (int i = 0; i < fpSupportCurls.Length; i++) fpSupportCurls[i] = wrap[i] * closed;
             arms.PoseFirstPersonArm(1, view, leftShoulder, supportWrist, handBones[1][1].position, supportFrame, fpSupportCurls);

@@ -16,6 +16,27 @@ Owner report after 0.3.28: pistols are useless, and it is almost impossible to k
 
 **Pending:** not in an installer; owner in-game balance check (players and bots).
 
+## ADR-129 follow-up: first-person trigger hand — 2026-11-27
+
+The owner reviewed 0.3.28: the first-person hands, especially the one on the gun, held it incorrectly. Captures showed three problems with the trigger hand:
+- an oversized palm (the licensed hand is about 14 cm from wrist to knuckles) laid over the receiver above the grip;
+- a generic tilted frame;
+- thumbs (in both views) curling toward the back of the hand, a sign error.
+
+**Changes** ([ADR-129](../../decisions.md#adr-129--accepted-licensed-first-person-arms-wrapped-support-grips-strafe-clip-facing-and-grenade-start-contact), amended):
+- `AuthoredHandGrip.MeasurePistolGrip` fits each gun's grip from its vertices under `right-hand-grip`: a raked axis (rifle about 9°) and a half width.
+- The knuckles stack up that axis with the index knuckle under the receiver, and the fingers wrap the grip. The index lies along the trigger guard and curls with the trigger.
+- First-person hands are drawn at 0.8 of the body's size.
+- Thumbs now curl toward the palm: around the pistol grip, and opened along the handguard on the support hand.
+- New metric `SupportPalmGap`: the support hand's skin to the handguard surface, measured from the baked mesh. It reads 0 to −1 mm on every variant and long gun, and is now asserted in `SupportHandWrapsEveryHandguard`.
+
+**Checks** (uncommitted source on `642f259`):
+- Unity EditMode **112/112** (`tests-editmode-20261127T195958640Z-017f5c2e`) and PlayMode **35/35** (`tests-playmode-20261127T200453585Z-18ff8dce`).
+- Renders, including new `rifle-grip` and `pistol-grip` close-ups: `capture-handling-20261127T200716736Z-0e454ee6` and `capture-soldier-skins-20261127T200747244Z-b81b77e0`.
+- The pure lanes are unaffected: this change touches only `Presentation/Rig` and tests.
+
+**Pending:** owner review in game. Not in an installer.
+
 ## Delivery 0.3.28 — 2026-11-27
 
 `Tools/Deliver.ps1 -ForceContent -ReleaseVersion 0.3.28` on clean `ca663ae` PASS (`m11-playable-release/ca663ae…/deliver-20261127T190746399Z-a41ca296`). It carries, on top of 0.3.27:
