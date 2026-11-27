@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using Shooter.Contracts;
+using Shooter.Simulation.Combat;
 using Shooter.Presentation.Audio;
 using Shooter.Presentation.Fx;
 using Xunit;
@@ -259,17 +260,31 @@ namespace Shooter.Simulation.Tests.Fx
         }
 
         [Fact]
-        public void Cosmetic_grenade_flight_arcs_and_despawns_on_nearby_impact()
+        public void Cosmetic_grenade_flight_arcs_and_despawns_on_its_throwers_blast()
         {
             var flight = new CosmeticGrenadeFlight();
             var id = new EntityId(11);
-            Assert.True(flight.TrySpawn(id, new Float3(0, 1, 0), new Float3(0, 4, 8)));
+            var thrower = new EntityId(3);
+            Assert.True(flight.TrySpawn(id, new Float3(0, 1, 0), new Float3(0, 4, 8), thrower));
             Assert.Equal(1, flight.ActiveCount);
             flight.Tick(0.1f);
             Assert.True(flight[0].Position.Z > 0f);
             Assert.True(flight[0].Velocity.Y < 4f); // gravity
-            flight.ObserveImpact(flight[0].Position);
+            // ADR-129: another thrower's blast far away leaves it; its own blast removes it wherever authority put it.
+            flight.ObserveBlast(new EntityId(4), new Float3(50, 0, 50));
+            Assert.Equal(1, flight.ActiveCount);
+            flight.ObserveBlast(thrower, new Float3(30, 0, 30));
             Assert.Equal(0, flight.ActiveCount);
+        }
+
+        [Fact]
+        public void Cosmetic_grenade_outlives_the_longest_fuse()
+        {
+            var flight = new CosmeticGrenadeFlight();
+            Assert.True(flight.TrySpawn(new EntityId(12), new Float3(0, 1, 0), new Float3(0, 0, 1), new EntityId(3)));
+            float fuseSeconds = WeaponDefinition.Grenade.FuseTicks / 60f;
+            for (float t = 0f; t < fuseSeconds; t += 1f / 60f) flight.Tick(1f / 60f);
+            Assert.Equal(1, flight.ActiveCount);
         }
     }
 }

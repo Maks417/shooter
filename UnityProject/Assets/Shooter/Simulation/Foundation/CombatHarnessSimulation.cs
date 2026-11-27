@@ -568,7 +568,8 @@ namespace Shooter.Simulation
             float yaw = thrower.Motor.AimYaw;
             float pitch = thrower.Motor.AimPitch;
             var aim = pose.AimDirection(yaw, pitch);
-            var origin = pose.CanonicalMuzzle(eye, yaw, pitch);
+            // A throw pressed against a wall must not start inside it (ADR-129).
+            var origin = grenades.SafeLaunchOrigin(eye, pose.CanonicalMuzzle(eye, yaw, pitch), world);
             if (action.DetonateInHand || action.RemainingFuseTicks == 0)
             {
                 grenadeExplosions.Add(new GrenadeExplosion(thrower.Id, thrower.Id, thrower.Team, thrower.Motor.Feet, action.Definition, action.ShotIndex));

@@ -38,7 +38,7 @@ namespace Shooter.Presentation.Session
                 mapView?.Decals?.Impact(mark.Position,mark.Normal,ProductAudioEventRouter.IsGrenadeBlastImpact(ev));
             if (ev.Kind == CombatEventKind.ProjectileSpawned && ev.Payload is ProjectilePayload projectile)
             {
-                grenadeFlight.TrySpawn(projectile.ProjectileId, projectile.Origin, projectile.Velocity);
+                grenadeFlight.TrySpawn(projectile.ProjectileId, projectile.Origin, projectile.Velocity, ev.Instigator);
                 if (session != null && ev.Instigator.Equals(session.HumanEntityId))
                     input.NotifyGrenadeSpent();
                 return;
@@ -80,10 +80,11 @@ namespace Shooter.Presentation.Session
                 // ADR-127: ReducedFlash hides pellet tracers like the primary tracer (ADR-061).
                 if(pelletTracers.TryPelletImpact(ev,out var pelletPoint)&&!reducedFlash)
                     analyticFxPool.SpawnPelletTracer(pelletTracerMuzzle,pelletPoint,pelletTracerPush);
-                grenadeFlight.ObserveImpact(impact.Position);
                 bool blast=ProductAudioEventRouter.IsGrenadeBlastImpact(ev);
                 if(blast)
                 {
+                    // ADR-129: only the thrower's blast ends a cosmetic grenade; bullet impacts nearby never do.
+                    grenadeFlight.ObserveBlast(ev.Instigator,impact.Position);
                     // ADR-111: layered blast; ReducedFlash drops the bright layers inside the pool recipe.
                     analyticFxPool.SpawnGrenadeBlast(impact.Position,impact.Normal,reducedFlash,QualitySettings.GetQualityLevel());
                     if(!reducedCameraMotion&&!reducedFlash&&camera!=null)

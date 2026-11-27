@@ -6,8 +6,9 @@ namespace Shooter.Presentation.Fx
 {
     /// <summary>
     /// Presentation-only thrown grenade arcs. Mirrors GrenadeSimulator gravity, bounce damping and ground friction
-    /// (ADR-111); bounces need a world <see cref="Probe"/>, otherwise the arc flies on. No authority mutation;
-    /// despawn on a nearby Impact or lifetime.
+    /// (ADR-111); bounces need a world <see cref="Probe"/>, otherwise the arc flies on. No authority mutation.
+    /// A grenade leaves on its thrower's blast (ADR-129), never on an unrelated bullet impact nearby; the lifetime is
+    /// only a safety net past the longest fuse.
     /// </summary>
     public sealed class CosmeticGrenadeFlight
     {
@@ -16,7 +17,7 @@ namespace Shooter.Presentation.Fx
         public const float BounceRetain = 0.45f;
         public const float GroundFriction = 0.85f;
         public const float Radius = 0.08f;
-        public const float MaxLifetimeSeconds = 2.5f;
+        public const float MaxLifetimeSeconds = 3.5f;
         public const float DespawnImpactRadiusMeters = 1.25f;
         /// <summary>Tumble rate per metre travelled (degrees), so the spin slows as the grenade rolls out.</summary>
         public const float TumbleDegreesPerMeter = 140f;
@@ -36,10 +37,13 @@ namespace Shooter.Presentation.Fx
             /// <summary>Accumulated tumble angle in degrees about the axis across the travel direction.</summary>
             public float TumbleDegrees { get; }
             public int Bounces { get; }
+            /// <summary>Thrower, matched against the blast's instigator; default when unknown.</summary>
+            public EntityId Thrower { get; }
 
             public Live(EntityId projectileId, Float3 position, Float3 velocity, float ageSeconds, bool active,
-                float tumbleDegrees = 0f, int bounces = 0)
+                float tumbleDegrees = 0f, int bounces = 0, EntityId thrower = default)
             {
+                Thrower = thrower;
                 ProjectileId = projectileId;
                 Position = position;
                 Velocity = velocity;
@@ -70,7 +74,7 @@ namespace Shooter.Presentation.Fx
             for (int i = 0; i < MaxLive; i++) slots[i] = default;
         }
 
-        public bool TrySpawn(EntityId projectileId, Float3 origin, Float3 velocity)
+        public bool TrySpawn(EntityId projectileId, Float3 origin, Float3 velocity, EntityId thrower = default)
         {
             if (!projectileId.IsValid) return false;
             int free = -1;
@@ -78,27 +82,39 @@ namespace Shooter.Presentation.Fx
             {
                 if (slots[i].Active && slots[i].ProjectileId.Equals(projectileId))
                 {
-                    slots[i] = new Live(projectileId, origin, velocity, 0f, true);
+                    slots[i] = new Live(projectileId, origin, velocity, 0f, true, thrower: thrower);
                     return true;
                 }
                 if (!slots[i].Active && free < 0) free = i;
             }
             if (free < 0) return false;
-            slots[free] = new Live(projectileId, origin, velocity, 0f, true);
+            slots[free] = new Live(projectileId, origin, velocity, 0f, true, thrower: thrower);
             return true;
         }
 
-        public void ObserveImpact(Float3 position)
+        /// <summary>
+        /// A grenade blast: removes the thrower's oldest live grenade (fuses run in throw order). With no thrower match it
+        /// falls back to the nearest grenade within <see cref="DespawnImpactRadiusMeters"/>.
+        /// </summary>
+        public void ObserveBlast(EntityId thrower, Float3 position)
         {
+            int oldest = -1;
+            for (int i = 0; i < MaxLive; i++)
+            {
+                if (!slots[i].Active || !thrower.IsValid || !slots[i].Thrower.Equals(thrower)) continue;
+                if (oldest < 0 || slots[i].AgeSeconds > slots[oldest].AgeSeconds) oldest = i;
+            }
+            if (oldest >= 0) { slots[oldest] = default; return; }
+            int nearest = -1;
+            float best = DespawnImpactRadiusMeters * DespawnImpactRadiusMeters;
             for (int i = 0; i < MaxLive; i++)
             {
                 if (!slots[i].Active) continue;
-                float dx = slots[i].Position.X - position.X;
-                float dy = slots[i].Position.Y - position.Y;
-                float dz = slots[i].Position.Z - position.Z;
-                if (dx * dx + dy * dy + dz * dz <= DespawnImpactRadiusMeters * DespawnImpactRadiusMeters)
-                    slots[i] = default;
+                float dx = slots[i].Position.X - position.X, dy = slots[i].Position.Y - position.Y, dz = slots[i].Position.Z - position.Z;
+                float d = dx * dx + dy * dy + dz * dz;
+                if (d <= best) { best = d; nearest = i; }
             }
+            if (nearest >= 0) slots[nearest] = default;
         }
 
         public void Tick(float dtSeconds)
@@ -140,7 +156,7 @@ namespace Shooter.Presentation.Fx
                 }
                 float travelled = (float)Math.Sqrt(delta.X * delta.X + delta.Y * delta.Y + delta.Z * delta.Z);
                 float tumble = (g.TumbleDegrees + travelled * TumbleDegreesPerMeter) % 360f;
-                slots[i] = new Live(g.ProjectileId, pos, vel, age, true, tumble, bounces);
+                slots[i] = new Live(g.ProjectileId, pos, vel, age, true, tumble, bounces, g.Thrower);
             }
         }
     }
