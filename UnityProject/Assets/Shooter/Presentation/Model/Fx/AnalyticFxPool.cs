@@ -25,12 +25,14 @@ namespace Shooter.Presentation.Fx
     /// <summary>Capped FX proxies (bounded pool). Presenters draw them with generated or ADR-126 licensed flipbooks.</summary>
     public sealed class AnalyticFxPool
     {
-        public const int MaxInstances = 96;
+        /// <summary>ADR-127 raised it from 96 with the tracer cap, keeping the shared-cap slack of the ADR-111 layout.</summary>
+        public const int MaxInstances = 104;
         /// <summary>ADR-111: grenade blast layers share one cap so two overlapping blasts fit without starving gunfire.</summary>
         public const int MaxBlastProxies = 40;
         public const int MaxSmokeProxies = 16;
         public const int MaxShellCasings = 24;
-        public const int MaxTracers = 16;
+        /// <summary>ADR-127: room for one M870 blast (8 pellet tracers) beside ordinary gunfire.</summary>
+        public const int MaxTracers = 24;
         /// <summary>Impact/footstep dust and debris share one cap so they cannot starve muzzle flashes.</summary>
         public const int MaxDustAndDebris = 14;
         // Brief but denser combat proxies (Warface-scale feedback without particle packs).
@@ -334,6 +336,21 @@ namespace Shooter.Presentation.Fx
             // Casings remain under ReducedFlash (ADR-061).
             if (TrySpawn(FxKind.ShellCasing, origin, eject)) spawned++;
             return spawned;
+        }
+
+        /// <summary>
+        /// ADR-127 pellet tracer: a tracer from the visible muzzle toward one pellet's impact point, pushed forward like the
+        /// primary tracer. Returns false when the pool is full or the point sits on the muzzle. Callers skip it under ReducedFlash.
+        /// </summary>
+        public bool SpawnPelletTracer(Float3 muzzle, Float3 impactPoint, float forwardPushMeters = MuzzleFlashForwardPushMeters)
+        {
+            float dx = impactPoint.X - muzzle.X, dy = impactPoint.Y - muzzle.Y, dz = impactPoint.Z - muzzle.Z;
+            float lenSq = dx * dx + dy * dy + dz * dz;
+            if (lenSq < 1e-6f) return false;
+            float inv = 1f / (float)Math.Sqrt(lenSq);
+            var dir = new Float3(dx * inv, dy * inv, dz * inv);
+            var start = new Float3(muzzle.X + dir.X * forwardPushMeters, muzzle.Y + dir.Y * forwardPushMeters, muzzle.Z + dir.Z * forwardPushMeters);
+            return TrySpawn(FxKind.Tracer, start, dir);
         }
 
         /// <summary>

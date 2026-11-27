@@ -234,7 +234,8 @@ namespace Shooter.Simulation.Tests.Fx
         [Fact]
         public void Pool_caps_were_raised_for_layered_blasts()
         {
-            Assert.Equal(96, AnalyticFxPool.MaxInstances);
+            Assert.Equal(104, AnalyticFxPool.MaxInstances); // ADR-127: +8 with the tracer cap (16 -> 24)
+            Assert.Equal(24, AnalyticFxPool.MaxTracers);
             Assert.Equal(40, AnalyticFxPool.MaxBlastProxies);
             Assert.True(AnalyticFxPool.MaxBlastProxies + AnalyticFxPool.MaxSmokeProxies + AnalyticFxPool.MaxShellCasings
                 + AnalyticFxPool.MaxTracers + AnalyticFxPool.MaxDustAndDebris <= AnalyticFxPool.MaxInstances + 14);

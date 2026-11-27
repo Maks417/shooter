@@ -23,6 +23,11 @@ namespace Shooter.Presentation.Session
     /// <summary>Combat feedback from authority events: impact FX, movement dust, hit feedback, damage sources and gunfire reveals.</summary>
     public sealed partial class ProductSessionView : MonoBehaviour
     {
+        // ADR-127: the other pellets of a shotgun blast each draw a tracer from the muzzle the shot was seen from.
+        private readonly PelletTracerTracker pelletTracers = new PelletTracerTracker();
+        private Float3 pelletTracerMuzzle;
+        private float pelletTracerPush;
+
         /// <summary>
         /// Spawn short-lived analytic mesh FX from authority combat events already leased for audio/HUD.
         /// ReducedFlash suppresses muzzle mesh + overlay only; impact/smoke proxies remain.
@@ -51,7 +56,7 @@ namespace Shooter.Presentation.Session
             if (ev.Kind == CombatEventKind.ShotAccepted && ev.Payload is ShotPayload shot)
             {
                 // Knife melee: no muzzle flash / tracer / casing — slash is the FP viewmodel.
-                if (IsKnifeDefinition(shot.WeaponId)) return;
+                if (IsKnifeDefinition(shot.WeaponId)) { pelletTracers.ObserveShot(ev, drawsTracers: false); return; }
                 // ADR-061: dual flame lobes + tracer + casing. ReducedFlash hides muzzle+tracer only.
                 var profile=WeaponVisualProfiles.Require(shot.WeaponId);
                 // The flash sits on the muzzle the viewer sees (FP view model or held weapon), not on the
@@ -64,11 +69,17 @@ namespace Shooter.Presentation.Session
                     profile.MuzzleFlashVariant,
                     anchored?AnalyticFxPool.MuzzleSocketPushMeters:AnalyticFxPool.MuzzleFlashForwardPushMeters, profile.MuzzleFlashSideJets);
                 analyticFxPool.TrySpawn(FxKind.SmokeProxy,flashOrigin,shot.UnitDirection);
+                pelletTracers.ObserveShot(ev, drawsTracers: profile.MuzzleFlashVariant!=0);
+                pelletTracerMuzzle=flashOrigin;
+                pelletTracerPush=anchored?AnalyticFxPool.MuzzleSocketPushMeters:AnalyticFxPool.MuzzleFlashForwardPushMeters;
                 return;
             }
 
             if (ev.Kind == CombatEventKind.Impact && ev.Payload is ImpactPayload impact)
             {
+                // ADR-127: ReducedFlash hides pellet tracers like the primary tracer (ADR-061).
+                if(pelletTracers.TryPelletImpact(ev,out var pelletPoint)&&!reducedFlash)
+                    analyticFxPool.SpawnPelletTracer(pelletTracerMuzzle,pelletPoint,pelletTracerPush);
                 grenadeFlight.ObserveImpact(impact.Position);
                 bool blast=ProductAudioEventRouter.IsGrenadeBlastImpact(ev);
                 if(blast)

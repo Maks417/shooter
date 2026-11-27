@@ -130,7 +130,7 @@ Accepting a decision never certifies a runtime or hardware gate. The headings be
 | [ADR-115](#adr-115--accepted-open-reflex-collimator-with-a-clear-glass-pane) | Accepted | open reflex collimator with a clear glass pane |  |
 | [ADR-116](#adr-116--accepted-realistic-map-colour-texture-and-shadows-materialnoise-120) | Accepted | realistic map colour, texture and shadows (material.noise 1.2.0) |  |
 | [ADR-117](#adr-117--accepted-single-point-collimator-dot-and-12x-collimator-zoom) | Accepted | single-point collimator dot and 1.2x collimator zoom |  |
-| [ADR-118](#adr-118--accepted-m4a1-mk-16-m24-sws-and-m870-pellets-shell-reloads-and-geometryweapon-150) | Accepted | M4A1, Mk 16, M24 SWS and M870: pellets, shell reloads and geometry.weapon 1.5.0 |  |
+| [ADR-118](#adr-118--accepted-m4a1-mk-16-m24-sws-and-m870-pellets-shell-reloads-and-geometryweapon-150) | Accepted | M4A1, Mk 16, M24 SWS and M870: pellets, shell reloads and geometry.weapon 1.5.0 | M870 damage retuned by ADR-127 |
 | [ADR-119](#adr-119--accepted-30-rank-career-ladder-and-four-new-perks) | Accepted | 30-rank career ladder and four new perks |  |
 | [ADR-120](#adr-120--accepted-parked-networking-behind-a-define-and-build-once-pure-lanes) | Accepted | parked networking behind a define and build-once pure lanes | amends ADR-076 |
 | [ADR-121](#adr-121--accepted-feature-lock-hashes-c-code-tokens-and-every-lock-has-a-refreeze-command) | Accepted | feature lock hashes C# code tokens; every lock has a refreeze command |  |
@@ -139,6 +139,7 @@ Accepting a decision never certifies a runtime or hardware gate. The headings be
 | [ADR-124](#adr-124--accepted-licensed-authored-art-track-characters-first) | Accepted | licensed authored art track (characters first) | amends ADR-002, ADR-007 |
 | [ADR-125](#adr-125--accepted-bolt-action-snipers-kill-on-any-hit) | Accepted | bolt-action snipers kill on any hit | amends ADR-063, ADR-110 for flagged guns |
 | [ADR-126](#adr-126--accepted-licensed-fire-and-smoke-flipbooks-and-burning-wrecks) | Accepted | licensed fire and smoke flipbooks and burning wrecks | second application of ADR-124; amends ADR-092, ADR-093, ADR-111 |
+| [ADR-127](#adr-127--accepted-m870-lethal-up-close-and-per-pellet-tracers) | Accepted | M870 lethal up close and per-pellet tracers | retunes the ADR-118 M870 |
 
 ## ADR-001 — Accepted: Unity 6 URP rasterization
 
@@ -1929,3 +1930,27 @@ Date 2026-11-27 (T233, owner decision). **Context.** After the authored soldiers
 Rollback: revert the presenter and pool changes, remove the pack and its files from `Tools/art-sources.json`, and delete `Art/Fx`.
 
 Evidence: [M11 handoff](milestones/m11-playable-release/handoff.md#adr-126-licensed-fire-and-smoke-flipbooks--2026-11-27).
+
+## ADR-127 — Accepted: M870 lethal up close and per-pellet tracers
+
+Date 2026-11-27. **Context.** Owner report: the shotgun is weak. A shotgun should throw a bunch of pellets per shot, and up close one or two pellets on the body should kill. The M870 already fired 8 pellets (ADR-118), but each did 25 with full damage only to 8 m. ADR-110 armor takes half of every torso or limb hit, so a torso pellet cost 13 health and a fresh soldier died only when all 8 pellets hit the torso inside 8 m. A blast also drew one tracer (pellet 0), so the spread was hard to read.
+
+**Decision.**
+- **Damage (content only).** `Content/Weapons/m870.weapon.json`: 100 per pellet (was 25), full damage to 10 m (was 8), falling linearly to 10 per pellet at 30 m (min scale 0.1, was 0.3). Pellet count, cone, spread, cadence, magazine and range are unchanged, and no Simulation code changes.
+
+  | Range | Per pellet | Kills a fresh soldier (100 health, 100 armor) |
+  |---|---|---|
+  | to 10 m | 100 | 2 torso pellets, or 1 torso + 2 limb, or 4 limb, or 1 head; 1 torso pellet once the armor is gone |
+  | 15 m | 77 | 3 torso pellets |
+  | 20 m | 55 | 4 torso pellets |
+  | 30 m and beyond | 10 | effectively never |
+
+- **Armory.** The damage bar clamps damage per shot at 200 (full health plus full armor). The M870 (8 × 100) fills it, and every other bar keeps today's length.
+- **Pellet tracers (presentation only).** `PelletTracerTracker` (Presentation.Model) finds every further `Impact` from the same shooter in the same tick that is off pellet 0's ray. `ProductSessionView` draws each one as a tracer from the visible muzzle toward that impact (`AnalyticFxPool.SpawnPelletTracer`). Single-projectile guns produce only the pellet-0 impact, so they are unchanged. Reduced flash hides pellet tracers like the primary tracer. A pellet that hits nothing within 60 m has no impact and draws no tracer.
+- **FX caps.** `MaxTracers` 16 → 24 (one full blast beside ordinary gunfire), with `MaxInstances` 96 → 104 to keep the ADR-111 shared-cap slack. The presenter allocates 8 more pooled particle systems.
+
+**Consequences.** Content, Presentation and tests only. C0, Game-v1, fixtures and locks are unchanged. Bots carrying the M870 are equally lethal up close; they still never fire it past its 30 m falloff end. Pending: owner in-game balance and tracer-look check, Unity lanes and a client build, and the TDM-5v5 Low benchmark with the larger tracer cap.
+
+Rollback: restore the three combat values in `m870.weapon.json` and regenerate; revert the tracker, tracer helper, caps and Armory clamp.
+
+Evidence: [M11 handoff](milestones/m11-playable-release/handoff.md#adr-127-m870-close-range-lethality-and-pellet-tracers--2026-11-27).

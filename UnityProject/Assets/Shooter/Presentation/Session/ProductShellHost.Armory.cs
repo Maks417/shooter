@@ -169,18 +169,27 @@ namespace Shooter.Presentation.Session
             for (int i = 0; i < offered.Count; i++)
                 if (backend.Armory.TryGetStats(offered[i], out int d, out int p, out int m, out int f, out _))
                 {
-                    maxDamage = Mathf.Max(maxDamage, d * Mathf.Max(1, p));
+                    maxDamage = Mathf.Max(maxDamage, ArmoryShotDamage(d, p));
                     maxMag = Mathf.Max(maxMag, m);
                     maxRpm = Mathf.Max(maxRpm, f);
                 }
             float sy = r.yMax - statsH - 8;
             float rowH = (statsH - 6) / 3f;
-            StatBar(new Rect(r.x + 18, sy, r.width - 36, rowH), ShellUiCopy.ArmoryStatDamage, damage * Mathf.Max(1, pellets) / (float)maxDamage,
+            StatBar(new Rect(r.x + 18, sy, r.width - 36, rowH), ShellUiCopy.ArmoryStatDamage, ArmoryShotDamage(damage, pellets) / (float)maxDamage,
                 pellets > 1 ? pellets + " × " + damage : damage.ToString());
             StatBar(new Rect(r.x + 18, sy + rowH + 3, r.width - 36, rowH), ShellUiCopy.ArmoryStatRate, rpm / (float)maxRpm, rpm + " RPM");
             StatBar(new Rect(r.x + 18, sy + (rowH + 3) * 2, r.width - 36, rowH), ShellUiCopy.ArmoryStatMagazine, magazine / (float)maxMag, magazine + " RND");
             ui.Label(new Rect(r.x + 18, r.y + 12, r.width - 36, 14), mode.ToUpperInvariant(), UiType.Micro + 1, TacticalUi.Accent, TextAnchor.UpperRight);
         }
+
+        /// <summary>ADR-110 full health plus full armor: a shot that can deal this much fills the damage bar.</summary>
+        private const int ArmoryDamageCap = 200;
+
+        /// <summary>
+        /// Damage per shot for the Armory bar (pellets × damage), clamped at <see cref="ArmoryDamageCap"/> so the ADR-127
+        /// M870 (8 × 100) shows a full bar without shrinking every rifle's bar.
+        /// </summary>
+        private static int ArmoryShotDamage(int damage, int pellets) => Mathf.Min(ArmoryDamageCap, damage * Mathf.Max(1, pellets));
 
         private void StatBar(Rect r, string label, float value01, string value)
         {

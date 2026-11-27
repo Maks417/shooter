@@ -211,13 +211,13 @@ namespace Shooter.Simulation.Combat
                 new WeaponDefinition(
                     new DefinitionId("weapons/m870"), FireMode.SemiAutomatic,
                     fireIntervalTicks: 36, reloadTicks: 28, equipTicks: 26,
-                    magazineSize: 7, reserveCapacity: 28, baseDamage: 25,
+                    magazineSize: 7, reserveCapacity: 28, baseDamage: 100,
                     hipSpreadRadians: Deg(1.2f), adsSpreadRadians: Deg(0.5f),
                     recoilPitchRadians: Deg(2.4f), recoilYawHalfRadians: Deg(0.5f),
                     maxRangeMeters: 60f, fuseTicks: 0, throwSpeedMetersPerSecond: 0f,
                     blastRadiusMeters: 0f, consumesAmmo: true, allowsSprintFire: false,
-                    burstCount: 0, burstIntervalTicks: 0, falloffStartMeters: 8f, falloffEndMeters: 30f,
-                    falloffMinScale: 0.3f, moveSpeedScale: 0.95f, spawnWeight: 2,
+                    burstCount: 0, burstIntervalTicks: 0, falloffStartMeters: 10f, falloffEndMeters: 30f,
+                    falloffMinScale: 0.1f, moveSpeedScale: 0.95f, spawnWeight: 2,
                     pelletCount: 8, pelletSpreadRadians: Deg(2.6f), reloadPerRound: true),
                 WeaponFamily.PrimaryGun, "weapons/m870")
         };

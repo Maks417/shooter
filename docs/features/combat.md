@@ -102,7 +102,7 @@ Other shot rules:
 - Authoritative recoil offsets aim; view kick is separate.
 - No client-supplied impact is trusted.
 
-**Pellets** ([ADR-118](../decisions.md#adr-118--accepted-m4a1-mk-16-m24-sws-and-m870-pellets-shell-reloads-and-geometryweapon-150)). A `pelletCount > 1` shot is one `ShotAccepted` and one recoil impulse. Each pellet gets its own eye ray, seeded channels (16 + 2p, 17 + 2p), impact and falloff damage. For the M870 that is 8 × 25 in a 2.6° cone, with falloff from 8 to 30 m.
+**Pellets** ([ADR-118](../decisions.md#adr-118--accepted-m4a1-mk-16-m24-sws-and-m870-pellets-shell-reloads-and-geometryweapon-150)). A `pelletCount > 1` shot is one `ShotAccepted` and one recoil impulse. Each pellet gets its own eye ray, seeded channels (16 + 2p, 17 + 2p), impact and falloff damage. For the M870 that is 8 × 100 in a 2.6° cone, full damage to 10 m and down to 10 per pellet at 30 m ([ADR-127](../decisions.md#adr-127--accepted-m870-lethal-up-close-and-per-pellet-tracers)): up close two torso pellets kill a fresh, armored soldier.
 
 **Damage** ([ADR-063](../decisions.md#adr-063--accepted-hit-region-damage-coefficients-one-shot-head)):
 - health is 100;
@@ -134,6 +134,7 @@ Feedback is presentation only, driven by authority events:
 | Event | Feedback |
 |---|---|
 | Firearm `ShotAccepted` | A report from the [audio](audio.md) bank, a mesh muzzle flash, casing, tracer and view kick |
+| Further pellet `Impact`s of the same shot | A tracer per pellet from the visible muzzle to its impact (`PelletTracerTracker`, [ADR-127](../decisions.md#adr-127--accepted-m870-lethal-up-close-and-per-pellet-tracers)); pellets that hit nothing draw none |
 | Knife `ShotAccepted` | A slash, or a stab when the same tick hits |
 | Grenade | A cook raise from `WeaponAction.Cooking`, then a cosmetic flying grenade after `ProjectileSpawned` |
 | Impacts | Bounded particles (generated sparks and chips, licensed CC0 dust flipbook per [ADR-126](../decisions.md#adr-126--accepted-licensed-fire-and-smoke-flipbooks-and-burning-wrecks)) and generated decals |

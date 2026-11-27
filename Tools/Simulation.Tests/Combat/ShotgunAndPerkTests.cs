@@ -141,12 +141,12 @@ namespace Shooter.Simulation.Tests.Combat
             Assert.NotEqual(WeaponModifiers.Identity, perks);
         }
 
-        [Fact]
-        public void One_blast_is_one_shot_with_an_impact_and_damage_per_pellet()
+        /// <summary>One M870 blast from the origin at a soldier standing <paramref name="meters"/> ahead, aimed at the torso.</summary>
+        private static (List<CombatEvent> events, EntityId target) BlastAt(float meters, float pitch)
         {
             var sim = new CombatHarnessSimulation(new Shooter.Simulation.Tests.Motor.StaticPlaneWorld());
             var shooter = sim.SpawnActor(default, 0, 1);
-            var target = sim.SpawnActor(new Float3(0, 0, 4f), 3.1f, 2);
+            var target = sim.SpawnActor(new Float3(0, 0, meters), 3.1f, 2);
             Assert.True(sim.ReplacePrimary(shooter, M870, 7, 28));
             var events = new List<CombatEvent>();
             for (uint t = 0; t < 120; t++)
@@ -154,21 +154,73 @@ namespace Shooter.Simulation.Tests.Combat
                 var buttons = t == 60 ? InputButtons.FireHeld | InputButtons.FirePressed : InputButtons.None;
                 sim.Step(t, new[]
                 {
-                    new InputCommand(shooter, t, t + 1, 0, 0, 0, 0.12f, buttons, 0),
+                    new InputCommand(shooter, t, t + 1, 0, 0, 0, pitch, buttons, 0),
                     new InputCommand(target, t, t + 1, 0, 0, 3.1f, 0, InputButtons.None, 0)
                 });
                 using var ev = sim.AcquireEvents();
                 for (int i = 0; i < ev.Events.Count; i++) events.Add(ev.Events[i]);
             }
+            return (events, target);
+        }
+
+        [Fact]
+        public void One_blast_is_one_shot_with_an_impact_per_pellet_and_kills_up_close()
+        {
+            var (events, target) = BlastAt(4f, 0.12f);
             Assert.Single(events, e => e.Kind == CombatEventKind.ShotAccepted);
             int impacts = events.Count(e => e.Kind == CombatEventKind.Impact);
             int hits = events.Count(e => e.Kind == CombatEventKind.DamageApplied);
             // At 4 m, aimed at the torso, the 2.6° cone is about a torso wide: several pellets land on the target, each with
-            // its own impact and damage event (one may land after the kill); stray pellets hit the ground or fly on.
+            // its own impact; stray pellets hit the ground or fly on. ADR-127: the first one to four pellets kill a fresh,
+            // armored soldier, and pellets resolved after the death apply no damage.
             int onTarget = events.Count(e => e.Kind == CombatEventKind.Impact && e.Target == target);
             Assert.InRange(onTarget, 3, 8);
-            Assert.InRange(hits, onTarget - 1, onTarget);
+            Assert.InRange(hits, 1, System.Math.Min(4, onTarget));
             Assert.InRange(impacts, onTarget, 8);
+            Assert.Single(events, e => e.Kind == CombatEventKind.Death && e.Target == target);
+        }
+
+        [Fact]
+        public void M870_blast_kills_an_armored_soldier_at_eight_meters()
+        {
+            var (events, target) = BlastAt(8f, 0.06f);
+            Assert.Single(events, e => e.Kind == CombatEventKind.ShotAccepted);
+            Assert.Single(events, e => e.Kind == CombatEventKind.Death && e.Target == target);
+        }
+
+        [Fact]
+        public void M870_two_torso_pellets_kill_an_armored_soldier_inside_ten_meters()
+        {
+            // ADR-127: 100 per pellet to 10 m, falling linearly to 10 at 30 m.
+            var def = WeaponDefinition.FromId(M870);
+            Assert.Equal(100, DamageMath.FalloffDamage(def.BaseDamage, def.FalloffScale(10f)));
+            Assert.Equal(77, DamageMath.FalloffDamage(def.BaseDamage, def.FalloffScale(15f))); // 77.5 in float rounds down
+            Assert.Equal(55, DamageMath.FalloffDamage(def.BaseDamage, def.FalloffScale(20f)));
+            Assert.Equal(10, DamageMath.FalloffDamage(def.BaseDamage, def.FalloffScale(30f)));
+            Assert.Equal(10, DamageMath.FalloffDamage(def.BaseDamage, def.FalloffScale(45f)));
+
+            // Fresh soldier: 100 health, 100 armor. Armor takes half of each torso or limb pellet (ADR-110).
+            static (ushort health, ushort armor) Hit(ushort health, ushort armor, ushort region, ushort baseDamage)
+            {
+                ushort amount = DamageMath.RoundDamage(baseDamage, region);
+                ushort taken = amount;
+                if (DamageMath.ArmorCovers(region) && armor > 0)
+                {
+                    taken = DamageMath.SplitArmor(amount, armor, out ushort armorTaken);
+                    armor = (ushort)(armor - armorTaken);
+                }
+                DamageMath.Apply(health, taken, out ushort remaining);
+                return (remaining, armor);
+            }
+            var one = Hit(DamageMath.MaxHealth, DamageMath.MaxArmor, 2, 100);
+            Assert.Equal((ushort)50, one.health);
+            Assert.Equal((ushort)0, Hit(one.health, one.armor, 2, 100).health);
+            // One torso and two limb pellets also kill; one head pellet kills alone.
+            var limb = Hit(one.health, one.armor, 3, 100);
+            Assert.Equal((ushort)0, Hit(limb.health, limb.armor, 4, 100).health);
+            Assert.Equal((ushort)0, Hit(DamageMath.MaxHealth, DamageMath.MaxArmor, 1, 100).health);
+            // Once the armor is gone, one torso pellet kills.
+            Assert.Equal((ushort)0, Hit(DamageMath.MaxHealth, 0, 2, 100).health);
         }
 
         [Fact]

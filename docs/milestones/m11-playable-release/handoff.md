@@ -2,6 +2,27 @@
 
 Evidence log for M11, newest first. Each delivery and change records identities, results and what stays Pending. Records before 2026-11-15 (deliveries up to 0.3.12, T062–T085) are in git history. Current status is in [next playable build](../../next-playable-build.md) and gates are in [acceptance](../../acceptance.md).
 
+## ADR-127 M870 close-range lethality and pellet tracers — 2026-11-27
+
+Owner request: shotguns are weak. A shotgun should throw a bunch of pellets per shot, and up close one or two pellets on the body should kill. Owner choices: full damage to 10 m, and a visible tracer per pellet. Implemented [ADR-127](../../decisions.md#adr-127--accepted-m870-lethal-up-close-and-per-pellet-tracers):
+- **Cause.** The M870 already fired 8 pellets, but each did 25 with full damage to 8 m. ADR-110 armor halves every torso hit, so a fresh soldier died only when all 8 pellets hit the torso inside 8 m.
+- **Damage.** `Content/Weapons/m870.weapon.json` is now 100 per pellet, full to 10 m, and 10 at 30 m (min scale 0.1); `WeaponCatalog.g.cs` is regenerated, and only the M870 row changed. Inside 10 m, two torso pellets kill an armored soldier (or one torso plus two limb pellets, or one head pellet). At 15 m it takes three torso pellets (77 each), at 20 m four (55 each).
+- **Armory.** `ProductShellHost.Armory` clamps damage per shot at 200 for the damage bar, so the 8 × 100 M870 fills it and the other bars keep their length.
+- **Pellet tracers.** `PelletTracerTracker` (Presentation.Model) picks out the further pellet impacts of a shot. `ProductSessionView.ObserveCombatFx` draws each one with `AnalyticFxPool.SpawnPelletTracer` from the visible muzzle, and hides them under reduced flash. Pellets that hit nothing draw no tracer. `MaxTracers` went from 16 to 24 and `MaxInstances` from 96 to 104.
+
+**Checks** (uncommitted source on `e939e3b`):
+- `Test-All.ps1`: Contracts 79/79, Game 168/168, Simulation **742/742** PASS. Generation 663/664 FAIL (`m0-foundation/e939e3b…/test-all-20261127T141048437Z-0f8311a6`).
+  - The one failure is `ContentStoreTests.ConsumerCancellationDoesNotCancelCoalescedPeer`, a 5 s thread-start wait. It failed while a `Shooter` player process and the Unity editor were running on the same machine.
+  - The class then passed 12/12 alone. The full suite passed **664/664** run directly (`dotnet test --no-build`, 3 min 25 s).
+  - Two standalone `Test-Generation.ps1` retries hit the wrapper's 180 s timeout under the same load before any test result (`m1-procedural-feasibility/e939e3b…/test-generation-20261127T141753627Z-3e9335f3`, `…T142133168Z-06be7ff0`). No clean wrapper PASS exists for Generation on this source.
+- New tests:
+  - `ShotgunAndPerkTests`: one blast at 4 m and at 8 m kills, plus a falloff and armor pin.
+  - `PelletTracerTrackerTests`: seven extra tracers for an 8-impact blast; none for a rifle, another shooter or tick, a knife or a grenade blast; the tracer direction.
+- `test_generate_weapon_catalog.py` 29/29, asmdef graph, contract lock, fixtures and `Test-SourceProvenance.ps1` PASS.
+- Unity EditMode **105/105 PASS** (`tests-editmode-20261127T141159483Z-7567741f`); PlayMode **32/32 PASS** (`tests-playmode-20261127T142826888Z-7e12a00c`).
+
+**Pending:** not in an installer; owner in-game check of shotgun balance (players and bots) and the tracer look; the TDM-5v5 Low benchmark with the larger tracer cap.
+
 ## Career double award fix and owner playtest logs — 2026-11-27
 
 **Owner playtest of the installed 0.3.26** (two sessions, logs copied to `Artifacts/playtest-logs/0.3.26/`):
