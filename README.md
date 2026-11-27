@@ -4,11 +4,11 @@
 
 [![Shooter in combat](site/assets/combat.jpg)](https://maks417.github.io/shooter/)
 
-[**Website**](https://maks417.github.io/shooter/) · [**Download v0.3.27 for Windows**](https://github.com/Maks417/shooter/releases/tag/v0.3.27) · [Docs](docs/index.md)
+[**Website**](https://maks417.github.io/shooter/) · [**Download v0.3.28 for Windows**](https://github.com/Maks417/shooter/releases/tag/v0.3.28) · [Docs](docs/index.md)
 
 Shooter is a Unity 6 URP first-person shooter. Maps, weapons, soldier gear and materials come from deterministic numeric recipes; soldier bodies, their animation clips and the fire and smoke flipbooks are licensed CC0 art (see [License](#license)). You play Team Deathmatch against local allied and enemy bots, with no account, network or server.
 
-> **Status: playtest build.** v0.3.27 is playable but still in development. The [release notes](https://github.com/Maks417/shooter/releases/tag/v0.3.27) list known issues.
+> **Status: playtest build.** v0.3.28 is playable but still in development. The [release notes](https://github.com/Maks417/shooter/releases/tag/v0.3.28) list known issues.
 
 ## Features
 

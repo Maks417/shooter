@@ -2,6 +2,22 @@
 
 Evidence log for M11, newest first. Each delivery and change records identities, results and what stays Pending. Records before 2026-11-15 (deliveries up to 0.3.12, T062–T085) are in git history. Current status is in [next playable build](../../next-playable-build.md) and gates are in [acceptance](../../acceptance.md).
 
+## Delivery 0.3.28 — 2026-11-27
+
+`Tools/Deliver.ps1 -ForceContent -ReleaseVersion 0.3.28` on clean `ca663ae` PASS (`m11-playable-release/ca663ae…/deliver-20261127T190746399Z-a41ca296`). It carries, on top of 0.3.27:
+- ADR-128, the bot replan cooldown after arrival;
+- ADR-129, the owner's 0.3.27 playtest fixes: licensed first-person arms, wrapped support grips, strafe clip facing, and grenade start contact.
+
+**Steps:**
+- Native content (12 packages, non-navigation byte-identity guard PASS) and IL2CPP Client: `m8-runtime-composition/ca663ae…/compile-gamecontent-20261127T190747033Z-f71484c5`, `m0-foundation/ca663ae…/build-client-20261127T190828728Z-7efec12a`.
+- Smoke PASS (`smoke-client-20261127T191347451Z-a3642093`).
+- Package PASS with native nav required, 1,245 inventory files, extract and corrupt-content rehearsals PASS. The rollback rehearsal was skipped because the 0.3.27 package run had been pruned (`package-20261127T191355699Z-15e8ff12`).
+- Installer `Shooter-Setup-0.3.28.exe`: 98,101,691 bytes, SHA-256 `7845aebe94beb0f431334ae22205d790ab8eef1cdf2a5c8fbae28cb6bbcd4810`, workspace clean (`installer-20261127T191403584Z-dc3b6d35`). It is copied with its report to `Artifacts/deliveries/`.
+
+**Published:** GitHub pre-release `v0.3.28` (tag on `ca663ae`) with the installer and its `.sha256`; the site and README point at it.
+
+**Pending / NotClaimed:** an install and upgrade over 0.3.27; a playtest of this build (owner review of the first-person arms on every weapon, bot strafes and grips, grenades near walls, and Old Town frame summaries with ADR-128); the TDM-5v5 Low benchmark; REL01–REL06.
+
 ## ADR-129 first-person arms, grips, strafes and grenades — 2026-11-27
 
 The owner's 0.3.27 playtest reported four defects: puppet hands in first person, wrong bot legs when strafing, bot support fingers long and not gripping, and grenades vanishing near walls with no explosion. Changes: [ADR-129](../../decisions.md#adr-129--accepted-licensed-first-person-arms-wrapped-support-grips-strafe-clip-facing-and-grenade-start-contact).
@@ -32,7 +48,7 @@ The owner's 0.3.27 playtest reported four defects: puppet hands in first person,
 - The first-person shoulders are fixed camera-space anchors pulled toward the wrist, so the forearms come in from the lower screen corners.
 - The packs have no walk-sideways or crouch-sideways clips; those strafes play the run clips at reduced cadence or use the leg turn.
 
-**Pending:** a client build and installer of this source; owner in-game review of the first-person arms on every weapon (VD3), of bot strafes and grips, and of grenades thrown against and near walls; the TDM-5v5 Low benchmark with the second authored body under the camera.
+**Pending:** owner in-game review on 0.3.28 of the first-person arms on every weapon (VD3), of bot strafes and grips, and of grenades thrown against and near walls; the TDM-5v5 Low benchmark with the second authored body under the camera.
 
 ## ADR-127 M870 close-range lethality and pellet tracers — 2026-11-27
 
