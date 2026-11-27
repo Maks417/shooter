@@ -120,6 +120,8 @@ namespace Shooter.Bootstrap
             }
             string preferredMap = PreferredMap();
             byte preferredSize = PreferredTeamSize();
+            // Frame-time summaries in the player log while a match plays (diagnostic; the benchmark mode records its own).
+            FrameTimingSummary.Attach(authority);
             // T059: shell owns start/stop; CLI/PlayerPrefs are setup defaults only.
             boot.ContinueAfterPaint(() =>
                 GameShellMenu.Create(new EntryShellBackend(authority), preferredMap, preferredSize));

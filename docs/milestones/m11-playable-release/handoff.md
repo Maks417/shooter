@@ -23,6 +23,25 @@ Owner request: shotguns are weak. A shotgun should throw a bunch of pellets per 
 
 **Pending:** not in an installer; owner in-game check of shotgun balance (players and bots) and the tracer look; the TDM-5v5 Low benchmark with the larger tracer cap.
 
+## Frame-time summaries in the product player log — 2026-11-27
+
+First step from the Old Town profile below. While a match is playing and not paused, the product player now logs one line every 10 s of play, for example:
+
+`SHOOTER_FRAME_SUMMARY tick=… session=… seconds=10.0 frames=212 fps=21.2 frameMs=p50/p95/max mainMs=… renderMs=… gpuMs=… slowFrames=…`
+
+- **CPU and GPU times:** CPU main-thread, CPU render-thread and GPU times come from `FrameTimingManager` (`enableFrameTimingStats` is already on).
+- **Slow frames:** `slowFrames` counts frames over 66.7 ms, the `SHOOTER_HITCH` condition. The session id matches the `SHOOTER_SHELL screen=Playing` line, which names the map.
+- **Startup line:** `SHOOTER_FRAME_SUMMARY_READY frameTiming=0|1` states at startup whether native timings are available.
+- **Code:** the pure `FrameTimingWindow` (`Bootstrap/Core`) does not allocate per frame. The client component is `FrameTimingSummary`, attached in `InstallProductShell`. It is diagnostic only and never changes simulation or rendering; benchmark mode keeps its own recorder.
+- **Tests:** `FrameTimingWindowTests` covers percentiles, slow-frame count, unavailable timings, overflow and zero allocation.
+
+**Checks** (uncommitted source on `a0b9597`):
+- `Test-All.ps1` PASS (Contracts 84, Game 168, Generation 664, Simulation 742).
+- Unity EditMode **105/105 PASS** (`tests-editmode-20261127T144113652Z-18191313`); PlayMode **32/32 PASS** (`tests-playmode-20261127T144445143Z-c65e5618`).
+- `Test-SourceProvenance.ps1` PASS; asmdef graph PASS.
+
+**Not yet observed in a real player log:** it needs a client build and a played match; not in an installer yet.
+
 ## Old Town stutter profile — 2026-11-27 (diagnostic, not acceptance)
 
 **Question.** Why did the owner's 0.3.26 Old Town 10v10 match log 383 `SHOOTER_HITCH` events (about 36 s of dropped simulation time in about 6.6 min), when Oil Depot logged 12 at the same settings?
