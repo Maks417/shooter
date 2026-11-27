@@ -59,7 +59,7 @@ namespace Shooter.Presentation.View
         /// <summary>ADR-129: camera-local lift added to a long gun over its reload (in by <see cref="LiftInPhase"/>, out from <see cref="LiftOutPhase"/>).</summary>
         public static readonly Float3 ReloadLift = new Float3(-0.03f, 0.06f, 0.03f);
         /// <summary>ADR-129: the smaller lift of a pistol, whose well is closer to the hip view.</summary>
-        public static readonly Float3 PistolReloadLift = new Float3(-0.02f, 0.12f, 0.01f);
+        public static readonly Float3 PistolReloadLift = new Float3(-0.02f, 0.08f, 0.01f);
         public const float LiftInPhase = 0.12f, LiftOutPhase = 0.86f;
         /// <summary>ADR-129: muzzle-up pitch (degrees, negative X) added with the long-gun lift.</summary>
         public const float ReloadLiftPitchDegrees = 0f;

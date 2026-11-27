@@ -344,7 +344,9 @@ namespace Shooter.Tests
                 for (byte slot = 0; slot < 2; slot++)
                 {
                     var id = new EntityId((ulong)slot + 1);
-                    lifecycle.State = new ActorLifecycleState(id, 1, true, 100, default, 0, 0, slot, 30, 90);
+                    // The sidearm players carry (the legacy slot-1 pistol is hidden from the Armory).
+                    var weapon = slot == 1 ? new DefinitionId("weapons/g17") : default;
+                    lifecycle.State = new ActorLifecycleState(id, 1, true, 100, default, 0, 0, slot, 30, 90, WeaponAction.Ready, weapon);
                     var snapshot = new MatchViewSnapshot(1, 10, 10, 53990, GameMatchPhase.Playing, MatchOutcome.None, FinishReason.None, 0, 0,
                         new[] { new ParticipantState(new ParticipantId(1), "Human", 1, true, id, new LifeId((uint)slot + 1), true, 0, 0, 0) }, 0);
                     presentation.Sync(snapshot, lifecycle, null, 0, id, false, .016f, Array.Empty<CombatEvent>(), 10);

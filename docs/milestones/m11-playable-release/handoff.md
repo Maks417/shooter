@@ -2,6 +2,29 @@
 
 Evidence log for M11, newest first. Each delivery and change records identities, results and what stays Pending. Records before 2026-11-15 (deliveries up to 0.3.12, T062–T085) are in git history. Current status is in [next playable build](../../next-playable-build.md) and gates are in [acceptance](../../acceptance.md).
 
+## ADR-129 follow-up: sidearm hip view — 2026-11-27
+
+Owner choice after the real-client recording: rework the pistol view. Changes:
+- `g17.weapon.json` and `golden-eagle.weapon.json`: hip bias (0.05, −0.04, 0.11), was (0.08, −0.085, 0.11); hip rotation (−3, −6, −4)°, was (0, −3, −2). `WeaponVisualProfiles.g.cs` regenerated, with only those two rows changed. Their combat values are unchanged.
+- Pistol reload lift reduced to (−2, +8, +1) cm.
+- The support hand takes an overhand frame when its reach goes over the gun. The first try turned an open palm at the camera during the empty-reload slide rack.
+- Editor handling captures now include the loadout sidearms (`g17-*`, `golden-eagle-*`), with reload beats and the slide rack.
+
+**Rejected:** a 0.13 m forward distance. Facing a wall at spawn, the slide reached into it and only the hammer and magazine base showed.
+
+**Recordings:**
+- final: `Artifacts/visual-design/adr-129-fp-hands/pistol4/` (build `b634e09…/build-client-20261127T222559557Z-3ed7b928`, packages recompiled with `Compile-GameContent.ps1`);
+- side by side with 0.3.29: `…/compare-pistol.mp4`.
+
+Rifle, knife and grenade framing are unchanged by this step.
+
+**Checks:**
+- pure `Test-All.ps1` PASS (`test-all-20261127T222938343Z-8ba2b003`);
+- `generate_weapon_catalog.py --check` PASS;
+- Unity EditMode **113/113** (`tests-editmode-20261127T223655953Z-243c8970`; `LicensedArmsHoldTheGunThroughSprintAndReload` now uses the G17, the sidearm players carry) and PlayMode **35/35** (`tests-playmode-20261127T223420136Z-58d564dd`).
+
+**Pending:** the owner's in-game review; not in an installer.
+
 ## ADR-129 follow-up: first-person arms in the real client — 2026-11-27
 
 Owner report after 0.3.29: the hands were still not fixed, the gun hand especially. The owner asked for a run of the real client with a recording, and a check of sprint and reload.

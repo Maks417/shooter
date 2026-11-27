@@ -11,7 +11,7 @@ This is the only page that tracks current status: the build, open findings, open
   - stronger sidearms ([ADR-130](decisions.md#adr-130--accepted-sidearms-kill-in-five-g17-and-three-golden-eagle-torso-hits)).
 - Passed: native packages, IL2CPP Client, smoke, package and installer builders. Pure lanes on the ADR-130 source; Unity EditMode 112/112 and PlayMode 35/35 on the trigger-hand change, run before ADR-130 was committed.
 - Still Pending: an actual install and upgrade over 0.3.28, a playtest of this build (owner review of the first-person hands, sidearm balance, and the 0.3.28 items), the TDM-5v5 Low benchmark, and all acceptance.
-- Since 0.3.29, on `main` and not in an installer: the owner reported the first-person hands still wrong in 0.3.29. A real-client recording fixed shoulder placement, the reload hand and reload framing ([handoff](milestones/m11-playable-release/handoff.md#adr-129-follow-up-first-person-arms-in-the-real-client--2026-11-27)). The pistol hip framing is an open owner decision.
+- Since 0.3.29, on `main` and not in an installer: the owner reported the first-person hands still wrong in 0.3.29. A real-client recording fixed shoulder placement, the reload hand and reload framing ([handoff](milestones/m11-playable-release/handoff.md#adr-129-follow-up-first-person-arms-in-the-real-client--2026-11-27)). The sidearms' hip pose was then reworked so both hands show on the grip ([handoff](milestones/m11-playable-release/handoff.md#adr-129-follow-up-sidearm-hip-view--2026-11-27)).
 
 ## Product and scope
 

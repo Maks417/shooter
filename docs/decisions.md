@@ -1999,6 +1999,11 @@ Date 2026-11-27 (owner playtest of 0.3.27). **Context.** The owner reported four
     - Through a reload the support hand turns from the handguard to a magazine grab, as far as its choreography reach has travelled (full at 6 cm).
     - The reload choreography lifts the gun toward the screen centre over the whole window (in by 12 %, out from 86 %): a long gun by (−3, +6, +3) cm, which cancels most of its old drop; a pistol by (−2, +12, +1) cm. A larger long-gun lift was tried and rejected, because it swings the stock across the view.
     - The sprint carry needed no change: both hands stay on the gun.
+    - **Sidearm hip pose** (owner: "rework pistol view"). The G17 and Golden Eagle sat low and right, seen from directly behind, with the hands mostly below the screen edge. They now sit 4.5 cm higher and 3 cm further in (`nearFieldHipBias` (0.05, −0.04, 0.11), was (0.08, −0.085, 0.11)), turned 6° toward the centre with a −3° pitch and −4° cant (`hipRotationDegrees`, was (0, −3, −2)).
+      - The forward distance is kept, so ADS is unchanged and the slide does not reach into a wall the player faces. A 0.13 m distance was recorded and rejected for that reason.
+      - The legacy `weapons/pistol` (pinned by the C0 fixture) is unchanged.
+      - The pistol reload lift is (−2, +8, +1) cm.
+      - A support reach up over the gun (slide rack, charging handle) takes an overhand frame, palm down, instead of the magazine grab.
   - Off a reload, third-person bots use the held gun's socket and radius; reload and other support tasks keep the solver's target.
 - **Strafe clip facing.** `AuthoredSoldierBody.Pose` takes the world travel heading and measures it from the drawn facing.
   - `AuthoredSoldierBlend` eases the four-way split with a 0.12 s time constant.

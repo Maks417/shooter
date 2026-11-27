@@ -341,6 +341,41 @@ public static class ShooterFeatureBuild
                     presentation.Sync(snapshot,lifecycle,null,0,id,false,.06f,Array.Empty<CombatEvent>(),64); RenderHandPose(camera,Path.Combine(output,"grenade-throw.png"));
                 }
             }
+            // The loadout sidearms (the legacy slot-1 pistol above is not what players carry).
+            foreach(string sidearm in new[]{"g17","golden-eagle"})
+            {
+                var id=new EntityId(10+(ulong)sidearm.Length);
+                lifecycle.State=new Shooter.Game.Contracts.ActorLifecycleState(id,1,true,100,default,0,0,1,7,35,WeaponAction.Ready,new DefinitionId("weapons/"+sidearm));
+                var snapshot=new Shooter.Game.Contracts.MatchViewSnapshot(1,10,10,53990,Shooter.Game.Contracts.GameMatchPhase.Playing,
+                    Shooter.Game.Contracts.MatchOutcome.None,Shooter.Game.Contracts.FinishReason.None,0,0,
+                    new[]{new Shooter.Game.Contracts.ParticipantState(new Shooter.Game.Contracts.ParticipantId(1),"Diagnostic",1,true,id,new Shooter.Game.Contracts.LifeId(20+(uint)sidearm.Length),true,0,0,0)},0);
+                for(int settle=0;settle<10;settle++) presentation.Sync(snapshot,lifecycle,null,0,id,false,.1f,Array.Empty<CombatEvent>(),(uint)(400+settle));
+                RenderHandPose(camera,Path.Combine(output,sidearm+"-ready.png"));
+                RenderHandPose(camera,Path.Combine(output,sidearm+"-ready-right.png"),new Vector3(.75f,-.15f,.45f));
+                foreach(var r in camera.GetComponentsInChildren<Renderer>().Where(r=>r.enabled&&r.gameObject.activeInHierarchy))
+                {
+                    var b=r.bounds; var c=camera.transform.InverseTransformPoint(b.center);
+                    Debug.Log($"SHOOTER_FP_BOUNDS {sidearm} {r.name} centre=({c.x:F3},{c.y:F3},{c.z:F3}) size={b.size.magnitude:F3}");
+                }
+                var reload=new CombatEvent(new EventId(1,410,id,1),CombatEventKind.ReloadStarted,id,default,new ActionPayload(1,410,510));
+                presentation.Sync(snapshot,lifecycle,null,0,id,false,.016f,new[]{reload},411);
+                foreach(int beat in new[]{10,20,30,45,58,75,90})
+                {
+                    presentation.Sync(snapshot,lifecycle,null,0,id,false,.016f,Array.Empty<CombatEvent>(),(uint)(410+beat));
+                    RenderHandPose(camera,Path.Combine(output,$"{sidearm}-reload-{beat:00}.png"));
+                }
+                presentation.Sync(snapshot,lifecycle,null,0,id,false,.016f,Array.Empty<CombatEvent>(),520);
+                // Empty reload: the overhand slide rack after the seat.
+                lifecycle.State=new Shooter.Game.Contracts.ActorLifecycleState(id,1,true,100,default,0,0,1,0,35,WeaponAction.Ready,new DefinitionId("weapons/"+sidearm));
+                var empty=new CombatEvent(new EventId(1,530,id,2),CombatEventKind.ReloadStarted,id,default,new ActionPayload(1,530,630));
+                presentation.Sync(snapshot,lifecycle,null,0,id,false,.016f,new[]{empty},531);
+                foreach(int beat in new[]{72,76,80})
+                {
+                    presentation.Sync(snapshot,lifecycle,null,0,id,false,.016f,Array.Empty<CombatEvent>(),(uint)(530+beat));
+                    RenderHandPose(camera,Path.Combine(output,$"{sidearm}-rack-{beat:00}.png"));
+                }
+                presentation.Sync(snapshot,lifecycle,null,0,id,false,.016f,Array.Empty<CombatEvent>(),640);
+            }
             File.WriteAllText(Path.Combine(output,"scope.txt"),"Editor packaged Low visual diagnostic; fixed camera and copied authority/action fixtures, no gameplay acceptance. fp.hand.v2 / geometry.weapon " + WeaponRecipe.GeneratorVersion + " / ADR-099 choreography");
             Debug.Log("SHOOTER_HANDLING_CAPTURE files=29");
         }

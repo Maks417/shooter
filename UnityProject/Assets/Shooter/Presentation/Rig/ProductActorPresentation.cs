@@ -980,7 +980,11 @@ namespace Shooter.Presentation.Rig
             // the magazine's front and fingers round its right side, as far as the wrist has travelled from the handguard.
             float reachLength = new Vector3(reloadPose.SupportWristOffset.X, reloadPose.SupportWristOffset.Y, reloadPose.SupportWristOffset.Z).magnitude;
             float grab = gun ? Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(reachLength / .06f)) : 0f;
-            var magazineFrame = AuthoredHandGrip.HandFrame(right * .8f + up * .2f, forward * .6f - up * .6f, true);
+            // A reach up over the gun (pistol slide rack, rifle charging handle) takes an overhand grip instead: palm
+            // down on the top, fingers round the right side.
+            float overhand = Mathf.Clamp01(reloadPose.SupportWristOffset.Y / .04f);
+            var magazineFrame = Quaternion.Slerp(AuthoredHandGrip.HandFrame(right * .8f + up * .2f, forward * .6f - up * .6f, true),
+                AuthoredHandGrip.HandFrame(right * .9f - up * .3f, up + forward * .2f, true), overhand);
             if (slot == 0 && set != null && set.HasSupportSocket)
             {
                 supportFrame = Quaternion.Slerp(AuthoredHandGrip.HandFrame(right * .75f + forward * .35f + up * .1f, -up, true), magazineFrame, grab);

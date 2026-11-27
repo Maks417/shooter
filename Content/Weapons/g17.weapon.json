@@ -27,14 +27,14 @@
     "magazineCycle": true,
     "nearFieldScale": 1.15,
     "nearFieldHipBias": [
-      0.08,
-      -0.085,
+      0.05,
+      -0.04,
       0.11
     ],
     "hipRotationDegrees": [
-      0,
       -3,
-      -2
+      -6,
+      -4
     ],
     "optic": "Irons",
     "cycleTravelMeters": 0.038,

@@ -107,8 +107,8 @@ namespace Shooter.Presentation.View
             new WeaponVisualProfile(
                 new DefinitionId("weapons/g17"), WeaponVisualFamily.Sidearm, "g17",
                 WeaponOpticMode.Irons, hasMagazineCycle: true, shotVoice: SynthVoiceKind.G17Shot, killFeedGlyph: KillFeedWeapon.G17,
-                nearFieldScale: 1.15f, nearFieldHipBias: new Float3(0.08f, -0.085f, 0.11f),
-                hipRotationDegrees: new Float3(0f, -3f, -2f), cycleTravelMeters: 0.038f, displayLabel: "G17", muzzleFx: "pistol",
+                nearFieldScale: 1.15f, nearFieldHipBias: new Float3(0.05f, -0.04f, 0.11f),
+                hipRotationDegrees: new Float3(-3f, -6f, -4f), cycleTravelMeters: 0.038f, displayLabel: "G17", muzzleFx: "pistol",
                 recoilPitchDegrees: 0.45f, recoilYawHalfDegrees: 0.14f,
                 equipTicks: 16, fireIntervalTicks: 7, reloadTicks: 96, fuseTicks: 0, adsSeconds: 0.13f,
                 handlingStyle: WeaponHandlingStyle.Pistol, adsFovDegrees: 0f, muzzleFlashScale: 0.6f, muzzleFlashSideJets: false),
@@ -116,8 +116,8 @@ namespace Shooter.Presentation.View
             new WeaponVisualProfile(
                 new DefinitionId("weapons/golden-eagle"), WeaponVisualFamily.Sidearm, "golden-eagle",
                 WeaponOpticMode.Irons, hasMagazineCycle: true, shotVoice: SynthVoiceKind.EagleShot, killFeedGlyph: KillFeedWeapon.GoldenEagle,
-                nearFieldScale: 1.15f, nearFieldHipBias: new Float3(0.08f, -0.085f, 0.11f),
-                hipRotationDegrees: new Float3(0f, -3f, -2f), cycleTravelMeters: 0.045f, displayLabel: "Golden Eagle .50", muzzleFx: "pistol",
+                nearFieldScale: 1.15f, nearFieldHipBias: new Float3(0.05f, -0.04f, 0.11f),
+                hipRotationDegrees: new Float3(-3f, -6f, -4f), cycleTravelMeters: 0.045f, displayLabel: "Golden Eagle .50", muzzleFx: "pistol",
                 recoilPitchDegrees: 1.6f, recoilYawHalfDegrees: 0.35f,
                 equipTicks: 22, fireIntervalTicks: 22, reloadTicks: 120, fuseTicks: 0, adsSeconds: 0.17f,
                 handlingStyle: WeaponHandlingStyle.Pistol, adsFovDegrees: 0f, muzzleFlashScale: 1.1f, muzzleFlashSideJets: false),

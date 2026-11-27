@@ -111,6 +111,8 @@ $timeline = @(
 $stillFractions = @(.15, .5, .85)
 
 New-Item -ItemType Directory -Force $OutDir | Out-Null
+# Absolute: the player runs from its own folder, so a relative -logFile would land there.
+$OutDir = (Resolve-Path -LiteralPath $OutDir).Path
 $framesDir = Join-Path $OutDir 'frames'
 New-Item -ItemType Directory -Force $framesDir | Out-Null
 $log = Join-Path $OutDir 'player.log'
