@@ -4,11 +4,11 @@ This is the only page that tracks current status: the build, open findings, open
 
 ## Current build
 
-**Latest installer: 0.3.26 (2026-11-27).**
-- Installer: `Artifacts/deliveries/Shooter-Setup-0.3.26.exe`, from clean source `232c645` ([delivery evidence](milestones/m11-playable-release/handoff.md#delivery-0326--2026-11-27)). Published as the GitHub pre-release `v0.3.26`.
-- Contents beyond 0.3.25 (`f9c3611`, which carried ADR-117–123): licensed authored soldiers ([ADR-124](decisions.md#adr-124--accepted-licensed-authored-art-track-characters-first)), lethal bolt snipers ([ADR-125](decisions.md#adr-125--accepted-bolt-action-snipers-kill-on-any-hit)), licensed fire and smoke ([ADR-126](decisions.md#adr-126--accepted-licensed-fire-and-smoke-flipbooks-and-burning-wrecks)).
-- Passed: native packages, IL2CPP Client, smoke, package and installer builders, and Unity EditMode/PlayMode on this source.
-- Still Pending: an actual install/upgrade over 0.3.25, a playtest of this build, the TDM-5v5 Low benchmark, and all acceptance.
+**Latest installer: 0.3.27 (2026-11-27), not published.**
+- Installer: `Artifacts/deliveries/Shooter-Setup-0.3.27.exe`, from clean source `8ac3042` ([delivery evidence](milestones/m11-playable-release/handoff.md#delivery-0327--2026-11-27)). The latest public pre-release is still `v0.3.26`.
+- Contents beyond 0.3.26 (`232c645`): menu vista re-entrant render fix and per-map fog and ambient, career award recorded once per match, M870 lethal up close with a tracer per pellet ([ADR-127](decisions.md#adr-127--accepted-m870-lethal-up-close-and-per-pellet-tracers)), and per-10 s `SHOOTER_FRAME_SUMMARY` lines in the player log.
+- Passed: native packages, IL2CPP Client, smoke, package and installer builders; pure lanes and Unity EditMode/PlayMode on this source.
+- Still Pending: an actual install and upgrade over 0.3.26, a playtest of this build (including the first `SHOOTER_FRAME_SUMMARY` lines on Old Town), the TDM-5v5 Low benchmark, and all acceptance. The owner's 0.3.26 career file keeps its duplicated awards.
 
 ## Product and scope
 

@@ -23,6 +23,25 @@ Owner request: shotguns are weak. A shotgun should throw a bunch of pellets per 
 
 **Pending:** not in an installer; owner in-game check of shotgun balance (players and bots) and the tracer look; the TDM-5v5 Low benchmark with the larger tracer cap.
 
+## Delivery 0.3.27 — 2026-11-27
+
+`Tools/Deliver.ps1 -ForceContent -ReleaseVersion 0.3.27` on clean `8ac3042` PASS (`m11-playable-release/8ac3042…/deliver-20261127T145113282Z-fc5f9c80`). It carries, on top of 0.3.26:
+- the menu vista re-entrant render fix and the per-map fog and ambient fix;
+- the career award recorded once per match;
+- ADR-127 (M870, from a parallel session);
+- the `SHOOTER_FRAME_SUMMARY` player-log lines.
+
+**Steps:**
+- Native content (12 packages, non-navigation byte-identity guard PASS) and IL2CPP Client: `m8-runtime-composition/8ac3042…/compile-gamecontent-20261127T145113519Z-238b07e5`, `m0-foundation/8ac3042…/build-client-20261127T145148722Z-9b8897f8`.
+- Smoke PASS (`smoke-client-20261127T145551399Z-2d7d448b`).
+- Package PASS with native nav required, 1,245 inventory files, extract and corrupt-content rehearsals PASS. The rollback rehearsal was skipped because the 0.3.26 package run had been pruned (`package-20261127T145559369Z-27af5b4c`).
+- Installer `Shooter-Setup-0.3.27.exe`: 98,099,344 bytes, SHA-256 `86a9e6da2abe35e8e8fd65f13b6881caf626f7ac642339c0cc8aab71c2900994`, workspace clean (`installer-20261127T145605905Z-f56786dc`). It is copied with its report to `Artifacts/deliveries/`.
+- The wrapper pruned the 0.3.26 run folders; the 0.3.26 installer remains in `Artifacts/deliveries/` and on the `v0.3.26` release.
+
+**Not published:** no tag or GitHub release, and the site and README still point at v0.3.26.
+
+**Pending / NotClaimed:** an install and upgrade over 0.3.26; a playtest with `SHOOTER_FRAME_SUMMARY` on Old Town; the TDM-5v5 Low benchmark; REL01–REL06.
+
 ## Frame-time summaries in the product player log — 2026-11-27
 
 First step from the Old Town profile below. While a match is playing and not paused, the product player now logs one line every 10 s of play, for example:
