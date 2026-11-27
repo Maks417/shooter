@@ -149,6 +149,75 @@ namespace Shooter.Tests
             }
         }
 
+        /// <summary>
+        /// ADR-123: each vista renders under its own map's fog colour and trilight ambient (from the generated sky
+        /// palette), and the global RenderSettings come back unchanged after the stage render.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator StageRendersUnderTheFocusedMapsFogAndAmbient()
+        {
+            var hash = ContentIdentity.Hash(Encoding.ASCII.GetBytes("menu-staging-atmosphere"));
+            string[] maps = { "training-compound", "depot-yard", "oil-depot" };
+            var visuals = maps.Select(map => PackagedVisualPayloads.FromBuild(MapPackageBuilder.Build(map, "low", hash))).ToArray();
+            Color fog0 = RenderSettings.fogColor, sky0 = RenderSettings.ambientSkyColor,
+                equator0 = RenderSettings.ambientEquatorColor, ground0 = RenderSettings.ambientGroundColor;
+            Color sentinel = new Color(1f, 0f, 1f, 1f);
+            RenderSettings.fogColor = RenderSettings.ambientSkyColor = RenderSettings.ambientEquatorColor = RenderSettings.ambientGroundColor = sentinel;
+            var root = new GameObject("Menu staging atmosphere");
+            ProductMenuScene? scene = null;
+            Camera? stage = null;
+            var seen = new System.Collections.Generic.Dictionary<string, (Color Fog, Color Sky, Color Equator, Color Ground)>();
+            void Record(UnityEngine.Rendering.ScriptableRenderContext context, Camera camera)
+            {
+                if (camera == stage && scene != null && scene.StagedMap.Length > 0)
+                    seen[scene.StagedMap] = (RenderSettings.fogColor, RenderSettings.ambientSkyColor, RenderSettings.ambientEquatorColor, RenderSettings.ambientGroundColor);
+            }
+            UnityEngine.Rendering.RenderPipelineManager.beginCameraRendering += Record;
+            try
+            {
+                scene = root.AddComponent<ProductMenuScene>();
+                scene.BindVerified(visuals);
+                for (int i = 0; i < 6 && scene.StagedMap.Length == 0; i++) yield return null;
+                Assert.That(scene.StagedMap, Is.Not.Empty);
+                stage = root.GetComponentsInChildren<Camera>(true).Single(c => c.targetTexture != null && c.targetTexture == scene.Frame);
+                // The first map was staged (and rendered) before the stage camera was known: focus the others first
+                // so every focus is a change, then wait in real time for that vista's render.
+                foreach (string map in maps.Where(m => m != scene.StagedMap).Append(scene.StagedMap).ToArray())
+                {
+                    scene.SetFocusedMap(map);
+                    float until = Time.realtimeSinceStartup + 3f;
+                    while (!seen.ContainsKey(map) && Time.realtimeSinceStartup < until) yield return null;
+                }
+                foreach (string map in maps)
+                {
+                    Assert.That(seen.ContainsKey(map), Is.True, map + " vista was rendered.");
+                    Shooter.Presentation.GeneratedSkyMath.ResolveProductPalette(map, out var zenith, out var horizon, out var ground, out _, out _, out _);
+                    Color Rgb(Shooter.Presentation.GeneratedSkyMath.Rgb c) => new Color(c.R, c.G, c.B, 1f);
+                    var (fog, sky, equator, groundColor) = seen[map];
+                    AssertColor(fog, Rgb(horizon), map + " fog colour");
+                    AssertColor(sky, Rgb(zenith), map + " ambient sky");
+                    AssertColor(equator, Rgb(horizon) * .8f, map + " ambient equator");
+                    AssertColor(groundColor, Rgb(ground), map + " ambient ground");
+                }
+                Assert.That(RenderSettings.fogColor, Is.EqualTo(sentinel), "The stage restores the global fog colour.");
+                Assert.That(RenderSettings.ambientSkyColor, Is.EqualTo(sentinel), "The stage restores the global ambient.");
+            }
+            finally
+            {
+                UnityEngine.Rendering.RenderPipelineManager.beginCameraRendering -= Record;
+                RenderSettings.fogColor = fog0; RenderSettings.ambientSkyColor = sky0;
+                RenderSettings.ambientEquatorColor = equator0; RenderSettings.ambientGroundColor = ground0;
+                Object.Destroy(root);
+            }
+        }
+
+        private static void AssertColor(Color actual, Color expected, string what)
+        {
+            Assert.That(actual.r, Is.EqualTo(expected.r).Within(1e-3f), what + " (r)");
+            Assert.That(actual.g, Is.EqualTo(expected.g).Within(1e-3f), what + " (g)");
+            Assert.That(actual.b, Is.EqualTo(expected.b).Within(1e-3f), what + " (b)");
+        }
+
         private sealed class FocusDuringRender : MonoBehaviour
         {
             public ProductMenuScene? Scene;

@@ -474,15 +474,17 @@ namespace Shooter.Presentation.Session
         private void RenderStage()
         {
             if (stageCamera == null) return;
+            // The saved globals must not share names with the per-map fields (fogColor, ambientSky, ...): a shadowing
+            // local made the stage write the globals back instead of the staged map's palette.
             bool fog = RenderSettings.fog;
-            Color fogColor = RenderSettings.fogColor;
+            Color savedFogColor = RenderSettings.fogColor;
             FogMode fogMode = RenderSettings.fogMode;
             float density = RenderSettings.fogDensity;
             AmbientMode ambientMode = RenderSettings.ambientMode;
             Color ambient = RenderSettings.ambientLight;
-            Color ambientSky = RenderSettings.ambientSkyColor;
-            Color ambientEquator = RenderSettings.ambientEquatorColor;
-            Color ambientGround = RenderSettings.ambientGroundColor;
+            Color savedAmbientSky = RenderSettings.ambientSkyColor;
+            Color savedAmbientEquator = RenderSettings.ambientEquatorColor;
+            Color savedAmbientGround = RenderSettings.ambientGroundColor;
             float fogStartDistance = RenderSettings.fogStartDistance, fogEndDistance = RenderSettings.fogEndDistance;
             Material sky = RenderSettings.skybox;
             RenderTexture previous = RenderTexture.active;
@@ -507,14 +509,14 @@ namespace Shooter.Presentation.Session
                 RenderSettings.fogStartDistance = fogStartDistance;
                 RenderSettings.fogEndDistance = fogEndDistance;
                 RenderSettings.fog = fog;
-                RenderSettings.fogColor = fogColor;
+                RenderSettings.fogColor = savedFogColor;
                 RenderSettings.fogMode = fogMode;
                 RenderSettings.fogDensity = density;
                 RenderSettings.ambientMode = ambientMode;
                 RenderSettings.ambientLight = ambient;
-                RenderSettings.ambientSkyColor = ambientSky;
-                RenderSettings.ambientEquatorColor = ambientEquator;
-                RenderSettings.ambientGroundColor = ambientGround;
+                RenderSettings.ambientSkyColor = savedAmbientSky;
+                RenderSettings.ambientEquatorColor = savedAmbientEquator;
+                RenderSettings.ambientGroundColor = savedAmbientGround;
                 RenderTexture.active = previous;
             }
         }
