@@ -38,7 +38,7 @@ Owner request: shotguns are weak. A shotgun should throw a bunch of pellets per 
 - Installer `Shooter-Setup-0.3.27.exe`: 98,099,344 bytes, SHA-256 `86a9e6da2abe35e8e8fd65f13b6881caf626f7ac642339c0cc8aab71c2900994`, workspace clean (`installer-20261127T145605905Z-f56786dc`). It is copied with its report to `Artifacts/deliveries/`.
 - The wrapper pruned the 0.3.26 run folders; the 0.3.26 installer remains in `Artifacts/deliveries/` and on the `v0.3.26` release.
 
-**Not published:** no tag or GitHub release, and the site and README still point at v0.3.26.
+**Published** as the GitHub pre-release `v0.3.27` (tag on `8ac3042`, installer and `.sha256` attached; the downloaded `.sha256` matches). Site and README point at v0.3.27 (`6dee753`; Pages deploy PASS); the gallery still shows the v0.3.26 captures. Publication is not acceptance.
 
 **Pending / NotClaimed:** an install and upgrade over 0.3.26; a playtest with `SHOOTER_FRAME_SUMMARY` on Old Town; the TDM-5v5 Low benchmark; REL01–REL06.
 
