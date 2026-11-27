@@ -16,9 +16,15 @@ Evidence log for M11, newest first. Each delivery and change records identities,
 
 **Checks** (uncommitted source on `039e2da`): Unity PlayMode **31/31 PASS** (`m0-foundation/039e2da…/tests-playmode-20261127T125220641Z-26e96c28`); EditMode **105/105 PASS** (`tests-editmode-20261127T125426145Z-d7e13b56`). The run folders cited below for `e3404c9` were pruned by the wrapper; their summaries remain under `Artifacts/reports/`.
 
-**Not in an installer yet.** 0.3.26 still has this exception.
+**Not in an installer yet.** 0.3.26 still has this exception and the missing per-map fog and ambient below.
 
-**Open finding, not fixed.** In `RenderStage`, the locals that save `RenderSettings.fogColor`, `ambientSkyColor`, `ambientEquatorColor` and `ambientGroundColor` shadow the per-map fields of the same names that `ApplyAtmosphere` sets. So the stage render writes back the saved global values: the ADR-123 per-map fog colour and trilight ambient never reach the vista. Only the fog distances and the sky are applied. Fixing it changes the menu look and needs owner review.
+**Per-map fog and ambient now reach the vista (owner-approved fix, `fbee447`).** In `RenderStage`, the locals that saved `RenderSettings.fogColor`, `ambientSkyColor`, `ambientEquatorColor` and `ambientGroundColor` shadowed the per-map fields of the same names that `ApplyAtmosphere` sets. The stage therefore wrote the saved globals back, and since ADR-123 only the fog distances and the sky had reached the vista. The saved locals are renamed.
+- `MenuStagingLifetimeTests.StageRendersUnderTheFocusedMapsFogAndAmbient` records `RenderSettings` as the stage camera starts rendering. It checks each map against its `GeneratedSkyMath` palette (fog = horizon, sky = zenith, equator = 0.8 × horizon, ground = ground), and checks that the globals are restored.
+- The test was not run on the old code; by construction it sees the saved globals there.
+- Checks: PlayMode **32/32 PASS** (`m0-foundation/07f9f92…/tests-playmode-20261127T130953797Z-a8aaa3d8`); EditMode **105/105 PASS** (`tests-editmode-20261127T130556859Z-93a3d64c`). The first PlayMode run of the new test failed 31/32 on a test timing flaw, not on the fix: the first map was rendered before the test found the stage camera. The test now focuses a changed map each time and waits in real time.
+- Look: IL2CPP Client of `fbee447` (`m0-foundation/fbee447…/build-client-20261127T131233525Z-52cf2721`), captured on the Harbour main menu against the installed 0.3.26 (`Artifacts/site-captures/atmosphere/`, side by side in `harbour-compare.jpg`). Distant buildings and the quay now fade into the warm horizon tint; the soldiers and UI are unchanged.
+- Old Town and Oil Depot were not captured, because the scripted key path stayed on Harbour. Owner review of all three vistas is Pending.
+- That build pruned the 0.3.26 build-run folder. The 0.3.26 package and installer folders remain.
 
 ## Delivery 0.3.26 — 2026-11-27
 
