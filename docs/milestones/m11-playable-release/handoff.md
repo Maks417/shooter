@@ -2,6 +2,20 @@
 
 Evidence log for M11, newest first. Each delivery and change records identities, results and what stays Pending. Records before 2026-11-15 (deliveries up to 0.3.12, T062–T085) are in git history. Current status is in [next playable build](../../next-playable-build.md) and gates are in [acceptance](../../acceptance.md).
 
+## ADR-130 sidearm lethality — 2026-11-27
+
+Owner report after 0.3.28: pistols are useless, and it is almost impossible to kill with one. Owner choice: five G17 and three Golden Eagle torso hits up close. Implemented [ADR-130](../../decisions.md#adr-130--accepted-sidearms-kill-in-five-g17-and-three-golden-eagle-torso-hits):
+- **Cause.** Damage, not hit resolution. ADR-110 armor halves every torso hit, so a fresh soldier took 9 G17 torso hits up close and 15 past 30 m (17-round magazine), and 4 from the Golden Eagle.
+- **Damage.** `g17.weapon.json` 40 (was 24), min scale 0.75 (was 0.6); `golden-eagle.weapon.json` 80 (was 55), min scale 0.8 (was 0.7). `WeaponCatalog.g.cs` is regenerated, and only those two rows changed. G17: 5 torso hits to 10 m, 6 at 20 m, 7 from 30 m. Golden Eagle: 3 to about 35 m, 4 from 40 m.
+- **Tests.** New `SidearmLethalityTests` (20): falloff damage per range, hits-to-kill through `SplitArmor` for torso and limbs, aimed ADS torso shots in `CombatHarnessSimulation` at 6 m (G17 kills on hit 5, Golden Eagle on hit 3, every hit region 2), and only these two sidearms are drawn.
+
+**Checks** (uncommitted source on `fad87b0`):
+- `Test-All.ps1` PASS: Contracts 84/84, Game 168/168, Generation 664/664, Simulation **771/771** (`m0-foundation/fad87b0…/test-all-20261127T200014872Z-04752b22`).
+- `generate_weapon_catalog.py --check`, `test_generate_weapon_catalog.py` 29/29, contract, game-contract and fixture checks, asmdef graph, feature registry and content format PASS. No lock or fixture changed.
+- Unity EditMode and PlayMode lanes were not run for this change (content values only): Pending.
+
+**Pending:** not in an installer; owner in-game balance check (players and bots).
+
 ## Delivery 0.3.28 — 2026-11-27
 
 `Tools/Deliver.ps1 -ForceContent -ReleaseVersion 0.3.28` on clean `ca663ae` PASS (`m11-playable-release/ca663ae…/deliver-20261127T190746399Z-a41ca296`). It carries, on top of 0.3.27:

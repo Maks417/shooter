@@ -114,7 +114,7 @@ Accepting a decision never certifies a runtime or hardware gate. The headings be
 | [ADR-099](#adr-099--accepted-per-weapon-first-person-hand-and-weapon-choreography) | Accepted | per-weapon first-person hand and weapon choreography |  |
 | [ADR-100](#adr-100--accepted-third-person-directional-gait-airborne-pose-and-bot-hopsslides) | Accepted | third-person directional gait, airborne pose and bot hops/slides |  |
 | [ADR-101](#adr-101--accepted-selectable-team-sizes-5--8--10--15) | Accepted | selectable team sizes 5 / 8 / 10 / 15 |  |
-| [ADR-102](#adr-102--accepted-named-real-world-arsenal-random-spawn-loadouts-and-muzzle-flash-fix) | Accepted | named real-world arsenal, random spawn loadouts and muzzle flash fix | human loadout replaced by ADR-107 |
+| [ADR-102](#adr-102--accepted-named-real-world-arsenal-random-spawn-loadouts-and-muzzle-flash-fix) | Accepted | named real-world arsenal, random spawn loadouts and muzzle flash fix | human loadout replaced by ADR-107; G17 and Golden Eagle damage retuned by ADR-130 |
 | [ADR-103](#adr-103--accepted-optical-scope-lens-camera-balancedhigh-quality-uplift-flicker-geometry-fixes-and-damage-feedback-v2) | Accepted | optical scope lens camera, Balanced/High quality uplift, flicker geometry fixes and damage feedback v2 |  |
 | [ADR-104](#adr-104--accepted-circular-heading-up-minimap-with-ring-compass) | Accepted | circular heading-up minimap with ring compass |  |
 | [ADR-105](#adr-105--accepted-dropped-primary-weapons-and-g-pickup) | Accepted | dropped primary weapons and G pickup |  |
@@ -142,6 +142,7 @@ Accepting a decision never certifies a runtime or hardware gate. The headings be
 | [ADR-127](#adr-127--accepted-m870-lethal-up-close-and-per-pellet-tracers) | Accepted | M870 lethal up close and per-pellet tracers | retunes the ADR-118 M870 |
 | [ADR-128](#adr-128--accepted-bot-replan-cooldown-also-after-arrival) | Accepted | bot replan cooldown also after arrival | amends the AI path budget (ai.md) |
 | [ADR-129](#adr-129--accepted-licensed-first-person-arms-wrapped-support-grips-strafe-clip-facing-and-grenade-start-contact) | Accepted | licensed first-person arms, wrapped support grips, strafe clip facing and grenade start contact | extends ADR-124 to the view model; amends ADR-111 grenade flight |
+| [ADR-130](#adr-130--accepted-sidearms-kill-in-five-g17-and-three-golden-eagle-torso-hits) | Accepted | sidearms kill in five (G17) and three (Golden Eagle) torso hits | retunes the ADR-102 sidearms under ADR-110 armor |
 
 ## ADR-001 — Accepted: Unity 6 URP rasterization
 
@@ -1991,7 +1992,8 @@ Date 2026-11-27 (owner playtest of 0.3.27). **Context.** The owner reported four
   - the knuckle line, the finger segment lengths, and the palm depth (75th percentile of the palm-side skin under the knuckle half).
   - **Handguard.** Treated as a cylinder measured from the gun's own LOD0 vertices around its `left-hand-grip` socket: radius = half width (clamped to 12–50 mm), axis that far above the underside.
   - **Palm.** The palm, not the wrist, lies against the cylinder with the knuckles at its far side.
-  - **Curls.** Each finger's three cumulative curls are solved in the curl plane so the fingertips meet that radius, cached per variant and millimetre.
+  - **Curls.** Each finger's three cumulative curls are solved in the curl plane so the fingertips meet that radius, cached per variant and millimetre. Thumbs curl toward the palm (the old sign turned them toward the back of the hand): round a pistol grip, opened along a handguard.
+  - **First-person trigger hand** (owner review of 0.3.28: "incorrect holding"). Each gun's pistol grip is fitted from its own vertices under the `right-hand-grip` socket: a raked axis and a half width. The knuckles stack up that axis with the index knuckle just under the receiver, the fingers wrap the grip's front, and the index lies along the trigger guard, curling with the trigger. First-person hands are drawn at 0.8 of the body's (the licensed palm is about 14 cm long).
   - Off a reload, third-person bots use the held gun's socket and radius; reload and other support tasks keep the solver's target.
 - **Strafe clip facing.** `AuthoredSoldierBody.Pose` takes the world travel heading and measures it from the drawn facing.
   - `AuthoredSoldierBlend` eases the four-way split with a 0.12 s time constant.
@@ -2015,3 +2017,27 @@ Date 2026-11-27 (owner playtest of 0.3.27). **Context.** The owner reported four
   - Grenade: revert `GrenadeSimulator.Step` and the spawn check.
 
 Evidence: [M11 handoff](milestones/m11-playable-release/handoff.md#adr-129-first-person-arms-grips-strafes-and-grenades--2026-11-27).
+
+## ADR-130 — Accepted: sidearms kill in five (G17) and three (Golden Eagle) torso hits
+
+Date 2026-11-27. **Context.** Owner report: pistols are useless, and it is almost impossible to kill with one. ADR-110 armor takes half of every torso or limb hit, so a fresh soldier (100 health, 100 armor) needed 9 G17 torso hits up close and 15 past 30 m, nearly the whole 17-round magazine. The Golden Eagle needed 4 up close and 5 past 40 m. A rifle needs about 6. Hit resolution and the semi-automatic press buffer were checked and are not at fault; headshots already killed with both.
+
+**Decision (content only).** The owner chose five G17 and three Golden Eagle torso hits up close.
+- `Content/Weapons/g17.weapon.json`: 40 damage (was 24), falloff 10–30 m kept, min scale 0.75 (was 0.6).
+- `Content/Weapons/golden-eagle.weapon.json`: 80 damage (was 55), falloff 15–40 m kept, min scale 0.8 (was 0.7).
+- Cadence, spread, recoil, magazine and reserve are unchanged. The legacy `weapons/pistol` (spawn weight 0, hidden from the Armory, pinned by the C0 fixture) is unchanged.
+
+  | Gun | Range | Per shot | Torso hits to kill a fresh soldier | Limb hits |
+  |---|---|---|---|---|
+  | G17 | to 10 m | 40 | 5 (was 9) | 10 |
+  | G17 | 20 m | 35 | 6 | |
+  | G17 | 30 m and beyond | 30 | 7 (was 15) | |
+  | Golden Eagle | to 15 m | 80 | 3 (was 4) | 5 |
+  | Golden Eagle | to about 35 m | ≥ 67 | 3 | |
+  | Golden Eagle | 40 m and beyond | 64 | 4 (was 5) | |
+
+**Consequences.** Content and tests only. C0, Game-v1, fixtures and locks are unchanged, and only the two rows of `WeaponCatalog.g.cs` change. Both guns stay within the 200 Armory damage-bar clamp. Bots that draw these sidearms are equally more lethal. Pending: owner in-game balance check, a client build and installer.
+
+Rollback: restore the four values in the two weapon files and regenerate.
+
+Regression tests: `SidearmLethalityTests`. Evidence: [M11 handoff](milestones/m11-playable-release/handoff.md#adr-130-sidearm-lethality--2026-11-27).

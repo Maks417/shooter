@@ -113,6 +113,8 @@ Other shot rules:
 
 [Body armor](../decisions.md#adr-110--accepted-body-armor-100-points-torso-and-limbs) gives 100 points on every spawn, covering the torso and limbs. Armor takes `floor(d/2)` of each covered hit and blast; health takes the rest.
 
+**Sidearms** ([ADR-130](../decisions.md#adr-130--accepted-sidearms-kill-in-five-g17-and-three-golden-eagle-torso-hits)). The G17 does 40 (30 past 30 m) and the Golden Eagle 80 (64 past 40 m), so up close a fresh, armored soldier dies to five G17 or three Golden Eagle torso hits.
+
 **Lethal on hit** ([ADR-125](../decisions.md#adr-125--accepted-bolt-action-snipers-kill-on-any-hit)). A gun flagged `lethalOnHit` (the M24 SWS and M-TAC 338) takes the target's remaining health with any hit, on any region and at any range. Armor is neither consulted nor spent.
 
 Penetration and ricochet are deferred. Damage never targets render meshes.

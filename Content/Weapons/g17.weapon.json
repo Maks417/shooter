@@ -11,14 +11,14 @@
     "equipTicks": 16,
     "magazineSize": 17,
     "reserveCapacity": 51,
-    "baseDamage": 24,
+    "baseDamage": 40,
     "hipSpreadDegrees": 1.4,
     "adsSpreadDegrees": 0.3,
     "recoilPitchDegrees": 0.45,
     "recoilYawHalfDegrees": 0.14,
     "falloffStartMeters": 10,
     "falloffEndMeters": 30,
-    "falloffMinScale": 0.6,
+    "falloffMinScale": 0.75,
     "spawnWeight": 3
   },
   "visual": {

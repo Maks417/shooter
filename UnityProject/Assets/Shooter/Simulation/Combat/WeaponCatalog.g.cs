@@ -146,26 +146,26 @@ namespace Shooter.Simulation.Combat
                 new WeaponDefinition(
                     new DefinitionId("weapons/g17"), FireMode.SemiAutomatic,
                     fireIntervalTicks: 7, reloadTicks: 96, equipTicks: 16,
-                    magazineSize: 17, reserveCapacity: 51, baseDamage: 24,
+                    magazineSize: 17, reserveCapacity: 51, baseDamage: 40,
                     hipSpreadRadians: Deg(1.4f), adsSpreadRadians: Deg(0.3f),
                     recoilPitchRadians: Deg(0.45f), recoilYawHalfRadians: Deg(0.14f),
                     maxRangeMeters: 300f, fuseTicks: 0, throwSpeedMetersPerSecond: 0f,
                     blastRadiusMeters: 0f, consumesAmmo: true, allowsSprintFire: false,
                     burstCount: 0, burstIntervalTicks: 0, falloffStartMeters: 10f, falloffEndMeters: 30f,
-                    falloffMinScale: 0.6f, moveSpeedScale: 1f, spawnWeight: 3),
+                    falloffMinScale: 0.75f, moveSpeedScale: 1f, spawnWeight: 3),
                 WeaponFamily.Sidearm, "weapons/g17"),
             // Content/Weapons/golden-eagle.weapon.json
             new WeaponCatalogEntry(
                 new WeaponDefinition(
                     new DefinitionId("weapons/golden-eagle"), FireMode.SemiAutomatic,
                     fireIntervalTicks: 22, reloadTicks: 120, equipTicks: 22,
-                    magazineSize: 7, reserveCapacity: 28, baseDamage: 55,
+                    magazineSize: 7, reserveCapacity: 28, baseDamage: 80,
                     hipSpreadRadians: Deg(2.2f), adsSpreadRadians: Deg(0.35f),
                     recoilPitchRadians: Deg(1.6f), recoilYawHalfRadians: Deg(0.35f),
                     maxRangeMeters: 300f, fuseTicks: 0, throwSpeedMetersPerSecond: 0f,
                     blastRadiusMeters: 0f, consumesAmmo: true, allowsSprintFire: false,
                     burstCount: 0, burstIntervalTicks: 0, falloffStartMeters: 15f, falloffEndMeters: 40f,
-                    falloffMinScale: 0.7f, moveSpeedScale: 1f, spawnWeight: 2),
+                    falloffMinScale: 0.8f, moveSpeedScale: 1f, spawnWeight: 2),
                 WeaponFamily.Sidearm, "weapons/golden-eagle"),
             // Content/Weapons/m4a1.weapon.json
             new WeaponCatalogEntry(
