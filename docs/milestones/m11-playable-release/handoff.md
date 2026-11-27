@@ -2,6 +2,29 @@
 
 Evidence log for M11, newest first. Each delivery and change records identities, results and what stays Pending. Records before 2026-11-15 (deliveries up to 0.3.12, T062–T085) are in git history. Current status is in [next playable build](../../next-playable-build.md) and gates are in [acceptance](../../acceptance.md).
 
+## ADR-126 licensed fire and smoke flipbooks — 2026-11-27
+
+Owner request (T233): better fire and smoke, using assets like the soldiers. Implemented [ADR-126](../../decisions.md#adr-126--accepted-licensed-fire-and-smoke-flipbooks-and-burning-wrecks):
+- six CC0 Unity Labs flipbooks pinned in `Tools/art-sources.json` (pack `unity-labs-vfx`), imported by `FxArtPostprocessor`, listed in `fx-art.json` and loaded by `FxArtCatalog`;
+- `FxArtRoles`, `AmbientFireAnchors` and `FxKind.MuzzleFire` in the pure pool;
+- frame blending, smoke lighting and fire glow in `CombatParticle`;
+- burning wrecks in `AnalyticFxPresenter.BindAmbientFires`, bound from `ProductSessionView`.
+
+**Presenter fix found by the capture.** Pooled systems were stopped and then given `Emit`. Outside play mode a stopped system ignores `Emit`, so the editor capture drew nothing. Each pooled system is now put into the paused state before it emits. A paused system never advances by itself, so only the manual pool-age `Simulate` moves it, as the presenter summary already stated. The in-game playback rate of pooled effects may differ from the previous build and is part of the owner review.
+
+**Checks** (uncommitted source on `48c343f`):
+- `Test-All.ps1` PASS: Contracts, Generation, Simulation and Game (`m0-foundation/48c343f…/test-all-20261127T111636783Z-0a033cb4`). After the final presenter tuning, `Test-Simulation.ps1` 732/732 PASS (`m2-combat-harness/48c343f…/test-simulation-20261127T113525148Z-41eee2a4`), including `FxArtRolesTests`: sheet roles, catalog file pinned CC0, playback maths, burning-wreck determinism, spacing and the Low prefix.
+- Unity EditMode 105/105 PASS (`tests-editmode-20261127T113159328Z-e4061702`), including `FxArtTests`: catalog loads every sheet, import settings, broken catalog throws, shader compiles.
+- `Test-SourceProvenance.ps1` PASS and `test_source_provenance.ps1` 44/44 PASS. Fixtures, contract lock and asmdef graph PASS.
+- **Unity PlayMode 29/30 FAIL.** `MenuStagingLifetimeTests.DestroyingSuspendedStageReleasesMaterialsMeshesTexturesAndTargets` leaks the authored `Swat_*` soldier materials. The same failure reproduces on clean `48c343f` with this work stashed (`tests-playmode-20261127T112332392Z-5161d2b3`), so it comes from T232 (ADR-124), not this change.
+- **Review captures:** `Tools/Capture-Fx.ps1` (`capture-fx-20261127T113119348Z-44c1d151`). These are editor diagnostics of the grenade blast at 0.1–3.5 s, a rifle shot, concrete, dirt and metal impacts, and a burning truck, at Low and High, with a stand-in floor, sky and truck. They are not the packaged-player look.
+
+**Pending / NotClaimed:**
+- client build and installer;
+- in-game captures on the product maps;
+- the TDM-5v5 Low benchmark on the reference laptop (fill cost of the larger soft puffs, RSK03);
+- named owner review of the effects.
+
 ## ADR-125 bolt-action snipers kill on any hit — 2026-11-27
 
 Owner request: bolt sniper rifles one-shot on any part of the body at any distance. Implemented [ADR-125](../../decisions.md#adr-125--accepted-bolt-action-snipers-kill-on-any-hit): the `lethalOnHit` combat flag on the M24 SWS and M-TAC 338, generated into `WeaponCatalog.g.cs`, carried through `WeaponModifiers.Apply`, and applied in `CombatHarnessSimulation.ApplyDirectDamage`.

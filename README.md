@@ -67,4 +67,4 @@ The pure assemblies also compile outside Unity through matching SDK projects in 
 
 ## License
 
-The source code is released under the [MIT License](LICENSE). The bundled Barlow Condensed typeface is under the SIL Open Font License 1.1. The Unity runtime in release builds is under Unity's own terms.
+The source code is released under the [MIT License](LICENSE). Soldier bodies and animation clips are by Quaternius (CC0), and the fire and smoke flipbooks are Unity Labs' free VFX flipbooks (CC0); every file is pinned in [`Tools/art-sources.json`](Tools/art-sources.json). The bundled Barlow Condensed typeface is under the SIL Open Font License 1.1. The Unity runtime in release builds is under Unity's own terms.

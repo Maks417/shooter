@@ -159,13 +159,13 @@ namespace Shooter.Simulation.Tests.Fx
             var origin = new Float3(1f, 1.5f, 2f);
             var dir = new Float3(0f, 0f, 1f);
             int spawned = pool.SpawnGunshotFeedback(origin, dir, suppressMuzzleAndTracer: false);
-            Assert.Equal(4, spawned);
-            Assert.Equal(4, pool.ActiveCount);
+            Assert.Equal(5, spawned);
+            Assert.Equal(5, pool.ActiveCount);
             Assert.Equal(1, pool.ShellCount);
             Assert.Equal(1, pool.TracerCount);
 
             int flashes = 0;
-            bool sawTracer = false, sawCasing = false;
+            bool sawTracer = false, sawCasing = false, sawFire = false;
             Float3 primaryNormal = default;
             Float3 secondaryNormal = default;
             for (int i = 0; i < AnalyticFxPool.MaxInstances; i++)
@@ -179,11 +179,13 @@ namespace Shooter.Simulation.Tests.Fx
                     else secondaryNormal = fx.Normal;
                 }
                 else if (fx.Kind == FxKind.Tracer) sawTracer = true;
+                else if (fx.Kind == FxKind.MuzzleFire) { sawFire = true; Assert.InRange(fx.Normal.Z, 0.99f, 1.01f); }
                 else if (fx.Kind == FxKind.ShellCasing) sawCasing = true;
             }
             Assert.Equal(2, flashes);
             Assert.True(sawTracer);
             Assert.True(sawCasing);
+            Assert.True(sawFire, "ADR-126 muzzle fire ball");
             // Primary along shot; secondary is the crossed flame lobe.
             Assert.InRange(primaryNormal.Z, 0.99f, 1.01f);
             Assert.True(Math.Abs(secondaryNormal.Y) > 0.9f);

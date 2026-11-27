@@ -110,6 +110,17 @@ namespace Shooter.Presentation.Session
             return ImpactSurfaceFx.Resolve(metal,onSolid,p,impact.Normal,impactAsphaltGround);
         }
 
+        /// <summary>ADR-126: the registered map plan's vehicles, any of which may burn (cosmetic only).</summary>
+        private static IReadOnlyList<AmbientFireSite> AmbientFireSites(string? mapId)
+        {
+            var sites=new List<AmbientFireSite>();
+            if(string.IsNullOrEmpty(mapId)||!MapRegistry.TryGet(mapId!,out _))return sites;
+            foreach(var f in ProductMapPlanner.Generate(mapId!).Features)
+                if(f.Kind==ArenaFeatureKind.Truck||f.Kind==ArenaFeatureKind.Tanker||f.Kind==ArenaFeatureKind.Trailer||f.Kind==ArenaFeatureKind.Tank)
+                    sites.Add(new AmbientFireSite(f.Center,f.Size,f.Facing));
+            return sites;
+        }
+
         private static bool[] ClassifyImpactMetal(IReadOnlyList<CollisionBox> boxes,string mapId)
         {
             var result=new bool[boxes.Count];bool oil=string.Equals(mapId,OilDepotDressing.MapId,System.StringComparison.Ordinal);

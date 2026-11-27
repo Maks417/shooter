@@ -7,7 +7,9 @@ namespace Shooter.Presentation.Fx
 {
     public enum FxKind : byte { MuzzleFlash = 1, ImpactSpark = 2, SmokeProxy = 3, ShellCasing = 4, Tracer = 5, Dust = 6, Fireball = 7, Shockwave = 8, Debris = 9,
         // ADR-111 grenade blast layers.
-        BlastFlash = 10, FirePuff = 11, Sparks = 12, Embers = 13, DustRing = 14 }
+        BlastFlash = 10, FirePuff = 11, Sparks = 12, Embers = 13, DustRing = 14,
+        // ADR-126: licensed fire ball drawn over the generated muzzle star.
+        MuzzleFire = 15 }
 
     public struct FxInstance
     {
@@ -20,7 +22,7 @@ namespace Shooter.Presentation.Fx
         public byte Variant;
     }
 
-    /// <summary>Capped analytic mesh FX proxies. No sprites/images; bounded pool.</summary>
+    /// <summary>Capped FX proxies (bounded pool). Presenters draw them with generated or ADR-126 licensed flipbooks.</summary>
     public sealed class AnalyticFxPool
     {
         public const int MaxInstances = 96;
@@ -33,6 +35,8 @@ namespace Shooter.Presentation.Fx
         public const int MaxDustAndDebris = 14;
         // Brief but denser combat proxies (Warface-scale feedback without particle packs).
         public const float MuzzleFlashLifetime = 0.13f;
+        /// <summary>ADR-126 muzzle fire ball: a touch shorter than the star so the star's tips read last.</summary>
+        public const float MuzzleFireLifetime = 0.1f;
         public const float ImpactSparkLifetime = 0.26f;
         public const float SmokeProxyLifetime = 1.45f;
         public const float ShellCasingLifetime = 0.85f;
@@ -40,7 +44,8 @@ namespace Shooter.Presentation.Fx
         public const float TracerLengthMeters = 9.5f;
         // ADR-111 grenade blast timings (seconds).
         public const float BlastFlashLifetime = 0.09f;
-        public const float FireballLifetime = 0.9f;
+        /// <summary>ADR-126: the licensed explosion sheet burns from fire into dark smoke over this time.</summary>
+        public const float FireballLifetime = 1.6f;
         public const float FirePuffLifetime = 0.75f;
         public const float SparksLifetime = 1.2f;
         public const float SparkMinLifetime = 0.5f;
@@ -72,6 +77,7 @@ namespace Shooter.Presentation.Fx
         public static float LifetimeFor(FxKind kind) => kind switch
         {
             FxKind.MuzzleFlash => MuzzleFlashLifetime,
+            FxKind.MuzzleFire => MuzzleFireLifetime,
             FxKind.ImpactSpark => ImpactSparkLifetime,
             FxKind.SmokeProxy => SmokeProxyLifetime,
             FxKind.ShellCasing => ShellCasingLifetime,
@@ -93,7 +99,7 @@ namespace Shooter.Presentation.Fx
 
         /// <summary>Bright additive kinds hidden under ReducedFlash.</summary>
         public static bool IsFlashing(FxKind kind) =>
-            kind == FxKind.MuzzleFlash || kind == FxKind.Tracer || kind == FxKind.Fireball || kind == FxKind.BlastFlash
+            kind == FxKind.MuzzleFlash || kind == FxKind.MuzzleFire || kind == FxKind.Tracer || kind == FxKind.Fireball || kind == FxKind.BlastFlash
             || kind == FxKind.FirePuff || kind == FxKind.Sparks || kind == FxKind.Shockwave;
 
         /// <summary>Spark streaks per quality tier (Low 40, Balanced 80, High 120).</summary>
@@ -216,7 +222,7 @@ namespace Shooter.Presentation.Fx
             for (int i = 0; i < MaxInstances; i++)
                 if (!items[i].Active) { slot = i; break; }
             // A saturated pool must still show the shot: flashes and blasts evict the most-faded ambient proxy.
-            if (slot < 0 && (kind == FxKind.MuzzleFlash || blast))
+            if (slot < 0 && (kind == FxKind.MuzzleFlash || kind == FxKind.MuzzleFire || blast))
                 slot = EvictWhere(IsAmbient);
             for (int i = slot < 0 ? MaxInstances : slot; i < MaxInstances; i++)
             {
@@ -282,7 +288,7 @@ namespace Shooter.Presentation.Fx
         }
 
         /// <summary>
-        /// Product-path gunshot FX (ADR-061): dual muzzle lobes + tracer + ejected casing.
+        /// Product-path gunshot FX (ADR-061): dual muzzle lobes + muzzle fire ball (ADR-126) + tracer + ejected casing.
         /// <paramref name="suppressMuzzleAndTracer"/> mirrors ReducedFlash — casings still spawn.
         /// </summary>
         public int SpawnGunshotFeedback(Float3 origin, Float3 unitDirection, bool suppressMuzzleAndTracer, byte muzzleProfile = 0,
@@ -299,6 +305,8 @@ namespace Shooter.Presentation.Fx
                     origin.Y + dir.Y * forwardPushMeters,
                     origin.Z + dir.Z * forwardPushMeters);
                 if (TrySpawn(FxKind.MuzzleFlash, primary, dir, muzzleProfile)) spawned++;
+                // ADR-126: hot licensed fire ball at the bore, under the crisp star lobes.
+                if (TrySpawn(FxKind.MuzzleFire, primary, dir, muzzleProfile)) spawned++;
 
                 // Cross lobe: vertical relative to the shot so the flash reads as a star, not a marble.
                 Float3 cross = CrossLobeAxis(dir);

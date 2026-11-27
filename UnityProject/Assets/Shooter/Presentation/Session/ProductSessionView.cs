@@ -278,7 +278,11 @@ namespace Shooter.Presentation.Session
             foreach(var step in actors.BindPackagedVisualSteps(visuals))yield return step;
             actors.AmbientVisibility=mapView.SampleActorVisibility;
             actors.CollisionGround=new CollisionSoldierGround(boxes);
-            if(analyticFxPresenter!=null)foreach(var step in analyticFxPresenter.BindVerifiedVisualSteps(visuals))yield return step;
+            if(analyticFxPresenter!=null)
+            {
+                foreach(var step in analyticFxPresenter.BindVerifiedVisualSteps(visuals))yield return step;
+                analyticFxPresenter.BindAmbientFires(mapId??"",AmbientFireSites(mapId));
+            }
             boundMapId = mapId ?? "";
             hudBoxes = boxes;
             impactMetalBoxes = ClassifyImpactMetal(boxes, boundMapId);

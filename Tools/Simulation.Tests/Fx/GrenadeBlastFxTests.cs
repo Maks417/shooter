@@ -31,7 +31,7 @@ namespace Shooter.Simulation.Tests.Fx
             Assert.Equal(13, (int)FxKind.Embers);
             Assert.Equal(14, (int)FxKind.DustRing);
             Assert.Equal(0.09f, AnalyticFxPool.LifetimeFor(FxKind.BlastFlash));
-            Assert.Equal(0.9f, AnalyticFxPool.LifetimeFor(FxKind.Fireball));
+            Assert.Equal(1.6f, AnalyticFxPool.LifetimeFor(FxKind.Fireball));
             Assert.Equal(1.2f, AnalyticFxPool.LifetimeFor(FxKind.Sparks));
             Assert.Equal(2.5f, AnalyticFxPool.LifetimeFor(FxKind.Embers));
             Assert.True(AnalyticFxPool.LifetimeFor(FxKind.Shockwave) < 0.5f, "shockwave got faster");

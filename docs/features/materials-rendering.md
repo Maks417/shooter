@@ -77,7 +77,13 @@ Up to 64 impact marks are pooled.
 - Low reduces the particle count.
 - Reduced flash suppresses fire and flash.
 
-No imported sprite or texture is used. The engine Particle System module is the only addition.
+**Licensed fire and smoke** ([ADR-126](../decisions.md#adr-126--accepted-licensed-fire-and-smoke-flipbooks-and-burning-wrecks)). Fire, smoke and dust draw six CC0 Unity Labs flipbooks from the ADR-124 art track (`Art/Fx/unity-labs-vfx`), listed by role in `Art/Fx/Resources/FxArt/fx-art.json` and loaded by `FxArtCatalog`, which throws when anything is missing. `FxArtRoles.For` picks the sheet per pool kind:
+- grenade fireballs: the two explosion sheets, played once;
+- grenade fire puffs and the `MuzzleFire` ball under the muzzle star: the fireball sheet, additive;
+- gun smoke, the blast column, the dust ring, impact and footstep dust: the wispy smoke sheet, tinted per surface;
+- burning wrecks: a flame column and a smoke plume on up to four map vehicles (`AmbientFireAnchors`, two on Low), with one fire light on Balanced/High.
+
+The muzzle star, tracers, casings, sparks, embers, debris, flash core and shockwave ring keep the generated sheets. `Shooter/CombatParticle` blends adjacent frames (UV2 + AnimBlend streams), lights smoke with the sky ambient and sun colour, and boosts fiery texels in HDR. `FxArtPostprocessor` owns the import settings.
 
 ## Flow and faults
 

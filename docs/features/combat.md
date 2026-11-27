@@ -136,7 +136,7 @@ Feedback is presentation only, driven by authority events:
 | Firearm `ShotAccepted` | A report from the [audio](audio.md) bank, a mesh muzzle flash, casing, tracer and view kick |
 | Knife `ShotAccepted` | A slash, or a stab when the same tick hits |
 | Grenade | A cook raise from `WeaponAction.Cooking`, then a cosmetic flying grenade after `ProjectileSpawned` |
-| Impacts | Bounded generated geometry or decals, never sprites |
+| Impacts | Bounded particles (generated sparks and chips, licensed CC0 dust flipbook per [ADR-126](../decisions.md#adr-126--accepted-licensed-fire-and-smoke-flipbooks-and-burning-wrecks)) and generated decals |
 
 **Local-only effects.** The full-screen muzzle overlay is for the local shooter only ([ADR-056](../decisions.md#adr-056--accepted-last-weapon-quick-switch-q-and-local-only-muzzle-overlay)).
 

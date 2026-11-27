@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "sheets": [
+    { "role": "BlastFireball", "texture": "FxArt/Explosion01_5x5", "columns": 5, "rows": 5, "blend": "Alpha", "framesPerSecond": 16, "brightness": 1.0, "lit": 0.85, "emission": 2.5 },
+    { "role": "BlastFireballAlt", "texture": "FxArt/Explosion02_5x5", "columns": 5, "rows": 5, "blend": "Alpha", "framesPerSecond": 16, "brightness": 1.0, "lit": 0.85, "emission": 2.5 },
+    { "role": "FireBall", "texture": "FxArt/FireBall01_8x8", "columns": 8, "rows": 8, "blend": "Additive", "framesPerSecond": 30, "brightness": 1.4, "lit": 0.0, "emission": 0.0 },
+    { "role": "Smoke", "texture": "FxArt/WispySmoke01_8x8", "columns": 8, "rows": 8, "blend": "Alpha", "framesPerSecond": 20, "brightness": 1.6, "lit": 0.9, "emission": 0.0 },
+    { "role": "Flame", "texture": "FxArt/Flame02_16x4", "columns": 16, "rows": 4, "blend": "Alpha", "framesPerSecond": 30, "brightness": 1.0, "lit": 0.0, "emission": 2.0 },
+    { "role": "SmokePlume", "texture": "FxArt/DiscSmoke01_16x4", "columns": 16, "rows": 4, "blend": "Alpha", "framesPerSecond": 24, "brightness": 1.0, "lit": 0.9, "emission": 0.0 }
+  ]
+}

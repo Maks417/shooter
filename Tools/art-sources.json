@@ -17,9 +17,47 @@
       "sourceUrl": "https://quaternius.com/packs/ultimatemodularcharacters.html",
       "license": "CC0-1.0",
       "notes": "Humanoid Rig FBX: Swat body plus Adventurer, Casual2, Suit and Beach heads; Animations.fbx (24 clips incl. four-way run). The download ships no license file; CC0 is stated on the pack page."
+    },
+    {
+      "id": "unity-labs-vfx",
+      "title": "Free VFX image sequences and flipbooks",
+      "author": "Unity Technologies (Thomas Iche, Unity Labs)",
+      "sourceUrl": "https://unity.com/blog/engine-platform/free-vfx-image-sequences-flipbooks",
+      "license": "CC0-1.0",
+      "notes": "ADR-126 effect flipbooks from the <Name>-flipbooks.zip downloads (assets01): Explosion01_5x5, Explosion02_5x5, FireBall01_8x8, WispySmoke01_8x8, Flame02_16x4, DiscSmoke01_16x4. The TGA sheets were re-saved as PNG losslessly (pixels identical). The zips ship no license file; CC0 is stated on the post."
     }
   ],
   "files": [
+    {
+      "path": "UnityProject/Assets/Shooter/Art/Fx/unity-labs-vfx/Resources/FxArt/DiscSmoke01_16x4.png",
+      "sha256": "f7125ab848736885ec3caad0318bfb6e981da851232586ad166ade04ec588e98",
+      "pack": "unity-labs-vfx"
+    },
+    {
+      "path": "UnityProject/Assets/Shooter/Art/Fx/unity-labs-vfx/Resources/FxArt/Explosion01_5x5.png",
+      "sha256": "8a9ee969c5499dad4978ac4e53d438e22740002bbe99fdfb13a27fea6f2a901e",
+      "pack": "unity-labs-vfx"
+    },
+    {
+      "path": "UnityProject/Assets/Shooter/Art/Fx/unity-labs-vfx/Resources/FxArt/Explosion02_5x5.png",
+      "sha256": "f2dc3dc1985f2338bbcf96e1301de98295e8c28d4aa30bf6dc0cebd643cd7198",
+      "pack": "unity-labs-vfx"
+    },
+    {
+      "path": "UnityProject/Assets/Shooter/Art/Fx/unity-labs-vfx/Resources/FxArt/FireBall01_8x8.png",
+      "sha256": "d4216e9a42ae8b8e82a554f518158c066e943507799784d7575c25d78898292b",
+      "pack": "unity-labs-vfx"
+    },
+    {
+      "path": "UnityProject/Assets/Shooter/Art/Fx/unity-labs-vfx/Resources/FxArt/Flame02_16x4.png",
+      "sha256": "b82cb3be29dc308d08f479df8261cdf15a7a12dd18a350cb7209f706a2bd334e",
+      "pack": "unity-labs-vfx"
+    },
+    {
+      "path": "UnityProject/Assets/Shooter/Art/Fx/unity-labs-vfx/Resources/FxArt/WispySmoke01_8x8.png",
+      "sha256": "846cbeabaa346f2ab4ee3e5b694d0208c27b9828844f969220f9f8fd7fbd07a3",
+      "pack": "unity-labs-vfx"
+    },
     {
       "path": "UnityProject/Assets/Shooter/Art/Soldiers/quaternius-ual/Resources/SoldierArt/ual1/UAL1_Standard.fbx",
       "sha256": "21b32d912da3cb93426d974fb945e86f5b2e86970acd2ce89905e0fbf9f1dcc2",

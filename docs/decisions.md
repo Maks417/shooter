@@ -138,6 +138,7 @@ Accepting a decision never certifies a runtime or hardware gate. The headings be
 | [ADR-123](#adr-123--accepted-unified-front-end-visual-system) | Accepted | unified front-end visual system | amends ADR-084, ADR-086, ADR-087 |
 | [ADR-124](#adr-124--accepted-licensed-authored-art-track-characters-first) | Accepted | licensed authored art track (characters first) | amends ADR-002, ADR-007 |
 | [ADR-125](#adr-125--accepted-bolt-action-snipers-kill-on-any-hit) | Accepted | bolt-action snipers kill on any hit | amends ADR-063, ADR-110 for flagged guns |
+| [ADR-126](#adr-126--accepted-licensed-fire-and-smoke-flipbooks-and-burning-wrecks) | Accepted | licensed fire and smoke flipbooks and burning wrecks | second application of ADR-124; amends ADR-092, ADR-093, ADR-111 |
 
 ## ADR-001 — Accepted: Unity 6 URP rasterization
 
@@ -1897,3 +1898,34 @@ Date 2026-11-27. **Context.** Owner request: the bolt-action sniper rifles shoul
 Rollback: remove the two flags from `Content/Weapons` and regenerate.
 
 Evidence: [M11 handoff](milestones/m11-playable-release/handoff.md#adr-125-bolt-action-snipers-kill-on-any-hit--2026-11-27). The in-game feel is Pending owner playtest.
+
+## ADR-126 — Accepted: licensed fire and smoke flipbooks and burning wrecks
+
+Date 2026-11-27 (T233, owner decision). **Context.** After the authored soldiers (ADR-124) the generated `fx.flipbook` fire and smoke (ADR-092) read as soft blobs next to them. The owner chose realistic, Houdini-rendered flipbooks for grenade explosions, muzzle fire and gun smoke, bullet impacts, and burning fires on the maps.
+
+**Decision.**
+- **Second application of the ADR-124 track.** Effect flipbook sheets are licensed textures under the same rules: redistributable license only, files only under `UnityProject/Assets/Shooter/Art/`, every file hash-pinned in `Tools/art-sources.json`. A flipbook sheet is a sprite atlas; inside this track that is allowed, outside it the AGENTS.md ban on sprites stands.
+- **Source.** Unity Labs "Free VFX image sequences and flipbooks" (2016), stated CC0 on the post (no license file in the zips). Six sheets: Explosion01 and Explosion02 (5×5), FireBall01 and WispySmoke01 (8×8), Flame02 and DiscSmoke01 (16×4). The TGA flipbooks are re-saved as lossless PNG with identical pixels, under `Art/Fx/unity-labs-vfx/Resources/FxArt/`.
+- **Import settings are code.** `FxArtPostprocessor` imports them as sRGB with their own alpha, mip-mapped, clamped and capped at 1024 (the 2048-wide sheets cost the same as the 1024 ones), compressed HQ.
+- **Catalog, no fallback.** `Art/Fx/Resources/FxArt/fx-art.json` maps each `FxArtRole` to a sheet (grid, blend, frame rate, brightness, scene light, fire glow). `FxArtCatalog` throws if a role, the catalog or a sheet is missing; there is no silent return to the generated sheets.
+- **What changes look.** `FxArtRoles.For` picks the sheet per pool kind:
+
+| Effect | Sheet |
+|---|---|
+| Grenade fireball (two per blast on Balanced/High) | Explosion01 / Explosion02, played once, fire burning out into dark smoke |
+| Grenade fire puffs, new `MuzzleFire` ball under the muzzle star | FireBall01, additive |
+| Gun smoke, blast smoke column, blast dust ring, impact and footstep dust | WispySmoke01, tinted per surface (concrete grey, dirt brown, footsteps tan) |
+| Burning wrecks | Flame02 on the roof plus a DiscSmoke01 plume |
+
+  The muzzle star, tracers, casings, spark streaks, embers, debris chips, flash core, shockwave ring and decals keep their generated sheets. `FxFlipbook` and its goldens and lock entries are unchanged, and the generated atlases stay in the map packages.
+- **Shader.** `CombatParticle` takes the grid from the particle system, blends adjacent frames through the UV2 and AnimBlend vertex streams, lights the non-glowing texels with the sky ambient plus part of the sun colour, and boosts fiery (red over blue) texels in HDR.
+- **Pool.** `FxKind.MuzzleFire` (15, 0.1 s) spawns with the primary muzzle lobe, counts as a flash (hidden by reduced flash, may evict ambient proxies like the flash), and the grenade fireball lives 1.6 s instead of 0.9 s so the sheet can burn out. Gun smoke drops to 2/3 particles (Low/other) and impact dust to 3/5; caps are unchanged.
+- **Burning wrecks.** `AmbientFireAnchors` picks up to four vehicles (truck, tanker, trailer, tank) of the registered map plan by a stable hash of the map id, at least 18 m apart; Low shows the first two. Each burns a flame column on the roof toward its front and a dark plume starting well above the roof, so the smoke never hides a standing soldier on one side only. One flickering light follows the nearest fire within 40 m on Balanced/High (steady under reduced flash), none on Low.
+- **Presentation only.** No damage, collision, navigation, bot sight, Simulation, C0, Game-v1 or map package change.
+- **Credits.** CC0, credited by courtesy in the release licenses text (from the manifest) and the README.
+
+**Consequences.** ADR-092's "no images or sprites are imported" and the ADR-093/ADR-111 material choices are amended for the kinds above. vision, materials-rendering and combat pages describe the licensed sheets. The fill cost of larger soft puffs on the integrated GPU (RSK03) needs the Low TDM benchmark on the reference machine; that and owner P05 review of the effects stay Pending until recorded.
+
+Rollback: revert the presenter and pool changes, remove the pack and its files from `Tools/art-sources.json`, and delete `Art/Fx`.
+
+Evidence: [M11 handoff](milestones/m11-playable-release/handoff.md#adr-126-licensed-fire-and-smoke-flipbooks--2026-11-27).

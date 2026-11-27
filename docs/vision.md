@@ -78,7 +78,7 @@ How generated output is treated:
 - **Textures** are algorithmic raster caches.
 - **Geometry** may be serialized in Unity native form with provenance.
 - **Animation** uses gait, IK and dynamics.
-- **Particles** use analytic geometry.
+- **Particles** use generated flipbooks, except fire and smoke, which use licensed CC0 flipbooks ([ADR-126](decisions.md#adr-126--accepted-licensed-fire-and-smoke-flipbooks-and-burning-wrecks)).
 - **Low detail** uses simplified meshes, not billboards.
 
 **Fonts and sound** are outside the 3D art rule. UI uses allowlisted fonts ([ADR-066](decisions.md#adr-066--accepted-non-commercial-ui-typeface-bank-barlow-condensed)). Combat audio is a provenance-recorded stereo PCM bank for non-commercial builds ([ADR-062](decisions.md#adr-062--accepted-stereo-foundauthored-combat-wav-bank-and-per-kind-distance-t089), [audio](features/audio.md)). Audio extracted from commercial games is out of scope.
