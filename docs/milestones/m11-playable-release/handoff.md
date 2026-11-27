@@ -23,6 +23,32 @@ Owner request: shotguns are weak. A shotgun should throw a bunch of pellets per 
 
 **Pending:** not in an installer; owner in-game check of shotgun balance (players and bots) and the tracer look; the TDM-5v5 Low benchmark with the larger tracer cap.
 
+## 0.3.27 owner upgrade and first frame summaries — 2026-11-27
+
+**Upgrade over 0.3.26** (owner PC, interactive installer, file-level INS02 evidence):
+- One uninstall entry `{B01E0F69-…}_is1` at 0.3.27 in the original `%LOCALAPPDATA%\Programs\Shooter\`; the Start menu shortcut targets it.
+- `installer-identity.json` names binary commit `8ac3042` and 1,245 inventory files. All 1,245 payload files are present, with no stale files.
+- `shooter-user-settings.json` is untouched since 2026-11-19.
+
+**First play** (Old Town 10v10, High, 1920×1080; log `Artifacts/playtest-logs/0.3.27/session1.log`):
+- **Career award recorded once:** `+4190`, 120,936 → 125,126 CP, a single `SHOOTER_CAREER award` line.
+- **Menu fix:** no exception or error lines, so the menu re-entrant render fix holds.
+- **Frame summaries:** `SHOOTER_FRAME_SUMMARY_READY frameTiming=1`, then 44 summaries. Medians over the 10 s windows, excluding the match-start window:
+  - frame 39.4 ms p50 / 44.7 ms p95 (about 25 fps);
+  - CPU main thread 35.8 / 40.6 ms;
+  - CPU render thread 6.4 / 8.9 ms;
+  - GPU 30.5 / 33.1 ms;
+  - 5 slow frames (over 66.7 ms) in the whole match.
+- **Bottleneck:** the main thread runs about 5 ms above the GPU in every window, so at this tier on this laptop the frame is bound by the CPU main thread first, with the GPU close behind.
+
+**The Old Town stutter is most likely per-launch, not per-map. This revises the "Old Town stutter profile" reading below.** `SHOOTER_HITCH` count per match:
+- 0.3.26 13:36, Harbour as match 1: 9.
+- 0.3.26 14:36, Oil Depot as match 1: 12; Old Town as match 2: **383**.
+- 0.3.27, Old Town as match 1: 5.
+
+Old Town runs at a steady 25 fps as the first match of a launch. The 383 came from the second match of that launch, and its stalls began in the opening seconds. The leading hypothesis is that state or load accumulates from one match to the next (presentation, effects, menu stage or GC), not Old Town's density. The PresentMon run below was also a first match, but it ran under a focus-forcing script and PresentMon itself.
+- **Next:** play two or more matches in one launch on 0.3.27 and compare the `SHOOTER_FRAME_SUMMARY` lines per match. Main-thread or GPU growth in match 2 would confirm it and show which side.
+
 ## Delivery 0.3.27 — 2026-11-27
 
 `Tools/Deliver.ps1 -ForceContent -ReleaseVersion 0.3.27` on clean `8ac3042` PASS (`m11-playable-release/8ac3042…/deliver-20261127T145113282Z-fc5f9c80`). It carries, on top of 0.3.26:
