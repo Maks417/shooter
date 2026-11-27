@@ -23,6 +23,32 @@ Owner request: shotguns are weak. A shotgun should throw a bunch of pellets per 
 
 **Pending:** not in an installer; owner in-game check of shotgun balance (players and bots) and the tracer look; the TDM-5v5 Low benchmark with the larger tracer cap.
 
+## Old Town stutter: bot repath rate on the main thread — 2026-11-27
+
+**Two matches in one 0.3.27 launch** (Old Town 10v10 both, High; `Artifacts/playtest-logs/0.3.27/session3-two-matches.log`): each match got a single career award (+5,582 and +4,762), and there were no errors.
+
+| Match | Start: main / GPU p50 | Middle / end: main p50 | Hitches | Slow frames |
+|---|---|---|---|---|
+| 1 (session 1001) | 36.2 / 37.2 ms | 42.5 / 47.8 ms | 4 | 25 |
+| 2 (session 1003) | 36.8 / 25.6 ms | 45.0 / 43.1 ms | 54 | 283 |
+
+GPU p50 stayed between 25 and 37 ms throughout.
+- **Not per-launch.** Match 2 started exactly like match 1. This supersedes the "per-launch" reading below.
+- **Within each match, only the CPU main thread climbs, by about 10 ms.**
+- **It tracks bot pathfinding.** `pathsCompleted` per 300 ticks rises from about 30–160 early to about 600 (about 2 per tick) mid-match, in both matches. Across 86 windows, main-thread p50 correlates with the bot path rate at r = 0.72 (about 0.13 ms per path/s). Main-thread p50 is 34.0 ms at under 20 paths/s and 45.3 ms at 60 or more.
+- Shots and AI state changes grow at a steady rate, so the path rate is the variable that ramps.
+
+**Mechanism (code).** `CombatAiDirector.EnsurePath` replans urgent goals (advance on a visible enemy, last heard, search, flank) whenever the goal moves more than `RetargetDistance` = 2 m. It is limited only by `ReplanCooldownTicks` = 30 per bot and `MaxNewPathsPerTick` = 2 per planner. Each request is a synchronous `NavMesh.CalculatePath` (`UnityNavMeshBakeInstaller`) inside the fixed tick on the main thread. Once combat starts, the bots run at the path budget, and the main thread crosses the 66.7 ms catch-up limit more often, producing `SHOOTER_HITCH`.
+
+The 0.3.26 Harbour `pathsPartial` surge (session 1) is the same path load. The earlier "dense map / High tier" reading explains the roughly 36 ms baseline, not the in-match growth.
+
+**Fix directions (not implemented):**
+- Fewer replans for moving targets: a larger retarget distance or a longer cooldown for "advance on visible enemy"; reuse the current path while the target stays within its end corridor.
+- A path budget in milliseconds per tick instead of a count.
+- Measuring native path time per AI summary to confirm the per-path cost before tuning.
+
+Bot behaviour changes need the AI tests and owner review.
+
 ## 0.3.27 owner upgrade and first frame summaries — 2026-11-27
 
 **Upgrade over 0.3.26** (owner PC, interactive installer, file-level INS02 evidence):
